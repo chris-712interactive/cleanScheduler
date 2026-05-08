@@ -30,6 +30,7 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
 
@@ -62,6 +63,8 @@ const PORTAL_PATH_PREFIX: Record<PortalKind, string> = {
   tenant: '/tenant',
 };
 
+type CookieToSet = { name: string; value: string; options?: CookieOptions };
+
 function getApexHost(): string {
   return process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'lvh.me:3000';
 }
@@ -89,7 +92,58 @@ function classify(subdomain: string | null): { kind: PortalKind; tenantSlug?: st
   return { kind: 'tenant', tenantSlug: subdomain };
 }
 
-export function middleware(request: NextRequest) {
+function applyCookies(target: NextResponse, cookies: CookieToSet[]) {
+  cookies.forEach(({ name, value, options }) => {
+    target.cookies.set(name, value, options);
+  });
+}
+
+function buildMarketingUrl(request: NextRequest, pathname: string, nextPath?: string): URL {
+  const apex = getApexHost();
+  const url = new URL(`${request.nextUrl.protocol}//${apex}${pathname}`);
+  if (nextPath) {
+    url.searchParams.set('next', nextPath);
+  }
+  return url;
+}
+
+async function resolveUser(request: NextRequest): Promise<{
+  userId: string | null;
+  cookiesToSet: CookieToSet[];
+}> {
+  const cookiesToSet: CookieToSet[] = [];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return { userId: null, cookiesToSet };
+  }
+
+  const supabase = createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(newCookies: CookieToSet[]) {
+          newCookies.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            cookiesToSet.push({ name, value, options });
+          });
+        },
+      },
+    },
+  );
+
+  const { data, error } = await supabase.auth.getUser();
+  if (error) {
+    return { userId: null, cookiesToSet };
+  }
+  return { userId: data.user?.id ?? null, cookiesToSet };
+}
+
+export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const apex = getApexHost();
   const subdomain = extractSubdomain(host, apex);
@@ -113,11 +167,23 @@ export function middleware(request: NextRequest) {
     url.pathname = url.pathname === '/' ? prefix : `${prefix}${url.pathname}`;
   }
 
-  return NextResponse.rewrite(url, {
+  const { userId, cookiesToSet } = await resolveUser(request);
+  const isProtectedPortal = kind !== 'marketing';
+  if (isProtectedPortal && !userId) {
+    const nextPath = request.nextUrl.pathname + request.nextUrl.search;
+    const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
+    const redirect = NextResponse.redirect(redirectUrl);
+    applyCookies(redirect, cookiesToSet);
+    return redirect;
+  }
+
+  const rewrite = NextResponse.rewrite(url, {
     request: {
       headers: requestHeaders,
     },
   });
+  applyCookies(rewrite, cookiesToSet);
+  return rewrite;
 }
 
 export const config = {
