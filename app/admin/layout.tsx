@@ -1,5 +1,8 @@
 import { PortalShell } from '@/components/portal/PortalShell';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
+import { requirePortalAccess } from '@/lib/auth/portalAccess';
+
+export const dynamic = 'force-dynamic';
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
@@ -18,7 +21,9 @@ const IDENTITY: IdentityChipModel = {
   initials: 'FA',
 };
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  await requirePortalAccess('admin', '/');
+
   return (
     <PortalShell
       brandLabel="cleanScheduler"

@@ -3,10 +3,10 @@
  *
  * Per implementation plan section 16 ("Environments & deployment"):
  *
- *   - Every env var is parsed via a Zod schema at import time.
- *   - If validation fails the process throws *before* any feature code runs,
- *     so misconfigured environments fail fast in CI / on Vercel rather than
- *     surfacing as opaque runtime errors deep inside a Stripe webhook.
+ *   - Every env var is parsed via a Zod schema on first access.
+ *   - If validation fails the process throws immediately at the call site,
+ *     so misconfigured environments still fail fast without causing build-time
+ *     crashes for routes that import env-aware modules but are not executed.
  *   - Public (browser-shipped) vars are split from server-only vars so we
  *     can't accidentally read a server secret from a client component.
  *
@@ -41,23 +41,36 @@ const publicEnvSchema = z.object({
 // Manually pluck NEXT_PUBLIC_* vars: webpack inlines them at build time, so
 // `process.env.NEXT_PUBLIC_FOO` works in both server and browser bundles, but
 // destructuring `process.env` does not.
-const publicParsed = publicEnvSchema.safeParse({
-  NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
-  NEXT_PUBLIC_APP_DOMAIN: process.env.NEXT_PUBLIC_APP_DOMAIN,
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
-});
+let _publicEnvCache: z.infer<typeof publicEnvSchema> | undefined;
 
-if (!publicParsed.success) {
-  throw new Error(
-    'Invalid public environment variables:\n' +
-      JSON.stringify(publicParsed.error.flatten().fieldErrors, null, 2),
-  );
+function getPublicEnv(): z.infer<typeof publicEnvSchema> {
+  if (_publicEnvCache) return _publicEnvCache;
+
+  const parsed = publicEnvSchema.safeParse({
+    NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
+    NEXT_PUBLIC_APP_DOMAIN: process.env.NEXT_PUBLIC_APP_DOMAIN,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  });
+
+  if (!parsed.success) {
+    throw new Error(
+      'Invalid public environment variables:\n' +
+        JSON.stringify(parsed.error.flatten().fieldErrors, null, 2),
+    );
+  }
+
+  _publicEnvCache = parsed.data;
+  return _publicEnvCache;
 }
 
-export const publicEnv = publicParsed.data;
+export const publicEnv = new Proxy({} as z.infer<typeof publicEnvSchema>, {
+  get(_target, prop: string) {
+    return getPublicEnv()[prop as keyof z.infer<typeof publicEnvSchema>];
+  },
+});
 
 // -----------------------------------------------------------------------------
 // Server-only - never reach for these from a client component
@@ -121,6 +134,6 @@ export const serverEnv = new Proxy({} as z.infer<typeof serverEnvSchema>, {
 // Convenience flags
 // -----------------------------------------------------------------------------
 
-export const isLocal = publicEnv.NEXT_PUBLIC_APP_ENV === 'local';
-export const isDev = publicEnv.NEXT_PUBLIC_APP_ENV === 'dev';
-export const isProd = publicEnv.NEXT_PUBLIC_APP_ENV === 'prod';
+export const isLocal = () => publicEnv.NEXT_PUBLIC_APP_ENV === 'local';
+export const isDev = () => publicEnv.NEXT_PUBLIC_APP_ENV === 'dev';
+export const isProd = () => publicEnv.NEXT_PUBLIC_APP_ENV === 'prod';
