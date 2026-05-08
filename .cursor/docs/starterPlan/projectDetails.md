@@ -14,6 +14,10 @@ This software is meant to fill all of the gaps and issues Residential or Commerc
 
 For my current projects I have been utilizing Next.js (with React & Redux Toolkit) for the frontend and a Supabase backend.  I would like you to explore all options and determine what would be most suited for a multi-tenant setup such as this and report back with findings on the pros and cons of each option.
 
+## Security Concerns
+
+Because we are dealing with other tenant's customer information, there needs to be a level of encryption that happens with this type of information.  I would like suggestions on what type of encryption and where this would be the most appropriate.
+
 ## Business Requirements
 
 The following list of requirements are the bare minimum that this software must have to be considered operational.  Along the way, if you deem something to be of value, that should be added, please recommend those upgrades and I will deicde if they are worthy to be added or not.
