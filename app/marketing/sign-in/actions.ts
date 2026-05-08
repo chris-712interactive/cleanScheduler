@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { parseAllowedRedirectOrigin } from '@/lib/auth/allowedRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
 
 export interface SignInState {
@@ -36,7 +37,9 @@ export async function requestMagicLink(
 
   const supabase = await createClient();
   const h = await headers();
-  const origin = getOriginFromHeaders(h);
+  const headerOrigin = getOriginFromHeaders(h);
+  const clientOrigin = parseAllowedRedirectOrigin(String(formData.get('return_origin') ?? ''));
+  const origin = clientOrigin ?? headerOrigin;
   const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 
   const { error } = await supabase.auth.signInWithOtp({
