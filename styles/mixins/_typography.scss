@@ -1,0 +1,64 @@
+// Typography helpers - role-based mixins built on top of token values so the
+// typographic hierarchy is consistent across components without each one
+// hand-tuning size/weight/line-height.
+
+@use '../tokens/typography' as type;
+
+@mixin display-1 {
+  font-size: type.$font-size-5xl;
+  font-weight: type.$font-weight-bold;
+  line-height: type.$line-height-tight;
+  letter-spacing: -0.02em;
+}
+
+@mixin display-2 {
+  font-size: type.$font-size-4xl;
+  font-weight: type.$font-weight-bold;
+  line-height: type.$line-height-tight;
+  letter-spacing: -0.015em;
+}
+
+@mixin h1 {
+  font-size: type.$font-size-3xl;
+  font-weight: type.$font-weight-semibold;
+  line-height: type.$line-height-snug;
+  letter-spacing: -0.01em;
+}
+
+@mixin h2 {
+  font-size: type.$font-size-2xl;
+  font-weight: type.$font-weight-semibold;
+  line-height: type.$line-height-snug;
+}
+
+@mixin h3 {
+  font-size: type.$font-size-xl;
+  font-weight: type.$font-weight-semibold;
+  line-height: type.$line-height-snug;
+}
+
+@mixin body {
+  font-size: type.$font-size-md;
+  font-weight: type.$font-weight-regular;
+  line-height: type.$line-height-normal;
+}
+
+@mixin body-sm {
+  font-size: type.$font-size-sm;
+  font-weight: type.$font-weight-regular;
+  line-height: type.$line-height-normal;
+}
+
+@mixin caption {
+  font-size: type.$font-size-xs;
+  font-weight: type.$font-weight-medium;
+  line-height: type.$line-height-snug;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+@mixin truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

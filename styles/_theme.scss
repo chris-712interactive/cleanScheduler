@@ -1,0 +1,214 @@
+// =============================================================================
+// Theme - semantic CSS custom properties
+// =============================================================================
+// Every component SCSS file consumes these variables (var(--color-bg) etc.)
+// and never the raw tokens directly. This is what makes light/dark theming -
+// and per-tenant brand overrides - a single-attribute change at the root.
+//
+// Theme resolution flow:
+//
+//   1. The pre-hydration script (components/theme/themeScript.ts) reads
+//      `localStorage.cs_theme` (one of "system" | "light" | "dark") and the
+//      `prefers-color-scheme` media query, then sets:
+//        <html data-theme="light|dark" data-theme-pref="system|light|dark">
+//   2. The tenant brand color (when set) is applied as a single
+//      `--color-brand-primary` override on <html data-tenant-brand="..."> via
+//      a generated <style>. We override the *semantic* var, not the raw token.
+//   3. Components only ever reference the semantic vars below.
+
+@use 'tokens/colors' as c;
+@use 'tokens/spacing' as s;
+@use 'tokens/typography' as type;
+@use 'tokens/radii' as r;
+@use 'tokens/shadows' as sh;
+@use 'tokens/z' as z;
+@use 'tokens/motion' as m;
+
+// -----------------------------------------------------------------------------
+// Light theme (default)
+// -----------------------------------------------------------------------------
+
+:root,
+:root[data-theme='light'] {
+  // -- color: surfaces / backgrounds --
+  --color-bg: #{c.$brand-bg-light};
+  --color-bg-subtle: #{c.$brand-surface-light};
+  --color-bg-muted: #{c.$gray-50-light};
+  --color-surface: #{c.$brand-bg-light};
+  --color-surface-raised: #{c.$brand-bg-light};
+  --color-surface-overlay: #{c.$brand-bg-light};
+
+  // -- color: text --
+  --color-text: #{c.$brand-text-light};
+  --color-text-muted: #{c.$brand-text-muted-light};
+  --color-text-subtle: #{c.$gray-500-light};
+  --color-text-on-brand: #{c.$brand-bg-light};
+  --color-text-inverse: #{c.$brand-text-dark};
+
+  // -- color: borders / dividers --
+  --color-border: #{c.$gray-200-light};
+  --color-border-strong: #{c.$gray-300-light};
+  --color-divider: #{c.$gray-100-light};
+
+  // -- color: brand --
+  --color-brand-primary: #{c.$brand-primary-light};
+  --color-brand-primary-hover: #{c.$brand-text-light};
+  --color-brand-accent: #{c.$brand-accent-light};
+  --color-brand-sparkle: #{c.$brand-sparkle-light};
+
+  // -- color: status --
+  --color-success: #{c.$success-light};
+  --color-success-bg: #ecfdf5;
+  --color-warning: #{c.$warning-light};
+  --color-warning-bg: #fffbeb;
+  --color-danger: #{c.$danger-light};
+  --color-danger-bg: #fef2f2;
+  --color-info: #{c.$info-light};
+  --color-info-bg: #eff6ff;
+
+  // -- color: focus ring --
+  --color-focus-ring: #{c.$focus-ring-light};
+
+  // -- shadow --
+  --shadow-xs: #{sh.$shadow-xs-light};
+  --shadow-sm: #{sh.$shadow-sm-light};
+  --shadow-md: #{sh.$shadow-md-light};
+  --shadow-lg: #{sh.$shadow-lg-light};
+  --shadow-xl: #{sh.$shadow-xl-light};
+
+  color-scheme: light;
+}
+
+// -----------------------------------------------------------------------------
+// Dark theme
+// -----------------------------------------------------------------------------
+
+:root[data-theme='dark'] {
+  // -- color: surfaces / backgrounds --
+  --color-bg: #{c.$brand-bg-dark};
+  --color-bg-subtle: #{c.$gray-50-dark};
+  --color-bg-muted: #{c.$gray-25-dark};
+  --color-surface: #{c.$brand-surface-dark};
+  --color-surface-raised: #{c.$gray-200-dark};
+  --color-surface-overlay: #{c.$gray-200-dark};
+
+  // -- color: text --
+  --color-text: #{c.$brand-text-dark};
+  --color-text-muted: #{c.$brand-text-muted-dark};
+  --color-text-subtle: #{c.$gray-600-dark};
+  --color-text-on-brand: #{c.$brand-bg-dark};
+  --color-text-inverse: #{c.$brand-text-light};
+
+  // -- color: borders / dividers --
+  --color-border: #{c.$gray-300-dark};
+  --color-border-strong: #{c.$gray-400-dark};
+  --color-divider: #{c.$gray-200-dark};
+
+  // -- color: brand --
+  --color-brand-primary: #{c.$brand-primary-dark};
+  --color-brand-primary-hover: #{c.$brand-accent-dark};
+  --color-brand-accent: #{c.$brand-accent-dark};
+  --color-brand-sparkle: #{c.$brand-sparkle-dark};
+
+  // -- color: status --
+  --color-success: #{c.$success-dark};
+  --color-success-bg: #052e16;
+  --color-warning: #{c.$warning-dark};
+  --color-warning-bg: #2a1c00;
+  --color-danger: #{c.$danger-dark};
+  --color-danger-bg: #2c0a0a;
+  --color-info: #{c.$info-dark};
+  --color-info-bg: #0b2235;
+
+  // -- color: focus ring --
+  --color-focus-ring: #{c.$focus-ring-dark};
+
+  // -- shadow --
+  --shadow-xs: #{sh.$shadow-xs-dark};
+  --shadow-sm: #{sh.$shadow-sm-dark};
+  --shadow-md: #{sh.$shadow-md-dark};
+  --shadow-lg: #{sh.$shadow-lg-dark};
+  --shadow-xl: #{sh.$shadow-xl-dark};
+
+  color-scheme: dark;
+}
+
+// -----------------------------------------------------------------------------
+// Theme-agnostic tokens (shared across light + dark)
+// -----------------------------------------------------------------------------
+
+:root {
+  // -- spacing --
+  --space-0: #{s.$space-0};
+  --space-1: #{s.$space-1};
+  --space-2: #{s.$space-2};
+  --space-3: #{s.$space-3};
+  --space-4: #{s.$space-4};
+  --space-5: #{s.$space-5};
+  --space-6: #{s.$space-6};
+  --space-7: #{s.$space-7};
+  --space-8: #{s.$space-8};
+  --space-9: #{s.$space-9};
+  --space-10: #{s.$space-10};
+  --space-11: #{s.$space-11};
+  --space-12: #{s.$space-12};
+
+  // -- typography --
+  --font-sans: #{type.$font-sans};
+  --font-mono: #{type.$font-mono};
+  --font-size-xs: #{type.$font-size-xs};
+  --font-size-sm: #{type.$font-size-sm};
+  --font-size-md: #{type.$font-size-md};
+  --font-size-lg: #{type.$font-size-lg};
+  --font-size-xl: #{type.$font-size-xl};
+  --font-size-2xl: #{type.$font-size-2xl};
+  --font-size-3xl: #{type.$font-size-3xl};
+  --font-size-4xl: #{type.$font-size-4xl};
+  --font-size-5xl: #{type.$font-size-5xl};
+
+  // -- radii --
+  --radius-none: #{r.$radius-none};
+  --radius-xs: #{r.$radius-xs};
+  --radius-sm: #{r.$radius-sm};
+  --radius-md: #{r.$radius-md};
+  --radius-lg: #{r.$radius-lg};
+  --radius-xl: #{r.$radius-xl};
+  --radius-2xl: #{r.$radius-2xl};
+  --radius-pill: #{r.$radius-pill};
+  --radius-circle: #{r.$radius-circle};
+
+  // -- z-index --
+  --z-base: #{z.$z-base};
+  --z-raised: #{z.$z-raised};
+  --z-sticky: #{z.$z-sticky};
+  --z-app-shell: #{z.$z-app-shell};
+  --z-dropdown: #{z.$z-dropdown};
+  --z-popover: #{z.$z-popover};
+  --z-tooltip: #{z.$z-tooltip};
+  --z-overlay: #{z.$z-overlay};
+  --z-modal: #{z.$z-modal};
+  --z-toast: #{z.$z-toast};
+
+  // -- motion --
+  --duration-fast: #{m.$duration-fast};
+  --duration-base: #{m.$duration-base};
+  --duration-slow: #{m.$duration-slow};
+  --duration-slower: #{m.$duration-slower};
+  --easing-standard: #{m.$easing-standard};
+  --easing-emphasized: #{m.$easing-emphasized};
+  --easing-decelerate: #{m.$easing-decelerate};
+  --easing-accelerate: #{m.$easing-accelerate};
+}
+
+// -----------------------------------------------------------------------------
+// Reduced motion - collapse durations to 0 globally for users who request it.
+// -----------------------------------------------------------------------------
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --duration-slower: 0ms;
+  }
+}

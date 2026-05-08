@@ -1,0 +1,43 @@
+.skeleton {
+  display: inline-block;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--color-bg-muted) 0%,
+      var(--color-bg-subtle) 50%,
+      var(--color-bg-muted) 100%
+    );
+  background-size: 200% 100%;
+  animation: shimmer var(--duration-slower) ease-in-out infinite;
+
+  &[data-radius='sm'] {
+    border-radius: var(--radius-sm);
+  }
+
+  &[data-radius='md'] {
+    border-radius: var(--radius-md);
+  }
+
+  &[data-radius='lg'] {
+    border-radius: var(--radius-lg);
+  }
+
+  &[data-radius='pill'] {
+    border-radius: var(--radius-pill);
+  }
+
+  &[data-radius='circle'] {
+    border-radius: var(--radius-circle);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}

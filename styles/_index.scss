@@ -1,0 +1,15 @@
+// Forward-only entry point. Modules can `@use 'styles/_index.scss' as *;` to
+// pull every token / mixin namespace under their preferred aliases.
+
+@forward 'tokens/colors';
+@forward 'tokens/spacing';
+@forward 'tokens/typography';
+@forward 'tokens/radii';
+@forward 'tokens/shadows';
+@forward 'tokens/z';
+@forward 'tokens/motion';
+@forward 'tokens/breakpoints';
+@forward 'mixins/breakpoints';
+@forward 'mixins/focus';
+@forward 'mixins/a11y';
+@forward 'mixins/typography';

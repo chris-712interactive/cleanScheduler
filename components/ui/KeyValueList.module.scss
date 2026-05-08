@@ -1,0 +1,33 @@
+.list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+
+  &[data-layout='inline'] {
+    grid-template-columns: minmax(120px, 32%) 1fr;
+  }
+}
+
+.row {
+  display: contents;
+
+  .list[data-layout='stacked'] & {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+}
+
+.key {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.value {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  word-break: break-word;
+}

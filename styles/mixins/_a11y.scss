@@ -1,0 +1,25 @@
+// Accessibility helpers.
+
+// Visually hide content while leaving it accessible to assistive tech. Pair
+// with Radix's <VisuallyHidden /> when you need a JSX-friendly version.
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// Respect reduced-motion preference. Wraps the supplied transition declaration
+// and zeroes it out for users who have requested less motion.
+@mixin respect-reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    animation-duration: 0ms;
+    animation-iteration-count: 1;
+  }
+}

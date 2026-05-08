@@ -1,0 +1,89 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/typography' as type;
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.breadcrumbs {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.breadcrumbList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.breadcrumbItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  &::after {
+    content: '/';
+    color: var(--color-text-subtle);
+  }
+
+  &:last-child::after {
+    content: '';
+  }
+
+  a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-text);
+      text-decoration: underline;
+    }
+  }
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  @include mq.up(md) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+
+  @include type.h1;
+}
+
+.description {
+  max-width: 64rem;
+  margin: 0;
+  color: var(--color-text-muted);
+
+  @include type.body;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

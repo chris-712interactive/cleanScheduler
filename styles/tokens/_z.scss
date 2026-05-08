@@ -1,0 +1,14 @@
+// Z-index scale. Keep this list as the single source of truth so we never end
+// up with 9999 races between modals, toasts, and dropdowns.
+
+$z-base: 0;
+$z-raised: 1;
+$z-sticky: 100;
+$z-app-shell: 200; // top bar + sidebar
+$z-dropdown: 300;
+$z-popover: 350;
+$z-tooltip: 400;
+$z-overlay: 500; // dialog scrim
+$z-modal: 510;
+$z-toast: 600;
+$z-debug: 9000;

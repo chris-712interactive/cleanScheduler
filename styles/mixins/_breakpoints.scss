@@ -1,0 +1,64 @@
+// Mobile-first media-query helpers. Always prefer mq-up (min-width) over
+// mq-down so styles cascade additively as the viewport grows.
+//
+// Example:
+//   @use 'mixins/breakpoints' as mq;
+//
+//   .grid {
+//     display: grid;
+//     grid-template-columns: 1fr;
+//
+//     @include mq.up(md) {
+//       grid-template-columns: 1fr 1fr;
+//     }
+//   }
+
+@use 'sass:map';
+@use '../tokens/breakpoints' as bp;
+
+$_breakpoints: (
+  xs: bp.$bp-xs,
+  sm: bp.$bp-sm,
+  md: bp.$bp-md,
+  lg: bp.$bp-lg,
+  xl: bp.$bp-xl,
+  2xl: bp.$bp-2xl,
+);
+
+@mixin up($name) {
+  $value: map.get($_breakpoints, $name);
+
+  @if $value == null {
+    @error "Unknown breakpoint `#{$name}`. Choose one of: #{map.keys($_breakpoints)}.";
+  }
+
+  @media (min-width: #{$value}) {
+    @content;
+  }
+}
+
+@mixin down($name) {
+  $value: map.get($_breakpoints, $name);
+
+  @if $value == null {
+    @error "Unknown breakpoint `#{$name}`. Choose one of: #{map.keys($_breakpoints)}.";
+  }
+
+  // Subtract 0.02px so we don't double-cover the boundary with `up()`.
+  @media (max-width: #{$value - 0.02px}) {
+    @content;
+  }
+}
+
+@mixin between($lower, $upper) {
+  $low: map.get($_breakpoints, $lower);
+  $high: map.get($_breakpoints, $upper);
+
+  @if $low == null or $high == null {
+    @error "Unknown breakpoint pair `#{$lower}` / `#{$upper}`.";
+  }
+
+  @media (min-width: #{$low}) and (max-width: #{$high - 0.02px}) {
+    @content;
+  }
+}

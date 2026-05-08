@@ -1,0 +1,89 @@
+// =============================================================================
+// Raw color tokens
+// =============================================================================
+// The hex literals listed here are the ONLY hex literals permitted anywhere in
+// the codebase (the stylelint `color-no-hex` rule exempts this file and
+// _theme.scss). Component code must reach for the semantic --color-* CSS
+// custom properties defined in styles/_theme.scss instead of these raw tokens.
+//
+// Brand values are taken verbatim from the cleanScheduler logo palette
+// (see plan section 4.1). Neutrals are derived as teal-tinted grays so the
+// chrome reads as part of the brand, not a generic gray sheet pasted underneath.
+
+// -----------------------------------------------------------------------------
+// Brand (light theme)
+// -----------------------------------------------------------------------------
+
+$brand-primary-light: #006d77; // logo "S" / "C"
+$brand-accent-light: #00e6d9; // sparkle trail / highlights
+$brand-text-light: #00353a; // dark teal heading text
+$brand-text-muted-light: #2c7a7a; // subtitles / secondary text
+$brand-bg-light: #ffffff; // page background
+$brand-surface-light: #f0faf9; // cards / subtle sections
+$brand-sparkle-light: #ffffff; // bright star shine
+
+// -----------------------------------------------------------------------------
+// Brand (dark theme)
+// -----------------------------------------------------------------------------
+
+$brand-primary-dark: #00b5a8; // brighter teal for dark bg
+$brand-accent-dark: #00f5e9; // sparkle trail (keeps pop)
+$brand-text-dark: #e0f5f3; // light teal-white headings
+$brand-text-muted-dark: #a1e4db; // supporting text
+$brand-bg-dark: #0a1f1f; // deep dark teal-black
+$brand-surface-dark: #132e2e; // slightly lighter surfaces
+$brand-sparkle-dark: #ffffff; // bright highlights
+
+// -----------------------------------------------------------------------------
+// Neutral scale (teal-tinted) - light
+// -----------------------------------------------------------------------------
+
+$gray-0-light: #ffffff;
+$gray-25-light: #fbfdfd;
+$gray-50-light: #f8fbfb;
+$gray-100-light: #eef4f4;
+$gray-200-light: #dfebeb;
+$gray-300-light: #c5d9d9;
+$gray-400-light: #9cb7b7;
+$gray-500-light: #688787;
+$gray-600-light: #486868;
+$gray-700-light: #2f4d4d;
+$gray-800-light: #1b3434;
+$gray-900-light: #0f2424;
+
+// -----------------------------------------------------------------------------
+// Neutral scale (teal-tinted) - dark
+// -----------------------------------------------------------------------------
+
+$gray-0-dark: #0a1f1f;
+$gray-25-dark: #0d2424;
+$gray-50-dark: #0f2727;
+$gray-100-dark: #132e2e;
+$gray-200-dark: #1a3838;
+$gray-300-dark: #244747;
+$gray-400-dark: #355a5a;
+$gray-500-dark: #4f7575;
+$gray-600-dark: #6e9494;
+$gray-700-dark: #93b5b5;
+$gray-800-dark: #c0dada;
+$gray-900-dark: #e0f5f3;
+
+// -----------------------------------------------------------------------------
+// Semantic accents (status colors)
+// -----------------------------------------------------------------------------
+
+$success-light: #16a34a;
+$success-dark: #22c55e;
+$warning-light: #b45309;
+$warning-dark: #f59e0b;
+$danger-light: #b91c1c;
+$danger-dark: #ef4444;
+$info-light: #0369a1;
+$info-dark: #38bdf8;
+
+// -----------------------------------------------------------------------------
+// Focus ring
+// -----------------------------------------------------------------------------
+
+$focus-ring-light: #00b5a8;
+$focus-ring-dark: #00f5e9;

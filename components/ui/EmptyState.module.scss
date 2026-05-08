@@ -1,0 +1,40 @@
+@use 'mixins/typography' as type;
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-9) var(--space-5);
+  text-align: center;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: var(--color-bg-muted);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-circle);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+
+  @include type.h3;
+}
+
+.description {
+  max-width: 36rem;
+  margin: 0;
+  color: var(--color-text-muted);
+
+  @include type.body;
+}
+
+.action {
+  margin-top: var(--space-2);
+}

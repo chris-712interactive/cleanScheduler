@@ -1,0 +1,56 @@
+@use 'mixins/focus' as f;
+
+.group {
+  display: inline-flex;
+  padding: 2px;
+
+  background-color: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+
+  padding: var(--space-1) var(--space-3);
+
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard);
+
+  @include f.focus-ring;
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &[data-selected] {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-xs);
+  }
+}
+
+.label {
+  // Keep label readable on desktop, collapse to icon-only on the smallest
+  // viewports so the toggle does not steal width from the top bar.
+  @media (max-width: 480px) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

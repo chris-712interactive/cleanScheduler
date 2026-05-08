@@ -1,0 +1,29 @@
+.container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+
+  @media (min-width: 768px) {
+    padding-inline: var(--space-6);
+  }
+
+  &[data-size='sm'] {
+    max-width: 640px;
+  }
+
+  &[data-size='md'] {
+    max-width: 880px;
+  }
+
+  &[data-size='lg'] {
+    max-width: 1120px;
+  }
+
+  &[data-size='xl'] {
+    max-width: 1320px;
+  }
+
+  &[data-size='full'] {
+    max-width: none;
+  }
+}

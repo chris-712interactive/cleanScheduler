@@ -1,0 +1,14 @@
+// Accessible focus-ring mixin. Targets `:focus-visible` so keyboard users get
+// the ring while click users do not, and uses an outline (not box-shadow) so
+// the ring is unaffected by border-radius clipping on parents.
+
+@mixin focus-ring($offset: 2px) {
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: $offset;
+  }
+}

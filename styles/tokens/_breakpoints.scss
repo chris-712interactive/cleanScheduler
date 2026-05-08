@@ -1,0 +1,9 @@
+// Breakpoint tokens - mobile-first. Use these via the @use 'mixins/breakpoints'
+// helpers (mq-up / mq-down) rather than reading them directly in components.
+
+$bp-xs: 360px; // tiny phones
+$bp-sm: 480px; // phones
+$bp-md: 768px; // small tablets
+$bp-lg: 1024px; // tablets / small laptops
+$bp-xl: 1280px; // desktops
+$bp-2xl: 1536px; // large desktops

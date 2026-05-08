@@ -1,7 +1,41 @@
+# macOS metadata
 ._*
+.DS_Store
+
+# Dependencies
 node_modules/
+
+# Next.js build output
+.next/
+out/
+dist/
+build/
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Test coverage
+coverage/
+
+# Environment files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.log
+*.swp
+
+# Supabase local CLI artefacts (will be added later)
+supabase/.branches
+supabase/.temp

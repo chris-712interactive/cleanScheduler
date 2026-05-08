@@ -1,0 +1,60 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+
+  padding: 2px var(--space-2);
+
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+
+  &[data-tone='neutral'] {
+    background-color: var(--color-bg-muted);
+    color: var(--color-text-muted);
+    border-color: var(--color-border);
+  }
+
+  &[data-tone='success'] {
+    background-color: var(--color-success-bg);
+    color: var(--color-success);
+    border-color: color-mix(in srgb, var(--color-success) 30%, transparent);
+  }
+
+  &[data-tone='warning'] {
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning);
+    border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
+  }
+
+  &[data-tone='danger'] {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger);
+    border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+  }
+
+  &[data-tone='info'] {
+    background-color: var(--color-info-bg);
+    color: var(--color-info);
+    border-color: color-mix(in srgb, var(--color-info) 30%, transparent);
+  }
+
+  &[data-tone='brand'] {
+    background-color: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+    color: var(--color-brand-primary);
+    border-color: color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
+  }
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  text-transform: capitalize;
+}

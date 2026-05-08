@@ -1,0 +1,14 @@
+// Motion tokens - durations and easings. Component code should always read
+// these via --motion-* custom properties so a global "reduced motion" override
+// can collapse them to 0ms without touching component SCSS.
+
+$duration-instant: 0ms;
+$duration-fast: 120ms;
+$duration-base: 180ms;
+$duration-slow: 280ms;
+$duration-slower: 420ms;
+
+$easing-standard: cubic-bezier(0.2, 0, 0, 1);
+$easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
+$easing-decelerate: cubic-bezier(0, 0, 0, 1);
+$easing-accelerate: cubic-bezier(0.3, 0, 1, 1);
