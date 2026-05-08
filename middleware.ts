@@ -69,14 +69,16 @@ function getApexHost(): string {
   return process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'lvh.me:3000';
 }
 
-function extractSubdomain(host: string, apex: string): string | null {
+function extractSubdomainLabel(host: string, apex: string): string | null {
   const apexWithoutPort = apex.split(':')[0]!.toLowerCase();
   const hostWithoutPort = host.split(':')[0]!.toLowerCase();
 
   if (hostWithoutPort === apexWithoutPort) return null;
 
   if (hostWithoutPort.endsWith(`.${apexWithoutPort}`)) {
-    return hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
+    const prefix = hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
+    const firstLabel = prefix.split('.')[0];
+    return firstLabel ?? null;
   }
 
   // Unrecognised origin (Vercel preview URL, raw IP) - render marketing.
@@ -99,8 +101,9 @@ function applyCookies(target: NextResponse, cookies: CookieToSet[]) {
 }
 
 function buildMarketingUrl(request: NextRequest, pathname: string, nextPath?: string): URL {
-  const apex = getApexHost();
-  const url = new URL(`${request.nextUrl.protocol}//${apex}${pathname}`);
+  // Keep redirects on the current host/subdomain so auth cookies are set for
+  // the exact portal domain the user is trying to access.
+  const url = new URL(pathname, request.url);
   if (nextPath) {
     url.searchParams.set('next', nextPath);
   }
@@ -146,7 +149,7 @@ async function resolveUser(request: NextRequest): Promise<{
 export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const apex = getApexHost();
-  const subdomain = extractSubdomain(host, apex);
+  const subdomain = extractSubdomainLabel(host, apex);
   const { kind, tenantSlug } = classify(subdomain);
 
   const requestHeaders = new Headers(request.headers);
