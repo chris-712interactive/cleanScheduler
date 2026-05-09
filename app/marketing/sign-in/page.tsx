@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { SignInForm } from './SignInForm';
@@ -24,9 +25,13 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       <Container size="sm">
         <Card
           title="Sign in to cleanScheduler"
-          description="Use a secure magic link. We will send a one-time sign-in link to your email."
+          description="Sign in with email and password, Google, or a one-time magic link (subject to your Supabase email quotas)."
         >
-          <SignInForm nextPath={nextPath} />
+          <Suspense
+            fallback={<p className={styles.loading}>Loading sign-in…</p>}
+          >
+            <SignInForm nextPath={nextPath} />
+          </Suspense>
           <p className={styles.helpText}>
             Need the public site instead? <Link href="/">Return to homepage</Link>.
           </p>
