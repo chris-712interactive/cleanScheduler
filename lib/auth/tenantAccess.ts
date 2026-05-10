@@ -83,7 +83,7 @@ export async function requireTenantPortalAccess(
   const slug = tenantSlug?.trim().toLowerCase() ?? '';
 
   if (!slug) {
-    redirect('/sign-in?error=tenant');
+    redirect('/access-denied?reason=tenant_config');
   }
 
   const membership = await lookupMembership(auth.user.id, slug);
@@ -104,8 +104,8 @@ export async function requireTenantPortalAccess(
         role: 'admin',
       };
     }
-    redirect('/sign-in?error=unknown_tenant');
+    redirect('/access-denied?reason=unknown_tenant');
   }
 
-  redirect('/sign-in?error=membership');
+  redirect('/access-denied?reason=membership');
 }

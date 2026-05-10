@@ -33,7 +33,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
-const AUTH_PATHS = new Set(['/sign-in', '/auth/callback']);
+
+/** Served as marketing routes on any host; no session required (sign-in, OAuth return, post-auth denial). */
+const PUBLIC_MARKETING_PATHS = new Set(['/sign-in', '/auth/callback', '/access-denied']);
 
 // Subdomains reserved for platform use. Tenants cannot register these.
 const RESERVED_SUBDOMAINS = new Set([
@@ -152,10 +154,14 @@ export async function middleware(request: NextRequest) {
   const apex = getApexHost();
   const subdomain = extractSubdomainLabel(host, apex);
   const requestedPath = request.nextUrl.pathname;
-  const isAuthPath = AUTH_PATHS.has(requestedPath);
+  const isPublicMarketingPath = PUBLIC_MARKETING_PATHS.has(requestedPath);
   const baseClassification = classify(subdomain);
-  const kind: PortalKind = isAuthPath ? 'marketing' : baseClassification.kind;
-  const tenantSlug = isAuthPath ? undefined : baseClassification.tenantSlug;
+  const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
+  // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.
+  const tenantSlug =
+    isPublicMarketingPath && requestedPath !== '/access-denied'
+      ? undefined
+      : baseClassification.tenantSlug;
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-portal', kind);

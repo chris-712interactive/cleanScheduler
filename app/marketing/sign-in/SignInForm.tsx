@@ -2,7 +2,6 @@
 
 import { useActionState } from 'react';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import {
   signInWithGoogle,
   signInWithPassword,
@@ -15,10 +14,14 @@ const initialState: SignInState = {};
 
 type AuthMode = 'password' | 'signup';
 
-export function SignInForm({ nextPath }: { nextPath: string }) {
-  const searchParams = useSearchParams();
-  const urlError = searchParams.get('error');
-
+export function SignInForm({
+  nextPath,
+  urlError,
+}: {
+  nextPath: string;
+  /** Auth failures only (wrong password, OAuth). Authorization issues use /access-denied. */
+  urlError?: string | null;
+}) {
   const [mode, setMode] = useState<AuthMode>('password');
   const [returnOrigin, setReturnOrigin] = useState('');
 
