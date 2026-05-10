@@ -5,9 +5,13 @@ import { Container } from '@/components/layout/Container';
 import { Grid } from '@/components/layout/Grid';
 import { Stack } from '@/components/layout/Stack';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { publicEnv } from '@/lib/env';
+import { TenantOnboardingForm } from './onboarding/TenantOnboardingForm';
 import styles from './landing.module.scss';
 
 export default function MarketingHome() {
+  const domainSuffix = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
+
   return (
     <>
       <header className={styles.header}>
@@ -39,7 +43,7 @@ export default function MarketingHome() {
                 of their service.
               </p>
               <div className={styles.heroActions}>
-                <Button size="lg" iconRight={<ArrowRight size={18} />}>
+                <Button size="lg" href="#start-trial" as="a" iconRight={<ArrowRight size={18} />}>
                   Start your free trial
                 </Button>
                 <Button size="lg" variant="secondary">
@@ -88,6 +92,17 @@ export default function MarketingHome() {
                 </Card>
               </Grid>
             </Stack>
+          </Container>
+        </section>
+
+        <section className={styles.onboarding} id="start-trial">
+          <Container size="sm">
+            <Card
+              title="Start your free trial"
+              description="Create your workspace, owner account, and sign in instantly."
+            >
+              <TenantOnboardingForm domainSuffix={domainSuffix} />
+            </Card>
           </Container>
         </section>
       </main>
