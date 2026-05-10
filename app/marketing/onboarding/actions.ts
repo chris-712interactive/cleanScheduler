@@ -58,9 +58,18 @@ export async function createTenantAndOwner(
   }
 
   const businessName = String(formData.get('business_name') ?? '').trim();
+  const companyEmail = String(formData.get('company_email') ?? '').trim().toLowerCase();
+  const companyPhone = String(formData.get('company_phone') ?? '').trim();
+  const companyWebsite = String(formData.get('company_website') ?? '').trim();
+  const serviceArea = String(formData.get('service_area') ?? '').trim();
+  const teamSize = String(formData.get('team_size') ?? '').trim();
+  const businessType = String(formData.get('business_type') ?? '').trim();
+  const referralSource = String(formData.get('referral_source') ?? '').trim();
   const displayName = String(formData.get('display_name') ?? '').trim();
+  const ownerPhone = String(formData.get('owner_phone') ?? '').trim();
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const password = String(formData.get('password') ?? '');
+  const acceptedTerms = String(formData.get('accept_terms') ?? '') === 'on';
   const slugInput = String(formData.get('workspace_slug') ?? '');
   const slug = normalizeSlug(slugInput);
 
@@ -73,6 +82,9 @@ export async function createTenantAndOwner(
   }
   if (password.length < 8) {
     return { error: 'Password must be at least 8 characters.' };
+  }
+  if (!acceptedTerms) {
+    return { error: 'Please accept terms to continue.' };
   }
 
   // Database types are currently ungenerated (`Tables: Record<string, never>`),
@@ -95,6 +107,8 @@ export async function createTenantAndOwner(
     },
     user_metadata: {
       display_name: displayName,
+      owner_phone: ownerPhone || null,
+      company_name: businessName,
     },
   });
 
@@ -151,6 +165,28 @@ export async function createTenantAndOwner(
     return { error: billingInsert.error.message };
   }
 
+  const onboardingProfileInsert = await admin.from('tenant_onboarding_profiles').insert({
+    tenant_id: tenantId,
+    company_email: companyEmail || null,
+    company_phone: companyPhone || null,
+    company_website: companyWebsite || null,
+    service_area: serviceArea || null,
+    team_size: teamSize || null,
+    business_type: businessType || null,
+    referral_source: referralSource || null,
+    owner_name: displayName,
+    owner_email: email,
+    owner_phone: ownerPhone || null,
+  });
+
+  if (onboardingProfileInsert.error) {
+    await admin.from('tenant_memberships').delete().eq('tenant_id', tenantId).eq('user_id', userId);
+    await admin.from('tenant_billing_accounts').delete().eq('tenant_id', tenantId);
+    await admin.from('tenants').delete().eq('id', tenantId);
+    await admin.auth.admin.deleteUser(userId);
+    return { error: onboardingProfileInsert.error.message };
+  }
+
   const profileUpsert = await admin.from('user_profiles').upsert(
     {
       user_id: userId,
@@ -163,6 +199,7 @@ export async function createTenantAndOwner(
   if (profileUpsert.error) {
     await admin.from('tenant_memberships').delete().eq('tenant_id', tenantId).eq('user_id', userId);
     await admin.from('tenant_billing_accounts').delete().eq('tenant_id', tenantId);
+    await admin.from('tenant_onboarding_profiles').delete().eq('tenant_id', tenantId);
     await admin.from('tenants').delete().eq('id', tenantId);
     await admin.auth.admin.deleteUser(userId);
     return { error: profileUpsert.error.message };

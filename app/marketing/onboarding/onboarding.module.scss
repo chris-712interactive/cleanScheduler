@@ -3,6 +3,35 @@
   gap: var(--space-3);
 }
 
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+
+  span {
+    display: inline-flex;
+    justify-content: center;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+
+  span[data-active='true'] {
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  }
+}
+
+.stepSection {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .label {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
@@ -58,8 +87,34 @@
   cursor: pointer;
 }
 
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.backButton {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .error {
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-danger-600);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
