@@ -6,8 +6,12 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { getPortalContext } from '@/lib/portal';
+import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
 
-export default function TenantDashboardPage() {
+export default async function TenantDashboardPage() {
+  const { tenantSlug } = await getPortalContext();
+  const trial = tenantSlug ? await getTenantTrialSummaryBySlug(tenantSlug) : null;
   return (
     <>
       <PageHeader
@@ -19,6 +23,16 @@ export default function TenantDashboardPage() {
       />
 
       <Stack gap={6}>
+        {trial?.status === 'trialing' ? (
+          <Card title="Free trial" description="Your workspace is in trial mode.">
+            <StatusPill tone="brand" icon={<Calendar size={14} />}>
+              {trial.daysRemaining === 0
+                ? 'Trial ends today'
+                : `${trial.daysRemaining ?? 0} day${trial.daysRemaining === 1 ? '' : 's'} left`}
+            </StatusPill>
+          </Card>
+        ) : null}
+
         <Grid min="240px" gap={4}>
           <Card title="Today's jobs" description="Scheduled appointments">
             <Stack gap={2}>

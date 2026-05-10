@@ -10,6 +10,7 @@ import { normalizeSlug, validateSlug } from './utils';
 export interface TenantOnboardingState {
   error?: string;
 }
+const TRIAL_DAYS = 7;
 
 function resolveRequestOrigin(h: Headers): URL {
   const forwardedProto = h.get('x-forwarded-proto');
@@ -132,6 +133,24 @@ export async function createTenantAndOwner(
     return { error: membershipInsert.error.message };
   }
 
+  const trialStart = new Date();
+  const trialEnd = new Date(trialStart);
+  trialEnd.setUTCDate(trialEnd.getUTCDate() + TRIAL_DAYS);
+
+  const billingInsert = await admin.from('tenant_billing_accounts').insert({
+    tenant_id: tenantId,
+    status: 'trialing',
+    trial_started_at: trialStart.toISOString(),
+    trial_ends_at: trialEnd.toISOString(),
+  });
+
+  if (billingInsert.error) {
+    await admin.from('tenant_memberships').delete().eq('tenant_id', tenantId).eq('user_id', userId);
+    await admin.from('tenants').delete().eq('id', tenantId);
+    await admin.auth.admin.deleteUser(userId);
+    return { error: billingInsert.error.message };
+  }
+
   const profileUpsert = await admin.from('user_profiles').upsert(
     {
       user_id: userId,
@@ -143,6 +162,7 @@ export async function createTenantAndOwner(
 
   if (profileUpsert.error) {
     await admin.from('tenant_memberships').delete().eq('tenant_id', tenantId).eq('user_id', userId);
+    await admin.from('tenant_billing_accounts').delete().eq('tenant_id', tenantId);
     await admin.from('tenants').delete().eq('id', tenantId);
     await admin.auth.admin.deleteUser(userId);
     return { error: profileUpsert.error.message };
