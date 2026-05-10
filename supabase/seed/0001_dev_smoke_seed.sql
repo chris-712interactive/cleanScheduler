@@ -12,7 +12,7 @@
 --   5) Creates one customer identity + customer + link for demo data
 --
 -- Before running:
---   - Create user in Supabase Auth UI first (email/password or magic link)
+--   - Create user in Supabase Auth UI first (email/password)
 --   - Replace the values in the params CTE below
 --
 -- Run in Supabase SQL Editor.

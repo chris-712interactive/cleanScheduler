@@ -4,7 +4,6 @@ import { useActionState } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  requestMagicLink,
   signInWithGoogle,
   signInWithPassword,
   signUpWithPassword,
@@ -14,7 +13,7 @@ import styles from './sign-in.module.scss';
 
 const initialState: SignInState = {};
 
-type AuthMode = 'password' | 'magic' | 'signup';
+type AuthMode = 'password' | 'signup';
 
 export function SignInForm({ nextPath }: { nextPath: string }) {
   const searchParams = useSearchParams();
@@ -28,51 +27,24 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
     initialState,
   );
   const [signupState, signupAction, signupPending] = useActionState(signUpWithPassword, initialState);
-  const [magicState, magicAction, magicPending] = useActionState(requestMagicLink, initialState);
 
   useEffect(() => {
     setReturnOrigin(window.location.origin);
   }, []);
 
-  const activePasswordError =
-    mode === 'password' ? passwordState.error : mode === 'signup' ? signupState.error : undefined;
-  const activePasswordSuccess =
-    mode === 'password' ? undefined : mode === 'signup' ? signupState.success : undefined;
+  const activeError =
+    mode === 'password' ? passwordState.error : signupState.error;
+  const activeSuccess = mode === 'signup' ? signupState.success : undefined;
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.tabs} role="tablist" aria-label="Sign-in method">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'password'}
-          className={styles.tab}
-          data-active={mode === 'password' || undefined}
-          onClick={() => setMode('password')}
-        >
-          Email & password
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'magic'}
-          className={styles.tab}
-          data-active={mode === 'magic' || undefined}
-          onClick={() => setMode('magic')}
-        >
-          Magic link
-        </button>
-      </div>
-
-      {(urlError || activePasswordError) && (
+      {(urlError || activeError) && (
         <p className={styles.error} role="alert">
-          {activePasswordError ?? urlError}
+          {activeError ?? urlError}
         </p>
       )}
 
-      {activePasswordSuccess ? (
-        <p className={styles.success}>{activePasswordSuccess}</p>
-      ) : null}
+      {activeSuccess ? <p className={styles.success}>{activeSuccess}</p> : null}
 
       {mode === 'password' ? (
         <form className={styles.form} action={passwordAction}>
@@ -105,11 +77,7 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
           <button type="submit" className={styles.submit} disabled={passwordPending}>
             {passwordPending ? 'Signing in...' : 'Sign in'}
           </button>
-          <button
-            type="button"
-            className={styles.switchMode}
-            onClick={() => setMode('signup')}
-          >
+          <button type="button" className={styles.switchMode} onClick={() => setMode('signup')}>
             Need an account? Create one
           </button>
         </form>
@@ -163,34 +131,6 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
           <button type="button" className={styles.switchMode} onClick={() => setMode('password')}>
             Already have an account? Sign in
           </button>
-        </form>
-      ) : null}
-
-      {mode === 'magic' ? (
-        <form className={styles.form} action={magicAction}>
-          <input type="hidden" name="next" value={nextPath} />
-          <input type="hidden" name="return_origin" value={returnOrigin} />
-          <p className={styles.hint}>
-            Magic links are convenient but rely on email delivery limits from your auth provider. Use
-            email/password or Google for frequent testing.
-          </p>
-          <label className={styles.label} htmlFor="magic-email">
-            Email
-          </label>
-          <input
-            id="magic-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="you@company.com"
-            className={styles.input}
-          />
-          <button type="submit" className={styles.submit} disabled={magicPending}>
-            {magicPending ? 'Sending secure link...' : 'Send magic link'}
-          </button>
-          {magicState.error ? <p className={styles.error}>{magicState.error}</p> : null}
-          {magicState.success ? <p className={styles.success}>{magicState.success}</p> : null}
         </form>
       ) : null}
 

@@ -34,40 +34,6 @@ function normalizeNextFromForm(formData: FormData): string {
   return raw.startsWith('/') ? raw : '/';
 }
 
-export async function requestMagicLink(
-  _prevState: SignInState,
-  formData: FormData,
-): Promise<SignInState> {
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
-  const nextPath = normalizeNextFromForm(formData);
-
-  if (!email) {
-    return { error: 'Please enter your email address.' };
-  }
-
-  const supabase = await createClient();
-  const origin = await resolveRedirectOrigin(formData);
-  const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo,
-    },
-  });
-
-  if (error) {
-    return {
-      error: error.message,
-    };
-  }
-
-  return {
-    success:
-      'Check your inbox for a secure sign-in link. Once clicked, you will be redirected back to your portal.',
-  };
-}
-
 export async function signInWithPassword(
   _prevState: SignInState,
   formData: FormData,

@@ -25,7 +25,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       <Container size="sm">
         <Card
           title="Sign in to cleanScheduler"
-          description="Sign in with email and password, Google, or a one-time magic link (subject to your Supabase email quotas)."
+          description="Sign in with email and password or Google."
         >
           <Suspense
             fallback={<p className={styles.loading}>Loading sign-in…</p>}

@@ -1,11 +1,12 @@
 /**
- * Validates the browser-reported origin for magic-link redirects.
+ * Validates the browser-reported origin for auth redirects (sign-up confirmation,
+ * OAuth return paths built from the app origin).
  *
- * Supabase only honors emailRedirectTo when it exactly matches an entry under
+ * Supabase only honors redirect URLs when they exactly match an entry under
  * Authentication → URL Configuration → Redirect URLs. If the server builds a
  * wrong origin (Host / X-Forwarded-Host mismatch on some proxies), Supabase
- * falls back to Site URL — often the apex — which sends users to
- * dev.cleanscheduler.com instead of admin.dev...
+ * may fall back to Site URL — often the apex — which sends users to the wrong
+ * host.
  *
  * The sign-in form passes `return_origin` from window.location.origin; we
  * whitelist against NEXT_PUBLIC_APP_DOMAIN (apex host, no protocol).
