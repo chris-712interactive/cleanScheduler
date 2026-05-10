@@ -203,6 +203,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   // Run on every request except Next.js internals, file assets, and favicons.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)',
   ],
 };
