@@ -79,7 +79,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           name="workspace_slug"
           className={styles.input}
           required
-          pattern="^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$"
+          pattern="^[a-z0-9][a-z0-9\\-]{1,61}[a-z0-9]$"
           placeholder="acme"
           value={slug}
           onChange={(event) => setSlug(event.target.value)}
