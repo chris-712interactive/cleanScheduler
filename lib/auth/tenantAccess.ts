@@ -54,6 +54,23 @@ async function lookupMembership(
   };
 }
 
+async function lookupTenantBySlug(
+  tenantSlug: string,
+): Promise<{ id: string; slug: string; name: string } | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('tenants')
+    .select('id, slug, name')
+    .eq('slug', tenantSlug)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
+}
+
 /**
  * Enforces tenant-portal membership by slug and returns normalized membership
  * context for layout/page rendering.
@@ -70,9 +87,25 @@ export async function requireTenantPortalAccess(
   }
 
   const membership = await lookupMembership(auth.user.id, slug);
-  if (!membership) {
-    redirect('/sign-in?error=membership');
+  if (membership) {
+    return membership;
   }
 
-  return membership;
+  // Founder / platform ops: no tenant_memberships row required if the tenant
+  // exists (support, demos, pre-invite debugging).
+  const appRole = auth.claims.appRole;
+  if (appRole === 'super_admin' || appRole === 'admin') {
+    const tenant = await lookupTenantBySlug(slug);
+    if (tenant) {
+      return {
+        tenantId: tenant.id,
+        tenantSlug: tenant.slug,
+        tenantName: tenant.name,
+        role: 'admin',
+      };
+    }
+    redirect('/sign-in?error=unknown_tenant');
+  }
+
+  redirect('/sign-in?error=membership');
 }
