@@ -74,14 +74,16 @@ async function lookupTenantBySlug(
 async function assertTenantWorkspaceUnlocked(tenantId: string, allowBypass: boolean): Promise<void> {
   if (allowBypass) return;
 
-  const admin = createAdminClient();
+  // Database types are still scaffold placeholders; runtime shape matches migrations.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const admin: any = createAdminClient();
   const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
     admin.from('tenants').select('is_active').eq('id', tenantId).maybeSingle(),
     admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
   ]);
 
-  const isActive = tenantRow?.is_active !== false;
-  const billingStatus = billingRow?.status as string | undefined;
+  const isActive = (tenantRow as { is_active?: boolean } | null)?.is_active !== false;
+  const billingStatus = (billingRow as { status?: string } | null)?.status;
 
   if (!isActive || billingStatus === 'canceled') {
     redirect('/access-denied?reason=billing_suspended');
