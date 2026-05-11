@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useActionState } from 'react';
 import { createTenantAndOwner, type TenantOnboardingState } from './actions';
+import {
+  PLATFORM_PLAN_DESCRIPTIONS,
+  PLATFORM_PLAN_LABELS,
+  type PlatformPlanTier,
+} from '@/lib/billing/platformPlanTier';
 import styles from './onboarding.module.scss';
 
 const initialState: TenantOnboardingState = {};
@@ -23,6 +28,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [referralSource, setReferralSource] = useState('');
+  const [platformPlan, setPlatformPlan] = useState<PlatformPlanTier>('pro');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [slugStatus, setSlugStatus] = useState<{
     tone: 'idle' | 'ok' | 'warn' | 'error';
@@ -218,6 +224,30 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
       </section>
 
       <section hidden={step !== 2} className={styles.stepSection}>
+        <fieldset className={styles.tierFieldset}>
+          <legend className={styles.label}>Subscription plan</legend>
+          <p className={styles.tierLead}>
+            All plans include a 7-day free trial with no credit card required. Pick the tier that
+            fits your team.
+          </p>
+          {(['starter', 'pro', 'business'] as const).map((tier) => (
+            <label key={tier} className={styles.tierOption} data-selected={platformPlan === tier || undefined}>
+              <input
+                type="radio"
+                name="platform_plan"
+                value={tier}
+                checked={platformPlan === tier}
+                onChange={() => setPlatformPlan(tier)}
+                required
+              />
+              <span className={styles.tierCopy}>
+                <span className={styles.tierName}>{PLATFORM_PLAN_LABELS[tier]}</span>
+                <span className={styles.tierDesc}>{PLATFORM_PLAN_DESCRIPTIONS[tier]}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
         <label className={styles.label} htmlFor="business_type">
           Business type
         </label>

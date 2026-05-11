@@ -1,0 +1,104 @@
+# Tier Entitlements: Build Contract
+
+This file defines the canonical entitlement payload and API/server-action checks
+for `Starter`, `Business`, and `Pro`.
+
+## Canonical shape
+
+Use `lib/billing/entitlements.ts` as the source of truth.
+
+```ts
+type EntitlementFeature =
+  | 'rolePermissions'
+  | 'jobCosting'
+  | 'customerPortal'
+  | 'campaigns'
+  | 'advancedAnalytics'
+  | 'forecasting'
+  | 'fullApiWebhooks'
+  | 'multiLocationControls'
+  | 'dedicatedOnboarding';
+
+type EntitlementLimitKey =
+  | 'includedSeats'
+  | 'maxActiveCustomers'
+  | 'maxAutomationWorkflows'
+  | 'includedSmsCreditsMonthly'
+  | 'includedEmailCreditsMonthly'
+  | 'includedIntegrations';
+
+interface PlanEntitlements {
+  plan: 'starter' | 'business' | 'pro';
+  displayName: string;
+  monthlyPriceUsd: number; // 39, 129, 299
+  annualEffectiveMonthlyUsd: number; // 31, 103, 239
+  features: Record<EntitlementFeature, boolean>;
+  limits: Record<EntitlementLimitKey, number>;
+}
+```
+
+## Price points
+
+- Starter: `$39/mo` (`$31` annual-effective)
+- Business: `$129/mo` (`$103` annual-effective)
+- Pro: `$299/mo` (`$239` annual-effective)
+
+## Required API/server-action checks
+
+### 1) Hard gates (feature flags)
+
+Before premium operations run, call `assertFeatureEnabled(planTier, feature)`.
+
+Recommended first checks to implement:
+
+- API integrations / webhooks endpoints -> `fullApiWebhooks`
+- analytics/reporting endpoints -> `advancedAnalytics`
+- forecast endpoints -> `forecasting`
+- onboarding concierge flows -> `dedicatedOnboarding`
+- multi-location management routes -> `multiLocationControls`
+
+### 2) Soft limits (metered caps)
+
+Before creating or triggering resource-heavy actions, call:
+
+`assertLimitNotExceeded(planTier, limitKey, currentValue)`
+
+Current implementation:
+
+- `app/tenant/customers/actions.ts`
+  - checks `maxActiveCustomers` before creating a customer
+- `app/admin/tenants/page.tsx`
+  - shows plan label + monthly price from canonical entitlement config
+- `app/admin/tenants/[slug]/page.tsx`
+  - shows per-tenant hard-gated feature list and soft-limit values
+
+Next checks to add:
+
+- seat invites / membership creation -> `includedSeats`
+- workflow creation actions -> `maxAutomationWorkflows`
+- SMS send pipeline -> `includedSmsCreditsMonthly`
+- campaign email sends -> `includedEmailCreditsMonthly`
+- integration connection actions -> `includedIntegrations`
+
+## Stripe mapping and fulfillment
+
+- Keep using tier-specific env variables:
+  - `STRIPE_PLATFORM_PRICE_STARTER`
+  - `STRIPE_PLATFORM_PRICE_BUSINESS`
+  - `STRIPE_PLATFORM_PRICE_PRO`
+- At checkout + webhook sync, map Stripe subscription metadata to
+  `tenant_billing_accounts.platform_plan`.
+- Entitlement resolution reads `tenant_billing_accounts.platform_plan`; fallback
+  defaults to `starter` if missing.
+
+## Ticket template (implementation-ready)
+
+- Add gate check in `<route-or-action>`
+- Resolve plan with `resolveTenantPlanTier(admin, tenantId)`
+- Add `assertFeatureEnabled(...)` or `assertLimitNotExceeded(...)`
+- Return upgrade-oriented error message on block
+- Add tests:
+  - Starter blocked where expected
+  - Business allowed for mid-tier features
+  - Pro allowed for all gates
+  - limit reached path returns deterministic error

@@ -64,11 +64,11 @@
   color: var(--color-text-subtle);
 
   &[data-tone='ok'] {
-    color: var(--color-success-600, #0a7a33);
+    color: var(--color-success);
   }
 
   &[data-tone='warn'] {
-    color: var(--color-warning-600, #9a6700);
+    color: var(--color-warning);
   }
 
   &[data-tone='error'] {
@@ -117,4 +117,52 @@
   gap: var(--space-2);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.tierFieldset {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  border: none;
+}
+
+.tierLead {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.tierOption {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &[data-selected='true'] {
+    border-color: var(--color-brand-primary);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+  }
+
+  input {
+    margin-top: 4px;
+  }
+}
+
+.tierCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tierName {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.tierDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }

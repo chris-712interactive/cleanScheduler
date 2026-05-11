@@ -29,7 +29,7 @@ export default function StartTrialPage() {
         <Container size="md">
           <Card
             title="Start your 7-day free trial"
-            description="Three quick steps: workspace setup, owner account, and launch preferences."
+            description="Three quick steps: workspace setup, owner account, and launch preferences. No credit card required."
           >
             <TenantOnboardingForm domainSuffix={domainSuffix} />
           </Card>

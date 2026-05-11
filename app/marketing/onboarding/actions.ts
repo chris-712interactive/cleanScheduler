@@ -6,6 +6,9 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { publicEnv, serverEnv } from '@/lib/env';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
+import { createPlatformSubscriptionCheckoutUrl } from '@/lib/billing/platformCheckout';
+import { parsePlatformPlanTier, resolvePlatformPriceId } from '@/lib/billing/platformPlans';
+import { getStripe } from '@/lib/stripe/server';
 
 export interface TenantOnboardingState {
   error?: string;
@@ -72,9 +75,21 @@ export async function createTenantAndOwner(
   const acceptedTerms = String(formData.get('accept_terms') ?? '') === 'on';
   const slugInput = String(formData.get('workspace_slug') ?? '');
   const slug = normalizeSlug(slugInput);
+  const platformPlan = parsePlatformPlanTier(String(formData.get('platform_plan') ?? ''));
 
   if (!businessName || !displayName || !email || !password || !slug) {
     return { error: 'Business name, workspace slug, owner name, email, and password are required.' };
+  }
+  if (!platformPlan) {
+    return { error: 'Choose a subscription plan (Starter, Pro, or Business).' };
+  }
+
+  const stripe = getStripe();
+  if (stripe && !resolvePlatformPriceId(platformPlan)) {
+    return {
+      error:
+        'Online checkout is not configured for the selected plan. Choose another tier or set STRIPE_PLATFORM_PRICE_* for Starter / Pro / Business (or legacy STRIPE_PLATFORM_PRICE_ID).',
+    };
   }
   const slugError = validateSlug(slug);
   if (slugError) {
@@ -156,6 +171,7 @@ export async function createTenantAndOwner(
     status: 'trialing',
     trial_started_at: trialStart.toISOString(),
     trial_ends_at: trialEnd.toISOString(),
+    platform_plan: platformPlan,
   });
 
   if (billingInsert.error) {
@@ -227,5 +243,20 @@ export async function createTenantAndOwner(
 
   const requestOrigin = resolveRequestOrigin(requestHeaders);
   const tenantOrigin = buildTenantOrigin(slug, requestOrigin);
+  const marketingOrigin = requestOrigin;
+
+  const checkoutUrl = await createPlatformSubscriptionCheckoutUrl({
+    tenantId,
+    tenantSlug: slug,
+    customerEmail: email,
+    platformPlan,
+    successUrl: `${tenantOrigin.replace(/\/$/, '')}/`,
+    cancelUrl: `${marketingOrigin.origin}/start-trial`,
+  });
+
+  if (checkoutUrl) {
+    redirect(checkoutUrl);
+  }
+
   redirect(`${tenantOrigin}/`);
 }

@@ -86,6 +86,12 @@ const serverEnvSchema = z.object({
   // Optional now, required when those integrations land.
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  /** @deprecated Use tier-specific prices; used as fallback when a tier id is unset. */
+  STRIPE_PLATFORM_PRICE_ID: z.string().optional(),
+  /** Stripe recurring Price IDs — cleanScheduler platform subscription per tier. */
+  STRIPE_PLATFORM_PRICE_STARTER: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS: z.string().optional(),
   STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
 
   PLAID_CLIENT_ID: z.string().optional(),

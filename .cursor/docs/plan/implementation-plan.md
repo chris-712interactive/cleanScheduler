@@ -1,16 +1,16 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling.
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo statuses below are synced periodically with shipped work** (see git history for source of truth).
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
-    status: pending
+    status: completed
   - id: portalShell
     content: "Build the unified PortalShell component (section 18) and the shared UI primitives library (PageHeader, FilterBar, DataTable, Card, Form, EmptyState, Skeleton, Toast, StatusPill, KeyValueList) in components/layout/ + components/ui/. Shell renders env banner, TopBar, contextual banner slot, collapsible Sidebar, mobile drawer + optional bottom nav, identity chip, and a main content Container. Wire up density preference (Comfortable / Compact / Cozy) persisted to profiles.density_preference. All three portals (admin, tenant, customer) wrap their pages in this shell parameterized by navItems + identityChip + bottomNav."
-    status: pending
+    status: completed
   - id: themeProvider
     content: "Implement the color system and theme provider: encode the provided light/dark palettes + derived role aliases in styles/tokens/_colors.scss, emit them as CSS custom properties in styles/_theme.scss (with [data-theme=dark] overrides), reserve --color-brand for the per-tenant hook, ship an inline pre-hydration script that picks System/Light/Dark from localStorage + prefers-color-scheme, and build the Settings toggle that persists to localStorage + profiles.theme_preference."
-    status: pending
+    status: completed
   - id: supabaseSetup
     content: "Provision Supabase projects for BOTH DEV and PROD (separate orgs/projects, no shared resources). Enable pgsodium + pgcrypto, configure Vault for KEK in each, generate typed Supabase clients, and wire env vars per environment. PROD on the Pro tier for PITR backups; DEV on Free tier initially. See section 16."
     status: pending
@@ -25,7 +25,7 @@ todos:
     status: pending
   - id: subdomainMiddleware
     content: Implement middleware that resolves subdomain -> tenant context, gates routes by app_role/tenant_role, and supports admin + my + tenant slugs with reserved-name guard.
-    status: pending
+    status: completed
   - id: authProfilesTenants
     content: "Migration 0001: profiles, tenants, tenant_members, roles, permissions, role_permissions; seed system roles (Admin, Billing, Employee) and permission keys; add Supabase JWT hook to inject claims."
     status: pending
@@ -76,19 +76,19 @@ todos:
     status: pending
   - id: marketingTrialSignup
     content: Build marketing site, inquiry form, and self-serve 7-day trial signup wired to Stripe Checkout (trial_period_days=7) and tenant + Super Admin creation.
-    status: pending
+    status: completed
   - id: stripeWebhooks
-    content: "Edge Function for Stripe webhooks: subscription lifecycle, invoice.paid, conversion-by-email tagging on inquiries, idempotent event handling."
-    status: pending
+    content: "Platform Stripe webhooks (Next route /api/webhooks/stripe): checkout.session.completed + customer.subscription.* → tenant_billing_accounts. Remaining: Edge Function parity, inquiry tagging, Connect webhooks, idempotency table."
+    status: in_progress
   - id: tenantPortalMvp
     content: "Tenant portal MVP: Dashboard KPIs, Customers CRUD, Schedule (day/week), Quotes Kanban (4 fixed stages, dnd-kit), Billing (invoices + pay), Employees CRUD, Settings (Personal, Business Info, Billing)."
-    status: pending
+    status: in_progress
   - id: customerPortalMvp
     content: "Customer portal MVP: aggregated Dashboard, read-only Schedule with reschedule-request, Billing view + pay, basic Messages, Settings."
     status: pending
   - id: founderAdminMvp
     content: "Founder admin MVP: Dashboard, Inquiries with filters & manual status, Customers/Tenants list+detail, manual onboarding, basic masquerade with audit log + session timer banner."
-    status: pending
+    status: in_progress
   - id: transactionalEmail
     content: "Resend integration: invites, invoice emails, password reset, magic-link claims; templated and tenant-branded headers."
     status: pending
