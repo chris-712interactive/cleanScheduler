@@ -4,8 +4,10 @@ import type { ZXCVBNResult } from 'zxcvbn';
 export const PASSWORD_STRENGTH_LABELS = ['Too weak', 'Weak', 'Fair', 'Good', 'Strong'] as const;
 
 export function passwordStrengthLabel(score: number): (typeof PASSWORD_STRENGTH_LABELS)[number] {
-  const idx = Math.min(4, Math.max(0, score));
-  return PASSWORD_STRENGTH_LABELS[idx];
+  const safe = Number.isFinite(score) ? Math.floor(score) : 0;
+  const idx = Math.min(PASSWORD_STRENGTH_LABELS.length - 1, Math.max(0, safe));
+  // `noUncheckedIndexedAccess`: numeric index is typed as possibly undefined; idx is always in range.
+  return PASSWORD_STRENGTH_LABELS[idx] ?? PASSWORD_STRENGTH_LABELS[0];
 }
 
 export function passwordStrengthTone(score: number): 'danger' | 'warning' | 'neutral' | 'success' {
