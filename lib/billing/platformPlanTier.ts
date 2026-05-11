@@ -9,8 +9,8 @@ export const PLATFORM_PLAN_LABELS: Record<PlatformPlanTier, string> = {
 /** Short positioning copy for onboarding (final pricing lives in Stripe). */
 export const PLATFORM_PLAN_DESCRIPTIONS: Record<PlatformPlanTier, string> = {
   starter: 'Solo / small teams — core scheduling, quotes, and invoicing.',
-  pro: 'Growing teams — recurring billing & deeper reports.',
-  business: 'Larger ops — higher limits and advanced capabilities.',
+  business: 'Growing teams — permissions, job costing, and key integrations.',
+  pro: 'Full platform — advanced analytics, API access, and premium support.',
 };
 
 export function parsePlatformPlanTier(raw: string | null | undefined): PlatformPlanTier | null {

@@ -72,6 +72,7 @@ export async function createTenantAndOwner(
   const ownerPhone = String(formData.get('owner_phone') ?? '').trim();
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const password = String(formData.get('password') ?? '');
+  const passwordConfirm = String(formData.get('password_confirm') ?? '');
   const acceptedTerms = String(formData.get('accept_terms') ?? '') === 'on';
   const slugInput = String(formData.get('workspace_slug') ?? '');
   const slug = normalizeSlug(slugInput);
@@ -81,14 +82,14 @@ export async function createTenantAndOwner(
     return { error: 'Business name, workspace slug, owner name, email, and password are required.' };
   }
   if (!platformPlan) {
-    return { error: 'Choose a subscription plan (Starter, Pro, or Business).' };
+    return { error: 'Choose a subscription plan (Starter, Business, or Pro).' };
   }
 
   const stripe = getStripe();
   if (stripe && !resolvePlatformPriceId(platformPlan)) {
     return {
       error:
-        'Online checkout is not configured for the selected plan. Choose another tier or set STRIPE_PLATFORM_PRICE_* for Starter / Pro / Business (or legacy STRIPE_PLATFORM_PRICE_ID).',
+        'Online checkout is not configured for the selected plan. Choose another tier or set STRIPE_PLATFORM_PRICE_* for Starter / Business / Pro (or legacy STRIPE_PLATFORM_PRICE_ID).',
     };
   }
   const slugError = validateSlug(slug);
@@ -97,6 +98,9 @@ export async function createTenantAndOwner(
   }
   if (password.length < 8) {
     return { error: 'Password must be at least 8 characters.' };
+  }
+  if (password !== passwordConfirm) {
+    return { error: 'Passwords do not match. Re-enter both fields and try again.' };
   }
   if (!acceptedTerms) {
     return { error: 'Please accept terms to continue.' };

@@ -1,13 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useActionState } from 'react';
+import zxcvbn from 'zxcvbn';
 import { createTenantAndOwner, type TenantOnboardingState } from './actions';
 import {
   PLATFORM_PLAN_DESCRIPTIONS,
   PLATFORM_PLAN_LABELS,
   type PlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
+import {
+  formatPasswordFeedback,
+  passwordStrengthLabel,
+  passwordStrengthTone,
+} from './passwordStrength';
 import styles from './onboarding.module.scss';
 
 const initialState: TenantOnboardingState = {};
@@ -27,6 +33,8 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
   const [ownerPhone, setOwnerPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [step1Error, setStep1Error] = useState<string | null>(null);
   const [referralSource, setReferralSource] = useState('');
   const [platformPlan, setPlatformPlan] = useState<PlatformPlanTier>('pro');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -71,13 +79,30 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
     };
   }, [slug]);
 
+  const passwordStrength = useMemo(() => (password.length > 0 ? zxcvbn(password) : null), [password]);
+
+  useEffect(() => {
+    setStep1Error(null);
+  }, [password, passwordConfirm]);
+
   function goNext() {
     if (step === 0) {
       if (!businessName.trim() || !slug.trim() || !teamSize || !serviceArea.trim()) return;
       if (slugStatus.tone === 'warn' || slugStatus.tone === 'error') return;
     }
     if (step === 1) {
-      if (!displayName.trim() || !email.trim() || password.length < 8) return;
+      if (!displayName.trim() || !email.trim()) {
+        setStep1Error('Your name and email are required.');
+        return;
+      }
+      if (password.length < 8) {
+        setStep1Error('Password must be at least 8 characters.');
+        return;
+      }
+      if (password !== passwordConfirm) {
+        setStep1Error('Passwords must match.');
+        return;
+      }
     }
     if (step < 2) setStep((prev) => prev + 1);
   }
@@ -230,7 +255,76 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          aria-describedby={passwordStrength ? 'password-strength-hint' : undefined}
         />
+
+        {passwordStrength ? (
+          <div
+            id="password-strength-hint"
+            className={styles.strengthBlock}
+            aria-live="polite"
+            aria-label="Password strength feedback"
+          >
+            <div className={styles.strengthHeader}>
+              <span
+                className={styles.strengthLabel}
+                data-tone={passwordStrengthTone(passwordStrength.score)}
+              >
+                {passwordStrengthLabel(passwordStrength.score)}
+              </span>
+              <span className={styles.strengthCrackHint}>
+                ~{passwordStrength.crack_times_display.offline_slow_hashing_1e10_per_second} to crack
+              </span>
+            </div>
+            <div
+              className={styles.strengthMeter}
+              role="meter"
+              aria-valuemin={0}
+              aria-valuemax={4}
+              aria-valuenow={passwordStrength.score}
+              aria-valuetext={passwordStrengthLabel(passwordStrength.score)}
+            >
+              {[0, 1, 2, 3].map((index) => (
+                <span
+                  key={`strength-seg-${index}`}
+                  className={styles.strengthSegment}
+                  data-filled={index < passwordStrength.score ? 'true' : undefined}
+                  data-tone={passwordStrengthTone(passwordStrength.score)}
+                />
+              ))}
+            </div>
+            {formatPasswordFeedback(passwordStrength) ? (
+              <p className={styles.strengthFeedback}>{formatPasswordFeedback(passwordStrength)}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <label className={styles.label} htmlFor="password_confirm">
+          Confirm password
+        </label>
+        <input
+          id="password_confirm"
+          name="password_confirm"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          className={[
+            styles.input,
+            passwordConfirm.length > 0 && password !== passwordConfirm ? styles.inputMismatch : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          required
+          value={passwordConfirm}
+          onChange={(event) => setPasswordConfirm(event.target.value)}
+          aria-invalid={passwordConfirm.length > 0 && password !== passwordConfirm}
+        />
+
+        {step1Error ? (
+          <p className={styles.stepFieldError} role="alert">
+            {step1Error}
+          </p>
+        ) : null}
       </section>
 
       <section
@@ -245,7 +339,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
             All plans include a 7-day free trial with no credit card required. Pick the tier that
             fits your team.
           </p>
-          {(['starter', 'pro', 'business'] as const).map((tier) => (
+          {(['starter', 'business', 'pro'] as const).map((tier) => (
             <label key={tier} className={styles.tierOption} data-selected={platformPlan === tier || undefined}>
               <input
                 type="radio"
