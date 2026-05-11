@@ -273,7 +273,11 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
                 {passwordStrengthLabel(passwordStrength.score)}
               </span>
               <span className={styles.strengthCrackHint}>
-                ~{passwordStrength.crack_times_display.offline_slow_hashing_1e10_per_second} to crack
+                ~
+                {String(
+                  passwordStrength.crack_times_display.offline_slow_hashing_1e4_per_second,
+                )}{' '}
+                to crack
               </span>
             </div>
             <div
