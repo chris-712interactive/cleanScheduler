@@ -6,12 +6,29 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { createClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
+import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
+
+export const dynamic = 'force-dynamic';
 
 export default async function TenantDashboardPage() {
   const { tenantSlug } = await getPortalContext();
-  const trial = tenantSlug ? await getTenantTrialSummaryBySlug(tenantSlug) : null;
+  const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/');
+  const [trial, supabase] = await Promise.all([
+    getTenantTrialSummaryBySlug(membership.tenantSlug),
+    createClient(),
+  ]);
+
+  const { count: activeCustomerCountRaw, error: customerCountError } = await supabase
+    .from('customers')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', membership.tenantId)
+    .eq('status', 'active');
+
+  const activeCustomerCount = customerCountError ? 0 : (activeCustomerCountRaw ?? 0);
+
   return (
     <>
       <PageHeader
@@ -50,23 +67,48 @@ export default async function TenantDashboardPage() {
               </StatusPill>
             </Stack>
           </Card>
-          <Card title="Active customers" description="With at least one upcoming visit">
+          <Card
+            title="Active customers"
+            description="Contacts marked active in your workspace directory (visits and scheduling are next)."
+          >
             <Stack gap={2}>
-              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>0</strong>
-              <StatusPill tone="neutral" icon={<UsersRound size={14} />}>
-                Add your first customer
-              </StatusPill>
+              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{activeCustomerCount}</strong>
+              {activeCustomerCount > 0 ? (
+                <>
+                  <StatusPill tone="brand" icon={<UsersRound size={14} />}>
+                    In your directory
+                  </StatusPill>
+                  <Button variant="secondary" size="sm" as="a" href="/customers">
+                    Open customers
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <StatusPill tone="neutral" icon={<UsersRound size={14} />}>
+                    Add your first customer
+                  </StatusPill>
+                  <Button variant="secondary" size="sm" as="a" href="/customers">
+                    Go to customers
+                  </Button>
+                </>
+              )}
             </Stack>
           </Card>
         </Grid>
 
-        <Card title="Get started" description="A few steps to get this tenant ready to take work.">
-          <EmptyState
-            title="No data yet"
-            description="As you add customers, schedule jobs, and connect Stripe, this dashboard will fill in with live activity."
-            action={<Button variant="primary">Add your first customer</Button>}
-          />
-        </Card>
+        {activeCustomerCount === 0 ? (
+          <Card title="Get started" description="A few steps to get this tenant ready to take work.">
+            <EmptyState
+              title="No customers yet"
+              description="Add people and businesses you serve so quotes, jobs, and billing can attach to real records."
+              action={
+                <Button variant="primary" as="a" href="/customers">
+                  Add your first customer
+                </Button>
+              }
+            />
+          </Card>
+        ) : null}
       </Stack>
     </>
   );
