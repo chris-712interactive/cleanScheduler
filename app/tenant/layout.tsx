@@ -5,11 +5,15 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Sidebar order matches product build priority for net-new tenant work (after
+ * Dashboard): quotes → customers → schedule (`lib/tenant/portalBuildOrder.ts`).
+ */
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
-  { label: 'Schedule', href: '/schedule', icon: 'schedule' },
   { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Customers', href: '/customers', icon: 'customers' },
+  { label: 'Schedule', href: '/schedule', icon: 'schedule' },
   { label: 'Employees', href: '/employees', icon: 'work' },
   { label: 'Billing', href: '/billing', icon: 'billing' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },

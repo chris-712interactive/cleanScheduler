@@ -1,4 +1,4 @@
-import { ArrowUpRight, Calendar, CreditCard, UsersRound } from 'lucide-react';
+import { ArrowUpRight, Calendar, ClipboardList, CreditCard, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Grid } from '@/components/layout/Grid';
@@ -21,13 +21,20 @@ export default async function TenantDashboardPage() {
     createClient(),
   ]);
 
-  const { count: activeCustomerCountRaw, error: customerCountError } = await supabase
-    .from('customers')
-    .select('*', { count: 'exact', head: true })
-    .eq('tenant_id', membership.tenantId)
-    .eq('status', 'active');
+  const [customersCountRes, quotesCountRes] = await Promise.all([
+    supabase
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', membership.tenantId)
+      .eq('status', 'active'),
+    supabase
+      .from('tenant_quotes')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', membership.tenantId),
+  ]);
 
-  const activeCustomerCount = customerCountError ? 0 : (activeCustomerCountRaw ?? 0);
+  const activeCustomerCount = customersCountRes.error ? 0 : (customersCountRes.count ?? 0);
+  const quoteCount = quotesCountRes.error ? 0 : (quotesCountRes.count ?? 0);
 
   return (
     <>
@@ -35,7 +42,9 @@ export default async function TenantDashboardPage() {
         title="Today's overview"
         description="A quick read on your jobs, money, and team for today."
         actions={
-          <Button iconRight={<ArrowUpRight size={16} />}>Open scheduler</Button>
+          <Button as="a" href="/schedule" iconRight={<ArrowUpRight size={16} />}>
+            Open schedule
+          </Button>
         }
       />
 
@@ -51,6 +60,30 @@ export default async function TenantDashboardPage() {
         ) : null}
 
         <Grid min="240px" gap={4}>
+          <Card title="Quotes" description="Draft and sent proposals">
+            <Stack gap={2}>
+              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{quoteCount}</strong>
+              {quoteCount > 0 ? (
+                <>
+                  <StatusPill tone="brand" icon={<ClipboardList size={14} />}>
+                    In your pipeline
+                  </StatusPill>
+                  <Button variant="secondary" size="sm" as="a" href="/quotes">
+                    Open quotes
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <StatusPill tone="neutral" icon={<ClipboardList size={14} />}>
+                    Create your first quote
+                  </StatusPill>
+                  <Button variant="secondary" size="sm" as="a" href="/quotes">
+                    Go to quotes
+                  </Button>
+                </>
+              )}
+            </Stack>
+          </Card>
           <Card title="Today's jobs" description="Scheduled appointments">
             <Stack gap={2}>
               <strong style={{ fontSize: 'var(--font-size-3xl)' }}>0</strong>
@@ -97,14 +130,22 @@ export default async function TenantDashboardPage() {
         </Grid>
 
         {activeCustomerCount === 0 ? (
-          <Card title="Get started" description="A few steps to get this tenant ready to take work.">
+          <Card
+            title="Get started"
+            description="Ship work in order: quotes, then a solid customer directory, then the schedule."
+          >
             <EmptyState
-              title="No customers yet"
-              description="Add people and businesses you serve so quotes, jobs, and billing can attach to real records."
+              title="Nothing in the pipeline yet"
+              description="Start from Quotes when you are ready to price jobs; add contacts under Customers; lock visits on the Schedule once quoting is live."
               action={
-                <Button variant="primary" as="a" href="/customers">
-                  Add your first customer
-                </Button>
+                <Stack gap={3}>
+                  <Button variant="primary" as="a" href="/quotes">
+                    Go to quotes
+                  </Button>
+                  <Button variant="secondary" as="a" href="/customers">
+                    Customer directory
+                  </Button>
+                </Stack>
               }
             />
           </Card>

@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0008.
+ * Hand-maintained schema mirror for migrations 0001–0009.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -309,6 +309,63 @@ export type Database = {
           },
         ];
       };
+      tenant_quotes: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string | null;
+          title: string;
+          status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+          amount_cents: number | null;
+          currency: string;
+          notes: string | null;
+          valid_until: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id?: string | null;
+          title: string;
+          status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+          amount_cents?: number | null;
+          currency?: string;
+          notes?: string | null;
+          valid_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string | null;
+          title?: string;
+          status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+          amount_cents?: number | null;
+          currency?: string;
+          notes?: string | null;
+          valid_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_quotes_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_quotes_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenants: {
         Row: {
           id: string;
@@ -375,6 +432,7 @@ export type Database = {
       tenant_role: 'owner' | 'admin' | 'employee' | 'viewer';
       tenant_billing_status: 'trialing' | 'active' | 'past_due' | 'canceled';
       platform_plan_tier: 'starter' | 'pro' | 'business';
+      quote_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
     };
     CompositeTypes: {
       [_ in never]: never;
