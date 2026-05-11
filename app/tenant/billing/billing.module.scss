@@ -1,0 +1,32 @@
+.muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.bannerError {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-danger-600);
+  background-color: color-mix(in srgb, var(--color-danger-600) 12%, transparent);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.bannerOk {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-success);
+  background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.resumeForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}

@@ -25,8 +25,7 @@ export async function createTenantCustomer(
 
   const membership = await requireTenantPortalAccess(slug, '/customers');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin: any = createAdminClient();
+  const admin = createAdminClient();
 
   const planTier = await resolveTenantPlanTier(admin, membership.tenantId);
   const customerCountResult = await admin
@@ -96,5 +95,59 @@ export async function createTenantCustomer(
   }
 
   revalidatePath('/tenant/customers');
+  return { success: true };
+}
+
+export async function updateTenantCustomer(
+  _prev: CustomerFormState,
+  formData: FormData,
+): Promise<CustomerFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const customerId = String(formData.get('customer_id') ?? '').trim();
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const phone = String(formData.get('phone') ?? '').trim();
+  const status = String(formData.get('status') ?? 'active').trim();
+
+  if (!slug || !customerId || !fullName) {
+    return { error: 'Workspace, customer, and full name are required.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/customers/${customerId}`);
+
+  const admin = createAdminClient();
+  const { data: row, error: fetchError } = await admin
+    .from('customers')
+    .select('id, customer_identity_id')
+    .eq('id', customerId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (fetchError || !row) {
+    return { error: 'Customer not found in this workspace.' };
+  }
+
+  const identityUpdate = await admin
+    .from('customer_identities')
+    .update({
+      full_name: fullName,
+      email: email || null,
+      phone: phone || null,
+    })
+    .eq('id', row.customer_identity_id);
+
+  if (identityUpdate.error) {
+    return { error: identityUpdate.error.message };
+  }
+
+  const statusNorm = status === 'inactive' ? 'inactive' : 'active';
+  const customerUpdate = await admin.from('customers').update({ status: statusNorm }).eq('id', customerId);
+
+  if (customerUpdate.error) {
+    return { error: customerUpdate.error.message };
+  }
+
+  revalidatePath('/tenant/customers');
+  revalidatePath(`/tenant/customers/${customerId}`);
   return { success: true };
 }

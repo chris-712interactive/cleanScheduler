@@ -25,3 +25,23 @@ export function resolvePlatformPriceId(tier: PlatformPlanTier): string | null {
       return legacy;
   }
 }
+
+/**
+ * Maps a Stripe recurring Price ID to a platform tier (for webhook sync when
+ * subscription metadata omits platform_plan).
+ */
+export function resolvePlatformTierFromStripePriceId(
+  priceId: string | null | undefined,
+): PlatformPlanTier | null {
+  const id = priceId?.trim();
+  if (!id) return null;
+  const starter = serverEnv.STRIPE_PLATFORM_PRICE_STARTER?.trim();
+  const business = serverEnv.STRIPE_PLATFORM_PRICE_BUSINESS?.trim();
+  const pro = serverEnv.STRIPE_PLATFORM_PRICE_PRO?.trim();
+  const legacy = serverEnv.STRIPE_PLATFORM_PRICE_ID?.trim();
+  if (starter && id === starter) return 'starter';
+  if (business && id === business) return 'business';
+  if (pro && id === pro) return 'pro';
+  if (legacy && id === legacy) return null;
+  return null;
+}

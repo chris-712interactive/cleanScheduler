@@ -14,6 +14,11 @@ import styles from '../tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
 
+function normalizeOne<T>(raw: T | T[] | null | undefined): T | null {
+  if (raw == null) return null;
+  return Array.isArray(raw) ? raw[0] ?? null : raw;
+}
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
@@ -22,8 +27,7 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = rawSlug.trim().toLowerCase();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin: any = createAdminClient();
+  const admin = createAdminClient();
   const { data: tenant, error } = await admin
     .from('tenants')
     .select(
@@ -39,7 +43,8 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
         trial_started_at,
         trial_ends_at,
         stripe_customer_id,
-        stripe_subscription_id
+        stripe_subscription_id,
+        platform_plan
       ),
       tenant_onboarding_profiles (
         company_email,
@@ -65,13 +70,10 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
   const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
   const portalUrl = `https://${tenant.slug}.${apex}/`;
 
-  const billingRaw = tenant.tenant_billing_accounts as Record<string, unknown> | Record<string, unknown>[] | null;
-  const billing = Array.isArray(billingRaw) ? billingRaw[0] ?? null : billingRaw;
+  const billing = normalizeOne(tenant.tenant_billing_accounts);
+  const onboarding = normalizeOne(tenant.tenant_onboarding_profiles);
 
-  const onboardRaw = tenant.tenant_onboarding_profiles as Record<string, unknown> | Record<string, unknown>[] | null;
-  const onboarding = Array.isArray(onboardRaw) ? onboardRaw[0] ?? null : onboardRaw;
-
-  const planRaw = billing?.platform_plan as string | undefined;
+  const planRaw = billing?.platform_plan;
   const planLabel =
     planRaw === 'starter' || planRaw === 'pro' || planRaw === 'business'
       ? PLATFORM_PLAN_LABELS[planRaw as PlatformPlanTier]

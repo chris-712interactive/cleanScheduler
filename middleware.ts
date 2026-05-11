@@ -181,6 +181,9 @@ export async function middleware(request: NextRequest) {
     url.pathname = url.pathname === '/' ? prefix : `${prefix}${url.pathname}`;
   }
 
+  // Post-rewrite path (e.g. /tenant/billing) for server-side billing gate / layout decisions.
+  requestHeaders.set('x-internal-pathname', url.pathname);
+
   const { userId, cookiesToSet } = await resolveUser(request);
   const isProtectedPortal = kind !== 'marketing';
   if (isProtectedPortal && !userId) {

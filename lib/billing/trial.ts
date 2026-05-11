@@ -1,4 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
+import type { Tables } from '@/lib/supabase/database.types';
+
+type TrialBySlugRow = Pick<
+  Tables<'tenant_billing_accounts'>,
+  'status' | 'trial_started_at' | 'trial_ends_at'
+> & {
+  tenants: Pick<Tables<'tenants'>, 'slug'>;
+};
 
 export interface TrialSummary {
   status: 'trialing' | 'active' | 'past_due' | 'canceled';
@@ -16,8 +24,7 @@ function computeDaysRemaining(trialEndsAt: string | null): number | null {
 }
 
 export async function getTenantTrialSummaryBySlug(slug: string): Promise<TrialSummary | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase: any = await createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('tenant_billing_accounts')
     .select(
@@ -31,7 +38,8 @@ export async function getTenantTrialSummaryBySlug(slug: string): Promise<TrialSu
     `,
     )
     .eq('tenants.slug', slug)
-    .maybeSingle();
+    .maybeSingle()
+    .overrideTypes<TrialBySlugRow, { merge: false }>();
 
   if (error || !data) return null;
 

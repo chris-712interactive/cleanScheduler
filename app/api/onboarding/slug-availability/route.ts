@@ -29,8 +29,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin: any = createAdminClient();
+  const admin = createAdminClient();
   const { data, error } = await admin.from('tenants').select('id').eq('slug', slug).maybeSingle();
   if (error) {
     return NextResponse.json(

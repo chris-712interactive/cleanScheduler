@@ -12,28 +12,13 @@ import styles from './tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-interface TenantRow {
-  id: string;
-  slug: string;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  tenant_billing_accounts: {
-    status: string;
-    trial_ends_at: string | null;
-    stripe_subscription_id: string | null;
-    platform_plan: string | null;
-  } | null;
-}
-
-function normalizeOne<T>(raw: T | T[] | null): T | null {
-  if (!raw) return null;
+function normalizeOne<T>(raw: T | T[] | null | undefined): T | null {
+  if (raw == null) return null;
   return Array.isArray(raw) ? raw[0] ?? null : raw;
 }
 
-async function fetchTenants(): Promise<TenantRow[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin: any = createAdminClient();
+async function fetchTenants() {
+  const admin = createAdminClient();
   const { data, error } = await admin
     .from('tenants')
     .select(
@@ -54,12 +39,10 @@ async function fetchTenants(): Promise<TenantRow[]> {
     .order('created_at', { ascending: false });
 
   if (error || !data) return [];
-  return (data as Record<string, unknown>[]).map((row) => ({
+  return data.map((row) => ({
     ...row,
-    tenant_billing_accounts: normalizeOne(
-      row.tenant_billing_accounts as TenantRow['tenant_billing_accounts'] | TenantRow['tenant_billing_accounts'][],
-    ),
-  })) as TenantRow[];
+    tenant_billing_accounts: normalizeOne(row.tenant_billing_accounts),
+  }));
 }
 
 export default async function AdminTenantsPage() {

@@ -1,4 +1,6 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
+import type { Database } from '@/lib/supabase/database.types';
 
 export type EntitlementFeature =
   | 'rolePermissions'
@@ -154,9 +156,7 @@ export function assertLimitNotExceeded(
 }
 
 export async function resolveTenantPlanTier(
-  // Database typing is still scaffolded in bootstrap.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin: any,
+  admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<PlatformPlanTier> {
   const { data } = await admin
@@ -165,12 +165,11 @@ export async function resolveTenantPlanTier(
     .eq('tenant_id', tenantId)
     .maybeSingle();
 
-  return parsePlatformPlanTier(data?.platform_plan) ?? 'starter';
+  return parsePlatformPlanTier(String(data?.platform_plan ?? '')) ?? 'starter';
 }
 
 export async function resolveTenantEntitlements(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin: any,
+  admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<PlanEntitlements> {
   const tier = await resolveTenantPlanTier(admin, tenantId);

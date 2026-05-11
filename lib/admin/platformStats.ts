@@ -17,8 +17,7 @@ function daysAgoIso(days: number): string {
  * Founder dashboard aggregates via service role (trusted admin routes only).
  */
 export async function getPlatformDashboardStats(): Promise<PlatformDashboardStats> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db: any = createAdminClient();
+  const db = createAdminClient();
 
   const [
     activeTenantsRes,

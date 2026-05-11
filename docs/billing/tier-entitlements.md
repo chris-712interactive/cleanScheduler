@@ -91,6 +91,12 @@ Next checks to add:
 - Entitlement resolution reads `tenant_billing_accounts.platform_plan`; fallback
   defaults to `starter` if missing.
 
+### Platform Stripe webhook idempotency
+
+- Migration `0008_stripe_webhook_idempotency.sql` adds `public.stripe_webhook_events` (`stripe_event_id` unique).
+- `app/api/webhooks/stripe/route.ts` records each event before handling; duplicates return `200` without re-running side effects.
+- On handler failure after insert, the row is deleted so Stripe retries can succeed.
+
 ### Trial end without a card (no-card checkout)
 
 Checkout uses `payment_method_collection: 'if_required'` and Stripe can end the

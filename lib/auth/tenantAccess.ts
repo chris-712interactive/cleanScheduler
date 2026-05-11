@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from './portalAccess';
@@ -10,14 +11,11 @@ export interface TenantMembership {
   role: TenantRole;
 }
 
-interface MembershipRow {
-  tenant_id: string;
-  role: TenantRole;
-  tenants: {
-    id: string;
-    slug: string;
-    name: string;
-  } | null;
+export interface TenantPortalAccessOptions {
+  /** Post-rewrite pathname from middleware (`x-internal-pathname`), e.g. `/tenant/billing`. */
+  internalPathname?: string | null;
+  /** Allow access when subscription is canceled (resume-checkout server action). */
+  allowBillingResume?: boolean;
 }
 
 async function lookupMembership(
@@ -40,7 +38,7 @@ async function lookupMembership(
     )
     .eq('user_id', userId)
     .eq('tenants.slug', tenantSlug)
-    .maybeSingle<MembershipRow>();
+    .maybeSingle();
 
   if (error || !data || !data.tenants) {
     return null;
@@ -71,23 +69,40 @@ async function lookupTenantBySlug(
   return data;
 }
 
-async function assertTenantWorkspaceUnlocked(tenantId: string, allowBypass: boolean): Promise<void> {
+function isTenantBillingPath(path: string | null | undefined): boolean {
+  if (!path) return false;
+  return path === '/tenant/billing' || path.endsWith('/billing');
+}
+
+async function assertTenantWorkspaceUnlocked(
+  tenantId: string,
+  allowBypass: boolean,
+  options?: TenantPortalAccessOptions,
+): Promise<void> {
   if (allowBypass) return;
 
-  // Database types are still scaffold placeholders; runtime shape matches migrations.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin: any = createAdminClient();
+  const allowWhenSuspended =
+    options?.allowBillingResume === true || isTenantBillingPath(options?.internalPathname);
+
+  const admin = createAdminClient();
   const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
     admin.from('tenants').select('is_active').eq('id', tenantId).maybeSingle(),
     admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
   ]);
 
-  const isActive = (tenantRow as { is_active?: boolean } | null)?.is_active !== false;
-  const billingStatus = (billingRow as { status?: string } | null)?.status;
+  const isActive = tenantRow?.is_active !== false;
+  const billingStatus = billingRow?.status;
+  const suspended = !isActive || billingStatus === 'canceled';
 
-  if (!isActive || billingStatus === 'canceled') {
-    redirect('/access-denied?reason=billing_suspended');
+  if (!suspended) {
+    return;
   }
+
+  if (allowWhenSuspended) {
+    return;
+  }
+
+  redirect('/access-denied?reason=billing_suspended');
 }
 
 /**
@@ -97,6 +112,7 @@ async function assertTenantWorkspaceUnlocked(tenantId: string, allowBypass: bool
 export async function requireTenantPortalAccess(
   tenantSlug: string | null,
   nextPath: string,
+  accessOptions?: TenantPortalAccessOptions,
 ): Promise<TenantMembership> {
   const auth = await requirePortalAccess('tenant', nextPath);
   const slug = tenantSlug?.trim().toLowerCase() ?? '';
@@ -105,12 +121,18 @@ export async function requireTenantPortalAccess(
     redirect('/access-denied?reason=tenant_config');
   }
 
+  const headerInternalPath = (await headers()).get('x-internal-pathname');
+  const mergedOptions: TenantPortalAccessOptions = {
+    allowBillingResume: accessOptions?.allowBillingResume === true,
+    internalPathname: accessOptions?.internalPathname ?? headerInternalPath,
+  };
+
   const membership = await lookupMembership(auth.user.id, slug);
   const appRole = auth.claims.appRole;
   const isPlatformAdmin = appRole === 'super_admin' || appRole === 'admin';
 
   if (membership) {
-    await assertTenantWorkspaceUnlocked(membership.tenantId, isPlatformAdmin);
+    await assertTenantWorkspaceUnlocked(membership.tenantId, isPlatformAdmin, mergedOptions);
     return membership;
   }
 

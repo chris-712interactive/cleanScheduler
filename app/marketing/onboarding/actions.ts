@@ -1,8 +1,10 @@
 'use server';
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/supabase/database.types';
 import { publicEnv, serverEnv } from '@/lib/env';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
@@ -33,9 +35,7 @@ function buildTenantOrigin(slug: string, requestOrigin: URL): string {
 }
 
 async function ensureSlugAvailable(
-  // Database types are still scaffold placeholders; use runtime checks here.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin: any,
+  admin: SupabaseClient<Database>,
   slug: string,
 ): Promise<boolean> {
   const { data, error } = await admin.from('tenants').select('id').eq('slug', slug).maybeSingle();
@@ -106,10 +106,7 @@ export async function createTenantAndOwner(
     return { error: 'Please accept terms to continue.' };
   }
 
-  // Database types are currently ungenerated (`Tables: Record<string, never>`),
-  // so we intentionally use `any` for bootstrap onboarding writes.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin: any = createAdminClient();
+  const admin = createAdminClient();
   const slugAvailable = await ensureSlugAvailable(admin, slug);
   if (!slugAvailable) {
     return { error: 'That workspace slug is unavailable. Try another.' };
