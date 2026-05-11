@@ -100,7 +100,12 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         <span data-active={step === 2 || undefined}>3. Preferences</span>
       </div>
 
-      <section hidden={step !== 0} className={styles.stepSection}>
+      <section
+        hidden={step !== 0}
+        inert={step !== 0}
+        aria-hidden={step !== 0}
+        className={step === 0 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`}
+      >
         <label className={styles.label} htmlFor="business_name">
           Business name
         </label>
@@ -167,7 +172,12 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         </select>
       </section>
 
-      <section hidden={step !== 1} className={styles.stepSection}>
+      <section
+        hidden={step !== 1}
+        inert={step !== 1}
+        aria-hidden={step !== 1}
+        className={step === 1 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`}
+      >
         <label className={styles.label} htmlFor="display_name">
           Your full name
         </label>
@@ -223,7 +233,12 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         />
       </section>
 
-      <section hidden={step !== 2} className={styles.stepSection}>
+      <section
+        hidden={step !== 2}
+        inert={step !== 2}
+        aria-hidden={step !== 2}
+        className={step === 2 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`}
+      >
         <fieldset className={styles.tierFieldset}>
           <legend className={styles.label}>Subscription plan</legend>
           <p className={styles.tierLead}>

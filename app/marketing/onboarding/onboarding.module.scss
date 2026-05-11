@@ -32,6 +32,12 @@
   gap: var(--space-3);
 }
 
+// Belt-and-suspenders: some browsers/layouts do not fully suppress `[hidden]`
+// when nested grids or portal styles interact with the UA stylesheet.
+.stepSectionHidden {
+  display: none !important;
+}
+
 .label {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
