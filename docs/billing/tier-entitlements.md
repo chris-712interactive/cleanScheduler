@@ -91,6 +91,21 @@ Next checks to add:
 - Entitlement resolution reads `tenant_billing_accounts.platform_plan`; fallback
   defaults to `starter` if missing.
 
+### Trial end without a card (no-card checkout)
+
+Checkout uses `payment_method_collection: 'if_required'` and Stripe can end the
+subscription when the trial ends without a payment method. Webhook handler
+`app/api/webhooks/stripe/route.ts` then:
+
+- sets `tenant_billing_accounts.status` to `canceled`, sets `canceled_at`, clears
+  `stripe_subscription_id` (so a later Checkout can attach a new subscription)
+- sets `tenants.is_active` to `false`
+
+Tenant portal access (`lib/auth/tenantAccess.ts`) blocks normal members when the
+workspace is inactive or billing status is `canceled`, with copy at
+`/access-denied?reason=billing_suspended`. Platform admins can still open the
+tenant for support.
+
 ## Ticket template (implementation-ready)
 
 - Add gate check in `<route-or-action>`

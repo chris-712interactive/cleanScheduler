@@ -39,6 +39,11 @@ const COPY: Record<
     description:
       'This portal URL is missing tenant context. Contact support if this keeps happening.',
   },
+  billing_suspended: {
+    title: 'Subscription ended',
+    description:
+      'This workspace is paused because the trial or subscription ended without an active payment method. Ask a workspace owner to add billing in Stripe checkout, or start a new workspace from the marketing site.',
+  },
 };
 
 const DEFAULT_COPY = {

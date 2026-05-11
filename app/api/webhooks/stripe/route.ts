@@ -57,18 +57,28 @@ async function syncTenantFromSubscription(subscription: Stripe.Subscription): Pr
 
   const platformPlan = parsePlatformPlanTier(String(subscription.metadata?.platform_plan ?? ''));
 
+  const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
+  const isCanceled = mappedStatus === 'canceled';
+  const nowIso = new Date().toISOString();
+
   const patch: Record<string, unknown> = {
-    stripe_subscription_id: subscription.id,
+    // Clear subscription id when ended so a future Checkout can attach a new subscription.
+    stripe_subscription_id: isCanceled ? null : subscription.id,
     stripe_customer_id: customerId ?? null,
-    status: mapStripeSubscriptionStatus(subscription.status),
+    status: mappedStatus,
     trial_started_at: trialStart,
     trial_ends_at: trialEnd,
+    canceled_at: isCanceled ? nowIso : null,
   };
   if (platformPlan) {
     patch.platform_plan = platformPlan;
   }
 
   await admin.from('tenant_billing_accounts').update(patch).eq('tenant_id', tenantId);
+
+  // Trial ended without payment method, churn, or explicit cancel: lock the workspace for tenant users.
+  // Platform admins can still open the tenant for support (see requireTenantPortalAccess).
+  await admin.from('tenants').update({ is_active: !isCanceled }).eq('id', tenantId);
 }
 
 export async function POST(request: Request) {

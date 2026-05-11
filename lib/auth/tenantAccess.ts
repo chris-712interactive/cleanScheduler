@@ -71,6 +71,23 @@ async function lookupTenantBySlug(
   return data;
 }
 
+async function assertTenantWorkspaceUnlocked(tenantId: string, allowBypass: boolean): Promise<void> {
+  if (allowBypass) return;
+
+  const admin = createAdminClient();
+  const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
+    admin.from('tenants').select('is_active').eq('id', tenantId).maybeSingle(),
+    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+  ]);
+
+  const isActive = tenantRow?.is_active !== false;
+  const billingStatus = billingRow?.status as string | undefined;
+
+  if (!isActive || billingStatus === 'canceled') {
+    redirect('/access-denied?reason=billing_suspended');
+  }
+}
+
 /**
  * Enforces tenant-portal membership by slug and returns normalized membership
  * context for layout/page rendering.
@@ -87,14 +104,17 @@ export async function requireTenantPortalAccess(
   }
 
   const membership = await lookupMembership(auth.user.id, slug);
+  const appRole = auth.claims.appRole;
+  const isPlatformAdmin = appRole === 'super_admin' || appRole === 'admin';
+
   if (membership) {
+    await assertTenantWorkspaceUnlocked(membership.tenantId, isPlatformAdmin);
     return membership;
   }
 
   // Founder / platform ops: no tenant_memberships row required if the tenant
   // exists (support, demos, pre-invite debugging).
-  const appRole = auth.claims.appRole;
-  if (appRole === 'super_admin' || appRole === 'admin') {
+  if (isPlatformAdmin) {
     const tenant = await lookupTenantBySlug(slug);
     if (tenant) {
       return {
