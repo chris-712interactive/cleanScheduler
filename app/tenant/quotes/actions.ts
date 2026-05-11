@@ -85,7 +85,8 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
     return { error: insert.error.message };
   }
 
-  revalidatePath('/tenant/quotes');
+  revalidatePath('/tenant', 'layout');
+  revalidatePath('/tenant/quotes', 'page');
   return { success: true };
 }
 
@@ -150,7 +151,8 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     return { error: upd.error.message };
   }
 
-  revalidatePath('/tenant/quotes');
-  revalidatePath(`/tenant/quotes/${quoteId}`);
+  revalidatePath('/tenant', 'layout');
+  revalidatePath('/tenant/quotes', 'page');
+  revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
   return { success: true };
 }

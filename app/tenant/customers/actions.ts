@@ -94,7 +94,8 @@ export async function createTenantCustomer(
     return { error: linkInsert.error.message };
   }
 
-  revalidatePath('/tenant/customers');
+  revalidatePath('/tenant', 'layout');
+  revalidatePath('/tenant/customers', 'page');
   return { success: true };
 }
 
@@ -147,7 +148,8 @@ export async function updateTenantCustomer(
     return { error: customerUpdate.error.message };
   }
 
-  revalidatePath('/tenant/customers');
-  revalidatePath(`/tenant/customers/${customerId}`);
+  revalidatePath('/tenant', 'layout');
+  revalidatePath('/tenant/customers', 'page');
+  revalidatePath(`/tenant/customers/${customerId}`, 'page');
   return { success: true };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
@@ -34,6 +35,7 @@ export function QuoteEditForm({
   snapshot: QuoteEditSnapshot;
 }) {
   const [state, formAction, pending] = useActionState(updateTenantQuote, initial);
+  useRefreshOnServerActionSuccess(state.success);
 
   return (
     <form action={formAction} className={styles.form}>

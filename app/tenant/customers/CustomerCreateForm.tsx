@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { createTenantCustomer, type CustomerFormState } from './actions';
 import styles from './customers.module.scss';
 
@@ -8,6 +9,7 @@ const initial: CustomerFormState = {};
 
 export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
   const [state, formAction, pending] = useActionState(createTenantCustomer, initial);
+  useRefreshOnServerActionSuccess(state.success);
 
   return (
     <form action={formAction} className={styles.form}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { updateTenantCustomer, type CustomerFormState } from './actions';
 import styles from './customers.module.scss';
 
@@ -22,6 +23,7 @@ export function CustomerEditForm({
   snapshot: CustomerEditSnapshot;
 }) {
   const [state, formAction, pending] = useActionState(updateTenantCustomer, initial);
+  useRefreshOnServerActionSuccess(state.success);
 
   return (
     <form action={formAction} className={styles.form} key={snapshot.customerId}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import styles from './quotes.module.scss';
 
@@ -19,6 +20,7 @@ export function QuoteCreateForm({
   customerOptions: QuoteCustomerOption[];
 }) {
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
+  useRefreshOnServerActionSuccess(state.success);
 
   return (
     <form action={formAction} className={styles.form}>
