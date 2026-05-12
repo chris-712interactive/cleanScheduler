@@ -50,3 +50,34 @@ export function parseAllowedRedirectOrigin(raw: string | null | undefined): stri
   // Preserve explicit port for local dev (e.g. lvh.me:3000).
   return `${url.protocol}//${url.host}`;
 }
+
+/**
+ * Safe `next` after password sign-in or when embedded in OAuth callback URLs.
+ * Allows same-site paths (single leading `/`) or full http(s) URLs whose host
+ * is the configured apex or a subdomain (for example the customer portal host).
+ */
+export function sanitizeAuthenticationNext(raw: string | null | undefined): string {
+  if (!raw || typeof raw !== 'string') return '/';
+  const trimmed = raw.trim();
+  if (!trimmed) return '/';
+
+  if (trimmed.startsWith('/')) {
+    if (trimmed.startsWith('//')) return '/';
+    return trimmed;
+  }
+
+  const allowedOrigin = parseAllowedRedirectOrigin(trimmed);
+  if (!allowedOrigin) return '/';
+
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return '/';
+  }
+
+  const actualOrigin = `${url.protocol}//${url.host}`;
+  if (actualOrigin !== allowedOrigin) return '/';
+
+  return trimmed;
+}

@@ -103,6 +103,10 @@ const serverEnvSchema = z.object({
   TWILIO_FROM_NUMBER: z.string().optional(),
 
   RESEND_API_KEY: z.string().optional(),
+
+  /** Twilio SendGrid — verified sender email (single address or "Name <email@domain>"). */
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().min(1).optional(),
   // onboarding create-user behavior:
   // auto     -> dev/local auto-confirm, prod requires confirmation
   // required -> always require email confirmation before first sign-in

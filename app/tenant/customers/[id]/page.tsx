@@ -6,8 +6,10 @@ import { Stack } from '@/components/layout/Stack';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { isSendgridConfigured } from '@/lib/email/sendgrid';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
 import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
+import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
 import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
 import styles from '../customers.module.scss';
@@ -43,7 +45,8 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
         id,
         email,
         full_name,
-        phone
+        phone,
+        auth_user_id
       ),
       tenant_customer_profiles (
         company_name,
@@ -85,6 +88,8 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
   const displayName = identity.full_name ?? 'Unnamed';
   const email = identity.email ?? '';
   const phone = identity.phone ?? '';
+  const portalLinked = Boolean(identity.auth_user_id);
+  const sendgridReady = isSendgridConfigured();
 
   return (
     <>
@@ -132,6 +137,19 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
               />
             </div>
           </div>
+        </Card>
+
+        <Card
+          title="Customer portal access"
+          description="Invite this customer by email so they can create a login and view their portal on my."
+        >
+          <CustomerPortalInvitePanel
+            tenantSlug={membership.tenantSlug}
+            customerId={customer.id}
+            customerEmail={email}
+            portalLinked={portalLinked}
+            sendgridReady={sendgridReady}
+          />
         </Card>
 
         <Card

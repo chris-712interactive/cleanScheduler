@@ -3,6 +3,8 @@ import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
+import { headers } from 'next/headers';
+import styles from './customer-layout.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +34,12 @@ const IDENTITY: IdentityChipModel = {
 };
 
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
+  const h = await headers();
+  const internal = h.get('x-internal-pathname') ?? '';
+  if (internal.startsWith('/customer/complete-invite')) {
+    return <div className={styles.publicInvite}>{children}</div>;
+  }
+
   const auth = await requirePortalAccess('customer', '/');
   const nonProdBanner = getNonProdPortalBanner();
   const identity = await getCustomerShellIdentity(auth.user.id);

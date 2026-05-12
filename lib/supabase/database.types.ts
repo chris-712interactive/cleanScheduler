@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0013.
+ * Hand-maintained schema mirror for migrations 0001–0014.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -187,6 +187,64 @@ export type Database = {
           },
           {
             foreignKeyName: 'customer_tenant_links_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      customer_portal_invites: {
+        Row: {
+          token: string;
+          tenant_id: string;
+          customer_id: string;
+          customer_identity_id: string;
+          email_normalized: string;
+          invited_by_user_id: string | null;
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          token?: string;
+          tenant_id: string;
+          customer_id: string;
+          customer_identity_id: string;
+          email_normalized: string;
+          invited_by_user_id?: string | null;
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          token?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          customer_identity_id?: string;
+          email_normalized?: string;
+          invited_by_user_id?: string | null;
+          expires_at?: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_portal_invites_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'customer_portal_invites_customer_identity_id_fkey';
+            columns: ['customer_identity_id'];
+            isOneToOne: false;
+            referencedRelation: 'customer_identities';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'customer_portal_invites_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';

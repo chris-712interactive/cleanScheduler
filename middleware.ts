@@ -165,6 +165,9 @@ export async function middleware(request: NextRequest) {
   const isPublicMarketingPath =
     PUBLIC_MARKETING_PATHS.has(requestedPath) ||
     (requestedPath === '/contact' && subdomain === null);
+  const isPublicCustomerInvite =
+    subdomain === 'my' && (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
+
   const baseClassification = classify(subdomain);
   const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
   // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.
@@ -195,7 +198,7 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-internal-pathname', url.pathname);
 
   const { userId, cookiesToSet } = await resolveUser(request);
-  const isProtectedPortal = kind !== 'marketing';
+  const isProtectedPortal = kind !== 'marketing' && !isPublicCustomerInvite;
   if (isProtectedPortal && !userId) {
     const nextPath = request.nextUrl.pathname + request.nextUrl.search;
     const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);

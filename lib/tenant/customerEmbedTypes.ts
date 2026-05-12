@@ -28,7 +28,7 @@ type PropertyPick = Pick<
 export type CustomerDetailEmbedRow = Pick<Tables<'customers'>, 'id' | 'status' | 'created_at'> & {
   customer_identities: Pick<
     Tables<'customer_identities'>,
-    'id' | 'email' | 'full_name' | 'phone'
+    'id' | 'email' | 'full_name' | 'phone' | 'auth_user_id'
   > | null;
   tenant_customer_profiles: ProfilePick | null;
   tenant_customer_properties: PropertyPick[] | null;

@@ -1,0 +1,62 @@
+'use client';
+
+import { useActionState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { sendCustomerPortalInviteAction, type CustomerInviteFormState } from './inviteActions';
+import styles from './customers.module.scss';
+
+const initial: CustomerInviteFormState = {};
+
+export function CustomerPortalInvitePanel({
+  tenantSlug,
+  customerId,
+  customerEmail,
+  portalLinked,
+  sendgridReady,
+}: {
+  tenantSlug: string;
+  customerId: string;
+  customerEmail: string;
+  portalLinked: boolean;
+  sendgridReady: boolean;
+}) {
+  const [state, action, pending] = useActionState(sendCustomerPortalInviteAction, initial);
+
+  if (portalLinked) {
+    return <p className={styles.inviteHint}>This customer already has a portal login linked.</p>;
+  }
+
+  if (!customerEmail.trim()) {
+    return (
+      <p className={styles.inviteHint}>Add an email address on this customer before sending a portal invite.</p>
+    );
+  }
+
+  return (
+    <div className={styles.inviteBlock}>
+      {state.error ? (
+        <p className={styles.error} role="alert">
+          {state.error}
+        </p>
+      ) : null}
+      {state.success ? <p className={styles.success}>{state.success}</p> : null}
+      <form action={action} className={styles.inviteForm}>
+        <input type="hidden" name="tenant_slug" value={tenantSlug} />
+        <input type="hidden" name="customer_id" value={customerId} />
+        <Button type="submit" variant="secondary" disabled={pending || !sendgridReady}>
+          {pending ? 'Sending…' : 'Email portal invite'}
+        </Button>
+      </form>
+      {!sendgridReady ? (
+        <p className={styles.inviteHint}>
+          Server email is not configured. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL (verified sender in SendGrid).
+        </p>
+      ) : (
+        <p className={styles.inviteHint}>
+          Sends <strong>{customerEmail}</strong> a link (valid 7 days) to finish signup on the customer portal and
+          link this record to their login.
+        </p>
+      )}
+    </div>
+  );
+}

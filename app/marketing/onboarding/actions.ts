@@ -5,7 +5,8 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
-import { publicEnv, serverEnv } from '@/lib/env';
+import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
+import { publicEnv } from '@/lib/env';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
 import { createPlatformSubscriptionCheckoutUrl } from '@/lib/billing/platformCheckout';
@@ -40,13 +41,6 @@ async function ensureSlugAvailable(
 ): Promise<boolean> {
   const { data, error } = await admin.from('tenants').select('id').eq('slug', slug).maybeSingle();
   return !error && !data;
-}
-
-function shouldAutoConfirmEmail(): boolean {
-  const mode = serverEnv.ONBOARDING_EMAIL_CONFIRM_MODE;
-  if (mode === 'required') return false;
-  if (mode === 'disabled') return true;
-  return publicEnv.NEXT_PUBLIC_APP_ENV !== 'prod';
 }
 
 export async function createTenantAndOwner(

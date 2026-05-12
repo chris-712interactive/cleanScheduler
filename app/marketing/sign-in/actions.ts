@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { parseAllowedRedirectOrigin } from '@/lib/auth/allowedRedirectOrigin';
+import { parseAllowedRedirectOrigin, sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
 
 export interface SignInState {
@@ -30,8 +30,7 @@ async function resolveRedirectOrigin(formData: FormData): Promise<string> {
 }
 
 function normalizeNextFromForm(formData: FormData): string {
-  const raw = String(formData.get('next') ?? '/').trim();
-  return raw.startsWith('/') ? raw : '/';
+  return sanitizeAuthenticationNext(String(formData.get('next') ?? '/'));
 }
 
 export async function signInWithPassword(

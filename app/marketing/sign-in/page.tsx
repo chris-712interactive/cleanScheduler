@@ -2,19 +2,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
+import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { getAuthContext } from '@/lib/auth/session';
 import { SignInForm } from './SignInForm';
 import styles from './sign-in.module.scss';
 
 interface SignInPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-function normalizeNext(next: string | string[] | undefined): string {
-  if (!next) return '/';
-  const value = Array.isArray(next) ? next[0] : next;
-  if (!value) return '/';
-  return value.startsWith('/') ? value : '/';
 }
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -32,7 +26,7 @@ const AUTHORIZATION_QUERY_ERRORS = new Set([
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = await searchParams;
-  const nextPath = normalizeNext(params.next);
+  const nextPath = sanitizeAuthenticationNext(firstParam(params.next));
   const rawError = firstParam(params.error)?.trim();
 
   const auth = await getAuthContext();
