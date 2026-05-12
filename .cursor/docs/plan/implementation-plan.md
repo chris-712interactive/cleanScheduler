@@ -19,10 +19,10 @@ todos:
     status: pending
   - id: cicdPipeline
     content: "GitHub Actions pipeline (section 16): on every PR run typecheck, ESLint, stylelint, Vitest, supabase db diff for migration sanity, and pg_tap RLS tests against an ephemeral local Supabase. Branch strategy: main = PROD, staging = DEV, feature branches \u2192 PRs into staging. Auto-deploy staging \u2192 DEV (with auto supabase db push); auto-deploy main \u2192 PROD with a manual approval gate before the migration runs."
-    status: pending
+    status: in_progress
   - id: envGuardrails
     content: "Implement env mismatch guardrails (section 16): lib/env.ts cross-checks at boot \u2014 if the Supabase URL looks like PROD, Stripe must be sk_live_ and Plaid must be Production; otherwise fail-fast. Persistent red 'DEV ENVIRONMENT \u2014 no real charges' banner across every authenticated page in DEV. .env.example checked in with empty values; .env.local ignored."
-    status: pending
+    status: in_progress
   - id: subdomainMiddleware
     content: Implement middleware that resolves subdomain -> tenant context, gates routes by app_role/tenant_role, and supports admin + my + tenant slugs with reserved-name guard.
     status: completed
@@ -85,7 +85,7 @@ todos:
     status: in_progress
   - id: customerPortalMvp
     content: "Customer portal MVP: aggregated Dashboard, read-only Schedule with reschedule-request, Billing view + pay, basic Messages, Settings."
-    status: pending
+    status: in_progress
   - id: founderAdminMvp
     content: "Founder admin MVP: Dashboard, Inquiries with filters & manual status, Customers/Tenants list+detail, manual onboarding, basic masquerade with audit log + session timer banner."
     status: in_progress

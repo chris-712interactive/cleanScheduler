@@ -26,6 +26,7 @@ export const navIcons: Record<string, LucideIcon> = {
   customersGlobal: Users,
   dashboard: LayoutDashboard,
   home: Home,
+  inquiries: Mail,
   invoices: FileText,
   messages: MessageSquare,
   paymentMethods: CreditCard,

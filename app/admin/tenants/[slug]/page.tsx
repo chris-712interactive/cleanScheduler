@@ -7,9 +7,10 @@ import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { createAdminClient } from '@/lib/supabase/server';
-import { publicEnv } from '@/lib/env';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { PLATFORM_PLAN_LABELS, parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
+import { startMasqueradeAction } from '@/lib/admin/masqueradeActions';
 import styles from '../tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -67,8 +68,7 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
-  const portalUrl = `https://${tenant.slug}.${apex}/`;
+  const portalUrl = `${getPublicOrigin(tenant.slug)}/`;
 
   const billing = normalizeOne(tenant.tenant_billing_accounts);
   const onboarding = normalizeOne(tenant.tenant_onboarding_profiles);
@@ -107,6 +107,20 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
 
       <Container size="md">
         <Stack gap={4}>
+          <Card title="Support masquerade">
+            <p className={styles.empty}>
+              Opens the tenant portal in your browser with masquerade metadata set on your account. Use only with
+              tenant consent; actions are written to the audit log.
+            </p>
+            <form action={startMasqueradeAction} className={styles.backWrap}>
+              <input type="hidden" name="tenant_slug" value={tenant.slug} />
+              <input type="hidden" name="tenant_id" value={tenant.id} />
+              <Button type="submit" variant="secondary">
+                Enter tenant portal as support
+              </Button>
+            </form>
+          </Card>
+
           <Card title="Workspace">
             <KeyValueList
               items={[

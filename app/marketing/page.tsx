@@ -42,8 +42,8 @@ export default function MarketingHome() {
                 <Button size="lg" href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>
                   Start your free trial
                 </Button>
-                <Button size="lg" variant="secondary">
-                  See it in action
+                <Button size="lg" variant="secondary" as="a" href="/contact">
+                  Contact sales
                 </Button>
               </div>
             </Stack>

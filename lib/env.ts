@@ -131,6 +131,23 @@ function getServerEnv(): z.infer<typeof serverEnvSchema> {
         JSON.stringify(parsed.error.flatten().fieldErrors, null, 2),
     );
   }
+
+  const appEnv = process.env.NEXT_PUBLIC_APP_ENV;
+  if (appEnv === 'prod') {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeKey && !stripeKey.startsWith('sk_live_')) {
+      throw new Error(
+        'NEXT_PUBLIC_APP_ENV=prod but STRIPE_SECRET_KEY is not a live key (expected sk_live_…).',
+      );
+    }
+    const plaidSecret = process.env.PLAID_SECRET;
+    if (plaidSecret && process.env.PLAID_ENV && process.env.PLAID_ENV !== 'production') {
+      throw new Error(
+        'NEXT_PUBLIC_APP_ENV=prod with PLAID_SECRET set requires PLAID_ENV=production.',
+      );
+    }
+  }
+
   _serverEnvCache = parsed.data;
   return _serverEnvCache;
 }

@@ -53,7 +53,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
     <>
       <PageHeader
         title="Workspace billing"
-        description="Platform subscription for cleanScheduler. Customer invoicing and Connect will live here next."
+        description="Platform subscription for cleanScheduler, plus customer invoicing for your clients."
       />
 
       <Stack gap={6}>
@@ -68,6 +68,16 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
             Checkout completed. Subscription details will update from Stripe within a minute.
           </p>
         ) : null}
+
+        <Card title="Customer invoices" description="Bill customers in your directory and record manual payments.">
+          <p className={styles.muted} style={{ marginTop: 0 }}>
+            Create invoices, track balances, and log cash, check, or Zelle payments. Stripe Connect pay-online flows
+            come next.
+          </p>
+          <Button variant="secondary" as="a" href="/billing/invoices">
+            Open customer invoices
+          </Button>
+        </Card>
 
         <Card title="Current plan" description="Synced from Stripe webhooks after checkout.">
           {error || !billing ? (

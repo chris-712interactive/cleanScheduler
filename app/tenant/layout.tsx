@@ -1,7 +1,10 @@
 import { PortalShell } from '@/components/portal/PortalShell';
+import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
 import { getPortalContext } from '@/lib/portal';
+import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { getAuthContext } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +40,12 @@ export default async function TenantLayout({ children }: { children: React.React
     subtitle: membership.role,
   };
 
+  const nonProdBanner = getNonProdPortalBanner();
+  const auth = await getAuthContext();
+  const masquerading =
+    Boolean(auth?.claims.masqueradeTargetTenantId) &&
+    (auth?.claims.appRole === 'super_admin' || auth?.claims.appRole === 'admin');
+
   return (
     <PortalShell
       brandLabel={slug}
@@ -44,6 +53,8 @@ export default async function TenantLayout({ children }: { children: React.React
       navItems={NAV_ITEMS}
       identity={identity}
       tenantBadge={<span>{slug}.cleanscheduler.com</span>}
+      environmentBanner={nonProdBanner}
+      sessionNotice={masquerading ? <MasqueradeExitBanner /> : null}
     >
       {children}
     </PortalShell>

@@ -25,8 +25,9 @@
  * Reserved subdomain names (admin/api/mail/etc.) cannot be claimed by a
  * tenant - they fall through to the marketing rewrite.
  *
- * Note: Supabase session-refresh wiring is intentionally not in this file
- * yet. It will be added once the auth flow lands in a follow-up task.
+ * Auth: `resolveUser` uses `@supabase/ssr` with cookie `getAll` / `setAll`.
+ * `getUser()` refreshes expired sessions when needed and applies updated
+ * cookies on the outgoing response (see `applyCookies`).
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
@@ -161,7 +162,9 @@ export async function middleware(request: NextRequest) {
   const apex = getApexHost();
   const subdomain = extractSubdomainLabel(host, apex);
   const requestedPath = request.nextUrl.pathname;
-  const isPublicMarketingPath = PUBLIC_MARKETING_PATHS.has(requestedPath);
+  const isPublicMarketingPath =
+    PUBLIC_MARKETING_PATHS.has(requestedPath) ||
+    (requestedPath === '/contact' && subdomain === null);
   const baseClassification = classify(subdomain);
   const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
   // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.

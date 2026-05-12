@@ -24,6 +24,10 @@ export interface PortalShellProps {
   brandHref?: string;
   identity?: IdentityChipModel;
   tenantBadge?: ReactNode;
+  /** Non-production warning (e.g. dev/staging) shown above the top bar. */
+  environmentBanner?: ReactNode;
+  /** Optional banner (e.g. masquerade exit) below env banner, above the top bar. */
+  sessionNotice?: ReactNode;
   children: ReactNode;
 }
 
@@ -34,6 +38,8 @@ export function PortalShell({
   brandHref = '/',
   identity,
   tenantBadge,
+  environmentBanner,
+  sessionNotice,
   children,
 }: PortalShellProps) {
   return (
@@ -41,6 +47,16 @@ export function PortalShell({
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
+      {environmentBanner ? (
+        <div className={styles.environmentBanner} role="status">
+          {environmentBanner}
+        </div>
+      ) : null}
+      {sessionNotice ? (
+        <div className={styles.sessionNotice} role="region" aria-label="Session notice">
+          {sessionNotice}
+        </div>
+      ) : null}
       <TopBar
         brandLabel={brandLabel}
         brandHref={brandHref}

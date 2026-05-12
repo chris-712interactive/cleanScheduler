@@ -1,6 +1,8 @@
 import { PortalShell } from '@/components/portal/PortalShell';
+import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
+import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Invoices', href: '/invoices', icon: 'invoices' },
   { label: 'Payment methods', href: '/payment-methods', icon: 'paymentMethods' },
   { label: 'Messages', href: '/messages', icon: 'messages' },
+  { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
 // Customer portal opts in to a mobile bottom nav for the most common
@@ -19,6 +22,7 @@ const BOTTOM_NAV: NavItem[] = [
   { label: 'Home', href: '/', icon: 'home', exact: true },
   { label: 'Visits', href: '/visits', icon: 'visits' },
   { label: 'Invoices', href: '/invoices', icon: 'invoices' },
+  { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
 const IDENTITY: IdentityChipModel = {
@@ -28,7 +32,9 @@ const IDENTITY: IdentityChipModel = {
 };
 
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
-  await requirePortalAccess('customer', '/');
+  const auth = await requirePortalAccess('customer', '/');
+  const nonProdBanner = getNonProdPortalBanner();
+  const identity = await getCustomerShellIdentity(auth.user.id);
 
   return (
     <PortalShell
@@ -36,8 +42,9 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       brandHref="/"
       navItems={NAV_ITEMS}
       bottomNavItems={BOTTOM_NAV}
-      identity={IDENTITY}
+      identity={identity ?? IDENTITY}
       tenantBadge={<span>my.cleanscheduler.com</span>}
+      environmentBanner={nonProdBanner}
     >
       {children}
     </PortalShell>

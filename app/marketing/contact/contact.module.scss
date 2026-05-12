@@ -1,0 +1,47 @@
+.page {
+  padding: var(--space-8) 0 var(--space-10);
+}
+
+.form {
+  margin-top: var(--space-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.input,
+.textarea {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.bannerOk {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-success);
+  background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+  font-size: var(--font-size-sm);
+}
+
+.bannerErr {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-danger);
+  background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  font-size: var(--font-size-sm);
+}

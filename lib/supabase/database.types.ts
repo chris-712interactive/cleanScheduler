@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0011.
+ * Hand-maintained schema mirror for migrations 0001–0013.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -37,6 +37,113 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      audit_log_entries: {
+        Row: {
+          id: string;
+          actor_user_id: string | null;
+          action: string;
+          target_tenant_id: string | null;
+          payload: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_user_id?: string | null;
+          action: string;
+          target_tenant_id?: string | null;
+          payload?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor_user_id?: string | null;
+          action?: string;
+          target_tenant_id?: string | null;
+          payload?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      customer_support_messages: {
+        Row: {
+          id: string;
+          thread_id: string;
+          author_user_id: string | null;
+          body: string;
+          is_from_customer: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          thread_id: string;
+          author_user_id?: string | null;
+          body: string;
+          is_from_customer?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          thread_id?: string;
+          author_user_id?: string | null;
+          body?: string;
+          is_from_customer?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_support_messages_thread_id_fkey';
+            columns: ['thread_id'];
+            isOneToOne: false;
+            referencedRelation: 'customer_support_threads';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      customer_support_threads: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          subject: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          subject?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          subject?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_support_threads_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'customer_support_threads_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       customer_tenant_links: {
         Row: {
@@ -87,6 +194,71 @@ export type Database = {
           },
         ];
       };
+      marketing_inquiries: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          company: string | null;
+          message: string;
+          status: 'new' | 'contacted' | 'closed';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          company?: string | null;
+          message: string;
+          status?: 'new' | 'contacted' | 'closed';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          company?: string | null;
+          message?: string;
+          status?: 'new' | 'contacted' | 'closed';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      masquerade_sessions: {
+        Row: {
+          id: string;
+          admin_user_id: string;
+          target_tenant_id: string;
+          started_at: string;
+          ended_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id: string;
+          target_tenant_id: string;
+          started_at?: string;
+          ended_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          admin_user_id?: string;
+          target_tenant_id?: string;
+          started_at?: string;
+          ended_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'masquerade_sessions_target_tenant_id_fkey';
+            columns: ['target_tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       customers: {
         Row: {
           id: string;
@@ -125,6 +297,114 @@ export type Database = {
           },
           {
             foreignKeyName: 'customers_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_invoice_payments: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          invoice_id: string;
+          amount_cents: number;
+          method: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
+          notes: string | null;
+          recorded_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          invoice_id: string;
+          amount_cents: number;
+          method?: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
+          notes?: string | null;
+          recorded_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          invoice_id?: string;
+          amount_cents?: number;
+          method?: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
+          notes?: string | null;
+          recorded_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_invoice_payments_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_invoices';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_invoice_payments_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_invoices: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          title: string;
+          status: 'draft' | 'open' | 'paid' | 'void';
+          currency: string;
+          amount_cents: number;
+          amount_paid_cents: number;
+          due_date: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          title?: string;
+          status?: 'draft' | 'open' | 'paid' | 'void';
+          currency?: string;
+          amount_cents: number;
+          amount_paid_cents?: number;
+          due_date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          title?: string;
+          status?: 'draft' | 'open' | 'paid' | 'void';
+          currency?: string;
+          amount_cents?: number;
+          amount_paid_cents?: number;
+          due_date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_invoices_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_invoices_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -633,6 +913,9 @@ export type Database = {
       quote_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
+      tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';
+      tenant_payment_method: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
+      marketing_inquiry_status: 'new' | 'contacted' | 'closed';
     };
     CompositeTypes: {
       [_ in never]: never;

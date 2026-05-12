@@ -1,4 +1,5 @@
 import { PortalShell } from '@/components/portal/PortalShell';
+import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 
@@ -6,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
+  { label: 'Inquiries', href: '/inquiries', icon: 'inquiries' },
   { label: 'Tenants', href: '/tenants', icon: 'tenants' },
   { label: 'Customers', href: '/customers', icon: 'customersGlobal' },
   { label: 'Billing', href: '/billing', icon: 'billing' },
@@ -23,6 +25,7 @@ const IDENTITY: IdentityChipModel = {
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requirePortalAccess('admin', '/');
+  const nonProdBanner = getNonProdPortalBanner();
 
   return (
     <PortalShell
@@ -31,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       navItems={NAV_ITEMS}
       identity={IDENTITY}
       tenantBadge={<span>Founder Admin</span>}
+      environmentBanner={nonProdBanner}
     >
       {children}
     </PortalShell>

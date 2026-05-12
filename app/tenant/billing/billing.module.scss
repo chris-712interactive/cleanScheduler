@@ -30,3 +30,50 @@
   gap: var(--space-3);
   align-items: center;
 }
+
+.backLinkWrap {
+  margin: 0 0 var(--space-4);
+}
+
+.backLink {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+  }
+}
+
+.invoiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.input,
+.select,
+.textarea {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  min-width: min(100%, 280px);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 5rem;
+}

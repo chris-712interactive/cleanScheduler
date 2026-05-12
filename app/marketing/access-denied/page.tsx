@@ -44,6 +44,11 @@ const COPY: Record<
     description:
       'This workspace is paused because the trial or subscription ended without an active payment method. Ask a workspace owner to add billing in Stripe checkout, or start a new workspace from the marketing site.',
   },
+  no_customer_profile: {
+    title: 'Customer profile not linked',
+    description:
+      'Your login is not linked to a customer record yet. Ask your cleaning provider to connect your account, or sign in with the email they have on file.',
+  },
 };
 
 const DEFAULT_COPY = {
