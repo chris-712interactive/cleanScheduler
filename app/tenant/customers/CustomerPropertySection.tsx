@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
@@ -44,6 +44,8 @@ export function CustomerPropertySection({
   customerId: string;
   properties: PropertyRow[];
 }) {
+  const [addLocationOpen, setAddLocationOpen] = useState(false);
+
   const sorted = [...properties].sort((a, b) => {
     if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
     return 0;
@@ -53,7 +55,10 @@ export function CustomerPropertySection({
     <div className={styles.propertySection}>
       <div className={styles.propertyList}>
         {sorted.length === 0 ? (
-          <p className={styles.empty}>No service locations yet. Add one below — quotes and visits attach here.</p>
+          <p className={styles.empty}>
+            No service locations yet. Use <strong>Add location</strong> when you need another site — quotes and visits
+            attach here.
+          </p>
         ) : (
           sorted.map((p) => (
             <details key={p.id} className={styles.propertyCard}>
@@ -88,7 +93,18 @@ export function CustomerPropertySection({
         )}
       </div>
 
-      <AddPropertyForm tenantSlug={tenantSlug} customerId={customerId} hasAny={sorted.length > 0} />
+      {addLocationOpen ? (
+        <div className={styles.collapsibleFormBlock}>
+          <AddPropertyForm tenantSlug={tenantSlug} customerId={customerId} hasAny={sorted.length > 0} />
+          <button type="button" className={styles.secondaryBtn} onClick={() => setAddLocationOpen(false)}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button type="button" className={styles.secondaryBtn} onClick={() => setAddLocationOpen(true)}>
+          Add location
+        </button>
+      )}
     </div>
   );
 }

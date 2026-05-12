@@ -9,7 +9,7 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
-import { CustomerEditForm } from '../CustomerEditForm';
+import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
 import { CustomerPropertySection } from '../CustomerPropertySection';
 import styles from '../customers.module.scss';
 
@@ -128,8 +128,11 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
           />
         </Card>
 
-        <Card title="Edit customer" description="Contact name, account status, and workspace-level notes.">
-          <CustomerEditForm
+        <Card
+          title="Account"
+          description="Contact name, status, and workspace-level notes. Open the editor only when you need to change something."
+        >
+          <CustomerAccountEditPanel
             tenantSlug={membership.tenantSlug}
             snapshot={{
               customerId: customer.id,
