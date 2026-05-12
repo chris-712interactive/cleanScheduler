@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { createClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { PLATFORM_PLAN_LABELS, parsePlatformPlanTier } from '@/lib/billing/platformPlanTier';
@@ -30,7 +30,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing');
 
-  const supabase = await createClient();
+  const supabase = createTenantPortalDbClient();
   const billingRes = await supabase
     .from('tenant_billing_accounts')
     .select('*')

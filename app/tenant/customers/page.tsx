@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
-import { createClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { CustomerListEmbedRow } from '@/lib/tenant/customerEmbedTypes';
@@ -15,7 +15,7 @@ export default async function TenantCustomersPage() {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/customers');
 
-  const supabase = await createClient();
+  const supabase = createTenantPortalDbClient();
   const { data: rows, error: listError } = await supabase
     .from('customers')
     .select(
@@ -52,8 +52,7 @@ export default async function TenantCustomersPage() {
         <Card title="Directory" description={`${customers.length} customer${customers.length === 1 ? '' : 's'}`}>
           {listError ? (
             <p className={styles.empty} role="alert">
-              Could not load customers ({listError.message}). Check Supabase RLS and table grants for the{' '}
-              <code>authenticated</code> role.
+              Could not load customers ({listError.message}).
             </p>
           ) : customers.length === 0 ? (
             <p className={styles.empty}>

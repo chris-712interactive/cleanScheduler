@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import type { Tables } from '@/lib/supabase/database.types';
 
 type TrialBySlugRow = Pick<
@@ -24,7 +24,7 @@ function computeDaysRemaining(trialEndsAt: string | null): number | null {
 }
 
 export async function getTenantTrialSummaryBySlug(slug: string): Promise<TrialSummary | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('tenant_billing_accounts')
     .select(

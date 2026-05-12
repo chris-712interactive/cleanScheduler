@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { createClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
@@ -32,7 +32,7 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, `/customers/${id}`);
 
-  const supabase = await createClient();
+  const supabase = createTenantPortalDbClient();
   const { data: row, error } = await supabase
     .from('customers')
     .select(

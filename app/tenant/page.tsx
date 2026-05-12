@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { createClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
@@ -16,10 +16,8 @@ export const dynamic = 'force-dynamic';
 export default async function TenantDashboardPage() {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/');
-  const [trial, supabase] = await Promise.all([
-    getTenantTrialSummaryBySlug(membership.tenantSlug),
-    createClient(),
-  ]);
+  const trial = await getTenantTrialSummaryBySlug(membership.tenantSlug);
+  const supabase = createTenantPortalDbClient();
 
   const [customersCountRes, quotesCountRes] = await Promise.all([
     supabase

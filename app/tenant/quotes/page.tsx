@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
-import { createClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
@@ -45,7 +45,7 @@ export default async function TenantQuotesPage() {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/quotes');
 
-  const supabase = await createClient();
+  const supabase = createTenantPortalDbClient();
 
   const [quotesRes, customersRes, propertiesRes] = await Promise.all([
     supabase

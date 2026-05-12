@@ -71,3 +71,15 @@ export function createAdminClient() {
     },
   );
 }
+
+/**
+ * Tenant portal **Server Components** should use this after `requireTenantPortalAccess`.
+ *
+ * The cookie-backed `createClient()` often does not send a JWT PostgREST can use for
+ * `auth.uid()` in RLS, so row-level policies may hide every row while service-role
+ * mutations still succeed. This client bypasses RLS; every query must scope by
+ * `membership.tenantId` (and by resource id when loading a single record).
+ */
+export function createTenantPortalDbClient() {
+  return createAdminClient();
+}

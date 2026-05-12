@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { publicEnv } from '@/lib/env';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
@@ -46,7 +46,7 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
     redirect(`/sign-in?next=${encodeURIComponent(`${tenantOrigin}/billing`)}`);
   }
 
-  const supabase = await createClient();
+  const supabase = createTenantPortalDbClient();
   const billingRes = await supabase
     .from('tenant_billing_accounts')
     .select('*')
