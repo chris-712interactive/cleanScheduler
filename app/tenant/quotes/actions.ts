@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
@@ -17,6 +18,56 @@ const QUOTE_STATUSES = new Set<Database['public']['Enums']['quote_status']>([
   'declined',
   'expired',
 ]);
+
+export type MoveQuoteStatusResult = { ok: true } | { ok: false; error: string };
+
+export async function moveTenantQuoteStatus(
+  tenantSlug: string,
+  quoteId: string,
+  nextStatus: Database['public']['Enums']['quote_status'],
+): Promise<MoveQuoteStatusResult> {
+  const slug = tenantSlug.trim().toLowerCase();
+  if (!slug || !quoteId) {
+    return { ok: false, error: 'Missing workspace or quote.' };
+  }
+
+  if (!QUOTE_STATUSES.has(nextStatus)) {
+    return { ok: false, error: 'Invalid status.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/quotes/${quoteId}`);
+  const admin = createAdminClient();
+
+  const { data: existing, error: fetchError } = await admin
+    .from('tenant_quotes')
+    .select('id, status')
+    .eq('id', quoteId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (fetchError || !existing) {
+    return { ok: false, error: 'Quote not found in this workspace.' };
+  }
+
+  if (existing.status === nextStatus) {
+    return { ok: true };
+  }
+
+  const upd = await admin
+    .from('tenant_quotes')
+    .update({ status: nextStatus })
+    .eq('id', quoteId)
+    .eq('tenant_id', membership.tenantId);
+
+  if (upd.error) {
+    return { ok: false, error: upd.error.message };
+  }
+
+  revalidatePath('/tenant', 'layout');
+  revalidatePath('/tenant/quotes', 'page');
+  revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
+  return { ok: true };
+}
 
 function parseOptionalDollarsToCents(raw: string): { ok: true; cents: number | null } | { ok: false; error: string } {
   const t = raw.trim();
@@ -73,7 +124,7 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
     return { error: 'Workspace and quote title are required.' };
   }
 
-  const membership = await requireTenantPortalAccess(slug, '/quotes');
+  const membership = await requireTenantPortalAccess(slug, '/quotes/new');
   const admin = createAdminClient();
 
   let customerId: string | null = null;
@@ -98,24 +149,32 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
-  const insert = await admin.from('tenant_quotes').insert({
-    tenant_id: membership.tenantId,
-    customer_id: customerId,
-    property_id: propertyId,
-    title,
-    status: 'draft',
-    amount_cents: parsed.cents,
-    notes: notes || null,
-    valid_until: validUntil,
-  });
+  const insert = await admin
+    .from('tenant_quotes')
+    .insert({
+      tenant_id: membership.tenantId,
+      customer_id: customerId,
+      property_id: propertyId,
+      title,
+      status: 'draft',
+      amount_cents: parsed.cents,
+      notes: notes || null,
+      valid_until: validUntil,
+    })
+    .select('id')
+    .single();
 
-  if (insert.error) {
-    return { error: insert.error.message };
+  if (insert.error || !insert.data) {
+    return { error: insert.error?.message ?? 'Could not create quote.' };
   }
+
+  const newId = insert.data.id as string;
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
-  return { success: true };
+  revalidatePath('/tenant/quotes/new', 'page');
+  revalidatePath(`/tenant/quotes/${newId}`, 'page');
+  redirect(`/quotes/${newId}`);
 }
 
 export async function updateTenantQuote(_prev: QuoteFormState, formData: FormData): Promise<QuoteFormState> {

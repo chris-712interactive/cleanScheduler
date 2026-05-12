@@ -61,6 +61,16 @@
   font-size: var(--font-size-sm);
 }
 
+.inlineLink {
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .list {
   margin: 0;
   padding: 0;
@@ -114,5 +124,203 @@
 
   &:hover {
     text-decoration: underline;
+  }
+}
+
+.boardWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.boardBannerError {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+  background: color-mix(in srgb, var(--color-danger-600) 12%, transparent);
+}
+
+.boardBannerMuted {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.board {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  scroll-snap-type: x proximity;
+}
+
+.boardColumn {
+  flex: 0 0 min(280px, 85vw);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  max-height: min(70vh, 720px);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.boardColumnOver {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.boardColumnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.boardColumnTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+}
+
+.boardColumnCount {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.45rem;
+}
+
+.boardColumnBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 120px;
+}
+
+.boardColumnEmpty {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-4) var(--space-2);
+}
+
+.boardCard {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.boardCardDragging {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.boardCardDragOverlay {
+  cursor: grabbing;
+  width: min(280px, 85vw);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.2);
+  pointer-events: none;
+}
+
+.boardCardPending {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.boardCardInner {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.boardCardTitle {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-brand-primary);
+    text-decoration: underline;
+  }
+}
+
+.boardCardTitleStatic {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.boardCardMeta {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.boardCardMetaMuted {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.boardCardHint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.boardCardMove {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.boardCardMoveLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.boardCardMoveSelect {
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 767px) {
+  .boardCard {
+    cursor: default;
+    touch-action: auto;
   }
 }

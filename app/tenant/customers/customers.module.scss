@@ -86,6 +86,57 @@
   font-size: var(--font-size-sm);
 }
 
+.directoryToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.directoryToolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.directorySearch {
+  flex: 1;
+  min-width: min(100%, 220px);
+}
+
+.directoryFilter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 160px;
+}
+
+.directoryToolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.directoryClearLink {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-brand-primary);
+    text-decoration: underline;
+  }
+}
+
+.directoryFilterHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 .list {
   margin: 0;
   padding: 0;
@@ -144,6 +195,217 @@
   &:hover {
     text-decoration: underline;
   }
+}
+
+.customerOverview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.customerOverviewActions {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.profileSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.profileSummaryTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.profileSummaryIdentity {
+  flex: 1;
+  min-width: 0;
+}
+
+.profileSummaryCompany {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.profileSummaryTagline {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.profileSummaryPersonName {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+.profileSummaryTaglineRest {
+  font-weight: 400;
+}
+
+.profileSummaryContactGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.profileSummaryContactCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.profileSummaryContactLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.profileSummaryContactValue {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--color-text);
+  text-decoration: none;
+  word-break: break-word;
+
+  &:hover {
+    color: var(--color-brand-primary);
+    text-decoration: underline;
+  }
+}
+
+.profileSummaryContactEmpty {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+}
+
+.profileSummaryLocation {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.profileSummaryLocationHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.profileSummaryLocationLabel {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.profileSummaryLocationAddress {
+  margin: 0;
+  font-size: var(--font-size-md);
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.profileSummaryNotes {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, var(--color-brand-primary));
+  background: color-mix(in srgb, var(--color-surface-muted) 92%, var(--color-brand-primary));
+}
+
+.profileSummaryNotesHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.profileSummaryNotesBody {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.profileSummaryMeta {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--color-border);
+
+  @media (min-width: 480px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.profileSummaryMetaItem {
+  margin: 0;
+
+  dt {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+  }
+}
+
+.profileSummaryMetaId {
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
 }
 
 .inlineLink {

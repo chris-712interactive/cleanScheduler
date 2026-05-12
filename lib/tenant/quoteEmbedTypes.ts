@@ -11,7 +11,10 @@ export type QuoteListEmbedRow = Pick<
       }
     | null;
   tenant_customer_properties:
-    | Pick<Tables<'tenant_customer_properties'>, 'label' | 'address_line1' | 'city'>
+    | Pick<
+        Tables<'tenant_customer_properties'>,
+        'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+      >
     | null;
 };
 

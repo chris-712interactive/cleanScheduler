@@ -3,13 +3,12 @@ import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
-import { KeyValueList } from '@/components/ui/KeyValueList';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
-import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
+import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
 import styles from '../customers.module.scss';
 
@@ -82,7 +81,6 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
   const profile = customer.tenant_customer_profiles;
   const properties = customer.tenant_customer_properties ?? [];
   const primary = properties.find((p) => p.is_primary);
-  const primaryLine = formatPropertyAddressLine(primary) || '—';
 
   const displayName = identity.full_name ?? 'Unnamed';
   const email = identity.email ?? '';
@@ -92,7 +90,11 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
     <>
       <PageHeader
         title={displayName}
-        description="Customer profile for this workspace."
+        description={
+          profile?.company_name?.trim()
+            ? `${profile.company_name.trim()} · Contact and locations for this account.`
+            : 'Contact details, primary service location, and workspace notes.'
+        }
         actions={
           <Link href="/customers" className={styles.backLink}>
             ← All customers
@@ -101,20 +103,35 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
       />
 
       <Stack gap={6}>
-        <Card title="Summary" description="Read-only metadata from your directory.">
-          <KeyValueList
-            items={[
-              { key: 'Customer ID', value: customer.id },
-              { key: 'Status', value: customer.status },
-              { key: 'Added', value: new Date(customer.created_at).toLocaleString() },
-              { key: 'Company', value: profile?.company_name || '—' },
-              { key: 'Primary service location', value: primaryLine },
-              {
-                key: 'Preferred contact',
-                value: profile?.preferred_contact_method || '—',
-              },
-            ]}
-          />
+        <Card
+          title="Customer overview"
+          description="Everything your team needs at a glance. Edit customer only when something changes."
+        >
+          <div className={styles.customerOverview}>
+            <CustomerProfileSummary
+              customerId={customer.id}
+              createdAt={customer.created_at}
+              status={customer.status}
+              identity={identity}
+              profile={profile}
+              primaryProperty={primary}
+            />
+            <div className={styles.customerOverviewActions}>
+              <CustomerAccountEditPanel
+                tenantSlug={membership.tenantSlug}
+                snapshot={{
+                  customerId: customer.id,
+                  fullName: identity.full_name ?? '',
+                  email,
+                  phone,
+                  status: customer.status,
+                  companyName: profile?.company_name ?? '',
+                  preferredContactMethod: profile?.preferred_contact_method ?? '',
+                  internalNotes: profile?.internal_notes ?? '',
+                }}
+              />
+            </div>
+          </div>
         </Card>
 
         <Card
@@ -125,25 +142,6 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
             tenantSlug={membership.tenantSlug}
             customerId={customer.id}
             properties={properties}
-          />
-        </Card>
-
-        <Card
-          title="Account"
-          description="Contact name, status, and workspace-level notes. Open the editor only when you need to change something."
-        >
-          <CustomerAccountEditPanel
-            tenantSlug={membership.tenantSlug}
-            snapshot={{
-              customerId: customer.id,
-              fullName: identity.full_name ?? '',
-              email,
-              phone,
-              status: customer.status,
-              companyName: profile?.company_name ?? '',
-              preferredContactMethod: profile?.preferred_contact_method ?? '',
-              internalNotes: profile?.internal_notes ?? '',
-            }}
           />
         </Card>
       </Stack>
