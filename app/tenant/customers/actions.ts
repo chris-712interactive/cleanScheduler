@@ -113,11 +113,6 @@ export async function createTenantCustomer(
     tenant_id: membership.tenantId,
     customer_id: customerId,
     company_name: companyName || null,
-    service_address_line1: serviceAddressLine1 || null,
-    service_address_line2: serviceAddressLine2 || null,
-    service_city: serviceCity || null,
-    service_state: serviceState || null,
-    service_postal_code: servicePostalCode || null,
     preferred_contact_method: preferredContactMethod,
     internal_notes: internalNotes || null,
   });
@@ -127,6 +122,27 @@ export async function createTenantCustomer(
     await admin.from('customers').delete().eq('id', customerId);
     await admin.from('customer_identities').delete().eq('id', identityId);
     return { error: profileInsert.error.message };
+  }
+
+  const propertyInsert = await admin.from('tenant_customer_properties').insert({
+    tenant_id: membership.tenantId,
+    customer_id: customerId,
+    label: 'Primary service location',
+    property_kind: 'residential',
+    address_line1: serviceAddressLine1 || null,
+    address_line2: serviceAddressLine2 || null,
+    city: serviceCity || null,
+    state: serviceState || null,
+    postal_code: servicePostalCode || null,
+    is_primary: true,
+  });
+
+  if (propertyInsert.error) {
+    await admin.from('tenant_customer_profiles').delete().eq('customer_id', customerId);
+    await admin.from('customer_tenant_links').delete().eq('customer_id', customerId);
+    await admin.from('customers').delete().eq('id', customerId);
+    await admin.from('customer_identities').delete().eq('id', identityId);
+    return { error: propertyInsert.error.message };
   }
 
   revalidatePath('/tenant', 'layout');
@@ -146,11 +162,6 @@ export async function updateTenantCustomer(
   const phone = String(formData.get('phone') ?? '').trim();
   const status = String(formData.get('status') ?? 'active').trim();
   const companyName = String(formData.get('company_name') ?? '').trim();
-  const serviceAddressLine1 = String(formData.get('service_address_line1') ?? '').trim();
-  const serviceAddressLine2 = String(formData.get('service_address_line2') ?? '').trim();
-  const serviceCity = String(formData.get('service_city') ?? '').trim();
-  const serviceState = String(formData.get('service_state') ?? '').trim();
-  const servicePostalCode = String(formData.get('service_postal_code') ?? '').trim();
   const preferredContactMethod = normalizeContactMethod(String(formData.get('preferred_contact_method') ?? '').trim());
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
@@ -197,11 +208,6 @@ export async function updateTenantCustomer(
       tenant_id: membership.tenantId,
       customer_id: customerId,
       company_name: companyName || null,
-      service_address_line1: serviceAddressLine1 || null,
-      service_address_line2: serviceAddressLine2 || null,
-      service_city: serviceCity || null,
-      service_state: serviceState || null,
-      service_postal_code: servicePostalCode || null,
       preferred_contact_method: preferredContactMethod,
       internal_notes: internalNotes || null,
     },

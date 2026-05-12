@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
+import type { CustomerPropertyGroup } from './QuoteCreateForm';
 import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_STATUS_OPTIONS } from '@/lib/tenant/quoteLabels';
 import styles from './quotes.module.scss';
@@ -15,6 +16,7 @@ export interface QuoteEditSnapshot {
   title: string;
   status: QuoteStatus;
   customerId: string;
+  propertyId: string;
   amountCents: number | null;
   notes: string;
   validUntilYmd: string;
@@ -28,14 +30,26 @@ function formatAmountField(cents: number | null): string {
 export function QuoteEditForm({
   tenantSlug,
   customerOptions,
+  customerPropertyGroups,
   snapshot,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
+  customerPropertyGroups: CustomerPropertyGroup[];
   snapshot: QuoteEditSnapshot;
 }) {
   const [state, formAction, pending] = useActionState(updateTenantQuote, initial);
   useRefreshOnServerActionSuccess(state.success);
+
+  const [customerId, setCustomerId] = useState(snapshot.customerId);
+
+  const propertyOptions = useMemo(() => {
+    return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
+  }, [customerPropertyGroups, customerId]);
+
+  const propertyDefault = propertyOptions.some((p) => p.id === snapshot.propertyId)
+    ? snapshot.propertyId
+    : '';
 
   return (
     <form action={formAction} className={styles.form}>
@@ -86,7 +100,8 @@ export function QuoteEditForm({
         id="edit_quote_customer"
         name="customer_id"
         className={styles.select}
-        defaultValue={snapshot.customerId}
+        value={customerId}
+        onChange={(e) => setCustomerId(e.target.value)}
       >
         <option value="">— None —</option>
         {customerOptions.map((c) => (
@@ -95,6 +110,28 @@ export function QuoteEditForm({
           </option>
         ))}
       </select>
+
+      <label className={styles.label} htmlFor="edit_quote_property">
+        Service location (optional)
+      </label>
+      <select
+        key={`edit_prop_${customerId || 'none'}`}
+        id="edit_quote_property"
+        name="property_id"
+        className={styles.select}
+        defaultValue={propertyDefault}
+        disabled={!customerId || propertyOptions.length === 0}
+      >
+        <option value="">— None —</option>
+        {propertyOptions.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.label}
+          </option>
+        ))}
+      </select>
+      {customerId && propertyOptions.length === 0 ? (
+        <p className={styles.hint}>Add service locations on the customer profile first.</p>
+      ) : null}
 
       <label className={styles.label} htmlFor="edit_quote_amount">
         Amount (USD)

@@ -155,3 +155,122 @@
     text-decoration: underline;
   }
 }
+
+.propertySection {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.propertyList {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.propertyCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 0 var(--space-2);
+
+  &[open] {
+    padding-bottom: var(--space-3);
+  }
+}
+
+.propertySummary {
+  cursor: pointer;
+  list-style: none;
+  padding: var(--space-3) 0;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: var(--space-2);
+    color: var(--color-text-muted);
+    transition: transform 0.15s ease;
+  }
+}
+
+.propertyCard[open] .propertySummary::before {
+  transform: rotate(90deg);
+}
+
+.propertyTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.primaryBadge {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-brand-primary);
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+}
+
+.propertyMeta {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.propertyBody {
+  padding: 0 0 0 var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.propertySiteNotes {
+  margin: var(--space-3) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.propertyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.inlineForm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.secondaryBtn,
+.dangerBtn {
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dangerBtn {
+  border-color: var(--color-danger-600);
+  color: var(--color-danger-600);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

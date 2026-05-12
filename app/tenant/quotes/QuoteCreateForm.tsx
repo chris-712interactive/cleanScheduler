@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import styles from './quotes.module.scss';
@@ -12,15 +12,28 @@ export interface QuoteCustomerOption {
   label: string;
 }
 
+export interface CustomerPropertyGroup {
+  customerId: string;
+  options: { id: string; label: string }[];
+}
+
 export function QuoteCreateForm({
   tenantSlug,
   customerOptions,
+  customerPropertyGroups,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
+  customerPropertyGroups: CustomerPropertyGroup[];
 }) {
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
   useRefreshOnServerActionSuccess(state.success);
+
+  const [customerId, setCustomerId] = useState('');
+
+  const propertyOptions = useMemo(() => {
+    return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
+  }, [customerPropertyGroups, customerId]);
 
   return (
     <form action={formAction} className={styles.form}>
@@ -50,7 +63,13 @@ export function QuoteCreateForm({
       <label className={styles.label} htmlFor="quote_customer">
         Customer (optional)
       </label>
-      <select id="quote_customer" name="customer_id" className={styles.select} defaultValue="">
+      <select
+        id="quote_customer"
+        name="customer_id"
+        className={styles.select}
+        value={customerId}
+        onChange={(e) => setCustomerId(e.target.value)}
+      >
         <option value="">— None —</option>
         {customerOptions.map((c) => (
           <option key={c.id} value={c.id}>
@@ -58,6 +77,28 @@ export function QuoteCreateForm({
           </option>
         ))}
       </select>
+
+      <label className={styles.label} htmlFor="quote_property">
+        Service location (optional)
+      </label>
+      <select
+        key={`prop_${customerId || 'none'}`}
+        id="quote_property"
+        name="property_id"
+        className={styles.select}
+        defaultValue=""
+        disabled={!customerId || propertyOptions.length === 0}
+      >
+        <option value="">— None —</option>
+        {propertyOptions.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.label}
+          </option>
+        ))}
+      </select>
+      {customerId && propertyOptions.length === 0 ? (
+        <p className={styles.hint}>Add service locations on the customer profile first.</p>
+      ) : null}
 
       <label className={styles.label} htmlFor="quote_amount">
         Amount (USD, optional)

@@ -8,9 +8,12 @@ import { createClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
+import type { QuoteDetailEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
+import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL } from '@/lib/tenant/quoteLabels';
 import { QuoteEditForm } from '../QuoteEditForm';
+import type { CustomerPropertyGroup } from '../QuoteCreateForm';
 import styles from '../quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +25,27 @@ type CustomerPickRow = {
   id: string;
   customer_identities: { full_name: string | null } | null;
 };
+
+type PropertyPickRow = Pick<
+  Tables<'tenant_customer_properties'>,
+  'id' | 'customer_id' | 'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code' | 'is_primary'
+>;
+
+function propertyOptionLabel(p: PropertyPickRow): string {
+  const line = formatPropertyAddressLine(p);
+  const base = p.label?.trim() || line || 'Location';
+  return p.is_primary ? `${base} (primary)` : base;
+}
+
+function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyGroup[] {
+  const map = new Map<string, { id: string; label: string }[]>();
+  for (const p of rows) {
+    const list = map.get(p.customer_id) ?? [];
+    list.push({ id: p.id, label: propertyOptionLabel(p) });
+    map.set(p.customer_id, list);
+  }
+  return Array.from(map.entries()).map(([customerId, options]) => ({ customerId, options }));
+}
 
 function toDateInputValue(iso: string | null): string {
   if (!iso) return '';
@@ -46,14 +70,26 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   const supabase = await createClient();
 
-  const [quoteRes, customersRes] = await Promise.all([
+  const [quoteRes, customersRes, propertiesRes] = await Promise.all([
     supabase
       .from('tenant_quotes')
-      .select('*')
+      .select(
+        `
+        *,
+        tenant_customer_properties (
+          label,
+          address_line1,
+          address_line2,
+          city,
+          state,
+          postal_code
+        )
+      `,
+      )
       .eq('id', id)
       .eq('tenant_id', membership.tenantId)
       .maybeSingle()
-      .overrideTypes<Tables<'tenant_quotes'>, { merge: false }>(),
+      .overrideTypes<QuoteDetailEmbedRow, { merge: false }>(),
     supabase
       .from('customers')
       .select(
@@ -68,6 +104,12 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .overrideTypes<CustomerPickRow[], { merge: false }>(),
+    supabase
+      .from('tenant_customer_properties')
+      .select('id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary')
+      .eq('tenant_id', membership.tenantId)
+      .order('is_primary', { ascending: false })
+      .overrideTypes<PropertyPickRow[], { merge: false }>(),
   ]);
 
   const row = quoteRes.data;
@@ -76,10 +118,18 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   }
 
   const customerRows = customersRes.data ?? [];
+  const propertyRows = propertiesRes.data ?? [];
+
   const customerOptions = customerRows.map((r) => ({
     id: r.id,
     label: r.customer_identities?.full_name?.trim() || 'Unnamed',
   }));
+
+  const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
+
+  const siteLine = row.tenant_customer_properties
+    ? formatPropertyAddressLine(row.tenant_customer_properties)
+    : '';
 
   return (
     <>
@@ -106,19 +156,25 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
                 key: 'Valid until',
                 value: row.valid_until ? new Date(row.valid_until).toLocaleDateString() : '—',
               },
+              {
+                key: 'Service location',
+                value: siteLine || '—',
+              },
             ]}
           />
         </Card>
 
-        <Card title="Edit quote" description="Update status, amount, and customer link.">
+        <Card title="Edit quote" description="Update status, amount, customer, and service site.">
           <QuoteEditForm
             tenantSlug={membership.tenantSlug}
             customerOptions={customerOptions}
+            customerPropertyGroups={customerPropertyGroups}
             snapshot={{
               quoteId: row.id,
               title: row.title,
               status: row.status,
               customerId: row.customer_id ?? '',
+              propertyId: row.property_id ?? '',
               amountCents: row.amount_cents,
               notes: row.notes ?? '',
               validUntilYmd: toDateInputValue(row.valid_until),

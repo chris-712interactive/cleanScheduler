@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0010.
+ * Hand-maintained schema mirror for migrations 0001–0011.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -256,11 +256,6 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           company_name: string | null;
-          service_address_line1: string | null;
-          service_address_line2: string | null;
-          service_city: string | null;
-          service_state: string | null;
-          service_postal_code: string | null;
           preferred_contact_method: 'email' | 'phone' | 'sms' | null;
           internal_notes: string | null;
           created_at: string;
@@ -271,11 +266,6 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           company_name?: string | null;
-          service_address_line1?: string | null;
-          service_address_line2?: string | null;
-          service_city?: string | null;
-          service_state?: string | null;
-          service_postal_code?: string | null;
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
           internal_notes?: string | null;
           created_at?: string;
@@ -286,11 +276,6 @@ export type Database = {
           tenant_id?: string;
           customer_id?: string;
           company_name?: string | null;
-          service_address_line1?: string | null;
-          service_address_line2?: string | null;
-          service_city?: string | null;
-          service_state?: string | null;
-          service_postal_code?: string | null;
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
           internal_notes?: string | null;
           created_at?: string;
@@ -306,6 +291,72 @@ export type Database = {
           },
           {
             foreignKeyName: 'tenant_customer_profiles_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_customer_properties: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          label: string | null;
+          property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
+          address_line1: string | null;
+          address_line2: string | null;
+          city: string | null;
+          state: string | null;
+          postal_code: string | null;
+          site_notes: string | null;
+          is_primary: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          label?: string | null;
+          property_kind?: 'residential' | 'commercial' | 'short_term_rental' | 'other';
+          address_line1?: string | null;
+          address_line2?: string | null;
+          city?: string | null;
+          state?: string | null;
+          postal_code?: string | null;
+          site_notes?: string | null;
+          is_primary?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          label?: string | null;
+          property_kind?: 'residential' | 'commercial' | 'short_term_rental' | 'other';
+          address_line1?: string | null;
+          address_line2?: string | null;
+          city?: string | null;
+          state?: string | null;
+          postal_code?: string | null;
+          site_notes?: string | null;
+          is_primary?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_customer_properties_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_customer_properties_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -377,6 +428,7 @@ export type Database = {
           id: string;
           tenant_id: string;
           customer_id: string | null;
+          property_id: string | null;
           title: string;
           status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
           amount_cents: number | null;
@@ -390,6 +442,7 @@ export type Database = {
           id?: string;
           tenant_id: string;
           customer_id?: string | null;
+          property_id?: string | null;
           title: string;
           status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
           amount_cents?: number | null;
@@ -403,6 +456,7 @@ export type Database = {
           id?: string;
           tenant_id?: string;
           customer_id?: string | null;
+          property_id?: string | null;
           title?: string;
           status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
           amount_cents?: number | null;
@@ -421,7 +475,88 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
+            foreignKeyName: 'tenant_quotes_property_id_fkey';
+            columns: ['property_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_customer_properties';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'tenant_quotes_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_scheduled_visits: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          property_id: string | null;
+          quote_id: string | null;
+          title: string;
+          starts_at: string;
+          ends_at: string;
+          status: 'scheduled' | 'completed' | 'cancelled';
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          property_id?: string | null;
+          quote_id?: string | null;
+          title?: string;
+          starts_at: string;
+          ends_at: string;
+          status?: 'scheduled' | 'completed' | 'cancelled';
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          property_id?: string | null;
+          quote_id?: string | null;
+          title?: string;
+          starts_at?: string;
+          ends_at?: string;
+          status?: 'scheduled' | 'completed' | 'cancelled';
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_scheduled_visits_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_scheduled_visits_property_id_fkey';
+            columns: ['property_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_customer_properties';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_scheduled_visits_quote_id_fkey';
+            columns: ['quote_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_quotes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_scheduled_visits_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -496,6 +631,8 @@ export type Database = {
       tenant_billing_status: 'trialing' | 'active' | 'past_due' | 'canceled';
       platform_plan_tier: 'starter' | 'pro' | 'business';
       quote_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+      customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
+      visit_status: 'scheduled' | 'completed' | 'cancelled';
     };
     CompositeTypes: {
       [_ in never]: never;

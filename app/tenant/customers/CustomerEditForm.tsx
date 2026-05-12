@@ -14,11 +14,6 @@ export interface CustomerEditSnapshot {
   phone: string;
   status: string;
   companyName: string;
-  serviceAddressLine1: string;
-  serviceAddressLine2: string;
-  serviceCity: string;
-  serviceState: string;
-  servicePostalCode: string;
   preferredContactMethod: string;
   internalNotes: string;
 }
@@ -96,56 +91,6 @@ export function CustomerEditForm({
         name="company_name"
         className={styles.input}
         defaultValue={snapshot.companyName}
-      />
-
-      <label className={styles.label} htmlFor="edit_service_address_line1">
-        Service address line 1
-      </label>
-      <input
-        id="edit_service_address_line1"
-        name="service_address_line1"
-        className={styles.input}
-        defaultValue={snapshot.serviceAddressLine1}
-      />
-
-      <label className={styles.label} htmlFor="edit_service_address_line2">
-        Service address line 2 (optional)
-      </label>
-      <input
-        id="edit_service_address_line2"
-        name="service_address_line2"
-        className={styles.input}
-        defaultValue={snapshot.serviceAddressLine2}
-      />
-
-      <label className={styles.label} htmlFor="edit_service_city">
-        City
-      </label>
-      <input
-        id="edit_service_city"
-        name="service_city"
-        className={styles.input}
-        defaultValue={snapshot.serviceCity}
-      />
-
-      <label className={styles.label} htmlFor="edit_service_state">
-        State / region
-      </label>
-      <input
-        id="edit_service_state"
-        name="service_state"
-        className={styles.input}
-        defaultValue={snapshot.serviceState}
-      />
-
-      <label className={styles.label} htmlFor="edit_service_postal_code">
-        Postal code
-      </label>
-      <input
-        id="edit_service_postal_code"
-        name="service_postal_code"
-        className={styles.input}
-        defaultValue={snapshot.servicePostalCode}
       />
 
       <label className={styles.label} htmlFor="edit_preferred_contact_method">

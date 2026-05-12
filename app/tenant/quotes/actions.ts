@@ -44,10 +44,27 @@ async function assertCustomerInTenant(
   return !!data;
 }
 
+async function assertPropertyForCustomer(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  customerId: string,
+  propertyId: string,
+): Promise<boolean> {
+  const { data } = await admin
+    .from('tenant_customer_properties')
+    .select('id')
+    .eq('id', propertyId)
+    .eq('tenant_id', tenantId)
+    .eq('customer_id', customerId)
+    .maybeSingle();
+  return !!data;
+}
+
 export async function createTenantQuote(_prev: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
   const title = String(formData.get('title') ?? '').trim();
   const customerRaw = String(formData.get('customer_id') ?? '').trim();
+  const propertyRaw = String(formData.get('property_id') ?? '').trim();
   const amountRaw = String(formData.get('amount_dollars') ?? '');
   const notes = String(formData.get('notes') ?? '').trim();
   const validUntilRaw = String(formData.get('valid_until') ?? '');
@@ -66,6 +83,16 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
     customerId = customerRaw;
   }
 
+  let propertyId: string | null = null;
+  if (propertyRaw) {
+    if (!customerId) {
+      return { error: 'Choose a customer before selecting a service location.' };
+    }
+    const ok = await assertPropertyForCustomer(admin, membership.tenantId, customerId, propertyRaw);
+    if (!ok) return { error: 'Service location does not belong to this customer.' };
+    propertyId = propertyRaw;
+  }
+
   const parsed = parseOptionalDollarsToCents(amountRaw);
   if (!parsed.ok) return { error: parsed.error };
 
@@ -74,6 +101,7 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
   const insert = await admin.from('tenant_quotes').insert({
     tenant_id: membership.tenantId,
     customer_id: customerId,
+    property_id: propertyId,
     title,
     status: 'draft',
     amount_cents: parsed.cents,
@@ -96,6 +124,7 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
   const title = String(formData.get('title') ?? '').trim();
   const statusRaw = String(formData.get('status') ?? 'draft').trim();
   const customerRaw = String(formData.get('customer_id') ?? '').trim();
+  const propertyRaw = String(formData.get('property_id') ?? '').trim();
   const amountRaw = String(formData.get('amount_dollars') ?? '');
   const notes = String(formData.get('notes') ?? '').trim();
   const validUntilRaw = String(formData.get('valid_until') ?? '');
@@ -129,6 +158,16 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     customerId = customerRaw;
   }
 
+  let propertyId: string | null = null;
+  if (propertyRaw) {
+    if (!customerId) {
+      return { error: 'Choose a customer before selecting a service location.' };
+    }
+    const ok = await assertPropertyForCustomer(admin, membership.tenantId, customerId, propertyRaw);
+    if (!ok) return { error: 'Service location does not belong to this customer.' };
+    propertyId = propertyRaw;
+  }
+
   const parsed = parseOptionalDollarsToCents(amountRaw);
   if (!parsed.ok) return { error: parsed.error };
 
@@ -140,6 +179,7 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
       title,
       status,
       customer_id: customerId,
+      property_id: propertyId,
       amount_cents: parsed.cents,
       notes: notes || null,
       valid_until: validUntil,
