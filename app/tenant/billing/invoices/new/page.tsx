@@ -7,7 +7,7 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createTenantInvoiceAction } from '@/lib/admin/tenantInvoiceActions';
-import styles from '../billing.module.scss';
+import styles from '../../billing.module.scss';
 
 export const dynamic = 'force-dynamic';
 
