@@ -120,8 +120,8 @@ export default async function TenantDashboardPage() {
                   <StatusPill tone="neutral" icon={<UsersRound size={14} />}>
                     Add your first customer
                   </StatusPill>
-                  <Button variant="secondary" size="sm" as="a" href="/customers">
-                    Go to customers
+                  <Button variant="secondary" size="sm" as="a" href="/customers/new">
+                    Add customer
                   </Button>
                 </>
               )}
@@ -142,8 +142,8 @@ export default async function TenantDashboardPage() {
                   <Button variant="primary" as="a" href="/quotes">
                     Go to quotes
                   </Button>
-                  <Button variant="secondary" as="a" href="/customers">
-                    Customer directory
+                  <Button variant="secondary" as="a" href="/customers/new">
+                    Add customer
                   </Button>
                 </Stack>
               }

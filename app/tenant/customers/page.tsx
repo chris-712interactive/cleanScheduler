@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
+import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { CustomerListEmbedRow } from '@/lib/tenant/customerEmbedTypes';
-import { CustomerCreateForm } from './CustomerCreateForm';
 import styles from './customers.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -41,16 +41,22 @@ export default async function TenantCustomersPage() {
       <PageHeader
         title="Customers"
         description="Residential and commercial accounts you serve under this workspace."
+        actions={
+          <Button variant="primary" as="a" href="/customers/new">
+            Add customer
+          </Button>
+        }
       />
 
       <Stack gap={6}>
-        <Card title="Add customer" description="Creates a customer profile for this business only.">
-          <CustomerCreateForm tenantSlug={membership.tenantSlug} />
-        </Card>
-
         <Card title="Directory" description={`${customers.length} customer${customers.length === 1 ? '' : 's'}`}>
           {customers.length === 0 ? (
-            <p className={styles.empty}>No customers yet.</p>
+            <p className={styles.empty}>
+              No customers yet.{' '}
+              <Link href="/customers/new" className={styles.inlineLink}>
+                Add your first customer
+              </Link>
+            </p>
           ) : (
             <ul className={styles.list}>
               {customers.map((c) => {

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
@@ -37,7 +38,7 @@ export async function createTenantCustomer(
     return { error: 'Workspace and customer name are required.' };
   }
 
-  const membership = await requireTenantPortalAccess(slug, '/customers');
+  const membership = await requireTenantPortalAccess(slug, '/customers/new');
 
   const admin = createAdminClient();
 
@@ -130,7 +131,8 @@ export async function createTenantCustomer(
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/customers', 'page');
-  return { success: true };
+  revalidatePath('/tenant/customers/new', 'page');
+  redirect('/customers');
 }
 
 export async function updateTenantCustomer(
