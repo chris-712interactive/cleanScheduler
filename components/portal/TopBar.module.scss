@@ -72,16 +72,23 @@
 .brandMark {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
+  flex-shrink: 0;
   height: 28px;
+  max-width: min(42vw, 160px);
 
-  background-color: var(--color-brand-primary);
-  color: var(--color-text-on-brand);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  border-radius: var(--radius-md);
+  @include mq.up(md) {
+    height: 32px;
+    max-width: 180px;
+  }
+}
+
+.brandLogo {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .brandLabel {

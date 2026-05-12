@@ -58,8 +58,13 @@ export function TopBar({
         </Dialog.Root>
 
         <Link href={brandHref} className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">
-            cs
+          <span className={styles.brandMark}>
+            <img
+              src="/brand/logo.svg"
+              alt=""
+              className={styles.brandLogo}
+              decoding="async"
+            />
           </span>
           <span className={styles.brandLabel}>{brandLabel}</span>
         </Link>
