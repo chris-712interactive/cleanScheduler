@@ -146,6 +146,7 @@ export async function createTenantCustomer(
   }
 
   revalidatePath('/tenant', 'layout');
+  revalidatePath('/tenant', 'page');
   revalidatePath('/tenant/customers', 'page');
   revalidatePath('/tenant/customers/new', 'page');
   redirect('/customers');

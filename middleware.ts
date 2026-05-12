@@ -128,6 +128,13 @@ async function resolveUser(request: NextRequest): Promise<{
     supabaseUrl,
     supabaseAnonKey,
     {
+      global: {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, {
+            ...init,
+            cache: 'no-store',
+          }),
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();

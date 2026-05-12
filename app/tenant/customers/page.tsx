@@ -16,7 +16,7 @@ export default async function TenantCustomersPage() {
   const membership = await requireTenantPortalAccess(tenantSlug, '/customers');
 
   const supabase = await createClient();
-  const { data: rows } = await supabase
+  const { data: rows, error: listError } = await supabase
     .from('customers')
     .select(
       `
@@ -50,7 +50,12 @@ export default async function TenantCustomersPage() {
 
       <Stack gap={6}>
         <Card title="Directory" description={`${customers.length} customer${customers.length === 1 ? '' : 's'}`}>
-          {customers.length === 0 ? (
+          {listError ? (
+            <p className={styles.empty} role="alert">
+              Could not load customers ({listError.message}). Check Supabase RLS and table grants for the{' '}
+              <code>authenticated</code> role.
+            </p>
+          ) : customers.length === 0 ? (
             <p className={styles.empty}>
               No customers yet.{' '}
               <Link href="/customers/new" className={styles.inlineLink}>

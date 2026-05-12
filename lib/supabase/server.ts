@@ -27,6 +27,13 @@ export async function createClient() {
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
+      global: {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, {
+            ...init,
+            cache: 'no-store',
+          }),
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
