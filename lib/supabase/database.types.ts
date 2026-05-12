@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0009.
+ * Hand-maintained schema mirror for migrations 0001–0010.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -243,6 +243,69 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'tenant_memberships_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_customer_profiles: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          company_name: string | null;
+          service_address_line1: string | null;
+          service_address_line2: string | null;
+          service_city: string | null;
+          service_state: string | null;
+          service_postal_code: string | null;
+          preferred_contact_method: 'email' | 'phone' | 'sms' | null;
+          internal_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          company_name?: string | null;
+          service_address_line1?: string | null;
+          service_address_line2?: string | null;
+          service_city?: string | null;
+          service_state?: string | null;
+          service_postal_code?: string | null;
+          preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
+          internal_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          company_name?: string | null;
+          service_address_line1?: string | null;
+          service_address_line2?: string | null;
+          service_city?: string | null;
+          service_state?: string | null;
+          service_postal_code?: string | null;
+          preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
+          internal_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_customer_profiles_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: true;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_customer_profiles_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';

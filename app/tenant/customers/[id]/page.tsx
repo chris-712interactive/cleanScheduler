@@ -43,6 +43,16 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
         email,
         full_name,
         phone
+      ),
+      tenant_customer_profiles (
+        company_name,
+        service_address_line1,
+        service_address_line2,
+        service_city,
+        service_state,
+        service_postal_code,
+        preferred_contact_method,
+        internal_notes
       )
     `,
     )
@@ -60,6 +70,7 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
   if (!identity) {
     notFound();
   }
+  const profile = customer.tenant_customer_profiles;
 
   const displayName = identity.full_name ?? 'Unnamed';
   const email = identity.email ?? '';
@@ -84,6 +95,24 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
               { key: 'Customer ID', value: customer.id },
               { key: 'Status', value: customer.status },
               { key: 'Added', value: new Date(customer.created_at).toLocaleString() },
+              { key: 'Company', value: profile?.company_name || '—' },
+              {
+                key: 'Service address',
+                value:
+                  [
+                    profile?.service_address_line1,
+                    profile?.service_address_line2,
+                    profile?.service_city,
+                    profile?.service_state,
+                    profile?.service_postal_code,
+                  ]
+                    .filter(Boolean)
+                    .join(', ') || '—',
+              },
+              {
+                key: 'Preferred contact',
+                value: profile?.preferred_contact_method || '—',
+              },
             ]}
           />
         </Card>
@@ -97,6 +126,14 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
               email,
               phone,
               status: customer.status,
+              companyName: profile?.company_name ?? '',
+              serviceAddressLine1: profile?.service_address_line1 ?? '',
+              serviceAddressLine2: profile?.service_address_line2 ?? '',
+              serviceCity: profile?.service_city ?? '',
+              serviceState: profile?.service_state ?? '',
+              servicePostalCode: profile?.service_postal_code ?? '',
+              preferredContactMethod: profile?.preferred_contact_method ?? '',
+              internalNotes: profile?.internal_notes ?? '',
             }}
           />
         </Card>

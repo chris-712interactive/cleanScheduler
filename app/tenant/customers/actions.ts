@@ -4,10 +4,16 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import type { Tables } from '@/lib/supabase/database.types';
 
 export interface CustomerFormState {
   error?: string;
   success?: boolean;
+}
+
+function normalizeContactMethod(raw: string): Tables<'tenant_customer_profiles'>['preferred_contact_method'] {
+  if (raw === 'email' || raw === 'phone' || raw === 'sms') return raw;
+  return null;
 }
 
 export async function createTenantCustomer(
@@ -18,6 +24,14 @@ export async function createTenantCustomer(
   const fullName = String(formData.get('full_name') ?? '').trim();
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const phone = String(formData.get('phone') ?? '').trim();
+  const companyName = String(formData.get('company_name') ?? '').trim();
+  const serviceAddressLine1 = String(formData.get('service_address_line1') ?? '').trim();
+  const serviceAddressLine2 = String(formData.get('service_address_line2') ?? '').trim();
+  const serviceCity = String(formData.get('service_city') ?? '').trim();
+  const serviceState = String(formData.get('service_state') ?? '').trim();
+  const servicePostalCode = String(formData.get('service_postal_code') ?? '').trim();
+  const preferredContactMethod = normalizeContactMethod(String(formData.get('preferred_contact_method') ?? '').trim());
+  const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
   if (!slug || !fullName) {
     return { error: 'Workspace and customer name are required.' };
@@ -94,6 +108,26 @@ export async function createTenantCustomer(
     return { error: linkInsert.error.message };
   }
 
+  const profileInsert = await admin.from('tenant_customer_profiles').insert({
+    tenant_id: membership.tenantId,
+    customer_id: customerId,
+    company_name: companyName || null,
+    service_address_line1: serviceAddressLine1 || null,
+    service_address_line2: serviceAddressLine2 || null,
+    service_city: serviceCity || null,
+    service_state: serviceState || null,
+    service_postal_code: servicePostalCode || null,
+    preferred_contact_method: preferredContactMethod,
+    internal_notes: internalNotes || null,
+  });
+
+  if (profileInsert.error) {
+    await admin.from('customer_tenant_links').delete().eq('customer_id', customerId);
+    await admin.from('customers').delete().eq('id', customerId);
+    await admin.from('customer_identities').delete().eq('id', identityId);
+    return { error: profileInsert.error.message };
+  }
+
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/customers', 'page');
   return { success: true };
@@ -109,6 +143,14 @@ export async function updateTenantCustomer(
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const phone = String(formData.get('phone') ?? '').trim();
   const status = String(formData.get('status') ?? 'active').trim();
+  const companyName = String(formData.get('company_name') ?? '').trim();
+  const serviceAddressLine1 = String(formData.get('service_address_line1') ?? '').trim();
+  const serviceAddressLine2 = String(formData.get('service_address_line2') ?? '').trim();
+  const serviceCity = String(formData.get('service_city') ?? '').trim();
+  const serviceState = String(formData.get('service_state') ?? '').trim();
+  const servicePostalCode = String(formData.get('service_postal_code') ?? '').trim();
+  const preferredContactMethod = normalizeContactMethod(String(formData.get('preferred_contact_method') ?? '').trim());
+  const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
   if (!slug || !customerId || !fullName) {
     return { error: 'Workspace, customer, and full name are required.' };
@@ -146,6 +188,26 @@ export async function updateTenantCustomer(
 
   if (customerUpdate.error) {
     return { error: customerUpdate.error.message };
+  }
+
+  const profileUpsert = await admin.from('tenant_customer_profiles').upsert(
+    {
+      tenant_id: membership.tenantId,
+      customer_id: customerId,
+      company_name: companyName || null,
+      service_address_line1: serviceAddressLine1 || null,
+      service_address_line2: serviceAddressLine2 || null,
+      service_city: serviceCity || null,
+      service_state: serviceState || null,
+      service_postal_code: servicePostalCode || null,
+      preferred_contact_method: preferredContactMethod,
+      internal_notes: internalNotes || null,
+    },
+    { onConflict: 'customer_id' },
+  );
+
+  if (profileUpsert.error) {
+    return { error: profileUpsert.error.message };
   }
 
   revalidatePath('/tenant', 'layout');
