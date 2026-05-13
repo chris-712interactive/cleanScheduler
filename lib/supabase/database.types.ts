@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0017.
+ * Hand-maintained schema mirror for migrations 0001–0018.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -588,6 +588,41 @@ export type Database = {
           },
         ];
       };
+      tenant_operational_settings: {
+        Row: {
+          tenant_id: string;
+          accepted_quote_schedule_mode: Database['public']['Enums']['accepted_quote_schedule_mode'];
+          invoice_expectation: Database['public']['Enums']['tenant_invoice_expectation'];
+          allowed_customer_payment_methods: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          accepted_quote_schedule_mode?: Database['public']['Enums']['accepted_quote_schedule_mode'];
+          invoice_expectation?: Database['public']['Enums']['tenant_invoice_expectation'];
+          allowed_customer_payment_methods?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          accepted_quote_schedule_mode?: Database['public']['Enums']['accepted_quote_schedule_mode'];
+          invoice_expectation?: Database['public']['Enums']['tenant_invoice_expectation'];
+          allowed_customer_payment_methods?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_operational_settings_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_customer_profiles: {
         Row: {
           id: string;
@@ -1150,6 +1185,8 @@ export type Database = {
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';
       tenant_payment_method: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
       marketing_inquiry_status: 'new' | 'contacted' | 'closed';
+      accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
+      tenant_invoice_expectation: 'prepay' | 'pay_after_service';
     };
     CompositeTypes: {
       [_ in never]: never;
