@@ -54,6 +54,17 @@ export function parseTenantInvoiceExpectation(raw: string): TenantInvoiceExpecta
   return raw === 'prepay' ? 'prepay' : 'pay_after_service';
 }
 
+export function parseQuoteEmailNotifyFromForm(formData: FormData) {
+  return {
+    email_notify_quote_sent: formData.get('email_notify_quote_sent') === 'on',
+    email_notify_quote_accepted: formData.get('email_notify_quote_accepted') === 'on',
+    email_notify_quote_declined: formData.get('email_notify_quote_declined') === 'on',
+    sms_notify_quote_sent: formData.get('sms_notify_quote_sent') === 'on',
+    sms_notify_quote_accepted: formData.get('sms_notify_quote_accepted') === 'on',
+    sms_notify_quote_declined: formData.get('sms_notify_quote_declined') === 'on',
+  };
+}
+
 /** Coerce DB text[] to ordered unique payment methods (invalid entries dropped). */
 export function normalizePaymentMethodsFromDb(raw: string[] | null | undefined): TenantPaymentMethod[] {
   if (!raw?.length) return ['card', 'cash', 'check', 'zelle'];

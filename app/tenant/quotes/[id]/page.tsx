@@ -17,7 +17,7 @@ import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
-import { quoteHeaderPricingDefaultsFromQuote } from '../QuoteHeaderPricingFields';
+import { quoteHeaderPricingDefaultsFromQuote } from '@/lib/tenant/quoteHeaderPricingDefaults';
 import styles from '../quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -115,7 +115,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const [customersRes, propertiesRes, snapRes, versionsRes] = await Promise.all([
+  const [customersRes, propertiesRes, snapRes, eSignRes, versionsRes] = await Promise.all([
     supabase
       .from('customers')
       .select(
@@ -139,6 +139,11 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     supabase
       .from('tenant_quote_acceptance_snapshots')
       .select('captured_at, payload')
+      .eq('quote_id', id)
+      .maybeSingle(),
+    supabase
+      .from('tenant_quote_acceptance_e_signatures')
+      .select('signature_kind, typed_full_name, drawn_png_base64, client_ip, user_agent, created_at')
       .eq('quote_id', id)
       .maybeSingle(),
     supabase
@@ -166,6 +171,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   const quoteLineItems = [...(row.tenant_quote_line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order);
 
   const acceptanceSnapshot = snapRes.data;
+  const eSign = eSignRes.data;
   const versionRows = versionsRes.data ?? [];
 
   const summaryItems = [
@@ -243,6 +249,38 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           </Card>
         ) : null}
 
+        {eSign && row.status === 'accepted' ? (
+          <Card
+            title="Electronic signature"
+            description="Captured when the customer accepted this quote in the portal."
+          >
+            <KeyValueList
+              items={[
+                {
+                  key: 'Signed at',
+                  value: new Date(eSign.created_at).toLocaleString(),
+                },
+                {
+                  key: 'Method',
+                  value: eSign.signature_kind === 'drawn_png' ? 'Drawn' : 'Typed full name',
+                },
+                ...(eSign.signature_kind === 'typed_name' && eSign.typed_full_name
+                  ? [{ key: 'Name on file', value: eSign.typed_full_name }]
+                  : []),
+                ...(eSign.client_ip ? [{ key: 'IP address', value: eSign.client_ip }] : []),
+                ...(eSign.user_agent ? [{ key: 'Browser', value: String(eSign.user_agent).slice(0, 200) }] : []),
+              ]}
+            />
+            {eSign.signature_kind === 'drawn_png' && eSign.drawn_png_base64 ? (
+              <div className={styles.eSignPreview}>
+                <p className={styles.eSignPreviewLabel}>Signature image</p>
+                {/* eslint-disable-next-line @next/next/no-img-element -- data URL from DB */}
+                <img src={eSign.drawn_png_base64} alt="Customer signature" />
+              </div>
+            ) : null}
+          </Card>
+        ) : null}
+
         {quoteLineItems.length > 0 ? (
           <Card title="Services" description="Priced lines for this revision.">
             <div className={styles.servicesTableWrap}>
@@ -305,15 +343,17 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
         </Card>
 
         <Card
-          title={row.is_locked ? 'Accepted quote' : 'Edit quote'}
+          title={row.is_locked ? 'Accepted quote' : row.status === 'expired' ? 'Expired quote' : 'Edit quote'}
           description={
             row.is_locked
               ? 'Accepted quotes are frozen. Create a new version above to propose changes.'
-              : 'Update status, amount, customer, service site, and line items.'
+              : row.status === 'expired'
+                ? 'Expired quotes cannot be edited. Create a new version from version history with a new valid-until date if the job is still open.'
+                : 'Update status, amount, customer, service site, and line items.'
           }
         >
           <QuoteEditForm
-            readOnly={row.is_locked}
+            readOnly={row.is_locked || row.status === 'expired'}
             tenantSlug={membership.tenantSlug}
             customerOptions={customerOptions}
             customerPropertyGroups={customerPropertyGroups}

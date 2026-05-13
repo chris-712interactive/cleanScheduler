@@ -42,7 +42,15 @@ function groupQuotesByStatus(quotes: QuoteListEmbedRow[]): Record<QuoteStatus, Q
   return map;
 }
 
-function BoardQuoteCardFace({ quote, variant }: { quote: QuoteListEmbedRow; variant: 'list' | 'overlay' }) {
+function BoardQuoteCardFace({
+  quote,
+  variant,
+  dragDisabled,
+}: {
+  quote: QuoteListEmbedRow;
+  variant: 'list' | 'overlay';
+  dragDisabled?: boolean;
+}) {
   const name = quote.customers?.customer_identities?.full_name?.trim();
   const who = name ? name : quote.customer_id ? 'Linked customer' : 'No customer';
   const prop = quote.tenant_customer_properties;
@@ -65,7 +73,7 @@ function BoardQuoteCardFace({ quote, variant }: { quote: QuoteListEmbedRow; vari
         {formatQuoteMoney(quote.amount_cents, quote.currency)} · {new Date(quote.created_at).toLocaleDateString()}
         {quote.version_number > 1 ? ` · v${quote.version_number}` : ''}
       </p>
-      {variant === 'list' ? (
+      {variant === 'list' && !dragDisabled ? (
         <p className={styles.boardCardHint} aria-hidden="true">
           Drag to another column
         </p>
@@ -75,9 +83,11 @@ function BoardQuoteCardFace({ quote, variant }: { quote: QuoteListEmbedRow; vari
 }
 
 function DraggableQuoteCard({ quote, pending }: { quote: QuoteListEmbedRow; pending: boolean }) {
+  const dragDisabled = quote.is_locked || quote.status === 'expired';
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: quote.id,
     data: { type: 'quote', status: quote.status },
+    disabled: dragDisabled,
   });
 
   return (
@@ -89,7 +99,7 @@ function DraggableQuoteCard({ quote, pending }: { quote: QuoteListEmbedRow; pend
       {...listeners}
       {...attributes}
     >
-      <BoardQuoteCardFace quote={quote} variant="list" />
+      <BoardQuoteCardFace quote={quote} variant="list" dragDisabled={dragDisabled} />
     </article>
   );
 }
@@ -106,6 +116,7 @@ function BoardColumn({
   const { setNodeRef, isOver } = useDroppable({
     id: columnDroppableId(status),
     data: { type: 'column', status },
+    disabled: status === 'accepted',
   });
 
   return (
@@ -203,7 +214,7 @@ function MobileQuoteCard({
             }}
           >
             {QUOTE_BOARD_COLUMN_ORDER.map((s) => (
-              <option key={s} value={s}>
+              <option key={s} value={s} disabled={s === 'accepted'}>
                 {QUOTE_STATUS_LABEL[s]}
               </option>
             ))}
@@ -249,6 +260,11 @@ export function QuotesBoard({ tenantSlug, quotes }: { tenantSlug: string; quotes
       setBoardError(null);
       setPendingQuoteId(quoteId);
       startTransition(async () => {
+        if (nextStatus === 'accepted') {
+          setPendingQuoteId(null);
+          setBoardError('Accepted is only available when the customer signs in the customer portal.');
+          return;
+        }
         const res = await moveTenantQuoteStatus(tenantSlug, quoteId, nextStatus);
         setPendingQuoteId(null);
         if (!res.ok) {

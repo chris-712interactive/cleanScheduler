@@ -26,6 +26,12 @@ export function OperationalSettingsForm({
     accepted_quote_schedule_mode: AcceptedQuoteScheduleMode;
     invoice_expectation: TenantInvoiceExpectation;
     allowed_customer_payment_methods: TenantPaymentMethod[];
+    email_notify_quote_sent: boolean;
+    email_notify_quote_accepted: boolean;
+    email_notify_quote_declined: boolean;
+    sms_notify_quote_sent: boolean;
+    sms_notify_quote_accepted: boolean;
+    sms_notify_quote_declined: boolean;
   };
 }) {
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
@@ -86,6 +92,69 @@ export function OperationalSettingsForm({
               <span>{INVOICE_EXPECTATION_LABEL[value]}</span>
             </label>
           ))}
+        </div>
+      </fieldset>
+
+      <fieldset className={styles.opsFieldset}>
+        <legend className={styles.opsLegend}>Quote email notifications (Twilio SendGrid)</legend>
+        <p className={styles.opsIntro}>
+          When enabled, the app sends transactional email using your server&apos;s SendGrid configuration.
+          Quote &quot;sent&quot; goes to the customer; accept/decline notices go to your workspace onboarding
+          email when available.
+        </p>
+        <div className={styles.opsCheckboxGrid}>
+          <label className={styles.opsCheckbox}>
+            <input type="checkbox" name="email_notify_quote_sent" defaultChecked={snapshot.email_notify_quote_sent} />
+            <span>Email customer when a quote is marked Sent</span>
+          </label>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="email_notify_quote_accepted"
+              defaultChecked={snapshot.email_notify_quote_accepted}
+            />
+            <span>Email your team when a customer accepts a quote</span>
+          </label>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="email_notify_quote_declined"
+              defaultChecked={snapshot.email_notify_quote_declined}
+            />
+            <span>Email your team when a customer declines a quote</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset className={styles.opsFieldset}>
+        <legend className={styles.opsLegend}>Quote SMS notifications (saved — not sent yet)</legend>
+        <p className={styles.opsIntro}>
+          Twilio SMS delivery for these events is planned; toggles are stored now so you can choose preferences
+          ahead of implementation.
+        </p>
+        <div className={styles.opsCheckboxGrid}>
+          <label className={styles.opsCheckbox}>
+            <input type="checkbox" name="sms_notify_quote_sent" defaultChecked={snapshot.sms_notify_quote_sent} disabled />
+            <span>SMS customer when a quote is marked Sent</span>
+          </label>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="sms_notify_quote_accepted"
+              defaultChecked={snapshot.sms_notify_quote_accepted}
+              disabled
+            />
+            <span>SMS your team when a customer accepts</span>
+          </label>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="sms_notify_quote_declined"
+              defaultChecked={snapshot.sms_notify_quote_declined}
+              disabled
+            />
+            <span>SMS your team when a customer declines</span>
+          </label>
         </div>
       </fieldset>
 

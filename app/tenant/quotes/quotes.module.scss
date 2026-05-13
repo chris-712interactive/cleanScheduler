@@ -550,3 +550,38 @@
   font-weight: 600;
   padding: 0;
 }
+
+.customerSourceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.customerSourceOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.eSignPreview {
+  margin-top: var(--space-4);
+}
+
+.eSignPreviewLabel {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.eSignPreview img {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}

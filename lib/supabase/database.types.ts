@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0019.
+ * Hand-maintained schema mirror for migrations 0001–0021.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -594,6 +594,12 @@ export type Database = {
           accepted_quote_schedule_mode: Database['public']['Enums']['accepted_quote_schedule_mode'];
           invoice_expectation: Database['public']['Enums']['tenant_invoice_expectation'];
           allowed_customer_payment_methods: string[];
+          email_notify_quote_sent: boolean;
+          email_notify_quote_accepted: boolean;
+          email_notify_quote_declined: boolean;
+          sms_notify_quote_sent: boolean;
+          sms_notify_quote_accepted: boolean;
+          sms_notify_quote_declined: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -602,6 +608,12 @@ export type Database = {
           accepted_quote_schedule_mode?: Database['public']['Enums']['accepted_quote_schedule_mode'];
           invoice_expectation?: Database['public']['Enums']['tenant_invoice_expectation'];
           allowed_customer_payment_methods?: string[];
+          email_notify_quote_sent?: boolean;
+          email_notify_quote_accepted?: boolean;
+          email_notify_quote_declined?: boolean;
+          sms_notify_quote_sent?: boolean;
+          sms_notify_quote_accepted?: boolean;
+          sms_notify_quote_declined?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -610,6 +622,12 @@ export type Database = {
           accepted_quote_schedule_mode?: Database['public']['Enums']['accepted_quote_schedule_mode'];
           invoice_expectation?: Database['public']['Enums']['tenant_invoice_expectation'];
           allowed_customer_payment_methods?: string[];
+          email_notify_quote_sent?: boolean;
+          email_notify_quote_accepted?: boolean;
+          email_notify_quote_declined?: boolean;
+          sms_notify_quote_sent?: boolean;
+          sms_notify_quote_accepted?: boolean;
+          sms_notify_quote_declined?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -835,6 +853,57 @@ export type Database = {
           },
         ];
       };
+      tenant_quote_acceptance_e_signatures: {
+        Row: {
+          quote_id: string;
+          tenant_id: string;
+          signer_auth_user_id: string | null;
+          signature_kind: Database['public']['Enums']['quote_acceptance_signature_kind'];
+          typed_full_name: string | null;
+          drawn_png_base64: string | null;
+          client_ip: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          quote_id: string;
+          tenant_id?: string;
+          signer_auth_user_id?: string | null;
+          signature_kind: Database['public']['Enums']['quote_acceptance_signature_kind'];
+          typed_full_name?: string | null;
+          drawn_png_base64?: string | null;
+          client_ip?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          quote_id?: string;
+          tenant_id?: string;
+          signer_auth_user_id?: string | null;
+          signature_kind?: Database['public']['Enums']['quote_acceptance_signature_kind'];
+          typed_full_name?: string | null;
+          drawn_png_base64?: string | null;
+          client_ip?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_quote_acceptance_e_signatures_quote_id_fkey';
+            columns: ['quote_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenant_quotes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_quote_acceptance_e_signatures_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_quote_line_items: {
         Row: {
           id: string;
@@ -899,7 +968,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
-          customer_id: string | null;
+          customer_id: string;
           property_id: string | null;
           title: string;
           status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
@@ -924,7 +993,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
-          customer_id?: string | null;
+          customer_id: string;
           property_id?: string | null;
           title: string;
           status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
@@ -949,7 +1018,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
-          customer_id?: string | null;
+          customer_id?: string;
           property_id?: string | null;
           title?: string;
           status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
@@ -1175,13 +1244,35 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      expire_sent_quotes_past_valid_until: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      tenant_quote_create_with_line_items: {
+        Args: {
+          p_tenant_id: string;
+          p_customer_id: string;
+          p_property_id: string | null;
+          p_title: string;
+          p_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+          p_amount_cents: number | null;
+          p_notes: string | null;
+          p_valid_until: string | null;
+          p_tax_mode: Database['public']['Enums']['quote_tax_mode'];
+          p_tax_rate_bps: number;
+          p_quote_discount_kind: Database['public']['Enums']['quote_discount_kind'];
+          p_quote_discount_value: number;
+          p_line_items: Json;
+        };
+        Returns: string;
+      };
       tenant_quote_save_with_line_items: {
         Args: {
           p_quote_id: string;
           p_tenant_id: string;
           p_title: string;
           p_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
-          p_customer_id: string | null;
+          p_customer_id: string;
           p_property_id: string | null;
           p_amount_cents: number | null;
           p_notes: string | null;
@@ -1210,6 +1301,7 @@ export type Database = {
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';
       tenant_payment_method: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
       marketing_inquiry_status: 'new' | 'contacted' | 'closed';
+      quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';
       accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
       tenant_invoice_expectation: 'prepay' | 'pay_after_service';
     };

@@ -19,7 +19,9 @@ export default async function TenantSettingsPage() {
   const supabase = createTenantPortalDbClient();
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
-    .select('accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods')
+    .select(
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined',
+    )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
@@ -28,11 +30,23 @@ export default async function TenantSettingsPage() {
         accepted_quote_schedule_mode: opsRow.accepted_quote_schedule_mode,
         invoice_expectation: opsRow.invoice_expectation,
         allowed_customer_payment_methods: normalizePaymentMethodsFromDb(opsRow.allowed_customer_payment_methods),
+        email_notify_quote_sent: opsRow.email_notify_quote_sent,
+        email_notify_quote_accepted: opsRow.email_notify_quote_accepted,
+        email_notify_quote_declined: opsRow.email_notify_quote_declined,
+        sms_notify_quote_sent: opsRow.sms_notify_quote_sent,
+        sms_notify_quote_accepted: opsRow.sms_notify_quote_accepted,
+        sms_notify_quote_declined: opsRow.sms_notify_quote_declined,
       }
     : {
         accepted_quote_schedule_mode: 'prompt_staff' as const,
         invoice_expectation: 'pay_after_service' as const,
         allowed_customer_payment_methods: normalizePaymentMethodsFromDb(undefined),
+        email_notify_quote_sent: true,
+        email_notify_quote_accepted: true,
+        email_notify_quote_declined: true,
+        sms_notify_quote_sent: false,
+        sms_notify_quote_accepted: false,
+        sms_notify_quote_declined: false,
       };
 
   return (
@@ -62,7 +76,7 @@ export default async function TenantSettingsPage() {
 
         <Card
           title="Quotes, scheduling & customer payments"
-          description="Defaults for how your team works after a quote is accepted, how you usually invoice, and which payment methods customers may choose. (Enforcement in customer flows comes in a follow-up.)"
+          description="Defaults for quotes, scheduling, payments, and Twilio SendGrid email notifications. SMS toggles are stored for a future release."
         >
           <OperationalSettingsForm tenantSlug={membership.tenantSlug} snapshot={opsSnapshot} />
         </Card>

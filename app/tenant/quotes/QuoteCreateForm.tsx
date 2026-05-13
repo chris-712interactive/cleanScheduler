@@ -31,15 +31,19 @@ export function QuoteCreateForm({
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
   useRefreshOnServerActionSuccess(state.success);
 
+  const [customerSource, setCustomerSource] = useState<'existing' | 'new'>('existing');
   const [customerId, setCustomerId] = useState('');
 
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
   }, [customerPropertyGroups, customerId]);
 
+  const effectiveCustomerId = customerSource === 'existing' ? customerId : '';
+
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="customer_source" value={customerSource} />
       {state.error ? (
         <p className={styles.error} role="alert">
           {state.error}
@@ -62,34 +66,111 @@ export function QuoteCreateForm({
         placeholder="Deep clean — 3 BR townhouse"
       />
 
-      <label className={styles.label} htmlFor="quote_customer">
-        Customer (optional)
-      </label>
-      <select
-        id="quote_customer"
-        name="customer_id"
-        className={styles.select}
-        value={customerId}
-        onChange={(e) => setCustomerId(e.target.value)}
-      >
-        <option value="">— None —</option>
-        {customerOptions.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.label}
-          </option>
-        ))}
-      </select>
+      <fieldset className={styles.pricingBlock}>
+        <legend className={styles.pricingLegend}>Customer</legend>
+        <p className={styles.hint}>
+          A customer is required on every quote so we can send the proposal and notifications. Pick someone
+          already in your CRM, or create a minimal profile inline (you can add addresses later on their
+          profile).
+        </p>
+        <div className={styles.customerSourceRow}>
+          <label className={styles.customerSourceOption}>
+            <input
+              type="radio"
+              name="customer_source_radio"
+              checked={customerSource === 'existing'}
+              onChange={() => setCustomerSource('existing')}
+            />
+            <span>Existing customer</span>
+          </label>
+          <label className={styles.customerSourceOption}>
+            <input
+              type="radio"
+              name="customer_source_radio"
+              checked={customerSource === 'new'}
+              onChange={() => {
+                setCustomerSource('new');
+                setCustomerId('');
+              }}
+            />
+            <span>New customer (inline)</span>
+          </label>
+        </div>
+
+        {customerSource === 'existing' ? (
+          <>
+            <label className={styles.label} htmlFor="quote_customer">
+              Customer
+            </label>
+            <select
+              id="quote_customer"
+              name="customer_id"
+              className={styles.select}
+              required
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+            >
+              <option value="" disabled>
+                — Select —
+              </option>
+              {customerOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : (
+          <>
+            <input type="hidden" name="customer_id" value="" />
+            <label className={styles.label} htmlFor="inline_customer_full_name">
+              Full name
+            </label>
+            <input
+              id="inline_customer_full_name"
+              name="inline_customer_full_name"
+              className={styles.input}
+              required
+              autoComplete="name"
+              placeholder="Jane Customer"
+            />
+            <label className={styles.label} htmlFor="inline_customer_email">
+              Email
+            </label>
+            <input
+              id="inline_customer_email"
+              name="inline_customer_email"
+              type="email"
+              className={styles.input}
+              required
+              autoComplete="email"
+              placeholder="jane@email.com"
+            />
+            <label className={styles.label} htmlFor="inline_customer_phone">
+              Phone (optional)
+            </label>
+            <input
+              id="inline_customer_phone"
+              name="inline_customer_phone"
+              type="tel"
+              className={styles.input}
+              autoComplete="tel"
+              placeholder="555-0100"
+            />
+          </>
+        )}
+      </fieldset>
 
       <label className={styles.label} htmlFor="quote_property">
         Service location (optional)
       </label>
       <select
-        key={`prop_${customerId || 'none'}`}
+        key={`prop_${effectiveCustomerId || 'none'}`}
         id="quote_property"
         name="property_id"
         className={styles.select}
         defaultValue=""
-        disabled={!customerId || propertyOptions.length === 0}
+        disabled={!effectiveCustomerId || propertyOptions.length === 0}
       >
         <option value="">— None —</option>
         {propertyOptions.map((p) => (
@@ -98,7 +179,7 @@ export function QuoteCreateForm({
           </option>
         ))}
       </select>
-      {customerId && propertyOptions.length === 0 ? (
+      {effectiveCustomerId && propertyOptions.length === 0 ? (
         <p className={styles.hint}>Add service locations on the customer profile first.</p>
       ) : null}
 

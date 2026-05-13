@@ -14,6 +14,8 @@ import {
   parseQuoteDiscountKind,
   parseQuoteTaxMode,
 } from '@/lib/tenant/quoteHeaderPricingForm';
+import { createTenantCustomerInlineForQuote } from '@/lib/tenant/createTenantCustomerInline';
+import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 
 export interface QuoteFormState {
   error?: string;
@@ -58,6 +60,10 @@ export async function moveTenantQuoteStatus(
     return { ok: false, error: 'Quote not found in this workspace.' };
   }
 
+  if (existing.status === 'expired') {
+    return { ok: false, error: 'This quote has expired and cannot be changed. Create a new version from the quote thread if needed.' };
+  }
+
   if (existing.is_locked) {
     return {
       ok: false,
@@ -70,6 +76,14 @@ export async function moveTenantQuoteStatus(
     return { ok: true };
   }
 
+  if (nextStatus === 'accepted') {
+    return {
+      ok: false,
+      error:
+        'Quotes can only be marked accepted from the customer portal after the customer signs. Share the quote as Sent and ask them to accept there.',
+    };
+  }
+
   const upd = await admin
     .from('tenant_quotes')
     .update({ status: nextStatus })
@@ -78,6 +92,22 @@ export async function moveTenantQuoteStatus(
 
   if (upd.error) {
     return { ok: false, error: upd.error.message };
+  }
+
+  if (nextStatus === 'sent' && existing.status !== 'sent') {
+    const { data: qrow } = await admin
+      .from('tenant_quotes')
+      .select('title, customer_id')
+      .eq('id', quoteId)
+      .maybeSingle();
+    if (qrow?.customer_id) {
+      void sendQuoteNotificationEmail(admin, 'quote_sent', {
+        tenantId: membership.tenantId,
+        quoteId,
+        quoteTitle: (qrow.title as string) ?? 'Quote',
+        customerId: qrow.customer_id as string,
+      });
+    }
   }
 
   revalidatePath('/tenant', 'layout');
@@ -160,11 +190,15 @@ function parseQuoteHeaderPricingFromForm(formData: FormData):
 export async function createTenantQuote(_prev: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
   const title = String(formData.get('title') ?? '').trim();
+  const customerSource = String(formData.get('customer_source') ?? 'existing').trim();
   const customerRaw = String(formData.get('customer_id') ?? '').trim();
   const propertyRaw = String(formData.get('property_id') ?? '').trim();
   const amountRaw = String(formData.get('amount_dollars') ?? '');
   const notes = String(formData.get('notes') ?? '').trim();
   const validUntilRaw = String(formData.get('valid_until') ?? '');
+  const inlineName = String(formData.get('inline_customer_full_name') ?? '').trim();
+  const inlineEmail = String(formData.get('inline_customer_email') ?? '').trim().toLowerCase();
+  const inlinePhone = String(formData.get('inline_customer_phone') ?? '').trim();
 
   if (!slug || !title) {
     return { error: 'Workspace and quote title are required.' };
@@ -173,8 +207,24 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
   const membership = await requireTenantPortalAccess(slug, '/quotes/new');
   const admin = createAdminClient();
 
-  let customerId: string | null = null;
-  if (customerRaw) {
+  let customerId: string;
+  if (customerSource === 'new') {
+    const created = await createTenantCustomerInlineForQuote({
+      admin,
+      tenantId: membership.tenantId,
+      fullName: inlineName,
+      email: inlineEmail,
+      phone: inlinePhone,
+    });
+    if (!created.ok) {
+      return { error: created.error };
+    }
+    customerId = created.customerId;
+    revalidatePath('/tenant/customers', 'page');
+  } else {
+    if (!customerRaw) {
+      return { error: 'Select a customer or create a new one before saving the quote.' };
+    }
     const ok = await assertCustomerInTenant(admin, membership.tenantId, customerRaw);
     if (!ok) return { error: 'Customer not found in this workspace.' };
     customerId = customerRaw;
@@ -182,9 +232,6 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
 
   let propertyId: string | null = null;
   if (propertyRaw) {
-    if (!customerId) {
-      return { error: 'Choose a customer before selecting a service location.' };
-    }
     const ok = await assertPropertyForCustomer(admin, membership.tenantId, customerId, propertyRaw);
     if (!ok) return { error: 'Service location does not belong to this customer.' };
     propertyId = propertyRaw;
@@ -222,48 +269,37 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
       ? null
       : totals.total_cents;
 
-  const insert = await admin
-    .from('tenant_quotes')
-    .insert({
-      tenant_id: membership.tenantId,
-      customer_id: customerId,
-      property_id: propertyId,
-      title,
-      status: 'draft',
-      amount_cents: amountCents,
-      tax_mode: pricing.tax_mode,
-      tax_rate_bps: pricing.tax_rate_bps,
-      quote_discount_kind: pricing.quote_discount_kind,
-      quote_discount_value: pricing.quote_discount_value,
-      notes: notes || null,
-      valid_until: validUntil,
-    })
-    .select('id')
-    .single();
+  const linePayload = parsedLines.lines.map((l) => ({
+    sort_order: l.sort_order,
+    service_label: l.service_label,
+    frequency: l.frequency,
+    frequency_detail: l.frequency_detail,
+    amount_cents: l.amount_cents,
+    line_discount_kind: l.line_discount_kind,
+    line_discount_value: l.line_discount_value,
+  }));
 
-  if (insert.error || !insert.data) {
-    return { error: insert.error?.message ?? 'Could not create quote.' };
+  const rpc = await admin.rpc('tenant_quote_create_with_line_items', {
+    p_tenant_id: membership.tenantId,
+    p_customer_id: customerId,
+    p_property_id: propertyId,
+    p_title: title,
+    p_status: 'draft',
+    p_amount_cents: amountCents,
+    p_notes: notes || null,
+    p_valid_until: validUntil,
+    p_tax_mode: pricing.tax_mode,
+    p_tax_rate_bps: pricing.tax_rate_bps,
+    p_quote_discount_kind: pricing.quote_discount_kind,
+    p_quote_discount_value: pricing.quote_discount_value,
+    p_line_items: linePayload,
+  });
+
+  if (rpc.error) {
+    return { error: rpc.error.message };
   }
 
-  const newId = insert.data.id as string;
-
-  if (parsedLines.lines.length > 0) {
-    const lineRows = parsedLines.lines.map((l) => ({
-      quote_id: newId,
-      sort_order: l.sort_order,
-      service_label: l.service_label,
-      frequency: l.frequency,
-      frequency_detail: l.frequency_detail,
-      amount_cents: l.amount_cents,
-      line_discount_kind: l.line_discount_kind,
-      line_discount_value: l.line_discount_value,
-    }));
-    const li = await admin.from('tenant_quote_line_items').insert(lineRows);
-    if (li.error) {
-      await admin.from('tenant_quotes').delete().eq('id', newId).eq('tenant_id', membership.tenantId);
-      return { error: li.error.message };
-    }
-  }
+  const newId = rpc.data as string;
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
@@ -291,18 +327,32 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     ? (statusRaw as Database['public']['Enums']['quote_status'])
     : 'draft';
 
+  if (status === 'accepted') {
+    return {
+      error:
+        'Quotes can only be marked accepted from the customer portal after the customer signs. Leave status as Sent until they accept.',
+    };
+  }
+
   const membership = await requireTenantPortalAccess(slug, `/quotes/${quoteId}`);
   const admin = createAdminClient();
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
-    .select('id, is_locked')
+    .select('id, is_locked, status, customer_id, title')
     .eq('id', quoteId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
   if (fetchError || !existing) {
     return { error: 'Quote not found in this workspace.' };
+  }
+
+  if ((existing.status as string) === 'expired') {
+    return {
+      error:
+        'This quote has expired and cannot be edited. Create a new version from the quote thread with a new valid-until date if the customer still wants the work.',
+    };
   }
 
   if (existing.is_locked) {
@@ -312,18 +362,17 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     };
   }
 
-  let customerId: string | null = null;
-  if (customerRaw) {
-    const ok = await assertCustomerInTenant(admin, membership.tenantId, customerRaw);
-    if (!ok) return { error: 'Customer not found in this workspace.' };
-    customerId = customerRaw;
+  const priorStatus = existing.status as Database['public']['Enums']['quote_status'];
+
+  if (!customerRaw) {
+    return { error: 'A customer is required on every quote.' };
   }
+  const okCust = await assertCustomerInTenant(admin, membership.tenantId, customerRaw);
+  if (!okCust) return { error: 'Customer not found in this workspace.' };
+  const customerId = customerRaw;
 
   let propertyId: string | null = null;
   if (propertyRaw) {
-    if (!customerId) {
-      return { error: 'Choose a customer before selecting a service location.' };
-    }
     const ok = await assertPropertyForCustomer(admin, membership.tenantId, customerId, propertyRaw);
     if (!ok) return { error: 'Service location does not belong to this customer.' };
     propertyId = propertyRaw;
@@ -395,7 +444,22 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
           'This quote was accepted and cannot be edited. Use “Create new version” on the quote page to draft a follow-up quote.',
       };
     }
+    if (rpc.error.message?.includes('QUOTE_EXPIRED_IMMUTABLE')) {
+      return {
+        error:
+          'This quote has expired and cannot be edited. Create a new version from the quote thread if you need updated terms.',
+      };
+    }
     return { error: rpc.error.message };
+  }
+
+  if (priorStatus !== 'sent' && status === 'sent') {
+    void sendQuoteNotificationEmail(admin, 'quote_sent', {
+      tenantId: membership.tenantId,
+      quoteId,
+      quoteTitle: title,
+      customerId,
+    });
   }
 
   revalidatePath('/tenant', 'layout');

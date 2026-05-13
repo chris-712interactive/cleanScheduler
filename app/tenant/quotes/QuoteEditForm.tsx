@@ -6,7 +6,7 @@ import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { CustomerPropertyGroup } from './QuoteCreateForm';
 import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
-import { QUOTE_STATUS_OPTIONS } from '@/lib/tenant/quoteLabels';
+import { QUOTE_STATUS_LABEL, TENANT_QUOTE_STATUS_EDIT_OPTIONS } from '@/lib/tenant/quoteLabels';
 import type { Tables } from '@/lib/supabase/database.types';
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditor';
 import { QuoteHeaderPricingFields, type QuoteHeaderPricingDefaults } from './QuoteHeaderPricingFields';
@@ -71,12 +71,23 @@ export function QuoteEditForm({
     ? snapshot.propertyId
     : '';
 
+  const statusSelectOptions = useMemo(() => {
+    const base = [...TENANT_QUOTE_STATUS_EDIT_OPTIONS];
+    if (!base.some((o) => o.value === snapshot.status)) {
+      base.unshift({
+        value: snapshot.status,
+        label: `${QUOTE_STATUS_LABEL[snapshot.status]} (current)`,
+      });
+    }
+    return base;
+  }, [snapshot.status]);
+
   if (readOnly) {
     return (
       <div className={styles.readOnlyNotice} role="status">
-        This quote was accepted and is frozen for the record. Customer-facing totals and line items were
-        captured at acceptance. To change terms, use <strong>Create new version</strong> below (if this is
-        still the active accepted version).
+        This quote can no longer be edited here. Accepted quotes are frozen for the record; expired quotes
+        cannot be reopened. To change terms, use <strong>Create new version</strong> in version history when
+        that applies, or create a new quote for the customer.
       </div>
     );
   }
@@ -116,24 +127,27 @@ export function QuoteEditForm({
         className={styles.select}
         defaultValue={snapshot.status}
       >
-        {QUOTE_STATUS_OPTIONS.map(({ value, label }) => (
-          <option key={value} value={value}>
+        {statusSelectOptions.map(({ value, label }) => (
+          <option key={value} value={value} disabled={!TENANT_QUOTE_STATUS_EDIT_OPTIONS.some((o) => o.value === value)}>
             {label}
           </option>
         ))}
       </select>
 
       <label className={styles.label} htmlFor="edit_quote_customer">
-        Customer (optional)
+        Customer
       </label>
       <select
         id="edit_quote_customer"
         name="customer_id"
         className={styles.select}
+        required
         value={customerId}
         onChange={(e) => setCustomerId(e.target.value)}
       >
-        <option value="">— None —</option>
+        <option value="" disabled>
+          — Select —
+        </option>
         {customerOptions.map((c) => (
           <option key={c.id} value={c.id}>
             {c.label}

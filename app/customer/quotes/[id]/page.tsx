@@ -112,7 +112,8 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
 
   const status = quote.status as QuoteStatus;
   const isLocked = Boolean(quote.is_locked);
-  const canRespond = status === 'sent' && !isLocked;
+  const isExpired = status === 'expired';
+  const canRespond = status === 'sent' && !isLocked && !isExpired;
 
   return (
     <>
