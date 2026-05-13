@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { ArrowRight, Calendar, FileText } from 'lucide-react';
+import { ArrowRight, Calendar, ClipboardList, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Grid } from '@/components/layout/Grid';
@@ -111,6 +111,21 @@ export default async function CustomerHomePage() {
               </p>
               <Button variant="secondary" size="sm" as="a" href="/invoices">
                 Go to invoices
+              </Button>
+            </Stack>
+          </Card>
+
+          <Card title="Quotes" description="Estimates and proposals from your providers">
+            <Stack gap={3}>
+              <StatusPill tone="neutral" icon={<ClipboardList size={14} />}>
+                {ctx.customerIds.length === 0 ? 'No provider links yet' : 'View provider quotes'}
+              </StatusPill>
+              <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>
+                Review line items, version history, and the acceptance record when a quote has been
+                accepted.
+              </p>
+              <Button variant="secondary" size="sm" as="a" href="/quotes">
+                Go to quotes
               </Button>
             </Stack>
           </Card>

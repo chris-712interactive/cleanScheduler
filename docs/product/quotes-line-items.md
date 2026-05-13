@@ -16,7 +16,7 @@ Migrations: `0016_quote_line_items.sql` (lines), `0017_quote_acceptance_versioni
 
 **Versioning (`tenant_quotes`)**: `quote_group_id` groups all revisions; `version_number` orders them; `version_reason` documents why a new row exists (required in UI when creating an amendment from an accepted quote); `supersedes_quote_id` / `superseded_by_quote_id` link the chain. **Acceptance**: `is_locked`, `accepted_at`; `tenant_quote_acceptance_snapshots` stores a JSON payload (header fields + `line_items`) at the first transition to `accepted`.
 
-**Not yet in schema** (still planned): taxes, discounts, tenant ops/invoice/payment settings, **customer**-portal quote acceptance + payment capture (tenant staff can mark accepted and create new versions in the tenant portal today).
+**Not yet in schema** (still planned): taxes, discounts, tenant ops/invoice/payment settings. **Customer portal**: read-only quotes + history + acceptance record are **live** under `/quotes`; accept/decline actions and payment capture are still **tenant-only** / future flow.
 
 ## Form contract (tenant portal)
 
@@ -87,7 +87,7 @@ The UI implementation is `QuoteLineItemsEditor` (`app/tenant/quotes/QuoteLineIte
 Suggested order is indicative; adjust with engineering.
 
 1. **Schema + UI**: Tax mode / display on quote; discount fields (header and/or per line) including **kind** (`percent` | `fixed_cents` or equivalent) and value; total math and order of operations vs tax if both apply.
-2. **Customer-facing quotes**: Show version history and frozen acceptance payload in the **customer** portal (and optional PDF/email) when quotes are shared with customers.
+2. **Customer-facing quotes**: **Shipped (read-only)**: customer portal `/quotes` and `/quotes/[id]` list current quote heads (not superseded), show version history, acceptance snapshot line table when present, and live line items otherwise. **Remaining**: optional PDF/email; **accept / decline** actions and payment capture (see item 4).
 3. **Tenant settings**: Flags/tables for scheduling mode (auto vs prompt), invoice timing (prepay vs post), allowed payment methods.
 4. **Customer acceptance flow**: Capture payment preference/method where applicable; enforce tenant allow-list; tie acceptance events to snapshot/lock if acceptance happens outside the tenant app.
 
@@ -99,3 +99,4 @@ Suggested order is indicative; adjust with engineering.
 - `lib/tenant/quoteEmbedTypes.ts` (`QuoteDetailEmbedRow` includes nested line items)
 - `lib/supabase/database.types.ts`
 - `app/tenant/quotes/actions.ts`, `QuoteLineItemsEditor.tsx`, `QuoteCreateForm.tsx`, `QuoteEditForm.tsx`, `QuoteAmendmentForm.tsx`, `[id]/page.tsx`, `page.tsx`, `QuotesBoard.tsx`, `quotes.module.scss`
+- `app/customer/quotes/page.tsx`, `app/customer/quotes/[id]/page.tsx`, `app/customer/quotes/quotes.module.scss`, `lib/customer/quoteAcceptanceSnapshot.ts`, `app/customer/layout.tsx`, `app/customer/page.tsx`
