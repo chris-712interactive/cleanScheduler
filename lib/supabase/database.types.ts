@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0015.
+ * Hand-maintained schema mirror for migrations 0001–0016.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -761,6 +761,60 @@ export type Database = {
           },
         ];
       };
+      tenant_quote_line_items: {
+        Row: {
+          id: string;
+          quote_id: string;
+          tenant_id: string;
+          sort_order: number;
+          service_label: string;
+          frequency: Database['public']['Enums']['quote_line_frequency'];
+          frequency_detail: string | null;
+          amount_cents: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          quote_id: string;
+          tenant_id?: string;
+          sort_order?: number;
+          service_label: string;
+          frequency?: Database['public']['Enums']['quote_line_frequency'];
+          frequency_detail?: string | null;
+          amount_cents: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          quote_id?: string;
+          tenant_id?: string;
+          sort_order?: number;
+          service_label?: string;
+          frequency?: Database['public']['Enums']['quote_line_frequency'];
+          frequency_detail?: string | null;
+          amount_cents?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_quote_line_items_quote_id_fkey';
+            columns: ['quote_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_quotes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_quote_line_items_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_quotes: {
         Row: {
           id: string;
@@ -1002,6 +1056,7 @@ export type Database = {
       tenant_billing_status: 'trialing' | 'active' | 'past_due' | 'canceled';
       platform_plan_tier: 'starter' | 'pro' | 'business';
       quote_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+      quote_line_frequency: 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';

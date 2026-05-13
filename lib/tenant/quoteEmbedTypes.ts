@@ -26,4 +26,10 @@ export type QuoteDetailEmbedRow = Tables<'tenant_quotes'> & {
         'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
       >
     | null;
+  tenant_quote_line_items:
+    | Pick<
+        Tables<'tenant_quote_line_items'>,
+        'id' | 'sort_order' | 'service_label' | 'frequency' | 'frequency_detail' | 'amount_cents'
+      >[]
+    | null;
 };

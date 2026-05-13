@@ -12,6 +12,7 @@ import type { QuoteDetailEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL } from '@/lib/tenant/quoteLabels';
+import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
 import { QuoteEditForm } from '../QuoteEditForm';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
 import styles from '../quotes.module.scss';
@@ -83,6 +84,14 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           city,
           state,
           postal_code
+        ),
+        tenant_quote_line_items (
+          id,
+          sort_order,
+          service_label,
+          frequency,
+          frequency_detail,
+          amount_cents
         )
       `,
       )
@@ -131,6 +140,8 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     ? formatPropertyAddressLine(row.tenant_customer_properties)
     : '';
 
+  const quoteLineItems = [...(row.tenant_quote_line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+
   return (
     <>
       <PageHeader
@@ -164,6 +175,33 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           />
         </Card>
 
+        {quoteLineItems.length > 0 ? (
+          <Card title="Services" description="Priced lines on this quote.">
+            <div className={styles.servicesTableWrap}>
+              <table className={styles.servicesTable}>
+                <thead>
+                  <tr>
+                    <th scope="col">Service</th>
+                    <th scope="col">Cadence</th>
+                    <th scope="col">Detail</th>
+                    <th scope="col">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quoteLineItems.map((line) => (
+                    <tr key={line.id}>
+                      <td>{line.service_label}</td>
+                      <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
+                      <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
+                      <td>{formatQuoteMoney(line.amount_cents, row.currency)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : null}
+
         <Card title="Edit quote" description="Update status, amount, customer, and service site.">
           <QuoteEditForm
             tenantSlug={membership.tenantSlug}
@@ -178,6 +216,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
               amountCents: row.amount_cents,
               notes: row.notes ?? '',
               validUntilYmd: toDateInputValue(row.valid_until),
+              lineItems: quoteLineItems,
             }}
           />
         </Card>

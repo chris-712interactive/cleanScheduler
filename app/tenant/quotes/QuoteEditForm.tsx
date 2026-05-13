@@ -7,9 +7,16 @@ import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { CustomerPropertyGroup } from './QuoteCreateForm';
 import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_STATUS_OPTIONS } from '@/lib/tenant/quoteLabels';
+import type { Tables } from '@/lib/supabase/database.types';
+import { QuoteLineItemsEditor } from './QuoteLineItemsEditor';
 import styles from './quotes.module.scss';
 
 const initial: QuoteFormState = {};
+
+export type QuoteEditLineItem = Pick<
+  Tables<'tenant_quote_line_items'>,
+  'id' | 'sort_order' | 'service_label' | 'frequency' | 'frequency_detail' | 'amount_cents'
+>;
 
 export interface QuoteEditSnapshot {
   quoteId: string;
@@ -20,6 +27,7 @@ export interface QuoteEditSnapshot {
   amountCents: number | null;
   notes: string;
   validUntilYmd: string;
+  lineItems: QuoteEditLineItem[];
 }
 
 function formatAmountField(cents: number | null): string {
@@ -133,9 +141,15 @@ export function QuoteEditForm({
         <p className={styles.hint}>Add service locations on the customer profile first.</p>
       ) : null}
 
+      <QuoteLineItemsEditor key={snapshot.quoteId} initialRows={snapshot.lineItems} />
+
       <label className={styles.label} htmlFor="edit_quote_amount">
-        Amount (USD)
+        Amount (USD, optional if lines above)
       </label>
+      <p className={styles.hint}>
+        If any service rows above have a name and amount, the saved quote total is the sum of those lines and
+        this field is ignored.
+      </p>
       <input
         id="edit_quote_amount"
         name="amount_dollars"

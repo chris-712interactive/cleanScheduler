@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
+import { parseQuoteLineItemsFromForm } from '@/lib/tenant/quoteLineItemsForm';
 
 export interface QuoteFormState {
   error?: string;
@@ -144,10 +145,21 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
     propertyId = propertyRaw;
   }
 
-  const parsed = parseOptionalDollarsToCents(amountRaw);
-  if (!parsed.ok) return { error: parsed.error };
+  const parsedLines = parseQuoteLineItemsFromForm(formData);
+  if (!parsedLines.ok) {
+    return { error: parsedLines.error };
+  }
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
+
+  let amountCents: number | null;
+  if (parsedLines.lines.length > 0) {
+    amountCents = parsedLines.total_cents;
+  } else {
+    const headerParsed = parseOptionalDollarsToCents(amountRaw);
+    if (!headerParsed.ok) return { error: headerParsed.error };
+    amountCents = headerParsed.cents;
+  }
 
   const insert = await admin
     .from('tenant_quotes')
@@ -157,7 +169,7 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
       property_id: propertyId,
       title,
       status: 'draft',
-      amount_cents: parsed.cents,
+      amount_cents: amountCents,
       notes: notes || null,
       valid_until: validUntil,
     })
@@ -169,6 +181,22 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
   }
 
   const newId = insert.data.id as string;
+
+  if (parsedLines.lines.length > 0) {
+    const lineRows = parsedLines.lines.map((l) => ({
+      quote_id: newId,
+      sort_order: l.sort_order,
+      service_label: l.service_label,
+      frequency: l.frequency,
+      frequency_detail: l.frequency_detail,
+      amount_cents: l.amount_cents,
+    }));
+    const li = await admin.from('tenant_quote_line_items').insert(lineRows);
+    if (li.error) {
+      await admin.from('tenant_quotes').delete().eq('id', newId).eq('tenant_id', membership.tenantId);
+      return { error: li.error.message };
+    }
+  }
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
@@ -227,10 +255,41 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     propertyId = propertyRaw;
   }
 
-  const parsed = parseOptionalDollarsToCents(amountRaw);
-  if (!parsed.ok) return { error: parsed.error };
+  const parsedLines = parseQuoteLineItemsFromForm(formData);
+  if (!parsedLines.ok) {
+    return { error: parsedLines.error };
+  }
+
+  let amountCents: number | null;
+  if (parsedLines.lines.length > 0) {
+    amountCents = parsedLines.total_cents;
+  } else {
+    const headerParsed = parseOptionalDollarsToCents(amountRaw);
+    if (!headerParsed.ok) return { error: headerParsed.error };
+    amountCents = headerParsed.cents;
+  }
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
+
+  const del = await admin.from('tenant_quote_line_items').delete().eq('quote_id', quoteId);
+  if (del.error) {
+    return { error: del.error.message };
+  }
+
+  if (parsedLines.lines.length > 0) {
+    const lineRows = parsedLines.lines.map((l) => ({
+      quote_id: quoteId,
+      sort_order: l.sort_order,
+      service_label: l.service_label,
+      frequency: l.frequency,
+      frequency_detail: l.frequency_detail,
+      amount_cents: l.amount_cents,
+    }));
+    const li = await admin.from('tenant_quote_line_items').insert(lineRows);
+    if (li.error) {
+      return { error: li.error.message };
+    }
+  }
 
   const upd = await admin
     .from('tenant_quotes')
@@ -239,7 +298,7 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
       status,
       customer_id: customerId,
       property_id: propertyId,
-      amount_cents: parsed.cents,
+      amount_cents: amountCents,
       notes: notes || null,
       valid_until: validUntil,
     })
