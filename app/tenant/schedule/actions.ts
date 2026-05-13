@@ -6,20 +6,14 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
 
+import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
+
 export interface ScheduleFormState {
   error?: string;
   success?: boolean;
 }
 
 const VISIT_STATUSES = new Set<Database['public']['Enums']['visit_status']>(['scheduled', 'completed', 'cancelled']);
-
-function parseDateTimeLocal(raw: string): string | null {
-  const t = raw.trim();
-  if (!t) return null;
-  const d = new Date(t);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
-}
 
 async function assertCustomer(admin: ReturnType<typeof createAdminClient>, tenantId: string, customerId: string) {
   const { data } = await admin.from('customers').select('id').eq('id', customerId).eq('tenant_id', tenantId).maybeSingle();
@@ -55,6 +49,7 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
   const title = String(formData.get('title') ?? '').trim() || 'Visit';
   const startsRaw = String(formData.get('starts_at') ?? '').trim();
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
+  const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
   const notes = String(formData.get('notes') ?? '').trim();
   const statusRaw = String(formData.get('status') ?? 'scheduled').trim();
 
@@ -89,8 +84,13 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
     quoteId = quoteRaw;
   }
 
-  const startsAt = parseDateTimeLocal(startsRaw);
-  const endsAt = parseDateTimeLocal(endsRaw);
+  const tzOffset = Number(tzOffsetRaw);
+  if (!Number.isFinite(tzOffset)) {
+    return { error: 'Missing timezone context. Please reload the page and try again.' };
+  }
+
+  const startsAt = parseBrowserDatetimeLocalToIso(startsRaw, tzOffset);
+  const endsAt = parseBrowserDatetimeLocalToIso(endsRaw, tzOffset);
   if (!startsAt || !endsAt) {
     return { error: 'Invalid start or end time.' };
   }

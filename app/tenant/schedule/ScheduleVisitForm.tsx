@@ -32,6 +32,7 @@ export function ScheduleVisitForm({
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="client_timezone_offset" value={String(new Date().getTimezoneOffset())} />
       {state.error ? (
         <p className={styles.error} role="alert">
           {state.error}
