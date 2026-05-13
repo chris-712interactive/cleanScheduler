@@ -32,6 +32,7 @@ export type ScheduleVisitVM = {
   customerPhone: string | null;
   siteLine: string;
   quoteTitle: string | null;
+  assignees: { userId: string; displayName: string; initials: string }[];
 };
 
 const STATUS_LABEL: Record<ScheduleVisitVM['status'], string> = {
@@ -222,7 +223,17 @@ export function TenantScheduleClient({
                     {v.siteLine ? <div className={styles.visitAddress}>{v.siteLine}</div> : null}
                     <div className={styles.visitTime}>{formatTimeRange(v.starts_at, v.ends_at)}</div>
                     <div className={styles.visitAvatars} aria-hidden="true">
-                      <span className={styles.avatarCircle}>{initials(v.customerName)}</span>
+                      <span className={styles.avatarCircle} title="Customer">
+                        {initials(v.customerName)}
+                      </span>
+                      {v.assignees.slice(0, 4).map((a) => (
+                        <span key={a.userId} className={styles.avatarCrew} title={a.displayName}>
+                          {a.initials}
+                        </span>
+                      ))}
+                      {v.assignees.length > 4 ? (
+                        <span className={styles.avatarMore}>+{v.assignees.length - 4}</span>
+                      ) : null}
                     </div>
                   </button>
                   {expanded ? (
@@ -231,6 +242,12 @@ export function TenantScheduleClient({
                         <span className={styles.visitDetailLabel}>Service</span>
                         <span>{v.title}</span>
                       </div>
+                      {v.assignees.length > 0 ? (
+                        <div className={styles.visitDetailRow}>
+                          <span className={styles.visitDetailLabel}>Crew</span>
+                          <span>{v.assignees.map((a) => a.displayName).join(', ')}</span>
+                        </div>
+                      ) : null}
                       {v.notes ? (
                         <div className={styles.visitDetailRow}>
                           <span className={styles.visitDetailLabel}>Notes</span>

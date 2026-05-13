@@ -41,6 +41,21 @@ async function assertQuote(admin: ReturnType<typeof createAdminClient>, tenantId
   return !!data;
 }
 
+async function assertActiveTenantMember(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await admin
+    .from('tenant_memberships')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .maybeSingle();
+  return !!data;
+}
+
 export async function createScheduledVisit(_prev: ScheduleFormState, formData: FormData): Promise<ScheduleFormState> {
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
@@ -108,10 +123,35 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
     ends_at: endsAt,
     status,
     notes: notes || null,
-  });
+  }).select('id').single();
 
-  if (ins.error) {
-    return { error: ins.error.message };
+  if (ins.error || !ins.data?.id) {
+    return { error: ins.error?.message ?? 'Could not create visit.' };
+  }
+
+  const visitId = ins.data.id;
+
+  const assigneeIds = formData
+    .getAll('assignee_user_id')
+    .map((x) => String(x).trim())
+    .filter((x) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x));
+  const uniqueAssignees = [...new Set(assigneeIds)];
+
+  for (const uid of uniqueAssignees) {
+    if (!(await assertActiveTenantMember(admin, membership.tenantId, uid))) {
+      await admin.from('tenant_scheduled_visits').delete().eq('id', visitId);
+      return { error: 'One or more crew selections are not active members of this workspace.' };
+    }
+  }
+
+  if (uniqueAssignees.length > 0) {
+    const insA = await admin.from('tenant_scheduled_visit_assignees').insert(
+      uniqueAssignees.map((user_id) => ({ visit_id: visitId, user_id })),
+    );
+    if (insA.error) {
+      await admin.from('tenant_scheduled_visits').delete().eq('id', visitId);
+      return { error: insA.error.message };
+    }
   }
 
   revalidatePath('/tenant', 'layout');

@@ -77,6 +77,21 @@ export default async function TenantScheduleNewPage() {
       .overrideTypes<QuotePickRow[], { merge: false }>(),
   ]);
 
+  const membersRes = await supabase
+    .from('tenant_memberships')
+    .select('user_id, role')
+    .eq('tenant_id', membership.tenantId)
+    .eq('is_active', true)
+    .order('role', { ascending: true });
+
+  const memberUserIds = [...new Set((membersRes.data ?? []).map((m) => m.user_id))];
+  const { data: memberProfiles } =
+    memberUserIds.length > 0
+      ? await supabase.from('user_profiles').select('user_id, display_name').in('user_id', memberUserIds)
+      : { data: [] as { user_id: string; display_name: string | null }[] };
+
+  const displayByUserId = new Map((memberProfiles ?? []).map((p) => [p.user_id, p.display_name]));
+
   const customerRows = customersRes.data ?? [];
   const propertyRows = propertiesRes.data ?? [];
   const quoteRows = quotesRes.data ?? [];
@@ -91,6 +106,11 @@ export default async function TenantScheduleNewPage() {
   const quoteOptions = quoteRows.map((q) => ({
     id: q.id,
     label: q.title,
+  }));
+
+  const employeeOptions = (membersRes.data ?? []).map((m) => ({
+    id: m.user_id,
+    label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
   }));
 
   return (
@@ -111,6 +131,7 @@ export default async function TenantScheduleNewPage() {
           customerOptions={customerOptions}
           customerPropertyGroups={customerPropertyGroups}
           quoteOptions={quoteOptions}
+          employeeOptions={employeeOptions}
         />
       </Card>
     </>

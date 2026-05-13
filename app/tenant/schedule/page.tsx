@@ -20,6 +20,13 @@ import styles from './schedule.module.scss';
 
 export const dynamic = 'force-dynamic';
 
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
+}
+
 type VisitListRow = {
   id: string;
   title: string;
@@ -35,6 +42,12 @@ type VisitListRow = {
       >
     | null;
   tenant_quotes: { title: string } | null;
+  tenant_scheduled_visit_assignees:
+    | {
+        user_id: string;
+        user_profiles: { display_name: string | null } | null;
+      }[]
+    | null;
 };
 
 interface PageProps {
@@ -77,6 +90,12 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       ),
       tenant_quotes (
         title
+      ),
+      tenant_scheduled_visit_assignees (
+        user_id,
+        user_profiles (
+          display_name
+        )
       )
     `,
     )
@@ -95,6 +114,21 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     const who = ident?.full_name?.trim() || 'Customer';
     const prop = v.tenant_customer_properties;
     const site = prop ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ') : '';
+    const rawAssignees = v.tenant_scheduled_visit_assignees as
+      | {
+          user_id: string;
+          user_profiles: { display_name: string | null } | null;
+        }[]
+      | {
+          user_id: string;
+          user_profiles: { display_name: string | null } | null;
+        }
+      | null;
+    const assigneeRows = Array.isArray(rawAssignees) ? rawAssignees : rawAssignees ? [rawAssignees] : [];
+    const assignees = assigneeRows.map((a) => {
+      const dn = a.user_profiles?.display_name?.trim() || 'Member';
+      return { userId: a.user_id, displayName: dn, initials: initialsFromName(dn) };
+    });
     return {
       id: v.id,
       title: v.title,
@@ -106,6 +140,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       customerPhone: ident?.phone?.trim() || null,
       siteLine: site,
       quoteTitle: v.tenant_quotes?.title ?? null,
+      assignees,
     };
   });
 

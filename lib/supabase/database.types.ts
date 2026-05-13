@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0014.
+ * Hand-maintained schema mirror for migrations 0001–0015.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -899,6 +899,39 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'tenants';
             referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_scheduled_visit_assignees: {
+        Row: {
+          visit_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          visit_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          visit_id?: string;
+          user_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_scheduled_visit_assignees_visit_id_fkey';
+            columns: ['visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_scheduled_visit_assignees_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['user_id'];
           },
         ];
       };
