@@ -63,6 +63,7 @@ function BoardQuoteCardFace({ quote, variant }: { quote: QuoteListEmbedRow; vari
       </p>
       <p className={styles.boardCardMetaMuted}>
         {formatQuoteMoney(quote.amount_cents, quote.currency)} · {new Date(quote.created_at).toLocaleDateString()}
+        {quote.version_number > 1 ? ` · v${quote.version_number}` : ''}
       </p>
       {variant === 'list' ? (
         <p className={styles.boardCardHint} aria-hidden="true">

@@ -55,6 +55,45 @@
   color: var(--color-text-muted);
 }
 
+.requiredMark {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.readOnlyNotice {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.versionHistory {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.versionHistoryItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.versionHistoryCurrent {
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+}
+
 .empty {
   margin: 0;
   color: var(--color-text-muted);

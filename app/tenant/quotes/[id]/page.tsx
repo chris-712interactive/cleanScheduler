@@ -11,9 +11,10 @@ import type { Tables } from '@/lib/supabase/database.types';
 import type { QuoteDetailEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
-import { QUOTE_STATUS_LABEL } from '@/lib/tenant/quoteLabels';
+import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
 import { QuoteEditForm } from '../QuoteEditForm';
+import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
 import styles from '../quotes.module.scss';
 
@@ -55,6 +56,12 @@ function toDateInputValue(iso: string | null): string {
   return d.toISOString().slice(0, 10);
 }
 
+function countSnapshotLines(payload: unknown): number {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return 0;
+  const li = (payload as { line_items?: unknown }).line_items;
+  return Array.isArray(li) ? li.length : 0;
+}
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -71,11 +78,10 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   const supabase = createTenantPortalDbClient();
 
-  const [quoteRes, customersRes, propertiesRes] = await Promise.all([
-    supabase
-      .from('tenant_quotes')
-      .select(
-        `
+  const quoteRes = await supabase
+    .from('tenant_quotes')
+    .select(
+      `
         *,
         tenant_customer_properties (
           label,
@@ -94,11 +100,18 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           amount_cents
         )
       `,
-      )
-      .eq('id', id)
-      .eq('tenant_id', membership.tenantId)
-      .maybeSingle()
-      .overrideTypes<QuoteDetailEmbedRow, { merge: false }>(),
+    )
+    .eq('id', id)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle()
+    .overrideTypes<QuoteDetailEmbedRow, { merge: false }>();
+
+  const row = quoteRes.data;
+  if (quoteRes.error || !row) {
+    notFound();
+  }
+
+  const [customersRes, propertiesRes, snapRes, versionsRes] = await Promise.all([
     supabase
       .from('customers')
       .select(
@@ -119,12 +132,18 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })
       .overrideTypes<PropertyPickRow[], { merge: false }>(),
+    supabase
+      .from('tenant_quote_acceptance_snapshots')
+      .select('captured_at, payload')
+      .eq('quote_id', id)
+      .maybeSingle(),
+    supabase
+      .from('tenant_quotes')
+      .select('id, version_number, title, status, created_at')
+      .eq('quote_group_id', row.quote_group_id)
+      .eq('tenant_id', membership.tenantId)
+      .order('version_number', { ascending: true }),
   ]);
-
-  const row = quoteRes.data;
-  if (quoteRes.error || !row) {
-    notFound();
-  }
 
   const customerRows = customersRes.data ?? [];
   const propertyRows = propertiesRes.data ?? [];
@@ -142,11 +161,52 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   const quoteLineItems = [...(row.tenant_quote_line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order);
 
+  const acceptanceSnapshot = snapRes.data;
+  const versionRows = versionsRes.data ?? [];
+
+  const summaryItems = [
+    { key: 'Quote ID', value: row.id },
+    { key: 'Version', value: String(row.version_number) },
+    {
+      key: 'Created',
+      value: new Date(row.created_at).toLocaleString(),
+    },
+    ...(row.accepted_at
+      ? [{ key: 'Accepted at', value: new Date(row.accepted_at).toLocaleString() }]
+      : []),
+    ...(row.version_reason
+      ? [{ key: 'Reason for this version', value: row.version_reason }]
+      : []),
+    ...(row.superseded_by_quote_id
+      ? [
+          {
+            key: 'Superseded by',
+            value: (
+              <Link href={`/quotes/${row.superseded_by_quote_id}`} className={styles.inlineLink}>
+                Newer version →
+              </Link>
+            ),
+          },
+        ]
+      : []),
+    {
+      key: 'Valid until',
+      value: row.valid_until ? new Date(row.valid_until).toLocaleDateString() : '—',
+    },
+    {
+      key: 'Service location',
+      value: siteLine || '—',
+    },
+  ];
+
+  const canCreateAmendment =
+    row.is_locked && row.status === 'accepted' && !row.superseded_by_quote_id;
+
   return (
     <>
       <PageHeader
         title={row.title}
-        description={`${QUOTE_STATUS_LABEL[row.status]} · ${formatQuoteMoney(row.amount_cents, row.currency)}`}
+        description={`${QUOTE_STATUS_LABEL[row.status]} · ${formatQuoteMoney(row.amount_cents, row.currency)} · Version ${row.version_number}`}
         actions={
           <Link href="/quotes" className={styles.backLink}>
             ← All quotes
@@ -155,28 +215,32 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       />
 
       <Stack gap={6}>
-        <Card title="Summary" description="Read-only snapshot; edit below.">
-          <KeyValueList
-            items={[
-              { key: 'Quote ID', value: row.id },
-              {
-                key: 'Created',
-                value: new Date(row.created_at).toLocaleString(),
-              },
-              {
-                key: 'Valid until',
-                value: row.valid_until ? new Date(row.valid_until).toLocaleDateString() : '—',
-              },
-              {
-                key: 'Service location',
-                value: siteLine || '—',
-              },
-            ]}
-          />
+        <Card title="Summary" description="Identifiers and key dates for this revision.">
+          <KeyValueList items={summaryItems} />
         </Card>
 
+        {acceptanceSnapshot ? (
+          <Card
+            title="Acceptance record"
+            description="Frozen copy of what the customer agreed to when this quote was marked accepted."
+          >
+            <KeyValueList
+              items={[
+                {
+                  key: 'Captured at',
+                  value: new Date(acceptanceSnapshot.captured_at).toLocaleString(),
+                },
+                {
+                  key: 'Service lines in record',
+                  value: String(countSnapshotLines(acceptanceSnapshot.payload)),
+                },
+              ]}
+            />
+          </Card>
+        ) : null}
+
         {quoteLineItems.length > 0 ? (
-          <Card title="Services" description="Priced lines on this quote.">
+          <Card title="Services" description="Priced lines for this revision.">
             <div className={styles.servicesTableWrap}>
               <table className={styles.servicesTable}>
                 <thead>
@@ -202,8 +266,37 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           </Card>
         ) : null}
 
-        <Card title="Edit quote" description="Update status, amount, customer, and service site.">
+        <Card
+          title="Version history"
+          description="Each amendment is a new quote row sharing the same quote group. Only the latest open revision appears on the board unless filtered."
+        >
+          <ul className={styles.versionHistory}>
+            {versionRows.map((v) => (
+              <li key={v.id} className={styles.versionHistoryItem}>
+                <Link href={`/quotes/${v.id}`} className={styles.inlineLink}>
+                  v{v.version_number}
+                </Link>
+                <span>{QUOTE_STATUS_LABEL[v.status as QuoteStatus]}</span>
+                <span className={styles.sub}>{v.title}</span>
+                {v.id === row.id ? <span className={styles.versionHistoryCurrent}>You are here</span> : null}
+              </li>
+            ))}
+          </ul>
+          {canCreateAmendment ? (
+            <QuoteAmendmentForm tenantSlug={membership.tenantSlug} priorQuoteId={row.id} />
+          ) : null}
+        </Card>
+
+        <Card
+          title={row.is_locked ? 'Accepted quote' : 'Edit quote'}
+          description={
+            row.is_locked
+              ? 'Accepted quotes are frozen. Create a new version above to propose changes.'
+              : 'Update status, amount, customer, service site, and line items.'
+          }
+        >
           <QuoteEditForm
+            readOnly={row.is_locked}
             tenantSlug={membership.tenantSlug}
             customerOptions={customerOptions}
             customerPropertyGroups={customerPropertyGroups}

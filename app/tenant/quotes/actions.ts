@@ -41,13 +41,21 @@ export async function moveTenantQuoteStatus(
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
-    .select('id, status')
+    .select('id, status, is_locked')
     .eq('id', quoteId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
   if (fetchError || !existing) {
     return { ok: false, error: 'Quote not found in this workspace.' };
+  }
+
+  if (existing.is_locked) {
+    return {
+      ok: false,
+      error:
+        'This quote was accepted and is frozen. Open it and use “Create new version” to change terms, or leave the status as-is.',
+    };
   }
 
   if (existing.status === nextStatus) {
@@ -229,13 +237,20 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
-    .select('id')
+    .select('id, is_locked')
     .eq('id', quoteId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
   if (fetchError || !existing) {
     return { error: 'Quote not found in this workspace.' };
+  }
+
+  if (existing.is_locked) {
+    return {
+      error:
+        'This quote was accepted and cannot be edited here. Use “Create new version” on the quote page to draft a follow-up quote.',
+    };
   }
 
   let customerId: string | null = null;
@@ -271,46 +286,159 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
-  const del = await admin.from('tenant_quote_line_items').delete().eq('quote_id', quoteId);
-  if (del.error) {
-    return { error: del.error.message };
-  }
+  const linePayload = parsedLines.lines.map((l) => ({
+    sort_order: l.sort_order,
+    service_label: l.service_label,
+    frequency: l.frequency,
+    frequency_detail: l.frequency_detail,
+    amount_cents: l.amount_cents,
+  }));
 
-  if (parsedLines.lines.length > 0) {
-    const lineRows = parsedLines.lines.map((l) => ({
-      quote_id: quoteId,
-      sort_order: l.sort_order,
-      service_label: l.service_label,
-      frequency: l.frequency,
-      frequency_detail: l.frequency_detail,
-      amount_cents: l.amount_cents,
-    }));
-    const li = await admin.from('tenant_quote_line_items').insert(lineRows);
-    if (li.error) {
-      return { error: li.error.message };
+  const rpc = await admin.rpc('tenant_quote_save_with_line_items', {
+    p_quote_id: quoteId,
+    p_tenant_id: membership.tenantId,
+    p_title: title,
+    p_status: status,
+    p_customer_id: customerId,
+    p_property_id: propertyId,
+    p_amount_cents: amountCents,
+    p_notes: notes || null,
+    p_valid_until: validUntil,
+    p_line_items: linePayload,
+  });
+
+  if (rpc.error) {
+    if (rpc.error.message?.includes('QUOTE_LOCKED')) {
+      return {
+        error:
+          'This quote was accepted and cannot be edited. Use “Create new version” on the quote page to draft a follow-up quote.',
+      };
     }
-  }
-
-  const upd = await admin
-    .from('tenant_quotes')
-    .update({
-      title,
-      status,
-      customer_id: customerId,
-      property_id: propertyId,
-      amount_cents: amountCents,
-      notes: notes || null,
-      valid_until: validUntil,
-    })
-    .eq('id', quoteId)
-    .eq('tenant_id', membership.tenantId);
-
-  if (upd.error) {
-    return { error: upd.error.message };
+    return { error: rpc.error.message };
   }
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
   return { success: true };
+}
+
+export interface AmendmentFormState {
+  error?: string;
+}
+
+export async function createTenantQuoteAmendment(
+  _prev: AmendmentFormState,
+  formData: FormData,
+): Promise<AmendmentFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const priorQuoteId = String(formData.get('prior_quote_id') ?? '').trim();
+  const reason = String(formData.get('version_reason') ?? '').trim();
+
+  if (!slug || !priorQuoteId) {
+    return { error: 'Missing workspace or quote.' };
+  }
+  if (reason.length < 5) {
+    return { error: 'Enter a short reason for this new version (at least 5 characters).' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/quotes/${priorQuoteId}`);
+  const admin = createAdminClient();
+
+  const { data: prior, error: priorErr } = await admin
+    .from('tenant_quotes')
+    .select(
+      'id, tenant_id, customer_id, property_id, title, status, amount_cents, currency, notes, valid_until, quote_group_id, version_number, is_locked, superseded_by_quote_id',
+    )
+    .eq('id', priorQuoteId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (priorErr || !prior) {
+    return { error: 'Quote not found in this workspace.' };
+  }
+  if (!prior.is_locked || prior.status !== 'accepted') {
+    return { error: 'New versions can only be created from an accepted quote.' };
+  }
+  if (prior.superseded_by_quote_id) {
+    return {
+      error: 'This version was already superseded. Open the latest version from version history.',
+    };
+  }
+
+  const { data: topRow } = await admin
+    .from('tenant_quotes')
+    .select('version_number')
+    .eq('quote_group_id', prior.quote_group_id)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextVersion = (topRow?.version_number ?? prior.version_number) + 1;
+
+  const { data: inserted, error: insErr } = await admin
+    .from('tenant_quotes')
+    .insert({
+      tenant_id: membership.tenantId,
+      customer_id: prior.customer_id,
+      property_id: prior.property_id,
+      title: prior.title,
+      status: 'draft',
+      amount_cents: prior.amount_cents,
+      currency: prior.currency,
+      notes: prior.notes,
+      valid_until: prior.valid_until,
+      quote_group_id: prior.quote_group_id,
+      version_number: nextVersion,
+      supersedes_quote_id: priorQuoteId,
+      version_reason: reason,
+    })
+    .select('id')
+    .single();
+
+  if (insErr || !inserted) {
+    return { error: insErr?.message ?? 'Could not create new version.' };
+  }
+
+  const newId = inserted.id as string;
+
+  const { data: lineRows } = await admin
+    .from('tenant_quote_line_items')
+    .select('sort_order, service_label, frequency, frequency_detail, amount_cents')
+    .eq('quote_id', priorQuoteId)
+    .order('sort_order', { ascending: true });
+
+  if (lineRows && lineRows.length > 0) {
+    const copy = lineRows.map((l) => ({
+      quote_id: newId,
+      sort_order: l.sort_order,
+      service_label: l.service_label,
+      frequency: l.frequency,
+      frequency_detail: l.frequency_detail,
+      amount_cents: l.amount_cents,
+    }));
+    const liErr = await admin.from('tenant_quote_line_items').insert(copy);
+    if (liErr.error) {
+      await admin.from('tenant_quotes').delete().eq('id', newId).eq('tenant_id', membership.tenantId);
+      return { error: liErr.error.message };
+    }
+  }
+
+  const sup = await admin
+    .from('tenant_quotes')
+    .update({ superseded_by_quote_id: newId })
+    .eq('id', priorQuoteId)
+    .eq('tenant_id', membership.tenantId);
+
+  if (sup.error) {
+    await admin.from('tenant_quote_line_items').delete().eq('quote_id', newId);
+    await admin.from('tenant_quotes').delete().eq('id', newId).eq('tenant_id', membership.tenantId);
+    return { error: sup.error.message };
+  }
+
+  revalidatePath('/tenant', 'layout');
+  revalidatePath('/tenant/quotes', 'page');
+  revalidatePath(`/tenant/quotes/${priorQuoteId}`, 'page');
+  revalidatePath(`/tenant/quotes/${newId}`, 'page');
+  redirect(`/quotes/${newId}`);
 }

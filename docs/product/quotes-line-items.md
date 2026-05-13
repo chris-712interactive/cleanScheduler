@@ -12,9 +12,11 @@ This document describes how **tenant quotes** combine a header row (`tenant_quot
   - `amount_cents` (non-negative integer; cents in the quote’s currency — see **Currency** below).
   - `sort_order` (integer; row order from the form).
 
-Migration: `supabase/migrations/0016_quote_line_items.sql`.
+Migrations: `0016_quote_line_items.sql` (lines), `0017_quote_acceptance_versioning.sql` (acceptance snapshot, lock, versioning columns, transactional save RPC).
 
-**Not yet in schema** (decided in principle; implement in follow-up migrations and UI): taxes, discounts, acceptance snapshots, quote versioning, tenant ops/invoice/payment settings, customer acceptance payment capture.
+**Versioning (`tenant_quotes`)**: `quote_group_id` groups all revisions; `version_number` orders them; `version_reason` documents why a new row exists (required in UI when creating an amendment from an accepted quote); `supersedes_quote_id` / `superseded_by_quote_id` link the chain. **Acceptance**: `is_locked`, `accepted_at`; `tenant_quote_acceptance_snapshots` stores a JSON payload (header fields + `line_items`) at the first transition to `accepted`.
+
+**Not yet in schema** (still planned): taxes, discounts, tenant ops/invoice/payment settings, **customer**-portal quote acceptance + payment capture (tenant staff can mark accepted and create new versions in the tenant portal today).
 
 ## Form contract (tenant portal)
 
@@ -34,7 +36,7 @@ The UI implementation is `QuoteLineItemsEditor` (`app/tenant/quotes/QuoteLineIte
 ## Server rules (`app/tenant/quotes/actions.ts`)
 
 - **Create**: Insert the quote, then insert line items. If line insert fails, the new quote row is deleted (best-effort rollback; not a DB transaction).
-- **Update**: Delete all existing line items for that `quote_id`, insert the new set from the form, then update the quote header fields including `amount_cents`. This sequence is **not wrapped in a SQL transaction**; if the insert fails after the delete, the quote can temporarily have no line items until the user saves again. Consider a `rpc` transaction if this becomes a support issue.
+- **Update**: Unlocked quotes only: `tenant_quote_save_with_line_items` RPC replaces line items and updates the header in **one transaction**. Locked quotes cannot be saved from the tenant form.
 - **Amount resolution**:
   - If the parsed line list is **non-empty** → `amount_cents` on the quote = **sum of line amounts** (the `amount_dollars` header field is ignored).
   - If the parsed line list is **empty** → legacy behavior: `amount_cents` comes from optional `amount_dollars` on the form (may be null).
@@ -80,20 +82,20 @@ The UI implementation is `QuoteLineItemsEditor` (`app/tenant/quotes/QuoteLineIte
 - **Single currency per quote**: One `currency` on the quote header applies to the whole quote and all line items (no per-line currency).
 - **Launch scope**: **USD only** for US-based businesses at initial sale; keep types and copy flexible so **other currencies can be enabled later** without a breaking redesign.
 
-## Future implementation backlog (not shipped)
+## Future implementation backlog (remaining)
 
 Suggested order is indicative; adjust with engineering.
 
 1. **Schema + UI**: Tax mode / display on quote; discount fields (header and/or per line) including **kind** (`percent` | `fixed_cents` or equivalent) and value; total math and order of operations vs tax if both apply.
-2. **Acceptance snapshot**: Persist immutable copy of header + line items (and totals) at `accepted` transition.
-3. **Versioning**: `tenant_quotes` version chain (parent id, version number, `version_reason`, `supersedes_quote_id`, etc.) + customer-visible history.
-4. **Tenant settings**: Flags/tables for scheduling mode (auto vs prompt), invoice timing (prepay vs post), allowed payment methods.
-5. **Customer acceptance flow**: Capture payment preference/method where applicable; enforce tenant allow-list.
-6. **Hardening**: Transactional replace for line items on update (`rpc` or single SQL transaction).
+2. **Customer-facing quotes**: Show version history and frozen acceptance payload in the **customer** portal (and optional PDF/email) when quotes are shared with customers.
+3. **Tenant settings**: Flags/tables for scheduling mode (auto vs prompt), invoice timing (prepay vs post), allowed payment methods.
+4. **Customer acceptance flow**: Capture payment preference/method where applicable; enforce tenant allow-list; tie acceptance events to snapshot/lock if acceptance happens outside the tenant app.
 
 ## Files touched by this feature
 
 - `supabase/migrations/0016_quote_line_items.sql`
+- `supabase/migrations/0017_quote_acceptance_versioning.sql`
 - `lib/tenant/quoteLineFrequency.ts`, `lib/tenant/quoteLineItemsForm.ts`
 - `lib/tenant/quoteEmbedTypes.ts` (`QuoteDetailEmbedRow` includes nested line items)
-- `app/tenant/quotes/actions.ts`, `QuoteLineItemsEditor.tsx`, `QuoteCreateForm.tsx`, `QuoteEditForm.tsx`, `[id]/page.tsx`, `quotes.module.scss`
+- `lib/supabase/database.types.ts`
+- `app/tenant/quotes/actions.ts`, `QuoteLineItemsEditor.tsx`, `QuoteCreateForm.tsx`, `QuoteEditForm.tsx`, `QuoteAmendmentForm.tsx`, `[id]/page.tsx`, `page.tsx`, `QuotesBoard.tsx`, `quotes.module.scss`

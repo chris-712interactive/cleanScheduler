@@ -3,7 +3,18 @@ import type { Tables } from '@/lib/supabase/database.types';
 /** List projection: quote row + optional customer display name + optional property. */
 export type QuoteListEmbedRow = Pick<
   Tables<'tenant_quotes'>,
-  'id' | 'title' | 'status' | 'amount_cents' | 'currency' | 'created_at' | 'customer_id' | 'property_id'
+  | 'id'
+  | 'title'
+  | 'status'
+  | 'amount_cents'
+  | 'currency'
+  | 'created_at'
+  | 'customer_id'
+  | 'property_id'
+  | 'quote_group_id'
+  | 'version_number'
+  | 'is_locked'
+  | 'superseded_by_quote_id'
 > & {
   customers:
     | {

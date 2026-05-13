@@ -30,6 +30,10 @@ export default async function TenantQuotesPage() {
         created_at,
         customer_id,
         property_id,
+        quote_group_id,
+        version_number,
+        is_locked,
+        superseded_by_quote_id,
         customers (
           customer_identities (
             full_name
@@ -46,6 +50,7 @@ export default async function TenantQuotesPage() {
       `,
     )
     .eq('tenant_id', membership.tenantId)
+    .is('superseded_by_quote_id', null)
     .overrideTypes<QuoteListEmbedRow[], { merge: false }>();
 
   const quotes = quotesRes.data ?? [];

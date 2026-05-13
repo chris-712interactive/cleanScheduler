@@ -40,11 +40,14 @@ export function QuoteEditForm({
   customerOptions,
   customerPropertyGroups,
   snapshot,
+  readOnly = false,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
   customerPropertyGroups: CustomerPropertyGroup[];
   snapshot: QuoteEditSnapshot;
+  /** When true, quote was accepted (frozen); show notice instead of the form. */
+  readOnly?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateTenantQuote, initial);
   useRefreshOnServerActionSuccess(state.success);
@@ -58,6 +61,16 @@ export function QuoteEditForm({
   const propertyDefault = propertyOptions.some((p) => p.id === snapshot.propertyId)
     ? snapshot.propertyId
     : '';
+
+  if (readOnly) {
+    return (
+      <div className={styles.readOnlyNotice} role="status">
+        This quote was accepted and is frozen for the record. Customer-facing totals and line items were
+        captured at acceptance. To change terms, use <strong>Create new version</strong> below (if this is
+        still the active accepted version).
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className={styles.form}>
