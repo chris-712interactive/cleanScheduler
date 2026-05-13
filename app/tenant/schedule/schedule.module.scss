@@ -102,3 +102,442 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Schedule board (tenant) — day / week / month + timeline                  */
+/* -------------------------------------------------------------------------- */
+
+.scheduleShell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.scheduleToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.scheduleDateNav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.iconNavBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-muted);
+  }
+}
+
+.scheduleDateLabel {
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: min(100%, 200px);
+}
+
+.todayLink {
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  min-height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: var(--font-size-sm);
+}
+
+.viewToggle {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.viewToggleBtn,
+.viewToggleBtnActive {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.viewToggleBtnActive {
+  background: color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-surface));
+  color: var(--color-brand-primary);
+}
+
+.scheduleFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.filterSelect {
+  min-width: 160px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.dayBoard {
+  display: grid;
+  grid-template-columns: 4.75rem 1fr;
+  gap: var(--space-2);
+  min-height: 640px;
+}
+
+.hourRail {
+  display: grid;
+  grid-template-rows: repeat(11, 1fr);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: right;
+  padding-right: var(--space-2);
+}
+
+.hourTick {
+  border-top: 1px solid transparent;
+  padding-top: 2px;
+}
+
+.timelineTrack {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(100% / 11 - 1px),
+    var(--color-border) calc(100% / 11 - 1px),
+    var(--color-border) calc(100% / 11)
+  );
+  min-height: 640px;
+}
+
+.hourLine {
+  display: none;
+}
+
+.nowLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-brand-primary);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.nowDot {
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-brand-primary);
+  border: 2px solid var(--color-surface);
+}
+
+.visitCard,
+.visitCardExpanded {
+  position: absolute;
+  left: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.visitCardExpanded {
+  z-index: 4;
+  box-shadow: var(--shadow-lg);
+}
+
+.visitCardSummary {
+  flex: 1;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.visitCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.visitCustomer {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.visitAddress {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  line-height: 1.35;
+}
+
+.visitTime {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+.visitAvatars {
+  margin-top: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+}
+
+.avatarCircle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-brand-primary) 22%, var(--color-surface));
+  color: var(--color-brand-primary);
+}
+
+.visitCardBody {
+  padding: 0 var(--space-3) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.visitDetailRow {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+  }
+}
+
+.visitDetailLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.visitDetailMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.emptyBoard {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.weekBoard {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.weekColumn {
+  border-right: 1px solid var(--color-border);
+  min-width: 0;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.weekColumnHead {
+  padding: var(--space-2) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.weekList {
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 120px;
+}
+
+.weekItem {
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.weekItemTitle {
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+}
+
+.weekItemMeta {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.weekEmpty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.monthBoard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.monthWeekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.monthWeekday {
+  padding: var(--space-2);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.monthCell {
+  min-height: 72px;
+  padding: var(--space-2);
+  border: none;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--color-text);
+
+  &:nth-child(7n) {
+    border-right: none;
+  }
+
+  &:hover {
+    background: var(--color-bg-muted);
+  }
+}
+
+.monthCellMuted {
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+}
+
+.monthCellActive {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+}
+
+.monthCellDay {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
+.monthCellDots {
+  font-size: 10px;
+  color: var(--color-brand-primary);
+  letter-spacing: 0.05em;
+}
+
+.pageFooterHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.inlineLink {
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.backToSchedule {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
@@ -65,7 +66,7 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
     ? (statusRaw as Database['public']['Enums']['visit_status'])
     : 'scheduled';
 
-  const membership = await requireTenantPortalAccess(slug, '/schedule');
+  const membership = await requireTenantPortalAccess(slug, '/schedule/new');
   const admin = createAdminClient();
 
   if (!(await assertCustomer(admin, membership.tenantId, customerId))) {
@@ -115,7 +116,8 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/schedule', 'page');
-  return { success: true };
+  revalidatePath('/tenant/schedule/new', 'page');
+  redirect('/schedule');
 }
 
 export async function deleteScheduledVisit(_prev: ScheduleFormState, formData: FormData): Promise<ScheduleFormState> {
@@ -141,5 +143,6 @@ export async function deleteScheduledVisit(_prev: ScheduleFormState, formData: F
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/schedule', 'page');
+  revalidatePath('/tenant/schedule/new', 'page');
   return { success: true };
 }
