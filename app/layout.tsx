@@ -12,6 +12,15 @@ export const metadata: Metadata = {
   description:
     'Multi-tenant scheduling, quoting, billing, and customer-service platform for residential and commercial cleaning businesses.',
   applicationName: 'cleanScheduler',
+  manifest: '/favicon/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon/icon0.svg', type: 'image/svg+xml' },
+      { url: '/favicon/favicon.ico', sizes: 'any' },
+      { url: '/favicon/icon1.png', type: 'image/png', sizes: '96x96' },
+    ],
+    apple: [{ url: '/favicon/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
 };
 
 export const viewport: Viewport = {
