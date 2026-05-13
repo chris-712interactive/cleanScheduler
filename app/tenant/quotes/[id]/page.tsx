@@ -10,12 +10,14 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
 import type { QuoteDetailEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
-import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
+import { formatQuoteMoney, formatQuoteLineDiscountShort } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
+import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
+import { quoteHeaderPricingDefaultsFromQuote } from '../QuoteHeaderPricingFields';
 import styles from '../quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -97,7 +99,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           service_label,
           frequency,
           frequency_detail,
-          amount_cents
+          amount_cents,
+          line_discount_kind,
+          line_discount_value
         )
       `,
     )
@@ -248,7 +252,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
                     <th scope="col">Service</th>
                     <th scope="col">Cadence</th>
                     <th scope="col">Detail</th>
-                    <th scope="col">Amount</th>
+                    <th scope="col">List</th>
+                    <th scope="col">Line discount</th>
+                    <th scope="col">After discount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -258,6 +264,17 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
                       <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
                       <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
                       <td>{formatQuoteMoney(line.amount_cents, row.currency)}</td>
+                      <td>{formatQuoteLineDiscountShort(line.line_discount_kind, line.line_discount_value, row.currency)}</td>
+                      <td>
+                        {formatQuoteMoney(
+                          effectiveLineSubtotalCents({
+                            amount_cents: line.amount_cents,
+                            line_discount_kind: line.line_discount_kind,
+                            line_discount_value: line.line_discount_value,
+                          }),
+                          row.currency,
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -310,6 +327,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
               notes: row.notes ?? '',
               validUntilYmd: toDateInputValue(row.valid_until),
               lineItems: quoteLineItems,
+              headerPricing: quoteHeaderPricingDefaultsFromQuote(row),
             }}
           />
         </Card>

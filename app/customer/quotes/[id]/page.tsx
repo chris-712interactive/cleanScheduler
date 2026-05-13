@@ -8,10 +8,12 @@ import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { Tables } from '@/lib/supabase/database.types';
-import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
+import { formatQuoteMoney, formatQuoteLineDiscountShort } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
+import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import { parseAcceptanceSnapshotLines } from '@/lib/customer/quoteAcceptanceSnapshot';
+import { CustomerQuoteResponseForm } from '../CustomerQuoteResponseForm';
 import styles from '../quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +23,14 @@ const UUID_RE =
 
 type LineRow = Pick<
   Tables<'tenant_quote_line_items'>,
-  'id' | 'sort_order' | 'service_label' | 'frequency' | 'frequency_detail' | 'amount_cents'
+  | 'id'
+  | 'sort_order'
+  | 'service_label'
+  | 'frequency'
+  | 'frequency_detail'
+  | 'amount_cents'
+  | 'line_discount_kind'
+  | 'line_discount_value'
 >;
 
 type VersionRow = Pick<Tables<'tenant_quotes'>, 'id' | 'version_number' | 'title' | 'status' | 'created_at'>;
@@ -55,7 +64,9 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
         service_label,
         frequency,
         frequency_detail,
-        amount_cents
+        amount_cents,
+        line_discount_kind,
+        line_discount_value
       )
     `,
     )
@@ -72,6 +83,7 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
   }
 
   const tenantName = (quote.tenants as { name: string } | null)?.name ?? 'Your provider';
+  const currency = quote.currency as string;
 
   const [snapRes, versionsRes] = await Promise.all([
     admin.from('tenant_quote_acceptance_snapshots').select('captured_at, payload').eq('quote_id', id).maybeSingle(),
@@ -94,18 +106,19 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
   );
 
   const showAgreementTable = snapshotLines.length > 0;
-  const agreementLines = showAgreementTable ? snapshotLines : liveLines;
   const agreementTitle = showAgreementTable
     ? 'What was agreed (acceptance record)'
     : 'Services & pricing (current quote)';
 
   const status = quote.status as QuoteStatus;
+  const isLocked = Boolean(quote.is_locked);
+  const canRespond = status === 'sent' && !isLocked;
 
   return (
     <>
       <PageHeader
         title={quote.title as string}
-        description={`${QUOTE_STATUS_LABEL[status]} · ${formatQuoteMoney(quote.amount_cents as number | null, quote.currency as string)} · Version ${quote.version_number as number}`}
+        description={`${QUOTE_STATUS_LABEL[status]} · ${formatQuoteMoney(quote.amount_cents as number | null, currency)} · Version ${quote.version_number as number}`}
         actions={
           <Link href="/quotes" className={styles.backLink}>
             ← All quotes
@@ -139,6 +152,15 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
           />
         </Card>
 
+        {canRespond ? (
+          <Card
+            title="Your decision"
+            description="Accept to tell your provider you agree to this quote, or decline if it is not a fit."
+          >
+            <CustomerQuoteResponseForm quoteId={id} />
+          </Card>
+        ) : null}
+
         <Card
           title="Version history"
           description="All revisions your provider created for this quote thread. Open any version to review what changed."
@@ -157,7 +179,7 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
           </ul>
         </Card>
 
-        {agreementLines.length > 0 ? (
+        {showAgreementTable || liveLines.length > 0 ? (
           <Card
             title={agreementTitle}
             description={
@@ -173,7 +195,9 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
                     <th scope="col">Service</th>
                     <th scope="col">Cadence</th>
                     <th scope="col">Detail</th>
-                    <th scope="col">Amount</th>
+                    <th scope="col">List</th>
+                    <th scope="col">Line discount</th>
+                    <th scope="col">After discount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -183,7 +207,18 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
                           <td>{line.service_label}</td>
                           <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
                           <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
-                          <td>{formatQuoteMoney(line.amount_cents, quote.currency as string)}</td>
+                          <td>{formatQuoteMoney(line.amount_cents, currency)}</td>
+                          <td>{formatQuoteLineDiscountShort(line.line_discount_kind, line.line_discount_value, currency)}</td>
+                          <td>
+                            {formatQuoteMoney(
+                              effectiveLineSubtotalCents({
+                                amount_cents: line.amount_cents,
+                                line_discount_kind: line.line_discount_kind,
+                                line_discount_value: line.line_discount_value,
+                              }),
+                              currency,
+                            )}
+                          </td>
                         </tr>
                       ))
                     : liveLines.map((line) => (
@@ -191,7 +226,18 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
                           <td>{line.service_label}</td>
                           <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
                           <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
-                          <td>{formatQuoteMoney(line.amount_cents, quote.currency as string)}</td>
+                          <td>{formatQuoteMoney(line.amount_cents, currency)}</td>
+                          <td>{formatQuoteLineDiscountShort(line.line_discount_kind, line.line_discount_value, currency)}</td>
+                          <td>
+                            {formatQuoteMoney(
+                              effectiveLineSubtotalCents({
+                                amount_cents: line.amount_cents,
+                                line_discount_kind: line.line_discount_kind,
+                                line_discount_value: line.line_discount_value,
+                              }),
+                              currency,
+                            )}
+                          </td>
                         </tr>
                       ))}
                 </tbody>

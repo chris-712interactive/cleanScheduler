@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0018.
+ * Hand-maintained schema mirror for migrations 0001–0019.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -845,6 +845,8 @@ export type Database = {
           frequency: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail: string | null;
           amount_cents: number;
+          line_discount_kind: Database['public']['Enums']['quote_line_discount_kind'];
+          line_discount_value: number;
           created_at: string;
           updated_at: string;
         };
@@ -857,6 +859,8 @@ export type Database = {
           frequency?: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail?: string | null;
           amount_cents: number;
+          line_discount_kind?: Database['public']['Enums']['quote_line_discount_kind'];
+          line_discount_value?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -869,6 +873,8 @@ export type Database = {
           frequency?: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail?: string | null;
           amount_cents?: number;
+          line_discount_kind?: Database['public']['Enums']['quote_line_discount_kind'];
+          line_discount_value?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -899,6 +905,10 @@ export type Database = {
           status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
           amount_cents: number | null;
           currency: string;
+          tax_mode: Database['public']['Enums']['quote_tax_mode'];
+          tax_rate_bps: number;
+          quote_discount_kind: Database['public']['Enums']['quote_discount_kind'];
+          quote_discount_value: number;
           notes: string | null;
           valid_until: string | null;
           quote_group_id: string;
@@ -920,6 +930,10 @@ export type Database = {
           status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
           amount_cents?: number | null;
           currency?: string;
+          tax_mode?: Database['public']['Enums']['quote_tax_mode'];
+          tax_rate_bps?: number;
+          quote_discount_kind?: Database['public']['Enums']['quote_discount_kind'];
+          quote_discount_value?: number;
           notes?: string | null;
           valid_until?: string | null;
           quote_group_id?: string;
@@ -941,6 +955,10 @@ export type Database = {
           status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
           amount_cents?: number | null;
           currency?: string;
+          tax_mode?: Database['public']['Enums']['quote_tax_mode'];
+          tax_rate_bps?: number;
+          quote_discount_kind?: Database['public']['Enums']['quote_discount_kind'];
+          quote_discount_value?: number;
           notes?: string | null;
           valid_until?: string | null;
           quote_group_id?: string;
@@ -1168,6 +1186,10 @@ export type Database = {
           p_amount_cents: number | null;
           p_notes: string | null;
           p_valid_until: string | null;
+          p_tax_mode: Database['public']['Enums']['quote_tax_mode'];
+          p_tax_rate_bps: number;
+          p_quote_discount_kind: Database['public']['Enums']['quote_discount_kind'];
+          p_quote_discount_value: number;
           p_line_items: Json;
         };
         Returns: undefined;
@@ -1180,6 +1202,9 @@ export type Database = {
       platform_plan_tier: 'starter' | 'pro' | 'business';
       quote_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
       quote_line_frequency: 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
+      quote_tax_mode: 'none' | 'exclusive';
+      quote_discount_kind: 'none' | 'percent' | 'fixed_cents';
+      quote_line_discount_kind: 'none' | 'percent' | 'fixed_cents';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';

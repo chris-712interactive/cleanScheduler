@@ -6,6 +6,14 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
 import { parseQuoteLineItemsFromForm } from '@/lib/tenant/quoteLineItemsForm';
+import { computeQuoteTotals } from '@/lib/tenant/quoteTotals';
+import {
+  parseDiscountDollarsToCents,
+  parseDiscountPercentToBps,
+  parsePercentStringToBps,
+  parseQuoteDiscountKind,
+  parseQuoteTaxMode,
+} from '@/lib/tenant/quoteHeaderPricingForm';
 
 export interface QuoteFormState {
   error?: string;
@@ -120,6 +128,35 @@ async function assertPropertyForCustomer(
   return !!data;
 }
 
+function parseQuoteHeaderPricingFromForm(formData: FormData):
+  | {
+      ok: true;
+      tax_mode: Database['public']['Enums']['quote_tax_mode'];
+      tax_rate_bps: number;
+      quote_discount_kind: Database['public']['Enums']['quote_discount_kind'];
+      quote_discount_value: number;
+    }
+  | { ok: false; error: string } {
+  const tax_mode = parseQuoteTaxMode(String(formData.get('quote_tax_mode') ?? 'none'));
+  const taxPct = parsePercentStringToBps(String(formData.get('quote_tax_rate_percent') ?? ''));
+  if (!taxPct.ok) return { ok: false, error: taxPct.error };
+  const tax_rate_bps = tax_mode === 'none' ? 0 : taxPct.bps;
+
+  const quote_discount_kind = parseQuoteDiscountKind(String(formData.get('quote_discount_kind') ?? 'none'));
+  let quote_discount_value = 0;
+  if (quote_discount_kind === 'percent') {
+    const p = parseDiscountPercentToBps(String(formData.get('quote_discount_percent') ?? ''));
+    if (!p.ok) return { ok: false, error: p.error };
+    quote_discount_value = p.bps;
+  } else if (quote_discount_kind === 'fixed_cents') {
+    const d = parseDiscountDollarsToCents(String(formData.get('quote_discount_dollars') ?? ''));
+    if (!d.ok) return { ok: false, error: d.error };
+    quote_discount_value = d.cents;
+  }
+
+  return { ok: true, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value };
+}
+
 export async function createTenantQuote(_prev: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
   const title = String(formData.get('title') ?? '').trim();
@@ -158,16 +195,32 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
     return { error: parsedLines.error };
   }
 
+  const pricing = parseQuoteHeaderPricingFromForm(formData);
+  if (!pricing.ok) return { error: pricing.error };
+
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
-  let amountCents: number | null;
-  if (parsedLines.lines.length > 0) {
-    amountCents = parsedLines.total_cents;
-  } else {
-    const headerParsed = parseOptionalDollarsToCents(amountRaw);
-    if (!headerParsed.ok) return { error: headerParsed.error };
-    amountCents = headerParsed.cents;
-  }
+  const headerParsed = parseOptionalDollarsToCents(amountRaw);
+  if (!headerParsed.ok) return { error: headerParsed.error };
+  const headerSubtotal = parsedLines.lines.length > 0 ? null : headerParsed.cents;
+
+  const totals = computeQuoteTotals({
+    lines: parsedLines.lines.map((l) => ({
+      amount_cents: l.amount_cents,
+      line_discount_kind: l.line_discount_kind,
+      line_discount_value: l.line_discount_value,
+    })),
+    header_subtotal_cents: headerSubtotal,
+    tax_mode: pricing.tax_mode,
+    tax_rate_bps: pricing.tax_rate_bps,
+    quote_discount_kind: pricing.quote_discount_kind,
+    quote_discount_value: pricing.quote_discount_value,
+  });
+
+  const amountCents =
+    parsedLines.lines.length === 0 && headerSubtotal == null && totals.total_cents === 0
+      ? null
+      : totals.total_cents;
 
   const insert = await admin
     .from('tenant_quotes')
@@ -178,6 +231,10 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
       title,
       status: 'draft',
       amount_cents: amountCents,
+      tax_mode: pricing.tax_mode,
+      tax_rate_bps: pricing.tax_rate_bps,
+      quote_discount_kind: pricing.quote_discount_kind,
+      quote_discount_value: pricing.quote_discount_value,
       notes: notes || null,
       valid_until: validUntil,
     })
@@ -198,6 +255,8 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
       frequency: l.frequency,
       frequency_detail: l.frequency_detail,
       amount_cents: l.amount_cents,
+      line_discount_kind: l.line_discount_kind,
+      line_discount_value: l.line_discount_value,
     }));
     const li = await admin.from('tenant_quote_line_items').insert(lineRows);
     if (li.error) {
@@ -275,14 +334,30 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     return { error: parsedLines.error };
   }
 
-  let amountCents: number | null;
-  if (parsedLines.lines.length > 0) {
-    amountCents = parsedLines.total_cents;
-  } else {
-    const headerParsed = parseOptionalDollarsToCents(amountRaw);
-    if (!headerParsed.ok) return { error: headerParsed.error };
-    amountCents = headerParsed.cents;
-  }
+  const pricing = parseQuoteHeaderPricingFromForm(formData);
+  if (!pricing.ok) return { error: pricing.error };
+
+  const headerParsed = parseOptionalDollarsToCents(amountRaw);
+  if (!headerParsed.ok) return { error: headerParsed.error };
+  const headerSubtotal = parsedLines.lines.length > 0 ? null : headerParsed.cents;
+
+  const totals = computeQuoteTotals({
+    lines: parsedLines.lines.map((l) => ({
+      amount_cents: l.amount_cents,
+      line_discount_kind: l.line_discount_kind,
+      line_discount_value: l.line_discount_value,
+    })),
+    header_subtotal_cents: headerSubtotal,
+    tax_mode: pricing.tax_mode,
+    tax_rate_bps: pricing.tax_rate_bps,
+    quote_discount_kind: pricing.quote_discount_kind,
+    quote_discount_value: pricing.quote_discount_value,
+  });
+
+  const amountCents =
+    parsedLines.lines.length === 0 && headerSubtotal == null && totals.total_cents === 0
+      ? null
+      : totals.total_cents;
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
@@ -292,6 +367,8 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     frequency: l.frequency,
     frequency_detail: l.frequency_detail,
     amount_cents: l.amount_cents,
+    line_discount_kind: l.line_discount_kind,
+    line_discount_value: l.line_discount_value,
   }));
 
   const rpc = await admin.rpc('tenant_quote_save_with_line_items', {
@@ -304,6 +381,10 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
     p_amount_cents: amountCents,
     p_notes: notes || null,
     p_valid_until: validUntil,
+    p_tax_mode: pricing.tax_mode,
+    p_tax_rate_bps: pricing.tax_rate_bps,
+    p_quote_discount_kind: pricing.quote_discount_kind,
+    p_quote_discount_value: pricing.quote_discount_value,
     p_line_items: linePayload,
   });
 
@@ -348,7 +429,7 @@ export async function createTenantQuoteAmendment(
   const { data: prior, error: priorErr } = await admin
     .from('tenant_quotes')
     .select(
-      'id, tenant_id, customer_id, property_id, title, status, amount_cents, currency, notes, valid_until, quote_group_id, version_number, is_locked, superseded_by_quote_id',
+      'id, tenant_id, customer_id, property_id, title, status, amount_cents, currency, notes, valid_until, quote_group_id, version_number, is_locked, superseded_by_quote_id, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value',
     )
     .eq('id', priorQuoteId)
     .eq('tenant_id', membership.tenantId)
@@ -386,6 +467,10 @@ export async function createTenantQuoteAmendment(
       status: 'draft',
       amount_cents: prior.amount_cents,
       currency: prior.currency,
+      tax_mode: prior.tax_mode,
+      tax_rate_bps: prior.tax_rate_bps,
+      quote_discount_kind: prior.quote_discount_kind,
+      quote_discount_value: prior.quote_discount_value,
       notes: prior.notes,
       valid_until: prior.valid_until,
       quote_group_id: prior.quote_group_id,
@@ -404,7 +489,7 @@ export async function createTenantQuoteAmendment(
 
   const { data: lineRows } = await admin
     .from('tenant_quote_line_items')
-    .select('sort_order, service_label, frequency, frequency_detail, amount_cents')
+    .select('sort_order, service_label, frequency, frequency_detail, amount_cents, line_discount_kind, line_discount_value')
     .eq('quote_id', priorQuoteId)
     .order('sort_order', { ascending: true });
 
@@ -416,6 +501,8 @@ export async function createTenantQuoteAmendment(
       frequency: l.frequency,
       frequency_detail: l.frequency_detail,
       amount_cents: l.amount_cents,
+      line_discount_kind: l.line_discount_kind,
+      line_discount_value: l.line_discount_value,
     }));
     const liErr = await admin.from('tenant_quote_line_items').insert(copy);
     if (liErr.error) {

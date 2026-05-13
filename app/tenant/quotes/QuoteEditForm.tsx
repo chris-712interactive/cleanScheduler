@@ -9,13 +9,21 @@ import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_STATUS_OPTIONS } from '@/lib/tenant/quoteLabels';
 import type { Tables } from '@/lib/supabase/database.types';
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditor';
+import { QuoteHeaderPricingFields, type QuoteHeaderPricingDefaults } from './QuoteHeaderPricingFields';
 import styles from './quotes.module.scss';
 
 const initial: QuoteFormState = {};
 
 export type QuoteEditLineItem = Pick<
   Tables<'tenant_quote_line_items'>,
-  'id' | 'sort_order' | 'service_label' | 'frequency' | 'frequency_detail' | 'amount_cents'
+  | 'id'
+  | 'sort_order'
+  | 'service_label'
+  | 'frequency'
+  | 'frequency_detail'
+  | 'amount_cents'
+  | 'line_discount_kind'
+  | 'line_discount_value'
 >;
 
 export interface QuoteEditSnapshot {
@@ -28,6 +36,7 @@ export interface QuoteEditSnapshot {
   notes: string;
   validUntilYmd: string;
   lineItems: QuoteEditLineItem[];
+  headerPricing: QuoteHeaderPricingDefaults;
 }
 
 function formatAmountField(cents: number | null): string {
@@ -156,12 +165,14 @@ export function QuoteEditForm({
 
       <QuoteLineItemsEditor key={snapshot.quoteId} initialRows={snapshot.lineItems} />
 
+      <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />
+
       <label className={styles.label} htmlFor="edit_quote_amount">
         Amount (USD, optional if lines above)
       </label>
       <p className={styles.hint}>
-        If any service rows above have a name and amount, the saved quote total is the sum of those lines and
-        this field is ignored.
+        When line items are present, the saved total is computed from those lines (after line discounts), then
+        quote-level discount and tax. This field is only used when there are no line items.
       </p>
       <input
         id="edit_quote_amount"

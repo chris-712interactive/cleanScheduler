@@ -1,5 +1,13 @@
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import { parseQuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
+import type { Database } from '@/lib/supabase/database.types';
+import {
+  parseDiscountDollarsToCents,
+  parseDiscountPercentToBps,
+  parseQuoteLineDiscountKind,
+} from '@/lib/tenant/quoteHeaderPricingForm';
+
+export type QuoteLineDiscountKind = Database['public']['Enums']['quote_line_discount_kind'];
 
 export interface ParsedQuoteLineItem {
   sort_order: number;
@@ -7,6 +15,8 @@ export interface ParsedQuoteLineItem {
   frequency: QuoteLineFrequency;
   frequency_detail: string | null;
   amount_cents: number;
+  line_discount_kind: QuoteLineDiscountKind;
+  line_discount_value: number;
 }
 
 function parseDollarsToCents(raw: string): { ok: true; cents: number } | { ok: false; error: string } {
@@ -24,14 +34,23 @@ function parseDollarsToCents(raw: string): { ok: true; cents: number } | { ok: f
  * Drops completely blank rows. Validates non-empty lines.
  */
 export function parseQuoteLineItemsFromForm(formData: FormData):
-  | { ok: true; lines: ParsedQuoteLineItem[]; total_cents: number }
+  | { ok: true; lines: ParsedQuoteLineItem[] }
   | { ok: false; error: string } {
   const services = formData.getAll('line_service').map((v) => String(v));
   const frequencies = formData.getAll('line_frequency').map((v) => String(v));
   const details = formData.getAll('line_frequency_detail').map((v) => String(v));
   const amounts = formData.getAll('line_amount').map((v) => String(v));
+  const discKinds = formData.getAll('line_discount_kind').map((v) => String(v));
+  const discInputs = formData.getAll('line_discount_input').map((v) => String(v));
 
-  const n = Math.max(services.length, frequencies.length, details.length, amounts.length);
+  const n = Math.max(
+    services.length,
+    frequencies.length,
+    details.length,
+    amounts.length,
+    discKinds.length,
+    discInputs.length,
+  );
   const lines: ParsedQuoteLineItem[] = [];
 
   for (let i = 0; i < n; i++) {
@@ -39,8 +58,14 @@ export function parseQuoteLineItemsFromForm(formData: FormData):
     const frequency = parseQuoteLineFrequency(frequencies[i] ?? '');
     const frequency_detail_raw = (details[i] ?? '').trim();
     const amountRaw = amounts[i] ?? '';
+    const line_discount_kind = parseQuoteLineDiscountKind(discKinds[i] ?? '');
+    const discInputRaw = discInputs[i] ?? '';
 
-    const rowBlank = !service_label && !amountRaw.trim();
+    const rowBlank =
+      !service_label &&
+      !amountRaw.trim() &&
+      line_discount_kind === 'none' &&
+      !discInputRaw.trim();
     if (rowBlank) continue;
 
     if (!service_label) {
@@ -54,15 +79,27 @@ export function parseQuoteLineItemsFromForm(formData: FormData):
     const parsed = parseDollarsToCents(amountRaw);
     if (!parsed.ok) return parsed;
 
+    let line_discount_value = 0;
+    if (line_discount_kind === 'percent') {
+      const p = parseDiscountPercentToBps(discInputRaw);
+      if (!p.ok) return { ok: false, error: p.error };
+      line_discount_value = p.bps;
+    } else if (line_discount_kind === 'fixed_cents') {
+      const d = parseDiscountDollarsToCents(discInputRaw);
+      if (!d.ok) return { ok: false, error: d.error };
+      line_discount_value = d.cents;
+    }
+
     lines.push({
       sort_order: lines.length,
       service_label,
       frequency,
       frequency_detail: frequency_detail_raw ? frequency_detail_raw : null,
       amount_cents: parsed.cents,
+      line_discount_kind,
+      line_discount_value,
     });
   }
 
-  const total_cents = lines.reduce((s, l) => s + l.amount_cents, 0);
-  return { ok: true, lines, total_cents };
+  return { ok: true, lines };
 }

@@ -5,6 +5,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import type { Tables } from '@/lib/supabase/database.types';
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import { QUOTE_LINE_FREQUENCY_OPTIONS, parseQuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
+import type { QuoteLineDiscountKind } from '@/lib/tenant/quoteHeaderPricingForm';
+import { QUOTE_LINE_DISCOUNT_OPTIONS } from '@/lib/tenant/quoteHeaderPricingForm';
 import styles from './quotes.module.scss';
 
 export type QuoteLineItemDraft = {
@@ -13,12 +15,27 @@ export type QuoteLineItemDraft = {
   frequency: QuoteLineFrequency;
   frequency_detail: string;
   amount_dollars: string;
+  line_discount_kind: QuoteLineDiscountKind;
+  line_discount_input: string;
 };
 
 type QuoteLineItemRow = Pick<
   Tables<'tenant_quote_line_items'>,
-  'id' | 'sort_order' | 'service_label' | 'frequency' | 'frequency_detail' | 'amount_cents'
+  | 'id'
+  | 'sort_order'
+  | 'service_label'
+  | 'frequency'
+  | 'frequency_detail'
+  | 'amount_cents'
+  | 'line_discount_kind'
+  | 'line_discount_value'
 >;
+
+function discountInputFromRow(kind: QuoteLineDiscountKind, value: number): string {
+  if (kind === 'none' || value <= 0) return '';
+  if (kind === 'percent') return String(value / 100);
+  return (value / 100).toFixed(2);
+}
 
 function emptyDraft(): QuoteLineItemDraft {
   return {
@@ -27,6 +44,8 @@ function emptyDraft(): QuoteLineItemDraft {
     frequency: 'one_time',
     frequency_detail: '',
     amount_dollars: '',
+    line_discount_kind: 'none',
+    line_discount_input: '',
   };
 }
 
@@ -43,6 +62,8 @@ export function draftsFromQuoteLineRows(
       frequency: l.frequency,
       frequency_detail: l.frequency_detail ?? '',
       amount_dollars: (l.amount_cents / 100).toFixed(2),
+      line_discount_kind: l.line_discount_kind,
+      line_discount_input: discountInputFromRow(l.line_discount_kind, l.line_discount_value),
     }));
 }
 
@@ -78,16 +99,18 @@ export function QuoteLineItemsEditor({
     <fieldset className={styles.lineItemsFieldset}>
       <legend className={styles.lineItemsLegend}>Services &amp; pricing</legend>
       <p className={styles.lineItemsIntro}>
-        Add one row per priced service. Cadence describes how often that price applies (for example weekly
-        maintenance vs one-time deep clean). If you enter any rows here, the quote total is the sum of line
-        amounts and the single &quot;Amount&quot; field below is ignored on save.
+        Add one row per priced service. Cadence describes how often that price applies. Line discounts reduce
+        that row&apos;s amount before the quote subtotal. If you enter any complete rows here, the header
+        amount field below is ignored for the total (tax and quote-level discount still apply).
       </p>
 
       <div className={styles.lineItemsHeaderRow} aria-hidden="true">
         <span className={styles.lineItemsHeaderCell}>Service</span>
         <span className={styles.lineItemsHeaderCell}>Cadence</span>
         <span className={styles.lineItemsHeaderCell}>Cadence detail</span>
-        <span className={styles.lineItemsHeaderCell}>Amount (USD)</span>
+        <span className={styles.lineItemsHeaderCell}>List ($)</span>
+        <span className={styles.lineItemsHeaderCell}>Line disc.</span>
+        <span className={styles.lineItemsHeaderCell}>Disc. value</span>
         <span className={styles.lineItemsHeaderCellAction} />
       </div>
 
@@ -140,7 +163,36 @@ export function QuoteLineItemsEditor({
               placeholder="0.00"
               value={row.amount_dollars}
               onChange={(e) => updateRow(row.key, { amount_dollars: e.target.value })}
-              aria-label="Line amount USD"
+              aria-label="Line list amount USD"
+            />
+            <select
+              name="line_discount_kind"
+              className={styles.select}
+              value={row.line_discount_kind}
+              onChange={(e) => {
+                const line_discount_kind = e.target.value as QuoteLineDiscountKind;
+                updateRow(row.key, {
+                  line_discount_kind,
+                  line_discount_input: line_discount_kind === 'none' ? '' : row.line_discount_input,
+                });
+              }}
+              aria-label="Line discount type"
+            >
+              {QUOTE_LINE_DISCOUNT_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <input
+              name="line_discount_input"
+              className={styles.input}
+              inputMode="decimal"
+              placeholder={row.line_discount_kind === 'percent' ? '%' : row.line_discount_kind === 'fixed_cents' ? '$' : '—'}
+              value={row.line_discount_input}
+              onChange={(e) => updateRow(row.key, { line_discount_input: e.target.value })}
+              readOnly={row.line_discount_kind === 'none'}
+              aria-label="Line discount value"
             />
             <div className={styles.lineItemActions}>
               <button

@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditor';
+import { QuoteHeaderPricingFields } from './QuoteHeaderPricingFields';
 import styles from './quotes.module.scss';
 
 const initial: QuoteFormState = {};
@@ -103,12 +104,15 @@ export function QuoteCreateForm({
 
       <QuoteLineItemsEditor />
 
+      <QuoteHeaderPricingFields />
+
       <label className={styles.label} htmlFor="quote_amount">
         Amount (USD, optional)
       </label>
       <p className={styles.hint}>
-        If you add any service rows above, the quote total is the sum of those lines and this amount field is
-        ignored when you save.
+        If you add priced service rows above, the saved total uses those lines (after line discounts), then
+        quote-level discount and tax below. This single amount field is only used when there are no line
+        items.
       </p>
       <input
         id="quote_amount"

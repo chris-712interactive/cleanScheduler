@@ -40,7 +40,14 @@ export type QuoteDetailEmbedRow = Tables<'tenant_quotes'> & {
   tenant_quote_line_items:
     | Pick<
         Tables<'tenant_quote_line_items'>,
-        'id' | 'sort_order' | 'service_label' | 'frequency' | 'frequency_detail' | 'amount_cents'
+        | 'id'
+        | 'sort_order'
+        | 'service_label'
+        | 'frequency'
+        | 'frequency_detail'
+        | 'amount_cents'
+        | 'line_discount_kind'
+        | 'line_discount_value'
       >[]
     | null;
 };
