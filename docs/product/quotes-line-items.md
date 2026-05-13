@@ -9,10 +9,12 @@ This document describes how **tenant quotes** combine a header row (`tenant_quot
   - `service_label` (required, free text — “what we are pricing”).
   - `frequency` (`quote_line_frequency` enum: `one_time`, `weekly`, `biweekly`, `monthly`, `custom`).
   - `frequency_detail` (optional text; **required when `frequency` is `custom`** to describe the cadence in plain language).
-  - `amount_cents` (non-negative integer, USD cents for that line).
+  - `amount_cents` (non-negative integer; cents in the quote’s currency — see **Currency** below).
   - `sort_order` (integer; row order from the form).
 
 Migration: `supabase/migrations/0016_quote_line_items.sql`.
+
+**Not yet in schema** (decided in principle; implement in follow-up migrations and UI): taxes, discounts, acceptance snapshots, quote versioning, tenant ops/invoice/payment settings, customer acceptance payment capture.
 
 ## Form contract (tenant portal)
 
@@ -42,12 +44,52 @@ The UI implementation is `QuoteLineItemsEditor` (`app/tenant/quotes/QuoteLineIte
 - Quote detail loads `tenant_quote_line_items` with the quote and renders a read-only **Services** table when lines exist.
 - Header subtitle still uses `formatQuoteMoney(row.amount_cents, row.currency)`; that should match the sum of lines when lines are present and in sync.
 
-## Open decisions (confirm with product)
+## Product decisions (stakeholder input)
 
-1. **Taxes and discounts**: Not modeled on lines or header; decide whether totals should be pre- or post-tax and where discounts live.
-2. **Quote versioning / PDF**: Whether accepted quotes freeze a snapshot of line items separately from live edits.
-3. **Mapping to scheduling or subscriptions**: Whether accepting a quote with mixed cadences auto-creates visits, invoices, or subscription records (not implemented here).
-4. **Currency**: Header has `currency`; lines assume the same currency (no per-line currency).
+### Taxes
+
+- **Tenant choice**: Each tenant decides whether amounts on a quote are **tax-inclusive** or **tax-exclusive** (or otherwise how tax is presented). The product should support that preference without forcing a single global rule.
+
+### Discounts
+
+- **Flexible model**: Support either (a) a **single quote-level discount** applied across the quote in a defined way (e.g. after subtotal — specify rounding at implementation time), or (b) **per-line custom discounts** when the line warrants it. Tenants should be able to use whichever fits the job.
+- **Discount kind (tenant choice)**: For any quote-level or per-line discount the tenant chooses the **mechanism**: **percentage off** or **fixed dollar amount** (not a global product default—each quote or line can follow what the tenant selects for that discount).
+- **Combining rules**: When both quote-level and per-line discounts exist, document the evaluation order (e.g. line discounts first then quote-level, or the reverse) when you implement totals so support and customers get one consistent story.
+
+### Acceptance and versioning
+
+- **Freeze on acceptance**: When the customer **accepts** a quote, that revision is **frozen** (immutable snapshot) because the customer agreed to that version.
+- **Amendments**: If the quote must change after acceptance, create a **new version** instead of mutating the accepted snapshot. Both **customer and tenant** retain a **history** of quote versions.
+- **Version reason**: Creating a new version after acceptance (or whenever versioning is used for amendments) should require a **mandatory reason** (audit trail and clarity for both sides).
+
+### Operations (scheduling) and tenant settings
+
+- **Tenant-configurable behavior**: Add **tenant-level settings** (or equivalent) so each business can choose:
+  - **Auto-scheduling**: Accepted quotes optionally drive automatic creation of visits / schedule entries according to rules you define later, **or**
+  - **Prompt workflow**: No auto-schedule; when staff log in they get a **workflow that prompts them** to schedule work for accepted quotes.
+
+### Invoices and payments
+
+- **Tenant policies**: Settings should allow **prepay vs. pay-after** (and similar) so businesses that require payment before work vs. after can both be supported.
+- **Methods**: Customers may pay with **cash, check, card**, etc. The **selected method** should be **clearly denoted** (especially for cash/check where there is no card rail).
+- **Acceptance phase**: Some payment or payment-intent details may be **collected from the customer during quote acceptance** (design the acceptance UI/API accordingly).
+- **Allowed methods per tenant**: Tenants configure **which payment methods they accept**; the customer only sees **those** options during acceptance (and anywhere else payment method is chosen).
+
+### Currency
+
+- **Single currency per quote**: One `currency` on the quote header applies to the whole quote and all line items (no per-line currency).
+- **Launch scope**: **USD only** for US-based businesses at initial sale; keep types and copy flexible so **other currencies can be enabled later** without a breaking redesign.
+
+## Future implementation backlog (not shipped)
+
+Suggested order is indicative; adjust with engineering.
+
+1. **Schema + UI**: Tax mode / display on quote; discount fields (header and/or per line) including **kind** (`percent` | `fixed_cents` or equivalent) and value; total math and order of operations vs tax if both apply.
+2. **Acceptance snapshot**: Persist immutable copy of header + line items (and totals) at `accepted` transition.
+3. **Versioning**: `tenant_quotes` version chain (parent id, version number, `version_reason`, `supersedes_quote_id`, etc.) + customer-visible history.
+4. **Tenant settings**: Flags/tables for scheduling mode (auto vs prompt), invoice timing (prepay vs post), allowed payment methods.
+5. **Customer acceptance flow**: Capture payment preference/method where applicable; enforce tenant allow-list.
+6. **Hardening**: Transactional replace for line items on update (`rpc` or single SQL transaction).
 
 ## Files touched by this feature
 
