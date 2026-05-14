@@ -18,7 +18,7 @@ todos:
     content: "Provision multi-environment infra (\u00a716): Vercel env scopes; DNS root + wildcard; Stripe test/live + webhooks; Plaid sandbox/prod; Twilio (SMS); **Resend** verified sending domain(s) for transactional email; Sentry tags."
     status: pending
   - id: cicdPipeline
-    content: "Shipped: `.github/workflows/ci.yml` runs `npm run typecheck` + `npm run lint` on every PR and on push to `main`/`staging`. Still missing vs §16: stylelint in CI (local `npm run lint:styles` currently errors in stylelint/postcss on `TopBar.module.scss`), Prettier `--check`, Vitest, `supabase db` migration diff / drift check, pg_tap RLS suite, ephemeral Supabase in CI, and Vercel branch deploy rules (staging\u2192DEV, gated PROD migrations)."
+    content: "Shipped: `.github/workflows/ci.yml` runs `npm run typecheck` + `npm run lint` + **`npm run lint:styles`** on every PR and on push to `main`/`staging`. Stylelint: disabled crash-prone `keyframe-block-no-duplicate-selectors` (upstream postcss-selector-parser); fixed remaining `color-no-hex` / alpha / comment violations. Still missing vs §16: Prettier `--check`, Vitest, `supabase db` migration diff / drift check, pg_tap RLS suite, ephemeral Supabase in CI, and Vercel branch deploy rules (staging\u2192DEV, gated PROD migrations)."
     status: in_progress
   - id: envGuardrails
     content: "Shipped: `lib/env.ts` Zod-validated `publicEnv`/`serverEnv`; `NEXT_PUBLIC_APP_ENV=prod` requires live Stripe key and production Plaid when Plaid is configured; **non-prod rejects `sk_live_` Stripe keys** (2026-05-12). `getNonProdPortalBanner()` drives dev/local banner text in portals. `.env.example` is checked in. Still missing: explicit prod-shaped Supabase URL pairing (today we key off `NEXT_PUBLIC_APP_ENV` only)."
@@ -480,7 +480,7 @@ This section reconciles the YAML todos at the top of this file with the current 
 
 ### Prioritized next slices (execute in roughly this order for trial-to-revenue)
 
-1. **CI (`cicdPipeline`)** — Fix or pin stylelint/postcss so `lint:styles` is green; add it to Actions. Optionally add `prettier --check` after a one-time `npm run format` on the repo (large churn). Add `supabase db lint` or migration list check when CLI is available in CI.
+1. **CI (`cicdPipeline`)** — ~~Fix or pin stylelint/postcss so `lint:styles` is green; add it to Actions.~~ **Done (2026-05-12):** `lint:styles` green + CI step. Optionally add `prettier --check` after a one-time `npm run format` on the repo (large churn). Add `supabase db lint` or migration list check when CLI is available in CI.
 2. **Env (`envGuardrails`)** — Optional: fail if `NEXT_PUBLIC_SUPABASE_URL` host suggests production project while `NEXT_PUBLIC_APP_ENV` is `local`/`dev` (needs agreed naming convention).
 3. ~~**Billing + Connect**~~ — **MVP landed 2026-05-12** (see §11.6). **0025 + app follow-up (2026-05-12):** `recurring_appointment_rules` + RRULE materializer cron; `billing_cycle_anchor` UX; Resend invoice email; Connect **Billing Portal**; refund-from-app; Connect webhook writers for **refunds / disputes / payouts** + dispute email to tenant owner; Balance Transaction **fee backfill** on invoice Checkout; cancel subscription (tenant + customer). **Next billing PRs:** Stripe Billing **`invoice.*`** sync into `tenant_invoices`; Setup Intents / saved PM UX polish.
 4. **Transactional email (`transactionalEmail`)** — Extend **Resend** for invoices, auth-adjacent mail, and any new flows (see `lib/email/resend.ts`).
