@@ -7,6 +7,7 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
+import { customerHasAnyNameParts, formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import {
   dbOverlapRangeForQuery,
@@ -34,7 +35,14 @@ type VisitListRow = {
   ends_at: string;
   status: Tables<'tenant_scheduled_visits'>['status'];
   notes: string | null;
-  customers: { customer_identities: { full_name: string | null; phone: string | null } | null } | null;
+  customers: {
+    customer_identities: {
+      first_name: string | null;
+      last_name: string | null;
+      full_name: string | null;
+      phone: string | null;
+    } | null;
+  } | null;
   tenant_customer_properties:
     | Pick<
         Tables<'tenant_customer_properties'>,
@@ -76,6 +84,8 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       notes,
       customers (
         customer_identities (
+          first_name,
+          last_name,
           full_name,
           phone
         )
@@ -111,7 +121,8 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
 
   const visits: ScheduleVisitVM[] = (visitRows ?? []).map((v) => {
     const ident = v.customers?.customer_identities;
-    const who = ident?.full_name?.trim() || 'Customer';
+    const who =
+      ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : 'Customer';
     const prop = v.tenant_customer_properties;
     const site = prop ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ') : '';
     const rawAssignees = v.tenant_scheduled_visit_assignees as

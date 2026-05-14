@@ -12,6 +12,7 @@ import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
 import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
 import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import styles from '../customers.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,8 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
       customer_identities (
         id,
         email,
+        first_name,
+        last_name,
         full_name,
         phone,
         auth_user_id
@@ -85,7 +88,7 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
   const properties = customer.tenant_customer_properties ?? [];
   const primary = properties.find((p) => p.is_primary);
 
-  const displayName = identity.full_name ?? 'Unnamed';
+  const displayName = formatCustomerDisplayName(identity);
   const email = identity.email ?? '';
   const phone = identity.phone ?? '';
   const portalLinked = Boolean(identity.auth_user_id);
@@ -126,7 +129,8 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
                 tenantSlug={membership.tenantSlug}
                 snapshot={{
                   customerId: customer.id,
-                  fullName: identity.full_name ?? '',
+                  firstName: identity.first_name ?? '',
+                  lastName: identity.last_name ?? '',
                   email,
                   phone,
                   status: customer.status,

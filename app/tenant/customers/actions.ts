@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import type { Tables } from '@/lib/supabase/database.types';
+import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 
 export interface CustomerFormState {
   error?: string;
@@ -22,7 +23,8 @@ export async function createTenantCustomer(
   formData: FormData,
 ): Promise<CustomerFormState> {
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
-  const fullName = String(formData.get('full_name') ?? '').trim();
+  const firstName = String(formData.get('first_name') ?? '').trim();
+  const lastName = String(formData.get('last_name') ?? '').trim();
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const phone = String(formData.get('phone') ?? '').trim();
   const companyName = String(formData.get('company_name') ?? '').trim();
@@ -34,9 +36,11 @@ export async function createTenantCustomer(
   const preferredContactMethod = normalizeContactMethod(String(formData.get('preferred_contact_method') ?? '').trim());
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
-  if (!slug || !fullName) {
-    return { error: 'Workspace and customer name are required.' };
+  if (!slug || !firstName) {
+    return { error: 'Workspace and customer first name are required.' };
   }
+
+  const fullNameSynced = syncedFullNameFromParts(firstName, lastName);
 
   const membership = await requireTenantPortalAccess(slug, '/customers/new');
 
@@ -67,7 +71,9 @@ export async function createTenantCustomer(
     .from('customer_identities')
     .insert({
       email: email || null,
-      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName || null,
+      full_name: fullNameSynced,
       phone: phone || null,
     })
     .select('id')
@@ -158,7 +164,8 @@ export async function updateTenantCustomer(
 ): Promise<CustomerFormState> {
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
-  const fullName = String(formData.get('full_name') ?? '').trim();
+  const firstName = String(formData.get('first_name') ?? '').trim();
+  const lastName = String(formData.get('last_name') ?? '').trim();
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const phone = String(formData.get('phone') ?? '').trim();
   const status = String(formData.get('status') ?? 'active').trim();
@@ -166,9 +173,11 @@ export async function updateTenantCustomer(
   const preferredContactMethod = normalizeContactMethod(String(formData.get('preferred_contact_method') ?? '').trim());
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
-  if (!slug || !customerId || !fullName) {
-    return { error: 'Workspace, customer, and full name are required.' };
+  if (!slug || !customerId || !firstName) {
+    return { error: 'Workspace, customer, and first name are required.' };
   }
+
+  const fullNameSynced = syncedFullNameFromParts(firstName, lastName);
 
   const membership = await requireTenantPortalAccess(slug, `/customers/${customerId}`);
 
@@ -187,7 +196,9 @@ export async function updateTenantCustomer(
   const identityUpdate = await admin
     .from('customer_identities')
     .update({
-      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName || null,
+      full_name: fullNameSynced,
       email: email || null,
       phone: phone || null,
     })

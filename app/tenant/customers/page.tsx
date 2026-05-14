@@ -12,6 +12,7 @@ import {
   parseCustomerDirectoryQuery,
   parseCustomerDirectoryStatus,
 } from '@/lib/tenant/customerDirectorySearch';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import styles from './customers.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -79,6 +80,8 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       created_at,
       customer_identities (
         email,
+        first_name,
+        last_name,
         full_name,
         phone
       )
@@ -128,7 +131,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
                   name="q"
                   type="search"
                   className={styles.input}
-                  placeholder="Name, email, or phone"
+                  placeholder="First or last name, email, or phone"
                   defaultValue={q}
                   autoComplete="off"
                 />
@@ -160,7 +163,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
               </div>
             </div>
             <p className={styles.directoryFilterHint}>
-              Press Apply after changing search or status. Results match any of name, email, or phone.
+              Press Apply after changing search or status. Results match any of first name, last name, full name, email, or phone.
             </p>
           </form>
 
@@ -186,7 +189,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
             <ul className={styles.list}>
               {customers.map((c) => {
                 const identity = c.customer_identities;
-                const name = identity?.full_name ?? 'Unnamed';
+                const name = identity ? formatCustomerDisplayName(identity) : 'Unnamed';
                 const email = identity?.email ?? '—';
                 const phone = identity?.phone ?? '—';
                 return (

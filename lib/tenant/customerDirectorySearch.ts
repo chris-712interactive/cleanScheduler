@@ -3,11 +3,11 @@ export function escapeIlikeMetacharacters(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 
-/** Build `full_name.ilike.%…%,email.ilike.%…%,phone.ilike.%…%` for Supabase `.or()`. */
+/** Build name/email/phone `ilike` filters for Supabase `.or()`. */
 export function customerIdentitySearchOrClause(trimmedQuery: string): string {
   const inner = escapeIlikeMetacharacters(trimmedQuery);
   const pat = `%${inner}%`;
-  return `full_name.ilike.${pat},email.ilike.${pat},phone.ilike.${pat}`;
+  return `first_name.ilike.${pat},last_name.ilike.${pat},full_name.ilike.${pat},email.ilike.${pat},phone.ilike.${pat}`;
 }
 
 export type CustomerDirectoryStatusParam = 'all' | 'active' | 'inactive';

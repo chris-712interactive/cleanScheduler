@@ -36,6 +36,8 @@ export default async function TenantQuotesPage() {
         superseded_by_quote_id,
         customers (
           customer_identities (
+            first_name,
+            last_name,
             full_name
           )
         ),

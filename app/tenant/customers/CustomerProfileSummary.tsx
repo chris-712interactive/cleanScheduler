@@ -1,6 +1,7 @@
 import { Building2, Calendar, Hash, Mail, MapPin, MessageSquareText, Phone } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
 import styles from './customers.module.scss';
 
@@ -57,7 +58,7 @@ export function CustomerProfileSummary({
           ) : (
             <p className={styles.profileSummaryTagline}>
               <span className={styles.profileSummaryPersonName}>
-                {identity.full_name?.trim() || 'Unnamed'}
+                {formatCustomerDisplayName(identity)}
               </span>
               <span className={styles.profileSummaryTaglineRest}> · Primary contact on file</span>
             </p>

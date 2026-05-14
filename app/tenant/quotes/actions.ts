@@ -196,7 +196,8 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
   const amountRaw = String(formData.get('amount_dollars') ?? '');
   const notes = String(formData.get('notes') ?? '').trim();
   const validUntilRaw = String(formData.get('valid_until') ?? '');
-  const inlineName = String(formData.get('inline_customer_full_name') ?? '').trim();
+  const inlineFirstName = String(formData.get('inline_customer_first_name') ?? '').trim();
+  const inlineLastName = String(formData.get('inline_customer_last_name') ?? '').trim();
   const inlineEmail = String(formData.get('inline_customer_email') ?? '').trim().toLowerCase();
   const inlinePhone = String(formData.get('inline_customer_phone') ?? '').trim();
 
@@ -212,7 +213,8 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
     const created = await createTenantCustomerInlineForQuote({
       admin,
       tenantId: membership.tenantId,
-      fullName: inlineName,
+      firstName: inlineFirstName,
+      lastName: inlineLastName,
       email: inlineEmail,
       phone: inlinePhone,
     });

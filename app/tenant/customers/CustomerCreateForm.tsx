@@ -23,15 +23,27 @@ export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
           <p className={styles.sectionDescription}>Core contact details for this account.</p>
         </header>
 
-        <label className={styles.label} htmlFor="full_name">
-          Full name
+        <label className={styles.label} htmlFor="first_name">
+          First name
         </label>
         <input
-          id="full_name"
-          name="full_name"
+          id="first_name"
+          name="first_name"
           className={styles.input}
           required
-          placeholder="Jane Customer"
+          autoComplete="given-name"
+          placeholder="Jane"
+        />
+
+        <label className={styles.label} htmlFor="last_name">
+          Last name (optional)
+        </label>
+        <input
+          id="last_name"
+          name="last_name"
+          className={styles.input}
+          autoComplete="family-name"
+          placeholder="Customer"
         />
 
         <label className={styles.label} htmlFor="email">

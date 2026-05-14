@@ -6,6 +6,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { sendCustomerPortalInviteEmail, isResendApiConfigured } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { inviteTemplateCustomerFirstName } from '@/lib/tenant/customerIdentityName';
 
 export interface CustomerInviteFormState {
   error?: string;
@@ -45,6 +46,7 @@ export async function sendCustomerPortalInviteAction(
       customer_identities (
         id,
         email,
+        first_name,
         full_name,
         auth_user_id
       )
@@ -64,6 +66,7 @@ export async function sendCustomerPortalInviteAction(
   ) as {
     id: string;
     email: string | null;
+    first_name: string | null;
     full_name: string | null;
     auth_user_id: string | null;
   } | null;
@@ -110,7 +113,7 @@ export async function sendCustomerPortalInviteAction(
 
   const acceptUrl = `${getPublicOrigin('my')}/complete-invite?token=${invite.token}`;
   const tenantName = String(tenant.name ?? 'Your cleaning provider').trim() || 'Your cleaning provider';
-  const customerName = (identity.full_name ?? '').trim() || 'there';
+  const customerName = inviteTemplateCustomerFirstName(identity);
 
   const sent = await sendCustomerPortalInviteEmail({
     to: email,

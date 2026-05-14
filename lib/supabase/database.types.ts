@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0021.
+ * Hand-maintained schema mirror for migrations 0001–0022.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -13,6 +13,8 @@ export type Database = {
           id: string;
           auth_user_id: string | null;
           email: string | null;
+          first_name: string | null;
+          last_name: string | null;
           full_name: string | null;
           phone: string | null;
           created_at: string;
@@ -22,6 +24,8 @@ export type Database = {
           id?: string;
           auth_user_id?: string | null;
           email?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
           full_name?: string | null;
           phone?: string | null;
           created_at?: string;
@@ -31,6 +35,8 @@ export type Database = {
           id?: string;
           auth_user_id?: string | null;
           email?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
           full_name?: string | null;
           phone?: string | null;
           created_at?: string;

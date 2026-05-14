@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -11,16 +12,19 @@ type AdminClient = SupabaseClient<Database>;
 export async function createTenantCustomerInlineForQuote(options: {
   admin: AdminClient;
   tenantId: string;
-  fullName: string;
+  firstName: string;
+  lastName?: string;
   email: string;
   phone?: string;
 }): Promise<{ ok: true; customerId: string } | { ok: false; error: string }> {
-  const fullName = options.fullName.trim();
+  const firstName = options.firstName.trim();
+  const lastName = (options.lastName ?? '').trim();
   const email = options.email.trim().toLowerCase();
   const phone = (options.phone ?? '').trim();
+  const fullNameSynced = syncedFullNameFromParts(firstName, lastName);
 
-  if (!fullName) {
-    return { ok: false, error: 'Customer name is required.' };
+  if (!firstName) {
+    return { ok: false, error: 'Customer first name is required.' };
   }
   if (!email) {
     return {
@@ -54,7 +58,9 @@ export async function createTenantCustomerInlineForQuote(options: {
     .from('customer_identities')
     .insert({
       email,
-      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName || null,
+      full_name: fullNameSynced,
       phone: phone || null,
     })
     .select('id')

@@ -87,8 +87,8 @@ upsert_membership as (
   returning tenant_id, user_id
 ),
 insert_customer_identity as (
-  insert into public.customer_identities (auth_user_id, email, full_name, phone)
-  select null, 'demo.customer@example.com', 'Demo Customer', '+1 (555) 555-0101'
+  insert into public.customer_identities (auth_user_id, email, first_name, last_name, full_name, phone)
+  select null, 'demo.customer@example.com', 'Demo', 'Customer', 'Demo Customer', '+1 (555) 555-0101'
   where not exists (
     select 1
     from public.customer_identities ci

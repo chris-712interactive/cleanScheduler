@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import type { IdentityChipModel } from '@/components/portal/types';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 
 function initialsFromName(name: string | null | undefined, email: string | null | undefined): string {
   const n = (name ?? '').trim();
@@ -19,16 +20,17 @@ export async function getCustomerShellIdentity(userId: string): Promise<Identity
   const admin = createAdminClient();
   const { data: identity } = await admin
     .from('customer_identities')
-    .select('full_name, email')
+    .select('first_name, last_name, full_name, email')
     .eq('auth_user_id', userId)
     .maybeSingle();
 
   if (!identity) return null;
 
-  const display = identity.full_name?.trim() || identity.email?.trim() || 'Customer';
+  const formatted = formatCustomerDisplayName(identity);
+  const display = formatted !== 'Unnamed' ? formatted : identity.email?.trim() || 'Customer';
   return {
     name: display,
     subtitle: 'Customer account',
-    initials: initialsFromName(identity.full_name, identity.email),
+    initials: initialsFromName(display, identity.email),
   };
 }

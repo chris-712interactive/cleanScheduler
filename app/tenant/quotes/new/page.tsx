@@ -6,6 +6,7 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { QuoteCreateForm, type CustomerPropertyGroup } from '../QuoteCreateForm';
 import styles from '../quotes.module.scss';
@@ -14,7 +15,11 @@ export const dynamic = 'force-dynamic';
 
 type CustomerPickRow = {
   id: string;
-  customer_identities: { full_name: string | null } | null;
+  customer_identities: {
+    first_name: string | null;
+    last_name: string | null;
+    full_name: string | null;
+  } | null;
 };
 
 type PropertyPickRow = Pick<
@@ -51,6 +56,8 @@ export default async function TenantQuoteNewPage() {
         `
         id,
         customer_identities (
+          first_name,
+          last_name,
           full_name
         )
       `,
@@ -72,7 +79,7 @@ export default async function TenantQuoteNewPage() {
 
   const customerOptions = customerRows.map((r) => ({
     id: r.id,
-    label: r.customer_identities?.full_name?.trim() || 'Unnamed',
+    label: r.customer_identities ? formatCustomerDisplayName(r.customer_identities) : 'Unnamed',
   }));
 
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);

@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { createAdminClient } from '@/lib/supabase/server';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import styles from './settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -14,9 +15,15 @@ export default async function CustomerSettingsPage() {
   const admin = createAdminClient();
   const { data: identity } = await admin
     .from('customer_identities')
-    .select('full_name, email, phone')
+    .select('first_name, last_name, full_name, email, phone')
     .eq('auth_user_id', auth.user.id)
     .maybeSingle();
+
+  let nameRow = '—';
+  if (identity) {
+    const n = formatCustomerDisplayName(identity);
+    nameRow = n === 'Unnamed' ? '—' : n;
+  }
 
   return (
     <>
@@ -37,7 +44,7 @@ export default async function CustomerSettingsPage() {
           {identity ? (
             <KeyValueList
               items={[
-                { key: 'Name', value: identity.full_name?.trim() || '—' },
+                { key: 'Name', value: nameRow },
                 { key: 'Email', value: identity.email?.trim() || '—' },
                 { key: 'Phone', value: identity.phone?.trim() || '—' },
               ]}

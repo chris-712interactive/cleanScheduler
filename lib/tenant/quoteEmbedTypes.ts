@@ -18,7 +18,10 @@ export type QuoteListEmbedRow = Pick<
 > & {
   customers:
     | {
-        customer_identities: Pick<Tables<'customer_identities'>, 'full_name'> | null;
+        customer_identities: Pick<
+          Tables<'customer_identities'>,
+          'first_name' | 'last_name' | 'full_name'
+        > | null;
       }
     | null;
   tenant_customer_properties:

@@ -6,6 +6,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
 import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 
 const TOKEN_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -176,7 +177,7 @@ export async function acceptCustomerPortalInviteAction(
 
   const { data: identity, error: idErr } = await admin
     .from('customer_identities')
-    .select('id, email, full_name, auth_user_id')
+    .select('id, email, first_name, last_name, full_name, auth_user_id')
     .eq('id', invite.customer_identity_id)
     .maybeSingle();
 
@@ -193,7 +194,8 @@ export async function acceptCustomerPortalInviteAction(
     return { error: 'Invite email does not match customer record. Contact your provider.' };
   }
 
-  const displayName = (identity.full_name ?? '').trim() || email.split('@')[0] || 'Customer';
+  const formatted = formatCustomerDisplayName(identity);
+  const displayName = formatted !== 'Unnamed' ? formatted : email.split('@')[0] || 'Customer';
 
   const created = await admin.auth.admin.createUser({
     email,

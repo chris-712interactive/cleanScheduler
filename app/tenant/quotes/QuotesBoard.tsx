@@ -14,6 +14,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
+import { customerHasAnyNameParts, formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
@@ -51,7 +52,8 @@ function BoardQuoteCardFace({
   variant: 'list' | 'overlay';
   dragDisabled?: boolean;
 }) {
-  const name = quote.customers?.customer_identities?.full_name?.trim();
+  const ident = quote.customers?.customer_identities;
+  const name = ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : '';
   const who = name ? name : quote.customer_id ? 'Linked customer' : 'No customer';
   const prop = quote.tenant_customer_properties;
   const site = prop ? formatPropertyAddressLine(prop) : '';
@@ -181,7 +183,8 @@ function MobileQuoteCard({
   onMobileMove: (quoteId: string, next: QuoteStatus) => void;
   pending: boolean;
 }) {
-  const name = quote.customers?.customer_identities?.full_name?.trim();
+  const ident = quote.customers?.customer_identities;
+  const name = ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : '';
   const who = name ? name : quote.customer_id ? 'Linked customer' : 'No customer';
   const prop = quote.tenant_customer_properties;
   const site = prop ? formatPropertyAddressLine(prop) : '';

@@ -10,6 +10,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
 import type { QuoteDetailEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatQuoteMoney, formatQuoteLineDiscountShort } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
@@ -27,7 +28,11 @@ const UUID_RE =
 
 type CustomerPickRow = {
   id: string;
-  customer_identities: { full_name: string | null } | null;
+  customer_identities: {
+    first_name: string | null;
+    last_name: string | null;
+    full_name: string | null;
+  } | null;
 };
 
 type PropertyPickRow = Pick<
@@ -122,6 +127,8 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
         `
         id,
         customer_identities (
+          first_name,
+          last_name,
           full_name
         )
       `,
@@ -159,7 +166,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   const customerOptions = customerRows.map((r) => ({
     id: r.id,
-    label: r.customer_identities?.full_name?.trim() || 'Unnamed',
+    label: r.customer_identities ? formatCustomerDisplayName(r.customer_identities) : 'Unnamed',
   }));
 
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);

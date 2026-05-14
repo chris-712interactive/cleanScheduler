@@ -123,16 +123,26 @@ export function QuoteCreateForm({
         ) : (
           <>
             <input type="hidden" name="customer_id" value="" />
-            <label className={styles.label} htmlFor="inline_customer_full_name">
-              Full name
+            <label className={styles.label} htmlFor="inline_customer_first_name">
+              First name
             </label>
             <input
-              id="inline_customer_full_name"
-              name="inline_customer_full_name"
+              id="inline_customer_first_name"
+              name="inline_customer_first_name"
               className={styles.input}
               required
-              autoComplete="name"
-              placeholder="Jane Customer"
+              autoComplete="given-name"
+              placeholder="Jane"
+            />
+            <label className={styles.label} htmlFor="inline_customer_last_name">
+              Last name (optional)
+            </label>
+            <input
+              id="inline_customer_last_name"
+              name="inline_customer_last_name"
+              className={styles.input}
+              autoComplete="family-name"
+              placeholder="Customer"
             />
             <label className={styles.label} htmlFor="inline_customer_email">
               Email

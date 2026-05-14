@@ -9,7 +9,8 @@ const initial: CustomerFormState = {};
 
 export interface CustomerEditSnapshot {
   customerId: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   status: string;
@@ -43,15 +44,27 @@ export function CustomerEditForm({
         </p>
       ) : null}
 
-      <label className={styles.label} htmlFor="edit_full_name">
-        Full name
+      <label className={styles.label} htmlFor="edit_first_name">
+        First name
       </label>
       <input
-        id="edit_full_name"
-        name="full_name"
+        id="edit_first_name"
+        name="first_name"
         className={styles.input}
         required
-        defaultValue={snapshot.fullName}
+        autoComplete="given-name"
+        defaultValue={snapshot.firstName}
+      />
+
+      <label className={styles.label} htmlFor="edit_last_name">
+        Last name (optional)
+      </label>
+      <input
+        id="edit_last_name"
+        name="last_name"
+        className={styles.input}
+        autoComplete="family-name"
+        defaultValue={snapshot.lastName}
       />
 
       <label className={styles.label} htmlFor="edit_email">
