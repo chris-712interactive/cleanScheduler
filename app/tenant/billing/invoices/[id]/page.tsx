@@ -9,20 +9,40 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { recordInvoicePaymentAction } from '@/lib/admin/tenantInvoiceActions';
+import { createInvoicePayCheckoutSessionAction } from '@/app/tenant/billing/invoiceCheckoutActions';
 import { formatUsdFromCents } from '@/lib/format/money';
 import styles from '../../billing.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-interface PageProps {
-  params: Promise<{ id: string }>;
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function TenantInvoiceDetailPage({ params }: PageProps) {
+interface PageProps {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function paymentMethodLabel(p: {
+  method: string;
+  recorded_via?: string | null;
+}): string {
+  if (p.recorded_via === 'stripe_checkout') return 'Card (Stripe Checkout)';
+  return p.method;
+}
+
+export default async function TenantInvoiceDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const sp = await searchParams;
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, `/billing/invoices/${id}`);
   const db = createTenantPortalDbClient();
+
+  const checkoutErr = firstParam(sp.error);
+  const checkoutOk = firstParam(sp.checkout) === 'success';
+  const checkoutCanceled = firstParam(sp.checkout) === 'canceled';
 
   const { data: inv, error } = await db
     .from('tenant_invoices')
@@ -41,6 +61,14 @@ export default async function TenantInvoiceDetailPage({ params }: PageProps) {
     .eq('invoice_id', id)
     .order('recorded_at', { ascending: false });
 
+  const { data: tenantRow } = await db
+    .from('tenants')
+    .select('stripe_connect_status')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+
+  const connectComplete = tenantRow?.stripe_connect_status === 'complete';
+
   const remaining = inv.amount_cents - inv.amount_paid_cents;
 
   return (
@@ -52,6 +80,23 @@ export default async function TenantInvoiceDetailPage({ params }: PageProps) {
           ← All invoices
         </Link>
       </p>
+
+      {checkoutErr ? (
+        <p className={styles.bannerError} role="alert">
+          {checkoutErr}
+        </p>
+      ) : null}
+      {checkoutOk ? (
+        <p className={styles.bannerOk} role="status">
+          Checkout completed. If the balance did not clear, wait a few seconds and refresh — the webhook records the
+          payment.
+        </p>
+      ) : null}
+      {checkoutCanceled ? (
+        <p className={styles.muted} role="status">
+          Checkout canceled — no charge was made.
+        </p>
+      ) : null}
 
       <Stack gap={4}>
         <Card title="Summary">
@@ -69,8 +114,29 @@ export default async function TenantInvoiceDetailPage({ params }: PageProps) {
           />
         </Card>
 
+        {inv.status !== 'void' && remaining > 0 && connectComplete ? (
+          <Card
+            title="Pay online (card)"
+            description="Opens Stripe Checkout on your connected account for the remaining balance."
+          >
+            <form action={createInvoicePayCheckoutSessionAction} className={styles.resumeForm}>
+              <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+              <input type="hidden" name="invoice_id" value={inv.id} />
+              <Button type="submit" variant="primary">
+                Pay {formatUsdFromCents(remaining)} with card
+              </Button>
+            </form>
+          </Card>
+        ) : inv.status !== 'void' && remaining > 0 && !connectComplete ? (
+          <Card title="Pay online (card)" description="Complete Stripe Connect under Billing → Payment setup to enable card checkout for this invoice.">
+            <Button variant="secondary" as="a" href="/billing/payment-setup">
+              Open payment setup
+            </Button>
+          </Card>
+        ) : null}
+
         {inv.status !== 'void' && remaining > 0 ? (
-          <Card title="Record payment" description="Manual cash, check, or Zelle recording (card charges ship with Connect).">
+          <Card title="Record payment" description="Manual cash, check, Zelle, ACH, or other (card uses Pay online above).">
             <form action={recordInvoicePaymentAction} className={styles.resumeForm}>
               <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
               <input type="hidden" name="invoice_id" value={inv.id} />
@@ -91,7 +157,6 @@ export default async function TenantInvoiceDetailPage({ params }: PageProps) {
                   <option value="check">Check</option>
                   <option value="zelle">Zelle</option>
                   <option value="ach">ACH</option>
-                  <option value="card">Card</option>
                   <option value="other">Other</option>
                 </select>
               </label>
@@ -113,7 +178,7 @@ export default async function TenantInvoiceDetailPage({ params }: PageProps) {
             <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
               {payments.map((p) => (
                 <li key={p.id} style={{ marginBottom: 'var(--space-2)' }}>
-                  <strong>{formatUsdFromCents(p.amount_cents)}</strong> · {p.method} ·{' '}
+                  <strong>{formatUsdFromCents(p.amount_cents)}</strong> · {paymentMethodLabel(p)} ·{' '}
                   {new Date(p.recorded_at).toLocaleString()}
                   {p.notes ? <span className={styles.muted}> — {p.notes}</span> : null}
                 </li>

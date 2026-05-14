@@ -86,6 +86,8 @@ The email campaign view will server several different purposes.  This should onl
 
 The billing view will handle anything that has to do with customer invoicing and payments.  This view should be given to Super Admins as well as certain administrators that have the proper permissions. They should be able to handle creating new invoices (if needed to manually), creating payments, auditing invoices and payments, etc.  This serves as the accounting hub for the business' transactions with customers and gives them all of the tools to properly assist a customer with any billing related matters.
 
+**Implementation note (2026-05-12):** Tenant **customer invoices** + manual payment recording ship under `/billing/invoices`. **Stripe Connect Express** onboarding lives at **`/billing/payment-setup`**; when Connect is **complete**, open invoices expose **Pay with card** (Stripe Checkout on the connected account). **Service plans** for recurring customer charges live at **`/billing/service-plans`**; customer detail includes **Recurring billing** (subscription Checkout). Full accounting hub features (reports, check workflow, Zelle automation) remain on the roadmap — see `.cursor/docs/plan/implementation-plan.md` §11.6.
+
 ## Settings
 
 The settings tab will look different depending on the type of user and will be incrementally added to as we get further along in this project.  Below is a basic list of settings that we will need to implement depending on the user type:

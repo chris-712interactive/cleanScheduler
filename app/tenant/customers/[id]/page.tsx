@@ -13,6 +13,7 @@ import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
 import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import { RecurringBillingPanel } from '../RecurringBillingPanel';
 import styles from '../customers.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -20,12 +21,19 @@ export const dynamic = 'force-dynamic';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-interface PageProps {
-  params: Promise<{ id: string }>;
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function TenantCustomerDetailPage({ params }: PageProps) {
+interface PageProps {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function TenantCustomerDetailPage({ params, searchParams }: PageProps) {
   const { id: rawId } = await params;
+  const sp = await searchParams;
   const id = rawId.trim();
   if (!UUID_RE.test(id)) {
     notFound();
@@ -94,6 +102,10 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
   const portalLinked = Boolean(identity.auth_user_id);
   const emailReady = isResendApiConfigured();
 
+  const errMsg = firstParam(sp.error);
+  const subscriptionCheckoutOk = firstParam(sp.subscription_checkout) === 'success';
+  const subscriptionCheckoutCanceled = firstParam(sp.subscription_checkout) === 'canceled';
+
   return (
     <>
       <PageHeader
@@ -109,6 +121,23 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
           </Link>
         }
       />
+
+      {errMsg ? (
+        <p className={styles.bannerError} role="alert">
+          {errMsg}
+        </p>
+      ) : null}
+      {subscriptionCheckoutOk ? (
+        <p className={styles.bannerOk} role="status">
+          Checkout completed. The subscription will appear below after Stripe sends the webhook (usually within a few
+          seconds).
+        </p>
+      ) : null}
+      {subscriptionCheckoutCanceled ? (
+        <p className={styles.muted} role="status">
+          Subscription checkout was canceled — no charge was made.
+        </p>
+      ) : null}
 
       <Stack gap={6}>
         <Card
@@ -155,6 +184,12 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
             emailReady={emailReady}
           />
         </Card>
+
+        <RecurringBillingPanel
+          tenantSlug={membership.tenantSlug}
+          tenantId={membership.tenantId}
+          customerId={customer.id}
+        />
 
         <Card
           title="Service locations"

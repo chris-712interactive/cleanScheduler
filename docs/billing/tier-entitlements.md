@@ -123,3 +123,17 @@ tenant for support.
   - Business allowed for mid-tier features
   - Pro allowed for all gates
   - limit reached path returns deterministic error
+
+## Stripe Connect (tenant → customer payments)
+
+**Status (2026-05-12):** MVP shipped. Tenants onboard **Stripe Connect Express** from **`/billing/payment-setup`**. Open invoices (`tenant_invoices`) can launch **Checkout** on the connected account when `tenants.stripe_connect_status = complete`. Webhook handler: `checkout.session.completed` (payment mode, `metadata.kind=tenant_invoice_pay`) and `account.updated` — see `app/api/webhooks/stripe/route.ts` and `lib/stripe/connectWebhookHandlers.ts`.
+
+**Environment**
+
+- `STRIPE_SECRET_KEY` — platform secret (also used to create Express accounts and Checkout on behalf of connected accounts).
+- `STRIPE_WEBHOOK_SECRET` — signing secret for `POST /api/webhooks/stripe`; in the Stripe Dashboard, enable **events from connected accounts** for the same endpoint so Connect events deliver.
+- Optional `STRIPE_CONNECT_APPLICATION_FEE_BPS` — platform application fee on invoice Checkout (basis points).
+
+**Schema** — migration `0023_tenant_billing_stripe_connect.sql`: `tenant_stripe_connect_accounts`, `tenants.stripe_connect_status`, extended `tenant_invoice_payments`, `tenant_usage_snapshots` (rollup TBD), mirror tables for refunds/disputes/payouts (webhook writers TBD).
+
+**Gates** — `lib/billing/requireConnect.ts`; manual **card** entry on invoices is blocked (`recordInvoicePaymentAction`); use **Pay online** only after Connect completes. The same gate applies to **subscription Checkout** (tenant customer detail) and **customer portal invoice pay** (`createCustomerInvoicePayCheckoutSessionAction`).

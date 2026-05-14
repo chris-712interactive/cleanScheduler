@@ -12,6 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Home', href: '/', icon: 'home', exact: true },
   { label: 'Visits', href: '/visits', icon: 'visits' },
   { label: 'Invoices', href: '/invoices', icon: 'invoices' },
+  { label: 'Subscriptions', href: '/subscriptions', icon: 'subscriptions' },
   { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Payment methods', href: '/payment-methods', icon: 'paymentMethods' },
   { label: 'Messages', href: '/messages', icon: 'messages' },

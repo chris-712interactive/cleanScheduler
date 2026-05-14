@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0022.
+ * Hand-maintained schema mirror for migrations 0001–0024.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -368,6 +368,70 @@ export type Database = {
           },
         ];
       };
+      customer_subscriptions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          service_plan_id: string;
+          status: Database['public']['Enums']['tenant_customer_subscription_status'];
+          stripe_subscription_id: string | null;
+          current_period_start: string | null;
+          current_period_end: string | null;
+          cancel_at_period_end: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          service_plan_id: string;
+          status?: Database['public']['Enums']['tenant_customer_subscription_status'];
+          stripe_subscription_id?: string | null;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          service_plan_id?: string;
+          status?: Database['public']['Enums']['tenant_customer_subscription_status'];
+          stripe_subscription_id?: string | null;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_subscriptions_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'customer_subscriptions_service_plan_id_fkey';
+            columns: ['service_plan_id'];
+            isOneToOne: false;
+            referencedRelation: 'service_plans';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'customer_subscriptions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_invoice_payments: {
         Row: {
           id: string;
@@ -378,6 +442,15 @@ export type Database = {
           notes: string | null;
           recorded_at: string;
           created_at: string;
+          recorded_via: Database['public']['Enums']['tenant_invoice_payment_recorded_via'];
+          stripe_checkout_session_id: string | null;
+          stripe_payment_intent_id: string | null;
+          stripe_charge_id: string | null;
+          stripe_balance_transaction_id: string | null;
+          gross_amount_cents: number | null;
+          stripe_fee_cents: number | null;
+          application_fee_cents: number | null;
+          net_amount_cents: number | null;
         };
         Insert: {
           id?: string;
@@ -388,6 +461,15 @@ export type Database = {
           notes?: string | null;
           recorded_at?: string;
           created_at?: string;
+          recorded_via?: Database['public']['Enums']['tenant_invoice_payment_recorded_via'];
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_balance_transaction_id?: string | null;
+          gross_amount_cents?: number | null;
+          stripe_fee_cents?: number | null;
+          application_fee_cents?: number | null;
+          net_amount_cents?: number | null;
         };
         Update: {
           id?: string;
@@ -398,6 +480,15 @@ export type Database = {
           notes?: string | null;
           recorded_at?: string;
           created_at?: string;
+          recorded_via?: Database['public']['Enums']['tenant_invoice_payment_recorded_via'];
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_balance_transaction_id?: string | null;
+          gross_amount_cents?: number | null;
+          stripe_fee_cents?: number | null;
+          application_fee_cents?: number | null;
+          net_amount_cents?: number | null;
         };
         Relationships: [
           {
@@ -606,6 +697,7 @@ export type Database = {
           sms_notify_quote_sent: boolean;
           sms_notify_quote_accepted: boolean;
           sms_notify_quote_declined: boolean;
+          check_reminder_hold_days: number;
           created_at: string;
           updated_at: string;
         };
@@ -620,6 +712,7 @@ export type Database = {
           sms_notify_quote_sent?: boolean;
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
+          check_reminder_hold_days?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -634,6 +727,7 @@ export type Database = {
           sms_notify_quote_sent?: boolean;
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
+          check_reminder_hold_days?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -754,6 +848,45 @@ export type Database = {
           },
           {
             foreignKeyName: 'tenant_customer_properties_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_customer_stripe_customers: {
+        Row: {
+          tenant_id: string;
+          customer_id: string;
+          stripe_customer_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          customer_id: string;
+          stripe_customer_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          customer_id?: string;
+          stripe_customer_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_customer_stripe_customers_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_customer_stripe_customers_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -1084,6 +1217,53 @@ export type Database = {
           },
         ];
       };
+      service_plans: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          description: string | null;
+          amount_cents: number;
+          currency: string;
+          billing_interval: Database['public']['Enums']['service_plan_billing_interval'];
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          description?: string | null;
+          amount_cents: number;
+          currency?: string;
+          billing_interval?: Database['public']['Enums']['service_plan_billing_interval'];
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          description?: string | null;
+          amount_cents?: number;
+          currency?: string;
+          billing_interval?: Database['public']['Enums']['service_plan_billing_interval'];
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'service_plans_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_scheduled_visits: {
         Row: {
           id: string;
@@ -1191,6 +1371,217 @@ export type Database = {
           },
         ];
       };
+      tenant_stripe_connect_accounts: {
+        Row: {
+          tenant_id: string;
+          stripe_account_id: string;
+          charges_enabled: boolean;
+          payouts_enabled: boolean;
+          details_submitted: boolean;
+          requirements_disabled_reason: string | null;
+          requirements_currently_due: Json | null;
+          last_event_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          stripe_account_id: string;
+          charges_enabled?: boolean;
+          payouts_enabled?: boolean;
+          details_submitted?: boolean;
+          requirements_disabled_reason?: string | null;
+          requirements_currently_due?: Json | null;
+          last_event_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          stripe_account_id?: string;
+          charges_enabled?: boolean;
+          payouts_enabled?: boolean;
+          details_submitted?: boolean;
+          requirements_disabled_reason?: string | null;
+          requirements_currently_due?: Json | null;
+          last_event_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_stripe_connect_accounts_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_stripe_disputes: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          stripe_dispute_id: string;
+          stripe_charge_id: string | null;
+          amount_cents: number;
+          status: string;
+          raw: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          stripe_dispute_id: string;
+          stripe_charge_id?: string | null;
+          amount_cents: number;
+          status: string;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          stripe_dispute_id?: string;
+          stripe_charge_id?: string | null;
+          amount_cents?: number;
+          status?: string;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_stripe_disputes_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_stripe_payouts: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          stripe_payout_id: string;
+          amount_cents: number;
+          status: string | null;
+          arrival_date: string | null;
+          raw: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          stripe_payout_id: string;
+          amount_cents: number;
+          status?: string | null;
+          arrival_date?: string | null;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          stripe_payout_id?: string;
+          amount_cents?: number;
+          status?: string | null;
+          arrival_date?: string | null;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_stripe_payouts_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_stripe_refunds: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          stripe_refund_id: string;
+          stripe_charge_id: string | null;
+          amount_cents: number;
+          status: string | null;
+          raw: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          stripe_refund_id: string;
+          stripe_charge_id?: string | null;
+          amount_cents: number;
+          status?: string | null;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          stripe_refund_id?: string;
+          stripe_charge_id?: string | null;
+          amount_cents?: number;
+          status?: string | null;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_stripe_refunds_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_usage_snapshots: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          snapshot_date: string;
+          active_user_count: number;
+          active_customer_count: number;
+          sms_segments_used: number;
+          email_sends: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          snapshot_date: string;
+          active_user_count?: number;
+          active_customer_count?: number;
+          sms_segments_used?: number;
+          email_sends?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          snapshot_date?: string;
+          active_user_count?: number;
+          active_customer_count?: number;
+          sms_segments_used?: number;
+          email_sends?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_usage_snapshots_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenants: {
         Row: {
           id: string;
@@ -1198,6 +1589,7 @@ export type Database = {
           name: string;
           timezone: string;
           is_active: boolean;
+          stripe_connect_status: Database['public']['Enums']['tenant_stripe_connect_status'];
           created_at: string;
           updated_at: string;
         };
@@ -1207,6 +1599,7 @@ export type Database = {
           name: string;
           timezone?: string;
           is_active?: boolean;
+          stripe_connect_status?: Database['public']['Enums']['tenant_stripe_connect_status'];
           created_at?: string;
           updated_at?: string;
         };
@@ -1216,6 +1609,7 @@ export type Database = {
           name?: string;
           timezone?: string;
           is_active?: boolean;
+          stripe_connect_status?: Database['public']['Enums']['tenant_stripe_connect_status'];
           created_at?: string;
           updated_at?: string;
         };
@@ -1310,6 +1704,18 @@ export type Database = {
       quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';
       accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
       tenant_invoice_expectation: 'prepay' | 'pay_after_service';
+      tenant_invoice_payment_recorded_via: 'manual' | 'stripe_checkout';
+      tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';
+      service_plan_billing_interval: 'week' | 'month' | 'year';
+      tenant_customer_subscription_status:
+        | 'incomplete'
+        | 'incomplete_expired'
+        | 'trialing'
+        | 'active'
+        | 'past_due'
+        | 'canceled'
+        | 'unpaid'
+        | 'paused';
     };
     CompositeTypes: {
       [_ in never]: never;

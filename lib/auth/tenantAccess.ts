@@ -71,7 +71,12 @@ async function lookupTenantBySlug(
 
 function isTenantBillingPath(path: string | null | undefined): boolean {
   if (!path) return false;
-  return path === '/tenant/billing' || path.endsWith('/billing');
+  return (
+    path === '/tenant/billing' ||
+    path.startsWith('/tenant/billing/') ||
+    path.endsWith('/billing') ||
+    path.includes('/billing/')
+  );
 }
 
 async function assertTenantWorkspaceUnlocked(

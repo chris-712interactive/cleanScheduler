@@ -7,6 +7,12 @@ import { serverEnv } from '@/lib/env';
 import { parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import { resolvePlatformTierFromStripePriceId } from '@/lib/billing/platformPlans';
 import { processStripeWebhookEventOnce } from '@/lib/stripe/webhookIdempotency';
+import {
+  handleConnectAccountUpdated,
+  handleTenantInvoiceCheckoutCompleted,
+  handleTenantCustomerSubscriptionCheckoutCompleted,
+  upsertCustomerSubscriptionFromStripe,
+} from '@/lib/stripe/connectWebhookHandlers';
 import type { Database } from '@/lib/supabase/database.types';
 
 function mapStripeSubscriptionStatus(
@@ -120,22 +126,55 @@ export async function POST(request: Request) {
 
   try {
     await processStripeWebhookEventOnce(admin, event, async () => {
+      const connectAccountId = typeof event.account === 'string' ? event.account : undefined;
+
       switch (event.type) {
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session;
+          if (session.mode === 'payment' && session.metadata?.kind === 'tenant_invoice_pay') {
+            await handleTenantInvoiceCheckoutCompleted(admin, session);
+            break;
+          }
+          if (
+            session.mode === 'subscription' &&
+            session.metadata?.kind === 'tenant_customer_subscription' &&
+            connectAccountId
+          ) {
+            await handleTenantCustomerSubscriptionCheckoutCompleted(
+              admin,
+              session,
+              stripe,
+              connectAccountId,
+            );
+            break;
+          }
           if (session.mode !== 'subscription') break;
+          if (connectAccountId) break;
 
           const tenantId = session.metadata?.tenant_id;
           const subId = session.subscription;
           if (!tenantId || typeof subId !== 'string') break;
+          if (session.metadata?.kind === 'tenant_customer_subscription') break;
 
           const subscription = await stripe.subscriptions.retrieve(subId);
           await syncTenantFromSubscription(admin, subscription);
           break;
         }
+        case 'account.updated': {
+          const account = event.data.object as Stripe.Account;
+          await handleConnectAccountUpdated(admin, account);
+          break;
+        }
+        case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted': {
           const subscription = event.data.object as Stripe.Subscription;
+          if (connectAccountId) {
+            if (subscription.metadata?.kind === 'tenant_customer_subscription') {
+              await upsertCustomerSubscriptionFromStripe(admin, subscription, connectAccountId);
+            }
+            break;
+          }
           await syncTenantFromSubscription(admin, subscription);
           break;
         }

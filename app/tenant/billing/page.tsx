@@ -69,14 +69,21 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           </p>
         ) : null}
 
-        <Card title="Customer invoices" description="Bill customers in your directory and record manual payments.">
+        <Card title="Customer invoices" description="Bill customers in your directory, collect cards via Stripe Connect, and record manual payments.">
           <p className={styles.muted} style={{ marginTop: 0 }}>
-            Create invoices, track balances, and log cash, check, or Zelle payments. Stripe Connect pay-online flows
-            come next.
+            Create invoices, track balances, log cash/check/Zelle/ACH, or send customers to Stripe Checkout when Connect is complete.
           </p>
-          <Button variant="secondary" as="a" href="/billing/invoices">
-            Open customer invoices
-          </Button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+            <Button variant="secondary" as="a" href="/billing/invoices">
+              Open customer invoices
+            </Button>
+            <Button variant="secondary" as="a" href="/billing/service-plans">
+              Service plans (recurring)
+            </Button>
+            <Button variant="secondary" as="a" href="/billing/payment-setup">
+              Payment setup (Stripe Connect)
+            </Button>
+          </div>
         </Card>
 
         <Card title="Current plan" description="Synced from Stripe webhooks after checkout.">

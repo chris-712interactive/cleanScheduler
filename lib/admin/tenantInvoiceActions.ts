@@ -74,7 +74,13 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
   const method = String(formData.get('method') ?? 'other').trim() as PaymentMethod;
   const notes = String(formData.get('notes') ?? '').trim() || null;
 
-  const allowed: PaymentMethod[] = ['cash', 'check', 'zelle', 'card', 'ach', 'other'];
+  if (method === 'card') {
+    redirect(
+      `/billing/invoices/${invoiceId || 'unknown'}?error=${encodeURIComponent('Use Pay online with card after Stripe Connect is complete.')}`,
+    );
+  }
+
+  const allowed: PaymentMethod[] = ['cash', 'check', 'zelle', 'ach', 'other'];
   const safeMethod = allowed.includes(method) ? method : 'other';
 
   if (!invoiceId || amountCents == null || amountCents <= 0) {

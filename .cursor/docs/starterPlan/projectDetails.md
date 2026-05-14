@@ -39,3 +39,7 @@ Once a tenant has successfully onboarded, they should be brought to their tenant
 ### 4. Customer Portal
 
 Customers will have access to manage their customer account once a tenant has added them.  A customer may be added to more than 1 tenant as it is possible that a customer may split their services among multiple businesses.  To the customer though, there should be a single portal where they can see it all.  You can gather more information about the customer portal throught he customerPortalRequirements.md documentation.
+
+### 5. Customer billing (tenant → customer)
+
+**MVP (2026-05-12):** Tenants record **manual** payments on **customer invoices** and, after **Stripe Connect Express** onboarding (`/billing/payment-setup`), can collect **card** payments via **Stripe Checkout** on the connected account (staff on invoice detail, or the customer on **`my`** invoice detail). **Service plans** + **subscription Checkout** on Connect cover recurring customer charges from the customer record; the **customer portal** lists **subscriptions** after webhooks sync. Remaining roadmap items (RRULE visit generator, Billing Portal, check workflow, full fee backfill) are tracked in `.cursor/docs/plan/implementation-plan.md` §11.6 and the YAML `billingPlans` / `paymentFlowsImpl` / `recurringBilling` entries in that file.

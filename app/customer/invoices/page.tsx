@@ -7,6 +7,7 @@ import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { formatUsdFromCents } from '@/lib/format/money';
 import styles from './invoices.module.scss';
 
@@ -75,7 +76,11 @@ export default async function CustomerInvoicesPage() {
             return (
               <Card
                 key={row.id}
-                title={row.title}
+                title={
+                  <Link href={`/invoices/${row.id}`} className={styles.cardTitleLink}>
+                    {row.title}
+                  </Link>
+                }
                 description={t?.name ?? 'Provider'}
               >
                 <div className={styles.row}>
