@@ -3,6 +3,10 @@ import { Button } from '@/components/ui/Button';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { createCustomerSubscriptionCheckoutSessionAction } from '@/app/tenant/billing/customerSubscriptionCheckoutActions';
+import {
+  cancelCustomerSubscriptionAtPeriodEndAction,
+  openTenantCustomerBillingPortalAction,
+} from '@/app/tenant/billing/subscriptionLifecycleActions';
 import styles from './recurringBillingPanel.module.scss';
 
 function intervalLabel(i: string): string {
@@ -19,6 +23,7 @@ type SubEmbed = {
   stripe_subscription_id: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
+  billing_cycle_anchor: string | null;
   service_plans: { name: string; amount_cents: number; billing_interval: string } | null;
 };
 
@@ -26,6 +31,13 @@ interface Props {
   tenantSlug: string;
   tenantId: string;
   customerId: string;
+}
+
+function formatAnchor(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(String(iso));
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString();
 }
 
 export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }: Props) {
@@ -47,6 +59,7 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
         stripe_subscription_id,
         current_period_end,
         cancel_at_period_end,
+        billing_cycle_anchor,
         service_plans ( name, amount_cents, billing_interval )
       `,
       )
@@ -58,6 +71,7 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
   const connectComplete = tenantRow?.stripe_connect_status === 'complete';
   const plans = (plansData ?? []) as PlanRow[];
   const subs = (subsRaw ?? []) as SubEmbed[];
+  const hasMonthlyPlan = plans.some((p) => p.billing_interval === 'month');
 
   return (
     <Card
@@ -89,11 +103,36 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
               ))}
             </select>
           </label>
+          {hasMonthlyPlan ? (
+            <label className={styles.field}>
+              Billing day (optional, monthly plans)
+              <input
+                className={styles.input}
+                name="billing_anchor_day"
+                type="number"
+                min={1}
+                max={28}
+                placeholder="1–28"
+                title="Day of month for the first full billing period (monthly plans only; Stripe ignores for weekly/yearly)."
+              />
+            </label>
+          ) : null}
           <Button type="submit" variant="primary">
             Open subscription checkout
           </Button>
         </form>
       )}
+
+      {connectComplete ? (
+        <form action={openTenantCustomerBillingPortalAction} className={styles.row} style={{ marginTop: 'var(--space-2)' }}>
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
+          <input type="hidden" name="customer_id" value={customerId} />
+          <Button type="submit" variant="secondary">
+            Open Stripe billing portal
+          </Button>
+          <span className={styles.muted}>Payment methods and invoices on your connected account.</span>
+        </form>
+      ) : null}
 
       {subs.length > 0 ? (
         <ul className={styles.subList}>
@@ -105,6 +144,11 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
             const end = s.current_period_end
               ? new Date(String(s.current_period_end)).toLocaleDateString()
               : '—';
+            const anchorLabel = formatAnchor(s.billing_cycle_anchor);
+            const sid = s.stripe_subscription_id;
+            const sidShort = sid && sid.length > 10 ? `…${sid.slice(-8)}` : sid;
+            const canCancelStripe =
+              Boolean(sid) && s.status !== 'canceled' && !s.cancel_at_period_end;
             return (
               <li key={s.id} className={styles.subItem}>
                 <strong>{label}</strong>
@@ -114,8 +158,23 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
                   {s.cancel_at_period_end ? ' (cancels at period end)' : ''}
                   {' · '}
                   Current period ends {end}
-                  {s.stripe_subscription_id ? ` · ${s.stripe_subscription_id}` : ''}
+                  {anchorLabel ? ` · Billing anchor ${anchorLabel}` : ''}
+                  {sidShort ? ` · ${sidShort}` : ''}
                 </span>
+                {connectComplete && sid ? (
+                  <div className={styles.subActions}>
+                    {canCancelStripe ? (
+                      <form action={cancelCustomerSubscriptionAtPeriodEndAction}>
+                        <input type="hidden" name="tenant_slug" value={tenantSlug} />
+                        <input type="hidden" name="customer_id" value={customerId} />
+                        <input type="hidden" name="subscription_row_id" value={s.id} />
+                        <Button type="submit" variant="secondary">
+                          Cancel at period end
+                        </Button>
+                      </form>
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             );
           })}

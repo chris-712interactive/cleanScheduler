@@ -13,6 +13,13 @@ import {
   handleTenantCustomerSubscriptionCheckoutCompleted,
   upsertCustomerSubscriptionFromStripe,
 } from '@/lib/stripe/connectWebhookHandlers';
+import {
+  notifyTenantDisputeOpened,
+  resolveConnectTenantId,
+  upsertConnectDispute,
+  upsertConnectPayout,
+  upsertConnectRefund,
+} from '@/lib/stripe/connectChargeMirrorHandlers';
 import type { Database } from '@/lib/supabase/database.types';
 
 function mapStripeSubscriptionStatus(
@@ -132,7 +139,10 @@ export async function POST(request: Request) {
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session;
           if (session.mode === 'payment' && session.metadata?.kind === 'tenant_invoice_pay') {
-            await handleTenantInvoiceCheckoutCompleted(admin, session);
+            await handleTenantInvoiceCheckoutCompleted(admin, session, {
+              stripe,
+              connectAccountId: connectAccountId ?? undefined,
+            });
             break;
           }
           if (
@@ -176,6 +186,33 @@ export async function POST(request: Request) {
             break;
           }
           await syncTenantFromSubscription(admin, subscription);
+          break;
+        }
+        case 'refund.created':
+        case 'refund.updated': {
+          if (!connectAccountId) break;
+          const refund = event.data.object as Stripe.Refund;
+          await upsertConnectRefund(admin, refund, connectAccountId);
+          break;
+        }
+        case 'charge.dispute.created':
+        case 'charge.dispute.updated': {
+          if (!connectAccountId) break;
+          const dispute = event.data.object as Stripe.Dispute;
+          await upsertConnectDispute(admin, dispute, connectAccountId);
+          if (event.type === 'charge.dispute.created') {
+            const tid = await resolveConnectTenantId(admin, connectAccountId);
+            if (tid) {
+              await notifyTenantDisputeOpened(admin, tid, dispute);
+            }
+          }
+          break;
+        }
+        case 'payout.paid':
+        case 'payout.updated': {
+          if (!connectAccountId) break;
+          const payout = event.data.object as Stripe.Payout;
+          await upsertConnectPayout(admin, payout, connectAccountId);
           break;
         }
         default:

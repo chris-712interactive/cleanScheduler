@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0024.
+ * Hand-maintained schema mirror for migrations 0001–0025.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -379,6 +379,7 @@ export type Database = {
           current_period_start: string | null;
           current_period_end: string | null;
           cancel_at_period_end: boolean;
+          billing_cycle_anchor: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -392,6 +393,7 @@ export type Database = {
           current_period_start?: string | null;
           current_period_end?: string | null;
           cancel_at_period_end?: boolean;
+          billing_cycle_anchor?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -405,6 +407,7 @@ export type Database = {
           current_period_start?: string | null;
           current_period_end?: string | null;
           cancel_at_period_end?: boolean;
+          billing_cycle_anchor?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1264,6 +1267,73 @@ export type Database = {
           },
         ];
       };
+      recurring_appointment_rules: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          property_id: string | null;
+          title: string;
+          rrule_definition: string;
+          anchor_starts_at: string;
+          visit_duration_minutes: number;
+          horizon_days: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          property_id?: string | null;
+          title?: string;
+          rrule_definition: string;
+          anchor_starts_at: string;
+          visit_duration_minutes?: number;
+          horizon_days?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          property_id?: string | null;
+          title?: string;
+          rrule_definition?: string;
+          anchor_starts_at?: string;
+          visit_duration_minutes?: number;
+          horizon_days?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recurring_appointment_rules_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'recurring_appointment_rules_property_id_fkey';
+            columns: ['property_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_customer_properties';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'recurring_appointment_rules_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_scheduled_visits: {
         Row: {
           id: string;
@@ -1276,6 +1346,7 @@ export type Database = {
           ends_at: string;
           status: 'scheduled' | 'completed' | 'cancelled';
           notes: string | null;
+          recurring_rule_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1290,6 +1361,7 @@ export type Database = {
           ends_at: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
           notes?: string | null;
+          recurring_rule_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1304,10 +1376,18 @@ export type Database = {
           ends_at?: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
           notes?: string | null;
+          recurring_rule_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: 'tenant_scheduled_visits_recurring_rule_id_fkey';
+            columns: ['recurring_rule_id'];
+            isOneToOne: false;
+            referencedRelation: 'recurring_appointment_rules';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'tenant_scheduled_visits_customer_id_fkey';
             columns: ['customer_id'];

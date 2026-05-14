@@ -1,6 +1,6 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-12 (Connect subscriptions + customer invoice pay)** — see §11.5–§11.6.
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-12 (0025 recurring visits + invoice mail/refunds + Connect mirrors + billing portal)** — see §11.5–§11.6.
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
@@ -36,10 +36,10 @@ todos:
     content: "Shipped as **tenant quotes** + **scheduled visits** (not the legacy `quote_stages` / `appointments` names in early plan sketches): `0009_tenant_quotes` through `0021_expire_sent_quotes_pg_cron.sql` (Kanban columns, line items, tax/discount, acceptance snapshots, e-signatures, notifications, expiry batch + pg_cron). Assignees in `0015`."
     status: in_progress
   - id: billingPlans
-    content: "Shipped **`0023_tenant_billing_stripe_connect.sql`** + **`0024_service_plans_customer_subscriptions.sql`**: Connect onboarding + invoice Stripe columns (0023); **`service_plans`**, **`customer_subscriptions`**, **`tenant_customer_stripe_customers`** (0024). **Still missing vs §15/\u00a717:** `plans` / `plan_features` / `tenant_addons` catalog in DB + seed; full payment status machine + check capture UX; populating fee columns from Balance Transactions; `tenant_addons` purchases."
+    content: "Shipped **`0023_tenant_billing_stripe_connect.sql`** + **`0024_service_plans_customer_subscriptions.sql`** + **`0025_recurring_visits_invoice_refunds_stripe_mirrors.sql`**: Connect onboarding + invoice Stripe columns (0023); **`service_plans`**, **`customer_subscriptions`**, **`tenant_customer_stripe_customers`** (0024); recurring visit rules + signed payments + subscription anchor (0025). **Still missing vs §15/\u00a717:** `plans` / `plan_features` / `tenant_addons` catalog in DB + seed; full payment status machine + check capture UX; `tenant_addons` purchases; Stripe **hosted invoice** sync."
     status: in_progress
   - id: paymentFlowsImpl
-    content: "Shipped: tenant **invoice pay** Checkout on connected account (`createInvoicePayCheckoutSessionAction`); **customer portal invoice pay** (`createCustomerInvoicePayCheckoutSessionAction`, `my` origin); **subscription Checkout** on connected account for `service_plans` (`createCustomerSubscriptionCheckoutSessionAction`); optional **`STRIPE_CONNECT_APPLICATION_FEE_BPS`** as payment-intent fee (invoice) or `application_fee_percent` (subscription). Webhooks: `checkout.session.completed` payment + `tenant_invoice_pay`; subscription + `tenant_customer_subscription` on Connect; `customer.subscription.*` on Connect when `metadata.kind=tenant_customer_subscription`. **Still missing vs §17:** Resend invoice/receipt emails; Setup Intent / saved payment methods; `billing_cycle_anchor` picker; Stripe Customer Billing Portal; refund-from-app; dispute notifications; `charge.*` / `payout.*` / `invoice.*` mirror writers; balance-transaction fee backfill."
+    content: "Shipped: tenant **invoice pay** Checkout on connected account (`createInvoicePayCheckoutSessionAction`); **customer portal invoice pay** (`createCustomerInvoicePayCheckoutSessionAction`, `my` origin); **subscription Checkout** on connected account for `service_plans` (`createCustomerSubscriptionCheckoutSessionAction`); optional **`STRIPE_CONNECT_APPLICATION_FEE_BPS`** as payment-intent fee (invoice) or `application_fee_percent` (subscription). **Resend** tenant invoice email (`sendTenantInvoiceEmailAction`). **Refund-from-app** (`refundStripeInvoicePaymentAction`) + negative `tenant_invoice_payments` row. **Stripe Billing Portal** (Connect) for tenant staff + customer (`createConnectCustomerBillingPortalSession`, optional **`STRIPE_CONNECT_BILLING_PORTAL_CONFIGURATION_ID`**). Webhooks: `checkout.session.completed` payment + fee backfill via Balance Transaction; subscription + `tenant_customer_subscription` on Connect; `customer.subscription.*` on Connect when `metadata.kind=tenant_customer_subscription`; Connect **`refund.*`**, **`charge.dispute.*`** (tenant owner email), **`payout.*`** → mirror tables (`lib/stripe/connectChargeMirrorHandlers.ts`). **Still missing vs §17:** Setup Intent / saved payment methods; Stripe-hosted **invoice** sync into `tenant_invoices`; richer receipt templates."
     status: in_progress
   - id: featureGatingMetering
     content: "Build the feature-gating + metering + soft-stop overage infrastructure (section 15): lib/billing/features.ts (feature-key enum), lib/billing/requireFeature.ts (server-side gate utility, mirrors requireConnect.ts), lib/billing/checkLimit.ts (typed quota checker driving the upgrade-or-add-on modal), components/billing/UpgradeOrAddOnModal.tsx (soft-stop UI used by Invite Employee / Add Customer / etc.), supabase/functions/usage-rollup/index.ts (nightly Vercel Cron rollup of active users / customers / sms segments into tenant_usage_snapshots), and inline 80%/95%/100% utilization warning banners. **Note:** `tenant_usage_snapshots` table exists from migration `0023` but is not populated yet. Strawman feature keys: recurring_billing, kanban_customization, custom_roles, email_campaigns, plaid_reconciliation, payroll_exports, sales_tax_summary, sms_outbound, sms_inbound, branded_email, phone_support."
@@ -51,7 +51,7 @@ todos:
     content: "MVP shipped (2026-05-12): `lib/billing/requireConnect.ts` gates **invoice card Checkout** and **subscription Checkout**; manual **card** entry blocked in `recordInvoicePaymentAction`; **`ConnectStatusBanner`** in tenant shell until `tenants.stripe_connect_status=complete`; invoice detail shows pay-online CTA only when complete. **Still missing:** generated-column variant (today: enum column + trigger from `tenant_stripe_connect_accounts`)."
     status: in_progress
   - id: recurringBilling
-    content: "Partial (2026-05-12): **`0024_service_plans_customer_subscriptions.sql`** + **`/billing/service-plans`** CRUD + **Recurring billing** panel on customer detail (subscription Checkout w/ `metadata.kind=tenant_customer_subscription`); **`/customer/subscriptions`** read list; Connect webhooks sync `customer_subscriptions` + `tenant_customer_stripe_customers`. **Still missing:** `recurring_appointment_rules` + RRULE materializer cron; `billing_cycle_anchor` UX; Stripe invoice/receipt sync to `tenant_invoices`; cancel subscription from app."
+    content: "Shipped: **`0024_service_plans_customer_subscriptions.sql`** + **`0025_recurring_visits_invoice_refunds_stripe_mirrors.sql`** — `recurring_appointment_rules`, visit `recurring_rule_id`, signed invoice payments, `customer_subscriptions.billing_cycle_anchor`. **`/billing/service-plans`** CRUD + **Recurring billing** panel (subscription Checkout, optional monthly **billing day** 1–28, **billing portal**, **cancel at period end**). **`/customer/subscriptions`** list + portal + cancel. **`lib/schedule/recurringVisitMaterialize.ts`** + Vercel Cron **`/api/cron/materialize-recurring-visits`** (`vercel.json`, optional **`CRON_SECRET`**). Connect webhooks sync subscriptions + mirrors. **Still missing:** Stripe **invoice** object sync to `tenant_invoices`; customer-visible hosted invoice PDFs."
     status: in_progress
   - id: checkPaymentWorkflow
     content: "Mobile-first Accept Payment flow on Schedule appointment detail (employees mark check received with amount, check number, optional photo; sets received_in_field). Office workflow lets Billing admin progress checks through received_in_office \u2192 deposited \u2192 cleared/bounced with audit log entries. Reminder cron skips invoices under active check holds (tenant-configurable hold days; per-status overrides)."
@@ -78,19 +78,19 @@ todos:
     content: Build marketing site, inquiry form, and self-serve 7-day trial signup wired to Stripe Checkout (trial_period_days=7) and tenant + Super Admin creation.
     status: completed
   - id: stripeWebhooks
-    content: "Shipped: platform `checkout.session.completed` (subscription), `customer.subscription.*` (no `event.account`); **Connect:** `checkout.session.completed` payment + `tenant_invoice_pay`; **Connect** `checkout.session.completed` subscription + `tenant_customer_subscription`; `customer.subscription.*` when `event.account` set + `metadata.kind=tenant_customer_subscription`; `account.updated` \u2192 `tenant_stripe_connect_accounts`. **Remaining:** inquiry/trial lifecycle automation; Edge Function parity; connected-account `charge.*`, `payout.*`, Stripe Billing `invoice.*`, dispute lifecycle writers to mirror tables."
+    content: "Shipped: platform `checkout.session.completed` (subscription), `customer.subscription.*` (no `event.account`); **Connect:** `checkout.session.completed` payment + `tenant_invoice_pay` (fee columns backfilled from expanded PI → charge → balance_transaction); **Connect** `checkout.session.completed` subscription + `tenant_customer_subscription`; `customer.subscription.*` when `event.account` set + `metadata.kind=tenant_customer_subscription`; `account.updated` \u2192 `tenant_stripe_connect_accounts`; Connect **`refund.*`**, **`charge.dispute.*`**, **`payout.*`** \u2192 mirror tables + dispute email to `tenant_onboarding_profiles.owner_email`. **Remaining:** inquiry/trial lifecycle automation; Edge Function parity; Stripe Billing **`invoice.*`** for hosted-invoice products."
     status: in_progress
   - id: tenantPortalMvp
-    content: "Routes live for dashboard, customers CRUD, schedule (list + new visit), quotes Kanban + detail + Resend-backed notifications, billing invoices + **service plans** + Connect payment setup + **invoice + subscription Checkout**, employees list, settings (incl. operational / quote email toggles). **Gaps:** Reports placeholder; RRULE recurring appointments; KPI depth per \u00a711."
+    content: "Routes live for dashboard, customers CRUD, schedule (list + new visit + **recurring rules**), quotes Kanban + detail + Resend-backed notifications, billing invoices (**email**, **Stripe refund**, card pay) + **service plans** + Connect payment setup + **invoice + subscription Checkout**, employees list, settings (incl. operational / quote email toggles). **Gaps:** Reports placeholder; KPI depth per \u00a711."
     status: in_progress
   - id: customerPortalMvp
-    content: "Dashboard, visits (read), **invoice list + detail + Pay balance (Connect Checkout on `my`)**, **subscriptions list**, messages threads, quotes (view/respond w/ e-sign), settings, payment methods, invite completion. **Gaps:** explicit reschedule-request workflow vs read-only schedule; consolidated cross-tenant billing rollups; Stripe Billing Portal for saved cards."
+    content: "Dashboard, visits (read), **invoice list + detail + Pay balance (Connect Checkout on `my`)**, **subscriptions** (list + **Billing portal** + cancel at period end), messages threads, quotes (view/respond w/ e-sign), settings, payment methods, invite completion. **Gaps:** explicit reschedule-request workflow vs read-only schedule; consolidated cross-tenant billing rollups."
     status: in_progress
   - id: founderAdminMvp
     content: "Tenants list/detail, inquiries list/detail/status, audit log page, masquerade actions, dashboard shell. **Gaps:** richer founder dashboard KPIs, manual onboarding UX polish, masquerade session timer banner refinement."
     status: in_progress
   - id: transactionalEmail
-    content: "**Resend** (`resend` npm + `lib/email/resend.ts`): quotes, portal invites, and future invoice/auth mail share `sendTransactionalEmail`. Configure `RESEND_API_KEY` + `RESEND_FROM_EMAIL` on the server."
+    content: "**Resend** (`resend` npm + `lib/email/resend.ts`): quotes, portal invites, **tenant invoice summary email** (`sendTenantInvoiceEmailAction` + `lib/email/tenantInvoiceEmailBody.ts`), dispute-opened notice to tenant owner. Configure `RESEND_API_KEY` + `RESEND_FROM_EMAIL` on the server."
     status: in_progress
   - id: observabilityCi
     content: "Sentry DSN slots exist in env schema; no Playwright/Vitest suites or CI DB checks yet. Overlaps `cicdPipeline` for Actions hardening."
@@ -482,7 +482,7 @@ This section reconciles the YAML todos at the top of this file with the current 
 
 1. **CI (`cicdPipeline`)** — Fix or pin stylelint/postcss so `lint:styles` is green; add it to Actions. Optionally add `prettier --check` after a one-time `npm run format` on the repo (large churn). Add `supabase db lint` or migration list check when CLI is available in CI.
 2. **Env (`envGuardrails`)** — Optional: fail if `NEXT_PUBLIC_SUPABASE_URL` host suggests production project while `NEXT_PUBLIC_APP_ENV` is `local`/`dev` (needs agreed naming convention).
-3. ~~**Billing + Connect**~~ — **MVP landed 2026-05-12** (see §11.6). Next billing slices: RRULE recurring visits + `billing_cycle_anchor`, Resend invoice mail, Billing Portal, refund/dispute/payout webhook writers, fee backfill from Balance Transactions.
+3. ~~**Billing + Connect**~~ — **MVP landed 2026-05-12** (see §11.6). **0025 + app follow-up (2026-05-12):** `recurring_appointment_rules` + RRULE materializer cron; `billing_cycle_anchor` UX; Resend invoice email; Connect **Billing Portal**; refund-from-app; Connect webhook writers for **refunds / disputes / payouts** + dispute email to tenant owner; Balance Transaction **fee backfill** on invoice Checkout; cancel subscription (tenant + customer). **Next billing PRs:** Stripe Billing **`invoice.*`** sync into `tenant_invoices`; Setup Intents / saved PM UX polish.
 4. **Transactional email (`transactionalEmail`)** — Extend **Resend** for invoices, auth-adjacent mail, and any new flows (see `lib/email/resend.ts`).
 5. **Recurring (`recurringBilling`)** — `service_plans`, `customer_subscriptions`, RRULE generator + cron.
 6. **Field + office money (`checkPaymentWorkflow`)** — Accept payment on visit detail; check state machine; Zelle manual entry already partially aligned with §14.
@@ -512,16 +512,20 @@ _(None open from the last round — add new rows here when tradeoffs reappear.)_
 - **Tenant recurring:** `app/tenant/billing/service-plans/` (plan CRUD) + **Recurring billing** panel on customer detail (`createCustomerSubscriptionCheckoutSessionAction`, Checkout `mode=subscription`, `metadata.kind=tenant_customer_subscription`, optional `subscription_data.application_fee_percent` from `STRIPE_CONNECT_APPLICATION_FEE_BPS`).
 - **Customer portal:** `app/customer/invoices/[id]/` (detail + **Pay balance**) + `app/customer/subscriptions/` + nav entry; `createCustomerInvoicePayCheckoutSessionAction` (origin `my`).
 - **Webhooks:** `app/api/webhooks/stripe/route.ts` — `account.updated`; Connect `checkout.session.completed` for `tenant_invoice_pay` and `tenant_customer_subscription`; Connect `customer.subscription.*` when `metadata.kind=tenant_customer_subscription` → `lib/stripe/connectWebhookHandlers.ts` (`upsertCustomerSubscriptionFromStripe`).
-- **Env:** optional `STRIPE_CONNECT_APPLICATION_FEE_BPS` in `lib/env.ts` + `.env.example`.
+- **Env:** optional `STRIPE_CONNECT_APPLICATION_FEE_BPS`, **`STRIPE_CONNECT_BILLING_PORTAL_CONFIGURATION_ID`**, **`CRON_SECRET`** (Vercel Cron auth for materializer) in `lib/env.ts` + `.env.example`.
 
-**Still open (next billing PRs)**
+**Also shipped (post-0024 slice, migration `0025` + routes)**
 
-- **Resend** invoice/receipt templates.
-- **Stripe Billing Portal** session for saved cards.
-- Webhook writers for **refunds / disputes / payouts** into mirror tables + tenant notifications.
-- Backfill **stripe_fee_cents** / **net_amount_cents** from Balance Transactions.
-- **`recurring_appointment_rules`** + nightly materializer; **`billing_cycle_anchor`** in UI.
-- **`featureGatingMetering`**: nightly rollup into `tenant_usage_snapshots`; `requireFeature` / `UpgradeOrAddOnModal` (beyond Connect).
+- **SQL (`0025_recurring_visits_invoice_refunds_stripe_mirrors.sql`):** `recurring_appointment_rules`; `tenant_scheduled_visits.recurring_rule_id` + idempotent unique slot per occurrence; **`tenant_invoice_payments.amount_cents`** signed (refund rows); `customer_subscriptions.billing_cycle_anchor`.
+- **Recurring visits:** `lib/schedule/recurringVisitMaterialize.ts` + **`GET /api/cron/materialize-recurring-visits`** (Bearer `CRON_SECRET`); `vercel.json` daily schedule.
+- **Tenant invoice UX:** Resend **Send invoice email**; **Refund in Stripe** per Checkout card row; query banners `?email=sent`, `?refund=ok`.
+- **Subscriptions UX:** customer detail **billing day (1–28)** for monthly plans; **Open Stripe billing portal**; **Cancel at period end**; customer portal `/subscriptions` portal + cancel.
+- **Webhooks (Connect):** `refund.*`, `charge.dispute.*`, `payout.*` → mirror tables + dispute email; invoice Checkout completion expands PI for **fee / net** columns.
+
+**Still open (later billing PRs)**
+
+- Stripe **Billing** hosted **`invoice.*`** sync into `tenant_invoices` (distinct from tenant-authored invoices today).
+- Rich PDF / receipt templates and deep **Setup Intent** saved-card management beyond the Stripe-hosted portal.
 
 ## 12. Key files & code we'll author first
 

@@ -10,7 +10,10 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { recordInvoicePaymentAction } from '@/lib/admin/tenantInvoiceActions';
 import { createInvoicePayCheckoutSessionAction } from '@/app/tenant/billing/invoiceCheckoutActions';
+import { sendTenantInvoiceEmailAction } from '@/app/tenant/billing/invoiceEmailActions';
+import { refundStripeInvoicePaymentAction } from '@/app/tenant/billing/invoiceRefundActions';
 import { formatUsdFromCents } from '@/lib/format/money';
+import { isResendConfigured } from '@/lib/email/resend';
 import styles from '../../billing.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -43,6 +46,8 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
   const checkoutErr = firstParam(sp.error);
   const checkoutOk = firstParam(sp.checkout) === 'success';
   const checkoutCanceled = firstParam(sp.checkout) === 'canceled';
+  const emailSent = firstParam(sp.email) === 'sent';
+  const refundOk = firstParam(sp.refund) === 'ok';
 
   const { data: inv, error } = await db
     .from('tenant_invoices')
@@ -97,6 +102,16 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
           Checkout canceled — no charge was made.
         </p>
       ) : null}
+      {emailSent ? (
+        <p className={styles.bannerOk} role="status">
+          Invoice email sent to the customer&apos;s address on file.
+        </p>
+      ) : null}
+      {refundOk ? (
+        <p className={styles.bannerOk} role="status">
+          Refund submitted in Stripe and a matching credit was applied to this invoice.
+        </p>
+      ) : null}
 
       <Stack gap={4}>
         <Card title="Summary">
@@ -113,6 +128,25 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
             ]}
           />
         </Card>
+
+        {inv.status !== 'void' && isResendConfigured() ? (
+          <Card
+            title="Email customer"
+            description="Sends a short summary with a link to the customer portal invoice page."
+          >
+            <form action={sendTenantInvoiceEmailAction} className={styles.resumeForm}>
+              <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+              <input type="hidden" name="invoice_id" value={inv.id} />
+              <Button type="submit" variant="secondary">
+                Send invoice email
+              </Button>
+            </form>
+          </Card>
+        ) : inv.status !== 'void' && !isResendConfigured() ? (
+          <Card title="Email customer" description="Set RESEND_API_KEY and RESEND_FROM_EMAIL to enable invoice emails from the app.">
+            <p className={styles.muted}>Configure Resend in your server environment to unlock this action.</p>
+          </Card>
+        ) : null}
 
         {inv.status !== 'void' && remaining > 0 && connectComplete ? (
           <Card
@@ -176,13 +210,42 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
             <p className={styles.muted}>Payments appear here when recorded.</p>
           ) : (
             <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-              {payments.map((p) => (
-                <li key={p.id} style={{ marginBottom: 'var(--space-2)' }}>
-                  <strong>{formatUsdFromCents(p.amount_cents)}</strong> · {paymentMethodLabel(p)} ·{' '}
-                  {new Date(p.recorded_at).toLocaleString()}
-                  {p.notes ? <span className={styles.muted}> — {p.notes}</span> : null}
-                </li>
-              ))}
+              {payments.map((p) => {
+                const refundable =
+                  inv.status !== 'void' &&
+                  connectComplete &&
+                  p.recorded_via === 'stripe_checkout' &&
+                  Boolean(p.stripe_charge_id) &&
+                  p.amount_cents > 0;
+                return (
+                  <li key={p.id} style={{ marginBottom: 'var(--space-3)' }}>
+                    <div>
+                      <strong>{formatUsdFromCents(p.amount_cents)}</strong> · {paymentMethodLabel(p)} ·{' '}
+                      {new Date(p.recorded_at).toLocaleString()}
+                      {p.notes ? <span className={styles.muted}> — {p.notes}</span> : null}
+                    </div>
+                    {refundable ? (
+                      <form action={refundStripeInvoicePaymentAction} className={styles.resumeForm} style={{ marginTop: 'var(--space-2)' }}>
+                        <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                        <input type="hidden" name="invoice_id" value={inv.id} />
+                        <input type="hidden" name="payment_id" value={p.id} />
+                        <label className={styles.field}>
+                          <span>Refund amount (USD), optional</span>
+                          <input
+                            name="refund_amount_dollars"
+                            type="text"
+                            className={styles.input}
+                            placeholder={`Max ${(p.amount_cents / 100).toFixed(2)}`}
+                          />
+                        </label>
+                        <Button type="submit" variant="secondary">
+                          Refund in Stripe
+                        </Button>
+                      </form>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>

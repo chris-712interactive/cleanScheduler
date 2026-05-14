@@ -105,6 +105,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const errMsg = firstParam(sp.error);
   const subscriptionCheckoutOk = firstParam(sp.subscription_checkout) === 'success';
   const subscriptionCheckoutCanceled = firstParam(sp.subscription_checkout) === 'canceled';
+  const subscriptionCancelScheduled = firstParam(sp.subscription_cancel) === 'scheduled';
 
   return (
     <>
@@ -136,6 +137,11 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
       {subscriptionCheckoutCanceled ? (
         <p className={styles.muted} role="status">
           Subscription checkout was canceled — no charge was made.
+        </p>
+      ) : null}
+      {subscriptionCancelScheduled ? (
+        <p className={styles.bannerOk} role="status">
+          Stripe will cancel this subscription at the end of the current billing period.
         </p>
       ) : null}
 

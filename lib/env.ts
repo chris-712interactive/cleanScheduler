@@ -97,6 +97,8 @@ const serverEnvSchema = z.object({
   STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
   /** Optional platform fee on tenant invoice Checkout (basis points, e.g. 100 = 1%). Max 10000. */
   STRIPE_CONNECT_APPLICATION_FEE_BPS: z.string().optional(),
+  /** Optional Stripe Billing Portal configuration id for Connect customer portal sessions. */
+  STRIPE_CONNECT_BILLING_PORTAL_CONFIGURATION_ID: z.string().optional(),
 
   PLAID_CLIENT_ID: z.string().optional(),
   PLAID_SECRET: z.string().optional(),
@@ -117,6 +119,8 @@ const serverEnvSchema = z.object({
   // required -> always require email confirmation before first sign-in
   // disabled -> always auto-confirm on signup
   ONBOARDING_EMAIL_CONFIRM_MODE: z.enum(['auto', 'required', 'disabled']).default('auto'),
+  /** Vercel Cron / manual GET `/api/cron/materialize-recurring-visits` — `Authorization: Bearer …`. */
+  CRON_SECRET: z.string().optional(),
 });
 
 // We lazy-instantiate so importing this module from a client component does

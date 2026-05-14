@@ -10,6 +10,7 @@ import {
   parseConnectApplicationFeeBps,
   subscriptionApplicationFeePercent,
 } from '@/lib/billing/connectApplicationFee';
+import { computeBillingCycleAnchorUnix } from '@/lib/billing/billingCycleAnchor';
 
 const SUBSCRIPTION_CHECKOUT_KIND = 'tenant_customer_subscription' as const;
 
@@ -85,6 +86,15 @@ export async function createCustomerSubscriptionCheckoutSessionAction(formData: 
   const feeBps = parseConnectApplicationFeeBps();
   const applicationFeePercent = subscriptionApplicationFeePercent(feeBps);
 
+  const anchorDayRaw = String(formData.get('billing_anchor_day') ?? '').trim();
+  let billingCycleAnchor: number | undefined;
+  if (plan.billing_interval === 'month' && anchorDayRaw) {
+    const d = Number.parseInt(anchorDayRaw, 10);
+    if (Number.isFinite(d) && d >= 1 && d <= 28) {
+      billingCycleAnchor = computeBillingCycleAnchorUnix(d);
+    }
+  }
+
   const meta = {
     kind: SUBSCRIPTION_CHECKOUT_KIND,
     tenant_id: membership.tenantId,
@@ -118,6 +128,7 @@ export async function createCustomerSubscriptionCheckoutSessionAction(formData: 
       metadata: meta,
       subscription_data: {
         metadata: meta,
+        ...(billingCycleAnchor ? { billing_cycle_anchor: billingCycleAnchor } : {}),
         ...(applicationFeePercent != null ? { application_fee_percent: applicationFeePercent } : {}),
       },
     },

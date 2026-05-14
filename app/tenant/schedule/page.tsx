@@ -171,9 +171,14 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         title="Schedule"
         description={subtitle}
         actions={
-          <Button as="a" href="/schedule/new" variant="primary" iconLeft={<Plus size={18} aria-hidden />}>
-            New appointment
-          </Button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', alignItems: 'center' }}>
+            <Button as="a" href="/schedule/recurring" variant="secondary">
+              Recurring rules
+            </Button>
+            <Button as="a" href="/schedule/new" variant="primary" iconLeft={<Plus size={18} aria-hidden />}>
+              New appointment
+            </Button>
+          </div>
         }
       />
 

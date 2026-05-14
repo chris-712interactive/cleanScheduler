@@ -3,14 +3,24 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { formatUsdFromCents } from '@/lib/format/money';
+import {
+  cancelCustomerOwnSubscriptionAction,
+  openCustomerBillingPortalAction,
+} from '@/app/customer/subscriptions/billingPortalActions';
 import styles from '../invoices/invoices.module.scss';
 
 export const dynamic = 'force-dynamic';
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
 
 function intervalLabel(i: string): string {
   if (i === 'week') return 'Weekly';
@@ -20,6 +30,8 @@ function intervalLabel(i: string): string {
 
 type SubRow = {
   id: string;
+  tenant_id: string;
+  customer_id: string;
   status: string;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
@@ -27,7 +39,15 @@ type SubRow = {
   tenants: { name: string } | null;
 };
 
-export default async function CustomerSubscriptionsPage() {
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function CustomerSubscriptionsPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const errMsg = firstParam(sp.error);
+  const cancelScheduled = firstParam(sp.subscription_cancel) === 'scheduled';
+
   const auth = await requirePortalAccess('customer', '/subscriptions');
   const ctx = await getCustomerPortalContext(auth.user.id);
   if (!ctx) redirect('/access-denied?reason=no_customer_profile');
@@ -40,6 +60,8 @@ export default async function CustomerSubscriptionsPage() {
           .select(
             `
             id,
+            tenant_id,
+            customer_id,
             status,
             current_period_end,
             cancel_at_period_end,
@@ -60,6 +82,17 @@ export default async function CustomerSubscriptionsPage() {
         description="Recurring services billed through your providers’ Stripe accounts."
       />
 
+      {errMsg ? (
+        <p className={styles.bannerError} role="alert">
+          {errMsg}
+        </p>
+      ) : null}
+      {cancelScheduled ? (
+        <p className={styles.bannerOk} role="status">
+          Your provider was notified — this subscription will end after the current billing period.
+        </p>
+      ) : null}
+
       {error ? (
         <Card title="Could not load subscriptions">
           <p className={styles.muted}>{error.message}</p>
@@ -72,14 +105,16 @@ export default async function CustomerSubscriptionsPage() {
       ) : (
         <Stack gap={3}>
           {list.map((row) => {
-            const sp = row.service_plans;
+            const spRow = row.service_plans;
             const t = row.tenants as { name: string } | null;
-            const label = sp
-              ? `${sp.name} · ${formatUsdFromCents(sp.amount_cents)} / ${intervalLabel(sp.billing_interval)}`
+            const label = spRow
+              ? `${spRow.name} · ${formatUsdFromCents(spRow.amount_cents)} / ${intervalLabel(spRow.billing_interval)}`
               : 'Subscription';
             const end = row.current_period_end
               ? new Date(String(row.current_period_end)).toLocaleDateString()
               : '—';
+            const canCancel =
+              row.status !== 'canceled' && !row.cancel_at_period_end && row.status !== 'incomplete_expired';
             return (
               <Card key={row.id} title={label} description={t?.name ?? 'Provider'}>
                 <div className={styles.row}>
@@ -91,6 +126,25 @@ export default async function CustomerSubscriptionsPage() {
                   ) : null}
                 </div>
                 <p className={styles.meta}>Current period ends {end}</p>
+                <div className={styles.row} style={{ marginTop: 'var(--space-3)' }}>
+                  <form action={openCustomerBillingPortalAction}>
+                    <input type="hidden" name="tenant_id" value={row.tenant_id} />
+                    <input type="hidden" name="customer_id" value={row.customer_id} />
+                    <Button type="submit" variant="secondary">
+                      Billing portal
+                    </Button>
+                  </form>
+                  {canCancel ? (
+                    <form action={cancelCustomerOwnSubscriptionAction}>
+                      <input type="hidden" name="tenant_id" value={row.tenant_id} />
+                      <input type="hidden" name="customer_id" value={row.customer_id} />
+                      <input type="hidden" name="subscription_row_id" value={row.id} />
+                      <Button type="submit" variant="secondary">
+                        Cancel at period end
+                      </Button>
+                    </form>
+                  ) : null}
+                </div>
               </Card>
             );
           })}

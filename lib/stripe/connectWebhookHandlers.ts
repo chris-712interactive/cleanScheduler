@@ -32,6 +32,7 @@ export async function handleConnectAccountUpdated(admin: Admin, account: Stripe.
 export async function handleTenantInvoiceCheckoutCompleted(
   admin: Admin,
   session: Stripe.Checkout.Session,
+  options?: { stripe?: Stripe; connectAccountId?: string },
 ): Promise<void> {
   if (session.metadata?.kind !== 'tenant_invoice_pay') return;
   const tenantId = session.metadata.tenant_id as string | undefined;
@@ -58,23 +59,60 @@ export async function handleTenantInvoiceCheckoutCompleted(
   const remaining = inv.amount_cents - inv.amount_paid_cents;
   if (remaining <= 0) return;
 
-  const { error: insErr } = await admin.from('tenant_invoice_payments').insert({
-    tenant_id: tenantId,
-    invoice_id: invoiceId,
-    amount_cents: Math.min(amountTotal, remaining),
-    method: 'card',
-    notes: 'Stripe Checkout (customer)',
-    recorded_via: 'stripe_checkout',
-    stripe_checkout_session_id: session.id,
-    stripe_payment_intent_id: pi,
-    gross_amount_cents: amountTotal,
-  });
+  const applied = Math.min(amountTotal, remaining);
+
+  const { data: inserted, error: insErr } = await admin
+    .from('tenant_invoice_payments')
+    .insert({
+      tenant_id: tenantId,
+      invoice_id: invoiceId,
+      amount_cents: applied,
+      method: 'card',
+      notes: 'Stripe Checkout (customer)',
+      recorded_via: 'stripe_checkout',
+      stripe_checkout_session_id: session.id,
+      stripe_payment_intent_id: pi,
+      gross_amount_cents: amountTotal,
+    })
+    .select('id')
+    .maybeSingle();
 
   if (insErr?.code === '23505') {
     return;
   }
   if (insErr) {
     throw new Error(insErr.message);
+  }
+
+  const paymentRowId = inserted?.id;
+  if (!paymentRowId || !options?.stripe || !options?.connectAccountId || !pi) {
+    return;
+  }
+
+  try {
+    const piFull = await options.stripe.paymentIntents.retrieve(
+      pi,
+      { expand: ['latest_charge.balance_transaction'] },
+      { stripeAccount: options.connectAccountId },
+    );
+    const charge = piFull.latest_charge as Stripe.Charge | null | undefined;
+    const bt = charge?.balance_transaction as Stripe.BalanceTransaction | string | null | undefined;
+    const btx = typeof bt === 'object' && bt && 'fee' in bt ? bt : null;
+    const appFee =
+      typeof piFull.application_fee_amount === 'number' ? piFull.application_fee_amount : null;
+
+    await admin
+      .from('tenant_invoice_payments')
+      .update({
+        stripe_charge_id: charge?.id ?? null,
+        stripe_balance_transaction_id: btx?.id ?? null,
+        stripe_fee_cents: btx?.fee ?? null,
+        application_fee_cents: appFee,
+        net_amount_cents: btx?.net ?? null,
+      })
+      .eq('id', paymentRowId);
+  } catch {
+    // Fee mirror is best-effort; payment row already applied invoice balance.
   }
 }
 
@@ -166,6 +204,10 @@ export async function upsertCustomerSubscriptionFromStripe(
   const periodEnd = subscription.current_period_end
     ? new Date(subscription.current_period_end * 1000).toISOString()
     : null;
+  const billingCycleAnchor =
+    subscription.billing_cycle_anchor && subscription.billing_cycle_anchor > 0
+      ? new Date(subscription.billing_cycle_anchor * 1000).toISOString()
+      : null;
 
   const row: Database['public']['Tables']['customer_subscriptions']['Update'] = {
     tenant_id: tenantId,
@@ -176,6 +218,7 @@ export async function upsertCustomerSubscriptionFromStripe(
     current_period_start: periodStart,
     current_period_end: periodEnd,
     cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+    billing_cycle_anchor: billingCycleAnchor,
     updated_at: new Date().toISOString(),
   };
 
@@ -200,6 +243,7 @@ export async function upsertCustomerSubscriptionFromStripe(
     current_period_start: periodStart,
     current_period_end: periodEnd,
     cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+    billing_cycle_anchor: billingCycleAnchor,
   };
 
   const { error: insErr } = await admin.from('customer_subscriptions').insert(insertRow);
