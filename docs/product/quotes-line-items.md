@@ -138,7 +138,7 @@ These are **not** failures of the current MVP; they are edges and follow-ons cal
 
 - **Gap**: No email (or push) when a quote is sent, accepted, or declined; staff and customers discover changes only when they open the app.
 - **Proposed solutions**:
-  - **A — Event outbox + worker**: Insert `notification_outbox` (or reuse a generic `domain_events` table) on status change via DB trigger or app layer; worker sends via **Resend / SendGrid / SES** with templates and idempotency keys.
+  - **A — Event outbox + worker**: Insert `notification_outbox` (or reuse a generic `domain_events` table) on status change via DB trigger or app layer; worker sends via **Resend** with templates and idempotency keys.
   - **B — Direct send from server action**: Simpler for low volume; risk of blocking request and harder retries—acceptable only for very early staging.
   - **C — Tenant toggles**: Respect per-tenant “email on quote accepted” etc. once `tenant_operational_settings` (or a small extension) defines flags.
 - **Decisions to confirm**: Minimum **event set** (e.g. `sent` to customer only vs also `accepted` to tenant)? Preferred **vendor**? Do customers without email use **SMS** later?

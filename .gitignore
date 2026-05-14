@@ -39,3 +39,6 @@ coverage/
 # Supabase local CLI artefacts (will be added later)
 supabase/.branches
 supabase/.temp
+
+# Generated PROD baseline SQL (see supabase/scripts/build-prod-baseline.sh)
+supabase/scripts/generated/

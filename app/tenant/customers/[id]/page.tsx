@@ -6,7 +6,7 @@ import { Stack } from '@/components/layout/Stack';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import { isSendgridConfigured } from '@/lib/email/sendgrid';
+import { isResendConfigured } from '@/lib/email/resend';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
 import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
 import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
@@ -89,7 +89,7 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
   const email = identity.email ?? '';
   const phone = identity.phone ?? '';
   const portalLinked = Boolean(identity.auth_user_id);
-  const sendgridReady = isSendgridConfigured();
+  const emailReady = isResendConfigured();
 
   return (
     <>
@@ -148,7 +148,7 @@ export default async function TenantCustomerDetailPage({ params }: PageProps) {
             customerId={customer.id}
             customerEmail={email}
             portalLinked={portalLinked}
-            sendgridReady={sendgridReady}
+            emailReady={emailReady}
           />
         </Card>
 

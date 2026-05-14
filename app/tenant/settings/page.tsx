@@ -76,7 +76,7 @@ export default async function TenantSettingsPage() {
 
         <Card
           title="Quotes, scheduling & customer payments"
-          description="Defaults for quotes, scheduling, payments, and Twilio SendGrid email notifications. SMS toggles are stored for a future release."
+          description="Defaults for quotes, scheduling, payments, and Resend email notifications. SMS toggles are stored for a future release."
         >
           <OperationalSettingsForm tenantSlug={membership.tenantSlug} snapshot={opsSnapshot} />
         </Card>

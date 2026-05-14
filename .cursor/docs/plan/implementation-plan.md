@@ -1,6 +1,6 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo statuses below are synced periodically with shipped work** (see git history for source of truth).
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-12** (see §11.5; product decisions Resend + Connect Express + PROD baseline script documented there).
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
@@ -12,32 +12,32 @@ todos:
     content: "Implement the color system and theme provider: encode the provided light/dark palettes + derived role aliases in styles/tokens/_colors.scss, emit them as CSS custom properties in styles/_theme.scss (with [data-theme=dark] overrides), reserve --color-brand for the per-tenant hook, ship an inline pre-hydration script that picks System/Light/Dark from localStorage + prefers-color-scheme, and build the Settings toggle that persists to localStorage + profiles.theme_preference."
     status: completed
   - id: supabaseSetup
-    content: "Provision Supabase projects for BOTH DEV and PROD (separate orgs/projects, no shared resources). Enable pgsodium + pgcrypto, configure Vault for KEK in each, generate typed Supabase clients, and wire env vars per environment. PROD on the Pro tier for PITR backups; DEV on Free tier initially. See section 16."
-    status: pending
+    content: "PROD Supabase project exists; **incremental migrations not applied on PROD yet** (2026-05-12). DEV tracks `supabase/migrations/0001`\u2013latest. Use `npm run db:prod-baseline` \u2192 `supabase/scripts/generated/prod_baseline.sql` for one-shot apply on **empty** PROD (see `supabase/scripts/README.md`). Still TODO: pgsodium + Vault KEK on each project, typed client regen from PROD after apply, env wiring."
+    status: in_progress
   - id: envProvisioning
-    content: "Provision the multi-environment infrastructure end-to-end (section 16): Vercel project with Development / Preview / Production env-var scopes; DNS for cleanscheduler.com (root + wildcard) and dev.cleanscheduler.com (root + wildcard); Stripe live + test accounts with separate webhook endpoints; Plaid Sandbox + Production credentials; Twilio test + production numbers; Resend verified domains for both envs; Sentry environment tags."
+    content: "Provision multi-environment infra (\u00a716): Vercel env scopes; DNS root + wildcard; Stripe test/live + webhooks; Plaid sandbox/prod; Twilio (SMS); **Resend** verified sending domain(s) for transactional email; Sentry tags."
     status: pending
   - id: cicdPipeline
-    content: "GitHub Actions pipeline (section 16): on every PR run typecheck, ESLint, stylelint, Vitest, supabase db diff for migration sanity, and pg_tap RLS tests against an ephemeral local Supabase. Branch strategy: main = PROD, staging = DEV, feature branches \u2192 PRs into staging. Auto-deploy staging \u2192 DEV (with auto supabase db push); auto-deploy main \u2192 PROD with a manual approval gate before the migration runs."
+    content: "Shipped: `.github/workflows/ci.yml` runs `npm run typecheck` + `npm run lint` on every PR and on push to `main`/`staging`. Still missing vs §16: stylelint in CI (local `npm run lint:styles` currently errors in stylelint/postcss on `TopBar.module.scss`), Prettier `--check`, Vitest, `supabase db` migration diff / drift check, pg_tap RLS suite, ephemeral Supabase in CI, and Vercel branch deploy rules (staging\u2192DEV, gated PROD migrations)."
     status: in_progress
   - id: envGuardrails
-    content: "Implement env mismatch guardrails (section 16): lib/env.ts cross-checks at boot \u2014 if the Supabase URL looks like PROD, Stripe must be sk_live_ and Plaid must be Production; otherwise fail-fast. Persistent red 'DEV ENVIRONMENT \u2014 no real charges' banner across every authenticated page in DEV. .env.example checked in with empty values; .env.local ignored."
+    content: "Shipped: `lib/env.ts` Zod-validated `publicEnv`/`serverEnv`; `NEXT_PUBLIC_APP_ENV=prod` requires live Stripe key and production Plaid when Plaid is configured; **non-prod rejects `sk_live_` Stripe keys** (2026-05-12). `getNonProdPortalBanner()` drives dev/local banner text in portals. `.env.example` is checked in. Still missing: explicit prod-shaped Supabase URL pairing (today we key off `NEXT_PUBLIC_APP_ENV` only)."
     status: in_progress
   - id: subdomainMiddleware
     content: Implement middleware that resolves subdomain -> tenant context, gates routes by app_role/tenant_role, and supports admin + my + tenant slugs with reserved-name guard.
     status: completed
   - id: authProfilesTenants
-    content: "Migration 0001: profiles, tenants, tenant_members, roles, permissions, role_permissions; seed system roles (Admin, Billing, Employee) and permission keys; add Supabase JWT hook to inject claims."
-    status: pending
+    content: "Baseline shipped in `0001_initial_auth_multitenant.sql` + onboarding flows: `user_profiles`, `tenants`, `tenant_memberships`, `app_role`/`tenant_role` enums, RLS helpers reading JWT `app_metadata` (claims set from app code \u2014 not a SQL auth hook file). **Gap vs original plan:** no separate `roles` / `permissions` / `role_permission` tables or seeded permission-key matrix; fine-grained `requirePermission()` remains app-level."
+    status: in_progress
   - id: customerModel
-    content: "Migration 0002: customer_identities, customers (with pgsodium-encrypted PII columns), customer_tenant_links; RLS policies + invite/claim flow."
-    status: pending
+    content: "Core shipped in `0001` + CRM/property/portal migrations (`0010`\u2013`0014`, etc.): `customer_identities`, `customers`, links, portal invites, tenant customer profiles/properties. **Gap:** pgsodium/Vault column encryption for PII not present in migrations yet; invite/claim flows exist but encryption story is still TODO."
+    status: in_progress
   - id: schedulingQuotes
-    content: "Migration 0003: appointments, quote_stages (seed default 4 stages), quotes; RLS by tenant + employee assignment."
-    status: pending
+    content: "Shipped as **tenant quotes** + **scheduled visits** (not the legacy `quote_stages` / `appointments` names in early plan sketches): `0009_tenant_quotes` through `0021_expire_sent_quotes_pg_cron.sql` (Kanban columns, line items, tax/discount, acceptance snapshots, e-signatures, notifications, expiry batch + pg_cron). Assignees in `0015`."
+    status: in_progress
   - id: billingPlans
-    content: "Migration 0004: plans (with NULLABLE prices since final pricing is deferred), plan_features (M2M to feature-key enum), tenant_addons (per-resource add-on rows linking to Stripe subscription items), tenant_usage_snapshots (daily rollup), tenant_subscriptions (renamed from subscriptions to disambiguate from customer_subscriptions), invoices (with source enum: manual | recurring_stripe | quote_converted, stripe_invoice_id, stripe_subscription_id), payments (with method enum incl. card/cash/check/zelle/ach, status enum, structured check fields, plus the Stripe accounting columns: gross_amount_cents, stripe_fee_cents, application_fee_cents [always 0 at launch], net_amount_cents, stripe_charge_id, stripe_balance_txn_id, stripe_payout_id), stripe_payouts (per-tenant payout batches), refunds, disputes, tenant_settings (incl. check_reminder_hold_days), stripe_connect_accounts. Seed three strawman plans (Starter / Pro / Business) with placeholder prices per section 15. Stripe products/prices for cleanScheduler\u2019s own subscription created in a follow-up step once final prices are set. Full payment flow + accounting model in section 17."
-    status: pending
+    content: "Partial: `0013` tenant invoices + payments, marketing inquiries, masquerade + audit; `0002`/`0007`/`0008` platform trial + tier + Stripe webhook idempotency; tenant billing UI routes exist. **Still missing vs §15/\u00a717:** `plans`/`plan_features`/`tenant_addons`/`tenant_usage_snapshots`, Stripe Connect tables, full accounting columns on payments, refunds/disputes/payouts aggregates, `check_reminder_hold_days` tenant settings, seed catalog."
+    status: in_progress
   - id: paymentFlowsImpl
     content: "Implement the end-to-end payment flows per section 17: Stripe Connect Express onboarding (already covered by stripeConnectOnboarding); 'Pay now' Stripe Checkout Session generation for one-off invoices with branded Resend emails; Stripe Setup Intent flow for capturing card-on-file before activating a customer_subscription; Stripe Subscription creation with billing_cycle_anchor on the connected account; connected-account webhook handler covering checkout.session.completed, charge.succeeded, charge.refunded, charge.dispute.* , invoice.created, invoice.payment_succeeded, invoice.payment_failed, customer.subscription.*, payout.created, payout.paid; Stripe Customer Billing Portal session generator deep-linked from the customer portal; refund-from-app action; dispute notification to tenant. All payment events mirrored into payments / invoices / refunds / disputes / stripe_payouts tables for source-of-truth reporting."
     status: pending
@@ -45,7 +45,7 @@ todos:
     content: "Build the feature-gating + metering + soft-stop overage infrastructure (section 15): lib/billing/features.ts (feature-key enum), lib/billing/requireFeature.ts (server-side gate utility, mirrors requireConnect.ts), lib/billing/checkLimit.ts (typed quota checker driving the upgrade-or-add-on modal), components/billing/UpgradeOrAddOnModal.tsx (soft-stop UI used by Invite Employee / Add Customer / etc.), supabase/functions/usage-rollup/index.ts (nightly Vercel Cron rollup of active users / customers / sms segments into tenant_usage_snapshots), and inline 80%/95%/100% utilization warning banners. Strawman feature keys: recurring_billing, kanban_customization, custom_roles, email_campaigns, plaid_reconciliation, payroll_exports, sales_tax_summary, sms_outbound, sms_inbound, branded_email, phone_support."
     status: pending
   - id: stripeConnectOnboarding
-    content: "Stripe Connect onboarding for tenants (Standard or Express): connect-account creation, OAuth return flow, webhook subscription on the connected account, UI in Tenant Settings > Billing > Payment Setup. Optional during the 7-day trial \u2014 tenants can skip after a verbose education screen explaining benefits, Stripe processing fees, what gets blocked if they skip (recurring billing + card payments + pay-now invoice links), and what still works (manual recording of cash/check/Zelle). Persistent banner in Tenant Portal until completed."
+    content: "Stripe Connect **Express** onboarding: connect-account creation, OAuth return flow, webhook subscription on the connected account, UI in Tenant Settings > Billing > Payment Setup. Optional during the 7-day trial \u2014 tenants can skip after a verbose education screen explaining benefits, Stripe processing fees, what gets blocked if they skip (recurring billing + card payments + pay-now invoice links), and what still works (manual recording of cash/check/Zelle). Persistent banner in Tenant Portal until completed. (Express confirmed 2026-05-12.)"
     status: pending
   - id: stripeConnectFeatureGating
     content: "Server-side feature gates keyed off stripe_connect_accounts.status: block customer_subscription creation, invoice card-charge action, and pay-now link generation when status != 'complete'. Inline upgrade prompts and the persistent banner deep-link to Settings > Billing > Payment Setup. tenants.stripe_connect_status materialized as a generated column for fast checks. Allowed without Connect: invoice creation, manual payment recording (cash/check/Zelle), service plan templates, recurring appointment rules (no billing attached)."
@@ -69,8 +69,8 @@ todos:
     content: "Phase 3: CSV / OFX bank statement import as Zelle/ACH reconciliation fallback for banks not well-supported by Plaid."
     status: pending
   - id: messagingAuditInquiries
-    content: "Migration 0005: conversations, messages, audit_log, masquerade_sessions, inquiries, support_tickets (Phase 2)."
-    status: pending
+    content: "Partial in `0013`: `marketing_inquiries`, masquerade + `audit_log`, `customer_support_threads` + `customer_support_messages` (MVP messaging), customer invoice read policies. **Gap vs plan:** no generic `conversations`/`messages` product threading; `support_tickets` deferred to Phase 2 todo `phase2Tickets`."
+    status: in_progress
   - id: rlsTestSuite
     content: Author pg_tap or SQL test fixtures verifying tenant isolation, customer cross-tenant view, founder bypass, and masquerade scoping.
     status: pending
@@ -78,22 +78,22 @@ todos:
     content: Build marketing site, inquiry form, and self-serve 7-day trial signup wired to Stripe Checkout (trial_period_days=7) and tenant + Super Admin creation.
     status: completed
   - id: stripeWebhooks
-    content: "Platform Stripe webhooks (Next route /api/webhooks/stripe): checkout.session.completed + customer.subscription.* → tenant_billing_accounts. Remaining: Edge Function parity, inquiry tagging, Connect webhooks, idempotency table."
+    content: "Shipped: `app/api/webhooks/stripe/route.ts` handles `checkout.session.completed` (subscription mode), `customer.subscription.updated`/`deleted`, syncs `tenant_billing_accounts` + tenant `is_active`; `0008_stripe_webhook_idempotency.sql` + `processStripeWebhookEventOnce`. **Remaining:** Connect account webhooks, inquiry/trial lifecycle automation, optional Edge Function parity, richer event coverage (charges, invoices on connected accounts)."
     status: in_progress
   - id: tenantPortalMvp
-    content: "Tenant portal MVP: Dashboard KPIs, Customers CRUD, Schedule (day/week), Quotes Kanban (4 fixed stages, dnd-kit), Billing (invoices + pay), Employees CRUD, Settings (Personal, Business Info, Billing)."
+    content: "Routes live for dashboard, customers CRUD, schedule (list + new visit), quotes Kanban + detail + Resend-backed notifications, billing invoices list/detail/create, employees list, settings (incl. operational / quote email toggles). **Gaps:** Reports page is placeholder; Connect onboarding + pay-now not wired; KPI depth and polish per \u00a711."
     status: in_progress
   - id: customerPortalMvp
-    content: "Customer portal MVP: aggregated Dashboard, read-only Schedule with reschedule-request, Billing view + pay, basic Messages, Settings."
+    content: "Dashboard, visits (read), invoices, messages threads, quotes (view/respond w/ e-sign), settings, payment methods, invite completion. **Gaps:** explicit reschedule-request workflow vs read-only schedule; consolidated cross-tenant billing; pay flows depend on tenant Stripe work."
     status: in_progress
   - id: founderAdminMvp
-    content: "Founder admin MVP: Dashboard, Inquiries with filters & manual status, Customers/Tenants list+detail, manual onboarding, basic masquerade with audit log + session timer banner."
+    content: "Tenants list/detail, inquiries list/detail/status, audit log page, masquerade actions, dashboard shell. **Gaps:** richer founder dashboard KPIs, manual onboarding UX polish, masquerade session timer banner refinement."
     status: in_progress
   - id: transactionalEmail
-    content: "Resend integration: invites, invoice emails, password reset, magic-link claims; templated and tenant-branded headers."
-    status: pending
+    content: "**Resend** (`resend` npm + `lib/email/resend.ts`): quotes, portal invites, and future invoice/auth mail share `sendTransactionalEmail`. Configure `RESEND_API_KEY` + `RESEND_FROM_EMAIL` on the server."
+    status: in_progress
   - id: observabilityCi
-    content: Set up Vercel + Supabase logging, Sentry for errors, Playwright e2e for critical flows (signup, invite, schedule create, pay invoice), GitHub Actions CI with migrations check and pg_tap RLS tests.
+    content: "Sentry DSN slots exist in env schema; no Playwright/Vitest suites or CI DB checks yet. Overlaps `cicdPipeline` for Actions hardening."
     status: pending
   - id: phase2Twilio
     content: "Phase 2: Twilio SMS in/out, tenant Integrations admin assignments, conversation surfacing in Messages."
@@ -441,7 +441,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - **Reports module v1 (Concern #4)**: Invoice Audit, Payment Reconciliation, Outstanding Balances (aging), Field Check Tracking, Revenue by Service / Customer, basic Employee Performance & Compensation. CSV + PDF export.
 - Customer portal: Dashboard, Schedule (read + reschedule-request), Billing (view + pay outstanding), Messages (basic 1:1), Settings.
 - Founder admin: Dashboard (key metrics), Inquiries (list + filters + manual status), Customers/Tenants (list + detail + manual onboard), Settings (skeleton), basic masquerade with audit log.
-- Foundation: subdomain routing, Supabase Auth, RLS everywhere, pgsodium for encrypted columns, Stripe + Stripe Connect + webhooks, Resend transactional email.
+- Foundation: subdomain routing, Supabase Auth, RLS everywhere, pgsodium for encrypted columns, Stripe + Stripe Connect + webhooks, **Resend** transactional email.
 - **Pricing & gating infrastructure (section 15)**: `plans` + `plan_features` + `tenant_addons` + `tenant_usage_snapshots` schema seeded with the three strawman plans (Starter / Pro / Business) at placeholder prices; server-side `requireFeature` + `checkLimit` utilities; soft-stop `UpgradeOrAddOnModal` UI with the 80%/95%/100% utilization warnings; nightly usage-rollup cron. Final tier prices remain TBD until the pre-launch pricing review — flipping prices is a one-line data change.
 
 **Phase 2 — Comms, Reconciliation & Ops**
@@ -463,6 +463,44 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - Year-end tax summaries (1099 inputs by customer).
 - Advanced reporting (cohort analysis, customer LTV, churn).
 
+## 11.5 Status sync & remaining backlog (2026-05-12)
+
+This section reconciles the YAML todos at the top of this file with the current repo. **Authoritative shipped state is always git + deployed migrations** (`supabase/migrations/0001` … latest).
+
+### What moved from “pending” to “in progress” (or completed) in this sync
+
+| Original YAML idea | Repo reality |
+| --- | --- |
+| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). No separate permissions catalog table yet. |
+| `customerModel` as 0002-only | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet. |
+| `schedulingQuotes` as old table names | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`). |
+| `billingPlans` as monolithic 0004 | **Partial:** tenant invoices/payments + inquiries + audit/masquerade in **0013**; platform tier + Stripe idempotency in **0007/0008**. Missing: plans catalog, Connect, usage snapshots, full §17 accounting. |
+| `messagingAuditInquiries` as 0005 | **0013** covers inquiries, audit, support threads/messages; not full “conversations” product. |
+| `stripeWebhooks` “no idempotency” | **0008** + `processStripeWebhookEventOnce` + route handler are shipped. |
+
+### Prioritized next slices (execute in roughly this order for trial-to-revenue)
+
+1. **CI (`cicdPipeline`)** — Fix or pin stylelint/postcss so `lint:styles` is green; add it to Actions. Optionally add `prettier --check` after a one-time `npm run format` on the repo (large churn). Add `supabase db lint` or migration list check when CLI is available in CI.
+2. **Env (`envGuardrails`)** — Optional: fail if `NEXT_PUBLIC_SUPABASE_URL` host suggests production project while `NEXT_PUBLIC_APP_ENV` is `local`/`dev` (needs agreed naming convention).
+3. **Billing + Connect (`billingPlans`, `stripeConnectOnboarding`, `stripeConnectFeatureGating`, `paymentFlowsImpl`)** — Schema + UI for Connect; gate card/recurring/pay-now; extend webhooks for connected accounts.
+4. **Transactional email (`transactionalEmail`)** — Extend **Resend** for invoices, auth-adjacent mail, and any new flows (see `lib/email/resend.ts`).
+5. **Recurring (`recurringBilling`)** — `service_plans`, `customer_subscriptions`, RRULE generator + cron.
+6. **Field + office money (`checkPaymentWorkflow`)** — Accept payment on visit detail; check state machine; Zelle manual entry already partially aligned with §14.
+7. **Reports (`reportsModule`)** — Replace tenant `/reports` placeholder with v1 reports + exports.
+8. **Feature gating (`featureGatingMetering`)** — `requireFeature` / `checkLimit` / usage rollup once `tenant_usage_snapshots` exists.
+9. **RLS tests (`rlsTestSuite`)** — pg_tap or SQL fixtures for tenant isolation + masquerade.
+10. **Portal MVP gaps** — Customer reschedule request UX; founder dashboard metrics; tenant dashboard KPIs.
+
+### Product decisions (2026-05-12)
+
+- **Transactional email:** **Resend** for all app-sent mail (quotes, invites, future invoices). Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL` in `lib/env.ts` and `.env.example`.
+- **Stripe Connect:** **Express** for tenant connected accounts.
+- **PROD database:** project exists; migrations not applied yet. Use **`npm run db:prod-baseline`** to regenerate `supabase/scripts/generated/prod_baseline.sql`, then apply with `psql … -v ON_ERROR_STOP=1 -f` on an **empty** database (details in `supabase/scripts/README.md`). Prefer Supabase CLI migration tracking for ongoing deploys after the initial bootstrap.
+
+### Questions only you can answer (no defaults assumed)
+
+_(None open from the last round — add new rows here when tradeoffs reappear.)_
+
 ## 12. Key files & code we'll author first
 
 - `[middleware.ts](middleware.ts)` — subdomain & auth resolver.
@@ -472,7 +510,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - `[components/theme/ThemeProvider.tsx](components/theme/ThemeProvider.tsx)` + `[components/theme/themeScript.ts](components/theme/themeScript.ts)` — pre-hydration `data-theme` resolver, System/Light/Dark toggle, and `localStorage` + `profiles.theme_preference` sync.
 - `[components/ui/Dialog/Dialog.tsx](components/ui/Dialog/Dialog.tsx)` + `[components/ui/Dialog/Dialog.module.scss](components/ui/Dialog/Dialog.module.scss)` — first Radix-backed primitive, used as the template for the rest of the `components/ui/` library.
 - `[components/layout/Stack/Stack.tsx](components/layout/Stack/Stack.tsx)` (and siblings) — layout primitives that keep feature SCSS files small.
-- `[components/layout/PortalShell.tsx](components/layout/PortalShell.tsx)` — the unified shell wrapping every authenticated page in all three portals (section 18). Renders env banner, TopBar, contextual banner slot, Sidebar, Container, optional bottom nav.
+- `[components/portal/PortalShell.tsx](components/portal/PortalShell.tsx)` — the unified shell wrapping every authenticated page in all three portals (section 18). Renders env banner, TopBar, contextual banner slot, Sidebar, Container, optional bottom nav.
 - `[components/layout/TopBar/TopBar.tsx](components/layout/TopBar/TopBar.tsx)`, `[components/layout/Sidebar/Sidebar.tsx](components/layout/Sidebar/Sidebar.tsx)`, `[components/layout/PageHeader/PageHeader.tsx](components/layout/PageHeader/PageHeader.tsx)`, `[components/layout/FilterBar/FilterBar.tsx](components/layout/FilterBar/FilterBar.tsx)` — chrome pieces used by `PortalShell` and shared across portals.
 - `[components/ui/DataTable/DataTable.tsx](components/ui/DataTable/DataTable.tsx)`, `[components/ui/EmptyState/EmptyState.tsx](components/ui/EmptyState/EmptyState.tsx)`, `[components/ui/Skeleton/Skeleton.tsx](components/ui/Skeleton/Skeleton.tsx)`, `[components/ui/Toast/Toast.tsx](components/ui/Toast/Toast.tsx)`, `[components/ui/StatusPill/StatusPill.tsx](components/ui/StatusPill/StatusPill.tsx)`, `[components/ui/KeyValueList/KeyValueList.tsx](components/ui/KeyValueList/KeyValueList.tsx)` — finite UI primitive set per section 18.6.
 - `[stylelint.config.cjs](stylelint.config.cjs)` — token-aware lint rules (forbid hard-coded colors, enforce declaration order).
@@ -855,8 +893,8 @@ flowchart LR
   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
   - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_CLIENT_ID`, `STRIPE_CONNECT_WEBHOOK_SECRET`.
   - `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` (Phase 2).
-  - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` (Phase 2).
-  - `RESEND_API_KEY`, `RESEND_FROM_DOMAIN`.
+  - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` (Phase 2 SMS).
+  - `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (transactional email — Resend).
   - `SENTRY_DSN`, `SENTRY_ENVIRONMENT`.
   - `APP_ENV` (`local` / `dev` / `prod`) — drives the env-mismatch assertion below.
 

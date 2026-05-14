@@ -12,13 +12,13 @@ export function CustomerPortalInvitePanel({
   customerId,
   customerEmail,
   portalLinked,
-  sendgridReady,
+  emailReady,
 }: {
   tenantSlug: string;
   customerId: string;
   customerEmail: string;
   portalLinked: boolean;
-  sendgridReady: boolean;
+  emailReady: boolean;
 }) {
   const [state, action, pending] = useActionState(sendCustomerPortalInviteAction, initial);
 
@@ -43,13 +43,13 @@ export function CustomerPortalInvitePanel({
       <form action={action} className={styles.inviteForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         <input type="hidden" name="customer_id" value={customerId} />
-        <Button type="submit" variant="secondary" disabled={pending || !sendgridReady}>
+        <Button type="submit" variant="secondary" disabled={pending || !emailReady}>
           {pending ? 'Sending…' : 'Email portal invite'}
         </Button>
       </form>
-      {!sendgridReady ? (
+      {!emailReady ? (
         <p className={styles.inviteHint}>
-          Server email is not configured. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL (verified sender in SendGrid).
+          Server email is not configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL (verified domain in Resend).
         </p>
       ) : (
         <p className={styles.inviteHint}>

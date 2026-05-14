@@ -9,6 +9,8 @@
  *     crashes for routes that import env-aware modules but are not executed.
  *   - Public (browser-shipped) vars are split from server-only vars so we
  *     can't accidentally read a server secret from a client component.
+ *   - Cross-env Stripe: prod requires sk_live_; non-prod must not use sk_live_
+ *     (see getServerEnv()).
  *
  * Usage:
  *
@@ -102,11 +104,10 @@ const serverEnvSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
 
+  /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),
-
-  /** Twilio SendGrid — verified sender email (single address or "Name <email@domain>"). */
-  SENDGRID_API_KEY: z.string().optional(),
-  SENDGRID_FROM_EMAIL: z.string().min(1).optional(),
+  /** Resend — verified sender, e.g. `Acme <billing@yourdomain.com>` or Resend onboarding address. */
+  RESEND_FROM_EMAIL: z.string().min(1).optional(),
   // onboarding create-user behavior:
   // auto     -> dev/local auto-confirm, prod requires confirmation
   // required -> always require email confirmation before first sign-in
@@ -148,6 +149,13 @@ function getServerEnv(): z.infer<typeof serverEnvSchema> {
     if (plaidSecret && process.env.PLAID_ENV && process.env.PLAID_ENV !== 'production') {
       throw new Error(
         'NEXT_PUBLIC_APP_ENV=prod with PLAID_SECRET set requires PLAID_ENV=production.',
+      );
+    }
+  } else {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeKey && stripeKey.startsWith('sk_live_')) {
+      throw new Error(
+        'STRIPE_SECRET_KEY is a live Stripe key (sk_live_…) but NEXT_PUBLIC_APP_ENV is not prod.',
       );
     }
   }

@@ -96,9 +96,9 @@ export function OperationalSettingsForm({
       </fieldset>
 
       <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>Quote email notifications (Twilio SendGrid)</legend>
+        <legend className={styles.opsLegend}>Quote email notifications (Resend)</legend>
         <p className={styles.opsIntro}>
-          When enabled, the app sends transactional email using your server&apos;s SendGrid configuration.
+          When enabled, the app sends transactional email using your server&apos;s Resend configuration.
           Quote &quot;sent&quot; goes to the customer; accept/decline notices go to your workspace onboarding
           email when available.
         </p>

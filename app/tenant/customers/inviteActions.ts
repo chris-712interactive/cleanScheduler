@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { sendTransactionalEmail, isSendgridConfigured } from '@/lib/email/sendgrid';
+import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 
 export interface CustomerInviteFormState {
@@ -37,10 +37,10 @@ export async function sendCustomerPortalInviteAction(
     return { error: 'You must be signed in to send an invite.' };
   }
 
-  if (!isSendgridConfigured()) {
+  if (!isResendConfigured()) {
     return {
       error:
-        'Email is not configured. Add SENDGRID_API_KEY and SENDGRID_FROM_EMAIL (verified sender) to the server environment.',
+        'Email is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL (verified domain in Resend) to the server environment.',
     };
   }
 

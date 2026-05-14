@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import { sendTransactionalEmail, isSendgridConfigured } from '@/lib/email/sendgrid';
+import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 
 type Admin = SupabaseClient<Database>;
@@ -68,13 +68,13 @@ function quoteUrlForCustomer(quoteId: string): string {
   return `${getPublicOrigin('my')}/quotes/${quoteId}`;
 }
 
-/** Fire-and-forget friendly: logs nothing on success; ignores when SendGrid off or no recipient. */
+/** Fire-and-forget friendly: logs nothing on success; ignores when Resend off or no recipient. */
 export async function sendQuoteNotificationEmail(
   admin: Admin,
   event: QuoteNotificationEvent,
   params: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
 ): Promise<void> {
-  if (!isSendgridConfigured()) return;
+  if (!isResendConfigured()) return;
 
   const flags = await loadOpsFlags(admin, params.tenantId);
   if (!flags) return;
