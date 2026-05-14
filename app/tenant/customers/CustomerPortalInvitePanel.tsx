@@ -49,7 +49,7 @@ export function CustomerPortalInvitePanel({
       </form>
       {!emailReady ? (
         <p className={styles.inviteHint}>
-          Server email is not configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL (verified domain in Resend).
+          Server email is not configured. Set RESEND_API_KEY. Portal invites use your Resend template for from/subject; quote emails still need RESEND_FROM_EMAIL.
         </p>
       ) : (
         <p className={styles.inviteHint}>

@@ -4,20 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
+import { sendCustomerPortalInviteEmail, isResendApiConfigured } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 
 export interface CustomerInviteFormState {
   error?: string;
   success?: string;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 export async function sendCustomerPortalInviteAction(
@@ -37,10 +29,10 @@ export async function sendCustomerPortalInviteAction(
     return { error: 'You must be signed in to send an invite.' };
   }
 
-  if (!isResendConfigured()) {
+  if (!isResendApiConfigured()) {
     return {
       error:
-        'Email is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL (verified domain in Resend) to the server environment.',
+        'Email is not configured. Add RESEND_API_KEY to the server environment (Resend dashboard template supplies from/subject for invites).',
     };
   }
 
@@ -117,28 +109,15 @@ export async function sendCustomerPortalInviteAction(
   }
 
   const acceptUrl = `${getPublicOrigin('my')}/complete-invite?token=${invite.token}`;
-  const tenantName = escapeHtml(String(tenant.name ?? 'Your cleaning provider'));
-  const recipientName = escapeHtml((identity.full_name ?? '').trim() || 'there');
-  const subject = `You’re invited to the cleanScheduler customer portal — ${tenant.name ?? 'your provider'}`;
+  const tenantName = String(tenant.name ?? 'Your cleaning provider').trim() || 'Your cleaning provider';
+  const customerName = (identity.full_name ?? '').trim() || 'there';
 
-  const text = [
-    `Hi ${identity.full_name?.trim() || 'there'},`,
-    '',
-    `${tenant.name ?? 'Your cleaning provider'} invited you to create your cleanScheduler customer portal account.`,
-    'Use this link (expires in 7 days):',
-    acceptUrl,
-    '',
-    'If you did not expect this email, you can ignore it.',
-  ].join('\n');
-
-  const html = `
-    <p>Hi ${recipientName},</p>
-    <p><strong>${tenantName}</strong> invited you to create your <strong>cleanScheduler</strong> customer portal account so you can view visits, invoices, and messages in one place.</p>
-    <p><a href="${acceptUrl}">Accept invite and set your password</a></p>
-    <p style="color:#666;font-size:14px;">This link expires in 7 days. If you did not expect this message, you can ignore it.</p>
-  `.trim();
-
-  const sent = await sendTransactionalEmail({ to: email, subject, text, html });
+  const sent = await sendCustomerPortalInviteEmail({
+    to: email,
+    tenantName,
+    customerName,
+    createCustomerLink: acceptUrl,
+  });
   if (!sent.ok) {
     console.error('[customerInvite] Resend failed:', sent.error);
     await admin.from('customer_portal_invites').delete().eq('token', invite.token);

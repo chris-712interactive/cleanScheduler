@@ -106,8 +106,10 @@ const serverEnvSchema = z.object({
 
   /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),
-  /** Resend — verified sender, e.g. `Acme <billing@yourdomain.com>` or Resend onboarding address. */
+  /** Resend — verified sender for non-template sends (e.g. quotes). Portal invite template may define its own from. */
   RESEND_FROM_EMAIL: z.string().min(1).optional(),
+  /** Resend — published template id/alias for customer portal invites (default create-customer-account). */
+  RESEND_CUSTOMER_INVITE_TEMPLATE_ID: z.string().min(1).optional(),
   // onboarding create-user behavior:
   // auto     -> dev/local auto-confirm, prod requires confirmation
   // required -> always require email confirmation before first sign-in
