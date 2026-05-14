@@ -11,7 +11,8 @@ import {
   type TenantInvoiceExpectation,
   type TenantPaymentMethod,
 } from '@/lib/tenant/operationalSettings';
-import { updateTenantOperationalSettings, operationalSettingsFormInitial } from './actions';
+import { updateTenantOperationalSettings } from './actions';
+import { operationalSettingsFormInitial } from './operationalSettingsFormState';
 import styles from './settings.module.scss';
 
 export function OperationalSettingsForm({

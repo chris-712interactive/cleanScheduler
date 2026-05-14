@@ -10,13 +10,7 @@ import {
   parseTenantPaymentMethodsFromForm,
   parseQuoteEmailNotifyFromForm,
 } from '@/lib/tenant/operationalSettings';
-
-export interface OperationalSettingsFormState {
-  error?: string;
-  success?: boolean;
-}
-
-export const operationalSettingsFormInitial: OperationalSettingsFormState = {};
+import type { OperationalSettingsFormState } from './operationalSettingsFormState';
 
 export async function updateTenantOperationalSettings(
   _prev: OperationalSettingsFormState,
