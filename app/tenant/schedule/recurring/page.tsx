@@ -75,7 +75,8 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
 
       {created ? (
         <p className={styles.success} role="status">
-          Rule created. Visits appear after the next cron run (see Vercel Cron or hit the cron route in dev).
+          Rule created. Visits appear after the next cron run (see Vercel Cron or hit the cron route
+          in dev).
         </p>
       ) : null}
       {err ? (
@@ -85,7 +86,10 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
       ) : null}
 
       <Stack gap={6}>
-        <Card title="Add rule" description="First occurrence anchors the series (same local-time idea as new appointments).">
+        <Card
+          title="Add rule"
+          description="First occurrence anchors the series (same local-time idea as new appointments)."
+        >
           <form action={createRecurringVisitRuleAction} className={styles.form}>
             <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
             <TimezoneOffsetField />
@@ -104,7 +108,11 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
             </label>
             <label className={styles.label}>
               Service location ID (optional)
-              <input name="property_id" className={styles.input} placeholder="UUID of tenant_customer_properties" />
+              <input
+                name="property_id"
+                className={styles.input}
+                placeholder="UUID of tenant_customer_properties"
+              />
             </label>
             <label className={styles.label}>
               Pattern
@@ -121,7 +129,12 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
             </label>
             <label className={styles.label}>
               Title
-              <input name="title" className={styles.input} type="text" placeholder="Bi-weekly clean" />
+              <input
+                name="title"
+                className={styles.input}
+                type="text"
+                placeholder="Bi-weekly clean"
+              />
             </label>
             <label className={styles.label}>
               First occurrence (local)
@@ -140,7 +153,14 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
             </label>
             <label className={styles.label}>
               Horizon (days)
-              <input name="horizon_days" className={styles.input} type="number" min={1} max={120} defaultValue={60} />
+              <input
+                name="horizon_days"
+                className={styles.input}
+                type="number"
+                min={1}
+                max={120}
+                defaultValue={60}
+              />
             </label>
             <Button type="submit" variant="primary">
               Save rule
@@ -172,7 +192,10 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
                     </pre>
                   </div>
                   {r.is_active ? (
-                    <form action={deactivateRecurringVisitRuleAction} style={{ marginTop: 'var(--space-2)' }}>
+                    <form
+                      action={deactivateRecurringVisitRuleAction}
+                      style={{ marginTop: 'var(--space-2)' }}
+                    >
                       <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
                       <input type="hidden" name="rule_id" value={r.id} />
                       <Button type="submit" variant="secondary">

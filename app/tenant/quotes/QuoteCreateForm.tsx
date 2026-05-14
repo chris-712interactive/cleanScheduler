@@ -69,9 +69,9 @@ export function QuoteCreateForm({
       <fieldset className={styles.pricingBlock}>
         <legend className={styles.pricingLegend}>Customer</legend>
         <p className={styles.hint}>
-          A customer is required on every quote so we can send the proposal and notifications. Pick someone
-          already in your CRM, or create a minimal profile inline (you can add addresses later on their
-          profile).
+          A customer is required on every quote so we can send the proposal and notifications. Pick
+          someone already in your CRM, or create a minimal profile inline (you can add addresses
+          later on their profile).
         </p>
         <div className={styles.customerSourceRow}>
           <label className={styles.customerSourceOption}>
@@ -201,9 +201,9 @@ export function QuoteCreateForm({
         Amount (USD, optional)
       </label>
       <p className={styles.hint}>
-        If you add priced service rows above, the saved total uses those lines (after line discounts), then
-        quote-level discount and tax below. This single amount field is only used when there are no line
-        items.
+        If you add priced service rows above, the saved total uses those lines (after line
+        discounts), then quote-level discount and tax below. This single amount field is only used
+        when there are no line items.
       </p>
       <input
         id="quote_amount"
@@ -221,7 +221,12 @@ export function QuoteCreateForm({
       <label className={styles.label} htmlFor="quote_notes">
         Notes
       </label>
-      <textarea id="quote_notes" name="notes" className={styles.textarea} placeholder="Scope, access, pets…" />
+      <textarea
+        id="quote_notes"
+        name="notes"
+        className={styles.textarea}
+        placeholder="Scope, access, pets…"
+      />
 
       <button type="submit" className={styles.submit} disabled={pending}>
         {pending ? 'Saving…' : 'Create draft quote'}

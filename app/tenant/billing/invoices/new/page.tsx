@@ -19,14 +19,19 @@ export default async function NewTenantInvoicePage() {
 
   const { data: customers, error } = await db
     .from('customers')
-    .select('id, customer_identity_id, customer_identities(first_name, last_name, full_name, email)')
+    .select(
+      'id, customer_identity_id, customer_identities(first_name, last_name, full_name, email)',
+    )
     .eq('tenant_id', membership.tenantId)
     .eq('status', 'active')
     .order('created_at', { ascending: true });
 
   return (
     <>
-      <PageHeader title="New invoice" description="Issue a balance to a customer in this workspace." />
+      <PageHeader
+        title="New invoice"
+        description="Issue a balance to a customer in this workspace."
+      />
 
       <p className={styles.backLinkWrap}>
         <Link href="/billing/invoices" className={styles.backLink}>
@@ -56,7 +61,9 @@ export default async function NewTenantInvoicePage() {
                     } | null;
                     const fromName = idRow ? formatCustomerDisplayName(idRow) : 'Unnamed';
                     const label =
-                      fromName !== 'Unnamed' ? fromName : idRow?.email?.trim() || `Customer ${c.id.slice(0, 8)}…`;
+                      fromName !== 'Unnamed'
+                        ? fromName
+                        : idRow?.email?.trim() || `Customer ${c.id.slice(0, 8)}…`;
                     return (
                       <option key={c.id} value={c.id}>
                         {label}
@@ -67,11 +74,22 @@ export default async function NewTenantInvoicePage() {
               </label>
               <label className={styles.field}>
                 <span>Title</span>
-                <input name="title" type="text" className={styles.input} placeholder="e.g. March deep clean" />
+                <input
+                  name="title"
+                  type="text"
+                  className={styles.input}
+                  placeholder="e.g. March deep clean"
+                />
               </label>
               <label className={styles.field}>
                 <span>Amount (USD)</span>
-                <input name="amount_dollars" type="text" className={styles.input} placeholder="120.00" required />
+                <input
+                  name="amount_dollars"
+                  type="text"
+                  className={styles.input}
+                  placeholder="120.00"
+                  required
+                />
               </label>
               <label className={styles.field}>
                 <span>Due date (optional)</span>

@@ -29,14 +29,16 @@ export function SignInForm({
     signInWithPassword,
     initialState,
   );
-  const [signupState, signupAction, signupPending] = useActionState(signUpWithPassword, initialState);
+  const [signupState, signupAction, signupPending] = useActionState(
+    signUpWithPassword,
+    initialState,
+  );
 
   useEffect(() => {
     setReturnOrigin(window.location.origin);
   }, []);
 
-  const activeError =
-    mode === 'password' ? passwordState.error : signupState.error;
+  const activeError = mode === 'password' ? passwordState.error : signupState.error;
   const activeSuccess = mode === 'signup' ? signupState.success : undefined;
 
   return (

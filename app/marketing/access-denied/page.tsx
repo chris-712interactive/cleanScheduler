@@ -15,10 +15,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-const COPY: Record<
-  string,
-  { title: string; description: string }
-> = {
+const COPY: Record<string, { title: string; description: string }> = {
   membership: {
     title: 'No access to this workspace',
     description:

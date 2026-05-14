@@ -6,7 +6,11 @@ import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { createAdminClient } from '@/lib/supabase/server';
 import { publicEnv } from '@/lib/env';
-import { PLATFORM_PLAN_LABELS, parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
+import {
+  PLATFORM_PLAN_LABELS,
+  parsePlatformPlanTier,
+  type PlatformPlanTier,
+} from '@/lib/billing/platformPlanTier';
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
 import styles from './tenants.module.scss';
 
@@ -14,7 +18,7 @@ export const dynamic = 'force-dynamic';
 
 function normalizeOne<T>(raw: T | T[] | null | undefined): T | null {
   if (raw == null) return null;
-  return Array.isArray(raw) ? raw[0] ?? null : raw;
+  return Array.isArray(raw) ? (raw[0] ?? null) : raw;
 }
 
 async function fetchTenants() {
@@ -70,9 +74,13 @@ export default async function AdminTenantsPage() {
                     : null;
                   const planKey = billing?.platform_plan as PlatformPlanTier | null;
                   const planLabel =
-                    planKey && planKey in PLATFORM_PLAN_LABELS ? PLATFORM_PLAN_LABELS[planKey] : null;
+                    planKey && planKey in PLATFORM_PLAN_LABELS
+                      ? PLATFORM_PLAN_LABELS[planKey]
+                      : null;
                   const parsedPlan = parsePlatformPlanTier(billing?.platform_plan ?? null);
-                  const planPrice = parsedPlan ? getEntitlementsForTier(parsedPlan).monthlyPriceUsd : null;
+                  const planPrice = parsedPlan
+                    ? getEntitlementsForTier(parsedPlan).monthlyPriceUsd
+                    : null;
 
                   return (
                     <li key={t.id} className={styles.row}>
@@ -91,7 +99,9 @@ export default async function AdminTenantsPage() {
                         {billing?.status ? (
                           <span className={styles.badge}>{billing.status}</span>
                         ) : null}
-                        {trialEnd ? <span className={styles.hint}>trial ends {trialEnd}</span> : null}
+                        {trialEnd ? (
+                          <span className={styles.hint}>trial ends {trialEnd}</span>
+                        ) : null}
                         {billing?.stripe_subscription_id ? (
                           <span className={styles.hint}>Stripe linked</span>
                         ) : (

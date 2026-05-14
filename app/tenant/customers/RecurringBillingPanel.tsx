@@ -80,11 +80,13 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
     >
       {!connectComplete ? (
         <p className={styles.muted}>
-          Finish Stripe Connect under Billing → Payment setup before you can start subscription checkout.
+          Finish Stripe Connect under Billing → Payment setup before you can start subscription
+          checkout.
         </p>
       ) : plans.length === 0 ? (
         <p className={styles.muted}>
-          Create at least one active service plan under Billing → Service plans, then return here to send checkout.
+          Create at least one active service plan under Billing → Service plans, then return here to
+          send checkout.
         </p>
       ) : (
         <form action={createCustomerSubscriptionCheckoutSessionAction} className={styles.row}>
@@ -98,7 +100,8 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
               </option>
               {plans.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} · {formatUsdFromCents(p.amount_cents)} / {intervalLabel(p.billing_interval)}
+                  {p.name} · {formatUsdFromCents(p.amount_cents)} /{' '}
+                  {intervalLabel(p.billing_interval)}
                 </option>
               ))}
             </select>
@@ -124,13 +127,19 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
       )}
 
       {connectComplete ? (
-        <form action={openTenantCustomerBillingPortalAction} className={styles.row} style={{ marginTop: 'var(--space-2)' }}>
+        <form
+          action={openTenantCustomerBillingPortalAction}
+          className={styles.row}
+          style={{ marginTop: 'var(--space-2)' }}
+        >
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="customer_id" value={customerId} />
           <Button type="submit" variant="secondary">
             Open Stripe billing portal
           </Button>
-          <span className={styles.muted}>Payment methods and invoices on your connected account.</span>
+          <span className={styles.muted}>
+            Payment methods and invoices on your connected account.
+          </span>
         </form>
       ) : null}
 

@@ -14,7 +14,9 @@ import { computeBillingCycleAnchorUnix } from '@/lib/billing/billingCycleAnchor'
 
 const SUBSCRIPTION_CHECKOUT_KIND = 'tenant_customer_subscription' as const;
 
-export async function createCustomerSubscriptionCheckoutSessionAction(formData: FormData): Promise<void> {
+export async function createCustomerSubscriptionCheckoutSessionAction(
+  formData: FormData,
+): Promise<void> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const servicePlanId = String(formData.get('service_plan_id') ?? '').trim();
@@ -26,47 +28,55 @@ export async function createCustomerSubscriptionCheckoutSessionAction(formData: 
     redirect(`/customers/${customerId}?error=${encodeURIComponent(gate.message)}`);
   }
 
-  const [{ data: plan, error: planErr }, { data: cust, error: custErr }, { data: conn, error: connErr }, { data: link }] =
-    await Promise.all([
-      admin
-        .from('service_plans')
-        .select('id, name, amount_cents, currency, billing_interval')
-        .eq('id', servicePlanId)
-        .eq('tenant_id', membership.tenantId)
-        .eq('is_active', true)
-        .maybeSingle(),
-      admin
-        .from('customers')
-        .select(
-          `
+  const [
+    { data: plan, error: planErr },
+    { data: cust, error: custErr },
+    { data: conn, error: connErr },
+    { data: link },
+  ] = await Promise.all([
+    admin
+      .from('service_plans')
+      .select('id, name, amount_cents, currency, billing_interval')
+      .eq('id', servicePlanId)
+      .eq('tenant_id', membership.tenantId)
+      .eq('is_active', true)
+      .maybeSingle(),
+    admin
+      .from('customers')
+      .select(
+        `
         id,
         customer_identities ( email )
       `,
-        )
-        .eq('id', customerId)
-        .eq('tenant_id', membership.tenantId)
-        .maybeSingle(),
-      admin
-        .from('tenant_stripe_connect_accounts')
-        .select('stripe_account_id')
-        .eq('tenant_id', membership.tenantId)
-        .maybeSingle(),
-      admin
-        .from('tenant_customer_stripe_customers')
-        .select('stripe_customer_id')
-        .eq('tenant_id', membership.tenantId)
-        .eq('customer_id', customerId)
-        .maybeSingle(),
-    ]);
+      )
+      .eq('id', customerId)
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+    admin
+      .from('tenant_stripe_connect_accounts')
+      .select('stripe_account_id')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+    admin
+      .from('tenant_customer_stripe_customers')
+      .select('stripe_customer_id')
+      .eq('tenant_id', membership.tenantId)
+      .eq('customer_id', customerId)
+      .maybeSingle(),
+  ]);
 
   if (planErr || !plan) {
-    redirect(`/customers/${customerId}?error=${encodeURIComponent('Service plan not found or inactive.')}`);
+    redirect(
+      `/customers/${customerId}?error=${encodeURIComponent('Service plan not found or inactive.')}`,
+    );
   }
   if (custErr || !cust) {
     redirect(`/customers/${customerId}?error=${encodeURIComponent('Customer not found.')}`);
   }
   if (connErr || !conn?.stripe_account_id) {
-    redirect(`/customers/${customerId}?error=${encodeURIComponent('Stripe Connect is not linked.')}`);
+    redirect(
+      `/customers/${customerId}?error=${encodeURIComponent('Stripe Connect is not linked.')}`,
+    );
   }
 
   const identity = cust.customer_identities as { email: string | null } | null;
@@ -129,7 +139,9 @@ export async function createCustomerSubscriptionCheckoutSessionAction(formData: 
       subscription_data: {
         metadata: meta,
         ...(billingCycleAnchor ? { billing_cycle_anchor: billingCycleAnchor } : {}),
-        ...(applicationFeePercent != null ? { application_fee_percent: applicationFeePercent } : {}),
+        ...(applicationFeePercent != null
+          ? { application_fee_percent: applicationFeePercent }
+          : {}),
       },
     },
     { stripeAccount: conn.stripe_account_id },

@@ -16,30 +16,24 @@ export type QuoteListEmbedRow = Pick<
   | 'is_locked'
   | 'superseded_by_quote_id'
 > & {
-  customers:
-    | {
-        customer_identities: Pick<
-          Tables<'customer_identities'>,
-          'first_name' | 'last_name' | 'full_name'
-        > | null;
-      }
-    | null;
-  tenant_customer_properties:
-    | Pick<
-        Tables<'tenant_customer_properties'>,
-        'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
-      >
-    | null;
+  customers: {
+    customer_identities: Pick<
+      Tables<'customer_identities'>,
+      'first_name' | 'last_name' | 'full_name'
+    > | null;
+  } | null;
+  tenant_customer_properties: Pick<
+    Tables<'tenant_customer_properties'>,
+    'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+  > | null;
 };
 
 /** Quote detail with optional embedded service location. */
 export type QuoteDetailEmbedRow = Tables<'tenant_quotes'> & {
-  tenant_customer_properties:
-    | Pick<
-        Tables<'tenant_customer_properties'>,
-        'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
-      >
-    | null;
+  tenant_customer_properties: Pick<
+    Tables<'tenant_customer_properties'>,
+    'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+  > | null;
   tenant_quote_line_items:
     | Pick<
         Tables<'tenant_quote_line_items'>,

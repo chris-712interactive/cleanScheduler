@@ -38,14 +38,14 @@ Header-only quotes (no lines): the optional header dollar amount is the pre-disc
 
 The client posts **parallel arrays** (same field names repeated in DOM order). The parser is `parseQuoteLineItemsFromForm` in `lib/tenant/quoteLineItemsForm.ts`:
 
-| Field name | Meaning |
-|------------|---------|
-| `line_service` | Service label |
-| `line_frequency` | Enum value string |
-| `line_frequency_detail` | Detail (required if frequency is `custom`) |
-| `line_amount` | Dollars as decimal string — **list** amount for that line |
-| `line_discount_kind` | `none` \| `percent` \| `fixed_cents` |
-| `line_discount_input` | Percent or dollars string depending on kind |
+| Field name              | Meaning                                                   |
+| ----------------------- | --------------------------------------------------------- |
+| `line_service`          | Service label                                             |
+| `line_frequency`        | Enum value string                                         |
+| `line_frequency_detail` | Detail (required if frequency is `custom`)                |
+| `line_amount`           | Dollars as decimal string — **list** amount for that line |
+| `line_discount_kind`    | `none` \| `percent` \| `fixed_cents`                      |
+| `line_discount_input`   | Percent or dollars string depending on kind               |
 
 **Header pricing** (`QuoteHeaderPricingFields`): `quote_tax_mode`, `quote_tax_rate_percent`, `quote_discount_kind`, `quote_discount_percent`, `quote_discount_dollars`.
 

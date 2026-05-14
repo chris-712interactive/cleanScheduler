@@ -11,5 +11,7 @@ type AddressLineInput = Partial<
 /** Single-line mailing-style address for lists and summaries. */
 export function formatPropertyAddressLine(row: AddressLineInput | null | undefined): string {
   if (!row) return '';
-  return [row.address_line1, row.address_line2, row.city, row.state, row.postal_code].filter(Boolean).join(', ');
+  return [row.address_line1, row.address_line2, row.city, row.state, row.postal_code]
+    .filter(Boolean)
+    .join(', ');
 }

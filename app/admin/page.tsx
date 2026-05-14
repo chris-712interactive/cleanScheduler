@@ -35,7 +35,10 @@ export default async function AdminDashboardPage() {
           >
             <div className={styles.metric}>
               <span className={styles.metricValue}>{stats.activeTenants}</span>
-              <StatusPill tone={stats.activeTenants > 0 ? 'brand' : 'neutral'} icon={<Building2 size={14} />}>
+              <StatusPill
+                tone={stats.activeTenants > 0 ? 'brand' : 'neutral'}
+                icon={<Building2 size={14} />}
+              >
                 {stats.activeTenants > 0 ? 'Tenants live' : 'Awaiting first signup'}
               </StatusPill>
             </div>
@@ -49,7 +52,10 @@ export default async function AdminDashboardPage() {
           <Card title="Customer accounts" description="Customer records across all tenants">
             <div className={styles.metric}>
               <span className={styles.metricValue}>{stats.customerRecords}</span>
-              <StatusPill tone={stats.customerRecords > 0 ? 'brand' : 'neutral'} icon={<Users size={14} />}>
+              <StatusPill
+                tone={stats.customerRecords > 0 ? 'brand' : 'neutral'}
+                icon={<Users size={14} />}
+              >
                 {stats.customerRecords > 0 ? 'Tracking' : 'None yet'}
               </StatusPill>
             </div>

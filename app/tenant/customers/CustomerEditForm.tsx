@@ -81,7 +81,13 @@ export function CustomerEditForm({
       <label className={styles.label} htmlFor="edit_phone">
         Phone
       </label>
-      <input id="edit_phone" name="phone" type="tel" className={styles.input} defaultValue={snapshot.phone} />
+      <input
+        id="edit_phone"
+        name="phone"
+        type="tel"
+        className={styles.input}
+        defaultValue={snapshot.phone}
+      />
 
       <label className={styles.label} htmlFor="edit_status">
         Status

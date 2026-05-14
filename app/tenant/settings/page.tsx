@@ -29,7 +29,9 @@ export default async function TenantSettingsPage() {
     ? {
         accepted_quote_schedule_mode: opsRow.accepted_quote_schedule_mode,
         invoice_expectation: opsRow.invoice_expectation,
-        allowed_customer_payment_methods: normalizePaymentMethodsFromDb(opsRow.allowed_customer_payment_methods),
+        allowed_customer_payment_methods: normalizePaymentMethodsFromDb(
+          opsRow.allowed_customer_payment_methods,
+        ),
         email_notify_quote_sent: opsRow.email_notify_quote_sent,
         email_notify_quote_accepted: opsRow.email_notify_quote_accepted,
         email_notify_quote_declined: opsRow.email_notify_quote_declined,

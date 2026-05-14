@@ -69,7 +69,13 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
           <form action={createServicePlanAction} className={styles.invoiceRow}>
             <label className={styles.field}>
               Name
-              <input className={styles.input} name="name" required maxLength={120} placeholder="Bi-weekly standard" />
+              <input
+                className={styles.input}
+                name="name"
+                required
+                maxLength={120}
+                placeholder="Bi-weekly standard"
+              />
             </label>
             <label className={styles.field}>
               Amount (USD)
@@ -77,7 +83,12 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
             </label>
             <label className={styles.field}>
               Interval
-              <select className={styles.select} name="billing_interval" required defaultValue="month">
+              <select
+                className={styles.select}
+                name="billing_interval"
+                required
+                defaultValue="month"
+              >
                 <option value="week">Weekly</option>
                 <option value="month">Monthly</option>
                 <option value="year">Yearly</option>
@@ -89,7 +100,10 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
           </form>
         </Card>
 
-        <Card title="Plans" description="Deactivate a plan to hide it from new subscription checkout.">
+        <Card
+          title="Plans"
+          description="Deactivate a plan to hide it from new subscription checkout."
+        >
           {error ? (
             <p className={styles.muted}>{error.message}</p>
           ) : !rows?.length ? (

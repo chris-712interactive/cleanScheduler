@@ -19,10 +19,7 @@ export interface KeyValueListProps {
 
 export function KeyValueList({ items, layout = 'inline', className }: KeyValueListProps) {
   return (
-    <dl
-      data-layout={layout}
-      className={[styles.list, className].filter(Boolean).join(' ')}
-    >
+    <dl data-layout={layout} className={[styles.list, className].filter(Boolean).join(' ')}>
       {items.map((item, idx) => (
         <div key={idx} className={styles.row}>
           <dt className={styles.key}>{item.key}</dt>

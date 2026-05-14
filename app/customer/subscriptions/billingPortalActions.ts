@@ -35,11 +35,17 @@ export async function openCustomerBillingPortalAction(formData: FormData): Promi
       .eq('tenant_id', tenantId)
       .eq('customer_id', customerId)
       .maybeSingle(),
-    admin.from('tenant_stripe_connect_accounts').select('stripe_account_id').eq('tenant_id', tenantId).maybeSingle(),
+    admin
+      .from('tenant_stripe_connect_accounts')
+      .select('stripe_account_id')
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
   ]);
 
   if (!link?.stripe_customer_id || !conn?.stripe_account_id) {
-    redirect(`/subscriptions?error=${encodeURIComponent('Billing portal is not available for this provider yet.')}`);
+    redirect(
+      `/subscriptions?error=${encodeURIComponent('Billing portal is not available for this provider yet.')}`,
+    );
   }
 
   const stripe = getStripe();
@@ -88,7 +94,9 @@ export async function cancelCustomerOwnSubscriptionAction(formData: FormData): P
     .maybeSingle();
 
   if (error || !sub?.stripe_subscription_id || sub.status === 'canceled') {
-    redirect(`/subscriptions?error=${encodeURIComponent('Subscription not found or already canceled.')}`);
+    redirect(
+      `/subscriptions?error=${encodeURIComponent('Subscription not found or already canceled.')}`,
+    );
   }
 
   const { data: conn } = await admin

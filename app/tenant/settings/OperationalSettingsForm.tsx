@@ -11,10 +11,7 @@ import {
   type TenantInvoiceExpectation,
   type TenantPaymentMethod,
 } from '@/lib/tenant/operationalSettings';
-import {
-  updateTenantOperationalSettings,
-  operationalSettingsFormInitial,
-} from './actions';
+import { updateTenantOperationalSettings, operationalSettingsFormInitial } from './actions';
 import styles from './settings.module.scss';
 
 export function OperationalSettingsForm({
@@ -59,27 +56,31 @@ export function OperationalSettingsForm({
       <fieldset className={styles.opsFieldset}>
         <legend className={styles.opsLegend}>When a quote is accepted</legend>
         <p className={styles.opsIntro}>
-          Controls how your team moves from an accepted quote to scheduled work. Automatic scheduling will
-          respect this preference once the engine is built.
+          Controls how your team moves from an accepted quote to scheduled work. Automatic
+          scheduling will respect this preference once the engine is built.
         </p>
         <div className={styles.opsRadioStack}>
-          {(Object.keys(ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL) as AcceptedQuoteScheduleMode[]).map((value) => (
-            <label key={value} className={styles.opsRadio}>
-              <input
-                type="radio"
-                name="accepted_quote_schedule_mode"
-                value={value}
-                defaultChecked={snapshot.accepted_quote_schedule_mode === value}
-              />
-              <span>{ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL[value]}</span>
-            </label>
-          ))}
+          {(Object.keys(ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL) as AcceptedQuoteScheduleMode[]).map(
+            (value) => (
+              <label key={value} className={styles.opsRadio}>
+                <input
+                  type="radio"
+                  name="accepted_quote_schedule_mode"
+                  value={value}
+                  defaultChecked={snapshot.accepted_quote_schedule_mode === value}
+                />
+                <span>{ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL[value]}</span>
+              </label>
+            ),
+          )}
         </div>
       </fieldset>
 
       <fieldset className={styles.opsFieldset}>
         <legend className={styles.opsLegend}>Typical invoicing</legend>
-        <p className={styles.opsIntro}>Helps staff and future customer flows understand how you prefer to get paid.</p>
+        <p className={styles.opsIntro}>
+          Helps staff and future customer flows understand how you prefer to get paid.
+        </p>
         <div className={styles.opsRadioStack}>
           {(Object.keys(INVOICE_EXPECTATION_LABEL) as TenantInvoiceExpectation[]).map((value) => (
             <label key={value} className={styles.opsRadio}>
@@ -98,13 +99,17 @@ export function OperationalSettingsForm({
       <fieldset className={styles.opsFieldset}>
         <legend className={styles.opsLegend}>Quote email notifications (Resend)</legend>
         <p className={styles.opsIntro}>
-          When enabled, the app sends transactional email using your server&apos;s Resend configuration.
-          Quote &quot;sent&quot; goes to the customer; accept/decline notices go to your workspace onboarding
-          email when available.
+          When enabled, the app sends transactional email using your server&apos;s Resend
+          configuration. Quote &quot;sent&quot; goes to the customer; accept/decline notices go to
+          your workspace onboarding email when available.
         </p>
         <div className={styles.opsCheckboxGrid}>
           <label className={styles.opsCheckbox}>
-            <input type="checkbox" name="email_notify_quote_sent" defaultChecked={snapshot.email_notify_quote_sent} />
+            <input
+              type="checkbox"
+              name="email_notify_quote_sent"
+              defaultChecked={snapshot.email_notify_quote_sent}
+            />
             <span>Email customer when a quote is marked Sent</span>
           </label>
           <label className={styles.opsCheckbox}>
@@ -129,12 +134,17 @@ export function OperationalSettingsForm({
       <fieldset className={styles.opsFieldset}>
         <legend className={styles.opsLegend}>Quote SMS notifications (saved — not sent yet)</legend>
         <p className={styles.opsIntro}>
-          Twilio SMS delivery for these events is planned; toggles are stored now so you can choose preferences
-          ahead of implementation.
+          Twilio SMS delivery for these events is planned; toggles are stored now so you can choose
+          preferences ahead of implementation.
         </p>
         <div className={styles.opsCheckboxGrid}>
           <label className={styles.opsCheckbox}>
-            <input type="checkbox" name="sms_notify_quote_sent" defaultChecked={snapshot.sms_notify_quote_sent} disabled />
+            <input
+              type="checkbox"
+              name="sms_notify_quote_sent"
+              defaultChecked={snapshot.sms_notify_quote_sent}
+              disabled
+            />
             <span>SMS customer when a quote is marked Sent</span>
           </label>
           <label className={styles.opsCheckbox}>
@@ -161,8 +171,8 @@ export function OperationalSettingsForm({
       <fieldset className={styles.opsFieldset}>
         <legend className={styles.opsLegend}>Payment methods customers may use</legend>
         <p className={styles.opsIntro}>
-          When customers accept quotes or pay invoices in the app, only these options will be offered. Card/ACH
-          may still depend on your Stripe Connect setup under Billing.
+          When customers accept quotes or pay invoices in the app, only these options will be
+          offered. Card/ACH may still depend on your Stripe Connect setup under Billing.
         </p>
         <div className={styles.opsCheckboxGrid}>
           {CUSTOMER_PAYMENT_METHOD_VALUES.map((m) => (

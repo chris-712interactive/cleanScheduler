@@ -24,15 +24,25 @@ export default async function AdminAuditLogPage() {
           <p className={styles.empty}>{error.message}</p>
         </Card>
       ) : !rows?.length ? (
-        <EmptyState title="No entries yet" description="Masquerade sessions and other actions will appear here." />
+        <EmptyState
+          title="No entries yet"
+          description="Masquerade sessions and other actions will appear here."
+        />
       ) : (
         <Stack gap={2}>
           {rows.map((row) => (
-            <Card key={row.id} title={row.action} description={new Date(row.created_at).toLocaleString()}>
+            <Card
+              key={row.id}
+              title={row.action}
+              description={new Date(row.created_at).toLocaleString()}
+            >
               <p className={styles.empty}>Actor: {row.actor_user_id ?? '—'}</p>
               <p className={styles.empty}>Tenant: {row.target_tenant_id ?? '—'}</p>
               {row.payload ? (
-                <pre className={styles.empty} style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--font-size-xs)' }}>
+                <pre
+                  className={styles.empty}
+                  style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--font-size-xs)' }}
+                >
                   {JSON.stringify(row.payload, null, 2)}
                 </pre>
               ) : null}

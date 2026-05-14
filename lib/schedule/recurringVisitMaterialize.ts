@@ -25,7 +25,10 @@ export async function materializeRecurringVisitsForAllTenants(): Promise<{
   let inserted = 0;
   let skippedDuplicates = 0;
 
-  const { data: rules, error } = await admin.from('recurring_appointment_rules').select('*').eq('is_active', true);
+  const { data: rules, error } = await admin
+    .from('recurring_appointment_rules')
+    .select('*')
+    .eq('is_active', true);
   if (error) {
     throw new Error(error.message);
   }

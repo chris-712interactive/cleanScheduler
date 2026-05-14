@@ -121,14 +121,18 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
 
       <Card title="Balance">
         <p className={styles.meta}>
-          Total {formatUsdFromCents(row.amount_cents)} · Paid {formatUsdFromCents(row.amount_paid_cents)} · Balance{' '}
+          Total {formatUsdFromCents(row.amount_cents)} · Paid{' '}
+          {formatUsdFromCents(row.amount_paid_cents)} · Balance{' '}
           <strong>{formatUsdFromCents(Math.max(0, remaining))}</strong>
         </p>
         {row.due_date ? (
           <p className={styles.meta}>Due {new Date(String(row.due_date)).toLocaleDateString()}</p>
         ) : null}
         {canPayOnline ? (
-          <form action={createCustomerInvoicePayCheckoutSessionAction} style={{ marginTop: 'var(--space-3)' }}>
+          <form
+            action={createCustomerInvoicePayCheckoutSessionAction}
+            style={{ marginTop: 'var(--space-3)' }}
+          >
             <input type="hidden" name="invoice_id" value={row.id} />
             <Button type="submit" variant="primary">
               Pay balance with card
@@ -136,8 +140,8 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
           </form>
         ) : remaining > 0 ? (
           <p className={styles.muted} style={{ marginTop: 'var(--space-3)' }}>
-            Online card payment becomes available when this provider finishes Stripe Connect setup. You can pay them
-            using the methods they accept outside the app.
+            Online card payment becomes available when this provider finishes Stripe Connect setup.
+            You can pay them using the methods they accept outside the app.
           </p>
         ) : null}
       </Card>
@@ -164,7 +168,10 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
                 {formatUsdFromCents(p.amount_cents)} · {p.method}
                 {p.recorded_via === 'stripe_checkout' ? ' (Stripe)' : ''}
                 {p.notes ? ` · ${p.notes}` : ''}
-                <span className={styles.muted}> · {new Date(String(p.recorded_at)).toLocaleString()}</span>
+                <span className={styles.muted}>
+                  {' '}
+                  · {new Date(String(p.recorded_at)).toLocaleString()}
+                </span>
               </li>
             ))}
           </ul>

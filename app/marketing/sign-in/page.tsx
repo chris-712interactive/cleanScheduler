@@ -17,12 +17,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 }
 
 /** Query values previously sent to /sign-in; they mean "already signed in, wrong role/tenant", not login failures. */
-const AUTHORIZATION_QUERY_ERRORS = new Set([
-  'membership',
-  'forbidden',
-  'unknown_tenant',
-  'tenant',
-]);
+const AUTHORIZATION_QUERY_ERRORS = new Set(['membership', 'forbidden', 'unknown_tenant', 'tenant']);
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = await searchParams;

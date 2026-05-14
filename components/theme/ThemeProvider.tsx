@@ -19,11 +19,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import {
-  THEME_STORAGE_KEY,
-  type ResolvedTheme,
-  type ThemePreference,
-} from './themeScript';
+import { THEME_STORAGE_KEY, type ResolvedTheme, type ThemePreference } from './themeScript';
 
 interface ThemeContextValue {
   preference: ThemePreference;

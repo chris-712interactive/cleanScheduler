@@ -19,14 +19,12 @@ function daysAgoIso(days: number): string {
 export async function getPlatformDashboardStats(): Promise<PlatformDashboardStats> {
   const db = createAdminClient();
 
-  const [
-    activeTenantsRes,
-    trialRes,
-    newTenantsRes,
-    customersRes,
-  ] = await Promise.all([
+  const [activeTenantsRes, trialRes, newTenantsRes, customersRes] = await Promise.all([
     db.from('tenants').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    db.from('tenant_billing_accounts').select('*', { count: 'exact', head: true }).eq('status', 'trialing'),
+    db
+      .from('tenant_billing_accounts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'trialing'),
     db.from('tenants').select('*', { count: 'exact', head: true }).gte('created_at', daysAgoIso(7)),
     db.from('customers').select('*', { count: 'exact', head: true }),
   ]);

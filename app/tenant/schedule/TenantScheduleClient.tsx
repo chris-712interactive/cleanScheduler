@@ -112,7 +112,10 @@ export function TenantScheduleClient({
   }, [dateKey, isLocalToday]);
 
   const dayVisits = useMemo(
-    () => visits.filter((v) => visitOverlapsLocalDay(v, dateKey)).sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
+    () =>
+      visits
+        .filter((v) => visitOverlapsLocalDay(v, dateKey))
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
     [visits, dateKey],
   );
 
@@ -136,7 +139,12 @@ export function TenantScheduleClient({
     <div className={styles.scheduleShell}>
       <div className={styles.scheduleToolbar}>
         <div className={styles.scheduleDateNav}>
-          <button type="button" className={styles.iconNavBtn} aria-label="Previous" onClick={goPrev}>
+          <button
+            type="button"
+            className={styles.iconNavBtn}
+            aria-label="Previous"
+            onClick={goPrev}
+          >
             <ChevronLeft size={20} />
           </button>
           <span className={styles.scheduleDateLabel}>{centerLabel}</span>
@@ -221,7 +229,9 @@ export function TenantScheduleClient({
                       {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </div>
                     {v.siteLine ? <div className={styles.visitAddress}>{v.siteLine}</div> : null}
-                    <div className={styles.visitTime}>{formatTimeRange(v.starts_at, v.ends_at)}</div>
+                    <div className={styles.visitTime}>
+                      {formatTimeRange(v.starts_at, v.ends_at)}
+                    </div>
                     <div className={styles.visitAvatars} aria-hidden="true">
                       <span className={styles.avatarCircle} title="Customer">
                         {initials(v.customerName)}
@@ -271,7 +281,9 @@ export function TenantScheduleClient({
                         </div>
                       ) : null}
                       <div className={styles.visitDetailMeta}>
-                        <StatusPill tone={STATUS_TONE[v.status]}>{STATUS_LABEL[v.status]}</StatusPill>
+                        <StatusPill tone={STATUS_TONE[v.status]}>
+                          {STATUS_LABEL[v.status]}
+                        </StatusPill>
                         <DeleteVisitButton tenantSlug={tenantSlug} visitId={v.id} />
                       </div>
                     </div>
@@ -304,7 +316,9 @@ export function TenantScheduleClient({
                     dayVisitsWeek.map((v) => (
                       <li key={v.id} className={styles.weekItem}>
                         <div className={styles.weekItemTitle}>{v.customerName}</div>
-                        <div className={styles.weekItemMeta}>{formatTimeRange(v.starts_at, v.ends_at)}</div>
+                        <div className={styles.weekItemMeta}>
+                          {formatTimeRange(v.starts_at, v.ends_at)}
+                        </div>
                       </li>
                     ))
                   )}
@@ -342,7 +356,9 @@ export function TenantScheduleClient({
                   onClick={() => push({ date: cell.key, view: 'day' })}
                 >
                   <span className={styles.monthCellDay}>{cell.day}</span>
-                  {n > 0 ? <span className={styles.monthCellDots}>{n > 3 ? '···' : '●'.repeat(n)}</span> : null}
+                  {n > 0 ? (
+                    <span className={styles.monthCellDots}>{n > 3 ? '···' : '●'.repeat(n)}</span>
+                  ) : null}
                 </button>
               );
             })}
@@ -351,7 +367,9 @@ export function TenantScheduleClient({
       ) : null}
 
       {view === 'day' && dayVisits.length === 0 ? (
-        <p className={styles.emptyBoard}>No appointments on this day. Use New appointment to add one.</p>
+        <p className={styles.emptyBoard}>
+          No appointments on this day. Use New appointment to add one.
+        </p>
       ) : null}
     </div>
   );

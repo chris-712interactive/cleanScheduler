@@ -14,7 +14,10 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { customerHasAnyNameParts, formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import {
+  customerHasAnyNameParts,
+  formatCustomerDisplayName,
+} from '@/lib/tenant/customerIdentityName';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
@@ -27,7 +30,9 @@ function sortInColumn(a: QuoteListEmbedRow, b: QuoteListEmbedRow): number {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
 
-function groupQuotesByStatus(quotes: QuoteListEmbedRow[]): Record<QuoteStatus, QuoteListEmbedRow[]> {
+function groupQuotesByStatus(
+  quotes: QuoteListEmbedRow[],
+): Record<QuoteStatus, QuoteListEmbedRow[]> {
   const map = {} as Record<QuoteStatus, QuoteListEmbedRow[]>;
   for (const s of QUOTE_BOARD_COLUMN_ORDER) {
     map[s] = [];
@@ -63,7 +68,11 @@ function BoardQuoteCardFace({
       {variant === 'overlay' ? (
         <span className={styles.boardCardTitleStatic}>{quote.title}</span>
       ) : (
-        <Link href={`/quotes/${quote.id}`} className={styles.boardCardTitle} onPointerDown={(e) => e.stopPropagation()}>
+        <Link
+          href={`/quotes/${quote.id}`}
+          className={styles.boardCardTitle}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           {quote.title}
         </Link>
       )}
@@ -72,7 +81,8 @@ function BoardQuoteCardFace({
         {site ? ` · ${site}` : ''}
       </p>
       <p className={styles.boardCardMetaMuted}>
-        {formatQuoteMoney(quote.amount_cents, quote.currency)} · {new Date(quote.created_at).toLocaleDateString()}
+        {formatQuoteMoney(quote.amount_cents, quote.currency)} ·{' '}
+        {new Date(quote.created_at).toLocaleDateString()}
         {quote.version_number > 1 ? ` · v${quote.version_number}` : ''}
       </p>
       {variant === 'list' && !dragDisabled ? (
@@ -95,7 +105,11 @@ function DraggableQuoteCard({ quote, pending }: { quote: QuoteListEmbedRow; pend
   return (
     <article
       ref={setNodeRef}
-      className={[styles.boardCard, isDragging ? styles.boardCardDragging : '', pending ? styles.boardCardPending : '']
+      className={[
+        styles.boardCard,
+        isDragging ? styles.boardCardDragging : '',
+        pending ? styles.boardCardPending : '',
+      ]
         .filter(Boolean)
         .join(' ')}
       {...listeners}
@@ -124,7 +138,9 @@ function BoardColumn({
   return (
     <section
       ref={setNodeRef}
-      className={[styles.boardColumn, isOver ? styles.boardColumnOver : ''].filter(Boolean).join(' ')}
+      className={[styles.boardColumn, isOver ? styles.boardColumnOver : '']
+        .filter(Boolean)
+        .join(' ')}
       aria-label={`${QUOTE_STATUS_LABEL[status]} quotes`}
     >
       <header className={styles.boardColumnHeader}>
@@ -166,7 +182,12 @@ function MobileColumn({
           <p className={styles.boardColumnEmpty}>No quotes</p>
         ) : (
           quotes.map((q) => (
-            <MobileQuoteCard key={q.id} quote={q} onMobileMove={onMobileMove} pending={pendingQuoteId === q.id} />
+            <MobileQuoteCard
+              key={q.id}
+              quote={q}
+              onMobileMove={onMobileMove}
+              pending={pendingQuoteId === q.id}
+            />
           ))
         )}
       </div>
@@ -190,7 +211,11 @@ function MobileQuoteCard({
   const site = prop ? formatPropertyAddressLine(prop) : '';
 
   return (
-    <article className={[styles.boardCard, pending ? styles.boardCardPending : ''].filter(Boolean).join(' ')}>
+    <article
+      className={[styles.boardCard, pending ? styles.boardCardPending : '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className={styles.boardCardInner}>
         <Link href={`/quotes/${quote.id}`} className={styles.boardCardTitle}>
           {quote.title}
@@ -200,7 +225,8 @@ function MobileQuoteCard({
           {site ? ` · ${site}` : ''}
         </p>
         <p className={styles.boardCardMetaMuted}>
-          {formatQuoteMoney(quote.amount_cents, quote.currency)} · {new Date(quote.created_at).toLocaleDateString()}
+          {formatQuoteMoney(quote.amount_cents, quote.currency)} ·{' '}
+          {new Date(quote.created_at).toLocaleDateString()}
         </p>
         <div className={styles.boardCardMove}>
           <label className={styles.boardCardMoveLabel} htmlFor={`move_${quote.id}`}>
@@ -228,7 +254,13 @@ function MobileQuoteCard({
   );
 }
 
-export function QuotesBoard({ tenantSlug, quotes }: { tenantSlug: string; quotes: QuoteListEmbedRow[] }) {
+export function QuotesBoard({
+  tenantSlug,
+  quotes,
+}: {
+  tenantSlug: string;
+  quotes: QuoteListEmbedRow[];
+}) {
   const router = useRouter();
   const [isNarrow, setIsNarrow] = useState(false);
   const [narrowReady, setNarrowReady] = useState(false);
@@ -265,7 +297,9 @@ export function QuotesBoard({ tenantSlug, quotes }: { tenantSlug: string; quotes
       startTransition(async () => {
         if (nextStatus === 'accepted') {
           setPendingQuoteId(null);
-          setBoardError('Accepted is only available when the customer signs in the customer portal.');
+          setBoardError(
+            'Accepted is only available when the customer signs in the customer portal.',
+          );
           return;
         }
         const res = await moveTenantQuoteStatus(tenantSlug, quoteId, nextStatus);
@@ -325,7 +359,12 @@ export function QuotesBoard({ tenantSlug, quotes }: { tenantSlug: string; quotes
         pendingQuoteId={pendingQuoteId}
       />
     ) : (
-      <BoardColumn key={status} status={status} quotes={grouped[status]} pendingQuoteId={pendingQuoteId} />
+      <BoardColumn
+        key={status}
+        status={status}
+        quotes={grouped[status]}
+        pendingQuoteId={pendingQuoteId}
+      />
     ),
   );
 

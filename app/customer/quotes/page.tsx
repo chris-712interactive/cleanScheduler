@@ -82,7 +82,15 @@ export default async function CustomerQuotesPage() {
             return (
               <Card key={row.id} title={row.title} description={t?.name ?? 'Provider'}>
                 <div className={styles.row}>
-                  <StatusPill tone={row.status === 'accepted' ? 'brand' : row.status === 'declined' ? 'neutral' : 'info'}>
+                  <StatusPill
+                    tone={
+                      row.status === 'accepted'
+                        ? 'brand'
+                        : row.status === 'declined'
+                          ? 'neutral'
+                          : 'info'
+                    }
+                  >
                     {QUOTE_STATUS_LABEL[row.status]}
                   </StatusPill>
                   <span>

@@ -4,7 +4,10 @@ import type { Database, Json } from '@/lib/supabase/database.types';
 
 type Admin = SupabaseClient<Database>;
 
-export async function handleConnectAccountUpdated(admin: Admin, account: Stripe.Account): Promise<void> {
+export async function handleConnectAccountUpdated(
+  admin: Admin,
+  account: Stripe.Account,
+): Promise<void> {
   let tenantId = account.metadata?.tenant_id as string | undefined;
   if (!tenantId) {
     const { data } = await admin
@@ -45,7 +48,7 @@ export async function handleTenantInvoiceCheckoutCompleted(
   const pi =
     typeof session.payment_intent === 'string'
       ? session.payment_intent
-      : session.payment_intent?.id ?? null;
+      : (session.payment_intent?.id ?? null);
 
   const { data: inv, error: invErr } = await admin
     .from('tenant_invoices')
@@ -188,7 +191,9 @@ export async function upsertCustomerSubscriptionFromStripe(
   if (!customerId || !servicePlanId) return;
 
   const stripeCust =
-    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id ?? null;
+    typeof subscription.customer === 'string'
+      ? subscription.customer
+      : (subscription.customer?.id ?? null);
   if (stripeCust) {
     await upsertTenantCustomerStripeCustomer(admin, {
       tenantId,
@@ -269,14 +274,20 @@ export async function handleTenantCustomerSubscriptionCheckoutCompleted(
     typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
   if (!subId) return;
 
-  const subscription = await stripe.subscriptions.retrieve(subId, { stripeAccount: connectAccountId });
+  const subscription = await stripe.subscriptions.retrieve(subId, {
+    stripeAccount: connectAccountId,
+  });
   await upsertCustomerSubscriptionFromStripe(admin, subscription, connectAccountId);
 
   const tenantId = session.metadata.tenant_id as string | undefined;
   const customerId = session.metadata.customer_id as string | undefined;
   const stripeCust =
-    typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
+    typeof session.customer === 'string' ? session.customer : (session.customer?.id ?? null);
   if (tenantId && customerId && stripeCust) {
-    await upsertTenantCustomerStripeCustomer(admin, { tenantId, customerId, stripeCustomerId: stripeCust });
+    await upsertTenantCustomerStripeCustomer(admin, {
+      tenantId,
+      customerId,
+      stripeCustomerId: stripeCust,
+    });
   }
 }

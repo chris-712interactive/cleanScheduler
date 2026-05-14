@@ -40,11 +40,7 @@ export function TopBar({
       <div className={styles.left}>
         <Dialog.Root open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <Dialog.Trigger asChild>
-            <button
-              type="button"
-              aria-label="Open navigation menu"
-              className={styles.menuButton}
-            >
+            <button type="button" aria-label="Open navigation menu" className={styles.menuButton}>
               <Menu size={20} aria-hidden="true" />
             </button>
           </Dialog.Trigger>
@@ -59,12 +55,7 @@ export function TopBar({
 
         <Link href={brandHref} className={styles.brand}>
           <span className={styles.brandMark}>
-            <img
-              src="/brand/logo.svg"
-              alt=""
-              className={styles.brandLogo}
-              decoding="async"
-            />
+            <img src="/brand/logo.svg" alt="" className={styles.brandLogo} decoding="async" />
           </span>
           <span className={styles.brandLabel}>{brandLabel}</span>
         </Link>

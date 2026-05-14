@@ -24,7 +24,15 @@ type CustomerPickRow = {
 
 type PropertyPickRow = Pick<
   Tables<'tenant_customer_properties'>,
-  'id' | 'customer_id' | 'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code' | 'is_primary'
+  | 'id'
+  | 'customer_id'
+  | 'label'
+  | 'address_line1'
+  | 'address_line2'
+  | 'city'
+  | 'state'
+  | 'postal_code'
+  | 'is_primary'
 >;
 
 function propertyOptionLabel(p: PropertyPickRow): string {
@@ -68,7 +76,9 @@ export default async function TenantQuoteNewPage() {
       .overrideTypes<CustomerPickRow[], { merge: false }>(),
     supabase
       .from('tenant_customer_properties')
-      .select('id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary')
+      .select(
+        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+      )
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })
       .overrideTypes<PropertyPickRow[], { merge: false }>(),
@@ -89,10 +99,7 @@ export default async function TenantQuoteNewPage() {
       <PageHeader
         title="New quote"
         description="Creates a draft you can send or refine."
-        breadcrumbs={[
-          { label: 'Quotes', href: '/quotes' },
-          { label: 'New quote' },
-        ]}
+        breadcrumbs={[{ label: 'Quotes', href: '/quotes' }, { label: 'New quote' }]}
         actions={
           <Link href="/quotes" className={styles.backLink}>
             ← All quotes
@@ -101,7 +108,10 @@ export default async function TenantQuoteNewPage() {
       />
 
       <Stack gap={6}>
-        <Card title="Quote details" description="Optional customer and service location help downstream scheduling.">
+        <Card
+          title="Quote details"
+          description="Optional customer and service location help downstream scheduling."
+        >
           <QuoteCreateForm
             tenantSlug={membership.tenantSlug}
             customerOptions={customerOptions}

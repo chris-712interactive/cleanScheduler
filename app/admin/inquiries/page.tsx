@@ -19,14 +19,20 @@ export default async function AdminInquiriesPage() {
 
   return (
     <>
-      <PageHeader title="Inquiries" description="Messages from the marketing contact form and manual follow-ups." />
+      <PageHeader
+        title="Inquiries"
+        description="Messages from the marketing contact form and manual follow-ups."
+      />
 
       {error ? (
         <Card title="Could not load inquiries">
           <p className={styles.empty}>{error.message}</p>
         </Card>
       ) : !rows?.length ? (
-        <EmptyState title="No inquiries yet" description="Submissions from /contact appear here automatically." />
+        <EmptyState
+          title="No inquiries yet"
+          description="Submissions from /contact appear here automatically."
+        />
       ) : (
         <Stack gap={3}>
           {rows.map((row) => (
@@ -40,8 +46,19 @@ export default async function AdminInquiriesPage() {
                 </Button>
               }
             >
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', alignItems: 'center' }}>
-                <StatusPill tone={row.status === 'new' ? 'warning' : row.status === 'closed' ? 'neutral' : 'brand'}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 'var(--space-2)',
+                  alignItems: 'center',
+                }}
+              >
+                <StatusPill
+                  tone={
+                    row.status === 'new' ? 'warning' : row.status === 'closed' ? 'neutral' : 'brand'
+                  }
+                >
                   {row.status}
                 </StatusPill>
                 {row.company ? <span className={styles.empty}>{row.company}</span> : null}

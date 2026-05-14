@@ -22,7 +22,9 @@ export async function updateTenantOperationalSettings(
   _prev: OperationalSettingsFormState,
   formData: FormData,
 ): Promise<OperationalSettingsFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) {
     return { error: 'Workspace is required.' };
   }
@@ -32,9 +34,7 @@ export async function updateTenantOperationalSettings(
 
   const { data: existingOps } = await admin
     .from('tenant_operational_settings')
-    .select(
-      'sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined',
-    )
+    .select('sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined')
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
@@ -45,8 +45,12 @@ export async function updateTenantOperationalSettings(
 
   const notify = parseQuoteEmailNotifyFromForm(formData);
 
-  const scheduleMode = parseAcceptedQuoteScheduleMode(String(formData.get('accepted_quote_schedule_mode') ?? ''));
-  const invoiceExpectation = parseTenantInvoiceExpectation(String(formData.get('invoice_expectation') ?? ''));
+  const scheduleMode = parseAcceptedQuoteScheduleMode(
+    String(formData.get('accepted_quote_schedule_mode') ?? ''),
+  );
+  const invoiceExpectation = parseTenantInvoiceExpectation(
+    String(formData.get('invoice_expectation') ?? ''),
+  );
 
   const row: Database['public']['Tables']['tenant_operational_settings']['Insert'] = {
     tenant_id: membership.tenantId,
@@ -61,7 +65,9 @@ export async function updateTenantOperationalSettings(
     sms_notify_quote_declined: existingOps?.sms_notify_quote_declined ?? false,
   };
 
-  const res = await admin.from('tenant_operational_settings').upsert(row, { onConflict: 'tenant_id' });
+  const res = await admin
+    .from('tenant_operational_settings')
+    .upsert(row, { onConflict: 'tenant_id' });
 
   if (res.error) {
     return { error: res.error.message };

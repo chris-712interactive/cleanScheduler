@@ -17,7 +17,9 @@ export async function sendCustomerPortalInviteAction(
   _prev: CustomerInviteFormState,
   formData: FormData,
 ): Promise<CustomerInviteFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
 
   if (!slug || !customerId) {
@@ -61,9 +63,7 @@ export async function sendCustomerPortalInviteAction(
   }
 
   const rawIdentity = row.customer_identities as unknown;
-  const identity = (
-    Array.isArray(rawIdentity) ? rawIdentity[0] : rawIdentity
-  ) as {
+  const identity = (Array.isArray(rawIdentity) ? rawIdentity[0] : rawIdentity) as {
     id: string;
     email: string | null;
     first_name: string | null;
@@ -84,7 +84,11 @@ export async function sendCustomerPortalInviteAction(
     return { error: 'Add an email address on the customer profile before sending an invite.' };
   }
 
-  const { data: tenant, error: tErr } = await admin.from('tenants').select('name').eq('id', membership.tenantId).maybeSingle();
+  const { data: tenant, error: tErr } = await admin
+    .from('tenants')
+    .select('name')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
   if (tErr || !tenant) {
     return { error: 'Could not load workspace name.' };
   }
@@ -92,7 +96,11 @@ export async function sendCustomerPortalInviteAction(
   const expires = new Date();
   expires.setUTCDate(expires.getUTCDate() + 7);
 
-  await admin.from('customer_portal_invites').delete().eq('customer_id', customerId).is('used_at', null);
+  await admin
+    .from('customer_portal_invites')
+    .delete()
+    .eq('customer_id', customerId)
+    .is('used_at', null);
 
   const { data: invite, error: invErr } = await admin
     .from('customer_portal_invites')
@@ -112,7 +120,8 @@ export async function sendCustomerPortalInviteAction(
   }
 
   const acceptUrl = `${getPublicOrigin('my')}/complete-invite?token=${invite.token}`;
-  const tenantName = String(tenant.name ?? 'Your cleaning provider').trim() || 'Your cleaning provider';
+  const tenantName =
+    String(tenant.name ?? 'Your cleaning provider').trim() || 'Your cleaning provider';
   const customerName = inviteTemplateCustomerFirstName(identity);
 
   const sent = await sendCustomerPortalInviteEmail({

@@ -28,7 +28,9 @@ export function CustomerPortalInvitePanel({
 
   if (!customerEmail.trim()) {
     return (
-      <p className={styles.inviteHint}>Add an email address on this customer before sending a portal invite.</p>
+      <p className={styles.inviteHint}>
+        Add an email address on this customer before sending a portal invite.
+      </p>
     );
   }
 
@@ -49,12 +51,13 @@ export function CustomerPortalInvitePanel({
       </form>
       {!emailReady ? (
         <p className={styles.inviteHint}>
-          Server email is not configured. Set RESEND_API_KEY. Portal invites use your Resend template for from/subject; quote emails still need RESEND_FROM_EMAIL.
+          Server email is not configured. Set RESEND_API_KEY. Portal invites use your Resend
+          template for from/subject; quote emails still need RESEND_FROM_EMAIL.
         </p>
       ) : (
         <p className={styles.inviteHint}>
-          Sends <strong>{customerEmail}</strong> a link (valid 7 days) to finish signup on the customer portal and
-          link this record to their login.
+          Sends <strong>{customerEmail}</strong> a link (valid 7 days) to finish signup on the
+          customer portal and link this record to their login.
         </p>
       )}
     </div>

@@ -84,20 +84,21 @@ export default async function CustomerInvoicesPage() {
                 description={t?.name ?? 'Provider'}
               >
                 <div className={styles.row}>
-                  <StatusPill tone={row.status === 'paid' ? 'brand' : balance > 0 ? 'warning' : 'neutral'}>
+                  <StatusPill
+                    tone={row.status === 'paid' ? 'brand' : balance > 0 ? 'warning' : 'neutral'}
+                  >
                     {row.status}
                   </StatusPill>
                   <span>
                     <strong>{formatUsdFromCents(row.amount_cents)}</strong>
-                    <span className={styles.muted}>
-                      {' '}
-                      · balance {formatUsdFromCents(balance)}
-                    </span>
+                    <span className={styles.muted}> · balance {formatUsdFromCents(balance)}</span>
                   </span>
                 </div>
                 <p className={styles.meta}>
                   Issued {new Date(row.created_at).toLocaleDateString()}
-                  {row.due_date ? ` · Due ${new Date(String(row.due_date)).toLocaleDateString()}` : ''}
+                  {row.due_date
+                    ? ` · Due ${new Date(String(row.due_date)).toLocaleDateString()}`
+                    : ''}
                 </p>
               </Card>
             );

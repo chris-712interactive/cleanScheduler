@@ -5,7 +5,9 @@ export type TenantStripeConnectStatus = Database['public']['Enums']['tenant_stri
 
 type Admin = SupabaseClient<Database>;
 
-export function isConnectCompleteForCardPayments(status: TenantStripeConnectStatus | null | undefined): boolean {
+export function isConnectCompleteForCardPayments(
+  status: TenantStripeConnectStatus | null | undefined,
+): boolean {
   return status === 'complete';
 }
 
@@ -41,7 +43,10 @@ export type ConnectGateResult = ConnectGateOk | ConnectGateBlocked;
 /**
  * Card-on-file / Stripe Checkout flows require Connect Express to be fully onboarded.
  */
-export async function requireConnectForOnlinePayments(admin: Admin, tenantId: string): Promise<ConnectGateResult> {
+export async function requireConnectForOnlinePayments(
+  admin: Admin,
+  tenantId: string,
+): Promise<ConnectGateResult> {
   const status = await getTenantStripeConnectStatus(admin, tenantId);
   if (isConnectCompleteForCardPayments(status)) {
     return { ok: true, status };

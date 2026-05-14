@@ -48,15 +48,32 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
             <Stack gap={4} as="div">
               <label className={styles.field}>
                 <span>Name</span>
-                <input name="name" type="text" required className={styles.input} autoComplete="name" />
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  className={styles.input}
+                  autoComplete="name"
+                />
               </label>
               <label className={styles.field}>
                 <span>Email</span>
-                <input name="email" type="email" required className={styles.input} autoComplete="email" />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  className={styles.input}
+                  autoComplete="email"
+                />
               </label>
               <label className={styles.field}>
                 <span>Company (optional)</span>
-                <input name="company" type="text" className={styles.input} autoComplete="organization" />
+                <input
+                  name="company"
+                  type="text"
+                  className={styles.input}
+                  autoComplete="organization"
+                />
               </label>
               <label className={styles.field}>
                 <span>Message</span>

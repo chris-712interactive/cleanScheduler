@@ -69,9 +69,13 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           </p>
         ) : null}
 
-        <Card title="Customer invoices" description="Bill customers in your directory, collect cards via Stripe Connect, and record manual payments.">
+        <Card
+          title="Customer invoices"
+          description="Bill customers in your directory, collect cards via Stripe Connect, and record manual payments."
+        >
           <p className={styles.muted} style={{ marginTop: 0 }}>
-            Create invoices, track balances, log cash/check/Zelle/ACH, or send customers to Stripe Checkout when Connect is complete.
+            Create invoices, track balances, log cash/check/Zelle/ACH, or send customers to Stripe
+            Checkout when Connect is complete.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
             <Button variant="secondary" as="a" href="/billing/invoices">
@@ -103,7 +107,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                 },
                 {
                   key: 'Stripe subscription',
-                  value: billing.stripe_subscription_id ? String(billing.stripe_subscription_id) : '—',
+                  value: billing.stripe_subscription_id
+                    ? String(billing.stripe_subscription_id)
+                    : '—',
                 },
                 {
                   key: 'Canceled',

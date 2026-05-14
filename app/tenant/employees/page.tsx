@@ -47,10 +47,14 @@ export default async function TenantEmployeesPage() {
             description="The workspace owner should appear here after onboarding. If this looks wrong, contact support."
           />
         ) : (
-          <Card title="Members" description={`${rows.length} workspace ${rows.length === 1 ? 'member' : 'members'}`}>
+          <Card
+            title="Members"
+            description={`${rows.length} workspace ${rows.length === 1 ? 'member' : 'members'}`}
+          >
             <ul className={styles.list}>
               {rows.map((row) => {
-                const label = nameByUser.get(row.user_id)?.trim() || `User ${row.user_id.slice(0, 8)}…`;
+                const label =
+                  nameByUser.get(row.user_id)?.trim() || `User ${row.user_id.slice(0, 8)}…`;
                 return (
                   <li key={row.id} className={styles.row} title={`User id: ${row.user_id}`}>
                     <div>

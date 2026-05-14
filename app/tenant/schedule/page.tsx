@@ -7,7 +7,10 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
-import { customerHasAnyNameParts, formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import {
+  customerHasAnyNameParts,
+  formatCustomerDisplayName,
+} from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import {
   dbOverlapRangeForQuery,
@@ -43,12 +46,10 @@ type VisitListRow = {
       phone: string | null;
     } | null;
   } | null;
-  tenant_customer_properties:
-    | Pick<
-        Tables<'tenant_customer_properties'>,
-        'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
-      >
-    | null;
+  tenant_customer_properties: Pick<
+    Tables<'tenant_customer_properties'>,
+    'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+  > | null;
   tenant_quotes: { title: string } | null;
   tenant_scheduled_visit_assignees:
     | {
@@ -124,7 +125,9 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     const who =
       ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : 'Customer';
     const prop = v.tenant_customer_properties;
-    const site = prop ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ') : '';
+    const site = prop
+      ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ')
+      : '';
     const rawAssignees = v.tenant_scheduled_visit_assignees as
       | {
           user_id: string;
@@ -135,7 +138,11 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           user_profiles: { display_name: string | null } | null;
         }
       | null;
-    const assigneeRows = Array.isArray(rawAssignees) ? rawAssignees : rawAssignees ? [rawAssignees] : [];
+    const assigneeRows = Array.isArray(rawAssignees)
+      ? rawAssignees
+      : rawAssignees
+        ? [rawAssignees]
+        : [];
     const assignees = assigneeRows.map((a) => {
       const dn = a.user_profiles?.display_name?.trim() || 'Member';
       return { userId: a.user_id, displayName: dn, initials: initialsFromName(dn) };
@@ -171,18 +178,33 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         title="Schedule"
         description={subtitle}
         actions={
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 'var(--space-2)',
+              alignItems: 'center',
+            }}
+          >
             <Button as="a" href="/schedule/recurring" variant="secondary">
               Recurring rules
             </Button>
-            <Button as="a" href="/schedule/new" variant="primary" iconLeft={<Plus size={18} aria-hidden />}>
+            <Button
+              as="a"
+              href="/schedule/new"
+              variant="primary"
+              iconLeft={<Plus size={18} aria-hidden />}
+            >
               New appointment
             </Button>
           </div>
         }
       />
 
-      <Card title="Calendar" description="Switch day, week, or month. Filters apply to the whole team when wired up.">
+      <Card
+        title="Calendar"
+        description="Switch day, week, or month. Filters apply to the whole team when wired up."
+      >
         <TenantScheduleClient
           tenantSlug={membership.tenantSlug}
           visits={visits}

@@ -32,8 +32,7 @@ export function parseAcceptanceSnapshotLines(payload: unknown): AcceptanceSnapsh
     const service_label = String(o.service_label ?? '').trim();
     const frequency = parseQuoteLineFrequency(String(o.frequency ?? ''));
     const fd = o.frequency_detail;
-    const frequency_detail =
-      fd == null || fd === '' ? null : String(fd).trim() || null;
+    const frequency_detail = fd == null || fd === '' ? null : String(fd).trim() || null;
     const amount_cents = Number(o.amount_cents);
     const line_discount_kind = parseQuoteLineDiscountKind(String(o.line_discount_kind ?? 'none'));
     const rawDiscVal = Number(o.line_discount_value);

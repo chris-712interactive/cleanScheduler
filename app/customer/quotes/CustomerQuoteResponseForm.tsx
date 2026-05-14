@@ -145,8 +145,8 @@ export function CustomerQuoteResponseForm({ quoteId }: { quoteId: string }) {
         <fieldset className={styles.signatureFieldset}>
           <legend className={styles.signatureLegend}>Sign to accept</legend>
           <p className={styles.signatureIntro}>
-            Your signature, IP address, and browser information are stored with this acceptance for your
-            records and your provider&apos;s.
+            Your signature, IP address, and browser information are stored with this acceptance for
+            your records and your provider&apos;s.
           </p>
           <div className={styles.signatureModeRow}>
             <label className={styles.signatureRadio}>
@@ -215,7 +215,12 @@ export function CustomerQuoteResponseForm({ quoteId }: { quoteId: string }) {
               <button type="button" className={styles.clearSigButton} onClick={clearCanvas}>
                 Clear drawing
               </button>
-              <input type="hidden" name="drawn_signature_data" id={`drawn_sig_${quoteId}`} defaultValue="" />
+              <input
+                type="hidden"
+                name="drawn_signature_data"
+                id={`drawn_sig_${quoteId}`}
+                defaultValue=""
+              />
               <input type="hidden" name="typed_full_name" value="" />
             </>
           ) : null}

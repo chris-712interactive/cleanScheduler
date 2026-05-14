@@ -19,13 +19,17 @@ export interface ParsedQuoteLineItem {
   line_discount_value: number;
 }
 
-function parseDollarsToCents(raw: string): { ok: true; cents: number } | { ok: false; error: string } {
+function parseDollarsToCents(
+  raw: string,
+): { ok: true; cents: number } | { ok: false; error: string } {
   const t = raw.trim();
   if (!t) return { ok: false, error: 'Each service line needs an amount.' };
   const n = Number(t.replace(/,/g, ''));
-  if (!Number.isFinite(n) || n < 0) return { ok: false, error: 'Enter a valid amount for each service line.' };
+  if (!Number.isFinite(n) || n < 0)
+    return { ok: false, error: 'Enter a valid amount for each service line.' };
   const cents = Math.round(n * 100);
-  if (!Number.isSafeInteger(cents)) return { ok: false, error: 'Amount too large on a service line.' };
+  if (!Number.isSafeInteger(cents))
+    return { ok: false, error: 'Amount too large on a service line.' };
   return { ok: true, cents };
 }
 
@@ -33,9 +37,9 @@ function parseDollarsToCents(raw: string): { ok: true; cents: number } | { ok: f
  * Reads parallel `line_*` fields from FormData (see QuoteLineItemsEditor).
  * Drops completely blank rows. Validates non-empty lines.
  */
-export function parseQuoteLineItemsFromForm(formData: FormData):
-  | { ok: true; lines: ParsedQuoteLineItem[] }
-  | { ok: false; error: string } {
+export function parseQuoteLineItemsFromForm(
+  formData: FormData,
+): { ok: true; lines: ParsedQuoteLineItem[] } | { ok: false; error: string } {
   const services = formData.getAll('line_service').map((v) => String(v));
   const frequencies = formData.getAll('line_frequency').map((v) => String(v));
   const details = formData.getAll('line_frequency_detail').map((v) => String(v));
@@ -62,10 +66,7 @@ export function parseQuoteLineItemsFromForm(formData: FormData):
     const discInputRaw = discInputs[i] ?? '';
 
     const rowBlank =
-      !service_label &&
-      !amountRaw.trim() &&
-      line_discount_kind === 'none' &&
-      !discInputRaw.trim();
+      !service_label && !amountRaw.trim() && line_discount_kind === 'none' && !discInputRaw.trim();
     if (rowBlank) continue;
 
     if (!service_label) {
@@ -73,7 +74,10 @@ export function parseQuoteLineItemsFromForm(formData: FormData):
     }
 
     if (frequency === 'custom' && !frequency_detail_raw) {
-      return { ok: false, error: 'Custom cadence lines need a short description (e.g. "Every other Thursday").' };
+      return {
+        ok: false,
+        error: 'Custom cadence lines need a short description (e.g. "Every other Thursday").',
+      };
     }
 
     const parsed = parseDollarsToCents(amountRaw);

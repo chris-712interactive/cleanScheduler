@@ -56,8 +56,8 @@ export function CustomerPropertySection({
       <div className={styles.propertyList}>
         {sorted.length === 0 ? (
           <p className={styles.empty}>
-            No service locations yet. Use <strong>Add location</strong> when you need another site — quotes and visits
-            attach here.
+            No service locations yet. Use <strong>Add location</strong> when you need another site —
+            quotes and visits attach here.
           </p>
         ) : (
           sorted.map((p) => (
@@ -68,7 +68,8 @@ export function CustomerPropertySection({
                   {p.is_primary ? <span className={styles.primaryBadge}>Primary</span> : null}
                 </span>
                 <span className={styles.propertyMeta}>
-                  {PROPERTY_KIND_LABEL[p.property_kind]} · {formatPropertyAddressLine(p) || 'No address on file'}
+                  {PROPERTY_KIND_LABEL[p.property_kind]} ·{' '}
+                  {formatPropertyAddressLine(p) || 'No address on file'}
                 </span>
               </summary>
 
@@ -81,9 +82,17 @@ export function CustomerPropertySection({
 
                 <div className={styles.propertyActions}>
                   {!p.is_primary ? (
-                    <SetPrimaryForm tenantSlug={tenantSlug} customerId={customerId} propertyId={p.id} />
+                    <SetPrimaryForm
+                      tenantSlug={tenantSlug}
+                      customerId={customerId}
+                      propertyId={p.id}
+                    />
                   ) : null}
-                  <DeletePropertyForm tenantSlug={tenantSlug} customerId={customerId} propertyId={p.id} />
+                  <DeletePropertyForm
+                    tenantSlug={tenantSlug}
+                    customerId={customerId}
+                    propertyId={p.id}
+                  />
                 </div>
 
                 <EditPropertyForm tenantSlug={tenantSlug} customerId={customerId} property={p} />
@@ -95,13 +104,25 @@ export function CustomerPropertySection({
 
       {addLocationOpen ? (
         <div className={styles.collapsibleFormBlock}>
-          <AddPropertyForm tenantSlug={tenantSlug} customerId={customerId} hasAny={sorted.length > 0} />
-          <button type="button" className={styles.secondaryBtn} onClick={() => setAddLocationOpen(false)}>
+          <AddPropertyForm
+            tenantSlug={tenantSlug}
+            customerId={customerId}
+            hasAny={sorted.length > 0}
+          />
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() => setAddLocationOpen(false)}
+          >
             Cancel
           </button>
         </div>
       ) : (
-        <button type="button" className={styles.secondaryBtn} onClick={() => setAddLocationOpen(true)}>
+        <button
+          type="button"
+          className={styles.secondaryBtn}
+          onClick={() => setAddLocationOpen(true)}
+        >
           Add location
         </button>
       )}
@@ -225,12 +246,22 @@ function EditPropertyForm({
       <label className={styles.label} htmlFor={`city_${property.id}`}>
         City
       </label>
-      <input id={`city_${property.id}`} name="city" className={styles.input} defaultValue={property.city ?? ''} />
+      <input
+        id={`city_${property.id}`}
+        name="city"
+        className={styles.input}
+        defaultValue={property.city ?? ''}
+      />
 
       <label className={styles.label} htmlFor={`st_${property.id}`}>
         State / region
       </label>
-      <input id={`st_${property.id}`} name="state" className={styles.input} defaultValue={property.state ?? ''} />
+      <input
+        id={`st_${property.id}`}
+        name="state"
+        className={styles.input}
+        defaultValue={property.state ?? ''}
+      />
 
       <label className={styles.label} htmlFor={`zip_${property.id}`}>
         Postal code
@@ -286,12 +317,22 @@ function AddPropertyForm({
         <label className={styles.label} htmlFor="new_prop_label">
           Label
         </label>
-        <input id="new_prop_label" name="label" className={styles.input} placeholder="e.g. Branch office · Unit 4" />
+        <input
+          id="new_prop_label"
+          name="label"
+          className={styles.input}
+          placeholder="e.g. Branch office · Unit 4"
+        />
 
         <label className={styles.label} htmlFor="new_prop_kind">
           Property type
         </label>
-        <select id="new_prop_kind" name="property_kind" className={styles.input} defaultValue="residential">
+        <select
+          id="new_prop_kind"
+          name="property_kind"
+          className={styles.input}
+          defaultValue="residential"
+        >
           {PROPERTY_KIND_OPTIONS.map(({ value, label }) => (
             <option key={value} value={value}>
               {label}

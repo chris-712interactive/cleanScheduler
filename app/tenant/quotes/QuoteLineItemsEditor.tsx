@@ -4,7 +4,10 @@ import { useCallback, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Tables } from '@/lib/supabase/database.types';
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
-import { QUOTE_LINE_FREQUENCY_OPTIONS, parseQuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
+import {
+  QUOTE_LINE_FREQUENCY_OPTIONS,
+  parseQuoteLineFrequency,
+} from '@/lib/tenant/quoteLineFrequency';
 import type { QuoteLineDiscountKind } from '@/lib/tenant/quoteHeaderPricingForm';
 import { QUOTE_LINE_DISCOUNT_OPTIONS } from '@/lib/tenant/quoteHeaderPricingForm';
 import styles from './quotes.module.scss';
@@ -39,7 +42,10 @@ function discountInputFromRow(kind: QuoteLineDiscountKind, value: number): strin
 
 function emptyDraft(): QuoteLineItemDraft {
   return {
-    key: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `row_${Math.random()}`,
+    key:
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `row_${Math.random()}`,
     service_label: '',
     frequency: 'one_time',
     frequency_detail: '',
@@ -99,9 +105,10 @@ export function QuoteLineItemsEditor({
     <fieldset className={styles.lineItemsFieldset}>
       <legend className={styles.lineItemsLegend}>Services &amp; pricing</legend>
       <p className={styles.lineItemsIntro}>
-        Add one row per priced service. Cadence describes how often that price applies. Line discounts reduce
-        that row&apos;s amount before the quote subtotal. If you enter any complete rows here, the header
-        amount field below is ignored for the total (tax and quote-level discount still apply).
+        Add one row per priced service. Cadence describes how often that price applies. Line
+        discounts reduce that row&apos;s amount before the quote subtotal. If you enter any complete
+        rows here, the header amount field below is ignored for the total (tax and quote-level
+        discount still apply).
       </p>
 
       <div className={styles.lineItemsHeaderRow} aria-hidden="true">
@@ -147,7 +154,9 @@ export function QuoteLineItemsEditor({
             <input
               name="line_frequency_detail"
               className={
-                row.frequency === 'custom' ? styles.input : `${styles.input} ${styles.visuallyHidden}`
+                row.frequency === 'custom'
+                  ? styles.input
+                  : `${styles.input} ${styles.visuallyHidden}`
               }
               placeholder={row.frequency === 'custom' ? 'e.g. Every other Thursday' : ''}
               value={row.frequency_detail}
@@ -188,7 +197,13 @@ export function QuoteLineItemsEditor({
               name="line_discount_input"
               className={styles.input}
               inputMode="decimal"
-              placeholder={row.line_discount_kind === 'percent' ? '%' : row.line_discount_kind === 'fixed_cents' ? '$' : '—'}
+              placeholder={
+                row.line_discount_kind === 'percent'
+                  ? '%'
+                  : row.line_discount_kind === 'fixed_cents'
+                    ? '$'
+                    : '—'
+              }
               value={row.line_discount_input}
               onChange={(e) => updateRow(row.key, { line_discount_input: e.target.value })}
               readOnly={row.line_discount_kind === 'none'}

@@ -28,10 +28,7 @@ interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function paymentMethodLabel(p: {
-  method: string;
-  recorded_via?: string | null;
-}): string {
+function paymentMethodLabel(p: { method: string; recorded_via?: string | null }): string {
   if (p.recorded_via === 'stripe_checkout') return 'Card (Stripe Checkout)';
   return p.method;
 }
@@ -93,8 +90,8 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
       ) : null}
       {checkoutOk ? (
         <p className={styles.bannerOk} role="status">
-          Checkout completed. If the balance did not clear, wait a few seconds and refresh — the webhook records the
-          payment.
+          Checkout completed. If the balance did not clear, wait a few seconds and refresh — the
+          webhook records the payment.
         </p>
       ) : null}
       {checkoutCanceled ? (
@@ -143,8 +140,13 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
             </form>
           </Card>
         ) : inv.status !== 'void' && !isResendConfigured() ? (
-          <Card title="Email customer" description="Set RESEND_API_KEY and RESEND_FROM_EMAIL to enable invoice emails from the app.">
-            <p className={styles.muted}>Configure Resend in your server environment to unlock this action.</p>
+          <Card
+            title="Email customer"
+            description="Set RESEND_API_KEY and RESEND_FROM_EMAIL to enable invoice emails from the app."
+          >
+            <p className={styles.muted}>
+              Configure Resend in your server environment to unlock this action.
+            </p>
           </Card>
         ) : null}
 
@@ -162,7 +164,10 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
             </form>
           </Card>
         ) : inv.status !== 'void' && remaining > 0 && !connectComplete ? (
-          <Card title="Pay online (card)" description="Complete Stripe Connect under Billing → Payment setup to enable card checkout for this invoice.">
+          <Card
+            title="Pay online (card)"
+            description="Complete Stripe Connect under Billing → Payment setup to enable card checkout for this invoice."
+          >
             <Button variant="secondary" as="a" href="/billing/payment-setup">
               Open payment setup
             </Button>
@@ -170,7 +175,10 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
         ) : null}
 
         {inv.status !== 'void' && remaining > 0 ? (
-          <Card title="Record payment" description="Manual cash, check, Zelle, ACH, or other (card uses Pay online above).">
+          <Card
+            title="Record payment"
+            description="Manual cash, check, Zelle, ACH, or other (card uses Pay online above)."
+          >
             <form action={recordInvoicePaymentAction} className={styles.resumeForm}>
               <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
               <input type="hidden" name="invoice_id" value={inv.id} />
@@ -205,7 +213,10 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
           </Card>
         ) : null}
 
-        <Card title="Payment history" description={payments?.length ? `${payments.length} entries` : 'No payments yet'}>
+        <Card
+          title="Payment history"
+          description={payments?.length ? `${payments.length} entries` : 'No payments yet'}
+        >
           {!payments?.length ? (
             <p className={styles.muted}>Payments appear here when recorded.</p>
           ) : (
@@ -220,12 +231,16 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
                 return (
                   <li key={p.id} style={{ marginBottom: 'var(--space-3)' }}>
                     <div>
-                      <strong>{formatUsdFromCents(p.amount_cents)}</strong> · {paymentMethodLabel(p)} ·{' '}
-                      {new Date(p.recorded_at).toLocaleString()}
+                      <strong>{formatUsdFromCents(p.amount_cents)}</strong> ·{' '}
+                      {paymentMethodLabel(p)} · {new Date(p.recorded_at).toLocaleString()}
                       {p.notes ? <span className={styles.muted}> — {p.notes}</span> : null}
                     </div>
                     {refundable ? (
-                      <form action={refundStripeInvoicePaymentAction} className={styles.resumeForm} style={{ marginTop: 'var(--space-2)' }}>
+                      <form
+                        action={refundStripeInvoicePaymentAction}
+                        className={styles.resumeForm}
+                        style={{ marginTop: 'var(--space-2)' }}
+                      >
                         <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
                         <input type="hidden" name="invoice_id" value={inv.id} />
                         <input type="hidden" name="payment_id" value={p.id} />

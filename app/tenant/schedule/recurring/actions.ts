@@ -46,7 +46,8 @@ export async function createRecurringVisitRuleAction(formData: FormData): Promis
   const horizon = Number.parseInt(horizonRaw, 10);
   const horizonDays = Number.isFinite(horizon) ? Math.min(120, Math.max(1, horizon)) : 60;
   const duration = Number.parseInt(durationRaw, 10);
-  const visitDuration = Number.isFinite(duration) && duration > 0 ? Math.min(24 * 60, duration) : 120;
+  const visitDuration =
+    Number.isFinite(duration) && duration > 0 ? Math.min(24 * 60, duration) : 120;
 
   let propertyId: string | null = null;
   if (propertyRaw) {

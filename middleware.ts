@@ -125,30 +125,26 @@ async function resolveUser(request: NextRequest): Promise<{
     return { userId: null, cookiesToSet };
   }
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      global: {
-        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
-          fetch(input, {
-            ...init,
-            cache: 'no-store',
-          }),
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, {
+          ...init,
+          cache: 'no-store',
+        }),
+    },
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(newCookies: CookieToSet[]) {
-          newCookies.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            cookiesToSet.push({ name, value, options });
-          });
-        },
+      setAll(newCookies: CookieToSet[]) {
+        newCookies.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          cookiesToSet.push({ name, value, options });
+        });
       },
     },
-  );
+  });
 
   const { data, error } = await supabase.auth.getUser();
   if (error) {
@@ -166,7 +162,8 @@ export async function middleware(request: NextRequest) {
     PUBLIC_MARKETING_PATHS.has(requestedPath) ||
     (requestedPath === '/contact' && subdomain === null);
   const isPublicCustomerInvite =
-    subdomain === 'my' && (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
+    subdomain === 'my' &&
+    (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
 
   const baseClassification = classify(subdomain);
   const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
@@ -218,7 +215,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Run on every request except Next.js internals, file assets, and favicons.
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)'],
 };

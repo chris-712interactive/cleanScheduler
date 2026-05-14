@@ -21,7 +21,11 @@ export async function startMasqueradeAction(formData: FormData): Promise<void> {
     redirect('/access-denied?reason=forbidden');
   }
 
-  const { data: tenant, error: tErr } = await admin.from('tenants').select('id, slug').eq('id', tenantId).maybeSingle();
+  const { data: tenant, error: tErr } = await admin
+    .from('tenants')
+    .select('id, slug')
+    .eq('id', tenantId)
+    .maybeSingle();
   if (tErr || !tenant || tenant.slug !== tenantSlug) {
     redirect('/tenants');
   }

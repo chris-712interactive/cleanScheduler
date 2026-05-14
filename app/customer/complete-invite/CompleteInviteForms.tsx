@@ -28,7 +28,10 @@ export function CompleteInviteForms({
   marketingSignInUrl: string;
 }) {
   const [pwState, pwAction, pwPending] = useActionState(acceptCustomerPortalInviteAction, initial);
-  const [linkState, linkAction, linkPending] = useActionState(linkExistingCustomerInviteAction, initial);
+  const [linkState, linkAction, linkPending] = useActionState(
+    linkExistingCustomerInviteAction,
+    initial,
+  );
 
   return (
     <Stack gap={6} as="div">
@@ -45,14 +48,23 @@ export function CompleteInviteForms({
           ) : null}
           {pwState.duplicateAccount ? (
             <p className={styles.hint}>
-              Use <strong>Link my account</strong> below if you are already signed in with {inviteEmail}, or open{' '}
-              <Link href={marketingSignInUrl}>sign in</Link> on the main site and return here.
+              Use <strong>Link my account</strong> below if you are already signed in with{' '}
+              {inviteEmail}, or open <Link href={marketingSignInUrl}>sign in</Link> on the main site
+              and return here.
             </p>
           ) : null}
           <label className={styles.label} htmlFor="password">
             Password
           </label>
-          <input id="password" name="password" type="password" autoComplete="new-password" className={styles.input} required minLength={8} />
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            className={styles.input}
+            required
+            minLength={8}
+          />
 
           <label className={styles.label} htmlFor="confirm_password">
             Confirm password
@@ -91,8 +103,8 @@ export function CompleteInviteForms({
           </form>
         ) : (
           <p className={styles.hint}>
-            Open <Link href={marketingSignInUrl}>sign in</Link>, complete login, then come back here and use Link my
-            account.
+            Open <Link href={marketingSignInUrl}>sign in</Link>, complete login, then come back here
+            and use Link my account.
           </p>
         )}
       </Card>

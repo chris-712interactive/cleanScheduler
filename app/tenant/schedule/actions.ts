@@ -13,10 +13,23 @@ export interface ScheduleFormState {
   success?: boolean;
 }
 
-const VISIT_STATUSES = new Set<Database['public']['Enums']['visit_status']>(['scheduled', 'completed', 'cancelled']);
+const VISIT_STATUSES = new Set<Database['public']['Enums']['visit_status']>([
+  'scheduled',
+  'completed',
+  'cancelled',
+]);
 
-async function assertCustomer(admin: ReturnType<typeof createAdminClient>, tenantId: string, customerId: string) {
-  const { data } = await admin.from('customers').select('id').eq('id', customerId).eq('tenant_id', tenantId).maybeSingle();
+async function assertCustomer(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  customerId: string,
+) {
+  const { data } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
   return !!data;
 }
 
@@ -36,8 +49,17 @@ async function assertProperty(
   return !!data;
 }
 
-async function assertQuote(admin: ReturnType<typeof createAdminClient>, tenantId: string, quoteId: string) {
-  const { data } = await admin.from('tenant_quotes').select('id').eq('id', quoteId).eq('tenant_id', tenantId).maybeSingle();
+async function assertQuote(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  quoteId: string,
+) {
+  const { data } = await admin
+    .from('tenant_quotes')
+    .select('id')
+    .eq('id', quoteId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
   return !!data;
 }
 
@@ -56,8 +78,13 @@ async function assertActiveTenantMember(
   return !!data;
 }
 
-export async function createScheduledVisit(_prev: ScheduleFormState, formData: FormData): Promise<ScheduleFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+export async function createScheduledVisit(
+  _prev: ScheduleFormState,
+  formData: FormData,
+): Promise<ScheduleFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const propertyRaw = String(formData.get('property_id') ?? '').trim();
   const quoteRaw = String(formData.get('quote_id') ?? '').trim();
@@ -113,17 +140,21 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
     return { error: 'End time must be after start time.' };
   }
 
-  const ins = await admin.from('tenant_scheduled_visits').insert({
-    tenant_id: membership.tenantId,
-    customer_id: customerId,
-    property_id: propertyId,
-    quote_id: quoteId,
-    title,
-    starts_at: startsAt,
-    ends_at: endsAt,
-    status,
-    notes: notes || null,
-  }).select('id').single();
+  const ins = await admin
+    .from('tenant_scheduled_visits')
+    .insert({
+      tenant_id: membership.tenantId,
+      customer_id: customerId,
+      property_id: propertyId,
+      quote_id: quoteId,
+      title,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      status,
+      notes: notes || null,
+    })
+    .select('id')
+    .single();
 
   if (ins.error || !ins.data?.id) {
     return { error: ins.error?.message ?? 'Could not create visit.' };
@@ -134,7 +165,9 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
   const assigneeIds = formData
     .getAll('assignee_user_id')
     .map((x) => String(x).trim())
-    .filter((x) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x));
+    .filter((x) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x),
+    );
   const uniqueAssignees = [...new Set(assigneeIds)];
 
   for (const uid of uniqueAssignees) {
@@ -145,9 +178,9 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
   }
 
   if (uniqueAssignees.length > 0) {
-    const insA = await admin.from('tenant_scheduled_visit_assignees').insert(
-      uniqueAssignees.map((user_id) => ({ visit_id: visitId, user_id })),
-    );
+    const insA = await admin
+      .from('tenant_scheduled_visit_assignees')
+      .insert(uniqueAssignees.map((user_id) => ({ visit_id: visitId, user_id })));
     if (insA.error) {
       await admin.from('tenant_scheduled_visits').delete().eq('id', visitId);
       return { error: insA.error.message };
@@ -160,8 +193,13 @@ export async function createScheduledVisit(_prev: ScheduleFormState, formData: F
   redirect('/schedule');
 }
 
-export async function deleteScheduledVisit(_prev: ScheduleFormState, formData: FormData): Promise<ScheduleFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+export async function deleteScheduledVisit(
+  _prev: ScheduleFormState,
+  formData: FormData,
+): Promise<ScheduleFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const visitId = String(formData.get('visit_id') ?? '').trim();
 
   if (!slug || !visitId) {

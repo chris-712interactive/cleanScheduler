@@ -17,7 +17,11 @@ function formatVisitRange(startsAt: string, endsAt: string): string {
   const s = new Date(startsAt);
   const e = new Date(endsAt);
   if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return '—';
-  const date = s.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const date = s.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
   const t0 = s.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   const t1 = e.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   return `${date} · ${t0}–${t1}`;

@@ -31,8 +31,13 @@ async function revalidateCustomerPaths(customerId: string) {
   revalidatePath('/tenant/schedule', 'page');
 }
 
-export async function addCustomerProperty(_prev: PropertyFormState, formData: FormData): Promise<PropertyFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+export async function addCustomerProperty(
+  _prev: PropertyFormState,
+  formData: FormData,
+): Promise<PropertyFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const label = String(formData.get('label') ?? '').trim();
   const kind = normalizeKind(String(formData.get('property_kind') ?? '').trim());
@@ -101,8 +106,13 @@ export async function addCustomerProperty(_prev: PropertyFormState, formData: Fo
   return { success: true };
 }
 
-export async function updateCustomerProperty(_prev: PropertyFormState, formData: FormData): Promise<PropertyFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+export async function updateCustomerProperty(
+  _prev: PropertyFormState,
+  formData: FormData,
+): Promise<PropertyFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const propertyId = String(formData.get('property_id') ?? '').trim();
   const label = String(formData.get('label') ?? '').trim();
@@ -160,7 +170,9 @@ export async function setPrimaryCustomerProperty(
   _prev: PropertyFormState,
   formData: FormData,
 ): Promise<PropertyFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const propertyId = String(formData.get('property_id') ?? '').trim();
 
@@ -207,7 +219,9 @@ export async function deleteCustomerProperty(
   _prev: PropertyFormState,
   formData: FormData,
 ): Promise<PropertyFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const propertyId = String(formData.get('property_id') ?? '').trim();
 
@@ -230,7 +244,11 @@ export async function deleteCustomerProperty(
     return { error: 'Property not found.' };
   }
 
-  const del = await admin.from('tenant_customer_properties').delete().eq('id', propertyId).eq('tenant_id', membership.tenantId);
+  const del = await admin
+    .from('tenant_customer_properties')
+    .delete()
+    .eq('id', propertyId)
+    .eq('tenant_id', membership.tenantId);
 
   if (del.error) {
     return { error: del.error.message };

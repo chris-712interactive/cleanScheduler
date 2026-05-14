@@ -18,8 +18,7 @@ import styles from '../customers.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   if (!value) return undefined;
@@ -130,8 +129,8 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
       ) : null}
       {subscriptionCheckoutOk ? (
         <p className={styles.bannerOk} role="status">
-          Checkout completed. The subscription will appear below after Stripe sends the webhook (usually within a few
-          seconds).
+          Checkout completed. The subscription will appear below after Stripe sends the webhook
+          (usually within a few seconds).
         </p>
       ) : null}
       {subscriptionCheckoutCanceled ? (

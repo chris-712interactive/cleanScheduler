@@ -73,7 +73,11 @@ export default async function TenantCustomerInvoicesPage() {
                     · paid {formatUsdFromCents(inv.amount_paid_cents)}
                   </span>
                 </div>
-                <StatusPill tone={inv.status === 'paid' ? 'brand' : inv.status === 'void' ? 'neutral' : 'warning'}>
+                <StatusPill
+                  tone={
+                    inv.status === 'paid' ? 'brand' : inv.status === 'void' ? 'neutral' : 'warning'
+                  }
+                >
                   {inv.status}
                 </StatusPill>
                 <Button variant="secondary" size="sm" as="a" href={`/billing/invoices/${inv.id}`}>

@@ -11,6 +11,8 @@
  *     can't accidentally read a server secret from a client component.
  *   - Cross-env Stripe: prod requires sk_live_; non-prod must not use sk_live_
  *     (see getServerEnv()).
+ *   - Supabase: prod requires https:// on NEXT_PUBLIC_SUPABASE_URL; optional
+ *     SUPABASE_DISALLOW_PROJECT_REF blocks local/dev from pointing at a known prod ref.
  *
  * Usage:
  *
@@ -121,6 +123,12 @@ const serverEnvSchema = z.object({
   ONBOARDING_EMAIL_CONFIRM_MODE: z.enum(['auto', 'required', 'disabled']).default('auto'),
   /** Vercel Cron / manual GET `/api/cron/materialize-recurring-visits` — `Authorization: Bearer …`. */
   CRON_SECRET: z.string().optional(),
+  /**
+   * Optional guard: when set, `getServerEnv()` refuses to start if `NEXT_PUBLIC_APP_ENV` is
+   * `local` or `dev` and `NEXT_PUBLIC_SUPABASE_URL` contains this substring (e.g. your production
+   * Supabase project ref). Prevents accidental reads/writes against prod from a dev build.
+   */
+  SUPABASE_DISALLOW_PROJECT_REF: z.string().optional(),
 });
 
 // We lazy-instantiate so importing this module from a client component does
@@ -130,8 +138,7 @@ let _serverEnvCache: z.infer<typeof serverEnvSchema> | undefined;
 function getServerEnv(): z.infer<typeof serverEnvSchema> {
   if (typeof window !== 'undefined') {
     throw new Error(
-      'serverEnv accessed from a browser context. Use publicEnv for ' +
-        'client-safe values.',
+      'serverEnv accessed from a browser context. Use publicEnv for ' + 'client-safe values.',
     );
   }
 
@@ -166,6 +173,19 @@ function getServerEnv(): z.infer<typeof serverEnvSchema> {
         'STRIPE_SECRET_KEY is a live Stripe key (sk_live_…) but NEXT_PUBLIC_APP_ENV is not prod.',
       );
     }
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  if (appEnv === 'prod' && supabaseUrl.length > 0 && !supabaseUrl.startsWith('https://')) {
+    throw new Error('NEXT_PUBLIC_APP_ENV=prod requires NEXT_PUBLIC_SUPABASE_URL to use https://');
+  }
+
+  const disallow = parsed.data.SUPABASE_DISALLOW_PROJECT_REF?.trim();
+  if (disallow && (appEnv === 'local' || appEnv === 'dev') && supabaseUrl.includes(disallow)) {
+    throw new Error(
+      `SUPABASE_DISALLOW_PROJECT_REF="${disallow}" matches NEXT_PUBLIC_SUPABASE_URL while NEXT_PUBLIC_APP_ENV="${appEnv}". ` +
+        'Unset SUPABASE_DISALLOW_PROJECT_REF or point this environment at a non-production Supabase project.',
+    );
   }
 
   _serverEnvCache = parsed.data;

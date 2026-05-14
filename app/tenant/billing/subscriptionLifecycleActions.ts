@@ -8,7 +8,9 @@ import { getStripe } from '@/lib/stripe/server';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { createConnectCustomerBillingPortalSession } from '@/lib/billing/connectCustomerBillingPortal';
 
-export async function cancelCustomerSubscriptionAtPeriodEndAction(formData: FormData): Promise<void> {
+export async function cancelCustomerSubscriptionAtPeriodEndAction(
+  formData: FormData,
+): Promise<void> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const subscriptionRowId = String(formData.get('subscription_row_id') ?? '').trim();
@@ -32,7 +34,9 @@ export async function cancelCustomerSubscriptionAtPeriodEndAction(formData: Form
     redirect(`/customers/${customerId}?error=${encodeURIComponent('Subscription not found.')}`);
   }
   if (sub.status === 'canceled') {
-    redirect(`/customers/${customerId}?error=${encodeURIComponent('Subscription already canceled.')}`);
+    redirect(
+      `/customers/${customerId}?error=${encodeURIComponent('Subscription already canceled.')}`,
+    );
   }
 
   const { data: conn } = await admin
@@ -81,7 +85,11 @@ export async function openTenantCustomerBillingPortalAction(formData: FormData):
       .eq('tenant_id', membership.tenantId)
       .eq('customer_id', customerId)
       .maybeSingle(),
-    admin.from('tenant_stripe_connect_accounts').select('stripe_account_id').eq('tenant_id', membership.tenantId).maybeSingle(),
+    admin
+      .from('tenant_stripe_connect_accounts')
+      .select('stripe_account_id')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
   ]);
 
   if (!link?.stripe_customer_id) {
@@ -106,7 +114,9 @@ export async function openTenantCustomerBillingPortalAction(formData: FormData):
     returnUrl,
   });
   if (!url) {
-    redirect(`/customers/${customerId}?error=${encodeURIComponent('Could not open billing portal.')}`);
+    redirect(
+      `/customers/${customerId}?error=${encodeURIComponent('Could not open billing portal.')}`,
+    );
   }
   redirect(url);
 }

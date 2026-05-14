@@ -36,8 +36,8 @@ export default function NotFound() {
             We can&apos;t find that page.
           </h1>
           <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>
-            The page you were looking for has moved, was removed, or never
-            existed. Try heading home and starting again.
+            The page you were looking for has moved, was removed, or never existed. Try heading home
+            and starting again.
           </p>
           <Button as={Link} href="/">
             Take me home

@@ -23,8 +23,7 @@ import styles from '../quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type CustomerPickRow = {
   id: string;
@@ -37,7 +36,15 @@ type CustomerPickRow = {
 
 type PropertyPickRow = Pick<
   Tables<'tenant_customer_properties'>,
-  'id' | 'customer_id' | 'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code' | 'is_primary'
+  | 'id'
+  | 'customer_id'
+  | 'label'
+  | 'address_line1'
+  | 'address_line2'
+  | 'city'
+  | 'state'
+  | 'postal_code'
+  | 'is_primary'
 >;
 
 function propertyOptionLabel(p: PropertyPickRow): string {
@@ -139,7 +146,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       .overrideTypes<CustomerPickRow[], { merge: false }>(),
     supabase
       .from('tenant_customer_properties')
-      .select('id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary')
+      .select(
+        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+      )
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })
       .overrideTypes<PropertyPickRow[], { merge: false }>(),
@@ -150,7 +159,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       .maybeSingle(),
     supabase
       .from('tenant_quote_acceptance_e_signatures')
-      .select('signature_kind, typed_full_name, drawn_png_base64, client_ip, user_agent, created_at')
+      .select(
+        'signature_kind, typed_full_name, drawn_png_base64, client_ip, user_agent, created_at',
+      )
       .eq('quote_id', id)
       .maybeSingle(),
     supabase
@@ -175,7 +186,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     ? formatPropertyAddressLine(row.tenant_customer_properties)
     : '';
 
-  const quoteLineItems = [...(row.tenant_quote_line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+  const quoteLineItems = [...(row.tenant_quote_line_items ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order,
+  );
 
   const acceptanceSnapshot = snapRes.data;
   const eSign = eSignRes.data;
@@ -191,9 +204,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     ...(row.accepted_at
       ? [{ key: 'Accepted at', value: new Date(row.accepted_at).toLocaleString() }]
       : []),
-    ...(row.version_reason
-      ? [{ key: 'Reason for this version', value: row.version_reason }]
-      : []),
+    ...(row.version_reason ? [{ key: 'Reason for this version', value: row.version_reason }] : []),
     ...(row.superseded_by_quote_id
       ? [
           {
@@ -275,7 +286,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
                   ? [{ key: 'Name on file', value: eSign.typed_full_name }]
                   : []),
                 ...(eSign.client_ip ? [{ key: 'IP address', value: eSign.client_ip }] : []),
-                ...(eSign.user_agent ? [{ key: 'Browser', value: String(eSign.user_agent).slice(0, 200) }] : []),
+                ...(eSign.user_agent
+                  ? [{ key: 'Browser', value: String(eSign.user_agent).slice(0, 200) }]
+                  : []),
               ]}
             />
             {eSign.signature_kind === 'drawn_png' && eSign.drawn_png_base64 ? (
@@ -309,7 +322,13 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
                       <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
                       <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
                       <td>{formatQuoteMoney(line.amount_cents, row.currency)}</td>
-                      <td>{formatQuoteLineDiscountShort(line.line_discount_kind, line.line_discount_value, row.currency)}</td>
+                      <td>
+                        {formatQuoteLineDiscountShort(
+                          line.line_discount_kind,
+                          line.line_discount_value,
+                          row.currency,
+                        )}
+                      </td>
                       <td>
                         {formatQuoteMoney(
                           effectiveLineSubtotalCents({
@@ -340,7 +359,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
                 </Link>
                 <span>{QUOTE_STATUS_LABEL[v.status as QuoteStatus]}</span>
                 <span className={styles.sub}>{v.title}</span>
-                {v.id === row.id ? <span className={styles.versionHistoryCurrent}>You are here</span> : null}
+                {v.id === row.id ? (
+                  <span className={styles.versionHistoryCurrent}>You are here</span>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -350,7 +371,13 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
         </Card>
 
         <Card
-          title={row.is_locked ? 'Accepted quote' : row.status === 'expired' ? 'Expired quote' : 'Edit quote'}
+          title={
+            row.is_locked
+              ? 'Accepted quote'
+              : row.status === 'expired'
+                ? 'Expired quote'
+                : 'Edit quote'
+          }
           description={
             row.is_locked
               ? 'Accepted quotes are frozen. Create a new version above to propose changes.'

@@ -68,9 +68,7 @@ async function syncTenantFromSubscription(
   if (!tenantId) return;
 
   const customerId =
-    typeof subscription.customer === 'string'
-      ? subscription.customer
-      : subscription.customer?.id;
+    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
 
   const trialStart = subscription.trial_start
     ? new Date(subscription.trial_start * 1000).toISOString()

@@ -14,7 +14,9 @@ export async function sendTenantInvoiceEmailAction(formData: FormData): Promise<
   const admin = createAdminClient();
 
   if (!isResendConfigured()) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Configure RESEND_API_KEY and RESEND_FROM_EMAIL to send mail.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Configure RESEND_API_KEY and RESEND_FROM_EMAIL to send mail.')}`,
+    );
   }
 
   const { data: inv, error: invErr } = await admin
@@ -40,10 +42,16 @@ export async function sendTenantInvoiceEmailAction(formData: FormData): Promise<
 
   const email = (cust.customer_identities as { email: string | null } | null)?.email?.trim();
   if (!email) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Customer has no email on file.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Customer has no email on file.')}`,
+    );
   }
 
-  const { data: tenant } = await admin.from('tenants').select('name').eq('id', membership.tenantId).maybeSingle();
+  const { data: tenant } = await admin
+    .from('tenants')
+    .select('name')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
   const tenantName = tenant?.name?.trim() || membership.tenantSlug;
   const balance = Math.max(0, inv.amount_cents - inv.amount_paid_cents);
   const dueLabel = inv.due_date ? new Date(String(inv.due_date)).toLocaleDateString() : null;

@@ -8,8 +8,7 @@ import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 
-const TOKEN_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface CompleteInviteState {
   error?: string;
@@ -36,14 +35,18 @@ async function loadActiveInvite(admin: SupabaseClient<Database>, token: string) 
     .eq('token', token)
     .maybeSingle();
 
-  if (error || !invite) return { ok: false as const, error: 'This invite link is invalid or has expired.' };
+  if (error || !invite)
+    return { ok: false as const, error: 'This invite link is invalid or has expired.' };
 
   if (invite.used_at) {
     return { ok: false as const, error: 'This invite has already been used.' };
   }
 
   if (new Date(invite.expires_at).getTime() < Date.now()) {
-    return { ok: false as const, error: 'This invite has expired. Ask your provider to send a new one.' };
+    return {
+      ok: false as const,
+      error: 'This invite has expired. Ask your provider to send a new one.',
+    };
   }
 
   return { ok: true as const, invite };
@@ -58,7 +61,9 @@ export async function linkExistingCustomerInviteAction(
     return { error: 'Sign in on this page first (same browser), then tap Link my account.' };
   }
 
-  const token = String(formData.get('token') ?? '').trim().toLowerCase();
+  const token = String(formData.get('token') ?? '')
+    .trim()
+    .toLowerCase();
   if (!TOKEN_RE.test(token)) {
     return { error: 'Invalid invite link.' };
   }
@@ -89,7 +94,10 @@ export async function linkExistingCustomerInviteAction(
 
   if (identity.auth_user_id) {
     if (identity.auth_user_id === auth.user.id) {
-      await admin.from('customer_portal_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
+      await admin
+        .from('customer_portal_invites')
+        .update({ used_at: new Date().toISOString() })
+        .eq('token', token);
       redirect('/');
     }
     return { error: 'This customer record is already linked to a different login.' };
@@ -106,7 +114,8 @@ export async function linkExistingCustomerInviteAction(
   }
 
   const displayName =
-    (typeof auth.user.user_metadata?.display_name === 'string' && auth.user.user_metadata.display_name) ||
+    (typeof auth.user.user_metadata?.display_name === 'string' &&
+      auth.user.user_metadata.display_name) ||
     auth.user.email.split('@')[0] ||
     'Customer';
 
@@ -136,7 +145,10 @@ export async function linkExistingCustomerInviteAction(
     return { error: metaErr.message };
   }
 
-  await admin.from('customer_portal_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
+  await admin
+    .from('customer_portal_invites')
+    .update({ used_at: new Date().toISOString() })
+    .eq('token', token);
 
   redirect('/');
 }
@@ -145,7 +157,9 @@ export async function acceptCustomerPortalInviteAction(
   _prev: CompleteInviteState,
   formData: FormData,
 ): Promise<CompleteInviteState> {
-  const token = String(formData.get('token') ?? '').trim().toLowerCase();
+  const token = String(formData.get('token') ?? '')
+    .trim()
+    .toLowerCase();
   if (!TOKEN_RE.test(token)) {
     return { error: 'Invalid invite link.' };
   }
@@ -212,7 +226,10 @@ export async function acceptCustomerPortalInviteAction(
   if (created.error || !created.data.user) {
     const msg = created.error?.message ?? 'Could not create account.';
     if (/already|registered|exists/i.test(msg)) {
-      return { duplicateAccount: true, error: 'An account already exists for this email. Sign in below, then link this invite.' };
+      return {
+        duplicateAccount: true,
+        error: 'An account already exists for this email. Sign in below, then link this invite.',
+      };
     }
     return { error: msg };
   }
@@ -262,7 +279,10 @@ export async function acceptCustomerPortalInviteAction(
     };
   }
 
-  await admin.from('customer_portal_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
+  await admin
+    .from('customer_portal_invites')
+    .update({ used_at: new Date().toISOString() })
+    .eq('token', token);
 
   redirect('/');
 }

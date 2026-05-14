@@ -9,7 +9,10 @@ import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_STATUS_LABEL, TENANT_QUOTE_STATUS_EDIT_OPTIONS } from '@/lib/tenant/quoteLabels';
 import type { Tables } from '@/lib/supabase/database.types';
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditor';
-import { QuoteHeaderPricingFields, type QuoteHeaderPricingDefaults } from './QuoteHeaderPricingFields';
+import {
+  QuoteHeaderPricingFields,
+  type QuoteHeaderPricingDefaults,
+} from './QuoteHeaderPricingFields';
 import styles from './quotes.module.scss';
 
 const initial: QuoteFormState = {};
@@ -85,9 +88,9 @@ export function QuoteEditForm({
   if (readOnly) {
     return (
       <div className={styles.readOnlyNotice} role="status">
-        This quote can no longer be edited here. Accepted quotes are frozen for the record; expired quotes
-        cannot be reopened. To change terms, use <strong>Create new version</strong> in version history when
-        that applies, or create a new quote for the customer.
+        This quote can no longer be edited here. Accepted quotes are frozen for the record; expired
+        quotes cannot be reopened. To change terms, use <strong>Create new version</strong> in
+        version history when that applies, or create a new quote for the customer.
       </div>
     );
   }
@@ -128,7 +131,11 @@ export function QuoteEditForm({
         defaultValue={snapshot.status}
       >
         {statusSelectOptions.map(({ value, label }) => (
-          <option key={value} value={value} disabled={!TENANT_QUOTE_STATUS_EDIT_OPTIONS.some((o) => o.value === value)}>
+          <option
+            key={value}
+            value={value}
+            disabled={!TENANT_QUOTE_STATUS_EDIT_OPTIONS.some((o) => o.value === value)}
+          >
             {label}
           </option>
         ))}
@@ -185,8 +192,9 @@ export function QuoteEditForm({
         Amount (USD, optional if lines above)
       </label>
       <p className={styles.hint}>
-        When line items are present, the saved total is computed from those lines (after line discounts), then
-        quote-level discount and tax. This field is only used when there are no line items.
+        When line items are present, the saved total is computed from those lines (after line
+        discounts), then quote-level discount and tax. This field is only used when there are no
+        line items.
       </p>
       <input
         id="edit_quote_amount"
@@ -210,7 +218,12 @@ export function QuoteEditForm({
       <label className={styles.label} htmlFor="edit_quote_notes">
         Notes
       </label>
-      <textarea id="edit_quote_notes" name="notes" className={styles.textarea} defaultValue={snapshot.notes} />
+      <textarea
+        id="edit_quote_notes"
+        name="notes"
+        className={styles.textarea}
+        defaultValue={snapshot.notes}
+      />
 
       <button type="submit" className={styles.submit} disabled={pending}>
         {pending ? 'Saving…' : 'Save changes'}

@@ -12,7 +12,9 @@ export function customerIdentitySearchOrClause(trimmedQuery: string): string {
 
 export type CustomerDirectoryStatusParam = 'all' | 'active' | 'inactive';
 
-export function parseCustomerDirectoryStatus(raw: string | string[] | undefined): CustomerDirectoryStatusParam {
+export function parseCustomerDirectoryStatus(
+  raw: string | string[] | undefined,
+): CustomerDirectoryStatusParam {
   const v = Array.isArray(raw) ? raw[0] : raw;
   if (v === 'active' || v === 'inactive') return v;
   return 'all';

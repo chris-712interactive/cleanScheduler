@@ -40,17 +40,23 @@ export async function createInvoicePayCheckoutSessionAction(formData: FormData):
     redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Invoice not found.')}`);
   }
   if (connErr || !conn?.stripe_account_id) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Stripe Connect is not linked.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Stripe Connect is not linked.')}`,
+    );
   }
 
   const remaining = inv.amount_cents - inv.amount_paid_cents;
   if (remaining <= 0) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Invoice is already paid.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Invoice is already paid.')}`,
+    );
   }
 
   const stripe = getStripe();
   if (!stripe) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Stripe is not configured.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Stripe is not configured.')}`,
+    );
   }
 
   const origin = getPublicOrigin(membership.tenantSlug);
@@ -92,7 +98,9 @@ export async function createInvoicePayCheckoutSessionAction(formData: FormData):
   );
 
   if (!session.url) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Could not start checkout.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Could not start checkout.')}`,
+    );
   }
 
   redirect(session.url);

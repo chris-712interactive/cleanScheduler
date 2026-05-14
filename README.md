@@ -4,12 +4,12 @@ Multi-tenant scheduling, quoting, billing, and customer-service platform for
 residential and commercial cleaning businesses. Three portals served from a
 single Next.js deployment, switched by subdomain:
 
-| Subdomain                        | Portal              |
-|----------------------------------|---------------------|
-| `admin.<apex>`                   | Founder admin       |
-| `my.<apex>`                      | Unified customer    |
-| `<tenant-slug>.<apex>`           | Tenant operations   |
-| `<apex>` / `www.<apex>`          | Marketing site      |
+| Subdomain               | Portal            |
+| ----------------------- | ----------------- |
+| `admin.<apex>`          | Founder admin     |
+| `my.<apex>`             | Unified customer  |
+| `<tenant-slug>.<apex>`  | Tenant operations |
+| `<apex>` / `www.<apex>` | Marketing site    |
 
 ## Tech stack
 
@@ -104,7 +104,7 @@ pnpm build             # next build
 - Theme layer (`styles/_theme.scss`) maps tokens to semantic CSS custom
   properties (`--color-bg`, `--color-text`, `--color-brand-primary`, ...).
 - Pre-hydration script (`components/theme/themeScript.ts`) sets
-  `data-theme="light|dark"` on `<html>` *before* React hydrates, so users
+  `data-theme="light|dark"` on `<html>` _before_ React hydrates, so users
   never see a flash of the wrong theme.
 - `<ThemeToggle />` exposes a System / Light / Dark control persisted to
   `localStorage.cs_theme`.

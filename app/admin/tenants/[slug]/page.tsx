@@ -8,7 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
-import { PLATFORM_PLAN_LABELS, parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
+import {
+  PLATFORM_PLAN_LABELS,
+  parsePlatformPlanTier,
+  type PlatformPlanTier,
+} from '@/lib/billing/platformPlanTier';
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
 import { startMasqueradeAction } from '@/lib/admin/masqueradeActions';
 import styles from '../tenants.module.scss';
@@ -17,7 +21,7 @@ export const dynamic = 'force-dynamic';
 
 function normalizeOne<T>(raw: T | T[] | null | undefined): T | null {
   if (raw == null) return null;
-  return Array.isArray(raw) ? raw[0] ?? null : raw;
+  return Array.isArray(raw) ? (raw[0] ?? null) : raw;
 }
 
 interface PageProps {
@@ -109,8 +113,8 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
         <Stack gap={4}>
           <Card title="Support masquerade">
             <p className={styles.empty}>
-              Opens the tenant portal in your browser with masquerade metadata set on your account. Use only with
-              tenant consent; actions are written to the audit log.
+              Opens the tenant portal in your browser with masquerade metadata set on your account.
+              Use only with tenant consent; actions are written to the audit log.
             </p>
             <form action={startMasqueradeAction} className={styles.backWrap}>
               <input type="hidden" name="tenant_slug" value={tenant.slug} />
@@ -140,10 +144,9 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
                   { key: 'Status', value: String(billing.status ?? '') },
                   {
                     key: 'Trial',
-                    value:
-                      billing.trial_ends_at
-                        ? `ends ${new Date(String(billing.trial_ends_at)).toLocaleString()}`
-                        : '—',
+                    value: billing.trial_ends_at
+                      ? `ends ${new Date(String(billing.trial_ends_at)).toLocaleString()}`
+                      : '—',
                   },
                   {
                     key: 'Stripe customer',
@@ -173,7 +176,10 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
                   { key: 'Hard-gated features', value: disabledFeatures || 'None' },
                   { key: 'Enabled features', value: enabledFeatures || 'None' },
                   { key: 'Included seats', value: String(entitlements.limits.includedSeats) },
-                  { key: 'Max active customers', value: String(entitlements.limits.maxActiveCustomers) },
+                  {
+                    key: 'Max active customers',
+                    value: String(entitlements.limits.maxActiveCustomers),
+                  },
                   {
                     key: 'Automation workflow cap',
                     value: String(entitlements.limits.maxAutomationWorkflows),
@@ -186,7 +192,10 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
                     key: 'Email credits / month',
                     value: String(entitlements.limits.includedEmailCreditsMonthly),
                   },
-                  { key: 'Integration cap', value: String(entitlements.limits.includedIntegrations) },
+                  {
+                    key: 'Integration cap',
+                    value: String(entitlements.limits.includedIntegrations),
+                  },
                 ]}
               />
             ) : (

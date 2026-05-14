@@ -44,11 +44,7 @@ export async function createTenantCustomerInlineForQuote(options: {
   }
 
   try {
-    assertLimitNotExceeded(
-      planTier,
-      'maxActiveCustomers',
-      Number(customerCountResult.count ?? 0),
-    );
+    assertLimitNotExceeded(planTier, 'maxActiveCustomers', Number(customerCountResult.count ?? 0));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Plan limit reached.';
     return { ok: false, error: message };
@@ -84,7 +80,10 @@ export async function createTenantCustomerInlineForQuote(options: {
 
   if (customerInsert.error || !customerInsert.data) {
     await options.admin.from('customer_identities').delete().eq('id', identityId);
-    return { ok: false, error: customerInsert.error?.message ?? 'Could not link customer to workspace.' };
+    return {
+      ok: false,
+      error: customerInsert.error?.message ?? 'Could not link customer to workspace.',
+    };
   }
 
   const customerId = customerInsert.data.id as string;

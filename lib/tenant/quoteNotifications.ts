@@ -17,9 +17,7 @@ async function loadOpsFlags(
 } | null> {
   const { data } = await admin
     .from('tenant_operational_settings')
-    .select(
-      'email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined',
-    )
+    .select('email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined')
     .eq('tenant_id', tenantId)
     .maybeSingle();
   if (!data) {
@@ -79,7 +77,9 @@ export async function sendQuoteNotificationEmail(
   params: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
 ): Promise<void> {
   if (!isResendConfigured()) {
-    console.warn('[quoteNotifications] Skipping email: Resend not configured (RESEND_API_KEY / RESEND_FROM_EMAIL).');
+    console.warn(
+      '[quoteNotifications] Skipping email: Resend not configured (RESEND_API_KEY / RESEND_FROM_EMAIL).',
+    );
     return;
   }
 

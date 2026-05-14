@@ -97,7 +97,10 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       custQuery = custQuery.in('customer_identity_id', identityIds);
     }
 
-    const { data: rows, error } = await custQuery.overrideTypes<CustomerListEmbedRow[], { merge: false }>();
+    const { data: rows, error } = await custQuery.overrideTypes<
+      CustomerListEmbedRow[],
+      { merge: false }
+    >();
     listError = error ? { message: error.message } : null;
     customers = rows ?? [];
   }
@@ -120,7 +123,11 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
 
       <Stack gap={6}>
         <Card title="Directory" description={directoryDescription}>
-          <form method="get" className={styles.directoryToolbar} aria-label="Search and filter customers">
+          <form
+            method="get"
+            className={styles.directoryToolbar}
+            aria-label="Search and filter customers"
+          >
             <div className={styles.directoryToolbarRow}>
               <div className={styles.directorySearch}>
                 <label className={styles.label} htmlFor="customer_directory_q">
@@ -163,7 +170,8 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
               </div>
             </div>
             <p className={styles.directoryFilterHint}>
-              Press Apply after changing search or status. Results match any of first name, last name, full name, email, or phone.
+              Press Apply after changing search or status. Results match any of first name, last
+              name, full name, email, or phone.
             </p>
           </form>
 
@@ -195,7 +203,10 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
                 return (
                   <li key={c.id} className={styles.row}>
                     <div>
-                      <Link href={`/customers/${c.id}`} className={`${styles.name} ${styles.detailLink}`}>
+                      <Link
+                        href={`/customers/${c.id}`}
+                        className={`${styles.name} ${styles.detailLink}`}
+                      >
                         {name}
                       </Link>
                       <div className={styles.sub}>

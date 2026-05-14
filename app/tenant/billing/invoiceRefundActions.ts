@@ -27,7 +27,9 @@ export async function refundStripeInvoicePaymentAction(formData: FormData): Prom
     .maybeSingle();
 
   if (pErr || !pay?.stripe_charge_id || pay.recorded_via !== 'stripe_checkout') {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Only Stripe Checkout card payments can be refunded here.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Only Stripe Checkout card payments can be refunded here.')}`,
+    );
   }
 
   const { data: conn } = await admin
@@ -36,12 +38,16 @@ export async function refundStripeInvoicePaymentAction(formData: FormData): Prom
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
   if (!conn?.stripe_account_id) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Connect account missing.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Connect account missing.')}`,
+    );
   }
 
   const stripe = getStripe();
   if (!stripe) {
-    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Stripe not configured.')}`);
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Stripe not configured.')}`,
+    );
   }
 
   const dollars = String(formData.get('refund_amount_dollars') ?? '').trim();
@@ -49,7 +55,9 @@ export async function refundStripeInvoicePaymentAction(formData: FormData): Prom
   if (dollars) {
     const n = Number.parseFloat(dollars.replace(/[$,]/g, ''));
     if (!Number.isFinite(n) || n <= 0) {
-      redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent('Invalid refund amount.')}`);
+      redirect(
+        `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Invalid refund amount.')}`,
+      );
     }
     refundCents = Math.round(n * 100);
   }

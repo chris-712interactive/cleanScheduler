@@ -30,7 +30,9 @@ export function parseQuoteDiscountKind(raw: string): QuoteDiscountKind {
 }
 
 /** User-entered percent string (e.g. "8.875") → basis points (887). */
-export function parsePercentStringToBps(raw: string): { ok: true; bps: number } | { ok: false; error: string } {
+export function parsePercentStringToBps(
+  raw: string,
+): { ok: true; bps: number } | { ok: false; error: string } {
   const t = raw.trim();
   if (!t) return { ok: true, bps: 0 };
   const n = Number(t.replace(/,/g, ''));
@@ -42,7 +44,9 @@ export function parsePercentStringToBps(raw: string): { ok: true; bps: number } 
 }
 
 /** User-entered percent for a discount (e.g. "10" = 10%) → basis points (1000). */
-export function parseDiscountPercentToBps(raw: string): { ok: true; bps: number } | { ok: false; error: string } {
+export function parseDiscountPercentToBps(
+  raw: string,
+): { ok: true; bps: number } | { ok: false; error: string } {
   const t = raw.trim();
   if (!t) return { ok: true, bps: 0 };
   const n = Number(t.replace(/,/g, ''));
@@ -53,7 +57,9 @@ export function parseDiscountPercentToBps(raw: string): { ok: true; bps: number 
   return { ok: true, bps };
 }
 
-export function parseDiscountDollarsToCents(raw: string): { ok: true; cents: number } | { ok: false; error: string } {
+export function parseDiscountDollarsToCents(
+  raw: string,
+): { ok: true; cents: number } | { ok: false; error: string } {
   const t = raw.trim();
   if (!t) return { ok: true, cents: 0 };
   const n = Number(t.replace(/,/g, ''));

@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check:migrations": "node scripts/check-migration-prefixes.mjs",
     "db:types": "supabase gen types typescript --linked --schema public",
     "db:prod-baseline": "bash supabase/scripts/build-prod-baseline.sh"
   },

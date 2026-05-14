@@ -44,7 +44,11 @@ export function ScheduleVisitForm({
   return (
     <form action={formAction} className={styles.formCompact}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="client_timezone_offset" value={String(new Date().getTimezoneOffset())} />
+      <input
+        type="hidden"
+        name="client_timezone_offset"
+        value={String(new Date().getTimezoneOffset())}
+      />
       {state.error ? (
         <p className={styles.error} role="alert">
           {state.error}
@@ -116,7 +120,12 @@ export function ScheduleVisitForm({
           <label className={styles.label} htmlFor="visit_status">
             Status
           </label>
-          <select id="visit_status" name="status" className={styles.select} defaultValue="scheduled">
+          <select
+            id="visit_status"
+            name="status"
+            className={styles.select}
+            defaultValue="scheduled"
+          >
             <option value="scheduled">Scheduled</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
@@ -129,13 +138,25 @@ export function ScheduleVisitForm({
           <label className={styles.label} htmlFor="visit_starts">
             Starts
           </label>
-          <input id="visit_starts" name="starts_at" className={styles.input} type="datetime-local" required />
+          <input
+            id="visit_starts"
+            name="starts_at"
+            className={styles.input}
+            type="datetime-local"
+            required
+          />
         </div>
         <div className={styles.formField}>
           <label className={styles.label} htmlFor="visit_ends">
             Ends
           </label>
-          <input id="visit_ends" name="ends_at" className={styles.input} type="datetime-local" required />
+          <input
+            id="visit_ends"
+            name="ends_at"
+            className={styles.input}
+            type="datetime-local"
+            required
+          />
         </div>
       </div>
 
@@ -152,13 +173,20 @@ export function ScheduleVisitForm({
             aria-label="Filter crew list"
           />
           {employeeOptions.length === 0 ? (
-            <p className={styles.crewEmpty}>No active workspace members yet. Add people under Employees.</p>
+            <p className={styles.crewEmpty}>
+              No active workspace members yet. Add people under Employees.
+            </p>
           ) : (
             <ul className={styles.crewList}>
               {filteredCrew.map((e) => (
                 <li key={e.id} className={styles.crewItem}>
                   <label className={styles.crewLabel}>
-                    <input type="checkbox" name="assignee_user_id" value={e.id} className={styles.crewCheck} />
+                    <input
+                      type="checkbox"
+                      name="assignee_user_id"
+                      value={e.id}
+                      className={styles.crewCheck}
+                    />
                     <span>{e.label}</span>
                   </label>
                 </li>
@@ -172,7 +200,12 @@ export function ScheduleVisitForm({
         <label className={styles.label} htmlFor="visit_notes">
           Notes
         </label>
-        <textarea id="visit_notes" name="notes" className={styles.textarea} placeholder="Crew notes, supplies…" />
+        <textarea
+          id="visit_notes"
+          name="notes"
+          className={styles.textarea}
+          placeholder="Crew notes, supplies…"
+        />
       </div>
 
       <div className={styles.formActions}>

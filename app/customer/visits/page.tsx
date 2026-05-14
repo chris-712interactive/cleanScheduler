@@ -70,11 +70,7 @@ export default async function CustomerVisitsPage() {
           {visits.map((row) => {
             const t = row.tenants as { name: string; slug: string } | null;
             return (
-              <Card
-                key={row.id}
-                title={row.title || 'Visit'}
-                description={t?.name ?? 'Provider'}
-              >
+              <Card key={row.id} title={row.title || 'Visit'} description={t?.name ?? 'Provider'}>
                 <div className={styles.row}>
                   <StatusPill tone="info">{formatWhen(row.starts_at, row.ends_at)}</StatusPill>
                   <StatusPill tone="neutral">{row.status}</StatusPill>

@@ -64,7 +64,9 @@ export function CustomerProfileSummary({
             </p>
           )}
         </div>
-        <StatusPill tone={isActive ? 'success' : 'neutral'}>{isActive ? 'Active' : status}</StatusPill>
+        <StatusPill tone={isActive ? 'success' : 'neutral'}>
+          {isActive ? 'Active' : status}
+        </StatusPill>
       </div>
 
       <div className={styles.profileSummaryContactGrid}>
@@ -74,7 +76,10 @@ export function CustomerProfileSummary({
             Email
           </span>
           {email ? (
-            <a href={`mailto:${encodeURIComponent(email)}`} className={styles.profileSummaryContactValue}>
+            <a
+              href={`mailto:${encodeURIComponent(email)}`}
+              className={styles.profileSummaryContactValue}
+            >
               {email}
             </a>
           ) : (
@@ -87,7 +92,10 @@ export function CustomerProfileSummary({
             Phone
           </span>
           {phone ? (
-            <a href={`tel:${phone.replace(/\s/g, '')}`} className={styles.profileSummaryContactValue}>
+            <a
+              href={`tel:${phone.replace(/\s/g, '')}`}
+              className={styles.profileSummaryContactValue}
+            >
               {phone}
             </a>
           ) : (
@@ -106,7 +114,9 @@ export function CustomerProfileSummary({
           <span>Primary service location</span>
         </div>
         {primaryLabel ? <p className={styles.profileSummaryLocationLabel}>{primaryLabel}</p> : null}
-        <p className={styles.profileSummaryLocationAddress}>{primaryLine || 'No address on file'}</p>
+        <p className={styles.profileSummaryLocationAddress}>
+          {primaryLine || 'No address on file'}
+        </p>
       </div>
 
       {internalNotes ? (

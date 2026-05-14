@@ -37,8 +37,8 @@ export function QuoteAmendmentForm({
         placeholder="e.g. Customer requested additional weekly visits after signing."
       />
       <p className={styles.hint}>
-        The accepted quote stays frozen for the record. A new draft quote is created as the next version in
-        this quote&apos;s history.
+        The accepted quote stays frozen for the record. A new draft quote is created as the next
+        version in this quote&apos;s history.
       </p>
       <button type="submit" className={styles.submit} disabled={pending}>
         {pending ? 'Creating…' : 'Create new version (draft)'}

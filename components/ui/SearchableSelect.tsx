@@ -68,7 +68,9 @@ export function SearchableSelect({
           <button
             id={`${baseId}-trigger`}
             type="button"
-            className={[styles.trigger, !selectedLabel ? styles.triggerMuted : ''].filter(Boolean).join(' ')}
+            className={[styles.trigger, !selectedLabel ? styles.triggerMuted : '']
+              .filter(Boolean)
+              .join(' ')}
             aria-expanded={open}
             aria-haspopup="dialog"
           >
@@ -101,7 +103,9 @@ export function SearchableSelect({
                   <li key={o.value}>
                     <button
                       type="button"
-                      className={[styles.option, o.value === value ? styles.optionActive : ''].filter(Boolean).join(' ')}
+                      className={[styles.option, o.value === value ? styles.optionActive : '']
+                        .filter(Boolean)
+                        .join(' ')}
                       role="option"
                       aria-selected={o.value === value}
                       onClick={() => {

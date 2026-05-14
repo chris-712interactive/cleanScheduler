@@ -2,7 +2,10 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { parseAllowedRedirectOrigin, sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
+import {
+  parseAllowedRedirectOrigin,
+  sanitizeAuthenticationNext,
+} from '@/lib/auth/allowedRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
 
 export interface SignInState {
@@ -37,7 +40,9 @@ export async function signInWithPassword(
   _prevState: SignInState,
   formData: FormData,
 ): Promise<SignInState> {
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const password = String(formData.get('password') ?? '');
   const nextPath = normalizeNextFromForm(formData);
 
@@ -59,7 +64,9 @@ export async function signUpWithPassword(
   _prevState: SignInState,
   formData: FormData,
 ): Promise<SignInState> {
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const password = String(formData.get('password') ?? '');
   const confirm = String(formData.get('confirm_password') ?? '');
   const nextPath = normalizeNextFromForm(formData);
@@ -124,7 +131,9 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
     redirect(data.url);
   }
 
-  redirect(`/sign-in?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent('Google sign-in failed.')}`);
+  redirect(
+    `/sign-in?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent('Google sign-in failed.')}`,
+  );
 }
 
 export async function signOut(): Promise<void> {

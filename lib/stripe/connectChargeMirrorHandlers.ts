@@ -5,7 +5,10 @@ import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 
 type Admin = SupabaseClient<Database>;
 
-export async function resolveConnectTenantId(admin: Admin, connectAccountId: string): Promise<string | null> {
+export async function resolveConnectTenantId(
+  admin: Admin,
+  connectAccountId: string,
+): Promise<string | null> {
   const { data } = await admin
     .from('tenant_stripe_connect_accounts')
     .select('tenant_id')
@@ -14,10 +17,14 @@ export async function resolveConnectTenantId(admin: Admin, connectAccountId: str
   return data?.tenant_id ?? null;
 }
 
-export async function upsertConnectRefund(admin: Admin, refund: Stripe.Refund, connectAccountId: string): Promise<void> {
+export async function upsertConnectRefund(
+  admin: Admin,
+  refund: Stripe.Refund,
+  connectAccountId: string,
+): Promise<void> {
   const tenantId = await resolveConnectTenantId(admin, connectAccountId);
   if (!tenantId) return;
-  const chargeId = typeof refund.charge === 'string' ? refund.charge : refund.charge?.id ?? null;
+  const chargeId = typeof refund.charge === 'string' ? refund.charge : (refund.charge?.id ?? null);
   const { error } = await admin.from('tenant_stripe_refunds').upsert(
     {
       tenant_id: tenantId,
@@ -34,10 +41,15 @@ export async function upsertConnectRefund(admin: Admin, refund: Stripe.Refund, c
   }
 }
 
-export async function upsertConnectDispute(admin: Admin, dispute: Stripe.Dispute, connectAccountId: string): Promise<void> {
+export async function upsertConnectDispute(
+  admin: Admin,
+  dispute: Stripe.Dispute,
+  connectAccountId: string,
+): Promise<void> {
   const tenantId = await resolveConnectTenantId(admin, connectAccountId);
   if (!tenantId) return;
-  const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id ?? null;
+  const chargeId =
+    typeof dispute.charge === 'string' ? dispute.charge : (dispute.charge?.id ?? null);
   const { error } = await admin.from('tenant_stripe_disputes').upsert(
     {
       tenant_id: tenantId,
@@ -54,7 +66,11 @@ export async function upsertConnectDispute(admin: Admin, dispute: Stripe.Dispute
   }
 }
 
-export async function notifyTenantDisputeOpened(admin: Admin, tenantId: string, dispute: Stripe.Dispute): Promise<void> {
+export async function notifyTenantDisputeOpened(
+  admin: Admin,
+  tenantId: string,
+  dispute: Stripe.Dispute,
+): Promise<void> {
   if (!isResendConfigured()) return;
   const { data: top } = await admin
     .from('tenant_onboarding_profiles')
@@ -88,7 +104,11 @@ function payoutArrivalDateOnly(p: Stripe.Payout): string | null {
   return null;
 }
 
-export async function upsertConnectPayout(admin: Admin, payout: Stripe.Payout, connectAccountId: string): Promise<void> {
+export async function upsertConnectPayout(
+  admin: Admin,
+  payout: Stripe.Payout,
+  connectAccountId: string,
+): Promise<void> {
   const tenantId = await resolveConnectTenantId(admin, connectAccountId);
   if (!tenantId) return;
   const arrival = payoutArrivalDateOnly(payout);

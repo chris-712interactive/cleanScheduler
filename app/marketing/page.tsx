@@ -33,10 +33,9 @@ export default function MarketingHome() {
                 Schedule, quote, bill, and grow - all from one tidy console.
               </h1>
               <p className={styles.heroLead}>
-                cleanScheduler is the multi-tenant scheduling, billing, and customer
-                portal stack for residential and commercial cleaning teams. Manage
-                jobs, get paid faster, and give every customer a clear, branded view
-                of their service.
+                cleanScheduler is the multi-tenant scheduling, billing, and customer portal stack
+                for residential and commercial cleaning teams. Manage jobs, get paid faster, and
+                give every customer a clear, branded view of their service.
               </p>
               <div className={styles.heroActions}>
                 <Button size="lg" href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>
@@ -56,8 +55,8 @@ export default function MarketingHome() {
               <Stack gap={2} align="center" as="div">
                 <h2 className={styles.sectionTitle}>Everything in one workspace</h2>
                 <p className={styles.sectionLead}>
-                  Three portals - one for your team, one for each tenant, one for
-                  every customer - sharing a clean, consistent design system.
+                  Three portals - one for your team, one for each tenant, one for every customer -
+                  sharing a clean, consistent design system.
                 </p>
               </Stack>
 
@@ -90,7 +89,6 @@ export default function MarketingHome() {
             </Stack>
           </Container>
         </section>
-
       </main>
 
       <footer className={styles.footer}>

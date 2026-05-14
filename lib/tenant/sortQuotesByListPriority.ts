@@ -22,6 +22,8 @@ export function compareQuotesByListPriority(
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
 
-export function sortQuotesByListPriority<T extends { status: QuoteStatus; created_at: string }>(quotes: T[]): T[] {
+export function sortQuotesByListPriority<T extends { status: QuoteStatus; created_at: string }>(
+  quotes: T[],
+): T[] {
   return [...quotes].sort(compareQuotesByListPriority);
 }

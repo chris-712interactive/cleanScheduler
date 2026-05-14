@@ -90,7 +90,12 @@ export default async function CustomerMessagesPage({ searchParams }: PageProps) 
           </label>
           <label className={styles.field}>
             <span>Subject</span>
-            <input name="subject" type="text" className={styles.input} placeholder="Question about my next visit" />
+            <input
+              name="subject"
+              type="text"
+              className={styles.input}
+              placeholder="Question about my next visit"
+            />
           </label>
           <label className={styles.field}>
             <span>Message</span>
@@ -107,7 +112,10 @@ export default async function CustomerMessagesPage({ searchParams }: PageProps) 
           <p className={styles.muted}>{error.message}</p>
         </Card>
       ) : !list.length ? (
-        <EmptyState title="No threads yet" description="Your providers will see new messages in their workspace." />
+        <EmptyState
+          title="No threads yet"
+          description="Your providers will see new messages in their workspace."
+        />
       ) : (
         <Stack gap={3}>
           <h2 className={styles.sectionTitle}>Recent</h2>

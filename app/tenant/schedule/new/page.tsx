@@ -25,7 +25,15 @@ type CustomerPickRow = {
 
 type PropertyPickRow = Pick<
   Tables<'tenant_customer_properties'>,
-  'id' | 'customer_id' | 'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code' | 'is_primary'
+  | 'id'
+  | 'customer_id'
+  | 'label'
+  | 'address_line1'
+  | 'address_line2'
+  | 'city'
+  | 'state'
+  | 'postal_code'
+  | 'is_primary'
 >;
 
 type QuotePickRow = Pick<Tables<'tenant_quotes'>, 'id' | 'title'>;
@@ -71,7 +79,9 @@ export default async function TenantScheduleNewPage() {
       .overrideTypes<CustomerPickRow[], { merge: false }>(),
     supabase
       .from('tenant_customer_properties')
-      .select('id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary')
+      .select(
+        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+      )
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })
       .overrideTypes<PropertyPickRow[], { merge: false }>(),
@@ -94,7 +104,10 @@ export default async function TenantScheduleNewPage() {
   const memberUserIds = [...new Set((membersRes.data ?? []).map((m) => m.user_id))];
   const { data: memberProfiles } =
     memberUserIds.length > 0
-      ? await supabase.from('user_profiles').select('user_id, display_name').in('user_id', memberUserIds)
+      ? await supabase
+          .from('user_profiles')
+          .select('user_id, display_name')
+          .in('user_id', memberUserIds)
       : { data: [] as { user_id: string; display_name: string | null }[] };
 
   const displayByUserId = new Map((memberProfiles ?? []).map((p) => [p.user_id, p.display_name]));
@@ -132,7 +145,10 @@ export default async function TenantScheduleNewPage() {
         }
       />
 
-      <Card title="Appointment details" description="Required fields are marked by the browser when you submit.">
+      <Card
+        title="Appointment details"
+        description="Required fields are marked by the browser when you submit."
+      >
         <ScheduleVisitForm
           tenantSlug={membership.tenantSlug}
           customerOptions={customerOptions}

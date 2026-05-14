@@ -52,9 +52,12 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/onboarding/slug-availability?slug=${encodeURIComponent(slug)}`, {
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          `/api/onboarding/slug-availability?slug=${encodeURIComponent(slug)}`,
+          {
+            signal: controller.signal,
+          },
+        );
         const payload = (await response.json()) as {
           available: boolean;
           message: string;
@@ -79,7 +82,10 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
     };
   }, [slug]);
 
-  const passwordStrength = useMemo(() => (password.length > 0 ? zxcvbn(password) : null), [password]);
+  const passwordStrength = useMemo(
+    () => (password.length > 0 ? zxcvbn(password) : null),
+    [password],
+  );
 
   useEffect(() => {
     setStep1Error(null);
@@ -129,7 +135,9 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         hidden={step !== 0}
         inert={step !== 0}
         aria-hidden={step !== 0}
-        className={step === 0 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`}
+        className={
+          step === 0 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`
+        }
       >
         <label className={styles.label} htmlFor="business_name">
           Business name
@@ -201,7 +209,9 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         hidden={step !== 1}
         inert={step !== 1}
         aria-hidden={step !== 1}
-        className={step === 1 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`}
+        className={
+          step === 1 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`
+        }
       >
         <label className={styles.label} htmlFor="display_name">
           Your full name
@@ -273,10 +283,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
                 {passwordStrengthLabel(passwordStrength.score)}
               </span>
               <span className={styles.strengthCrackHint}>
-                ~
-                {String(
-                  passwordStrength.crack_times_display.offline_slow_hashing_1e4_per_second,
-                )}{' '}
+                ~{String(passwordStrength.crack_times_display.offline_slow_hashing_1e4_per_second)}{' '}
                 to crack
               </span>
             </div>
@@ -335,7 +342,9 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         hidden={step !== 2}
         inert={step !== 2}
         aria-hidden={step !== 2}
-        className={step === 2 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`}
+        className={
+          step === 2 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`
+        }
       >
         <fieldset className={styles.tierFieldset}>
           <legend className={styles.label}>Subscription plan</legend>
@@ -344,7 +353,11 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
             fits your team.
           </p>
           {(['starter', 'business', 'pro'] as const).map((tier) => (
-            <label key={tier} className={styles.tierOption} data-selected={platformPlan === tier || undefined}>
+            <label
+              key={tier}
+              className={styles.tierOption}
+              data-selected={platformPlan === tier || undefined}
+            >
               <input
                 type="radio"
                 name="platform_plan"

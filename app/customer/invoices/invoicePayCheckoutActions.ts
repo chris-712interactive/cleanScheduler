@@ -12,7 +12,9 @@ import {
   paymentIntentApplicationFeeAmountCents,
 } from '@/lib/billing/connectApplicationFee';
 
-export async function createCustomerInvoicePayCheckoutSessionAction(formData: FormData): Promise<void> {
+export async function createCustomerInvoicePayCheckoutSessionAction(
+  formData: FormData,
+): Promise<void> {
   const invoiceId = String(formData.get('invoice_id') ?? '').trim();
   const auth = await requirePortalAccess('customer', `/invoices/${invoiceId}`);
   const ctx = await getCustomerPortalContext(auth.user.id);
@@ -31,7 +33,9 @@ export async function createCustomerInvoicePayCheckoutSessionAction(formData: Fo
     redirect(`/invoices/${invoiceId}?error=${encodeURIComponent('Invoice not found.')}`);
   }
   if (!ctx.customerIds.includes(inv.customer_id)) {
-    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent('You do not have access to this invoice.')}`);
+    redirect(
+      `/invoices/${invoiceId}?error=${encodeURIComponent('You do not have access to this invoice.')}`,
+    );
   }
 
   const gate = await requireConnectForOnlinePayments(admin, inv.tenant_id);
@@ -46,7 +50,9 @@ export async function createCustomerInvoicePayCheckoutSessionAction(formData: Fo
     .maybeSingle();
 
   if (connErr || !conn?.stripe_account_id) {
-    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent('This provider has not finished payment setup.')}`);
+    redirect(
+      `/invoices/${invoiceId}?error=${encodeURIComponent('This provider has not finished payment setup.')}`,
+    );
   }
 
   const remaining = inv.amount_cents - inv.amount_paid_cents;

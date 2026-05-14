@@ -13,7 +13,9 @@ export interface CustomerFormState {
   success?: boolean;
 }
 
-function normalizeContactMethod(raw: string): Tables<'tenant_customer_profiles'>['preferred_contact_method'] {
+function normalizeContactMethod(
+  raw: string,
+): Tables<'tenant_customer_profiles'>['preferred_contact_method'] {
   if (raw === 'email' || raw === 'phone' || raw === 'sms') return raw;
   return null;
 }
@@ -22,10 +24,14 @@ export async function createTenantCustomer(
   _prev: CustomerFormState,
   formData: FormData,
 ): Promise<CustomerFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const firstName = String(formData.get('first_name') ?? '').trim();
   const lastName = String(formData.get('last_name') ?? '').trim();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const phone = String(formData.get('phone') ?? '').trim();
   const companyName = String(formData.get('company_name') ?? '').trim();
   const serviceAddressLine1 = String(formData.get('service_address_line1') ?? '').trim();
@@ -33,7 +39,9 @@ export async function createTenantCustomer(
   const serviceCity = String(formData.get('service_city') ?? '').trim();
   const serviceState = String(formData.get('service_state') ?? '').trim();
   const servicePostalCode = String(formData.get('service_postal_code') ?? '').trim();
-  const preferredContactMethod = normalizeContactMethod(String(formData.get('preferred_contact_method') ?? '').trim());
+  const preferredContactMethod = normalizeContactMethod(
+    String(formData.get('preferred_contact_method') ?? '').trim(),
+  );
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
   if (!slug || !firstName) {
@@ -57,11 +65,7 @@ export async function createTenantCustomer(
   }
 
   try {
-    assertLimitNotExceeded(
-      planTier,
-      'maxActiveCustomers',
-      Number(customerCountResult.count ?? 0),
-    );
+    assertLimitNotExceeded(planTier, 'maxActiveCustomers', Number(customerCountResult.count ?? 0));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Plan limit reached.';
     return { error: message };
@@ -162,15 +166,21 @@ export async function updateTenantCustomer(
   _prev: CustomerFormState,
   formData: FormData,
 ): Promise<CustomerFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const firstName = String(formData.get('first_name') ?? '').trim();
   const lastName = String(formData.get('last_name') ?? '').trim();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const phone = String(formData.get('phone') ?? '').trim();
   const status = String(formData.get('status') ?? 'active').trim();
   const companyName = String(formData.get('company_name') ?? '').trim();
-  const preferredContactMethod = normalizeContactMethod(String(formData.get('preferred_contact_method') ?? '').trim());
+  const preferredContactMethod = normalizeContactMethod(
+    String(formData.get('preferred_contact_method') ?? '').trim(),
+  );
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
   if (!slug || !customerId || !firstName) {
@@ -209,7 +219,10 @@ export async function updateTenantCustomer(
   }
 
   const statusNorm = status === 'inactive' ? 'inactive' : 'active';
-  const customerUpdate = await admin.from('customers').update({ status: statusNorm }).eq('id', customerId);
+  const customerUpdate = await admin
+    .from('customers')
+    .update({ status: statusNorm })
+    .eq('id', customerId);
 
   if (customerUpdate.error) {
     return { error: customerUpdate.error.message };

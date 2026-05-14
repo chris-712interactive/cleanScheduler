@@ -125,7 +125,10 @@ export function getTierLimit(tier: PlatformPlanTier, limit: EntitlementLimitKey)
 }
 
 export class EntitlementGateError extends Error {
-  constructor(message: string, public readonly code: 'feature_blocked' | 'limit_exceeded') {
+  constructor(
+    message: string,
+    public readonly code: 'feature_blocked' | 'limit_exceeded',
+  ) {
     super(message);
     this.name = 'EntitlementGateError';
   }

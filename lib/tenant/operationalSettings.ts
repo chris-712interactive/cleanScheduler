@@ -35,7 +35,9 @@ export const INVOICE_EXPECTATION_LABEL: Record<TenantInvoiceExpectation, string>
 
 const METHOD_SET = new Set<string>(CUSTOMER_PAYMENT_METHOD_VALUES);
 
-export function parseTenantPaymentMethodsFromForm(formData: FormData): TenantPaymentMethod[] | null {
+export function parseTenantPaymentMethodsFromForm(
+  formData: FormData,
+): TenantPaymentMethod[] | null {
   const picked: TenantPaymentMethod[] = [];
   for (const m of CUSTOMER_PAYMENT_METHOD_VALUES) {
     if (formData.get(`method_${m}`) === 'on') {
@@ -66,7 +68,9 @@ export function parseQuoteEmailNotifyFromForm(formData: FormData) {
 }
 
 /** Coerce DB text[] to ordered unique payment methods (invalid entries dropped). */
-export function normalizePaymentMethodsFromDb(raw: string[] | null | undefined): TenantPaymentMethod[] {
+export function normalizePaymentMethodsFromDb(
+  raw: string[] | null | undefined,
+): TenantPaymentMethod[] {
   if (!raw?.length) return ['card', 'cash', 'check', 'zelle'];
   const out: TenantPaymentMethod[] = [];
   const seen = new Set<string>();

@@ -61,7 +61,11 @@ export async function moveTenantQuoteStatus(
   }
 
   if (existing.status === 'expired') {
-    return { ok: false, error: 'This quote has expired and cannot be changed. Create a new version from the quote thread if needed.' };
+    return {
+      ok: false,
+      error:
+        'This quote has expired and cannot be changed. Create a new version from the quote thread if needed.',
+    };
   }
 
   if (existing.is_locked) {
@@ -116,7 +120,9 @@ export async function moveTenantQuoteStatus(
   return { ok: true };
 }
 
-function parseOptionalDollarsToCents(raw: string): { ok: true; cents: number | null } | { ok: false; error: string } {
+function parseOptionalDollarsToCents(
+  raw: string,
+): { ok: true; cents: number | null } | { ok: false; error: string } {
   const t = raw.trim();
   if (!t) return { ok: true, cents: null };
   const n = Number(t.replace(/,/g, ''));
@@ -138,7 +144,12 @@ async function assertCustomerInTenant(
   tenantId: string,
   customerId: string,
 ): Promise<boolean> {
-  const { data } = await admin.from('customers').select('id').eq('id', customerId).eq('tenant_id', tenantId).maybeSingle();
+  const { data } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
   return !!data;
 }
 
@@ -172,7 +183,9 @@ function parseQuoteHeaderPricingFromForm(formData: FormData):
   if (!taxPct.ok) return { ok: false, error: taxPct.error };
   const tax_rate_bps = tax_mode === 'none' ? 0 : taxPct.bps;
 
-  const quote_discount_kind = parseQuoteDiscountKind(String(formData.get('quote_discount_kind') ?? 'none'));
+  const quote_discount_kind = parseQuoteDiscountKind(
+    String(formData.get('quote_discount_kind') ?? 'none'),
+  );
   let quote_discount_value = 0;
   if (quote_discount_kind === 'percent') {
     const p = parseDiscountPercentToBps(String(formData.get('quote_discount_percent') ?? ''));
@@ -187,8 +200,13 @@ function parseQuoteHeaderPricingFromForm(formData: FormData):
   return { ok: true, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value };
 }
 
-export async function createTenantQuote(_prev: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+export async function createTenantQuote(
+  _prev: QuoteFormState,
+  formData: FormData,
+): Promise<QuoteFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const title = String(formData.get('title') ?? '').trim();
   const customerSource = String(formData.get('customer_source') ?? 'existing').trim();
   const customerRaw = String(formData.get('customer_id') ?? '').trim();
@@ -198,7 +216,9 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
   const validUntilRaw = String(formData.get('valid_until') ?? '');
   const inlineFirstName = String(formData.get('inline_customer_first_name') ?? '').trim();
   const inlineLastName = String(formData.get('inline_customer_last_name') ?? '').trim();
-  const inlineEmail = String(formData.get('inline_customer_email') ?? '').trim().toLowerCase();
+  const inlineEmail = String(formData.get('inline_customer_email') ?? '')
+    .trim()
+    .toLowerCase();
   const inlinePhone = String(formData.get('inline_customer_phone') ?? '').trim();
 
   if (!slug || !title) {
@@ -310,8 +330,13 @@ export async function createTenantQuote(_prev: QuoteFormState, formData: FormDat
   redirect(`/quotes/${newId}`);
 }
 
-export async function updateTenantQuote(_prev: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+export async function updateTenantQuote(
+  _prev: QuoteFormState,
+  formData: FormData,
+): Promise<QuoteFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   const title = String(formData.get('title') ?? '').trim();
   const statusRaw = String(formData.get('status') ?? 'draft').trim();
@@ -478,7 +503,9 @@ export async function createTenantQuoteAmendment(
   _prev: AmendmentFormState,
   formData: FormData,
 ): Promise<AmendmentFormState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const priorQuoteId = String(formData.get('prior_quote_id') ?? '').trim();
   const reason = String(formData.get('version_reason') ?? '').trim();
 
@@ -555,7 +582,9 @@ export async function createTenantQuoteAmendment(
 
   const { data: lineRows } = await admin
     .from('tenant_quote_line_items')
-    .select('sort_order, service_label, frequency, frequency_detail, amount_cents, line_discount_kind, line_discount_value')
+    .select(
+      'sort_order, service_label, frequency, frequency_detail, amount_cents, line_discount_kind, line_discount_value',
+    )
     .eq('quote_id', priorQuoteId)
     .order('sort_order', { ascending: true });
 
@@ -572,7 +601,11 @@ export async function createTenantQuoteAmendment(
     }));
     const liErr = await admin.from('tenant_quote_line_items').insert(copy);
     if (liErr.error) {
-      await admin.from('tenant_quotes').delete().eq('id', newId).eq('tenant_id', membership.tenantId);
+      await admin
+        .from('tenant_quotes')
+        .delete()
+        .eq('id', newId)
+        .eq('tenant_id', membership.tenantId);
       return { error: liErr.error.message };
     }
   }

@@ -33,7 +33,10 @@ export default async function CustomerSettingsPage() {
       />
 
       <Stack gap={6}>
-        <Card title="Appearance" description="Applies on this device and syncs when profile theme preference ships.">
+        <Card
+          title="Appearance"
+          description="Applies on this device and syncs when profile theme preference ships."
+        >
           <div className={styles.themeRow}>
             <span className={styles.label}>Theme</span>
             <ThemeToggle />

@@ -55,7 +55,9 @@ export async function createTenantAndOwner(
   }
 
   const businessName = String(formData.get('business_name') ?? '').trim();
-  const companyEmail = String(formData.get('company_email') ?? '').trim().toLowerCase();
+  const companyEmail = String(formData.get('company_email') ?? '')
+    .trim()
+    .toLowerCase();
   const companyPhone = String(formData.get('company_phone') ?? '').trim();
   const companyWebsite = String(formData.get('company_website') ?? '').trim();
   const serviceArea = String(formData.get('service_area') ?? '').trim();
@@ -64,7 +66,9 @@ export async function createTenantAndOwner(
   const referralSource = String(formData.get('referral_source') ?? '').trim();
   const displayName = String(formData.get('display_name') ?? '').trim();
   const ownerPhone = String(formData.get('owner_phone') ?? '').trim();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const password = String(formData.get('password') ?? '');
   const passwordConfirm = String(formData.get('password_confirm') ?? '');
   const acceptedTerms = String(formData.get('accept_terms') ?? '') === 'on';
@@ -73,7 +77,9 @@ export async function createTenantAndOwner(
   const platformPlan = parsePlatformPlanTier(String(formData.get('platform_plan') ?? ''));
 
   if (!businessName || !displayName || !email || !password || !slug) {
-    return { error: 'Business name, workspace slug, owner name, email, and password are required.' };
+    return {
+      error: 'Business name, workspace slug, owner name, email, and password are required.',
+    };
   }
   if (!platformPlan) {
     return { error: 'Choose a subscription plan (Starter, Business, or Pro).' };

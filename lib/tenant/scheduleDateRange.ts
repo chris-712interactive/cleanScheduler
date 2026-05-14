@@ -15,7 +15,10 @@ export function normalizeView(raw: string | string[] | undefined): ScheduleView 
 }
 
 /** UTC bounds for DB overlap: visits where starts_at <= end AND ends_at >= start. */
-export function visibleRangeUtc(view: ScheduleView, dateKey: string): { start: string; end: string } {
+export function visibleRangeUtc(
+  view: ScheduleView,
+  dateKey: string,
+): { start: string; end: string } {
   const d = new Date(`${dateKey}T12:00:00.000Z`);
 
   if (view === 'day') {
@@ -92,7 +95,9 @@ export function visitOverlapsUtcCalendarDay(
   return vs <= de && ve >= ds;
 }
 
-export function buildUtcMonthGrid(dateKey: string): { key: string; inMonth: boolean; day: number }[] {
+export function buildUtcMonthGrid(
+  dateKey: string,
+): { key: string; inMonth: boolean; day: number }[] {
   const d = new Date(`${dateKey}T12:00:00.000Z`);
   const y = d.getUTCFullYear();
   const m = d.getUTCMonth();
@@ -114,7 +119,10 @@ export function buildUtcMonthGrid(dateKey: string): { key: string; inMonth: bool
 }
 
 /** Widen day fetch so visits crossing local midnight still load (overlap query). */
-export function dbOverlapRangeForQuery(view: ScheduleView, dateKey: string): { start: string; end: string } {
+export function dbOverlapRangeForQuery(
+  view: ScheduleView,
+  dateKey: string,
+): { start: string; end: string } {
   if (view === 'day') {
     return {
       start: `${shiftDateKey(dateKey, -1)}T00:00:00.000Z`,

@@ -9,7 +9,10 @@ export function parseConnectApplicationFeeBps(): number {
 }
 
 /** One-time Checkout `payment_intent_data.application_fee_amount` (cents). */
-export function paymentIntentApplicationFeeAmountCents(remainingCents: number, feeBps: number): number | undefined {
+export function paymentIntentApplicationFeeAmountCents(
+  remainingCents: number,
+  feeBps: number,
+): number | undefined {
   if (feeBps <= 0 || remainingCents <= 0) return undefined;
   const rawFee = Math.floor((remainingCents * feeBps) / 10000);
   const capped = Math.min(Math.max(0, rawFee), Math.max(0, remainingCents - 1));

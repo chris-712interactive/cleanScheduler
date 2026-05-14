@@ -49,12 +49,11 @@
 .hero {
   padding: var(--space-9) 0 var(--space-10);
 
-  background:
-    radial-gradient(
-      ellipse at top,
-      color-mix(in srgb, var(--color-brand-primary) 14%, transparent) 0%,
-      transparent 60%
-    );
+  background: radial-gradient(
+    ellipse at top,
+    color-mix(in srgb, var(--color-brand-primary) 14%, transparent) 0%,
+    transparent 60%
+  );
 
   @include mq.up(md) {
     padding: var(--space-12) 0;

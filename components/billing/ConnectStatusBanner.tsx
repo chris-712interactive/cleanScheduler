@@ -7,17 +7,14 @@ export type TenantStripeConnectStatus = Enums<'tenant_stripe_connect_status'>;
 const COPY: Record<TenantStripeConnectStatus, string> = {
   not_started:
     'Connect Stripe to collect card payments from customers (Checkout links on invoices). Manual cash, check, and Zelle still work without Connect.',
-  pending: 'Stripe Connect onboarding is in progress — finish verification so card payments can go live.',
+  pending:
+    'Stripe Connect onboarding is in progress — finish verification so card payments can go live.',
   complete: '',
   restricted:
     'Stripe flagged your connected account. Open Payment setup to review requirements, or contact Stripe from your Dashboard.',
 };
 
-export function ConnectStatusBanner({
-  status,
-}: {
-  status: TenantStripeConnectStatus;
-}) {
+export function ConnectStatusBanner({ status }: { status: TenantStripeConnectStatus }) {
   if (status === 'complete') return null;
 
   const blurb = COPY[status] ?? COPY.not_started;

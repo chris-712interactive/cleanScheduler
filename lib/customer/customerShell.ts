@@ -2,7 +2,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 import type { IdentityChipModel } from '@/components/portal/types';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 
-function initialsFromName(name: string | null | undefined, email: string | null | undefined): string {
+function initialsFromName(
+  name: string | null | undefined,
+  email: string | null | undefined,
+): string {
   const n = (name ?? '').trim();
   if (n.length >= 2) {
     const parts = n.split(/\s+/).filter(Boolean);

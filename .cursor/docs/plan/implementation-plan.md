@@ -18,10 +18,10 @@ todos:
     content: "Provision multi-environment infra (\u00a716): Vercel env scopes; DNS root + wildcard; Stripe test/live + webhooks; Plaid sandbox/prod; Twilio (SMS); **Resend** verified sending domain(s) for transactional email; Sentry tags."
     status: pending
   - id: cicdPipeline
-    content: "Shipped: `.github/workflows/ci.yml` runs `npm run typecheck` + `npm run lint` + **`npm run lint:styles`** on every PR and on push to `main`/`staging`. Stylelint: disabled crash-prone `keyframe-block-no-duplicate-selectors` (upstream postcss-selector-parser); fixed remaining `color-no-hex` / alpha / comment violations. Still missing vs §16: Prettier `--check`, Vitest, `supabase db` migration diff / drift check, pg_tap RLS suite, ephemeral Supabase in CI, and Vercel branch deploy rules (staging\u2192DEV, gated PROD migrations)."
+    content: "Shipped: `.github/workflows/ci.yml` runs `npm run typecheck` + **`npm run format:check`** + **`npm run check:migrations`** + `npm run lint` + **`npm run lint:styles`** on every PR and on push to `main`/`staging`. Stylelint: disabled crash-prone `keyframe-block-no-duplicate-selectors`; fixed remaining violations. **`scripts/check-migration-prefixes.mjs`** catches duplicate `NNNN_*.sql` prefixes. Still missing vs §16: Vitest, `supabase db` migration diff / drift check, pg_tap RLS suite, ephemeral Supabase in CI, and Vercel branch deploy rules (staging\u2192DEV, gated PROD migrations)."
     status: in_progress
   - id: envGuardrails
-    content: "Shipped: `lib/env.ts` Zod-validated `publicEnv`/`serverEnv`; `NEXT_PUBLIC_APP_ENV=prod` requires live Stripe key and production Plaid when Plaid is configured; **non-prod rejects `sk_live_` Stripe keys** (2026-05-12). `getNonProdPortalBanner()` drives dev/local banner text in portals. `.env.example` is checked in. Still missing: explicit prod-shaped Supabase URL pairing (today we key off `NEXT_PUBLIC_APP_ENV` only)."
+    content: "Shipped: `lib/env.ts` Zod-validated `publicEnv`/`serverEnv`; `NEXT_PUBLIC_APP_ENV=prod` requires live Stripe key and production Plaid when Plaid is configured; **non-prod rejects `sk_live_` Stripe keys**; **prod requires `https://` on `NEXT_PUBLIC_SUPABASE_URL`**; optional **`SUPABASE_DISALLOW_PROJECT_REF`** blocks local/dev from pointing at a known production project ref (substring match). `getNonProdPortalBanner()` drives dev/local banner text in portals. `.env.example` documents the new guard."
     status: in_progress
   - id: subdomainMiddleware
     content: Implement middleware that resolves subdomain -> tenant context, gates routes by app_role/tenant_role, and supports admin + my + tenant slugs with reserved-name guard.
@@ -228,9 +228,15 @@ flowchart TB
     '2xl': 1536px,
   );
 
-  @mixin from($name) { @media (min-width: map.get($breakpoints, $name)) { @content; } }
+  @mixin from($name) {
+    @media (min-width: map.get($breakpoints, $name)) {
+      @content;
+    }
+  }
   ```
+
   Used as `@include from('md') { ... }`. **Container queries** are used inside complex components (kanban cards, calendar event chips) so they respond to their own width, not the viewport.
+
 - **Theming**: `:root` carries the light palette as CSS custom properties; `[data-theme="dark"]` re-declares them. The initial theme is resolved by an inline pre-hydration script that prefers an explicit user choice in `localStorage`, falling back to `window.matchMedia('(prefers-color-scheme: dark)')`. The Settings toggle persists to `localStorage` + `profiles.theme_preference`. See section 4.1 for the actual color values, role aliases, and a11y guidance.
 - **Layout primitives** (`components/layout/`): `Stack` (vertical rhythm), `Cluster` (wrapping inline items), `Grid` (responsive columns), `Container` (max-widths + gutter), `Sidebar` (responsive split). Feature code composes these instead of writing raw flex/grid every time, which is the main thing that keeps SCSS files small and semantic.
 - **Icons**: Lucide React.
@@ -288,35 +294,35 @@ flowchart TB
 
 Code never references brand color names directly — it references roles like `var(--color-primary)`. The mapping below shows the resolved hex per theme. Roles marked **derived** were filled in to harmonize with the teal palette and are open for your review.
 
-| Role | Light | Dark | Source |
-|---|---|---|---|
-| `bg` | `#FFFFFF` | `#0A1F1F` | provided |
-| `surface` | `#F0FAF9` | `#132E2E` | provided |
-| `surface-raised` (popovers, dropdowns) | `#FFFFFF` | `#1A3838` | derived |
-| `surface-sunken` (table headers, wells) | `#E4F4F2` | `#0F2727` | derived |
-| `fg` | `#00353A` | `#E0F5F3` | provided |
-| `fg-muted` | `#2C7A7A` | `#A1E4DB` | provided |
-| `fg-subtle` (placeholders, captions) | `#5A9494` | `#6FB4AC` | derived |
-| `fg-on-primary` | `#FFFFFF` | `#0A1F1F` | derived |
-| `border` | `#D6E2E1` | `#244141` | derived (neutral gray with faint teal cast) |
-| `border-strong` | `#B5C8C6` | `#355555` | derived |
-| `primary` | `#006D77` | `#00B5A8` | provided |
-| `primary-hover` | `#005761` | `#00D4C5` | derived |
-| `primary-active` | `#004248` | `#00F5E9` | derived |
-| `accent` | `#00E6D9` | `#00F5E9` | provided |
-| `accent-hover` | `#00CCC0` | `#6CFFF5` | derived |
-| `focus-ring` | `#00E6D9` | `#00F5E9` | derived (accent glow doubles as focus ring) |
-| `sparkle` | `#FFFFFF` | `#FFFFFF` | provided |
-| `success` | `#16A34A` | `#22C55E` | derived |
-| `success-bg` | `#DCFCE7` | `#052E16` | derived |
-| `warning` | `#D97706` | `#F59E0B` | derived |
-| `warning-bg` | `#FEF3C7` | `#422006` | derived |
-| `danger` | `#DC2626` | `#F87171` | derived |
-| `danger-bg` | `#FEE2E2` | `#450A0A` | derived |
-| `info` | `#0891B2` | `#22D3EE` | derived |
-| `info-bg` | `#CFFAFE` | `#0C2434` | derived |
-| `overlay` (modal scrim) | `rgba(10, 31, 31, 0.55)` | `rgba(0, 0, 0, 0.65)` | derived |
-| `brand` | alias of `primary` | alias of `primary` | derived (per-tenant override hook) |
+| Role                                    | Light                    | Dark                  | Source                                      |
+| --------------------------------------- | ------------------------ | --------------------- | ------------------------------------------- |
+| `bg`                                    | `#FFFFFF`                | `#0A1F1F`             | provided                                    |
+| `surface`                               | `#F0FAF9`                | `#132E2E`             | provided                                    |
+| `surface-raised` (popovers, dropdowns)  | `#FFFFFF`                | `#1A3838`             | derived                                     |
+| `surface-sunken` (table headers, wells) | `#E4F4F2`                | `#0F2727`             | derived                                     |
+| `fg`                                    | `#00353A`                | `#E0F5F3`             | provided                                    |
+| `fg-muted`                              | `#2C7A7A`                | `#A1E4DB`             | provided                                    |
+| `fg-subtle` (placeholders, captions)    | `#5A9494`                | `#6FB4AC`             | derived                                     |
+| `fg-on-primary`                         | `#FFFFFF`                | `#0A1F1F`             | derived                                     |
+| `border`                                | `#D6E2E1`                | `#244141`             | derived (neutral gray with faint teal cast) |
+| `border-strong`                         | `#B5C8C6`                | `#355555`             | derived                                     |
+| `primary`                               | `#006D77`                | `#00B5A8`             | provided                                    |
+| `primary-hover`                         | `#005761`                | `#00D4C5`             | derived                                     |
+| `primary-active`                        | `#004248`                | `#00F5E9`             | derived                                     |
+| `accent`                                | `#00E6D9`                | `#00F5E9`             | provided                                    |
+| `accent-hover`                          | `#00CCC0`                | `#6CFFF5`             | derived                                     |
+| `focus-ring`                            | `#00E6D9`                | `#00F5E9`             | derived (accent glow doubles as focus ring) |
+| `sparkle`                               | `#FFFFFF`                | `#FFFFFF`             | provided                                    |
+| `success`                               | `#16A34A`                | `#22C55E`             | derived                                     |
+| `success-bg`                            | `#DCFCE7`                | `#052E16`             | derived                                     |
+| `warning`                               | `#D97706`                | `#F59E0B`             | derived                                     |
+| `warning-bg`                            | `#FEF3C7`                | `#422006`             | derived                                     |
+| `danger`                                | `#DC2626`                | `#F87171`             | derived                                     |
+| `danger-bg`                             | `#FEE2E2`                | `#450A0A`             | derived                                     |
+| `info`                                  | `#0891B2`                | `#22D3EE`             | derived                                     |
+| `info-bg`                               | `#CFFAFE`                | `#0C2434`             | derived                                     |
+| `overlay` (modal scrim)                 | `rgba(10, 31, 31, 0.55)` | `rgba(0, 0, 0, 0.65)` | derived                                     |
+| `brand`                                 | alias of `primary`       | alias of `primary`    | derived (per-tenant override hook)          |
 
 ### SCSS shape
 
@@ -332,7 +338,7 @@ Code never references brand color names directly — it references roles like `v
   --color-brand: var(--color-primary);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   @each $name, $value in $colors-dark {
     --color-#{$name}: #{$value};
   }
@@ -431,6 +437,7 @@ erDiagram
 Note: Concerns raised by the prospective tenant (section 14) have been folded into the phasing below. Phase 1 grows by ~2 weeks vs. the original estimate to accommodate Stripe Connect, customer recurring billing, the field check-payment workflow, and the Reports module — all of which are deal-breakers for a real cleaning business.
 
 **Phase 1 — Trial-to-Revenue (target ~8–10 weeks of build)**
+
 - Marketing site + Inquiry form + 7-day trial signup (creates `tenant` + Super Admin + Stripe trial subscription on cleanScheduler's account).
 - Tenant portal: Dashboard (basic KPIs), Customers (CRUD), Schedule (day/week views, create/edit/assign, mobile-first appointment detail), Quotes (fixed 4-column Kanban with drag-and-drop), Billing (invoices + Stripe payments + multi-method recording), Employees (CRUD + 3 system roles), Settings (Personal, Business Info, Billing, **Payment Setup via Stripe Connect**, **Service Plans**).
 - **Stripe Connect** tenant onboarding so tenants can collect from their own customers (cards + recurring). **Optional during trial** with a verbose education + skip flow; recurring billing, card-charge actions, and pay-now invoice links are server-side gated until Connect is `complete`. Manual recording of cash/check/Zelle works without Connect.
@@ -445,6 +452,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - **Pricing & gating infrastructure (section 15)**: `plans` + `plan_features` + `tenant_addons` + `tenant_usage_snapshots` schema seeded with the three strawman plans (Starter / Pro / Business) at placeholder prices; server-side `requireFeature` + `checkLimit` utilities; soft-stop `UpgradeOrAddOnModal` UI with the 80%/95%/100% utilization warnings; nightly usage-rollup cron. Final tier prices remain TBD until the pre-launch pricing review — flipping prices is a one-line data change.
 
 **Phase 2 — Comms, Reconciliation & Ops**
+
 - **Plaid integration (Concern #1)**: tenant bank linking, daily transaction sync, Zelle/ACH match-suggestion queue with one-click confirmation.
 - **Advanced check workflow (Concern #2)**: per-status reminder hold overrides, bounced-check handling (auto-reopen invoice, optional bounce fee), bulk deposit slip view.
 - **Reports module v2 (Concern #4)**: tips per appointment, commission rules per role, payroll exports (ADP / Gusto / QBO formats), Sales Tax Summary by jurisdiction.
@@ -455,6 +463,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - Trello-style schedule filters & employee-only view polish.
 
 **Phase 3 — Growth & Polish**
+
 - **CSV / OFX bank statement import (Concern #1 fallback)** for banks with poor Plaid coverage.
 - Email Campaigns (gated by plan): builder, sends, open/click metrics.
 - Founder masquerade UX polish + tenant-side consent flow + per-action audit UI.
@@ -469,19 +478,19 @@ This section reconciles the YAML todos at the top of this file with the current 
 
 ### What moved from “pending” to “in progress” (or completed) in this sync
 
-| Original YAML idea | Repo reality |
-| --- | --- |
-| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). No separate permissions catalog table yet. |
-| `customerModel` as 0002-only | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet. |
-| `schedulingQuotes` as old table names | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`). |
-| `billingPlans` as monolithic 0004 | **Partial:** `0013` + **`0023`** (Connect + payment columns + usage snapshot stub + check hold days + mirror tables). Still missing DB plan catalog / `tenant_addons` / full §17 lifecycle. |
-| `messagingAuditInquiries` as 0005 | **0013** covers inquiries, audit, support threads/messages; not full “conversations” product. |
-| `stripeWebhooks` “no idempotency” | **0008** + `processStripeWebhookEventOnce` + route handler are shipped. |
+| Original YAML idea                            | Repo reality                                                                                                                                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). No separate permissions catalog table yet.                    |
+| `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                               |
+| `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                     |
+| `billingPlans` as monolithic 0004             | **Partial:** `0013` + **`0023`** (Connect + payment columns + usage snapshot stub + check hold days + mirror tables). Still missing DB plan catalog / `tenant_addons` / full §17 lifecycle. |
+| `messagingAuditInquiries` as 0005             | **0013** covers inquiries, audit, support threads/messages; not full “conversations” product.                                                                                               |
+| `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                     |
 
 ### Prioritized next slices (execute in roughly this order for trial-to-revenue)
 
 1. **CI (`cicdPipeline`)** — ~~Fix or pin stylelint/postcss so `lint:styles` is green; add it to Actions.~~ **Done (2026-05-12):** `lint:styles` green + CI step. Optionally add `prettier --check` after a one-time `npm run format` on the repo (large churn). Add `supabase db lint` or migration list check when CLI is available in CI.
-2. **Env (`envGuardrails`)** — Optional: fail if `NEXT_PUBLIC_SUPABASE_URL` host suggests production project while `NEXT_PUBLIC_APP_ENV` is `local`/`dev` (needs agreed naming convention).
+2. **Env (`envGuardrails`)** — **Partial (2026-05-12):** prod requires `https://` Supabase URL; optional **`SUPABASE_DISALLOW_PROJECT_REF`** blocks local/dev from matching a prod project ref. Still optional: stricter URL↔project pairing without extra env (needs agreed naming convention).
 3. ~~**Billing + Connect**~~ — **MVP landed 2026-05-12** (see §11.6). **0025 + app follow-up (2026-05-12):** `recurring_appointment_rules` + RRULE materializer cron; `billing_cycle_anchor` UX; Resend invoice email; Connect **Billing Portal**; refund-from-app; Connect webhook writers for **refunds / disputes / payouts** + dispute email to tenant owner; Balance Transaction **fee backfill** on invoice Checkout; cancel subscription (tenant + customer). **Next billing PRs:** Stripe Billing **`invoice.*`** sync into `tenant_invoices`; Setup Intents / saved PM UX polish.
 4. **Transactional email (`transactionalEmail`)** — Extend **Resend** for invoices, auth-adjacent mail, and any new flows (see `lib/email/resend.ts`).
 5. **Recurring (`recurringBilling`)** — `service_plans`, `customer_subscriptions`, RRULE generator + cron.
@@ -590,6 +599,7 @@ This section captures concerns raised during plan review by a prospective tenant
 4. **Phase 3 — CSV / OFX import**: as a fallback for banks Plaid doesn't cover well, tenant uploads a bank export. Same matching engine runs on the imported rows.
 
 **What this changes**:
+
 - `payments.method` enum now includes `zelle` and `ach`.
 - Phase 2 adds `bank_links`, `bank_transactions`, `payment_match_suggestions` (`[supabase/migrations/0007_bank_reconciliation.sql](supabase/migrations/0007_bank_reconciliation.sql)`) plus the Plaid sync edge function.
 - Phase 3 adds the CSV importer.
@@ -601,30 +611,36 @@ This section captures concerns raised during plan review by a prospective tenant
 **Status**: Not previously addressed. **Fully resolved in Phase 1**, with advanced bits in Phase 2.
 
 **Field-side flow (Phase 1, mobile-first)**:
+
 - On the employee's appointment detail page (already mobile-first per the original Schedule plan), an **Accept Payment** action surfaces. Method options: Cash / Check.
 - Choosing Check captures: amount, check number, optional photo of the check (Supabase Storage), and stamps `received_by_user_id` from the session.
 - Creates a `payments` row with `method='check'`, `status='received_in_field'`, `received_at=now()`.
 - Audit-logged.
 
 **Office-side flow (Phase 1)**:
+
 - Billing admin has a **Field Checks Awaiting Office** queue (filtered view of `payments` where `status='received_in_field'`).
 - Admin can transition: `received_in_field` -> `received_in_office` (acknowledging physical receipt) -> `deposited` -> `cleared`. Or to `bounced` from `deposited`.
 - Each transition is audit-logged with `actor_user_id` and timestamp.
 
 **Reminder-hold logic (Phase 1)**:
+
 - New `tenant_settings.check_reminder_hold_days` (default `7`, tenant-editable) and per-status overrides (e.g., 14 days from `received_in_field`, 7 days from `received_in_office`, 3 days from `deposited`).
 - The `[supabase/functions/invoice-reminders/index.ts](supabase/functions/invoice-reminders/index.ts)` cron skips any invoice whose most recent payment is a check still in a holding status, until `received_at + hold_days < now()`. This prevents nag-emailing customers about checks the office hasn't processed yet.
 - If a check eventually `bounces`, the invoice auto-reopens and the cron resumes reminders the next morning.
 
 **Field Check Tracking Report (Phase 1)**:
+
 - Filter by status / employee / date range. Columns: customer, appointment, employee who received, check #, amount, status, days outstanding.
 - Used by the billing admin to ensure every field-collected check made it back to the office for deposit. CSV + PDF export.
 
 **Phase 2 additions**:
+
 - Bulk deposit slip (group selected received_in_office checks into a single deposit-slip PDF for the bank).
 - Bounced-check workflow with optional auto-applied bounce fee (tenant configurable).
 
 **What this changes**:
+
 - `payments` schema: `method`, `status`, `check_number`, `received_by_user_id`, `received_at`, `deposited_at`, `cleared_at`, `photo_url`, `bounce_reason`.
 - `tenant_settings` table introduced (key-value with typed accessors) for `check_reminder_hold_days` and the per-status overrides.
 - Mobile-first Accept Payment UI on the appointment detail page.
@@ -635,6 +651,7 @@ This section captures concerns raised during plan review by a prospective tenant
 **Status**: Partially covered in the original plan (the word "subscription" was in the docs but only for tenant->cleanScheduler billing). **Promoted to Phase 1** because cleaning businesses live and die by recurring revenue.
 
 **Resolution approach**:
+
 - **Stripe Connect** (Standard or Express): each tenant connects their own Stripe account so they can collect from customers and receive payouts directly. cleanScheduler facilitates the integration; funds flow tenant <-> customer. **Connect is optional during the trial** — see "Trial-time Connect skip flow" below.
 - **Service Plans** (`service_plans`): tenant-defined templates in Settings (e.g., "Bi-weekly Standard Clean", base price, billing interval, default appointment cadence, included service items).
 - **Customer enrollment** (`customer_subscriptions`): from the customer detail page, "Set up recurring billing" enrolls a customer either in a Service Plan or a custom recurrence. Backed by a Stripe Subscription on the connected account, with `billing_cycle_anchor` set so the customer is billed on a fixed day of the month/week (the prospective tenant's exact requirement).
@@ -646,6 +663,7 @@ This section captures concerns raised during plan review by a prospective tenant
 Stripe Connect requires identity verification (legal name, EIN/SSN, bank account, sometimes a business document). That can take 5–30 minutes and isn't always something a tenant wants to do at 9 PM while exploring a new SaaS. We make Connect optional during the trial, but invest in education so tenants understand the trade-off.
 
 **Onboarding UI**:
+
 1. Self-serve trial signup creates the tenant + Super Admin and lands them on the Tenant Dashboard.
 2. The Dashboard shows a prominent (but dismissible per session) banner: "Set up payment processing to unlock card payments and recurring billing."
 3. Settings > Billing > Payment Setup is the canonical Connect entry point. Tenant can also be deep-linked there from any blocked feature.
@@ -685,6 +703,7 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 - **Reassurance**: "You can complete this any time from Settings > Billing > Payment Setup. Most tenants finish it in about 10 minutes."
 
 **Feature gating (server-side)**:
+
 - All Connect-dependent server actions check `tenants.stripe_connect_status === 'complete'` (a generated column over `stripe_connect_accounts`). Possible statuses: `not_started`, `in_progress`, `pending_verification`, `complete`, `restricted`.
 - Gates protect:
   - `customer_subscriptions` creation / activation.
@@ -695,6 +714,7 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 - Each gated UI surface shows an inline upgrade prompt: "Complete Stripe Connect to enable [feature]." with a button that deep-links to `/settings/billing/payment-setup?return_to=/customers/{id}`. After Connect completes, the user is bounced back to where they were.
 
 **Persistent reminder banner**:
+
 - Dismissible-per-session at the top of the Tenant Portal whenever `stripe_connect_status != 'complete'`. Copy adapts to status:
   - `not_started`: "Set up payment processing to unlock card payments and recurring billing."
   - `in_progress`: "Stripe needs a few more details to finish your payment setup. Resume now."
@@ -702,10 +722,12 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
   - `restricted`: "Stripe needs additional information from you to keep collecting payments. Update now." (Highest urgency styling.)
 
 **Naming clarification for the schema (rolled into the Key files list)**:
+
 - `tenant_subscriptions` — tenant's plan with cleanScheduler (renamed from `subscriptions`).
 - `customer_subscriptions` — end customer's recurring service with their tenant.
 
 **What this changes**:
+
 - New migration `[supabase/migrations/0006_recurring_billing.sql](supabase/migrations/0006_recurring_billing.sql)` for `service_plans`, `customer_subscriptions`, `recurring_appointment_rules`. Adds `stripe_connect_accounts` (account_id, status, charges_enabled, payouts_enabled, requirements, last_synced_at) and a `tenants.stripe_connect_status` generated column for fast gating checks.
 - Stripe Connect onboarding flow in Tenant Settings > Billing > Payment Setup with the education screen + skip path described above.
 - Server-side feature-gate utility: `[lib/billing/requireConnect.ts](lib/billing/requireConnect.ts)` — used by every Connect-dependent server action and Route Handler. Returns a typed `ConnectGateResult` so UIs can render the right inline prompt.
@@ -718,6 +740,7 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 **Status**: Partially covered (original plan mentioned an "Accounting view" but lacked specifics). **Expanded to a dedicated Reports module**, Phase 1 baseline + Phase 2 advanced.
 
 **Phase 1 Reports module — Tenant Billing > Reports** (date-range filters, CSV + PDF export on every report):
+
 - **Invoice Audit Report**: every invoice in period with status (draft/sent/paid/overdue/void), due date, paid date, days outstanding, customer, total, payment method(s).
 - **Payment Reconciliation Report**: every payment grouped by method (card / cash / check / Zelle / ACH), with reconciliation status (auto-matched / manually-matched / unmatched / pending). Designed for monthly bookkeeping.
 - **Outstanding Balances Report**: open invoices grouped by customer with aging buckets (0–30 / 31–60 / 61–90 / 90+).
@@ -726,18 +749,21 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 - **Employee Performance & Compensation Report (basic)**: per employee — hours worked (from appointment durations), jobs completed, gross labor cost using `employees.labor_cost_per_hour`. Designed as a payroll input the tenant exports to ADP / Gusto / QBO.
 
 **Phase 2 Reports module — additions**:
+
 - Tips per appointment + commission rules per role (modeled in `compensation_rules`).
 - Payroll exports formatted for ADP / Gusto / QBO file specifications.
 - Sales Tax Summary by jurisdiction (using customer service address).
 - Operational reports: utilization by employee, on-time-arrival, customer satisfaction inputs.
 
 **Phase 3**:
+
 - Year-end tax summary inputs (1099-relevant totals by customer, W-2 inputs by employee).
 - Cohort / LTV / churn analytics.
 
 **Audit chain-of-custody**: the existing `audit_log` table (security audit) is extended to record every state transition on `invoices` and `payments` (status changes, edits to amount, who marked it deposited/cleared). Reports can link directly to the audit-log row that justified each entry — exactly what the tenant's accountant will want for an end-of-year audit.
 
 **What this changes**:
+
 - New `[supabase/migrations/0008_reports.sql](supabase/migrations/0008_reports.sql)` for `report_runs` (cached heavy report results so re-opens are instant; stale TTL configurable per report).
 - PDF generation via a queued worker (Puppeteer or `pdfkit`); rendered PDFs cached in Supabase Storage keyed off `report_run_id`.
 - New `compensation_rules` table arrives in Phase 2.
@@ -863,21 +889,21 @@ Even with TBD prices, we build all of this now so launch-day pricing is a config
 
 ### Environment matrix
 
-| Concern | Local (engineer) | DEV (client testing) | PROD (live) |
-|---|---|---|---|
-| Domain | `*.lvh.me:3000` | `*.dev.cleanscheduler.com` | `*.cleanscheduler.com` |
-| Founder admin | `admin.lvh.me:3000` | `admin.dev.cleanscheduler.com` | `admin.cleanscheduler.com` |
-| Customer portal | `my.lvh.me:3000` | `my.dev.cleanscheduler.com` | `my.cleanscheduler.com` |
-| Next.js host | `next dev` | Vercel (DEV deployment) | Vercel (Production deployment) |
-| Database | Local Supabase via `supabase start` (Docker) | Dedicated Supabase project (Free tier OK initially) | Dedicated Supabase project (**Pro** tier for PITR backups) |
-| Auth / Storage / Edge Fns | Local Supabase | DEV Supabase | PROD Supabase |
-| Stripe | Test mode | Test mode | Live mode |
-| Stripe Connect | Test connected accounts | Test connected accounts | Live connected accounts |
-| Plaid (Phase 2) | Sandbox | Sandbox | Production |
-| Twilio (Phase 2) | Test creds + Magic numbers | Real creds against trial number | Verified production phone numbers |
-| Resend | Skipped or `cleanscheduler.test` | Verified `dev.cleanscheduler.com` | Verified `cleanscheduler.com` |
-| Sentry | Disabled or local-only | DEV environment tag | PROD environment tag |
-| Vercel Cron | Manual triggers only | Lower cadence | Production cadence |
+| Concern                   | Local (engineer)                             | DEV (client testing)                                | PROD (live)                                                |
+| ------------------------- | -------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| Domain                    | `*.lvh.me:3000`                              | `*.dev.cleanscheduler.com`                          | `*.cleanscheduler.com`                                     |
+| Founder admin             | `admin.lvh.me:3000`                          | `admin.dev.cleanscheduler.com`                      | `admin.cleanscheduler.com`                                 |
+| Customer portal           | `my.lvh.me:3000`                             | `my.dev.cleanscheduler.com`                         | `my.cleanscheduler.com`                                    |
+| Next.js host              | `next dev`                                   | Vercel (DEV deployment)                             | Vercel (Production deployment)                             |
+| Database                  | Local Supabase via `supabase start` (Docker) | Dedicated Supabase project (Free tier OK initially) | Dedicated Supabase project (**Pro** tier for PITR backups) |
+| Auth / Storage / Edge Fns | Local Supabase                               | DEV Supabase                                        | PROD Supabase                                              |
+| Stripe                    | Test mode                                    | Test mode                                           | Live mode                                                  |
+| Stripe Connect            | Test connected accounts                      | Test connected accounts                             | Live connected accounts                                    |
+| Plaid (Phase 2)           | Sandbox                                      | Sandbox                                             | Production                                                 |
+| Twilio (Phase 2)          | Test creds + Magic numbers                   | Real creds against trial number                     | Verified production phone numbers                          |
+| Resend                    | Skipped or `cleanscheduler.test`             | Verified `dev.cleanscheduler.com`                   | Verified `cleanscheduler.com`                              |
+| Sentry                    | Disabled or local-only                       | DEV environment tag                                 | PROD environment tag                                       |
+| Vercel Cron               | Manual triggers only                         | Lower cadence                                       | Production cadence                                         |
 
 ### DNS & subdomain plan
 
@@ -1095,24 +1121,24 @@ Sister tables capture the rest of the accounting picture:
 
 Idempotent against `event.id`. Every event also writes an `audit_log` row.
 
-| Event | What we do |
-|---|---|
-| `account.updated` | Recompute `stripe_connect_status` (drives feature gates per section 14, Concern #3) |
-| `setup_intent.succeeded` | Stash payment-method id; signal "card on file" so the activate-subscription button enables |
-| `customer.subscription.created` | INSERT `customer_subscriptions` with anchor + interval |
-| `customer.subscription.updated` | Update status / anchor / price |
-| `customer.subscription.deleted` | Mark `status='cancelled'`, optionally end recurring appointments |
-| `invoice.created` | INSERT mirrored `invoices` row (source='recurring_stripe') |
-| `invoice.payment_succeeded` | Mark invoice paid; INSERT pre-fee `payments` row |
-| `invoice.payment_failed` | Mark invoice past-due; notify tenant; let Stripe retry |
-| `checkout.session.completed` | Tie one-off Checkout payment to the originating invoice |
-| `charge.succeeded` | Backfill `stripe_fee_cents`, `net_amount_cents`, `stripe_balance_txn_id` from balance_transaction |
-| `charge.refunded` | INSERT `refunds` row; update `payments.status='refunded'`; reopen invoice if full refund |
-| `charge.dispute.created` | INSERT `disputes` row; notify tenant; deep-link to Express Dashboard |
-| `charge.dispute.closed` | Update dispute outcome; if lost, mark payment `disputed` and reopen invoice |
-| `payout.created` | INSERT `stripe_payouts` row (status='in_transit') |
-| `payout.paid` | Update payout status; backfill `payments.stripe_payout_id` for each charge in the batch |
-| `payout.failed` | Update payout status; notify tenant; Stripe will retry |
+| Event                           | What we do                                                                                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `account.updated`               | Recompute `stripe_connect_status` (drives feature gates per section 14, Concern #3)               |
+| `setup_intent.succeeded`        | Stash payment-method id; signal "card on file" so the activate-subscription button enables        |
+| `customer.subscription.created` | INSERT `customer_subscriptions` with anchor + interval                                            |
+| `customer.subscription.updated` | Update status / anchor / price                                                                    |
+| `customer.subscription.deleted` | Mark `status='cancelled'`, optionally end recurring appointments                                  |
+| `invoice.created`               | INSERT mirrored `invoices` row (source='recurring_stripe')                                        |
+| `invoice.payment_succeeded`     | Mark invoice paid; INSERT pre-fee `payments` row                                                  |
+| `invoice.payment_failed`        | Mark invoice past-due; notify tenant; let Stripe retry                                            |
+| `checkout.session.completed`    | Tie one-off Checkout payment to the originating invoice                                           |
+| `charge.succeeded`              | Backfill `stripe_fee_cents`, `net_amount_cents`, `stripe_balance_txn_id` from balance_transaction |
+| `charge.refunded`               | INSERT `refunds` row; update `payments.status='refunded'`; reopen invoice if full refund          |
+| `charge.dispute.created`        | INSERT `disputes` row; notify tenant; deep-link to Express Dashboard                              |
+| `charge.dispute.closed`         | Update dispute outcome; if lost, mark payment `disputed` and reopen invoice                       |
+| `payout.created`                | INSERT `stripe_payouts` row (status='in_transit')                                                 |
+| `payout.paid`                   | Update payout status; backfill `payments.stripe_payout_id` for each charge in the batch           |
+| `payout.failed`                 | Update payout status; notify tenant; Stripe will retry                                            |
 
 ### 17.6 Money-flow timing the tenant cares about
 

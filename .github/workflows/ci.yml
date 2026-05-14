@@ -17,6 +17,10 @@ jobs:
         run: npm ci
       - name: Typecheck
         run: npm run typecheck
+      - name: Prettier
+        run: npm run format:check
+      - name: Migration prefix sanity
+        run: npm run check:migrations
       - name: ESLint
         run: npm run lint
       - name: Stylelint

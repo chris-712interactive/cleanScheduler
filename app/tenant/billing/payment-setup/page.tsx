@@ -39,7 +39,11 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
   const db = createTenantPortalDbClient();
   const [{ data: tenant }, { data: acct }] = await Promise.all([
     db.from('tenants').select('stripe_connect_status').eq('id', membership.tenantId).maybeSingle(),
-    db.from('tenant_stripe_connect_accounts').select('*').eq('tenant_id', membership.tenantId).maybeSingle(),
+    db
+      .from('tenant_stripe_connect_accounts')
+      .select('*')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
   ]);
 
   const status = tenant?.stripe_connect_status ?? 'not_started';
@@ -70,12 +74,16 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
       ) : null}
       {connectParam === 'return' ? (
         <p className={styles.bannerOk} role="status">
-          If Stripe still shows onboarding steps, use Refresh status below after you finish in Stripe.
+          If Stripe still shows onboarding steps, use Refresh status below after you finish in
+          Stripe.
         </p>
       ) : null}
 
       <Stack gap={6}>
-        <Card title="Stripe Connect" description="One connected account per workspace. Funds settle with Stripe; platform fees are optional (see STRIPE_CONNECT_APPLICATION_FEE_BPS).">
+        <Card
+          title="Stripe Connect"
+          description="One connected account per workspace. Funds settle with Stripe; platform fees are optional (see STRIPE_CONNECT_APPLICATION_FEE_BPS)."
+        >
           <p className={styles.muted} style={{ marginTop: 0 }}>
             Status: <strong>{statusLabel}</strong>
             {acct?.stripe_account_id ? (
@@ -85,7 +93,14 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
               </>
             ) : null}
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 'var(--space-3)',
+              marginTop: 'var(--space-4)',
+            }}
+          >
             <form action={startStripeConnectOnboardingAction}>
               <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
               <Button type="submit" variant="primary">
@@ -103,10 +118,14 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
           </div>
         </Card>
 
-        <Card title="Webhooks" description="Configure your Stripe webhook to send Connect events to the same endpoint as platform billing.">
+        <Card
+          title="Webhooks"
+          description="Configure your Stripe webhook to send Connect events to the same endpoint as platform billing."
+        >
           <p className={styles.muted} style={{ marginTop: 0 }}>
-            Endpoint: <code>/api/webhooks/stripe</code> — include <code>checkout.session.completed</code> (payment
-            mode) and <code>account.updated</code> for connected accounts. Use the signing secret from that endpoint in{' '}
+            Endpoint: <code>/api/webhooks/stripe</code> — include{' '}
+            <code>checkout.session.completed</code> (payment mode) and <code>account.updated</code>{' '}
+            for connected accounts. Use the signing secret from that endpoint in{' '}
             <code>STRIPE_WEBHOOK_SECRET</code>.
           </p>
         </Card>

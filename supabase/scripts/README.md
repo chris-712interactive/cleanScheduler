@@ -20,8 +20,7 @@ If you have a **new, empty** Supabase (or Postgres) database and want the same s
    ```
 
 3. **Supabase migration history**: the SQL editor does not record rows in `supabase_migrations.schema_migrations`. If you later want `supabase db push` / CLI history to match PROD, either:
-
-   - use the Supabase CLI against PROD with linked project and `supabase db push` (recommended long-term), or  
+   - use the Supabase CLI against PROD with linked project and `supabase db push` (recommended long-term), or
    - insert the migration version rows manually to match what was applied (advanced).
 
 **Important**

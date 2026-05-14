@@ -32,9 +32,13 @@ function buildTenantOrigin(slug: string, requestOrigin: URL): string {
 }
 
 export async function resumePlatformSubscriptionCheckout(formData: FormData): Promise<void> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const requestHeaders = await headers();
-  const membership = await requireTenantPortalAccess(slug, '/billing', { allowBillingResume: true });
+  const membership = await requireTenantPortalAccess(slug, '/billing', {
+    allowBillingResume: true,
+  });
 
   const requestOrigin = resolveRequestOrigin(requestHeaders);
   const tenantOrigin = buildTenantOrigin(membership.tenantSlug, requestOrigin);
@@ -56,18 +60,24 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
   const error = billingRes.error;
 
   if (error || !billing) {
-    redirect(`${billingPath}?resume=error&message=${encodeURIComponent('Billing is not set up for this workspace.')}`);
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent('Billing is not set up for this workspace.')}`,
+    );
   }
 
   const tier = parsePlatformPlanTier(String(billing.platform_plan ?? ''));
   if (!tier) {
-    redirect(`${billingPath}?resume=error&message=${encodeURIComponent('Choose a plan in onboarding first.')}`);
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent('Choose a plan in onboarding first.')}`,
+    );
   }
 
   const stripe = getStripe();
   const priceId = resolvePlatformPriceId(tier);
   if (!stripe || !priceId) {
-    redirect(`${billingPath}?resume=error&message=${encodeURIComponent('Stripe checkout is not configured.')}`);
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent('Stripe checkout is not configured.')}`,
+    );
   }
 
   const checkoutUrl = await createPlatformSubscriptionCheckoutUrl({
@@ -80,7 +90,9 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
   });
 
   if (!checkoutUrl) {
-    redirect(`${billingPath}?resume=error&message=${encodeURIComponent('Could not start checkout.')}`);
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent('Could not start checkout.')}`,
+    );
   }
 
   redirect(checkoutUrl);

@@ -7,7 +7,13 @@ import styles from './schedule.module.scss';
 
 const initial: ScheduleFormState = {};
 
-export function DeleteVisitButton({ tenantSlug, visitId }: { tenantSlug: string; visitId: string }) {
+export function DeleteVisitButton({
+  tenantSlug,
+  visitId,
+}: {
+  tenantSlug: string;
+  visitId: string;
+}) {
   const [state, action, pending] = useActionState(deleteScheduledVisit, initial);
   useRefreshOnServerActionSuccess(state.success);
   return (

@@ -27,7 +27,11 @@ export default async function AdminInquiryDetailPage({ params, searchParams }: P
   const err = firstParam(sp.error);
 
   const admin = createAdminClient();
-  const { data: row, error } = await admin.from('marketing_inquiries').select('*').eq('id', id).maybeSingle();
+  const { data: row, error } = await admin
+    .from('marketing_inquiries')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
 
   if (error || !row) {
     notFound();
@@ -46,7 +50,11 @@ export default async function AdminInquiryDetailPage({ params, searchParams }: P
       <Stack gap={4}>
         <Card title="Details">
           <Stack gap={2} as="div">
-            <StatusPill tone={row.status === 'new' ? 'warning' : row.status === 'closed' ? 'neutral' : 'brand'}>
+            <StatusPill
+              tone={
+                row.status === 'new' ? 'warning' : row.status === 'closed' ? 'neutral' : 'brand'
+              }
+            >
               {row.status}
             </StatusPill>
             {row.company ? <p className={styles.empty}>Company: {row.company}</p> : null}
@@ -61,9 +69,16 @@ export default async function AdminInquiryDetailPage({ params, searchParams }: P
         <Card title="Update status">
           <form action={updateMarketingInquiryStatusAction} className={styles.backWrap}>
             <input type="hidden" name="id" value={row.id} />
-            <label className={styles.empty} style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+            <label
+              className={styles.empty}
+              style={{ display: 'block', marginBottom: 'var(--space-2)' }}
+            >
               <span className={styles.empty}>Status</span>
-              <select name="status" defaultValue={row.status} style={{ marginLeft: 'var(--space-2)' }}>
+              <select
+                name="status"
+                defaultValue={row.status}
+                style={{ marginLeft: 'var(--space-2)' }}
+              >
                 <option value="new">new</option>
                 <option value="contacted">contacted</option>
                 <option value="closed">closed</option>

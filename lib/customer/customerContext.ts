@@ -21,7 +21,9 @@ export interface CustomerPortalContext {
  * `customer_id` / `customer_identity_id` filters (RLS does not expose these
  * rows to the `customer` app role yet).
  */
-export async function getCustomerPortalContext(userId: string): Promise<CustomerPortalContext | null> {
+export async function getCustomerPortalContext(
+  userId: string,
+): Promise<CustomerPortalContext | null> {
   const admin = createAdminClient();
   const { data: identity, error: idErr } = await admin
     .from('customer_identities')

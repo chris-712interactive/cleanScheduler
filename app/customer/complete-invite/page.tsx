@@ -10,8 +10,7 @@ export const metadata = {
   title: 'Accept customer invite',
 };
 
-const TOKEN_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -30,7 +29,9 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Invalid link">
-          <p className={styles.lead}>This invite URL is missing a valid token. Open the link from your email again.</p>
+          <p className={styles.lead}>
+            This invite URL is missing a valid token. Open the link from your email again.
+          </p>
         </Card>
       </Container>
     );
@@ -56,7 +57,9 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Invite not found">
-          <p className={styles.lead}>This link is invalid or was removed. Ask your provider for a new invite.</p>
+          <p className={styles.lead}>
+            This link is invalid or was removed. Ask your provider for a new invite.
+          </p>
         </Card>
       </Container>
     );
@@ -66,7 +69,9 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Already used">
-          <p className={styles.lead}>This invite was already completed. Sign in at the customer portal if you need access.</p>
+          <p className={styles.lead}>
+            This invite was already completed. Sign in at the customer portal if you need access.
+          </p>
         </Card>
       </Container>
     );
@@ -76,7 +81,9 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Invite expired">
-          <p className={styles.lead}>Ask your provider to send a fresh invite from their cleanScheduler workspace.</p>
+          <p className={styles.lead}>
+            Ask your provider to send a fresh invite from their cleanScheduler workspace.
+          </p>
         </Card>
       </Container>
     );
@@ -92,7 +99,9 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Already linked">
-          <p className={styles.lead}>This customer record already has a portal login. Open the customer portal home page.</p>
+          <p className={styles.lead}>
+            This customer record already has a portal login. Open the customer portal home page.
+          </p>
         </Card>
       </Container>
     );
@@ -110,7 +119,10 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
 
   return (
     <Container size="sm">
-      <Card title={`Join ${tenantName} on cleanScheduler`} description="Finish setup for your customer portal.">
+      <Card
+        title={`Join ${tenantName} on cleanScheduler`}
+        description="Finish setup for your customer portal."
+      >
         <p className={styles.lead}>
           Invited email: <strong>{inviteEmail}</strong>
         </p>

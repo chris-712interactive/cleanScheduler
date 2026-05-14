@@ -114,11 +114,17 @@ export default async function CustomerSubscriptionsPage({ searchParams }: PagePr
               ? new Date(String(row.current_period_end)).toLocaleDateString()
               : '—';
             const canCancel =
-              row.status !== 'canceled' && !row.cancel_at_period_end && row.status !== 'incomplete_expired';
+              row.status !== 'canceled' &&
+              !row.cancel_at_period_end &&
+              row.status !== 'incomplete_expired';
             return (
               <Card key={row.id} title={label} description={t?.name ?? 'Provider'}>
                 <div className={styles.row}>
-                  <StatusPill tone={row.status === 'active' || row.status === 'trialing' ? 'brand' : 'neutral'}>
+                  <StatusPill
+                    tone={
+                      row.status === 'active' || row.status === 'trialing' ? 'brand' : 'neutral'
+                    }
+                  >
                     {row.status}
                   </StatusPill>
                   {row.cancel_at_period_end ? (
