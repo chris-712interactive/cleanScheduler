@@ -123,14 +123,14 @@ export async function respondToCustomerQuote(
   }
 
   if (decision === 'accept') {
-    void sendQuoteNotificationEmail(admin, 'quote_accepted', {
+    await sendQuoteNotificationEmail(admin, 'quote_accepted', {
       tenantId: quote.tenant_id as string,
       quoteId,
       quoteTitle: (quote.title as string) ?? 'Quote',
       customerId: quote.customer_id as string,
     });
   } else {
-    void sendQuoteNotificationEmail(admin, 'quote_declined', {
+    await sendQuoteNotificationEmail(admin, 'quote_declined', {
       tenantId: quote.tenant_id as string,
       quoteId,
       quoteTitle: (quote.title as string) ?? 'Quote',

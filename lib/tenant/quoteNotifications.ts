@@ -68,13 +68,20 @@ function quoteUrlForCustomer(quoteId: string): string {
   return `${getPublicOrigin('my')}/quotes/${quoteId}`;
 }
 
-/** Fire-and-forget friendly: logs nothing on success; ignores when Resend off or no recipient. */
+/**
+ * Sends quote-related mail via Resend. Callers should **await** this in server actions
+ * so serverless runtimes do not freeze before the request finishes (floating promises are dropped).
+ * Failures are logged and do not throw.
+ */
 export async function sendQuoteNotificationEmail(
   admin: Admin,
   event: QuoteNotificationEvent,
   params: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
 ): Promise<void> {
-  if (!isResendConfigured()) return;
+  if (!isResendConfigured()) {
+    console.warn('[quoteNotifications] Skipping email: Resend not configured (RESEND_API_KEY / RESEND_FROM_EMAIL).');
+    return;
+  }
 
   const flags = await loadOpsFlags(admin, params.tenantId);
   if (!flags) return;
@@ -88,7 +95,10 @@ export async function sendQuoteNotificationEmail(
     const subject = `Quote from ${tname}: ${params.quoteTitle}`;
     const text = `You have a new quote from ${tname}.\n\nTitle: ${params.quoteTitle}\n\nView and respond: ${link}\n`;
     const html = `<p>You have a new quote from <strong>${escapeHtml(tname)}</strong>.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p><a href="${link}">View and respond</a></p>`;
-    await sendTransactionalEmail({ to: customerEmail, subject, text, html });
+    const sent = await sendTransactionalEmail({ to: customerEmail, subject, text, html });
+    if (!sent.ok) {
+      console.error('[quoteNotifications] quote_sent email failed:', sent.error);
+    }
     return;
   }
 
@@ -96,7 +106,10 @@ export async function sendQuoteNotificationEmail(
     const subject = `Quote accepted: ${params.quoteTitle}`;
     const text = `A customer accepted a quote.\n\nTitle: ${params.quoteTitle}\nQuote ID: ${params.quoteId}\n`;
     const html = `<p>A customer accepted a quote.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p>Quote ID: <code>${escapeHtml(params.quoteId)}</code></p>`;
-    await sendTransactionalEmail({ to: staffEmail, subject, text, html });
+    const sent = await sendTransactionalEmail({ to: staffEmail, subject, text, html });
+    if (!sent.ok) {
+      console.error('[quoteNotifications] quote_accepted email failed:', sent.error);
+    }
     return;
   }
 
@@ -104,7 +117,10 @@ export async function sendQuoteNotificationEmail(
     const subject = `Quote declined: ${params.quoteTitle}`;
     const text = `A customer declined a quote.\n\nTitle: ${params.quoteTitle}\nQuote ID: ${params.quoteId}\n`;
     const html = `<p>A customer declined a quote.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p>Quote ID: <code>${escapeHtml(params.quoteId)}</code></p>`;
-    await sendTransactionalEmail({ to: staffEmail, subject, text, html });
+    const sent = await sendTransactionalEmail({ to: staffEmail, subject, text, html });
+    if (!sent.ok) {
+      console.error('[quoteNotifications] quote_declined email failed:', sent.error);
+    }
   }
 }
 

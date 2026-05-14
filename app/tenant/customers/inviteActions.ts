@@ -140,6 +140,7 @@ export async function sendCustomerPortalInviteAction(
 
   const sent = await sendTransactionalEmail({ to: email, subject, text, html });
   if (!sent.ok) {
+    console.error('[customerInvite] Resend failed:', sent.error);
     await admin.from('customer_portal_invites').delete().eq('token', invite.token);
     return { error: sent.error };
   }

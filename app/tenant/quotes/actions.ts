@@ -101,7 +101,7 @@ export async function moveTenantQuoteStatus(
       .eq('id', quoteId)
       .maybeSingle();
     if (qrow?.customer_id) {
-      void sendQuoteNotificationEmail(admin, 'quote_sent', {
+      await sendQuoteNotificationEmail(admin, 'quote_sent', {
         tenantId: membership.tenantId,
         quoteId,
         quoteTitle: (qrow.title as string) ?? 'Quote',
@@ -454,7 +454,7 @@ export async function updateTenantQuote(_prev: QuoteFormState, formData: FormDat
   }
 
   if (priorStatus !== 'sent' && status === 'sent') {
-    void sendQuoteNotificationEmail(admin, 'quote_sent', {
+    await sendQuoteNotificationEmail(admin, 'quote_sent', {
       tenantId: membership.tenantId,
       quoteId,
       quoteTitle: title,
