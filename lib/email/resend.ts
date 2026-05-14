@@ -131,3 +131,51 @@ export async function sendCustomerPortalInviteEmail(
     return { ok: false, error: msg };
   }
 }
+
+export interface SendEmployeeInviteEmailParams {
+  to: string;
+  tenantName: string;
+  roleLabel: string;
+  acceptUrl: string;
+  workspaceUrl: string;
+}
+
+function escapeHtmlLite(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Inline HTML invite — requires RESEND_FROM_EMAIL (same as quote mail). */
+export async function sendEmployeeInviteEmail(
+  params: SendEmployeeInviteEmailParams,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tenant = escapeHtmlLite(params.tenantName);
+  const role = escapeHtmlLite(params.roleLabel);
+  const subject = `You're invited to ${params.tenantName} on cleanScheduler`;
+  const text = [
+    `${params.tenantName} invited you as ${params.roleLabel}.`,
+    '',
+    'Create your password and join the team:',
+    params.acceptUrl,
+    '',
+    'After you finish, sign in to the workspace at:',
+    params.workspaceUrl,
+    '',
+    'This link expires in 7 days.',
+  ].join('\n');
+
+  const html = `<p><strong>${tenant}</strong> invited you as <strong>${role}</strong>.</p>
+<p><a href="${escapeHtmlLite(params.acceptUrl)}">Create your account</a></p>
+<p>Then sign in at <a href="${escapeHtmlLite(params.workspaceUrl)}">${escapeHtmlLite(params.workspaceUrl)}</a>.</p>
+<p style="color:#666;font-size:12px">This link expires in 7 days.</p>`;
+
+  return sendTransactionalEmail({
+    to: params.to,
+    subject,
+    text,
+    html,
+  });
+}

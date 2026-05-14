@@ -1,6 +1,6 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-12 (0025 recurring visits + invoice mail/refunds + Connect mirrors + billing portal)** — see §11.5–§11.6.
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-14** — billing **0025** + Connect follow-ups (§11.6); **CI** typecheck + Prettier + migration-prefix check + ESLint + Stylelint; **env** prod https Supabase + optional `SUPABASE_DISALLOW_PROJECT_REF` (see `cicdPipeline` / `envGuardrails` todos).
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
@@ -93,7 +93,7 @@ todos:
     content: "**Resend** (`resend` npm + `lib/email/resend.ts`): quotes, portal invites, **tenant invoice summary email** (`sendTenantInvoiceEmailAction` + `lib/email/tenantInvoiceEmailBody.ts`), dispute-opened notice to tenant owner. Configure `RESEND_API_KEY` + `RESEND_FROM_EMAIL` on the server."
     status: in_progress
   - id: observabilityCi
-    content: "Sentry DSN slots exist in env schema; no Playwright/Vitest suites or CI DB checks yet. Overlaps `cicdPipeline` for Actions hardening."
+    content: "Sentry DSN slots exist in env schema; **CI quality lane** now covers typecheck + Prettier + migration-prefix + ESLint + Stylelint (overlaps `cicdPipeline`). Still missing: Playwright/Vitest suites, CI DB checks, Sentry release/sourcemap wiring."
     status: pending
   - id: phase2Twilio
     content: "Phase 2: Twilio SMS in/out, tenant Integrations admin assignments, conversation surfacing in Messages."
@@ -478,22 +478,22 @@ This section reconciles the YAML todos at the top of this file with the current 
 
 ### What moved from “pending” to “in progress” (or completed) in this sync
 
-| Original YAML idea                            | Repo reality                                                                                                                                                                                |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). No separate permissions catalog table yet.                    |
-| `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                               |
-| `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                     |
-| `billingPlans` as monolithic 0004             | **Partial:** `0013` + **`0023`** (Connect + payment columns + usage snapshot stub + check hold days + mirror tables). Still missing DB plan catalog / `tenant_addons` / full §17 lifecycle. |
-| `messagingAuditInquiries` as 0005             | **0013** covers inquiries, audit, support threads/messages; not full “conversations” product.                                                                                               |
-| `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                     |
+| Original YAML idea                            | Repo reality                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). No separate permissions catalog table yet.                                                                                                                              |
+| `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                                                                                                                                         |
+| `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                                                                                                                               |
+| `billingPlans` as monolithic 0004             | **Partial:** tenant↔customer money path is **`0023`–`0025`** (Connect + `service_plans` / `customer_subscriptions` + recurring rules + signed payments + mirrors). Still missing **platform** catalog `plans` / `plan_features` / `tenant_addons` (§15) and Stripe **hosted** `invoice.*` sync (§17). |
+| `messagingAuditInquiries` as 0005             | **0013** covers inquiries, audit, support threads/messages; not full “conversations” product.                                                                                                                                                                                                         |
+| `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                                                                                                                               |
 
 ### Prioritized next slices (execute in roughly this order for trial-to-revenue)
 
-1. **CI (`cicdPipeline`)** — ~~Fix or pin stylelint/postcss so `lint:styles` is green; add it to Actions.~~ **Done (2026-05-12):** `lint:styles` green + CI step. Optionally add `prettier --check` after a one-time `npm run format` on the repo (large churn). Add `supabase db lint` or migration list check when CLI is available in CI.
+1. **CI (`cicdPipeline`)** — ~~Stylelint green + CI step (2026-05-12).~~ **Done (2026-05-14):** repo-wide Prettier + **`npm run format:check`** in Actions; **`npm run check:migrations`** (`scripts/check-migration-prefixes.mjs`, ignores `._*`); order = typecheck → Prettier → migrations → ESLint → Stylelint. Still missing: Vitest, `supabase db` drift check, pg_tap RLS, ephemeral Supabase in CI, Vercel branch rules.
 2. **Env (`envGuardrails`)** — **Partial (2026-05-12):** prod requires `https://` Supabase URL; optional **`SUPABASE_DISALLOW_PROJECT_REF`** blocks local/dev from matching a prod project ref. Still optional: stricter URL↔project pairing without extra env (needs agreed naming convention).
 3. ~~**Billing + Connect**~~ — **MVP landed 2026-05-12** (see §11.6). **0025 + app follow-up (2026-05-12):** `recurring_appointment_rules` + RRULE materializer cron; `billing_cycle_anchor` UX; Resend invoice email; Connect **Billing Portal**; refund-from-app; Connect webhook writers for **refunds / disputes / payouts** + dispute email to tenant owner; Balance Transaction **fee backfill** on invoice Checkout; cancel subscription (tenant + customer). **Next billing PRs:** Stripe Billing **`invoice.*`** sync into `tenant_invoices`; Setup Intents / saved PM UX polish.
-4. **Transactional email (`transactionalEmail`)** — Extend **Resend** for invoices, auth-adjacent mail, and any new flows (see `lib/email/resend.ts`).
-5. **Recurring (`recurringBilling`)** — `service_plans`, `customer_subscriptions`, RRULE generator + cron.
+4. **Transactional email (`transactionalEmail`)** — **Partially shipped:** quotes + portal invites + **tenant invoice summary** (`sendTenantInvoiceEmailAction`) + **dispute-opened** email to tenant owner. **Still missing:** auth-adjacent mail, richer HTML/receipt templates, productized template management.
+5. **Recurring (`recurringBilling`)** — ~~Core generator + cron.~~ **Shipped with `0025` + app** (see todo `recurringBilling`): RRULE rules UI, materializer cron, subscription anchor UX, customer/tenant cancel + billing portal.
 6. **Field + office money (`checkPaymentWorkflow`)** — Accept payment on visit detail; check state machine; Zelle manual entry already partially aligned with §14.
 7. **Reports (`reportsModule`)** — Replace tenant `/reports` placeholder with v1 reports + exports.
 8. **Feature gating (`featureGatingMetering`)** — `requireFeature` / `checkLimit` / usage rollup cron populating `tenant_usage_snapshots` (table exists empty).
@@ -521,7 +521,13 @@ _(None open from the last round — add new rows here when tradeoffs reappear.)_
 - **Tenant recurring:** `app/tenant/billing/service-plans/` (plan CRUD) + **Recurring billing** panel on customer detail (`createCustomerSubscriptionCheckoutSessionAction`, Checkout `mode=subscription`, `metadata.kind=tenant_customer_subscription`, optional `subscription_data.application_fee_percent` from `STRIPE_CONNECT_APPLICATION_FEE_BPS`).
 - **Customer portal:** `app/customer/invoices/[id]/` (detail + **Pay balance**) + `app/customer/subscriptions/` + nav entry; `createCustomerInvoicePayCheckoutSessionAction` (origin `my`).
 - **Webhooks:** `app/api/webhooks/stripe/route.ts` — `account.updated`; Connect `checkout.session.completed` for `tenant_invoice_pay` and `tenant_customer_subscription`; Connect `customer.subscription.*` when `metadata.kind=tenant_customer_subscription` → `lib/stripe/connectWebhookHandlers.ts` (`upsertCustomerSubscriptionFromStripe`).
-- **Env:** optional `STRIPE_CONNECT_APPLICATION_FEE_BPS`, **`STRIPE_CONNECT_BILLING_PORTAL_CONFIGURATION_ID`**, **`CRON_SECRET`** (Vercel Cron auth for materializer) in `lib/env.ts` + `.env.example`.
+- **Env:** optional `STRIPE_CONNECT_APPLICATION_FEE_BPS`, **`STRIPE_CONNECT_BILLING_PORTAL_CONFIGURATION_ID`**, **`CRON_SECRET`** (Vercel Cron auth for materializer) in `lib/env.ts` + `.env.example`; server **`SUPABASE_DISALLOW_PROJECT_REF`** + prod **`https://`** requirement on `NEXT_PUBLIC_SUPABASE_URL` (see `envGuardrails` todo).
+
+**Engineering hygiene (2026-05-14, cross-cutting)**
+
+- **Prettier:** full-repo format + **`format:check`** in GitHub Actions.
+- **Migrations:** `scripts/check-migration-prefixes.mjs` + `npm run check:migrations` in CI (duplicate `NNNN_*.sql` prefix guard; skips `._*` files).
+- **Stylelint:** `keyframe-block-no-duplicate-selectors` disabled (upstream crash); SCSS fixes incl. **`--color-text-on-danger`** for dev env banner text on danger background.
 
 **Also shipped (post-0024 slice, migration `0025` + routes)**
 

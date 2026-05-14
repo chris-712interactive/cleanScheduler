@@ -258,6 +258,47 @@ export type Database = {
           },
         ];
       };
+      employee_invites: {
+        Row: {
+          token: string;
+          tenant_id: string;
+          email_normalized: string;
+          invited_role: Database['public']['Enums']['tenant_role'];
+          invited_by_user_id: string | null;
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          token?: string;
+          tenant_id: string;
+          email_normalized: string;
+          invited_role: Database['public']['Enums']['tenant_role'];
+          invited_by_user_id?: string | null;
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          token?: string;
+          tenant_id?: string;
+          email_normalized?: string;
+          invited_role?: Database['public']['Enums']['tenant_role'];
+          invited_by_user_id?: string | null;
+          expires_at?: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'employee_invites_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       marketing_inquiries: {
         Row: {
           id: string;
@@ -1700,6 +1741,7 @@ export type Database = {
           user_id: string;
           app_role: 'super_admin' | 'admin' | 'employee' | 'customer';
           display_name: string | null;
+          avatar_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1707,6 +1749,7 @@ export type Database = {
           user_id: string;
           app_role?: 'super_admin' | 'admin' | 'employee' | 'customer';
           display_name?: string | null;
+          avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1714,6 +1757,7 @@ export type Database = {
           user_id?: string;
           app_role?: 'super_admin' | 'admin' | 'employee' | 'customer';
           display_name?: string | null;
+          avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

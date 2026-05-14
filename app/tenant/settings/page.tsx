@@ -5,9 +5,11 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { getAuthContext } from '@/lib/auth/session';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { normalizePaymentMethodsFromDb } from '@/lib/tenant/operationalSettings';
 import { OperationalSettingsForm } from './OperationalSettingsForm';
+import { ProfileSettingsForm } from './ProfileSettingsForm';
 import styles from './settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,20 @@ export default async function TenantSettingsPage() {
   const membership = await requireTenantPortalAccess(tenantSlug, '/settings');
 
   const supabase = createTenantPortalDbClient();
+  const auth = await getAuthContext();
+  const { data: myProfile } =
+    auth?.user.id != null
+      ? await supabase
+          .from('user_profiles')
+          .select('display_name, avatar_url')
+          .eq('user_id', auth.user.id)
+          .maybeSingle()
+      : { data: null };
+  const displayName =
+    myProfile?.display_name?.trim() ||
+    auth?.user?.email?.split('@')[0] ||
+    'Team member';
+  const avatarUrl = myProfile?.avatar_url ?? null;
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
@@ -64,6 +80,14 @@ export default async function TenantSettingsPage() {
             <span className={styles.label}>Theme</span>
             <ThemeToggle />
           </div>
+        </Card>
+
+        <Card title="Your profile" description="Name and photo shown to teammates in this workspace.">
+          <ProfileSettingsForm
+            tenantSlug={membership.tenantSlug}
+            displayName={displayName}
+            avatarUrl={avatarUrl}
+          />
         </Card>
 
         <Card title="Workspace" description="Read-only snapshot from your tenant record.">

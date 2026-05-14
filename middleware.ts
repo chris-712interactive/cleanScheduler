@@ -36,7 +36,12 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
 
 /** Served as marketing routes on any host; no session required (sign-in, OAuth return, post-auth denial). */
-const PUBLIC_MARKETING_PATHS = new Set(['/sign-in', '/auth/callback', '/access-denied']);
+const PUBLIC_MARKETING_PATHS = new Set([
+  '/sign-in',
+  '/auth/callback',
+  '/access-denied',
+  '/complete-employee-invite',
+]);
 
 // Subdomains reserved for platform use. Tenants cannot register these.
 const RESERVED_SUBDOMAINS = new Set([

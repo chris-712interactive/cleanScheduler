@@ -27,21 +27,10 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
-const IDENTITY: IdentityChipModel = {
-  name: 'Tenant Admin',
-  subtitle: 'Owner',
-  initials: 'TA',
-};
-
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/');
   const slug = membership.tenantSlug;
-
-  const identity: IdentityChipModel = {
-    ...IDENTITY,
-    subtitle: membership.role,
-  };
 
   const nonProdBanner = getNonProdPortalBanner();
   const auth = await getAuthContext();
@@ -55,6 +44,30 @@ export default async function TenantLayout({ children }: { children: React.React
     .select('stripe_connect_status')
     .eq('id', membership.tenantId)
     .maybeSingle();
+
+  let identityName = 'Team member';
+  let identityInitials = 'TM';
+  let identityAvatar: string | undefined;
+  if (auth?.user.id) {
+    const { data: prof } = await supabase
+      .from('user_profiles')
+      .select('display_name, avatar_url')
+      .eq('user_id', auth.user.id)
+      .maybeSingle();
+    const dn = prof?.display_name?.trim();
+    const emailLocal = auth.user.email?.split('@')[0];
+    identityName = dn || emailLocal || 'Team member';
+    const compact = identityName.replace(/\s+/g, '');
+    identityInitials = compact.slice(0, 2).toUpperCase().padEnd(2, '·');
+    if (prof?.avatar_url) identityAvatar = prof.avatar_url;
+  }
+
+  const identity: IdentityChipModel = {
+    name: identityName,
+    subtitle: membership.role,
+    initials: identityInitials,
+    avatarUrl: identityAvatar,
+  };
 
   const connectStatus = tenantRow?.stripe_connect_status ?? 'not_started';
 
