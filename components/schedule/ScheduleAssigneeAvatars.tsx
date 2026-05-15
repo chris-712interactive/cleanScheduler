@@ -9,11 +9,13 @@ export function ScheduleAssigneeAvatars({
   maxVisible = 4,
   className,
   size = 'sm',
+  layout = 'row',
 }: {
   assignees: ScheduleAssigneeChip[];
   maxVisible?: number;
   className?: string;
   size?: AvatarChipSize;
+  layout?: 'row' | 'column';
 }) {
   if (assignees.length === 0) return null;
 
@@ -22,8 +24,10 @@ export function ScheduleAssigneeAvatars({
   const moreClass =
     size === 'lg' ? styles.moreLg : size === 'md' ? styles.moreMd : styles.moreSm;
 
+  const layoutClass = layout === 'column' ? styles.column : styles.row;
+
   return (
-    <div className={className ? `${styles.row} ${className}` : styles.row}>
+    <div className={className ? `${layoutClass} ${className}` : layoutClass}>
       {visible.map((a) => (
         <PersonAvatarChip
           key={a.userId}

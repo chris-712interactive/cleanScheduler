@@ -271,7 +271,7 @@
   left: var(--space-2);
   right: var(--space-2);
   z-index: 1;
-  min-height: 72px;
+  min-height: 52px;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-strong);
@@ -279,8 +279,9 @@
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
   text-align: left;
   text-decoration: none;
   color: inherit;
@@ -309,12 +310,30 @@
   }
 }
 
+.visitCardInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.visitCardCrew {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--color-border-subtle);
+}
+
 .visitCardHead {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .visitCustomer {
@@ -322,6 +341,9 @@
   font-size: var(--font-size-sm);
   color: var(--color-text);
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .visitStatusPill {
@@ -337,23 +359,18 @@
 .visitAddress {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  margin-top: var(--space-1);
   line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .visitTime {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  margin-top: var(--space-1);
-}
-
-.visitAvatars {
-  margin-top: auto;
-  padding-top: var(--space-2);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .avatarCircle {

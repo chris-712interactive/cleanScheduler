@@ -19,8 +19,6 @@ import {
   visitOverlapsLocalDay,
 } from './scheduleTimelineUtils';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
-import { firstNameFromDisplayName, initialsFromDisplayName } from '@/lib/profile/displayName';
-import { PersonAvatarChip } from '@/components/schedule/PersonAvatarChip';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import { VisitStatusPill } from './VisitStatusPill';
 import styles from './schedule.module.scss';
@@ -184,25 +182,26 @@ export function TenantScheduleClient({
                   key={v.id}
                   href={`/schedule/${v.id}`}
                   className={styles.visitCard}
-                  style={{ top: `${topPct}%`, height: `${heightPct}%`, minHeight: '72px' }}
+                  style={{ top: `${topPct}%`, height: `${heightPct}%`, minHeight: '52px' }}
                 >
-                  <span className={styles.visitCardHead}>
-                    <span className={styles.visitCustomer}>{v.customerName}</span>
-                    <VisitStatusPill status={v.status} />
-                  </span>
-                  {v.siteLine ? <span className={styles.visitAddress}>{v.siteLine}</span> : null}
-                  <span className={styles.visitTime}>{formatTimeRange(v.starts_at, v.ends_at)}</span>
-                  <span className={styles.visitAvatars}>
-                    <PersonAvatarChip
-                      firstName={firstNameFromDisplayName(v.customerName)}
-                      displayName={v.customerName}
-                      avatarUrl={null}
-                      initials={initialsFromDisplayName(v.customerName)}
-                      variant="customer"
-                      size="md"
-                    />
-                    <ScheduleAssigneeAvatars assignees={v.assignees} size="md" maxVisible={3} />
-                  </span>
+                  <div className={styles.visitCardInfo}>
+                    <span className={styles.visitCardHead}>
+                      <span className={styles.visitCustomer}>{v.customerName}</span>
+                      <VisitStatusPill status={v.status} />
+                    </span>
+                    {v.siteLine ? <span className={styles.visitAddress}>{v.siteLine}</span> : null}
+                    <span className={styles.visitTime}>{formatTimeRange(v.starts_at, v.ends_at)}</span>
+                  </div>
+                  {v.assignees.length > 0 ? (
+                    <div className={styles.visitCardCrew}>
+                      <ScheduleAssigneeAvatars
+                        assignees={v.assignees}
+                        size="sm"
+                        maxVisible={4}
+                        layout="column"
+                      />
+                    </div>
+                  ) : null}
                 </Link>
               );
             })}
