@@ -302,10 +302,25 @@
   }
 }
 
+.visitCardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 .visitCustomer {
   font-weight: 700;
   font-size: var(--font-size-sm);
   color: var(--color-text);
+  min-width: 0;
+}
+
+.visitStatusPill {
+  flex-shrink: 0;
+  font-size: 10px;
+  padding: 1px var(--space-2);
 }
 
 .visitAddress {
@@ -436,10 +451,19 @@
   }
 }
 
+.weekItemTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
 .weekItemTitle {
   font-weight: 600;
   font-size: var(--font-size-xs);
   color: var(--color-text);
+  min-width: 0;
 }
 
 .weekItemMeta {

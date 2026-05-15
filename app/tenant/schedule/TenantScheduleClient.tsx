@@ -22,6 +22,7 @@ import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import { firstNameFromDisplayName, initialsFromDisplayName } from '@/lib/profile/displayName';
 import { PersonAvatarChip } from '@/components/schedule/PersonAvatarChip';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
+import { VisitStatusPill } from './VisitStatusPill';
 import styles from './schedule.module.scss';
 
 export type ScheduleVisitVM = {
@@ -185,7 +186,10 @@ export function TenantScheduleClient({
                   className={styles.visitCard}
                   style={{ top: `${topPct}%`, height: `${heightPct}%`, minHeight: '72px' }}
                 >
-                  <span className={styles.visitCustomer}>{v.customerName}</span>
+                  <span className={styles.visitCardHead}>
+                    <span className={styles.visitCustomer}>{v.customerName}</span>
+                    <VisitStatusPill status={v.status} />
+                  </span>
                   {v.siteLine ? <span className={styles.visitAddress}>{v.siteLine}</span> : null}
                   <span className={styles.visitTime}>{formatTimeRange(v.starts_at, v.ends_at)}</span>
                   <span className={styles.visitAvatars}>
@@ -227,10 +231,13 @@ export function TenantScheduleClient({
                     dayVisitsWeek.map((v) => (
                       <li key={v.id}>
                         <Link href={`/schedule/${v.id}`} className={styles.weekItem}>
-                          <div className={styles.weekItemTitle}>{v.customerName}</div>
-                          <div className={styles.weekItemMeta}>
+                          <span className={styles.weekItemTop}>
+                            <span className={styles.weekItemTitle}>{v.customerName}</span>
+                            <VisitStatusPill status={v.status} />
+                          </span>
+                          <span className={styles.weekItemMeta}>
                             {formatTimeRange(v.starts_at, v.ends_at)}
-                          </div>
+                          </span>
                         </Link>
                       </li>
                     ))
