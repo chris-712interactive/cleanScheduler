@@ -1388,6 +1388,10 @@ export type Database = {
           status: 'scheduled' | 'completed' | 'cancelled';
           notes: string | null;
           recurring_rule_id: string | null;
+          checked_in_at: string | null;
+          checked_in_by_user_id: string | null;
+          completed_at: string | null;
+          completed_by_user_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1403,6 +1407,10 @@ export type Database = {
           status?: 'scheduled' | 'completed' | 'cancelled';
           notes?: string | null;
           recurring_rule_id?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by_user_id?: string | null;
+          completed_at?: string | null;
+          completed_by_user_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1418,6 +1426,10 @@ export type Database = {
           status?: 'scheduled' | 'completed' | 'cancelled';
           notes?: string | null;
           recurring_rule_id?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by_user_id?: string | null;
+          completed_at?: string | null;
+          completed_by_user_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

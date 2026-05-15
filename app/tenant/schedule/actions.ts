@@ -187,9 +187,8 @@ export async function createScheduledVisit(
     }
   }
 
-  revalidatePath('/tenant', 'layout');
-  revalidatePath('/tenant/schedule', 'page');
-  revalidatePath('/tenant/schedule/new', 'page');
+  revalidatePath('/schedule');
+  revalidatePath('/schedule/new');
   redirect('/schedule');
 }
 
@@ -219,8 +218,7 @@ export async function deleteScheduledVisit(
     return { error: del.error.message };
   }
 
-  revalidatePath('/tenant', 'layout');
-  revalidatePath('/tenant/schedule', 'page');
-  revalidatePath('/tenant/schedule/new', 'page');
-  return { success: true };
+  revalidatePath('/schedule');
+  revalidatePath('/schedule/new');
+  redirect('/schedule');
 }

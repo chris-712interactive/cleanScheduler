@@ -266,13 +266,13 @@
   border: 2px solid var(--color-surface);
 }
 
-.visitCard,
-.visitCardExpanded {
+.visitCard {
   position: absolute;
   left: var(--space-2);
   right: var(--space-2);
   z-index: 1;
-  min-height: 48px;
+  min-height: 72px;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
@@ -280,29 +280,26 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.visitCardExpanded {
-  z-index: 4;
-  box-shadow: var(--shadow-lg);
-}
-
-.visitCardSummary {
-  flex: 1;
+  gap: var(--space-1);
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  background: transparent;
-  cursor: pointer;
+  text-decoration: none;
   color: inherit;
-  font: inherit;
-}
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 
-.visitCardTop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-2);
+  &:hover {
+    border-color: var(--color-brand-primary);
+    box-shadow: var(--shadow-md);
+    z-index: 2;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+    z-index: 2;
+  }
 }
 
 .visitCustomer {
@@ -325,10 +322,12 @@
 }
 
 .visitAvatars {
-  margin-top: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .avatarCircle {
@@ -423,10 +422,18 @@
 }
 
 .weekItem {
+  display: block;
   padding: var(--space-2);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--color-brand-primary);
+  }
 }
 
 .weekItemTitle {

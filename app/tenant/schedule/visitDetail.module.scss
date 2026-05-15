@@ -1,0 +1,95 @@
+.backWrap {
+  margin: 0 0 var(--space-4);
+}
+
+.backLink {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.detailGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.detailRow {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.detailLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.detailValue {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+  }
+}
+
+.crewRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fieldWork {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.fieldHint {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.fieldForm {
+  margin-bottom: var(--space-3);
+}
+
+.error {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+}
+
+.ok {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+}
+
+.adminActions {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}

@@ -1,9 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
-import { StatusPill } from '@/components/ui/StatusPill';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ScheduleView } from '@/lib/tenant/scheduleDateRange';
 import {
   buildUtcMonthGrid,
@@ -22,7 +22,6 @@ import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import { firstNameFromDisplayName, initialsFromDisplayName } from '@/lib/profile/displayName';
 import { PersonAvatarChip } from '@/components/schedule/PersonAvatarChip';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
-import { DeleteVisitButton } from './DeleteVisitButton';
 import styles from './schedule.module.scss';
 
 export type ScheduleVisitVM = {
@@ -39,18 +38,6 @@ export type ScheduleVisitVM = {
   assignees: ScheduleAssigneeChip[];
 };
 
-const STATUS_LABEL: Record<ScheduleVisitVM['status'], string> = {
-  scheduled: 'Scheduled',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-};
-
-const STATUS_TONE: Record<ScheduleVisitVM['status'], 'info' | 'success' | 'neutral'> = {
-  scheduled: 'info',
-  completed: 'success',
-  cancelled: 'neutral',
-};
-
 function formatTimeRange(startsAt: string, endsAt: string): string {
   const s = new Date(startsAt);
   const e = new Date(endsAt);
@@ -58,15 +45,7 @@ function formatTimeRange(startsAt: string, endsAt: string): string {
   return `${s.toLocaleString(undefined, opts)} – ${e.toLocaleString(undefined, opts)}`;
 }
 
-function durationHours(startsAt: string, endsAt: string): string {
-  const h = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 3_600_000;
-  if (h < 1) return `${Math.round(h * 60)} min`;
-  const rounded = Math.round(h * 10) / 10;
-  return `${rounded} hr${rounded === 1 ? '' : 's'}`;
-}
-
 export function TenantScheduleClient({
-  tenantSlug,
   visits,
   dateKey,
   view,
@@ -79,7 +58,6 @@ export function TenantScheduleClient({
   weekDayKeys: string[];
 }) {
   const router = useRouter();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [, setNowTick] = useState(0);
 
   useEffect(() => {
@@ -200,89 +178,28 @@ export function TenantScheduleClient({
             {dayVisits.map((v) => {
               const { topPct, heightPct, visible } = layoutVisitOnLocalDay(v, dateKey);
               if (!visible) return null;
-              const expanded = expandedId === v.id;
               return (
-                <div
+                <Link
                   key={v.id}
-                  className={expanded ? styles.visitCardExpanded : styles.visitCard}
-                  style={
-                    expanded
-                      ? {
-                          top: `${topPct}%`,
-                          height: 'auto',
-                          minHeight: `max(${heightPct}%, 200px)`,
-                        }
-                      : { top: `${topPct}%`, height: `${heightPct}%` }
-                  }
+                  href={`/schedule/${v.id}`}
+                  className={styles.visitCard}
+                  style={{ top: `${topPct}%`, height: `${heightPct}%`, minHeight: '72px' }}
                 >
-                  <button
-                    type="button"
-                    className={styles.visitCardSummary}
-                    onClick={() => setExpandedId(expanded ? null : v.id)}
-                    aria-expanded={expanded}
-                  >
-                    <div className={styles.visitCardTop}>
-                      <span className={styles.visitCustomer}>{v.customerName}</span>
-                      {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </div>
-                    {v.siteLine ? <div className={styles.visitAddress}>{v.siteLine}</div> : null}
-                    <div className={styles.visitTime}>
-                      {formatTimeRange(v.starts_at, v.ends_at)}
-                    </div>
-                    <div className={styles.visitAvatars}>
-                      <PersonAvatarChip
-                        firstName={firstNameFromDisplayName(v.customerName)}
-                        displayName={v.customerName}
-                        avatarUrl={null}
-                        initials={initialsFromDisplayName(v.customerName)}
-                        variant="customer"
-                      />
-                      <ScheduleAssigneeAvatars assignees={v.assignees} />
-                    </div>
-                  </button>
-                  {expanded ? (
-                    <div className={styles.visitCardBody}>
-                      <div className={styles.visitDetailRow}>
-                        <span className={styles.visitDetailLabel}>Service</span>
-                        <span>{v.title}</span>
-                      </div>
-                      {v.assignees.length > 0 ? (
-                        <div className={styles.visitDetailRow}>
-                          <span className={styles.visitDetailLabel}>Crew</span>
-                          <span>{v.assignees.map((a) => a.displayName).join(', ')}</span>
-                        </div>
-                      ) : null}
-                      {v.notes ? (
-                        <div className={styles.visitDetailRow}>
-                          <span className={styles.visitDetailLabel}>Notes</span>
-                          <span>{v.notes}</span>
-                        </div>
-                      ) : null}
-                      {v.customerPhone ? (
-                        <div className={styles.visitDetailRow}>
-                          <span className={styles.visitDetailLabel}>Phone</span>
-                          <a href={`tel:${v.customerPhone}`}>{v.customerPhone}</a>
-                        </div>
-                      ) : null}
-                      <div className={styles.visitDetailRow}>
-                        <span className={styles.visitDetailLabel}>Duration</span>
-                        <span>{durationHours(v.starts_at, v.ends_at)}</span>
-                      </div>
-                      {v.quoteTitle ? (
-                        <div className={styles.visitDetailRow}>
-                          <span className={styles.visitDetailLabel}>Quote</span>
-                          <span>{v.quoteTitle}</span>
-                        </div>
-                      ) : null}
-                      <div className={styles.visitDetailMeta}>
-                        <StatusPill tone={STATUS_TONE[v.status]}>
-                          {STATUS_LABEL[v.status]}
-                        </StatusPill>
-                        <DeleteVisitButton tenantSlug={tenantSlug} visitId={v.id} />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                  <span className={styles.visitCustomer}>{v.customerName}</span>
+                  {v.siteLine ? <span className={styles.visitAddress}>{v.siteLine}</span> : null}
+                  <span className={styles.visitTime}>{formatTimeRange(v.starts_at, v.ends_at)}</span>
+                  <span className={styles.visitAvatars}>
+                    <PersonAvatarChip
+                      firstName={firstNameFromDisplayName(v.customerName)}
+                      displayName={v.customerName}
+                      avatarUrl={null}
+                      initials={initialsFromDisplayName(v.customerName)}
+                      variant="customer"
+                      size="md"
+                    />
+                    <ScheduleAssigneeAvatars assignees={v.assignees} size="md" maxVisible={3} />
+                  </span>
+                </Link>
               );
             })}
           </div>
@@ -308,11 +225,13 @@ export function TenantScheduleClient({
                     <li className={styles.weekEmpty}>—</li>
                   ) : (
                     dayVisitsWeek.map((v) => (
-                      <li key={v.id} className={styles.weekItem}>
-                        <div className={styles.weekItemTitle}>{v.customerName}</div>
-                        <div className={styles.weekItemMeta}>
-                          {formatTimeRange(v.starts_at, v.ends_at)}
-                        </div>
+                      <li key={v.id}>
+                        <Link href={`/schedule/${v.id}`} className={styles.weekItem}>
+                          <div className={styles.weekItemTitle}>{v.customerName}</div>
+                          <div className={styles.weekItemMeta}>
+                            {formatTimeRange(v.starts_at, v.ends_at)}
+                          </div>
+                        </Link>
                       </li>
                     ))
                   )}

@@ -5,16 +5,33 @@
   gap: var(--space-1);
 }
 
-.more {
+.moreSm,
+.moreMd,
+.moreLg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  height: 28px;
   padding: 0 var(--space-1);
   border-radius: var(--radius-pill);
-  font-size: 10px;
   font-weight: 700;
   background: var(--color-bg-muted);
   color: var(--color-text-muted);
+}
+
+.moreSm {
+  min-width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+
+.moreMd {
+  min-width: 36px;
+  height: 36px;
+  font-size: 11px;
+}
+
+.moreLg {
+  min-width: 48px;
+  height: 48px;
+  font-size: 12px;
 }
