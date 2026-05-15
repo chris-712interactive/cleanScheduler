@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { SignOutButton } from '@/components/auth/SignOutButton';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -55,6 +56,13 @@ export default async function CustomerSettingsPage() {
           ) : (
             <p className={styles.muted}>No customer identity is linked to this login yet.</p>
           )}
+        </Card>
+
+        <Card title="Account" description="End your session on this device.">
+          <p className={styles.muted}>
+            Signed in as {auth.user.email?.trim() || 'your account'}.
+          </p>
+          <SignOutButton variant="settings" />
         </Card>
       </Stack>
     </>

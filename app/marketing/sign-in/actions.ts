@@ -135,9 +135,3 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
     `/sign-in?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent('Google sign-in failed.')}`,
   );
 }
-
-export async function signOut(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/sign-in');
-}

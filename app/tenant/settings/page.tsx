@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { SignOutButton } from '@/components/auth/SignOutButton';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -105,6 +106,13 @@ export default async function TenantSettingsPage() {
           description="Defaults for quotes, scheduling, payments, and Resend email notifications. SMS toggles are stored for a future release."
         >
           <OperationalSettingsForm tenantSlug={membership.tenantSlug} snapshot={opsSnapshot} />
+        </Card>
+
+        <Card title="Account" description="End your session on this device.">
+          <p className={styles.muted}>
+            Signed in as {auth?.user.email?.trim() || 'your account'}.
+          </p>
+          <SignOutButton variant="settings" />
         </Card>
       </Stack>
     </>

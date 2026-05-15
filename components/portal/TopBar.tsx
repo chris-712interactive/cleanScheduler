@@ -13,7 +13,7 @@ import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { IdentityChip } from './IdentityChip';
+import { AccountMenu } from './AccountMenu';
 import { NavList } from './NavList';
 import type { IdentityChipModel, NavItem } from './types';
 import styles from './TopBar.module.scss';
@@ -22,6 +22,7 @@ export interface TopBarProps {
   brandLabel: string;
   brandHref?: string;
   identity?: IdentityChipModel;
+  settingsHref?: string;
   tenantBadge?: React.ReactNode;
   navItems: NavItem[];
 }
@@ -30,6 +31,7 @@ export function TopBar({
   brandLabel,
   brandHref = '/',
   identity,
+  settingsHref,
   tenantBadge,
   navItems,
 }: TopBarProps) {
@@ -64,7 +66,7 @@ export function TopBar({
 
       <div className={styles.right}>
         <ThemeToggle />
-        {identity ? <IdentityChip {...identity} /> : null}
+        {identity ? <AccountMenu {...identity} settingsHref={settingsHref} /> : null}
       </div>
     </header>
   );

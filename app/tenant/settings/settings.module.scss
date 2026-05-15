@@ -10,6 +10,11 @@
   font-weight: 600;
 }
 
+.muted {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-muted);
+}
+
 .opsForm {
   display: grid;
   gap: var(--space-4);

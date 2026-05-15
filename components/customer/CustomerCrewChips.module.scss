@@ -1,0 +1,29 @@
+.crew {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 52px;
+}
+
+.name {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.more {
+  align-self: center;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+}

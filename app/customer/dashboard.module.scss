@@ -1,0 +1,304 @@
+@use 'mixins/breakpoints' as mq;
+
+.dashboardPage {
+  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) calc(-1 * var(--space-9));
+  padding: var(--space-5) var(--space-4) var(--space-9);
+  background-color: var(--color-bg-subtle);
+  min-height: 100%;
+
+  @include mq.up(md) {
+    margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-7)) calc(-1 * var(--space-10));
+    padding: var(--space-6) var(--space-7) var(--space-10);
+  }
+}
+
+.dashboardHeader {
+  margin-bottom: var(--space-6);
+}
+
+.dashboardTitle {
+  margin: 0 0 var(--space-2);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-brand-primary);
+  line-height: 1.15;
+}
+
+.dashboardSubtitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--color-brand-primary) 70%, var(--color-text-muted));
+  line-height: 1.45;
+}
+
+.dashboardGrid {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    gap: var(--space-6);
+  }
+}
+
+.mainColumn,
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.cardBody {
+  padding: var(--space-5);
+}
+
+.cardTitle {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  letter-spacing: -0.01em;
+}
+
+.nextCard {
+  border-left: 4px solid var(--color-brand-primary);
+}
+
+.nextCardInner {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(md) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-primary);
+}
+
+.nextWhen {
+  margin: 0 0 var(--space-2);
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  line-height: 1.2;
+}
+
+.nextMeta {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--color-brand-primary) 75%, var(--color-text-muted));
+  line-height: 1.45;
+}
+
+.nextMeta + .nextMeta {
+  margin-top: var(--space-1);
+}
+
+.nextActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.outlineBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--easing-standard);
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+  }
+}
+
+.amountDueCard {
+  background: var(--color-warning-bg);
+  border-color: color-mix(in srgb, var(--color-warning) 25%, var(--color-border));
+}
+
+.amountDueEyebrow {
+  color: color-mix(in srgb, var(--color-warning) 85%, var(--color-text));
+}
+
+.amountDueInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.amountDueAmount {
+  margin: 0 0 var(--space-1);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  line-height: 1.1;
+}
+
+.invoiceTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.invoiceTable th {
+  padding: 0 0 var(--space-3);
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.invoiceTable td {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.invoiceTable tr:last-child td {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.invoiceLink {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.invoiceAmount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.upcomingList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.upcomingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.upcomingDate {
+  margin: 0 0 2px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+}
+
+.upcomingTime {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.calendarBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--easing-standard);
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+  }
+}
+
+.supportCard {
+  text-align: center;
+}
+
+.supportIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-4);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  color: var(--color-brand-primary);
+}
+
+.supportTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+}
+
+.supportText {
+  margin: 0 0 var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}

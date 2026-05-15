@@ -23,6 +23,8 @@ export interface PortalShellProps {
   brandLabel: string;
   brandHref?: string;
   identity?: IdentityChipModel;
+  /** Account menu link; omit to hide Settings in the menu. Defaults to `/settings`. */
+  settingsHref?: string;
   tenantBadge?: ReactNode;
   /** Non-production warning (e.g. dev/staging) shown above the top bar. */
   environmentBanner?: ReactNode;
@@ -37,6 +39,7 @@ export function PortalShell({
   brandLabel,
   brandHref = '/',
   identity,
+  settingsHref = '/settings',
   tenantBadge,
   environmentBanner,
   sessionNotice,
@@ -61,6 +64,7 @@ export function PortalShell({
         brandLabel={brandLabel}
         brandHref={brandHref}
         identity={identity}
+        settingsHref={settingsHref}
         tenantBadge={tenantBadge}
         navItems={navItems}
       />

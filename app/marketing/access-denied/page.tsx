@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { getPortalContext } from '@/lib/portal';
 import { getAuthContext } from '@/lib/auth/session';
-import { signOut } from '../sign-in/actions';
+import { signOut } from '@/lib/auth/signOutAction';
 import styles from './access-denied.module.scss';
 
 interface AccessDeniedPageProps {
