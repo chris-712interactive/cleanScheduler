@@ -266,28 +266,30 @@ export default async function CustomerHomePage() {
               <p className={styles.eyebrow}>Next appointment</p>
               {nextVisit ? (
                 <div className={styles.nextCardInner}>
-                  <div>
-                    <p className={styles.nextWhen}>
-                      {formatNextAppointmentWhen(nextVisit.starts_at)}
-                    </p>
-                    {nextServiceLine ? (
-                      <p className={styles.nextMeta}>{nextServiceLine}</p>
-                    ) : null}
-                    {nextSite ? <p className={styles.nextMeta}>{nextSite}</p> : null}
-                    <div className={styles.nextActions}>
-                      <Link href="/messages" className={styles.outlineBtn}>
-                        <Calendar size={16} aria-hidden />
-                        Reschedule
-                      </Link>
-                      <Link href="/messages" className={styles.outlineBtn}>
-                        <FileText size={16} aria-hidden />
-                        Add note
-                      </Link>
+                  <div className={styles.nextCardDetailsRow}>
+                    <div className={styles.nextCardCopy}>
+                      <p className={styles.nextWhen}>
+                        {formatNextAppointmentWhen(nextVisit.starts_at)}
+                      </p>
+                      {nextServiceLine ? (
+                        <p className={styles.nextMeta}>{nextServiceLine}</p>
+                      ) : null}
+                      {nextSite ? <p className={styles.nextMeta}>{nextSite}</p> : null}
                     </div>
+                    {nextVisitCrew.length > 0 ? (
+                      <CustomerCrewChips assignees={nextVisitCrew} />
+                    ) : null}
                   </div>
-                  {nextVisitCrew.length > 0 ? (
-                    <CustomerCrewChips assignees={nextVisitCrew} />
-                  ) : null}
+                  <div className={styles.nextActions}>
+                    <Link href="/messages" className={styles.outlineBtn}>
+                      <Calendar size={16} aria-hidden />
+                      Reschedule
+                    </Link>
+                    <Link href="/messages" className={styles.outlineBtn}>
+                      <FileText size={16} aria-hidden />
+                      Add note
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <p className={styles.emptyText}>

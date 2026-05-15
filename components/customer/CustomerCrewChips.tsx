@@ -26,7 +26,7 @@ export function CustomerCrewChips({
             avatarUrl={a.avatarUrl}
             initials={a.initials}
             variant="crew"
-            size="calendar"
+            size="xl"
           />
           <span className={styles.name}>{a.firstName}</span>
         </div>
