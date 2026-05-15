@@ -173,3 +173,14 @@
   font-weight: 500;
   color: var(--color-text-muted);
 }
+
+.backLink {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

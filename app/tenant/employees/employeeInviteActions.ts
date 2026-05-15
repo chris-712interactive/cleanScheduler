@@ -50,7 +50,7 @@ export async function sendEmployeeInviteAction(
     return { error: 'Pick a permission level for this invite.' };
   }
 
-  const membership = await requireTenantPortalAccess(slug, '/employees');
+  const membership = await requireTenantPortalAccess(slug, '/employees/new');
   if (!canManageTeamInvitesAndRoles(membership.role)) {
     return { error: 'Only workspace owners and admins can invite team members.' };
   }
@@ -164,5 +164,6 @@ export async function sendEmployeeInviteAction(
   }
 
   revalidatePath('/employees');
+  revalidatePath('/employees/new');
   return { success: `Invite sent to ${emailRaw}.` };
 }

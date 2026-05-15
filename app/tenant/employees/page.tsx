@@ -1,19 +1,15 @@
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Plus } from 'lucide-react';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
-import {
-  allowedInviteRolesForActor,
-  canEditTeamMember,
-  canManageTeamInvitesAndRoles,
-} from '@/lib/tenant/employeePermissions';
-import { isResendConfigured } from '@/lib/email/resend';
+import { canEditTeamMember, canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
-import { EmployeeInviteForm } from './EmployeeInviteForm';
 import { TeamMemberRow } from './TeamMemberRow';
 import styles from './employees.module.scss';
 
@@ -44,30 +40,27 @@ export default async function TenantEmployeesPage() {
 
   const actorRole = membership.role as TenantRole;
   const canManage = canManageTeamInvitesAndRoles(actorRole);
-  const allowedRoles = allowedInviteRolesForActor(actorRole);
-  const emailReady = isResendConfigured();
 
   return (
     <>
       <PageHeader
         title="Team"
-        description="Invite teammates by email, set permission levels, and manage who can access this workspace."
+        description="People who can sign in to this workspace."
+        actions={
+          canManage ? (
+            <Button
+              as="a"
+              href="/employees/new"
+              variant="primary"
+              iconLeft={<Plus size={18} aria-hidden />}
+            >
+              Add employee
+            </Button>
+          ) : undefined
+        }
       />
 
       <Stack gap={4}>
-        {canManage ? (
-          <Card
-            title="Invite teammate"
-            description="They receive a secure link to set a password and join this workspace. Invites expire after 7 days."
-          >
-            <EmployeeInviteForm
-              tenantSlug={membership.tenantSlug}
-              allowedRoles={allowedRoles}
-              emailReady={emailReady}
-            />
-          </Card>
-        ) : null}
-
         {error ? (
           <Card title="Could not load team">
             <p className={styles.muted}>{error.message}</p>
@@ -75,7 +68,11 @@ export default async function TenantEmployeesPage() {
         ) : !rows?.length ? (
           <EmptyState
             title="No members yet"
-            description="The workspace owner should appear here after onboarding. If this looks wrong, contact support."
+            description={
+              canManage
+                ? 'Invite your first teammate to get started.'
+                : 'The workspace owner should appear here after onboarding. If this looks wrong, contact support.'
+            }
           />
         ) : (
           <Card
