@@ -32,7 +32,7 @@ function visitCardPositionStyle(
     return {
       top: `${topPct}%`,
       height: `${heightPct}%`,
-      minHeight: '64px',
+      minHeight: '76px',
     };
   }
 
@@ -126,7 +126,16 @@ export function ScheduleVisitBlock({
           <div className={styles.visitCardMain}>
             <div className={styles.visitCardInfo}>
               <span className={styles.visitCustomer}>{visit.customerName}</span>
-              {visit.siteLine ? <span className={styles.visitAddress}>{visit.siteLine}</span> : null}
+              <span
+                className={[
+                  styles.visitAddress,
+                  !visit.siteLine ? styles.visitAddressEmpty : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {visit.siteLine || 'No address on file'}
+              </span>
               <span className={styles.visitTime}>{timeLabel}</span>
             </div>
 
@@ -134,7 +143,7 @@ export function ScheduleVisitBlock({
               <div className={styles.visitCardCrew}>
                 <ScheduleAssigneeAvatars
                   assignees={visit.assignees}
-                  size="sm"
+                  size="calendar"
                   maxVisible={4}
                   layout="row"
                   className={styles.visitCrewRow}
@@ -158,7 +167,7 @@ export function ScheduleVisitBlock({
               {visit.assignees.length > 0 ? (
                 <ScheduleAssigneeAvatars
                   assignees={visit.assignees}
-                  size="md"
+                  size="calendar"
                   maxVisible={4}
                   layout="row"
                   className={styles.visitCrewRow}

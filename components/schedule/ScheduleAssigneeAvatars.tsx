@@ -22,7 +22,13 @@ export function ScheduleAssigneeAvatars({
   const visible = assignees.slice(0, maxVisible);
   const overflow = assignees.length - maxVisible;
   const moreClass =
-    size === 'lg' ? styles.moreLg : size === 'md' ? styles.moreMd : styles.moreSm;
+    size === 'lg'
+      ? styles.moreLg
+      : size === 'md'
+        ? styles.moreMd
+        : size === 'calendar'
+          ? styles.moreCalendar
+          : styles.moreSm;
 
   const layoutClass = layout === 'column' ? styles.column : styles.row;
 

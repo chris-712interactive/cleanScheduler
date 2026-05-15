@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import styles from './PersonAvatarChip.module.scss';
 
-const SIZE_PX = { sm: 28, md: 36, lg: 48 } as const;
+const SIZE_PX = { sm: 28, md: 36, lg: 48, calendar: 40 } as const;
 
 export type AvatarChipSize = keyof typeof SIZE_PX;
 
@@ -25,7 +25,13 @@ export function PersonAvatarChip({
   const px = SIZE_PX[size];
   const variantClass = variant === 'customer' ? styles.customer : styles.crew;
   const sizeClass =
-    size === 'lg' ? styles.size_lg : size === 'md' ? styles.size_md : styles.size_sm;
+    size === 'lg'
+      ? styles.size_lg
+      : size === 'md'
+        ? styles.size_md
+        : size === 'calendar'
+          ? styles.size_calendar
+          : styles.size_sm;
 
   return (
     <span

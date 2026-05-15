@@ -9,7 +9,7 @@ import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
-import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import { resolveVisitSiteLine } from '@/lib/schedule/resolveVisitSiteLine';
 import {
   dbOverlapRangeForQuery,
   isLocalCalendarToday,
@@ -37,10 +37,19 @@ type VisitListRow = {
       full_name: string | null;
       phone: string | null;
     } | null;
+    tenant_customer_properties: Pick<
+      Tables<'tenant_customer_properties'>,
+      | 'is_primary'
+      | 'address_line1'
+      | 'address_line2'
+      | 'city'
+      | 'state'
+      | 'postal_code'
+    >[] | null;
   } | null;
   tenant_customer_properties: Pick<
     Tables<'tenant_customer_properties'>,
-    'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+    'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
   > | null;
   tenant_quotes: { title: string } | null;
   tenant_scheduled_visit_assignees:
@@ -81,10 +90,17 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           last_name,
           full_name,
           phone
+        ),
+        tenant_customer_properties (
+          is_primary,
+          address_line1,
+          address_line2,
+          city,
+          state,
+          postal_code
         )
       ),
       tenant_customer_properties (
-        label,
         address_line1,
         address_line2,
         city,
@@ -117,10 +133,10 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     const ident = v.customers?.customer_identities;
     const who =
       ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : 'Customer';
-    const prop = v.tenant_customer_properties;
-    const site = prop
-      ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ')
-      : '';
+    const site = resolveVisitSiteLine(
+      v.tenant_customer_properties,
+      v.customers?.tenant_customer_properties,
+    );
     const assignees = normalizeAssigneeRows(
       v.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
     );
