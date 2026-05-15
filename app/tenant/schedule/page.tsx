@@ -1,6 +1,4 @@
-import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
@@ -155,7 +153,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     <>
       <PageHeader
         title="Schedule"
-        description={subtitle}
+        description={<span className={styles.scheduleSubtitle}>{subtitle}</span>}
         actions={
           <div
             style={{
@@ -180,26 +178,13 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         }
       />
 
-      <Card
-        title="Calendar"
-        description="Switch day, week, or month. Filters apply to the whole team when wired up."
-      >
-        <TenantScheduleClient
-          tenantSlug={membership.tenantSlug}
-          visits={visits}
-          dateKey={dateKey}
-          view={view}
-          weekDayKeys={weekDayKeys}
-        />
-      </Card>
-
-      <p className={styles.pageFooterHint}>
-        Need to block time?{' '}
-        <Link href="/schedule/new" className={styles.inlineLink}>
-          Add an appointment
-        </Link>
-        .
-      </p>
+      <TenantScheduleClient
+        tenantSlug={membership.tenantSlug}
+        visits={visits}
+        dateKey={dateKey}
+        view={view}
+        weekDayKeys={weekDayKeys}
+      />
     </>
   );
 }

@@ -266,48 +266,73 @@
   border: 2px solid var(--color-surface);
 }
 
+.scheduleSubtitle {
+  color: var(--color-brand-primary);
+  font-weight: 500;
+}
+
 .visitCard {
   position: absolute;
   left: var(--space-2);
   right: var(--space-2);
   z-index: 1;
-  min-height: 52px;
-  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-2);
-  text-align: left;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
   transition:
     box-shadow 0.15s ease,
     border-color 0.15s ease;
 
   &:hover {
-    border-color: var(--color-brand-primary);
+    border-color: color-mix(in srgb, var(--color-brand-primary) 40%, var(--color-border));
     box-shadow: var(--shadow-md);
     z-index: 2;
-    text-decoration: none;
   }
+}
+
+.visitCardExpanded {
+  z-index: 3;
+  border-color: var(--color-brand-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.visitAccent {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--color-brand-primary);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  pointer-events: none;
+}
+
+.visitCardButton {
+  display: block;
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-3) + 4px);
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
 
   &:focus-visible {
     outline: 2px solid var(--color-brand-primary);
-    outline-offset: 2px;
-    z-index: 2;
+    outline-offset: -2px;
   }
+}
 
-  .visitCardHead {
-    .visitCustomer {
-      text-decoration: none;
-    }
-  }
+.visitCardMain {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 .visitCardInfo {
@@ -323,37 +348,24 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   padding-left: var(--space-2);
-  border-left: 1px solid var(--color-border-subtle);
 }
 
-.visitCardHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1);
+.visitCrewRow {
+  > * + * {
+    margin-left: -8px;
+  }
 }
 
 .visitCustomer {
   font-weight: 700;
   font-size: var(--font-size-sm);
-  color: var(--color-text);
+  color: var(--color-brand-primary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.visitStatusPill {
-  flex-shrink: 0;
-  font-size: 10px;
-  padding: 1px var(--space-2);
-
-  .StatusPill_label {
-    text-decoration: none;
-  }
 }
 
 .visitAddress {
@@ -371,6 +383,135 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.visitDuration {
+  color: var(--color-text-muted);
+}
+
+.visitCardExpand {
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-3) + 4px);
+}
+
+.visitExpandHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.visitExpandHeadText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.visitExpandHeadAside {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.visitCollapseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-muted);
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+.visitDetailList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.visitDetailItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.visitDetailIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+
+.visitDetailCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.visitDetailLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.visitDetailValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.visitDetailLink {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.visitOpenLink {
+  display: inline-block;
+  margin-top: var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.visitStatusPill {
+  flex-shrink: 0;
+  font-size: 10px;
+  padding: 1px var(--space-2);
+
+  .StatusPill_label {
+    text-decoration: none;
+  }
 }
 
 .avatarCircle {

@@ -19,8 +19,8 @@ import {
   visitOverlapsLocalDay,
 } from './scheduleTimelineUtils';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
-import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import { VisitStatusPill } from './VisitStatusPill';
+import { ScheduleVisitBlock } from './ScheduleVisitBlock';
 import styles from './schedule.module.scss';
 
 export type ScheduleVisitVM = {
@@ -58,11 +58,16 @@ export function TenantScheduleClient({
 }) {
   const router = useRouter();
   const [, setNowTick] = useState(0);
+  const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => setNowTick((n) => n + 1), 60_000);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    setExpandedVisitId(null);
+  }, [dateKey, view]);
 
   const push = (next: { date?: string; view?: ScheduleView }) => {
     const params = new URLSearchParams();
@@ -178,31 +183,16 @@ export function TenantScheduleClient({
               const { topPct, heightPct, visible } = layoutVisitOnLocalDay(v, dateKey);
               if (!visible) return null;
               return (
-                <Link
+                <ScheduleVisitBlock
                   key={v.id}
-                  href={`/schedule/${v.id}`}
-                  className={styles.visitCard}
-                  style={{ top: `${topPct}%`, height: `${heightPct}%`, minHeight: '52px' }}
-                >
-                  <div className={styles.visitCardInfo}>
-                    <span className={styles.visitCardHead}>
-                      <span className={styles.visitCustomer}>{v.customerName}</span>
-                      <VisitStatusPill status={v.status} />
-                    </span>
-                    {v.siteLine ? <span className={styles.visitAddress}>{v.siteLine}</span> : null}
-                    <span className={styles.visitTime}>{formatTimeRange(v.starts_at, v.ends_at)}</span>
-                  </div>
-                  {v.assignees.length > 0 ? (
-                    <div className={styles.visitCardCrew}>
-                      <ScheduleAssigneeAvatars
-                        assignees={v.assignees}
-                        size="sm"
-                        maxVisible={4}
-                        layout="column"
-                      />
-                    </div>
-                  ) : null}
-                </Link>
+                  visit={v}
+                  topPct={topPct}
+                  heightPct={heightPct}
+                  expanded={expandedVisitId === v.id}
+                  onToggle={() =>
+                    setExpandedVisitId((current) => (current === v.id ? null : v.id))
+                  }
+                />
               );
             })}
           </div>
