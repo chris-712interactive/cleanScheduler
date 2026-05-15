@@ -63,3 +63,35 @@ export function canToggleMemberActive(params: {
   if (targetRole === 'admin') return actor === 'owner';
   return true;
 }
+
+/** Whether the actor may open the per-member edit screen for `targetUserId`. */
+export function canEditTeamMember(params: {
+  actor: TenantRole;
+  actorUserId: string;
+  targetUserId: string;
+  targetRole: TenantRole;
+}): boolean {
+  const { actor, actorUserId, targetUserId, targetRole } = params;
+  if (!canManageTeamInvitesAndRoles(actor)) return false;
+  if (actorUserId === targetUserId) return false;
+  if (targetRole === 'owner') return false;
+  if (actor === 'admin' && targetRole === 'admin') return false;
+  return true;
+}
+
+export function roleOptionsForMemberEditor(actor: TenantRole): { value: Exclude<TenantRole, 'owner'>; label: string }[] {
+  if (actor === 'owner') {
+    return [
+      { value: 'admin', label: 'Admin' },
+      { value: 'employee', label: 'Employee' },
+      { value: 'viewer', label: 'Viewer' },
+    ];
+  }
+  if (actor === 'admin') {
+    return [
+      { value: 'employee', label: 'Employee' },
+      { value: 'viewer', label: 'Viewer' },
+    ];
+  }
+  return [];
+}

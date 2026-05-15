@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { canChangeMemberRole, canToggleMemberActive } from '@/lib/tenant/employeePermissions';
+import {
+  canChangeMemberRole,
+  canEditTeamMember,
+  canToggleMemberActive,
+} from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
@@ -31,6 +35,62 @@ async function assertTargetInTenant(
     .eq('user_id', targetUserId)
     .maybeSingle();
   return Boolean(data);
+}
+
+function revalidateMemberPaths(targetUserId: string) {
+  revalidatePath('/employees');
+  revalidatePath(`/employees/${targetUserId}`);
+  revalidatePath('/', 'layout');
+}
+
+export async function updateTeamMemberDisplayNameAction(
+  _prev: MemberActionState,
+  formData: FormData,
+): Promise<MemberActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const targetUserId = String(formData.get('target_user_id') ?? '').trim();
+  const name = String(formData.get('display_name') ?? '').trim();
+  if (!slug || !targetUserId) return { error: 'Missing fields.' };
+  if (!name || name.length > 120) {
+    return { error: 'Enter a display name (max 120 characters).' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/employees/${targetUserId}`);
+  const auth = await getAuthContext();
+  if (!auth) return { error: 'Not signed in.' };
+
+  const admin = createAdminClient();
+  const { data: targetRow, error: tErr } = await admin
+    .from('tenant_memberships')
+    .select('role')
+    .eq('tenant_id', membership.tenantId)
+    .eq('user_id', targetUserId)
+    .maybeSingle();
+  if (tErr || !targetRow) return { error: 'Member not found.' };
+
+  if (
+    !canEditTeamMember({
+      actor: membership.role,
+      actorUserId: auth.user.id,
+      targetUserId,
+      targetRole: targetRow.role as TenantRole,
+    })
+  ) {
+    return { error: 'You cannot edit this member.' };
+  }
+
+  const { error } = await admin
+    .from('user_profiles')
+    .update({ display_name: name, updated_at: new Date().toISOString() })
+    .eq('user_id', targetUserId);
+  if (error) return { error: error.message };
+
+  await admin.auth.admin.updateUserById(targetUserId, {
+    user_metadata: { display_name: name },
+  });
+
+  revalidateMemberPaths(targetUserId);
+  return { success: 'Display name saved.' };
 }
 
 export async function updateTenantMemberRoleAction(
@@ -113,7 +173,7 @@ export async function updateTenantMemberRoleAction(
     .eq('user_id', targetUserId);
   if (profErr) return { error: profErr.message };
 
-  revalidatePath('/employees');
+  revalidateMemberPaths(targetUserId);
   return { success: 'Role updated.' };
 }
 
@@ -176,7 +236,7 @@ export async function setTenantMemberActiveAction(
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
 
-  revalidatePath('/employees');
+  revalidateMemberPaths(targetUserId);
   return { success: isActive ? 'Member reactivated.' : 'Member deactivated.' };
 }
 
@@ -239,7 +299,7 @@ export async function uploadTeamMemberAvatarAction(
     .eq('user_id', targetUserId);
   if (pErr) return { error: pErr.message };
 
-  revalidatePath('/employees');
+  revalidateMemberPaths(targetUserId);
   revalidatePath('/settings');
   return { success: 'Photo updated.' };
 }

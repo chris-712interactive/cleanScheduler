@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
 import {
   allowedInviteRolesForActor,
+  canEditTeamMember,
   canManageTeamInvitesAndRoles,
 } from '@/lib/tenant/employeePermissions';
 import { isResendConfigured } from '@/lib/email/resend';
@@ -41,7 +42,6 @@ export default async function TenantEmployeesPage() {
     (profiles ?? []).map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }]),
   );
 
-  const ownerCount = (rows ?? []).filter((r) => r.role === 'owner').length;
   const actorRole = membership.role as TenantRole;
   const canManage = canManageTeamInvitesAndRoles(actorRole);
   const allowedRoles = allowedInviteRolesForActor(actorRole);
@@ -80,26 +80,32 @@ export default async function TenantEmployeesPage() {
         ) : (
           <Card
             title="Members"
-            description={`${rows.length} workspace ${rows.length === 1 ? 'member' : 'members'}. Update your own name and photo under Settings.`}
+            description={`${rows.length} workspace ${rows.length === 1 ? 'member' : 'members'}.`}
           >
             <ul className={styles.list}>
               {rows.map((row) => {
                 const prof = profileByUser.get(row.user_id);
                 const displayName = prof?.display_name ?? '';
                 const avatarUrl = prof?.avatar_url ?? null;
+                const role = row.role as TenantRole;
+                const isSelf = currentUserId === row.user_id;
+                const canEdit =
+                  canEditTeamMember({
+                    actor: actorRole,
+                    actorUserId: currentUserId,
+                    targetUserId: row.user_id,
+                    targetRole: role,
+                  });
                 return (
                   <TeamMemberRow
                     key={row.id}
-                    tenantSlug={membership.tenantSlug}
                     memberUserId={row.user_id}
                     displayName={displayName}
                     avatarUrl={avatarUrl}
-                    role={row.role as TenantRole}
+                    role={role}
                     isActive={row.is_active}
-                    canManage={canManage}
-                    currentUserId={currentUserId}
-                    actorRole={actorRole}
-                    ownerCount={ownerCount}
+                    isSelf={isSelf}
+                    canEdit={canEdit}
                   />
                 );
               })}
