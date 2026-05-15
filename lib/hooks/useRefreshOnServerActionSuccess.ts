@@ -8,7 +8,8 @@ import { useEffect, useRef } from 'react';
  * lists and counts update. Needed alongside `revalidatePath` when the tenant
  * portal is served via middleware URL rewrites (`/customers` → `/tenant/customers`).
  */
-export function useRefreshOnServerActionSuccess(success: boolean | undefined) {
+/** Accepts boolean or message string — any truthy value triggers a refresh. */
+export function useRefreshOnServerActionSuccess(success: boolean | string | undefined) {
   const router = useRouter();
   const didRefresh = useRef(false);
 
