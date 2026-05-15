@@ -116,26 +116,30 @@ export function TenantScheduleClient({
 
   return (
     <div className={styles.scheduleShell}>
-      <div className={styles.scheduleToolbar}>
+      <div className={styles.scheduleControlBar}>
         <div className={styles.scheduleDateNav}>
           <button
             type="button"
             className={styles.iconNavBtn}
-            aria-label="Previous"
+            aria-label="Previous day"
             onClick={goPrev}
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={20} aria-hidden="true" />
           </button>
-          <span className={styles.scheduleDateLabel}>{centerLabel}</span>
-          <button type="button" className={styles.iconNavBtn} aria-label="Next" onClick={goNext}>
-            <ChevronRight size={20} />
-          </button>
-          <button
-            type="button"
-            className={styles.todayLink}
-            onClick={() => push({ date: todayKey })}
-          >
-            Today
+          <div className={styles.scheduleDateCenter}>
+            <span className={styles.scheduleDateLabel}>{centerLabel}</span>
+            {!isLocalToday ? (
+              <button
+                type="button"
+                className={styles.todayLink}
+                onClick={() => push({ date: todayKey })}
+              >
+                Jump to today
+              </button>
+            ) : null}
+          </div>
+          <button type="button" className={styles.iconNavBtn} aria-label="Next day" onClick={goNext}>
+            <ChevronRight size={20} aria-hidden="true" />
           </button>
         </div>
         <div className={styles.viewToggle} role="group" aria-label="Calendar view">

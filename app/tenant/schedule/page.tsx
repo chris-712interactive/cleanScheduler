@@ -166,19 +166,13 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           : 'Month view — tap a day to open the day timeline.';
 
   return (
-    <>
+    <div className={styles.schedulePage}>
       <PageHeader
+        className={styles.schedulePageHeader}
         title="Schedule"
         description={<span className={styles.scheduleSubtitle}>{subtitle}</span>}
         actions={
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 'var(--space-2)',
-              alignItems: 'center',
-            }}
-          >
+          <div className={styles.scheduleHeaderActions}>
             <Button as="a" href="/schedule/recurring" variant="secondary">
               Recurring rules
             </Button>
@@ -201,6 +195,6 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         view={view}
         weekDayKeys={weekDayKeys}
       />
-    </>
+    </div>
   );
 }

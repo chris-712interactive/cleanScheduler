@@ -1,3 +1,5 @@
+@use 'mixins/breakpoints' as mq;
+
 .form {
   display: grid;
   gap: var(--space-3);
@@ -107,84 +109,176 @@
 // Schedule board (tenant) — day / week / month + timeline
 // -----------------------------------------------------------------------------
 
+// Full-bleed canvas behind schedule (mockup: cool gray main, white sidebar)
+.schedulePage {
+  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) calc(-1 * var(--space-9));
+  padding: var(--space-5) var(--space-4) var(--space-9);
+  background-color: var(--color-bg-subtle);
+  min-height: 100%;
+
+  @include mq.up(md) {
+    margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-7)) calc(-1 * var(--space-10));
+    padding: var(--space-6) var(--space-7) var(--space-10);
+  }
+}
+
+.schedulePageHeader {
+  margin-bottom: var(--space-5);
+
+  :global(h1) {
+    color: var(--color-brand-primary);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  :global(p) {
+    margin: 0;
+  }
+}
+
+.scheduleSubtitle {
+  display: block;
+  color: color-mix(in srgb, var(--color-brand-primary) 70%, var(--color-text-muted));
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.scheduleHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
 .scheduleShell {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.scheduleToolbar {
+.scheduleControlBar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 .scheduleDateNav {
+  flex: 1;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.scheduleDateCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 var(--space-2);
 }
 
 .iconNavBtn {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  border: none;
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
+  background: transparent;
+  color: var(--color-text-muted);
   cursor: pointer;
 
   &:hover {
     background: var(--color-bg-muted);
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
   }
 }
 
 .scheduleDateLabel {
   font-weight: 600;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
-  min-width: min(100%, 200px);
+  text-align: center;
+  line-height: 1.35;
+
+  @include mq.up(md) {
+    font-size: var(--font-size-md);
+  }
 }
 
 .todayLink {
-  margin-left: var(--space-2);
-  padding: 0 var(--space-2);
-  min-height: 40px;
+  padding: 0;
   border: none;
   background: transparent;
   color: var(--color-brand-primary);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  font-size: var(--font-size-sm);
+  line-height: 1.2;
+
+  &:hover {
+    color: var(--color-brand-primary-hover);
+  }
 }
 
 .viewToggle {
   display: inline-flex;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  flex-shrink: 0;
+  gap: var(--space-2);
 }
 
 .viewToggleBtn,
 .viewToggleBtnActive {
+  min-height: 36px;
   padding: var(--space-2) var(--space-4);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  border: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   cursor: pointer;
   background: var(--color-surface);
-  color: var(--color-text-muted);
+  color: var(--color-text);
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--color-bg-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
 }
 
 .viewToggleBtnActive {
-  background: color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-surface));
-  color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-brand);
+
+  &:hover {
+    background: var(--color-brand-primary-hover);
+    border-color: var(--color-brand-primary-hover);
+    color: var(--color-text-on-brand);
+  }
 }
 
 .scheduleFilters {
@@ -198,10 +292,11 @@
   min-height: 40px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface-muted);
-  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-xs);
 }
 
 .dayBoard {
@@ -209,6 +304,11 @@
   grid-template-columns: 4.75rem 1fr;
   gap: var(--space-2);
   min-height: 640px;
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 .dayBoardExpanded {
@@ -232,8 +332,8 @@
 .timelineTrack {
   position: relative;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
@@ -273,11 +373,6 @@
   border-radius: 50%;
   background: var(--color-brand-primary);
   border: 2px solid var(--color-surface);
-}
-
-.scheduleSubtitle {
-  color: var(--color-brand-primary);
-  font-weight: 500;
 }
 
 .visitCard {
@@ -597,6 +692,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .weekColumn {
@@ -615,7 +712,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -674,12 +771,14 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .monthWeekdayRow {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
