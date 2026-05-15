@@ -6,19 +6,13 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { canChangeMemberRole, canToggleMemberActive } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
+import {
+  AVATAR_ALLOWED_INPUT_MIME,
+  AVATAR_MAX_UPLOAD_BYTES,
+  prepareEmployeeAvatar,
+} from '@/lib/images/employeeAvatar';
 
 type MemberRoleUpdate = Exclude<TenantRole, 'owner'>;
-
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const MAX_BYTES = 2 * 1024 * 1024;
-
-function extForMime(m: string): string | null {
-  if (m === 'image/jpeg') return 'jpg';
-  if (m === 'image/png') return 'png';
-  if (m === 'image/webp') return 'webp';
-  if (m === 'image/gif') return 'gif';
-  return null;
-}
 
 export interface MemberActionState {
   error?: string;
@@ -213,21 +207,23 @@ export async function uploadTeamMemberAvatarAction(
   if (!file || typeof file === 'string' || file.size < 1) {
     return { error: 'Choose an image file.' };
   }
-  if (file.size > MAX_BYTES) {
-    return { error: 'Image must be 2MB or smaller.' };
+  if (file.size > AVATAR_MAX_UPLOAD_BYTES) {
+    return { error: 'Image is too large to upload (max 10MB). Try a smaller file.' };
   }
-  const mime = file.type;
-  if (!ALLOWED_MIME.has(mime)) {
+  if (!AVATAR_ALLOWED_INPUT_MIME.has(file.type)) {
     return { error: 'Use JPEG, PNG, WebP, or GIF.' };
   }
-  const ext = extForMime(mime);
-  if (!ext) return { error: 'Unsupported image type.' };
 
-  const buf = Buffer.from(await file.arrayBuffer());
-  const path = `${membership.tenantId}/${targetUserId}.${ext}`;
+  const raw = Buffer.from(await file.arrayBuffer());
+  const prepared = await prepareEmployeeAvatar(raw);
+  if (!prepared.ok) {
+    return { error: prepared.error };
+  }
 
-  const { error: upStorage } = await admin.storage.from('employee_avatars').upload(path, buf, {
-    contentType: mime,
+  const path = `${membership.tenantId}/${targetUserId}.${prepared.fileExtension}`;
+
+  const { error: upStorage } = await admin.storage.from('employee_avatars').upload(path, prepared.buffer, {
+    contentType: prepared.contentType,
     upsert: true,
   });
   if (upStorage) {

@@ -4,17 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const MAX_BYTES = 2 * 1024 * 1024;
-
-function extForMime(m: string): string | null {
-  if (m === 'image/jpeg') return 'jpg';
-  if (m === 'image/png') return 'png';
-  if (m === 'image/webp') return 'webp';
-  if (m === 'image/gif') return 'gif';
-  return null;
-}
+import {
+  AVATAR_ALLOWED_INPUT_MIME,
+  AVATAR_MAX_UPLOAD_BYTES,
+  prepareEmployeeAvatar,
+} from '@/lib/images/employeeAvatar';
 
 export interface ProfileActionState {
   error?: string;
@@ -67,21 +61,24 @@ export async function uploadOwnAvatarAction(
   if (!file || typeof file === 'string' || file.size < 1) {
     return { error: 'Choose an image file.' };
   }
-  if (file.size > MAX_BYTES) {
-    return { error: 'Image must be 2MB or smaller.' };
+  if (file.size > AVATAR_MAX_UPLOAD_BYTES) {
+    return { error: 'Image is too large to upload (max 10MB). Try a smaller file.' };
   }
-  if (!ALLOWED_MIME.has(file.type)) {
+  if (!AVATAR_ALLOWED_INPUT_MIME.has(file.type)) {
     return { error: 'Use JPEG, PNG, WebP, or GIF.' };
   }
-  const ext = extForMime(file.type);
-  if (!ext) return { error: 'Unsupported image type.' };
 
   const admin = createAdminClient();
-  const buf = Buffer.from(await file.arrayBuffer());
-  const path = `${membership.tenantId}/${auth.user.id}.${ext}`;
+  const raw = Buffer.from(await file.arrayBuffer());
+  const prepared = await prepareEmployeeAvatar(raw);
+  if (!prepared.ok) {
+    return { error: prepared.error };
+  }
 
-  const { error: upStorage } = await admin.storage.from('employee_avatars').upload(path, buf, {
-    contentType: file.type,
+  const path = `${membership.tenantId}/${auth.user.id}.${prepared.fileExtension}`;
+
+  const { error: upStorage } = await admin.storage.from('employee_avatars').upload(path, prepared.buffer, {
+    contentType: prepared.contentType,
     upsert: true,
   });
   if (upStorage) return { error: upStorage.message };

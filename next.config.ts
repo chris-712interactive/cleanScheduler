@@ -4,6 +4,13 @@ import path from 'node:path';
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Avatar uploads: originals may be large; Sharp compresses to ≤2MB before Storage.
+  // Multipart bodies are larger than raw file bytes — leave headroom.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '12mb',
+    },
+  },
   images: {
     remotePatterns: [
       {
