@@ -162,7 +162,11 @@ export function TenantScheduleClient({
       </div>
 
       {view === 'day' ? (
-        <div className={styles.dayBoard}>
+        <div
+          className={[styles.dayBoard, expandedVisitId ? styles.dayBoardExpanded : '']
+            .filter(Boolean)
+            .join(' ')}
+        >
           <div className={styles.hourRail}>
             {hours.map((h) => (
               <div key={h.hour} className={styles.hourTick}>
@@ -170,7 +174,14 @@ export function TenantScheduleClient({
               </div>
             ))}
           </div>
-          <div className={styles.timelineTrack}>
+          <div
+            className={[
+              styles.timelineTrack,
+              expandedVisitId ? styles.timelineTrackExpanded : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
             {hours.map((h) => (
               <div key={h.hour} className={styles.hourLine} />
             ))}

@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { ChevronUp, ClipboardList, FileText, Phone } from 'lucide-react';
+import { ChevronDown, ChevronUp, ClipboardList, FileText, Phone } from 'lucide-react';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
+import { resolveVisitExpandDirection } from './scheduleTimelineUtils';
 import type { ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
 
@@ -20,6 +22,36 @@ function formatDurationLabel(startsAt: string, endsAt: string): string {
   return `${rounded} hrs`;
 }
 
+function visitCardPositionStyle(
+  expanded: boolean,
+  expandDir: 'up' | 'down',
+  topPct: number,
+  heightPct: number,
+): CSSProperties {
+  if (!expanded) {
+    return {
+      top: `${topPct}%`,
+      height: `${heightPct}%`,
+      minHeight: '64px',
+    };
+  }
+
+  const slotEndPct = topPct + heightPct;
+  if (expandDir === 'up') {
+    return {
+      top: 'auto',
+      bottom: `${Math.max(0, 100 - slotEndPct)}%`,
+      height: 'auto',
+    };
+  }
+
+  return {
+    top: `${topPct}%`,
+    bottom: 'auto',
+    height: 'auto',
+  };
+}
+
 export function ScheduleVisitBlock({
   visit,
   topPct,
@@ -33,18 +65,53 @@ export function ScheduleVisitBlock({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const cardRef = useRef<HTMLElement>(null);
+  const [expandDir, setExpandDir] = useState<'up' | 'down'>(() =>
+    resolveVisitExpandDirection(topPct, heightPct),
+  );
+
   const timeLabel = formatTimeRange(visit.starts_at, visit.ends_at);
   const durationLabel = formatDurationLabel(visit.starts_at, visit.ends_at);
   const serviceLabel = visit.quoteTitle?.trim() || visit.title?.trim() || 'Service visit';
 
+  useEffect(() => {
+    if (expanded) {
+      setExpandDir(resolveVisitExpandDirection(topPct, heightPct));
+    }
+  }, [expanded, topPct, heightPct, visit.id]);
+
+  useLayoutEffect(() => {
+    if (!expanded || !cardRef.current) return;
+
+    const track = cardRef.current.parentElement;
+    if (!track) return;
+
+    const trackRect = track.getBoundingClientRect();
+    const cardRect = cardRef.current.getBoundingClientRect();
+    const overflowsBottom = cardRect.bottom > trackRect.bottom + 2;
+    const overflowsTop = cardRect.top < trackRect.top + 2;
+
+    setExpandDir((prev) => {
+      if (overflowsBottom && prev === 'down') return 'up';
+      if (overflowsTop && prev === 'up') return 'down';
+      return prev;
+    });
+  }, [expanded, expandDir, topPct, heightPct]);
+
+  const cardClass = [
+    styles.visitCard,
+    expanded ? styles.visitCardExpanded : '',
+    expanded && expandDir === 'up' ? styles.visitCardExpandUp : '',
+    expanded && expandDir === 'down' ? styles.visitCardExpandDown : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <article
-      className={[styles.visitCard, expanded ? styles.visitCardExpanded : ''].filter(Boolean).join(' ')}
-      style={{
-        top: `${topPct}%`,
-        height: expanded ? 'auto' : `${heightPct}%`,
-        minHeight: expanded ? undefined : '64px',
-      }}
+      ref={cardRef}
+      className={cardClass}
+      style={visitCardPositionStyle(expanded, expandDir, topPct, heightPct)}
     >
       <span className={styles.visitAccent} aria-hidden="true" />
 
@@ -103,7 +170,11 @@ export function ScheduleVisitBlock({
                 onClick={onToggle}
                 aria-label="Collapse appointment details"
               >
-                <ChevronUp size={18} aria-hidden="true" />
+                {expandDir === 'up' ? (
+                  <ChevronDown size={18} aria-hidden="true" />
+                ) : (
+                  <ChevronUp size={18} aria-hidden="true" />
+                )}
               </button>
             </div>
           </div>

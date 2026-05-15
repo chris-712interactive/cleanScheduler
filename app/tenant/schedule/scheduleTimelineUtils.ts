@@ -65,6 +65,28 @@ export function currentTimeLinePct(dateKey: string): number | null {
   return ((t - slotStart.getTime()) / totalMs) * 100;
 }
 
+/** Minimum timeline % we want free when expanding in a direction. */
+const EXPAND_PANEL_MIN_PCT = 32;
+
+/**
+ * Pick whether an expanded visit card should grow down (from start time)
+ * or up (anchored to end of the scheduled slot).
+ */
+export function resolveVisitExpandDirection(
+  topPct: number,
+  heightPct: number,
+): 'up' | 'down' {
+  const spaceAbove = topPct;
+  const spaceBelowFromEnd = 100 - topPct - heightPct;
+  const spaceBelowFromStart = 100 - topPct;
+
+  if (spaceAbove < EXPAND_PANEL_MIN_PCT) return 'down';
+  if (spaceBelowFromEnd < EXPAND_PANEL_MIN_PCT || spaceBelowFromStart < EXPAND_PANEL_MIN_PCT + 6) {
+    return 'up';
+  }
+  return 'down';
+}
+
 export function hourLabels(): { label: string; hour: number }[] {
   const out: { label: string; hour: number }[] = [];
   for (let h = TIMELINE_START_HOUR; h < TIMELINE_END_HOUR; h++) {

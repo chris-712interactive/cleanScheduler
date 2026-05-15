@@ -211,6 +211,10 @@
   min-height: 640px;
 }
 
+.dayBoardExpanded {
+  overflow: visible;
+}
+
 .hourRail {
   display: grid;
   grid-template-rows: repeat(11, 1fr);
@@ -238,6 +242,11 @@
     var(--color-border) calc(100% / 11)
   );
   min-height: 640px;
+}
+
+.timelineTrackExpanded {
+  overflow: visible;
+  z-index: 1;
 }
 
 .hourLine {
@@ -274,7 +283,9 @@
 .visitCard {
   position: absolute;
   left: var(--space-2);
-  right: var(--space-2);
+  right: auto;
+  width: 50%;
+  max-width: 50%;
   z-index: 1;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
@@ -296,6 +307,7 @@
   z-index: 3;
   border-color: var(--color-brand-primary);
   box-shadow: var(--shadow-md);
+  overflow: visible;
 }
 
 .visitAccent {
