@@ -18,6 +18,10 @@ import {
   layoutVisitOnLocalDay,
   visitOverlapsLocalDay,
 } from './scheduleTimelineUtils';
+import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
+import { firstNameFromDisplayName, initialsFromDisplayName } from '@/lib/profile/displayName';
+import { PersonAvatarChip } from '@/components/schedule/PersonAvatarChip';
+import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import { DeleteVisitButton } from './DeleteVisitButton';
 import styles from './schedule.module.scss';
 
@@ -32,7 +36,7 @@ export type ScheduleVisitVM = {
   customerPhone: string | null;
   siteLine: string;
   quoteTitle: string | null;
-  assignees: { userId: string; displayName: string; initials: string }[];
+  assignees: ScheduleAssigneeChip[];
 };
 
 const STATUS_LABEL: Record<ScheduleVisitVM['status'], string> = {
@@ -46,13 +50,6 @@ const STATUS_TONE: Record<ScheduleVisitVM['status'], 'info' | 'success' | 'neutr
   completed: 'success',
   cancelled: 'neutral',
 };
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
-}
 
 function formatTimeRange(startsAt: string, endsAt: string): string {
   const s = new Date(startsAt);
@@ -232,18 +229,15 @@ export function TenantScheduleClient({
                     <div className={styles.visitTime}>
                       {formatTimeRange(v.starts_at, v.ends_at)}
                     </div>
-                    <div className={styles.visitAvatars} aria-hidden="true">
-                      <span className={styles.avatarCircle} title="Customer">
-                        {initials(v.customerName)}
-                      </span>
-                      {v.assignees.slice(0, 4).map((a) => (
-                        <span key={a.userId} className={styles.avatarCrew} title={a.displayName}>
-                          {a.initials}
-                        </span>
-                      ))}
-                      {v.assignees.length > 4 ? (
-                        <span className={styles.avatarMore}>+{v.assignees.length - 4}</span>
-                      ) : null}
+                    <div className={styles.visitAvatars}>
+                      <PersonAvatarChip
+                        firstName={firstNameFromDisplayName(v.customerName)}
+                        displayName={v.customerName}
+                        avatarUrl={null}
+                        initials={initialsFromDisplayName(v.customerName)}
+                        variant="customer"
+                      />
+                      <ScheduleAssigneeAvatars assignees={v.assignees} />
                     </div>
                   </button>
                   {expanded ? (

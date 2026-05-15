@@ -7,8 +7,11 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { KeyValueList } from '@/components/ui/KeyValueList';
+import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
+import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
+import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -44,34 +47,44 @@ export default async function CustomerHomePage() {
     { key: 'When', value: '—' },
     { key: 'Visit', value: '—' },
   ];
+  let nextVisitCrew: ScheduleAssigneeChip[] = [];
 
   if (ctx.customerIds.length > 0) {
     const { data: visits } = await admin
       .from('tenant_scheduled_visits')
-      .select('id, title, starts_at, ends_at, tenant_id, tenants:tenants!inner(name)')
+      .select(
+        `
+        id,
+        title,
+        starts_at,
+        ends_at,
+        tenant_id,
+        tenants:tenants!inner(name),
+        tenant_scheduled_visit_assignees (
+          user_id,
+          user_profiles ( display_name, avatar_url )
+        )
+      `,
+      )
       .in('customer_id', ctx.customerIds)
       .eq('status', 'scheduled')
       .gte('starts_at', nowIso)
       .order('starts_at', { ascending: true })
       .limit(1);
 
-    const v = visits?.[0] as
-      | {
-          title: string;
-          starts_at: string;
-          ends_at: string;
-          tenants: { name: string } | null;
-        }
-      | undefined;
+    const v = visits?.[0];
 
     if (v) {
       nextVisitLabel = v.title || 'Scheduled visit';
-      const tenantName = v.tenants?.name ?? 'Your provider';
+      const tenantName = (v.tenants as { name: string } | null)?.name ?? 'Your provider';
       nextVisitMeta = [
         { key: 'Provider', value: tenantName },
         { key: 'When', value: formatVisitRange(v.starts_at, v.ends_at) },
         { key: 'Visit', value: v.title || 'Cleaning visit' },
       ];
+      nextVisitCrew = normalizeAssigneeRows(
+        v.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
+      );
     }
   }
 
@@ -101,6 +114,29 @@ export default async function CustomerHomePage() {
                 {nextVisitLabel}
               </StatusPill>
               <KeyValueList items={nextVisitMeta} />
+              {nextVisitCrew.length > 0 ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: 'var(--space-2)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 'var(--font-size-xs)',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      color: 'var(--color-text-muted)',
+                    }}
+                  >
+                    Your crew
+                  </span>
+                  <ScheduleAssigneeAvatars assignees={nextVisitCrew} />
+                </div>
+              ) : null}
             </Stack>
           </Card>
 

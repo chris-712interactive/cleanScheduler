@@ -19,17 +19,11 @@ import {
   normalizeView,
   utcWeekDayKeys,
 } from '@/lib/tenant/scheduleDateRange';
+import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { TenantScheduleClient, type ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
 
 export const dynamic = 'force-dynamic';
-
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
-}
 
 type VisitListRow = {
   id: string;
@@ -54,7 +48,7 @@ type VisitListRow = {
   tenant_scheduled_visit_assignees:
     | {
         user_id: string;
-        user_profiles: { display_name: string | null } | null;
+        user_profiles: { display_name: string | null; avatar_url: string | null } | null;
       }[]
     | null;
 };
@@ -105,7 +99,8 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       tenant_scheduled_visit_assignees (
         user_id,
         user_profiles (
-          display_name
+          display_name,
+          avatar_url
         )
       )
     `,
@@ -128,25 +123,9 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     const site = prop
       ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ')
       : '';
-    const rawAssignees = v.tenant_scheduled_visit_assignees as
-      | {
-          user_id: string;
-          user_profiles: { display_name: string | null } | null;
-        }[]
-      | {
-          user_id: string;
-          user_profiles: { display_name: string | null } | null;
-        }
-      | null;
-    const assigneeRows = Array.isArray(rawAssignees)
-      ? rawAssignees
-      : rawAssignees
-        ? [rawAssignees]
-        : [];
-    const assignees = assigneeRows.map((a) => {
-      const dn = a.user_profiles?.display_name?.trim() || 'Member';
-      return { userId: a.user_id, displayName: dn, initials: initialsFromName(dn) };
-    });
+    const assignees = normalizeAssigneeRows(
+      v.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
+    );
     return {
       id: v.id,
       title: v.title,

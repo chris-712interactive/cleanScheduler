@@ -3,8 +3,10 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
+import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import styles from './visits.module.scss';
@@ -37,7 +39,14 @@ export default async function CustomerVisitsPage() {
             starts_at,
             ends_at,
             status,
-            tenants:tenants!inner ( name, slug )
+            tenants:tenants!inner ( name, slug ),
+            tenant_scheduled_visit_assignees (
+              user_id,
+              user_profiles (
+                display_name,
+                avatar_url
+              )
+            )
           `,
           )
           .in('customer_id', ctx.customerIds)
@@ -69,15 +78,21 @@ export default async function CustomerVisitsPage() {
         <Stack gap={3}>
           {visits.map((row) => {
             const t = row.tenants as { name: string; slug: string } | null;
+            const assignees = normalizeAssigneeRows(
+              row.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
+            );
             return (
               <Card key={row.id} title={row.title || 'Visit'} description={t?.name ?? 'Provider'}>
                 <div className={styles.row}>
                   <StatusPill tone="info">{formatWhen(row.starts_at, row.ends_at)}</StatusPill>
                   <StatusPill tone="neutral">{row.status}</StatusPill>
                 </div>
-                <p className={styles.hint}>
-                  Reschedule requests and crew details will appear here as those features go live.
-                </p>
+                {assignees.length > 0 ? (
+                  <div className={styles.crewRow}>
+                    <span className={styles.crewLabel}>Your crew</span>
+                    <ScheduleAssigneeAvatars assignees={assignees} />
+                  </div>
+                ) : null}
               </Card>
             );
           })}
