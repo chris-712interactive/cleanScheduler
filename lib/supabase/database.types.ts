@@ -556,6 +556,7 @@ export type Database = {
           id: string;
           tenant_id: string;
           customer_id: string;
+          visit_id: string | null;
           title: string;
           status: 'draft' | 'open' | 'paid' | 'void';
           currency: string;
@@ -570,6 +571,7 @@ export type Database = {
           id?: string;
           tenant_id: string;
           customer_id: string;
+          visit_id?: string | null;
           title?: string;
           status?: 'draft' | 'open' | 'paid' | 'void';
           currency?: string;
@@ -584,6 +586,7 @@ export type Database = {
           id?: string;
           tenant_id?: string;
           customer_id?: string;
+          visit_id?: string | null;
           title?: string;
           status?: 'draft' | 'open' | 'paid' | 'void';
           currency?: string;
@@ -792,6 +795,7 @@ export type Database = {
           customer_id: string;
           company_name: string | null;
           preferred_contact_method: 'email' | 'phone' | 'sms' | null;
+          preferred_payment_method: Database['public']['Enums']['tenant_payment_method'];
           internal_notes: string | null;
           created_at: string;
           updated_at: string;
@@ -802,6 +806,7 @@ export type Database = {
           customer_id: string;
           company_name?: string | null;
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
+          preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -812,6 +817,7 @@ export type Database = {
           customer_id?: string;
           company_name?: string | null;
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
+          preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -1392,6 +1398,11 @@ export type Database = {
           checked_in_by_user_id: string | null;
           completed_at: string | null;
           completed_by_user_id: string | null;
+          completion_payment_collected: boolean | null;
+          completion_collected_method: Database['public']['Enums']['tenant_payment_method'] | null;
+          completion_check_number: string | null;
+          completion_collected_amount_cents: number | null;
+          completion_invoice_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1411,6 +1422,11 @@ export type Database = {
           checked_in_by_user_id?: string | null;
           completed_at?: string | null;
           completed_by_user_id?: string | null;
+          completion_payment_collected?: boolean | null;
+          completion_collected_method?: Database['public']['Enums']['tenant_payment_method'] | null;
+          completion_check_number?: string | null;
+          completion_collected_amount_cents?: number | null;
+          completion_invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1430,6 +1446,11 @@ export type Database = {
           checked_in_by_user_id?: string | null;
           completed_at?: string | null;
           completed_by_user_id?: string | null;
+          completion_payment_collected?: boolean | null;
+          completion_collected_method?: Database['public']['Enums']['tenant_payment_method'] | null;
+          completion_check_number?: string | null;
+          completion_collected_amount_cents?: number | null;
+          completion_invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

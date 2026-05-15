@@ -14,6 +14,12 @@ import {
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import {
+  formatCustomerPreferredBilling,
+  isElectronicPreferredBilling,
+} from '@/lib/tenant/customerBillingPreference';
+import { CUSTOMER_PAYMENT_METHOD_LABEL } from '@/lib/tenant/operationalSettings';
+import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import {
   canCheckInToVisit,
@@ -91,12 +97,22 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
       checked_in_by_user_id,
       completed_at,
       completed_by_user_id,
+      completion_payment_collected,
+      completion_collected_method,
+      completion_check_number,
+      completion_collected_amount_cents,
+      completion_invoice_id,
+      quote_id,
       customers (
         customer_identities (
           first_name,
           last_name,
           full_name,
-          phone
+          phone,
+          email
+        ),
+        tenant_customer_profiles (
+          preferred_payment_method
         )
       ),
       tenant_customer_properties (
@@ -107,7 +123,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
         state,
         postal_code
       ),
-      tenant_quotes ( title ),
+      tenant_quotes ( title, amount_cents ),
       tenant_scheduled_visit_assignees (
         user_id,
         user_profiles ( display_name, avatar_url )
@@ -124,6 +140,12 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
   const customerName =
     ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : 'Customer';
   const customerPhone = ident?.phone?.trim() || null;
+  const customerEmail = ident?.email?.trim() || '';
+  const preferredPaymentMethod =
+    row.customers?.tenant_customer_profiles?.preferred_payment_method ?? null;
+  const quoteAmountRaw = row.tenant_quotes?.amount_cents;
+  const defaultAmountCents =
+    quoteAmountRaw != null && Number(quoteAmountRaw) > 0 ? Number(quoteAmountRaw) : null;
   const prop = row.tenant_customer_properties;
   const siteLine = prop
     ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ')
@@ -192,10 +214,26 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                   </p>
                 </div>
               ) : null}
+              {preferredPaymentMethod ? (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Billing preference</span>
+                  <p className={styles.detailValue}>
+                    {formatCustomerPreferredBilling(preferredPaymentMethod)}
+                    {isElectronicPreferredBilling(preferredPaymentMethod)
+                      ? ' · Invoice via Stripe after service'
+                      : ' · Collect on site'}
+                  </p>
+                </div>
+              ) : null}
               {row.tenant_quotes?.title ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Quote</span>
-                  <p className={styles.detailValue}>{row.tenant_quotes.title}</p>
+                  <p className={styles.detailValue}>
+                    {row.tenant_quotes.title}
+                    {defaultAmountCents != null
+                      ? ` · $${formatCentsAsDollars(defaultAmountCents)}`
+                      : ''}
+                  </p>
                 </div>
               ) : null}
               {row.notes ? (
@@ -216,6 +254,26 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                   <p className={styles.detailValue}>{formatTimestamp(row.completed_at)}</p>
                 </div>
               ) : null}
+              {row.completion_payment_collected != null ? (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Payment at completion</span>
+                  <p className={styles.detailValue}>
+                    {row.completion_payment_collected
+                      ? row.completion_collected_method
+                        ? `${CUSTOMER_PAYMENT_METHOD_LABEL[row.completion_collected_method]} · $${formatCentsAsDollars(row.completion_collected_amount_cents ?? 0)}${row.completion_check_number ? ` · Check #${row.completion_check_number}` : ''}`
+                        : 'Collected on site'
+                      : 'Not collected — invoice sent'}
+                    {row.completion_invoice_id ? (
+                      <>
+                        {' '}
+                        <Link href={`/billing/invoices/${row.completion_invoice_id}`}>
+                          View invoice
+                        </Link>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             {assignees.length > 0 ? (
@@ -233,6 +291,9 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               canCheckIn={showCheckIn}
               canComplete={showComplete}
               checkedInAt={row.checked_in_at}
+              preferredPaymentMethod={preferredPaymentMethod}
+              defaultAmountCents={defaultAmountCents}
+              customerHasEmail={Boolean(customerEmail)}
             />
 
             {canDelete ? (

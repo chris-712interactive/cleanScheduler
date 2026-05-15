@@ -1,5 +1,6 @@
 import { Building2, Calendar, Hash, Mail, MapPin, MessageSquareText, Phone } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { formatCustomerPreferredBilling } from '@/lib/tenant/customerBillingPreference';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
@@ -42,6 +43,7 @@ export function CustomerProfileSummary({
   const company = profile?.company_name?.trim() ?? '';
   const internalNotes = profile?.internal_notes?.trim() ?? '';
   const preferred = formatPreferredContact(profile?.preferred_contact_method);
+  const preferredBilling = formatCustomerPreferredBilling(profile?.preferred_payment_method);
   const primaryLine = formatPropertyAddressLine(primaryProperty);
   const primaryLabel = primaryProperty?.label?.trim();
   const isActive = status === 'active';
@@ -105,6 +107,10 @@ export function CustomerProfileSummary({
         <div className={styles.profileSummaryContactCard}>
           <span className={styles.profileSummaryContactLabel}>Preferred contact</span>
           <span className={styles.profileSummaryContactValue}>{preferred}</span>
+        </div>
+        <div className={styles.profileSummaryContactCard}>
+          <span className={styles.profileSummaryContactLabel}>Preferred billing</span>
+          <span className={styles.profileSummaryContactValue}>{preferredBilling}</span>
         </div>
       </div>
 

@@ -106,6 +106,7 @@ export async function createTenantCustomerInlineForQuote(options: {
     customer_id: customerId,
     company_name: null,
     preferred_contact_method: 'email',
+    preferred_payment_method: 'card',
     internal_notes: null,
   });
 

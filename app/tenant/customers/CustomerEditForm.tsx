@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { CUSTOMER_PREFERRED_BILLING_OPTIONS } from '@/lib/tenant/customerBillingPreference';
 import { updateTenantCustomer, type CustomerFormState } from './actions';
 import styles from './customers.module.scss';
 
@@ -16,6 +17,7 @@ export interface CustomerEditSnapshot {
   status: string;
   companyName: string;
   preferredContactMethod: string;
+  preferredPaymentMethod: string;
   internalNotes: string;
 }
 
@@ -111,6 +113,22 @@ export function CustomerEditForm({
         className={styles.input}
         defaultValue={snapshot.companyName}
       />
+
+      <label className={styles.label} htmlFor="edit_preferred_payment_method">
+        Preferred billing
+      </label>
+      <select
+        id="edit_preferred_payment_method"
+        name="preferred_payment_method"
+        className={styles.input}
+        defaultValue={snapshot.preferredPaymentMethod || 'card'}
+      >
+        {CUSTOMER_PREFERRED_BILLING_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label} — {opt.hint}
+          </option>
+        ))}
+      </select>
 
       <label className={styles.label} htmlFor="edit_preferred_contact_method">
         Preferred contact

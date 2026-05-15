@@ -5,11 +5,13 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import type { TenantRole } from '@/lib/auth/types';
+import type { Database } from '@/lib/supabase/database.types';
 import {
   canCheckInToVisit,
   canCompleteVisit,
   isVisitAssignee,
 } from '@/lib/schedule/visitFieldWork';
+import { applyVisitCompletionBilling } from '@/lib/billing/completeVisitWithBilling';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -23,7 +25,7 @@ async function loadVisitForActor(
 ) {
   const { data: visit, error } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status, checked_in_at, checked_in_by_user_id')
+    .select('id, status, checked_in_at, checked_in_by_user_id, customer_id, quote_id, title')
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -44,6 +46,7 @@ async function loadVisitForActor(
 function revalidateVisitPaths(visitId: string) {
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${visitId}`);
+  revalidatePath('/billing/invoices');
 }
 
 export async function checkInToVisitAction(
@@ -91,13 +94,25 @@ export async function checkInToVisitAction(
   return { success: 'Checked in at property.' };
 }
 
-export async function completeVisitAction(
+export async function completeVisitWithPaymentAction(
   _prev: VisitFieldActionState,
   formData: FormData,
 ): Promise<VisitFieldActionState> {
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
   const visitId = String(formData.get('visit_id') ?? '').trim();
+  const paymentCollectedRaw = String(formData.get('payment_collected') ?? '').trim();
+  const collectedMethodRaw = String(formData.get('collected_method') ?? '').trim();
+  const checkNumber = String(formData.get('check_number') ?? '').trim();
+  const amountDollars = String(formData.get('amount_dollars') ?? '').trim();
+
   if (!slug || !visitId) return { error: 'Missing visit.' };
+  if (paymentCollectedRaw !== 'yes' && paymentCollectedRaw !== 'no') {
+    return { error: 'Select whether payment was collected.' };
+  }
+
+  const paymentCollected = paymentCollectedRaw === 'yes';
+  const collectedMethod =
+    collectedMethodRaw === 'cash' || collectedMethodRaw === 'check' ? collectedMethodRaw : undefined;
 
   const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
   const auth = await getAuthContext();
@@ -127,25 +142,41 @@ export async function completeVisitAction(
     return { error: 'You cannot complete this visit.' };
   }
 
+  const billing = await applyVisitCompletionBilling(admin, {
+    tenantId: membership.tenantId,
+    tenantSlug: membership.tenantSlug,
+    visitId,
+    customerId: loaded.visit.customer_id,
+    quoteId: loaded.visit.quote_id,
+    visitTitle: loaded.visit.title,
+    billing: {
+      paymentCollected,
+      collectedMethod,
+      checkNumber: checkNumber || undefined,
+      amountDollars,
+    },
+  });
+
+  if ('error' in billing) {
+    return { error: billing.error };
+  }
+
   const now = new Date().toISOString();
-  const patch: {
-    status: 'completed';
-    completed_at: string;
-    completed_by_user_id: string;
-    updated_at: string;
-    checked_in_at?: string;
-    checked_in_by_user_id?: string;
-  } = {
+  const patch: Database['public']['Tables']['tenant_scheduled_visits']['Update'] = {
     status: 'completed',
     completed_at: now,
     completed_by_user_id: auth.user.id,
     updated_at: now,
+    completion_payment_collected: paymentCollected,
+    completion_collected_method: paymentCollected ? collectedMethod ?? null : null,
+    completion_check_number:
+      paymentCollected && collectedMethod === 'check' ? checkNumber || null : null,
+    completion_collected_amount_cents: paymentCollected ? billing.amountCents : null,
+    completion_invoice_id: billing.invoiceId,
+    ...(!loaded.visit.checked_in_at
+      ? { checked_in_at: now, checked_in_by_user_id: auth.user.id }
+      : {}),
   };
-
-  if (!loaded.visit.checked_in_at) {
-    patch.checked_in_at = now;
-    patch.checked_in_by_user_id = auth.user.id;
-  }
 
   const { error: upErr } = await admin
     .from('tenant_scheduled_visits')
@@ -155,5 +186,11 @@ export async function completeVisitAction(
   if (upErr) return { error: upErr.message };
 
   revalidateVisitPaths(visitId);
+  if (billing.emailed) {
+    return { success: 'Job marked complete. Invoice emailed to the customer.' };
+  }
+  if (paymentCollected) {
+    return { success: 'Job marked complete. On-site payment recorded.' };
+  }
   return { success: 'Job marked complete.' };
 }

@@ -7,6 +7,8 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import type { Tables } from '@/lib/supabase/database.types';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
+import { parseCustomerPreferredPaymentMethod } from '@/lib/tenant/customerBillingPreference';
+import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 
 export interface CustomerFormState {
   error?: string;
@@ -42,6 +44,9 @@ export async function createTenantCustomer(
   const preferredContactMethod = normalizeContactMethod(
     String(formData.get('preferred_contact_method') ?? '').trim(),
   );
+  const preferredPaymentMethod =
+    parseCustomerPreferredPaymentMethod(String(formData.get('preferred_payment_method') ?? '')) ??
+    'card';
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
   if (!slug || !firstName) {
@@ -124,6 +129,7 @@ export async function createTenantCustomer(
     customer_id: customerId,
     company_name: companyName || null,
     preferred_contact_method: preferredContactMethod,
+    preferred_payment_method: preferredPaymentMethod,
     internal_notes: internalNotes || null,
   });
 
@@ -181,6 +187,9 @@ export async function updateTenantCustomer(
   const preferredContactMethod = normalizeContactMethod(
     String(formData.get('preferred_contact_method') ?? '').trim(),
   );
+  const preferredPaymentMethod =
+    parseCustomerPreferredPaymentMethod(String(formData.get('preferred_payment_method') ?? '')) ??
+    'card';
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
 
   if (!slug || !customerId || !firstName) {
@@ -234,6 +243,7 @@ export async function updateTenantCustomer(
       customer_id: customerId,
       company_name: companyName || null,
       preferred_contact_method: preferredContactMethod,
+      preferred_payment_method: preferredPaymentMethod as TenantPaymentMethod,
       internal_notes: internalNotes || null,
     },
     { onConflict: 'customer_id' },

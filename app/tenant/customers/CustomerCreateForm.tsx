@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { CUSTOMER_PREFERRED_BILLING_OPTIONS } from '@/lib/tenant/customerBillingPreference';
 import { createTenantCustomer, type CustomerFormState } from './actions';
 import styles from './customers.module.scss';
 
@@ -140,6 +141,22 @@ export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
             How to communicate and important service context.
           </p>
         </header>
+
+        <label className={styles.label} htmlFor="preferred_payment_method">
+          Preferred billing
+        </label>
+        <select
+          id="preferred_payment_method"
+          name="preferred_payment_method"
+          className={styles.input}
+          defaultValue="card"
+        >
+          {CUSTOMER_PREFERRED_BILLING_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label} — {opt.hint}
+            </option>
+          ))}
+        </select>
 
         <label className={styles.label} htmlFor="preferred_contact_method">
           Preferred contact
