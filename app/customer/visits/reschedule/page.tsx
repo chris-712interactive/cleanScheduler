@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createAdminClient } from '@/lib/supabase/server';
+import { formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
 import { CustomerRescheduleForm } from './CustomerRescheduleForm';
 
 export const dynamic = 'force-dynamic';
@@ -58,7 +59,7 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
       status,
       checked_in_at,
       customer_id,
-      tenants:tenants!inner ( name )
+      tenants:tenants!inner ( name, timezone )
     `,
     )
     .eq('id', rawVisit)
@@ -78,7 +79,9 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
     );
   }
 
-  const tenantName = (visit.tenants as { name: string } | null)?.name ?? 'Provider';
+  const tenant = visit.tenants as { name: string; timezone: string } | null;
+  const tenantName = tenant?.name ?? 'Provider';
+  const tenantTz = tenant?.timezone;
   const serviceTitle = visit.title?.trim() || 'Cleaning visit';
   const blockingReason =
     visit.status !== 'scheduled'
@@ -93,14 +96,14 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
     <>
       <PageHeader
         title="Request reschedule"
-        description={`${tenantName} · ${serviceTitle} · ${formatWhen(visit.starts_at, visit.ends_at)}`}
+        description={`${tenantName} · ${serviceTitle} · ${formatVisitWhenRange(visit.starts_at, visit.ends_at, tenantTz)}`}
       />
 
       <Card title="Appointment">
         <p style={{ marginTop: 0, color: 'var(--color-text-muted)' }}>
           Current time:{' '}
           <strong style={{ color: 'var(--color-text)' }}>
-            {formatWhen(visit.starts_at, visit.ends_at)}
+            {formatVisitWhenRange(visit.starts_at, visit.ends_at, tenantTz)}
           </strong>
         </p>
 
@@ -122,18 +125,4 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
       </Card>
     </>
   );
-}
-
-function formatWhen(startsAt: string, endsAt: string): string {
-  const s = new Date(startsAt);
-  const e = new Date(endsAt);
-  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return '—';
-  const date = s.toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-  const t0 = s.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  const t1 = e.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  return `${date} · ${t0} – ${t1}`;
 }

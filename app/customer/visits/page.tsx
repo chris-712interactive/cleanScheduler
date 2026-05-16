@@ -10,16 +10,10 @@ import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { formatVisitWhenCompact } from '@/lib/datetime/formatInTimeZone';
 import styles from './visits.module.scss';
 
 export const dynamic = 'force-dynamic';
-
-function formatWhen(startsAt: string, endsAt: string): string {
-  const s = new Date(startsAt);
-  const e = new Date(endsAt);
-  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return '—';
-  return `${s.toLocaleString()} – ${e.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-}
 
 function canCustomerRequestReschedule(row: {
   status: string;
@@ -62,7 +56,7 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
             ends_at,
             status,
             checked_in_at,
-            tenants:tenants!inner ( name, slug ),
+            tenants:tenants!inner ( name, slug, timezone ),
             tenant_scheduled_visit_assignees (
               user_id,
               user_profiles (
@@ -106,14 +100,16 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
       ) : (
         <Stack gap={3}>
           {visits.map((row) => {
-            const t = row.tenants as { name: string; slug: string } | null;
+            const t = row.tenants as { name: string; slug: string; timezone: string } | null;
             const assignees = normalizeAssigneeRows(
               row.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
             );
             return (
               <Card key={row.id} title={row.title || 'Visit'} description={t?.name ?? 'Provider'}>
                 <div className={styles.row}>
-                  <StatusPill tone="info">{formatWhen(row.starts_at, row.ends_at)}</StatusPill>
+                  <StatusPill tone="info">
+                    {formatVisitWhenCompact(row.starts_at, row.ends_at, t?.timezone)}
+                  </StatusPill>
                   <StatusPill tone="neutral">{row.status}</StatusPill>
                   {canCustomerRequestReschedule(row) ? (
                     <Button variant="secondary" size="sm" as="a" href={`/visits/reschedule?visit=${row.id}`}>

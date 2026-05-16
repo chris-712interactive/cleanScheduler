@@ -13,11 +13,13 @@ const initial: ScheduleFormState = {};
 
 export function VisitTimeRescheduleForm({
   tenantSlug,
+  tenantTimezone,
   visitId,
   startsAtIso,
   endsAtIso,
 }: {
   tenantSlug: string;
+  tenantTimezone: string;
   visitId: string;
   startsAtIso: string;
   endsAtIso: string;
@@ -29,9 +31,9 @@ export function VisitTimeRescheduleForm({
   const [endsLocal, setEndsLocal] = useState('');
 
   useEffect(() => {
-    setStartsLocal(isoToLocalDatetimeLocalValue(startsAtIso));
-    setEndsLocal(isoToLocalDatetimeLocalValue(endsAtIso));
-  }, [startsAtIso, endsAtIso]);
+    setStartsLocal(isoToLocalDatetimeLocalValue(startsAtIso, tenantTimezone));
+    setEndsLocal(isoToLocalDatetimeLocalValue(endsAtIso, tenantTimezone));
+  }, [startsAtIso, endsAtIso, tenantTimezone]);
 
   return (
     <form action={formAction} className={styles.visitRescheduleCard}>

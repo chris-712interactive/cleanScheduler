@@ -11,6 +11,7 @@ import {
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { formatDateTimeInTimeZone } from '@/lib/datetime/formatInTimeZone';
 import { TenantRescheduleDecisionRow } from './TenantRescheduleDecisionRow';
 import styles from './rescheduleRequests.module.scss';
 
@@ -48,19 +49,26 @@ function customerLabel(row: ReqRow): string {
   return n === 'Unnamed' ? 'Customer' : n;
 }
 
-function fmtWhen(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
 export default async function TenantRescheduleRequestsPage() {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/schedule/reschedule-requests');
   const slug = membership.tenantSlug;
 
   const supabase = createTenantPortalDbClient();
+  const { data: tenantRow } = await supabase
+    .from('tenants')
+    .select('timezone')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+
+  const fmtWhen = (iso: string | null | undefined) =>
+    iso
+      ? formatDateTimeInTimeZone(iso, tenantTimezone, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        })
+      : '—';
   const { data, error } = await supabase
     .from('visit_reschedule_requests')
     .select(

@@ -11,6 +11,12 @@ import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { resolveVisitSiteLine } from '@/lib/schedule/resolveVisitSiteLine';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import {
+  formatNextAppointmentWhen,
+  formatUpcomingVisitDate,
+  formatUpcomingVisitTimeLine,
+  formatVisitDuration,
+} from '@/lib/datetime/formatInTimeZone';
 import styles from './dashboard.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +26,7 @@ type VisitRow = {
   title: string;
   starts_at: string;
   ends_at: string;
+  tenants: { timezone: string } | null;
   tenant_customer_properties: {
     address_line1: string | null;
     address_line2: string | null;
@@ -53,49 +60,8 @@ type InvoiceRow = {
   created_at: string;
 };
 
-function formatNextAppointmentWhen(startsAt: string): string {
-  const s = new Date(startsAt);
-  if (Number.isNaN(s.getTime())) return '—';
-  const date = s.toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-  const time = s.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  return `${date} at ${time}`;
-}
-
-function formatUpcomingDate(startsAt: string): string {
-  const s = new Date(startsAt);
-  if (Number.isNaN(s.getTime())) return '—';
-  return s.toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatUpcomingTime(startsAt: string, endsAt: string): string {
-  const s = new Date(startsAt);
-  const e = new Date(endsAt);
-  if (Number.isNaN(s.getTime())) return '—';
-  const time = s.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  const duration = formatVisitDuration(startsAt, endsAt);
-  return duration ? `${time} · ${duration}` : time;
-}
-
-function formatVisitDuration(startsAt: string, endsAt: string): string {
-  const ms = new Date(endsAt).getTime() - new Date(startsAt).getTime();
-  if (!Number.isFinite(ms) || ms <= 0) return '';
-  const hours = ms / 3_600_000;
-  if (hours < 1) {
-    const mins = Math.round(ms / 60_000);
-    return `${mins} min`;
-  }
-  const rounded = Math.round(hours * 10) / 10;
-  const label = rounded === 1 ? 'hour' : 'hours';
-  return Number.isInteger(rounded) ? `${rounded} ${label}` : `${rounded} hours`;
+function visitTimeZone(row: VisitRow): string {
+  return row.tenants?.timezone ?? 'America/New_York';
 }
 
 function formatInvoiceRef(id: string, title: string): string {
@@ -158,6 +124,7 @@ export default async function CustomerHomePage() {
         title,
         starts_at,
         ends_at,
+        tenants:tenants!inner ( timezone ),
         tenant_customer_properties (
           address_line1,
           address_line2,
@@ -269,7 +236,7 @@ export default async function CustomerHomePage() {
                   <div className={styles.nextCardDetailsRow}>
                     <div className={styles.nextCardCopy}>
                       <p className={styles.nextWhen}>
-                        {formatNextAppointmentWhen(nextVisit.starts_at)}
+                        {formatNextAppointmentWhen(nextVisit.starts_at, visitTimeZone(nextVisit))}
                       </p>
                       {nextServiceLine ? (
                         <p className={styles.nextMeta}>{nextServiceLine}</p>
@@ -389,16 +356,20 @@ export default async function CustomerHomePage() {
                     <li key={visit.id} className={styles.upcomingRow}>
                       <div>
                         <p className={styles.upcomingDate}>
-                          {formatUpcomingDate(visit.starts_at)}
+                          {formatUpcomingVisitDate(visit.starts_at, visitTimeZone(visit))}
                         </p>
                         <p className={styles.upcomingTime}>
-                          {formatUpcomingTime(visit.starts_at, visit.ends_at)}
+                          {formatUpcomingVisitTimeLine(
+                            visit.starts_at,
+                            visit.ends_at,
+                            visitTimeZone(visit),
+                          )}
                         </p>
                       </div>
                       <Link
                         href="/visits"
                         className={styles.calendarBtn}
-                        aria-label={`View visit on ${formatUpcomingDate(visit.starts_at)}`}
+                        aria-label={`View visit on ${formatUpcomingVisitDate(visit.starts_at, visitTimeZone(visit))}`}
                       >
                         <Calendar size={18} aria-hidden />
                       </Link>

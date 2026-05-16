@@ -21,6 +21,7 @@ import {
 import { CUSTOMER_PAYMENT_METHOD_LABEL } from '@/lib/tenant/operationalSettings';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
+import { formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
 import {
   canCheckInToVisit,
   canCompleteVisit,
@@ -48,24 +49,11 @@ const STATUS_TONE = {
   cancelled: 'neutral',
 } as const;
 
-function formatWhen(startsAt: string, endsAt: string): string {
-  const s = new Date(startsAt);
-  const e = new Date(endsAt);
-  const date = s.toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
-  return `${date} · ${s.toLocaleTimeString(undefined, opts)} – ${e.toLocaleTimeString(undefined, opts)}`;
-}
-
-function formatTimestamp(iso: string | null): string | null {
+function formatTimestamp(iso: string | null, timeZone: string): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  return d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone });
 }
 
 interface PageProps {
@@ -84,6 +72,13 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
   const actorRole = membership.role as TenantRole;
 
   const supabase = createTenantPortalDbClient();
+  const { data: tenantRow } = await supabase
+    .from('tenants')
+    .select('timezone')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+
   const { data: row, error } = await supabase
     .from('tenant_scheduled_visits')
     .select(
@@ -195,7 +190,9 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
             <div className={styles.detailGrid}>
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>When</span>
-                <p className={styles.detailValue}>{formatWhen(row.starts_at, row.ends_at)}</p>
+                <p className={styles.detailValue}>
+                  {formatVisitWhenRange(row.starts_at, row.ends_at, tenantTimezone)}
+                </p>
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Service</span>
@@ -243,16 +240,16 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                   <p className={styles.detailValue}>{row.notes}</p>
                 </div>
               ) : null}
-              {formatTimestamp(row.checked_in_at) ? (
+              {formatTimestamp(row.checked_in_at, tenantTimezone) ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Checked in</span>
-                  <p className={styles.detailValue}>{formatTimestamp(row.checked_in_at)}</p>
+                  <p className={styles.detailValue}>{formatTimestamp(row.checked_in_at, tenantTimezone)}</p>
                 </div>
               ) : null}
-              {formatTimestamp(row.completed_at) ? (
+              {formatTimestamp(row.completed_at, tenantTimezone) ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Completed</span>
-                  <p className={styles.detailValue}>{formatTimestamp(row.completed_at)}</p>
+                  <p className={styles.detailValue}>{formatTimestamp(row.completed_at, tenantTimezone)}</p>
                 </div>
               ) : null}
               {row.completion_payment_collected != null ? (
@@ -300,6 +297,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
             {row.status === 'scheduled' && !row.checked_in_at ? (
               <VisitTimeRescheduleForm
                 tenantSlug={membership.tenantSlug}
+                tenantTimezone={tenantTimezone}
                 visitId={visitId}
                 startsAtIso={row.starts_at}
                 endsAtIso={row.ends_at}
