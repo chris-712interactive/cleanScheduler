@@ -281,7 +281,7 @@ export default async function CustomerHomePage() {
                     ) : null}
                   </div>
                   <div className={styles.nextActions}>
-                    <Link href="/messages" className={styles.outlineBtn}>
+                    <Link href={`/visits/reschedule?visit=${nextVisit.id}`} className={styles.outlineBtn}>
                       <Calendar size={16} aria-hidden />
                       Reschedule
                     </Link>

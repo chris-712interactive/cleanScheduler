@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Customers', href: '/customers', icon: 'customers' },
   { label: 'Schedule', href: '/schedule', icon: 'schedule' },
+  { label: 'Reschedule requests', href: '/schedule/reschedule-requests', icon: 'rescheduleRequests' },
   { label: 'Employees', href: '/employees', icon: 'work' },
   { label: 'Billing', href: '/billing', icon: 'billing' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },

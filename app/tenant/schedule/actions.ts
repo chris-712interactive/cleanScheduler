@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -221,4 +222,126 @@ export async function deleteScheduledVisit(
   revalidatePath('/schedule');
   revalidatePath('/schedule/new');
   redirect('/schedule');
+}
+
+export async function updateScheduledVisitTimes(
+  _prev: ScheduleFormState,
+  formData: FormData,
+): Promise<ScheduleFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const visitId = String(formData.get('visit_id') ?? '').trim();
+  const startsRaw = String(formData.get('starts_at') ?? '').trim();
+  const endsRaw = String(formData.get('ends_at') ?? '').trim();
+  const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
+
+  if (!slug || !visitId || !startsRaw || !endsRaw) {
+    return { error: 'Workspace, visit, start, and end times are required.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  const admin = createAdminClient();
+
+  const { data: visit, error: vErr } = await admin
+    .from('tenant_scheduled_visits')
+    .select('id, status, checked_in_at')
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (vErr || !visit) {
+    return { error: 'Visit not found.' };
+  }
+
+  if (visit.status !== 'scheduled') {
+    return { error: 'Only scheduled visits can have their time updated.' };
+  }
+
+  if (visit.checked_in_at) {
+    return {
+      error:
+        'This visit has been checked in. Contact an admin if the time still needs to be changed.',
+    };
+  }
+
+  const tzOffset = Number(tzOffsetRaw);
+  if (!Number.isFinite(tzOffset)) {
+    return { error: 'Missing timezone context. Please reload and try again.' };
+  }
+
+  const startsAt = parseBrowserDatetimeLocalToIso(startsRaw, tzOffset);
+  const endsAt = parseBrowserDatetimeLocalToIso(endsRaw, tzOffset);
+  if (!startsAt || !endsAt) {
+    return { error: 'Invalid start or end time.' };
+  }
+  if (new Date(endsAt) <= new Date(startsAt)) {
+    return { error: 'End time must be after start time.' };
+  }
+
+  const upd = await admin
+    .from('tenant_scheduled_visits')
+    .update({ starts_at: startsAt, ends_at: endsAt })
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId);
+
+  if (upd.error) {
+    return { error: upd.error.message };
+  }
+
+  revalidatePath('/schedule');
+  revalidatePath(`/schedule/${visitId}`);
+  revalidatePath('/schedule/reschedule-requests');
+  return { success: true };
+}
+
+export async function resolveVisitRescheduleRequest(
+  _prev: ScheduleFormState,
+  formData: FormData,
+): Promise<ScheduleFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const requestId = String(formData.get('request_id') ?? '').trim();
+  const resolution = String(formData.get('resolution') ?? '').trim() as 'completed' | 'declined';
+  const note = String(formData.get('tenant_response_note') ?? '').trim();
+
+  if (!slug || !requestId) {
+    return { error: 'Missing request.' };
+  }
+
+  if (resolution !== 'completed' && resolution !== 'declined') {
+    return { error: 'Invalid resolution.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, '/schedule/reschedule-requests');
+  const auth = await getAuthContext();
+  const actorId = auth?.user?.id ?? null;
+
+  const admin = createAdminClient();
+  const nextStatus = resolution === 'completed' ? ('completed' as const) : ('declined' as const);
+
+  const { data: updated, error: updErr } = await admin
+    .from('visit_reschedule_requests')
+    .update({
+      status: nextStatus,
+      resolved_at: new Date().toISOString(),
+      resolved_by_user_id: actorId,
+      tenant_response_note: note || null,
+    })
+    .eq('id', requestId)
+    .eq('tenant_id', membership.tenantId)
+    .eq('status', 'pending')
+    .select('id');
+
+  if (updErr) {
+    return { error: updErr.message };
+  }
+
+  if (!updated?.length) {
+    return { error: 'Request was already handled or could not be found.' };
+  }
+
+  revalidatePath('/schedule/reschedule-requests');
+  return { success: true };
 }

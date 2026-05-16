@@ -29,6 +29,7 @@ import {
 import type { TenantRole } from '@/lib/auth/types';
 import { DeleteVisitButton } from '../DeleteVisitButton';
 import { VisitFieldWorkPanel } from '../VisitFieldWorkPanel';
+import { VisitTimeRescheduleForm } from '../VisitTimeRescheduleForm';
 import styles from '../visitDetail.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -295,6 +296,15 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               defaultAmountCents={defaultAmountCents}
               customerHasEmail={Boolean(customerEmail)}
             />
+
+            {row.status === 'scheduled' && !row.checked_in_at ? (
+              <VisitTimeRescheduleForm
+                tenantSlug={membership.tenantSlug}
+                visitId={visitId}
+                startsAtIso={row.starts_at}
+                endsAtIso={row.ends_at}
+              />
+            ) : null}
 
             {canDelete ? (
               <div className={styles.adminActions}>

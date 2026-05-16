@@ -1,5 +1,5 @@
 /**
- * Hand-maintained schema mirror for migrations 0001–0025.
+ * Hand-maintained schema mirror for migrations 0001–0029.
  * Regenerate from a live project when convenient:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  */
@@ -1381,6 +1381,76 @@ export type Database = {
           },
         ];
       };
+      visit_reschedule_requests: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          visit_id: string;
+          status: Database['public']['Enums']['visit_reschedule_request_status'];
+          customer_note: string;
+          preferred_starts_at: string | null;
+          preferred_ends_at: string | null;
+          created_at: string;
+          updated_at: string;
+          resolved_at: string | null;
+          resolved_by_user_id: string | null;
+          tenant_response_note: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          visit_id: string;
+          status?: Database['public']['Enums']['visit_reschedule_request_status'];
+          customer_note?: string;
+          preferred_starts_at?: string | null;
+          preferred_ends_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          resolved_at?: string | null;
+          resolved_by_user_id?: string | null;
+          tenant_response_note?: string | null;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          visit_id?: string;
+          status?: Database['public']['Enums']['visit_reschedule_request_status'];
+          customer_note?: string;
+          preferred_starts_at?: string | null;
+          preferred_ends_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          resolved_at?: string | null;
+          resolved_by_user_id?: string | null;
+          tenant_response_note?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'visit_reschedule_requests_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'visit_reschedule_requests_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'visit_reschedule_requests_visit_id_fkey';
+            columns: ['visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_scheduled_visits: {
         Row: {
           id: string;
@@ -1864,6 +1934,7 @@ export type Database = {
       tenant_invoice_payment_recorded_via: 'manual' | 'stripe_checkout';
       tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';
       service_plan_billing_interval: 'week' | 'month' | 'year';
+      visit_reschedule_request_status: 'pending' | 'completed' | 'declined' | 'withdrawn';
       tenant_customer_subscription_status:
         | 'incomplete'
         | 'incomplete_expired'

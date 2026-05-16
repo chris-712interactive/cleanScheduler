@@ -4,6 +4,7 @@ import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
+import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
@@ -20,7 +21,28 @@ function formatWhen(startsAt: string, endsAt: string): string {
   return `${s.toLocaleString()} – ${e.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
 }
 
-export default async function CustomerVisitsPage() {
+function canCustomerRequestReschedule(row: {
+  status: string;
+  starts_at: string;
+  checked_in_at: string | null;
+}): boolean {
+  if (row.status !== 'scheduled') return false;
+  if (row.checked_in_at) return false;
+  return new Date(row.starts_at).getTime() >= Date.now();
+}
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function CustomerVisitsPage({ searchParams }: PageProps) {
+  const rescheduleSent = firstParam((await searchParams).reschedule) === 'sent';
+
   const auth = await requirePortalAccess('customer', '/visits');
   const ctx = await getCustomerPortalContext(auth.user.id);
   if (!ctx) redirect('/access-denied?reason=no_customer_profile');
@@ -39,6 +61,7 @@ export default async function CustomerVisitsPage() {
             starts_at,
             ends_at,
             status,
+            checked_in_at,
             tenants:tenants!inner ( name, slug ),
             tenant_scheduled_visit_assignees (
               user_id,
@@ -60,6 +83,12 @@ export default async function CustomerVisitsPage() {
         title="Upcoming visits"
         description="Every scheduled cleaning you have on file with connected providers."
       />
+
+      {rescheduleSent ? (
+        <p className={styles.bannerOk} role="status">
+          Reschedule request sent. Your provider will follow up soon.
+        </p>
+      ) : null}
 
       {error ? (
         <Card title="Could not load visits">
@@ -86,6 +115,11 @@ export default async function CustomerVisitsPage() {
                 <div className={styles.row}>
                   <StatusPill tone="info">{formatWhen(row.starts_at, row.ends_at)}</StatusPill>
                   <StatusPill tone="neutral">{row.status}</StatusPill>
+                  {canCustomerRequestReschedule(row) ? (
+                    <Button variant="secondary" size="sm" as="a" href={`/visits/reschedule?visit=${row.id}`}>
+                      Request reschedule
+                    </Button>
+                  ) : null}
                 </div>
                 {assignees.length > 0 ? (
                   <div className={styles.crewRow}>
