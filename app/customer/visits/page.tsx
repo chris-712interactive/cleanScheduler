@@ -110,7 +110,19 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
             const reschedulePending = pendingRescheduleVisitIds.has(row.id);
 
             return (
-              <Card key={row.id} title={row.title || 'Visit'} description={t?.name ?? 'Provider'}>
+              <Card
+                key={row.id}
+                title={row.title || 'Visit'}
+                description={t?.name ?? 'Provider'}
+                actions={
+                  assignees.length > 0 ? (
+                    <div className={styles.headerCrew}>
+                      <span className={styles.crewLabel}>Your crew</span>
+                      <ScheduleAssigneeAvatars assignees={assignees} size="lg" />
+                    </div>
+                  ) : undefined
+                }
+              >
                 {reschedulePending ? (
                   <p className={styles.reschedulePendingBanner} role="status">
                     <StatusPill tone="warning">Reschedule requested</StatusPill>
@@ -128,12 +140,6 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
                     </Button>
                   ) : null}
                 </div>
-                {assignees.length > 0 ? (
-                  <div className={styles.crewRow}>
-                    <span className={styles.crewLabel}>Your crew</span>
-                    <ScheduleAssigneeAvatars assignees={assignees} />
-                  </div>
-                ) : null}
               </Card>
             );
           })}
