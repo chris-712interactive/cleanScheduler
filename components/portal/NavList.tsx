@@ -40,6 +40,11 @@ export function NavList({ items, onNavigate }: NavListProps) {
               <Link
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
+                aria-label={
+                  typeof item.badge === 'number' && item.badge > 0
+                    ? `${item.label}, ${item.badge} pending`
+                    : undefined
+                }
                 className={styles.item}
                 data-active={active || undefined}
                 onClick={onNavigate}

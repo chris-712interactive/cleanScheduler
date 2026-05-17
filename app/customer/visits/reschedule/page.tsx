@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createAdminClient } from '@/lib/supabase/server';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
 import { CustomerRescheduleForm } from './CustomerRescheduleForm';
 
@@ -83,14 +84,23 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
   const tenantName = tenant?.name ?? 'Provider';
   const tenantTz = tenant?.timezone;
   const serviceTitle = visit.title?.trim() || 'Cleaning visit';
+  const { data: existingPending } = await admin
+    .from('visit_reschedule_requests')
+    .select('id')
+    .eq('visit_id', visit.id)
+    .eq('status', 'pending')
+    .maybeSingle();
+
   const blockingReason =
-    visit.status !== 'scheduled'
-      ? 'This visit is not eligible for reschedule (already completed or cancelled).'
-      : visit.checked_in_at
-        ? 'This visit already started check-in — contact your provider to change plans.'
-        : new Date(visit.starts_at).getTime() < Date.now()
-          ? 'This appointment is in the past.'
-          : null;
+    existingPending
+      ? 'pending_request'
+      : visit.status !== 'scheduled'
+        ? 'This visit is not eligible for reschedule (already completed or cancelled).'
+        : visit.checked_in_at
+          ? 'This visit already started check-in — contact your provider to change plans.'
+          : new Date(visit.starts_at).getTime() < Date.now()
+            ? 'This appointment is in the past.'
+            : null;
 
   return (
     <>
@@ -107,7 +117,15 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
           </strong>
         </p>
 
-        {blockingReason ? (
+        {blockingReason === 'pending_request' ? (
+          <div style={{ marginBottom: 'var(--space-4)' }} role="status">
+            <StatusPill tone="warning">Reschedule requested</StatusPill>
+            <p style={{ margin: 'var(--space-3) 0 0', color: 'var(--color-text-muted)' }}>
+              {tenantName} has your request and will confirm a new time soon. You can{' '}
+              <Link href="/messages">send a message</Link> if you need to add details.
+            </p>
+          </div>
+        ) : blockingReason ? (
           <p style={{ marginBottom: 0 }} role="status">
             {blockingReason}{' '}
             <Link href="/messages">Message your provider</Link> if you need help.

@@ -10,6 +10,7 @@ import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { getCustomerPendingRescheduleVisitIds } from '@/lib/customer/pendingRescheduleVisits';
 import { formatVisitWhenCompact } from '@/lib/datetime/formatInTimeZone';
 import styles from './visits.module.scss';
 
@@ -71,6 +72,8 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
           .order('starts_at', { ascending: true })
       : { data: [], error: null };
 
+  const pendingRescheduleVisitIds = await getCustomerPendingRescheduleVisitIds(ctx.customerIds);
+
   return (
     <>
       <PageHeader
@@ -104,14 +107,22 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
             const assignees = normalizeAssigneeRows(
               row.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
             );
+            const reschedulePending = pendingRescheduleVisitIds.has(row.id);
+
             return (
               <Card key={row.id} title={row.title || 'Visit'} description={t?.name ?? 'Provider'}>
+                {reschedulePending ? (
+                  <p className={styles.reschedulePendingBanner} role="status">
+                    <StatusPill tone="warning">Reschedule requested</StatusPill>
+                    <span>Your provider is reviewing a new time for this visit.</span>
+                  </p>
+                ) : null}
                 <div className={styles.row}>
                   <StatusPill tone="info">
                     {formatVisitWhenCompact(row.starts_at, row.ends_at, t?.timezone)}
                   </StatusPill>
                   <StatusPill tone="neutral">{row.status}</StatusPill>
-                  {canCustomerRequestReschedule(row) ? (
+                  {canCustomerRequestReschedule(row) && !reschedulePending ? (
                     <Button variant="secondary" size="sm" as="a" href={`/visits/reschedule?visit=${row.id}`}>
                       Request reschedule
                     </Button>

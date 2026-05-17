@@ -7,6 +7,7 @@ import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * Sidebar order matches product build priority for net-new tenant work (after
  * Dashboard): quotes → customers → schedule (`lib/tenant/portalBuildOrder.ts`).
  */
-const NAV_ITEMS: NavItem[] = [
+const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
   { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Customers', href: '/customers', icon: 'customers' },
@@ -72,6 +73,18 @@ export default async function TenantLayout({ children }: { children: React.React
 
   const connectStatus = tenantRow?.stripe_connect_status ?? 'not_started';
 
+  const pendingRescheduleCount = await countPendingRescheduleRequests(
+    supabase,
+    membership.tenantId,
+  );
+  const navItems: NavItem[] = NAV_ITEMS_BASE.map((item) => {
+    if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {
+      return item;
+    }
+    const badge = pendingRescheduleCount > 99 ? '99+' : pendingRescheduleCount;
+    return { ...item, badge };
+  });
+
   const sessionNotices: ReactNode[] = [];
   if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
   if (connectStatus !== 'complete') {
@@ -83,7 +96,7 @@ export default async function TenantLayout({ children }: { children: React.React
     <PortalShell
       brandLabel={slug}
       brandHref="/"
-      navItems={NAV_ITEMS}
+      navItems={navItems}
       identity={identity}
       tenantBadge={<span>{slug}.cleanscheduler.com</span>}
       environmentBanner={nonProdBanner}

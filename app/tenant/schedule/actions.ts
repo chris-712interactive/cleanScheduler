@@ -343,5 +343,6 @@ export async function resolveVisitRescheduleRequest(
   }
 
   revalidatePath('/schedule/reschedule-requests');
+  revalidatePath('/', 'layout');
   return { success: true };
 }

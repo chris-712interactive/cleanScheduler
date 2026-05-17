@@ -10,6 +10,7 @@ import { formatUsdFromCents } from '@/lib/format/money';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { resolveVisitSiteLine } from '@/lib/schedule/resolveVisitSiteLine';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
+import { getCustomerPendingRescheduleVisitIds } from '@/lib/customer/pendingRescheduleVisits';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import {
   formatNextAppointmentWhen,
@@ -217,6 +218,8 @@ export default async function CustomerHomePage() {
     ? Math.max(0, openInvoice.amount_cents - openInvoice.amount_paid_cents)
     : 0;
 
+  const pendingRescheduleVisitIds = await getCustomerPendingRescheduleVisitIds(ctx.customerIds);
+
   return (
     <div className={styles.dashboardPage}>
       <header className={styles.dashboardHeader}>
@@ -233,6 +236,11 @@ export default async function CustomerHomePage() {
               <p className={styles.eyebrow}>Next appointment</p>
               {nextVisit ? (
                 <div className={styles.nextCardInner}>
+                  {pendingRescheduleVisitIds.has(nextVisit.id) ? (
+                    <StatusPill tone="warning" className={styles.reschedulePendingPill}>
+                      Reschedule requested — your provider is reviewing
+                    </StatusPill>
+                  ) : null}
                   <div className={styles.nextCardDetailsRow}>
                     <div className={styles.nextCardCopy}>
                       <p className={styles.nextWhen}>
@@ -248,10 +256,19 @@ export default async function CustomerHomePage() {
                     ) : null}
                   </div>
                   <div className={styles.nextActions}>
-                    <Link href={`/visits/reschedule?visit=${nextVisit.id}`} className={styles.outlineBtn}>
-                      <Calendar size={16} aria-hidden />
-                      Reschedule
-                    </Link>
+                    {pendingRescheduleVisitIds.has(nextVisit.id) ? (
+                      <span className={styles.reschedulePendingNote}>
+                        Waiting for your provider to confirm a new time
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/visits/reschedule?visit=${nextVisit.id}`}
+                        className={styles.outlineBtn}
+                      >
+                        <Calendar size={16} aria-hidden />
+                        Reschedule
+                      </Link>
+                    )}
                     <Link href="/messages" className={styles.outlineBtn}>
                       <FileText size={16} aria-hidden />
                       Add note
@@ -365,6 +382,11 @@ export default async function CustomerHomePage() {
                             visitTimeZone(visit),
                           )}
                         </p>
+                        {pendingRescheduleVisitIds.has(visit.id) ? (
+                          <StatusPill tone="warning" className={styles.reschedulePendingPillCompact}>
+                            Reschedule pending
+                          </StatusPill>
+                        ) : null}
                       </div>
                       <Link
                         href="/visits"

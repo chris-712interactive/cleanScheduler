@@ -128,6 +128,26 @@
   margin-top: var(--space-1);
 }
 
+.reschedulePendingPill {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.reschedulePendingPillCompact {
+  margin-top: var(--space-2);
+  width: fit-content;
+}
+
+.reschedulePendingNote {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-warning) 90%, var(--color-text));
+}
+
 .nextActions {
   display: flex;
   flex-wrap: wrap;

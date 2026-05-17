@@ -138,5 +138,6 @@ export async function submitCustomerVisitRescheduleRequest(
   revalidatePath('/visits');
   revalidatePath('/');
   revalidatePath('/visits/reschedule');
+  revalidatePath('/', 'layout');
   redirect(`/visits?reschedule=sent`);
 }
