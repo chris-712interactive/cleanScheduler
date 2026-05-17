@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useEffect, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
@@ -15,12 +16,14 @@ const initial: ScheduleFormState = {};
 export function TenantRescheduleDecisionRow({
   tenantSlug,
   requestId,
+  visitId,
   applyWhenLabel,
   canApplyTime,
   initialConflicts,
 }: {
   tenantSlug: string;
   requestId: string;
+  visitId: string | null;
   applyWhenLabel: string | null;
   canApplyTime: boolean;
   initialConflicts: AssigneeConflictInfo[];
@@ -59,7 +62,8 @@ export function TenantRescheduleDecisionRow({
         </p>
       ) : (
         <p className={styles.hint}>
-          No preferred time on this request — open the visit to set a time before approving.
+          No preferred time on this request — use Schedule for another time to set a time before
+          approving.
         </p>
       )}
 
@@ -101,6 +105,11 @@ export function TenantRescheduleDecisionRow({
         >
           Decline
         </button>
+        {visitId ? (
+          <Link href={`/schedule/${visitId}`} className={styles.secondaryBtn}>
+            Schedule for another time
+          </Link>
+        ) : null}
       </div>
     </form>
   );

@@ -41,18 +41,6 @@
   margin-right: var(--space-2);
 }
 
-.visitLink {
-  display: inline-flex;
-  font-weight: 600;
-  color: var(--color-brand-primary);
-  text-decoration: none;
-  margin-top: var(--space-2);
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .decisionForm {
   display: flex;
   flex-direction: column;
@@ -91,6 +79,9 @@
 }
 
 .secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 40px;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
@@ -98,11 +89,19 @@
   background: var(--color-bg);
   color: var(--color-text);
   font-weight: 600;
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: none;
   cursor: pointer;
+  box-sizing: border-box;
 
   &:disabled {
     opacity: 0.65;
     cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--color-bg-muted);
   }
 }
 
@@ -115,7 +114,6 @@
   color: var(--color-text-on-brand);
   font-weight: 600;
   cursor: pointer;
-  margin-inline-start: auto;
 
   &:disabled {
     opacity: 0.65;

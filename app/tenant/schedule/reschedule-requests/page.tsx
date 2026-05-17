@@ -190,7 +190,7 @@ export default async function TenantRescheduleRequestsPage() {
       <p className={styles.pageHint}>
         Approving applies the customer&apos;s preferred window to the visit. If assigned crew is
         already booked, you&apos;ll see a warning and must confirm before double-booking. To set a
-        different time, open the visit under <Link href="/schedule">Schedule</Link>.
+        different time, use <strong>Schedule for another time</strong> on the request.
       </p>
 
       {error ? (
@@ -252,17 +252,14 @@ export default async function TenantRescheduleRequestsPage() {
                         </div>
                       )}
 
-                      {v ? (
-                        <Link className={styles.visitLink} href={`/schedule/${v.id}`}>
-                          Open visit to reschedule →
-                        </Link>
-                      ) : (
+                      {!v ? (
                         <span className={styles.muted}>Visit missing or deleted.</span>
-                      )}
+                      ) : null}
 
                       <TenantRescheduleDecisionRow
                         tenantSlug={slug}
                         requestId={r.id}
+                        visitId={v?.id ?? null}
                         applyWhenLabel={preview?.applyWhenLabel ?? null}
                         canApplyTime={preview?.canApplyTime ?? false}
                         initialConflicts={preview?.conflicts ?? []}
