@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
 import { isoToLocalDatetimeLocalValue } from '@/lib/datetime/isoToLocalDatetimeLocalValue';
 import {
   updateScheduledVisitTimes,
@@ -29,11 +30,20 @@ export function VisitTimeRescheduleForm({
 
   const [startsLocal, setStartsLocal] = useState('');
   const [endsLocal, setEndsLocal] = useState('');
+  const [overlapConfirm, setOverlapConfirm] = useState(false);
 
   useEffect(() => {
     setStartsLocal(isoToLocalDatetimeLocalValue(startsAtIso, tenantTimezone));
     setEndsLocal(isoToLocalDatetimeLocalValue(endsAtIso, tenantTimezone));
   }, [startsAtIso, endsAtIso, tenantTimezone]);
+
+  useEffect(() => {
+    setOverlapConfirm(false);
+  }, [state.error, state.success, state.needsOverlapConfirm, startsLocal, endsLocal]);
+
+  const conflicts = state.conflicts ?? [];
+  const hasConflicts = conflicts.length > 0;
+  const saveBlocked = hasConflicts && !overlapConfirm;
 
   return (
     <form action={formAction} className={styles.visitRescheduleCard}>
@@ -60,6 +70,13 @@ export function VisitTimeRescheduleForm({
           Visit time saved.
         </p>
       ) : null}
+
+      <ScheduleOverlapConfirm
+        conflicts={conflicts}
+        showConfirmField={hasConflicts}
+        confirmChecked={overlapConfirm}
+        onConfirmChange={setOverlapConfirm}
+      />
 
       <div className={styles.visitRescheduleGrid}>
         <div className={styles.formField}>
@@ -93,7 +110,7 @@ export function VisitTimeRescheduleForm({
       </div>
 
       <div className={styles.visitRescheduleActions}>
-        <button type="submit" className={styles.submit} disabled={pending}>
+        <button type="submit" className={styles.submit} disabled={pending || saveBlocked}>
           {pending ? 'Saving…' : 'Save new time'}
         </button>
       </div>

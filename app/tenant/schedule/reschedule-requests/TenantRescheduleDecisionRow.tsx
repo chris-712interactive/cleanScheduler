@@ -1,7 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
+import type { AssigneeConflictInfo } from '@/lib/schedule/visitAssigneeConflicts';
 import {
   resolveVisitRescheduleRequest,
   type ScheduleFormState,
@@ -13,12 +15,27 @@ const initial: ScheduleFormState = {};
 export function TenantRescheduleDecisionRow({
   tenantSlug,
   requestId,
+  applyWhenLabel,
+  canApplyTime,
+  initialConflicts,
 }: {
   tenantSlug: string;
   requestId: string;
+  applyWhenLabel: string | null;
+  canApplyTime: boolean;
+  initialConflicts: AssigneeConflictInfo[];
 }) {
   const [state, formAction, pending] = useActionState(resolveVisitRescheduleRequest, initial);
   useRefreshOnServerActionSuccess(state.success);
+  const [overlapConfirm, setOverlapConfirm] = useState(false);
+
+  const conflicts = state.conflicts ?? initialConflicts;
+  const hasConflicts = conflicts.length > 0;
+  const approveBlocked = hasConflicts && !overlapConfirm;
+
+  useEffect(() => {
+    setOverlapConfirm(false);
+  }, [state.error, state.success, state.needsOverlapConfirm]);
 
   return (
     <form action={formAction} className={styles.decisionForm}>
@@ -32,9 +49,26 @@ export function TenantRescheduleDecisionRow({
       ) : null}
       {state.success ? (
         <p className={styles.success} role="status">
-          Updated.
+          Request updated.
         </p>
       ) : null}
+
+      {canApplyTime && applyWhenLabel ? (
+        <p className={styles.applyWhen}>
+          Approving will move this visit to <strong>{applyWhenLabel}</strong>.
+        </p>
+      ) : (
+        <p className={styles.hint}>
+          No preferred time on this request — open the visit to set a time before approving.
+        </p>
+      )}
+
+      <ScheduleOverlapConfirm
+        conflicts={conflicts}
+        showConfirmField={hasConflicts && canApplyTime}
+        confirmChecked={overlapConfirm}
+        onConfirmChange={setOverlapConfirm}
+      />
 
       <label className={styles.srOnly} htmlFor={`note_${requestId}`}>
         Optional reply to customer
@@ -49,19 +83,25 @@ export function TenantRescheduleDecisionRow({
       />
 
       <div className={styles.decisionRow}>
-        <label className={styles.radioLabel}>
-          <input type="radio" name="resolution" value="completed" defaultChecked />
-          Completed (time updated / agreed)
-        </label>
-        <label className={styles.radioLabel}>
-          <input type="radio" name="resolution" value="declined" />
-          Declined
-        </label>
-        <button type="submit" className={styles.primaryBtn} disabled={pending}>
-          {pending ? 'Saving…' : 'Submit'}
+        <button
+          type="submit"
+          name="resolution"
+          value="completed"
+          className={styles.primaryBtn}
+          disabled={pending || !canApplyTime || approveBlocked}
+        >
+          {pending ? 'Saving…' : 'Approve & apply customer’s time'}
+        </button>
+        <button
+          type="submit"
+          name="resolution"
+          value="declined"
+          className={styles.secondaryBtn}
+          disabled={pending}
+        >
+          Decline
         </button>
       </div>
-      <p className={styles.hint}>Update the appointment on its visit page before marking completed.</p>
     </form>
   );
 }

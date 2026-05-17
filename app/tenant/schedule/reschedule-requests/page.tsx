@@ -10,8 +10,13 @@ import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { formatDateTimeInTimeZone } from '@/lib/datetime/formatInTimeZone';
+import {
+  findAssigneeScheduleConflicts,
+  resolveRescheduleTargetWindow,
+  type AssigneeConflictInfo,
+} from '@/lib/schedule/visitAssigneeConflicts';
 import { TenantRescheduleDecisionRow } from './TenantRescheduleDecisionRow';
 import styles from './rescheduleRequests.module.scss';
 
@@ -47,6 +52,66 @@ function customerLabel(row: ReqRow): string {
   if (!ident || !customerHasAnyNameParts(ident)) return 'Customer';
   const n = formatCustomerDisplayName(ident);
   return n === 'Unnamed' ? 'Customer' : n;
+}
+
+type PendingPreview = {
+  applyWhenLabel: string | null;
+  canApplyTime: boolean;
+  conflicts: AssigneeConflictInfo[];
+};
+
+async function buildPendingPreviews(
+  admin: ReturnType<typeof createAdminClient>,
+  pending: ReqRow[],
+  tenantId: string,
+  tenantTimezone: string,
+  fmtWhen: (iso: string | null | undefined) => string,
+): Promise<Map<string, PendingPreview>> {
+  const map = new Map<string, PendingPreview>();
+
+  await Promise.all(
+    pending.map(async (r) => {
+      const v = r.tenant_scheduled_visits;
+      if (!v || !r.preferred_starts_at) {
+        map.set(r.id, { applyWhenLabel: null, canApplyTime: false, conflicts: [] });
+        return;
+      }
+
+      const window = resolveRescheduleTargetWindow(
+        r.preferred_starts_at,
+        r.preferred_ends_at,
+        v.starts_at,
+        v.ends_at,
+      );
+      if ('error' in window) {
+        map.set(r.id, { applyWhenLabel: null, canApplyTime: false, conflicts: [] });
+        return;
+      }
+
+      const applyWhenLabel = `${fmtWhen(window.startsAt)} – ${formatDateTimeInTimeZone(window.endsAt, tenantTimezone, {
+        timeStyle: 'short',
+      })}`;
+
+      const { data: assigneeRows } = await admin
+        .from('tenant_scheduled_visit_assignees')
+        .select('user_id')
+        .eq('visit_id', r.visit_id);
+
+      const assigneeUserIds = (assigneeRows ?? []).map((a) => a.user_id);
+      const conflicts = await findAssigneeScheduleConflicts(admin, {
+        tenantId,
+        excludeVisitId: r.visit_id,
+        startsAt: window.startsAt,
+        endsAt: window.endsAt,
+        assigneeUserIds,
+        tenantTimezone,
+      });
+
+      map.set(r.id, { applyWhenLabel, canApplyTime: true, conflicts });
+    }),
+  );
+
+  return map;
 }
 
 export default async function TenantRescheduleRequestsPage() {
@@ -106,17 +171,26 @@ export default async function TenantRescheduleRequestsPage() {
   const pending = rows.filter((r) => r.status === 'pending');
   const history = rows.filter((r) => r.status !== 'pending');
 
+  const admin = createAdminClient();
+  const pendingPreviews = await buildPendingPreviews(
+    admin,
+    pending,
+    membership.tenantId,
+    tenantTimezone,
+    fmtWhen,
+  );
+
   return (
     <>
       <PageHeader
         title="Reschedule requests"
-        description="Customer requests to move appointments. Confirm the calendar on each visit card, then mark requests complete."
+        description="Review customer preferred times, resolve crew conflicts, then approve to update the visit automatically."
       />
 
       <p className={styles.pageHint}>
-        To change timing yourself anytime, open a visit under{' '}
-        <Link href="/schedule">Schedule</Link> — you can edit start and end as long as the visit is
-        still scheduled and not checked in yet.
+        Approving applies the customer&apos;s preferred window to the visit. If assigned crew is
+        already booked, you&apos;ll see a warning and must confirm before double-booking. To set a
+        different time, open the visit under <Link href="/schedule">Schedule</Link>.
       </p>
 
       {error ? (
@@ -133,6 +207,7 @@ export default async function TenantRescheduleRequestsPage() {
               <Stack gap={3}>
                 {pending.map((r) => {
                   const v = r.tenant_scheduled_visits;
+                  const preview = pendingPreviews.get(r.id);
                   return (
                     <Card key={r.id} title={customerLabel(r)} description={fmtWhen(r.created_at)}>
                       <div className={styles.reqMeta}>
@@ -185,7 +260,13 @@ export default async function TenantRescheduleRequestsPage() {
                         <span className={styles.muted}>Visit missing or deleted.</span>
                       )}
 
-                      <TenantRescheduleDecisionRow tenantSlug={slug} requestId={r.id} />
+                      <TenantRescheduleDecisionRow
+                        tenantSlug={slug}
+                        requestId={r.id}
+                        applyWhenLabel={preview?.applyWhenLabel ?? null}
+                        canApplyTime={preview?.canApplyTime ?? false}
+                        initialConflicts={preview?.conflicts ?? []}
+                      />
                     </Card>
                   );
                 })}

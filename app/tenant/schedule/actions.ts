@@ -8,10 +8,17 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
 
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
+import { applyVisitScheduleTime } from '@/lib/schedule/applyVisitScheduleTime';
+import {
+  resolveRescheduleTargetWindow,
+  type AssigneeConflictInfo,
+} from '@/lib/schedule/visitAssigneeConflicts';
 
 export interface ScheduleFormState {
   error?: string;
   success?: boolean;
+  conflicts?: AssigneeConflictInfo[];
+  needsOverlapConfirm?: boolean;
 }
 
 const VISIT_STATUSES = new Set<Database['public']['Enums']['visit_status']>([
@@ -279,19 +286,36 @@ export async function updateScheduledVisitTimes(
     return { error: 'End time must be after start time.' };
   }
 
-  const upd = await admin
-    .from('tenant_scheduled_visits')
-    .update({ starts_at: startsAt, ends_at: endsAt })
-    .eq('id', visitId)
-    .eq('tenant_id', membership.tenantId);
+  const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
 
-  if (upd.error) {
-    return { error: upd.error.message };
+  const { data: tenantRow } = await admin
+    .from('tenants')
+    .select('timezone')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+
+  const applied = await applyVisitScheduleTime(admin, {
+    tenantId: membership.tenantId,
+    visitId,
+    startsAt,
+    endsAt,
+    confirmOverlap,
+    tenantTimezone,
+  });
+
+  if (!applied.ok) {
+    return {
+      error: applied.error,
+      conflicts: applied.conflicts,
+      needsOverlapConfirm: applied.needsOverlapConfirm,
+    };
   }
 
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${visitId}`);
   revalidatePath('/schedule/reschedule-requests');
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -305,6 +329,7 @@ export async function resolveVisitRescheduleRequest(
   const requestId = String(formData.get('request_id') ?? '').trim();
   const resolution = String(formData.get('resolution') ?? '').trim() as 'completed' | 'declined';
   const note = String(formData.get('tenant_response_note') ?? '').trim();
+  const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
 
   if (!slug || !requestId) {
     return { error: 'Missing request.' };
@@ -319,6 +344,73 @@ export async function resolveVisitRescheduleRequest(
   const actorId = auth?.user?.id ?? null;
 
   const admin = createAdminClient();
+
+  const { data: request, error: reqErr } = await admin
+    .from('visit_reschedule_requests')
+    .select(
+      `
+      id,
+      visit_id,
+      preferred_starts_at,
+      preferred_ends_at,
+      tenant_scheduled_visits (
+        starts_at,
+        ends_at,
+        status,
+        checked_in_at
+      )
+    `,
+    )
+    .eq('id', requestId)
+    .eq('tenant_id', membership.tenantId)
+    .eq('status', 'pending')
+    .maybeSingle();
+
+  if (reqErr || !request) {
+    return { error: 'Request was already handled or could not be found.' };
+  }
+
+  const visit = request.tenant_scheduled_visits;
+  if (!visit) {
+    return { error: 'The linked visit no longer exists.' };
+  }
+
+  if (resolution === 'completed') {
+    const window = resolveRescheduleTargetWindow(
+      request.preferred_starts_at,
+      request.preferred_ends_at,
+      visit.starts_at,
+      visit.ends_at,
+    );
+    if ('error' in window) {
+      return { error: window.error };
+    }
+
+    const { data: tenantRow } = await admin
+      .from('tenants')
+      .select('timezone')
+      .eq('id', membership.tenantId)
+      .maybeSingle();
+    const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+
+    const applied = await applyVisitScheduleTime(admin, {
+      tenantId: membership.tenantId,
+      visitId: request.visit_id,
+      startsAt: window.startsAt,
+      endsAt: window.endsAt,
+      confirmOverlap,
+      tenantTimezone,
+    });
+
+    if (!applied.ok) {
+      return {
+        error: applied.error,
+        conflicts: applied.conflicts,
+        needsOverlapConfirm: applied.needsOverlapConfirm,
+      };
+    }
+  }
+
   const nextStatus = resolution === 'completed' ? ('completed' as const) : ('declined' as const);
 
   const { data: updated, error: updErr } = await admin
@@ -343,6 +435,8 @@ export async function resolveVisitRescheduleRequest(
   }
 
   revalidatePath('/schedule/reschedule-requests');
+  revalidatePath('/schedule');
+  revalidatePath(`/schedule/${request.visit_id}`);
   revalidatePath('/', 'layout');
   return { success: true };
 }

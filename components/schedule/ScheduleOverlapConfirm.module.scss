@@ -1,0 +1,46 @@
+.box {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
+  background: var(--color-warning-bg);
+}
+
+.title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--color-warning) 90%, var(--color-text));
+}
+
+.intro {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.list {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.when {
+  color: var(--color-text-muted);
+}
+
+.confirmLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.4;
+
+  input {
+    margin-top: 3px;
+  }
+}
