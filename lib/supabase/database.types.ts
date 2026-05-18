@@ -495,6 +495,10 @@ export type Database = {
           stripe_fee_cents: number | null;
           application_fee_cents: number | null;
           net_amount_cents: number | null;
+          received_at: string | null;
+          received_by_user_id: string | null;
+          deposited_at: string | null;
+          deposited_by_user_id: string | null;
         };
         Insert: {
           id?: string;
@@ -514,6 +518,10 @@ export type Database = {
           stripe_fee_cents?: number | null;
           application_fee_cents?: number | null;
           net_amount_cents?: number | null;
+          received_at?: string | null;
+          received_by_user_id?: string | null;
+          deposited_at?: string | null;
+          deposited_by_user_id?: string | null;
         };
         Update: {
           id?: string;
@@ -533,6 +541,10 @@ export type Database = {
           stripe_fee_cents?: number | null;
           application_fee_cents?: number | null;
           net_amount_cents?: number | null;
+          received_at?: string | null;
+          received_by_user_id?: string | null;
+          deposited_at?: string | null;
+          deposited_by_user_id?: string | null;
         };
         Relationships: [
           {

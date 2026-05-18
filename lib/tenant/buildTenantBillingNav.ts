@@ -9,6 +9,7 @@ export function buildTenantBillingNavItem(connectStatus: ConnectStatus): NavItem
     { label: 'Invoices', href: '/billing/invoices', icon: 'billing' },
     { label: 'Service Plans', href: '/billing/service-plans', icon: 'billing' },
     { label: 'Transactions', href: '/billing/transactions', icon: 'billing' },
+    { label: 'Payment audits', href: '/billing/payment-audits', icon: 'billing' },
   ];
 
   if (connectStatus === 'complete') {

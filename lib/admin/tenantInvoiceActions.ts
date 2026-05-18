@@ -118,8 +118,10 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
     redirect(`/billing/invoices/${invoiceId}?error=save`);
   }
 
-  revalidatePath('/tenant/billing');
-  revalidatePath('/tenant/billing/invoices');
-  revalidatePath(`/tenant/billing/invoices/${invoiceId}`);
+  revalidatePath('/billing');
+  revalidatePath('/billing/invoices');
+  revalidatePath('/billing/transactions');
+  revalidatePath('/billing/payment-audits');
+  revalidatePath(`/billing/invoices/${invoiceId}`);
   redirect(`/billing/invoices/${invoiceId}`);
 }
