@@ -353,6 +353,8 @@ export async function resolveVisitRescheduleRequest(
       visit_id,
       preferred_starts_at,
       preferred_ends_at,
+      original_starts_at,
+      original_ends_at,
       tenant_scheduled_visits (
         starts_at,
         ends_at,
@@ -375,6 +377,9 @@ export async function resolveVisitRescheduleRequest(
     return { error: 'The linked visit no longer exists.' };
   }
 
+  let appliedStartsAt: string | null = null;
+  let appliedEndsAt: string | null = null;
+
   if (resolution === 'completed') {
     const window = resolveRescheduleTargetWindow(
       request.preferred_starts_at,
@@ -385,6 +390,9 @@ export async function resolveVisitRescheduleRequest(
     if ('error' in window) {
       return { error: window.error };
     }
+
+    appliedStartsAt = window.startsAt;
+    appliedEndsAt = window.endsAt;
 
     const { data: tenantRow } = await admin
       .from('tenants')
@@ -420,6 +428,14 @@ export async function resolveVisitRescheduleRequest(
       resolved_at: new Date().toISOString(),
       resolved_by_user_id: actorId,
       tenant_response_note: note || null,
+      original_starts_at: request.original_starts_at ?? visit.starts_at,
+      original_ends_at: request.original_ends_at ?? visit.ends_at,
+      ...(resolution === 'completed'
+        ? {
+            applied_starts_at: appliedStartsAt,
+            applied_ends_at: appliedEndsAt,
+          }
+        : {}),
     })
     .eq('id', requestId)
     .eq('tenant_id', membership.tenantId)

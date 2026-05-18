@@ -8,6 +8,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
+import { buildTenantBillingNavItem } from '@/lib/tenant/buildTenantBillingNav';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,6 @@ const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Schedule', href: '/schedule', icon: 'schedule' },
   { label: 'Reschedule requests', href: '/schedule/reschedule-requests', icon: 'rescheduleRequests' },
   { label: 'Employees', href: '/employees', icon: 'work' },
-  { label: 'Billing', href: '/billing', icon: 'billing' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },
   { label: 'Reports', href: '/reports', icon: 'reports' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
@@ -77,7 +77,11 @@ export default async function TenantLayout({ children }: { children: React.React
     supabase,
     membership.tenantId,
   );
-  const navItems: NavItem[] = NAV_ITEMS_BASE.map((item) => {
+  const navItems: NavItem[] = [
+    ...NAV_ITEMS_BASE.slice(0, 6),
+    buildTenantBillingNavItem(connectStatus),
+    ...NAV_ITEMS_BASE.slice(6),
+  ].map((item) => {
     if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {
       return item;
     }

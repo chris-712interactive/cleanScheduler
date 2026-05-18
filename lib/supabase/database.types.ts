@@ -1391,6 +1391,10 @@ export type Database = {
           customer_note: string;
           preferred_starts_at: string | null;
           preferred_ends_at: string | null;
+          original_starts_at: string | null;
+          original_ends_at: string | null;
+          applied_starts_at: string | null;
+          applied_ends_at: string | null;
           created_at: string;
           updated_at: string;
           resolved_at: string | null;
@@ -1406,6 +1410,10 @@ export type Database = {
           customer_note?: string;
           preferred_starts_at?: string | null;
           preferred_ends_at?: string | null;
+          original_starts_at?: string | null;
+          original_ends_at?: string | null;
+          applied_starts_at?: string | null;
+          applied_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
           resolved_at?: string | null;
@@ -1421,6 +1429,10 @@ export type Database = {
           customer_note?: string;
           preferred_starts_at?: string | null;
           preferred_ends_at?: string | null;
+          original_starts_at?: string | null;
+          original_ends_at?: string | null;
+          applied_starts_at?: string | null;
+          applied_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
           resolved_at?: string | null;

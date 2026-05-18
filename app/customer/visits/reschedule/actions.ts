@@ -126,6 +126,8 @@ export async function submitCustomerVisitRescheduleRequest(
     customer_note: customerNote,
     preferred_starts_at: preferredStartsAt,
     preferred_ends_at: preferredEndsAt,
+    original_starts_at: visit.starts_at,
+    original_ends_at: visit.ends_at,
   });
 
   if (insErr) {

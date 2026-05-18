@@ -7,6 +7,7 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { isNavItemActive } from './navActive';
 import type { NavItem } from './types';
 import { navIcons } from './navIcons';
 import styles from './MobileBottomNav.module.scss';
@@ -21,9 +22,7 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
   return (
     <nav aria-label="Quick navigation" className={styles.nav}>
       {items.map((item) => {
-        const active = item.exact
-          ? pathname === item.href
-          : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = isNavItemActive(pathname, item, items);
         const Icon = navIcons[item.icon];
         return (
           <Link
