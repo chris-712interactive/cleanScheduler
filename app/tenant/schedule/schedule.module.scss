@@ -109,17 +109,8 @@
 // Schedule board (tenant) — day / week / month + timeline
 // -----------------------------------------------------------------------------
 
-// Full-bleed canvas behind schedule (mockup: cool gray main, white sidebar)
 .schedulePage {
-  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) calc(-1 * var(--space-9));
-  padding: var(--space-5) var(--space-4) var(--space-9);
-  background-color: var(--color-bg-subtle);
   min-height: 100%;
-
-  @include mq.up(md) {
-    margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-7)) calc(-1 * var(--space-10));
-    padding: var(--space-6) var(--space-7) var(--space-10);
-  }
 }
 
 .schedulePageHeader {

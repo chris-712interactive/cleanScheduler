@@ -70,29 +70,25 @@ export default async function TenantQuotesPage() {
       />
 
       <Stack gap={6}>
-        <Card
-          title="Quote board"
-          description={
-            quotes.length === 0
-              ? 'No quotes yet — create one to start your pipeline.'
-              : `${quotes.length} quote${quotes.length === 1 ? '' : 's'} · Drag to change status`
-          }
-        >
+
           {quotesRes.error ? (
-            <p className={styles.empty} role="alert">
-              Could not load quotes ({quotesRes.error.message}).
-            </p>
+            <Card>
+              <p className={styles.empty} role="alert">
+                Could not load quotes ({quotesRes.error.message}).
+              </p>
+            </Card>
           ) : quotes.length === 0 ? (
-            <p className={styles.empty}>
-              Nothing here yet.{' '}
-              <Link href="/quotes/new" className={styles.inlineLink}>
-                Add your first quote
-              </Link>
-            </p>
+            <Card>
+              <p className={styles.empty}>
+                Nothing here yet.{' '}
+                <Link href="/quotes/new" className={styles.inlineLink}>
+                  Add your first quote
+                </Link>
+              </p>
+            </Card>
           ) : (
             <QuotesBoard tenantSlug={membership.tenantSlug} quotes={quotes} />
           )}
-        </Card>
       </Stack>
     </>
   );

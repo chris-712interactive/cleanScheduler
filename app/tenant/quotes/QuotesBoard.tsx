@@ -51,11 +51,9 @@ function groupQuotesByStatus(
 function BoardQuoteCardFace({
   quote,
   variant,
-  dragDisabled,
 }: {
   quote: QuoteListEmbedRow;
   variant: 'list' | 'overlay';
-  dragDisabled?: boolean;
 }) {
   const ident = quote.customers?.customer_identities;
   const name = ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : '';
@@ -85,11 +83,6 @@ function BoardQuoteCardFace({
         {new Date(quote.created_at).toLocaleDateString()}
         {quote.version_number > 1 ? ` · v${quote.version_number}` : ''}
       </p>
-      {variant === 'list' && !dragDisabled ? (
-        <p className={styles.boardCardHint} aria-hidden="true">
-          Drag to another column
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -115,7 +108,7 @@ function DraggableQuoteCard({ quote, pending }: { quote: QuoteListEmbedRow; pend
       {...listeners}
       {...attributes}
     >
-      <BoardQuoteCardFace quote={quote} variant="list" dragDisabled={dragDisabled} />
+      <BoardQuoteCardFace quote={quote} variant="list" />
     </article>
   );
 }

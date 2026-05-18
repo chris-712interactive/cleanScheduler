@@ -31,9 +31,10 @@
 :root,
 :root[data-theme='light'] {
   // -- color: surfaces / backgrounds --
-  --color-bg: #{c.$brand-bg-light};
-  --color-bg-subtle: #{c.$brand-surface-light};
-  --color-bg-muted: #{c.$gray-50-light};
+  // Page canvas is the soft teal tint; cards, sidebar, and top bar use white surface.
+  --color-bg: #{c.$brand-surface-light};
+  --color-bg-subtle: #{c.$gray-50-light};
+  --color-bg-muted: #{c.$gray-100-light};
   --color-surface: #{c.$brand-bg-light};
   --color-surface-raised: #{c.$brand-bg-light};
   --color-surface-overlay: #{c.$brand-bg-light};
