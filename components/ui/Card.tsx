@@ -4,10 +4,13 @@
  * tables or maps edge-to-edge.
  */
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import { TitleWithHint } from '@/components/ui/HeadingHint';
 import styles from './Card.module.scss';
 
 export interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   title?: ReactNode;
+  /** Shown in an info tooltip beside the title instead of below it. */
+  titleHint?: string;
   description?: ReactNode;
   actions?: ReactNode;
   footer?: ReactNode;
@@ -15,10 +18,10 @@ export interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
 }
 
 export const Card = forwardRef<HTMLElement, CardProps>(function Card(
-  { title, description, actions, footer, padded = true, className, children, ...rest },
+  { title, titleHint, description, actions, footer, padded = true, className, children, ...rest },
   ref,
 ) {
-  const hasHeader = title || description || actions;
+  const hasHeader = title || titleHint || description || actions;
 
   return (
     <section
@@ -29,7 +32,11 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
       {hasHeader ? (
         <header className={styles.header}>
           <div className={styles.headerCopy}>
-            {title ? <h2 className={styles.title}>{title}</h2> : null}
+            {title ? (
+              <h2 className={styles.title}>
+                <TitleWithHint hint={titleHint}>{title}</TitleWithHint>
+              </h2>
+            ) : null}
             {description ? <p className={styles.description}>{description}</p> : null}
           </div>
           {actions ? <div className={styles.actions}>{actions}</div> : null}

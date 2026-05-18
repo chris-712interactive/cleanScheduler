@@ -51,7 +51,7 @@ export default async function TenantDashboardPage() {
     <>
       <PageHeader
         title="Today's overview"
-        description="A quick read on your jobs, money, and team for today."
+        titleHint="A quick read on your jobs, money, and team for today."
         actions={
           <Button as="a" href="/schedule" iconRight={<ArrowUpRight size={16} />}>
             Open schedule
@@ -61,7 +61,7 @@ export default async function TenantDashboardPage() {
 
       <Stack gap={6}>
         {trial?.status === 'trialing' ? (
-          <Card title="Free trial" description="Your workspace is in trial mode.">
+          <Card title="Free trial" titleHint="Your workspace is in trial mode.">
             <StatusPill tone="brand" icon={<Calendar size={14} />}>
               {trial.daysRemaining === 0
                 ? 'Trial ends today'
@@ -71,7 +71,7 @@ export default async function TenantDashboardPage() {
         ) : null}
 
         <Grid min="240px" gap={4}>
-          <Card title="Quotes" description="Draft and sent proposals">
+          <Card title="Quotes" titleHint="Draft and sent proposals">
             <Stack gap={2}>
               <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{quoteCount}</strong>
               {quoteCount > 0 ? (
@@ -95,36 +95,38 @@ export default async function TenantDashboardPage() {
               )}
             </Stack>
           </Card>
-          <Card title="Today's jobs" description="Scheduled appointments today">
+          <Card title="Today's jobs" titleHint="Scheduled appointments today">
             <Stack gap={2}>
               <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{todaysJobCount}</strong>
               {todaysJobCount > 0 ? (
-                <>
-                  <StatusPill tone="brand" icon={<Calendar size={14} />}>
-                    {todaysScheduledCount > 0
-                      ? `${todaysScheduledCount} scheduled`
-                      : 'On the calendar'}
-                    {todaysCompletedCount > 0
-                      ? ` · ${todaysCompletedCount} completed`
-                      : ''}
-                  </StatusPill>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    as="a"
-                    href={`/schedule?date=${todayKey}&view=day`}
-                  >
-                    View today&apos;s schedule
-                  </Button>
-                </>
+                <StatusPill tone="brand" icon={<Calendar size={14} />}>
+                  {todaysScheduledCount > 0
+                    ? `${todaysScheduledCount} scheduled`
+                    : 'On the calendar'}
+                  {todaysCompletedCount > 0
+                    ? ` · ${todaysCompletedCount} completed`
+                    : ''}
+                </StatusPill>
               ) : (
                 <StatusPill tone="neutral" icon={<Calendar size={14} />}>
                   Nothing scheduled today
                 </StatusPill>
               )}
+              <Button
+                variant="secondary"
+                size="sm"
+                as="a"
+                href={
+                  todaysJobCount > 0
+                    ? `/schedule?date=${todayKey}&view=day`
+                    : '/schedule'
+                }
+              >
+                Open schedule
+              </Button>
             </Stack>
           </Card>
-          <Card title="Outstanding invoices" description="Open balances awaiting payment">
+          <Card title="Outstanding invoices" titleHint="Open balances awaiting payment">
             <Stack gap={2}>
               <strong style={{ fontSize: 'var(--font-size-3xl)' }}>
                 {formatUsdFromCents(outstandingCents)}
@@ -153,7 +155,7 @@ export default async function TenantDashboardPage() {
           </Card>
           <Card
             title="Active customers"
-            description="Contacts marked active in your workspace directory (visits and scheduling are next)."
+            titleHint="Contacts marked active in your workspace directory (visits and scheduling are next)."
           >
             <Stack gap={2}>
               <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{activeCustomerCount}</strong>
@@ -183,7 +185,7 @@ export default async function TenantDashboardPage() {
         {activeCustomerCount === 0 ? (
           <Card
             title="Get started"
-            description="Ship work in order: quotes, then a solid customer directory, then the schedule."
+            titleHint="Ship work in order: quotes, then a solid customer directory, then the schedule."
           >
             <EmptyState
               title="Nothing in the pipeline yet"
