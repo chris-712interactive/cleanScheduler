@@ -44,14 +44,10 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
     <>
       <PageHeader
         title="Service plans"
-        description="Recurring prices you offer end customers. Checkout runs on your Stripe Connect account."
+        backHref="/billing"
+        backLabel="Workspace billing"
+        titleHint="Recurring prices you offer end customers. Checkout runs on your Stripe Connect account."
       />
-
-      <p className={styles.backLinkWrap}>
-        <a href="/billing" className={styles.backLink}>
-          ← Workspace billing
-        </a>
-      </p>
 
       {created ? (
         <p className={styles.bannerOk} role="status">

@@ -30,14 +30,10 @@ export default async function NewTenantInvoicePage() {
     <>
       <PageHeader
         title="New invoice"
-        description="Issue a balance to a customer in this workspace."
+        backHref="/billing/invoices"
+        backLabel="Customer invoices"
+        titleHint="Issue a balance to a customer in this workspace."
       />
-
-      <p className={styles.backLinkWrap}>
-        <Link href="/billing/invoices" className={styles.backLink}>
-          ← All invoices
-        </Link>
-      </p>
 
       {error ? (
         <Card title="Could not load customers">

@@ -53,14 +53,10 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
     <>
       <PageHeader
         title="Payment setup"
-        description="Connect Stripe Express so customers can pay open invoices by card. Cash, check, and Zelle recording still works without Connect."
+        backHref="/billing"
+        backLabel="Workspace billing"
+        titleHint="Connect Stripe Express so customers can pay open invoices by card. Cash, check, and Zelle recording still works without Connect."
       />
-
-      <p className={styles.backLinkWrap}>
-        <Link href="/billing" className={styles.backLink}>
-          ← Workspace billing
-        </Link>
-      </p>
 
       {err ? (
         <p className={styles.bannerError} role="alert">

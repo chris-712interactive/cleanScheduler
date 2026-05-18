@@ -53,7 +53,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
     <>
       <PageHeader
         title="Workspace billing"
-        description="Platform subscription for cleanScheduler, plus customer invoicing for your clients."
+        titleHint="Platform subscription for cleanScheduler, plus customer invoicing for your clients."
       />
 
       <Stack gap={6}>

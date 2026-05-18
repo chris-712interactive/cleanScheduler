@@ -107,14 +107,10 @@ export default async function TenantBillingTransactionsPage() {
     <>
       <PageHeader
         title="Transactions"
-        description="All payments recorded on customer invoices — manual entries and Stripe Checkout."
+        backHref="/billing"
+        backLabel="Workspace billing"
+        titleHint="All payments recorded on customer invoices — manual entries and Stripe Checkout."
       />
-
-      <p className={styles.backLinkWrap}>
-        <Link href="/billing" className={styles.backLink}>
-          ← Workspace billing
-        </Link>
-      </p>
 
       {error ? (
         <Card title="Could not load transactions">

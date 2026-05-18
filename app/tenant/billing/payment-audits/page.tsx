@@ -214,14 +214,10 @@ export default async function TenantPaymentAuditsPage({
     <>
       <PageHeader
         title="Payment audits"
-        description="Track check, cash, Zelle, and other offline payments — mark when received and when deposited."
+        backHref="/billing"
+        backLabel="Workspace billing"
+        titleHint="Track check, cash, Zelle, and other offline payments — mark when received and when deposited."
       />
-
-      <p className={styles.backLinkWrap}>
-        <Link href="/billing" className={styles.backLink}>
-          ← Workspace billing
-        </Link>
-      </p>
 
       <PaymentAuditDateRangeForm
         filter={filter}

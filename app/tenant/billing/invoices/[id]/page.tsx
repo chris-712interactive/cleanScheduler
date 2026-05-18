@@ -75,13 +75,12 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
 
   return (
     <>
-      <PageHeader title={inv.title} description={`Invoice · ${inv.status}`} />
-
-      <p className={styles.backLinkWrap}>
-        <Link href="/billing/invoices" className={styles.backLink}>
-          ← All invoices
-        </Link>
-      </p>
+      <PageHeader
+        title={inv.title}
+        backHref="/billing/invoices"
+        backLabel="Customer invoices"
+        titleHint={`Invoice · ${inv.status}`}
+      />
 
       {checkoutErr ? (
         <p className={styles.bannerError} role="alert">

@@ -31,10 +31,6 @@
   align-items: center;
 }
 
-.backLinkWrap {
-  margin: 0 0 var(--space-4);
-}
-
 .backLink {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
@@ -46,10 +42,47 @@
   }
 }
 
+.invoiceCardLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+
+  &,
+  &:hover,
+  &:focus,
+  &:focus-visible,
+  & * {
+    text-decoration: none;
+  }
+
+  &:hover {
+    color: inherit;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:hover .invoiceCard {
+    border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border));
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.invoiceCard {
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-fast) var(--easing-standard);
+}
+
 .invoiceRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   margin-top: var(--space-2);
 }
@@ -205,11 +238,15 @@
   letter-spacing: 0.03em;
 }
 
+$date-range-control-height: 2.75rem;
+
 .dateRangeInput {
+  box-sizing: border-box;
+  min-height: $date-range-control-height;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background-color: var(--color-surface);
   color: var(--color-text);
   font: inherit;
   min-width: 10.5rem;
@@ -220,6 +257,13 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+
+  button[data-size='sm'] {
+    box-sizing: border-box;
+    height: $date-range-control-height;
+    min-height: $date-range-control-height;
+    padding-block: 0;
+  }
 }
 
 .dateRangeClear {
@@ -248,7 +292,7 @@
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background-color: var(--color-surface);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -266,7 +310,7 @@
 
   &[data-active] {
     border-color: var(--color-brand-primary);
-    background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-surface));
     color: var(--color-brand-primary);
     font-weight: 600;
   }

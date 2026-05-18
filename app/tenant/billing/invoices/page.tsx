@@ -29,19 +29,15 @@ export default async function TenantCustomerInvoicesPage() {
     <>
       <PageHeader
         title="Customer invoices"
-        description="Bill your customers for completed work. Payments update balances automatically."
+        backHref="/billing"
+        backLabel="Workspace billing"
+        titleHint="Bill your customers for completed work. Payments update balances automatically."
         actions={
           <Button variant="primary" as="a" href="/billing/invoices/new">
             New invoice
           </Button>
         }
       />
-
-      <p className={styles.backLinkWrap}>
-        <Link href="/billing" className={styles.backLink}>
-          ← Workspace billing
-        </Link>
-      </p>
 
       {error ? (
         <Card title="Could not load invoices">
@@ -60,13 +56,18 @@ export default async function TenantCustomerInvoicesPage() {
       ) : (
         <Stack gap={3}>
           {invoices.map((inv) => (
-            <Card
+            <Link
               key={inv.id}
-              title={inv.title}
-              description={`Created ${new Date(inv.created_at).toLocaleString()}`}
+              href={`/billing/invoices/${inv.id}`}
+              className={styles.invoiceCardLink}
             >
-              <div className={styles.invoiceRow}>
-                <div>
+              <Card
+                className={styles.invoiceCard}
+                title={inv.title}
+                description={`Created ${new Date(inv.created_at).toLocaleString()}`}
+              >
+                <div className={styles.invoiceRow}>
+                  <div>
                   <strong>{formatUsdFromCents(inv.amount_cents)}</strong>
                   <span className={styles.muted}>
                     {' '}
@@ -80,11 +81,9 @@ export default async function TenantCustomerInvoicesPage() {
                 >
                   {inv.status}
                 </StatusPill>
-                <Button variant="secondary" size="sm" as="a" href={`/billing/invoices/${inv.id}`}>
-                  Open
-                </Button>
-              </div>
-            </Card>
+                </div>
+              </Card>
+            </Link>
           ))}
         </Stack>
       )}
