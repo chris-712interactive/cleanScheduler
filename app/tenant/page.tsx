@@ -10,6 +10,9 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
+import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingInvoices';
+import { formatUsdFromCents } from '@/lib/format/money';
+import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +22,7 @@ export default async function TenantDashboardPage() {
   const trial = await getTenantTrialSummaryBySlug(membership.tenantSlug);
   const supabase = createTenantPortalDbClient();
 
-  const [customersCountRes, quotesCountRes] = await Promise.all([
+  const [customersCountRes, quotesCountRes, outstandingInvoices, todaysJobs] = await Promise.all([
     supabase
       .from('customers')
       .select('*', { count: 'exact', head: true })
@@ -29,10 +32,20 @@ export default async function TenantDashboardPage() {
       .from('tenant_quotes')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', membership.tenantId),
+    getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
+    getTenantTodaysJobsSummary(supabase, membership.tenantId),
   ]);
 
   const activeCustomerCount = customersCountRes.error ? 0 : (customersCountRes.count ?? 0);
   const quoteCount = quotesCountRes.error ? 0 : (quotesCountRes.count ?? 0);
+  const { totalCents: outstandingCents, invoiceCount: outstandingCount, pastDueCount } =
+    outstandingInvoices;
+  const {
+    count: todaysJobCount,
+    scheduledCount: todaysScheduledCount,
+    completedCount: todaysCompletedCount,
+    todayKey,
+  } = todaysJobs;
 
   return (
     <>
@@ -82,20 +95,60 @@ export default async function TenantDashboardPage() {
               )}
             </Stack>
           </Card>
-          <Card title="Today's jobs" description="Scheduled appointments">
+          <Card title="Today's jobs" description="Scheduled appointments today">
             <Stack gap={2}>
-              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>0</strong>
-              <StatusPill tone="brand" icon={<Calendar size={14} />}>
-                Schedule is empty
-              </StatusPill>
+              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{todaysJobCount}</strong>
+              {todaysJobCount > 0 ? (
+                <>
+                  <StatusPill tone="brand" icon={<Calendar size={14} />}>
+                    {todaysScheduledCount > 0
+                      ? `${todaysScheduledCount} scheduled`
+                      : 'On the calendar'}
+                    {todaysCompletedCount > 0
+                      ? ` · ${todaysCompletedCount} completed`
+                      : ''}
+                  </StatusPill>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    as="a"
+                    href={`/schedule?date=${todayKey}&view=day`}
+                  >
+                    View today&apos;s schedule
+                  </Button>
+                </>
+              ) : (
+                <StatusPill tone="neutral" icon={<Calendar size={14} />}>
+                  Nothing scheduled today
+                </StatusPill>
+              )}
             </Stack>
           </Card>
-          <Card title="Outstanding invoices" description="Awaiting payment">
+          <Card title="Outstanding invoices" description="Open balances awaiting payment">
             <Stack gap={2}>
-              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>$0</strong>
-              <StatusPill tone="neutral" icon={<CreditCard size={14} />}>
-                Nothing past due
-              </StatusPill>
+              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>
+                {formatUsdFromCents(outstandingCents)}
+              </strong>
+              {outstandingCount > 0 ? (
+                <>
+                  <StatusPill
+                    tone={pastDueCount > 0 ? 'warning' : 'brand'}
+                    icon={<CreditCard size={14} />}
+                  >
+                    {outstandingCount} invoice{outstandingCount === 1 ? '' : 's'}
+                    {pastDueCount > 0
+                      ? ` · ${pastDueCount} past due`
+                      : ' with balance due'}
+                  </StatusPill>
+                  <Button variant="secondary" size="sm" as="a" href="/billing/invoices">
+                    Open invoices
+                  </Button>
+                </>
+              ) : (
+                <StatusPill tone="neutral" icon={<CreditCard size={14} />}>
+                  Nothing outstanding
+                </StatusPill>
+              )}
             </Stack>
           </Card>
           <Card
