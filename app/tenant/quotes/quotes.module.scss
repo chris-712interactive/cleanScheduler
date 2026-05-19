@@ -215,7 +215,7 @@
   overflow: hidden;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-bg-muted);
   box-shadow: var(--shadow-xs);
 }
 
@@ -230,28 +230,57 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-3);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+
+.boardColumnTitleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .boardColumnTitle {
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--color-text);
+  letter-spacing: -0.01em;
 }
 
 .boardColumnCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 var(--space-1);
   font-size: var(--font-size-xs);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-muted);
-  background: var(--color-bg-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.boardColumnMenu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
   border-radius: var(--radius-sm);
-  padding: 0.15rem 0.45rem;
+  cursor: default;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+    color: var(--color-text);
+  }
 }
 
 .boardColumnBody {
@@ -280,9 +309,9 @@
 
 .boardCard {
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-border));
   background: var(--color-surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  box-shadow: var(--shadow-xs);
   cursor: grab;
   touch-action: none;
 
@@ -309,48 +338,99 @@
 }
 
 .boardCardInner {
-  padding: var(--space-3);
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  min-height: 7.5rem;
 }
 
-.boardCardTitle {
+.boardCardHeadline {
+  margin: 0;
   font-size: var(--font-size-md);
-  font-weight: 600;
-  color: inherit;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-brand-primary);
+  letter-spacing: -0.01em;
   text-decoration: none;
 
   &:hover {
-    color: var(--color-brand-primary);
-    text-decoration: underline;
+    color: var(--color-brand-primary-hover);
+    text-decoration: none;
   }
 }
 
-.boardCardTitleStatic {
+.boardCardHeadlineStatic {
+  margin: 0;
   font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-text);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-brand-primary);
+  letter-spacing: -0.01em;
 }
 
-.boardCardMeta {
+.boardCardService {
   margin: 0;
   font-size: var(--font-size-sm);
-  color: var(--color-text);
   line-height: 1.4;
+  color: var(--color-text-muted);
 }
 
-.boardCardMetaMuted {
+.boardCardAmount {
   margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-brand-primary);
+  letter-spacing: -0.02em;
+}
+
+.boardCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.boardCardDate {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
+.boardCardStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+}
+
+.boardCardStatusAccepted {
+  color: var(--color-success);
+  background-color: var(--color-success-bg);
+}
+
+.boardCardStatusDeclined {
+  color: var(--color-danger);
+  background-color: var(--color-danger-bg);
+}
+
+.boardCardStatusExpired {
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+}
+
 .boardCardMove {
-  margin-top: var(--space-2);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  padding: 0 var(--space-4) var(--space-4);
+  margin-top: calc(-1 * var(--space-2));
 }
 
 .boardCardMoveLabel {

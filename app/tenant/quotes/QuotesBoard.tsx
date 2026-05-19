@@ -14,12 +14,9 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import {
-  customerHasAnyNameParts,
-  formatCustomerDisplayName,
-} from '@/lib/tenant/customerIdentityName';
+import { Check, MoreVertical } from 'lucide-react';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
-import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import { getQuoteBoardCardDisplay } from '@/lib/tenant/quoteBoardCardDisplay';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { columnDroppableId, QUOTE_BOARD_COLUMN_ORDER } from '@/lib/tenant/quoteBoardColumns';
@@ -48,6 +45,32 @@ function groupQuotesByStatus(
   return map;
 }
 
+function QuoteCardStatusFootnote({ status }: { status: QuoteStatus }) {
+  if (status === 'accepted') {
+    return (
+      <span className={[styles.boardCardStatusBadge, styles.boardCardStatusAccepted].join(' ')}>
+        <Check size={12} strokeWidth={2.5} aria-hidden />
+        Accepted
+      </span>
+    );
+  }
+  if (status === 'declined') {
+    return (
+      <span className={[styles.boardCardStatusBadge, styles.boardCardStatusDeclined].join(' ')}>
+        Declined
+      </span>
+    );
+  }
+  if (status === 'expired') {
+    return (
+      <span className={[styles.boardCardStatusBadge, styles.boardCardStatusExpired].join(' ')}>
+        Expired
+      </span>
+    );
+  }
+  return null;
+}
+
 function BoardQuoteCardFace({
   quote,
   variant,
@@ -55,35 +78,53 @@ function BoardQuoteCardFace({
   quote: QuoteListEmbedRow;
   variant: 'list' | 'overlay';
 }) {
-  const ident = quote.customers?.customer_identities;
-  const name = ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : '';
-  const who = name ? name : quote.customer_id ? 'Linked customer' : 'No customer';
-  const prop = quote.tenant_customer_properties;
-  const site = prop ? formatPropertyAddressLine(prop) : '';
+  const { headline, serviceLine, dateLabel } = getQuoteBoardCardDisplay(quote);
 
   return (
     <div className={styles.boardCardInner}>
       {variant === 'overlay' ? (
-        <span className={styles.boardCardTitleStatic}>{quote.title}</span>
+        <span className={styles.boardCardHeadlineStatic}>{headline}</span>
       ) : (
         <Link
           href={`/quotes/${quote.id}`}
-          className={styles.boardCardTitle}
+          className={styles.boardCardHeadline}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {quote.title}
+          {headline}
         </Link>
       )}
-      <p className={styles.boardCardMeta}>
-        {who}
-        {site ? ` · ${site}` : ''}
+      {serviceLine ? <p className={styles.boardCardService}>{serviceLine}</p> : null}
+      <p className={styles.boardCardAmount}>
+        {formatQuoteMoney(quote.amount_cents, quote.currency)}
       </p>
-      <p className={styles.boardCardMetaMuted}>
-        {formatQuoteMoney(quote.amount_cents, quote.currency)} ·{' '}
-        {new Date(quote.created_at).toLocaleDateString()}
-        {quote.version_number > 1 ? ` · v${quote.version_number}` : ''}
-      </p>
+      <div className={styles.boardCardFooter}>
+        <span className={styles.boardCardDate}>
+          {dateLabel}
+          {quote.version_number > 1 ? ` · v${quote.version_number}` : ''}
+        </span>
+        <QuoteCardStatusFootnote status={quote.status as QuoteStatus} />
+      </div>
     </div>
+  );
+}
+
+function BoardColumnHeader({
+  status,
+  count,
+}: {
+  status: QuoteStatus;
+  count: number;
+}) {
+  return (
+    <header className={styles.boardColumnHeader}>
+      <div className={styles.boardColumnTitleRow}>
+        <h3 className={styles.boardColumnTitle}>{QUOTE_STATUS_LABEL[status]}</h3>
+        <span className={styles.boardColumnCount}>{count}</span>
+      </div>
+      <button type="button" className={styles.boardColumnMenu} aria-hidden tabIndex={-1}>
+        <MoreVertical size={16} aria-hidden />
+      </button>
+    </header>
   );
 }
 
@@ -136,10 +177,7 @@ function BoardColumn({
         .join(' ')}
       aria-label={`${QUOTE_STATUS_LABEL[status]} quotes`}
     >
-      <header className={styles.boardColumnHeader}>
-        <h3 className={styles.boardColumnTitle}>{QUOTE_STATUS_LABEL[status]}</h3>
-        <span className={styles.boardColumnCount}>{quotes.length}</span>
-      </header>
+      <BoardColumnHeader status={status} count={quotes.length} />
       <div className={styles.boardColumnBody}>
         {quotes.length === 0 ? (
           <p className={styles.boardColumnEmpty}>Drop quotes here</p>
@@ -166,10 +204,7 @@ function MobileColumn({
 }) {
   return (
     <section className={styles.boardColumn} aria-label={`${QUOTE_STATUS_LABEL[status]} quotes`}>
-      <header className={styles.boardColumnHeader}>
-        <h3 className={styles.boardColumnTitle}>{QUOTE_STATUS_LABEL[status]}</h3>
-        <span className={styles.boardColumnCount}>{quotes.length}</span>
-      </header>
+      <BoardColumnHeader status={status} count={quotes.length} />
       <div className={styles.boardColumnBody}>
         {quotes.length === 0 ? (
           <p className={styles.boardColumnEmpty}>No quotes</p>
@@ -197,31 +232,14 @@ function MobileQuoteCard({
   onMobileMove: (quoteId: string, next: QuoteStatus) => void;
   pending: boolean;
 }) {
-  const ident = quote.customers?.customer_identities;
-  const name = ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : '';
-  const who = name ? name : quote.customer_id ? 'Linked customer' : 'No customer';
-  const prop = quote.tenant_customer_properties;
-  const site = prop ? formatPropertyAddressLine(prop) : '';
-
   return (
     <article
       className={[styles.boardCard, pending ? styles.boardCardPending : '']
         .filter(Boolean)
         .join(' ')}
     >
-      <div className={styles.boardCardInner}>
-        <Link href={`/quotes/${quote.id}`} className={styles.boardCardTitle}>
-          {quote.title}
-        </Link>
-        <p className={styles.boardCardMeta}>
-          {who}
-          {site ? ` · ${site}` : ''}
-        </p>
-        <p className={styles.boardCardMetaMuted}>
-          {formatQuoteMoney(quote.amount_cents, quote.currency)} ·{' '}
-          {new Date(quote.created_at).toLocaleDateString()}
-        </p>
-        <div className={styles.boardCardMove}>
+      <BoardQuoteCardFace quote={quote} variant="list" />
+      <div className={styles.boardCardMove}>
           <label className={styles.boardCardMoveLabel} htmlFor={`move_${quote.id}`}>
             Move to
           </label>
@@ -241,7 +259,6 @@ function MobileQuoteCard({
               </option>
             ))}
           </select>
-        </div>
       </div>
     </article>
   );

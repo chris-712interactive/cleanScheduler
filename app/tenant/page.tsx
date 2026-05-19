@@ -1,7 +1,6 @@
-import { ArrowUpRight, Calendar, ClipboardList, CreditCard, UsersRound } from 'lucide-react';
+import { Calendar, ClipboardList, CreditCard, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Grid } from '@/components/layout/Grid';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -13,6 +12,12 @@ import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
 import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingInvoices';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
+import {
+  getTenantCustomersAddedThisMonthCount,
+  getTenantSentQuotesCount,
+} from '@/lib/tenant/dashboardMetrics';
+import { DashboardStatCard } from './DashboardStatCard';
+import styles from './dashboard.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,19 +27,23 @@ export default async function TenantDashboardPage() {
   const trial = await getTenantTrialSummaryBySlug(membership.tenantSlug);
   const supabase = createTenantPortalDbClient();
 
-  const [customersCountRes, quotesCountRes, outstandingInvoices, todaysJobs] = await Promise.all([
-    supabase
-      .from('customers')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', membership.tenantId)
-      .eq('status', 'active'),
-    supabase
-      .from('tenant_quotes')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', membership.tenantId),
-    getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
-    getTenantTodaysJobsSummary(supabase, membership.tenantId),
-  ]);
+  const [customersCountRes, quotesCountRes, sentQuotesCount, customersAddedThisMonth, outstandingInvoices, todaysJobs] =
+    await Promise.all([
+      supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', membership.tenantId)
+        .eq('status', 'active'),
+      supabase
+        .from('tenant_quotes')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', membership.tenantId)
+        .is('superseded_by_quote_id', null),
+      getTenantSentQuotesCount(supabase, membership.tenantId),
+      getTenantCustomersAddedThisMonthCount(supabase, membership.tenantId),
+      getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
+      getTenantTodaysJobsSummary(supabase, membership.tenantId),
+    ]);
 
   const activeCustomerCount = customersCountRes.error ? 0 : (customersCountRes.count ?? 0);
   const quoteCount = quotesCountRes.error ? 0 : (quotesCountRes.count ?? 0);
@@ -43,9 +52,36 @@ export default async function TenantDashboardPage() {
   const {
     count: todaysJobCount,
     scheduledCount: todaysScheduledCount,
-    completedCount: todaysCompletedCount,
     todayKey,
   } = todaysJobs;
+
+  const quotesBadge =
+    quoteCount === 0
+      ? 'Create your first quote'
+      : sentQuotesCount > 0
+        ? `${sentQuotesCount} sent`
+        : 'In your pipeline';
+
+  const jobsBadge =
+    todaysJobCount === 0
+      ? 'Nothing scheduled today'
+      : todaysScheduledCount > 0
+        ? `${todaysScheduledCount} in progress`
+        : 'On the calendar today';
+
+  const invoicesBadge =
+    outstandingCount === 0
+      ? 'Nothing outstanding'
+      : pastDueCount > 0
+        ? `${pastDueCount} overdue`
+        : `${outstandingCount} with balance due`;
+
+  const customersBadge =
+    activeCustomerCount === 0
+      ? 'Add your first customer'
+      : customersAddedThisMonth > 0
+        ? `${customersAddedThisMonth} added this month`
+        : 'In your directory';
 
   return (
     <>
@@ -53,7 +89,7 @@ export default async function TenantDashboardPage() {
         title="Today's overview"
         titleHint="A quick read on your jobs, money, and team for today."
         actions={
-          <Button as="a" href="/schedule" iconRight={<ArrowUpRight size={16} />}>
+          <Button as="a" href="/schedule" iconLeft={<Calendar size={16} />}>
             Open schedule
           </Button>
         }
@@ -61,7 +97,7 @@ export default async function TenantDashboardPage() {
 
       <Stack gap={6}>
         {trial?.status === 'trialing' ? (
-          <Card title="Free trial" titleHint="Your workspace is in trial mode.">
+          <Card title="Free trial" titleHint="Your workspace is in trial mode." className={styles.trialBanner}>
             <StatusPill tone="brand" icon={<Calendar size={14} />}>
               {trial.daysRemaining === 0
                 ? 'Trial ends today'
@@ -70,117 +106,48 @@ export default async function TenantDashboardPage() {
           </Card>
         ) : null}
 
-        <Grid min="240px" gap={4}>
-          <Card title="Quotes" titleHint="Draft and sent proposals">
-            <Stack gap={2}>
-              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{quoteCount}</strong>
-              {quoteCount > 0 ? (
-                <>
-                  <StatusPill tone="brand" icon={<ClipboardList size={14} />}>
-                    In your pipeline
-                  </StatusPill>
-                  <Button variant="secondary" size="sm" as="a" href="/quotes">
-                    Open quotes
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <StatusPill tone="neutral" icon={<ClipboardList size={14} />}>
-                    Create your first quote
-                  </StatusPill>
-                  <Button variant="secondary" size="sm" as="a" href="/quotes">
-                    Go to quotes
-                  </Button>
-                </>
-              )}
-            </Stack>
-          </Card>
-          <Card title="Today's jobs" titleHint="Scheduled appointments today">
-            <Stack gap={2}>
-              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{todaysJobCount}</strong>
-              {todaysJobCount > 0 ? (
-                <StatusPill tone="brand" icon={<Calendar size={14} />}>
-                  {todaysScheduledCount > 0
-                    ? `${todaysScheduledCount} scheduled`
-                    : 'On the calendar'}
-                  {todaysCompletedCount > 0
-                    ? ` · ${todaysCompletedCount} completed`
-                    : ''}
-                </StatusPill>
-              ) : (
-                <StatusPill tone="neutral" icon={<Calendar size={14} />}>
-                  Nothing scheduled today
-                </StatusPill>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                as="a"
-                href={
-                  todaysJobCount > 0
-                    ? `/schedule?date=${todayKey}&view=day`
-                    : '/schedule'
-                }
-              >
-                Open schedule
-              </Button>
-            </Stack>
-          </Card>
-          <Card title="Outstanding invoices" titleHint="Open balances awaiting payment">
-            <Stack gap={2}>
-              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>
-                {formatUsdFromCents(outstandingCents)}
-              </strong>
-              {outstandingCount > 0 ? (
-                <>
-                  <StatusPill
-                    tone={pastDueCount > 0 ? 'warning' : 'brand'}
-                    icon={<CreditCard size={14} />}
-                  >
-                    {outstandingCount} invoice{outstandingCount === 1 ? '' : 's'}
-                    {pastDueCount > 0
-                      ? ` · ${pastDueCount} past due`
-                      : ' with balance due'}
-                  </StatusPill>
-                  <Button variant="secondary" size="sm" as="a" href="/billing/invoices">
-                    Open invoices
-                  </Button>
-                </>
-              ) : (
-                <StatusPill tone="neutral" icon={<CreditCard size={14} />}>
-                  Nothing outstanding
-                </StatusPill>
-              )}
-            </Stack>
-          </Card>
-          <Card
-            title="Active customers"
-            titleHint="Contacts marked active in your workspace directory (visits and scheduling are next)."
-          >
-            <Stack gap={2}>
-              <strong style={{ fontSize: 'var(--font-size-3xl)' }}>{activeCustomerCount}</strong>
-              {activeCustomerCount > 0 ? (
-                <>
-                  <StatusPill tone="brand" icon={<UsersRound size={14} />}>
-                    In your directory
-                  </StatusPill>
-                  <Button variant="secondary" size="sm" as="a" href="/customers">
-                    Open customers
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <StatusPill tone="neutral" icon={<UsersRound size={14} />}>
-                    Add your first customer
-                  </StatusPill>
-                  <Button variant="secondary" size="sm" as="a" href="/customers/new">
-                    Add customer
-                  </Button>
-                </>
-              )}
-            </Stack>
-          </Card>
-        </Grid>
+        <div className={styles.statGrid}>
+          <DashboardStatCard
+            icon={<ClipboardList size={20} strokeWidth={2} />}
+            label="Quotes"
+            value={quoteCount}
+            badge={quotesBadge}
+            badgeTone={quoteCount === 0 ? 'muted' : 'brand'}
+            actionLabel={quoteCount === 0 ? 'Go to quotes' : 'View quotes'}
+            actionHref="/quotes"
+          />
+          <DashboardStatCard
+            icon={<Calendar size={20} strokeWidth={2} />}
+            label="Today's jobs"
+            value={todaysJobCount}
+            badge={jobsBadge}
+            badgeTone={todaysJobCount === 0 ? 'muted' : 'brand'}
+            actionLabel={todaysJobCount === 0 ? 'Open schedule' : "View today's jobs"}
+            actionHref={
+              todaysJobCount > 0 ? `/schedule?date=${todayKey}&view=day` : '/schedule'
+            }
+          />
+          <DashboardStatCard
+            icon={<CreditCard size={20} strokeWidth={2} />}
+            label="Outstanding invoices"
+            value={formatUsdFromCents(outstandingCents)}
+            badge={invoicesBadge}
+            badgeTone={
+              outstandingCount === 0 ? 'muted' : pastDueCount > 0 ? 'warn' : 'brand'
+            }
+            actionLabel="View invoices"
+            actionHref="/billing/invoices"
+          />
+          <DashboardStatCard
+            icon={<UsersRound size={20} strokeWidth={2} />}
+            label="Active customers"
+            value={activeCustomerCount}
+            badge={customersBadge}
+            badgeTone={activeCustomerCount === 0 ? 'muted' : 'brand'}
+            actionLabel={activeCustomerCount === 0 ? 'Add customer' : 'View customers'}
+            actionHref={activeCustomerCount === 0 ? '/customers/new' : '/customers'}
+          />
+        </div>
 
         {activeCustomerCount === 0 ? (
           <Card

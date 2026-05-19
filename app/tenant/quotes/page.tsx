@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
@@ -61,9 +62,9 @@ export default async function TenantQuotesPage() {
     <>
       <PageHeader
         title="Quotes"
-        description="Board by status — drag cards between columns on desktop, or use Move to on smaller screens."
+        titleHint="Drag cards between columns on desktop, or use Move to on smaller screens."
         actions={
-          <Button variant="primary" as="a" href="/quotes/new">
+          <Button variant="primary" as="a" href="/quotes/new" iconLeft={<Plus size={16} />}>
             Add quote
           </Button>
         }
