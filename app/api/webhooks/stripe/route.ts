@@ -13,6 +13,7 @@ import {
   handleTenantCustomerSubscriptionCheckoutCompleted,
   upsertCustomerSubscriptionFromStripe,
 } from '@/lib/stripe/connectWebhookHandlers';
+import { notifyTenantTrialEndingSoon } from '@/lib/billing/trialEndingNotifications';
 import {
   notifyTenantDisputeOpened,
   resolveConnectTenantId,
@@ -99,6 +100,9 @@ async function syncTenantFromSubscription(
   if (platformPlan) {
     updatePayload.platform_plan = platformPlan;
   }
+  if (mappedStatus === 'active' && !isCanceled) {
+    updatePayload.activated_at = nowIso;
+  }
 
   await admin.from('tenant_billing_accounts').update(updatePayload).eq('tenant_id', tenantId);
 
@@ -171,6 +175,13 @@ export async function POST(request: Request) {
         case 'account.updated': {
           const account = event.data.object as Stripe.Account;
           await handleConnectAccountUpdated(admin, account);
+          break;
+        }
+        case 'customer.subscription.trial_will_end': {
+          const subscription = event.data.object as Stripe.Subscription;
+          if (!connectAccountId) {
+            await notifyTenantTrialEndingSoon(admin, subscription);
+          }
           break;
         }
         case 'customer.subscription.created':

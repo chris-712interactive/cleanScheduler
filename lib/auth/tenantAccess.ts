@@ -1,6 +1,11 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
+import {
+  isTenantBillingHubPath,
+  isTenantPortalSuspended,
+  resolveTenantSubscriptionAccess,
+} from '@/lib/billing/tenantSubscriptionAccess';
 import { requirePortalAccess } from './portalAccess';
 import type { TenantRole } from './types';
 
@@ -14,6 +19,8 @@ export interface TenantMembership {
 export interface TenantPortalAccessOptions {
   /** Post-rewrite pathname from middleware (`x-internal-pathname`), e.g. `/tenant/billing`. */
   internalPathname?: string | null;
+  /** Browser pathname on the tenant host (`x-tenant-pathname`), e.g. `/quotes`. */
+  browserPathname?: string | null;
   /** Allow access when subscription is canceled (resume-checkout server action). */
   allowBillingResume?: boolean;
 }
@@ -69,37 +76,32 @@ async function lookupTenantBySlug(
   return data;
 }
 
-function isTenantBillingPath(path: string | null | undefined): boolean {
-  if (!path) return false;
-  return (
-    path === '/tenant/billing' ||
-    path.startsWith('/tenant/billing/') ||
-    path.endsWith('/billing') ||
-    path.includes('/billing/')
-  );
-}
-
 async function assertTenantWorkspaceUnlocked(
   tenantId: string,
-  allowBypass: boolean,
   options?: TenantPortalAccessOptions,
 ): Promise<void> {
-  if (allowBypass) return;
-
   const allowWhenSuspended =
-    options?.allowBillingResume === true || isTenantBillingPath(options?.internalPathname);
+    options?.allowBillingResume === true ||
+    isTenantBillingHubPath(options?.internalPathname, options?.browserPathname);
 
   const admin = createAdminClient();
   const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
     admin.from('tenants').select('is_active').eq('id', tenantId).maybeSingle(),
-    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+    admin
+      .from('tenant_billing_accounts')
+      .select('status, trial_ends_at, stripe_subscription_id')
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
   ]);
 
-  const isActive = tenantRow?.is_active !== false;
-  const billingStatus = billingRow?.status;
-  const suspended = !isActive || billingStatus === 'canceled';
+  const access = resolveTenantSubscriptionAccess({
+    billingStatus: billingRow?.status,
+    trialEndsAt: billingRow?.trial_ends_at,
+    tenantIsActive: tenantRow?.is_active !== false,
+    stripeSubscriptionId: billingRow?.stripe_subscription_id,
+  });
 
-  if (!suspended) {
+  if (!isTenantPortalSuspended(access)) {
     return;
   }
 
@@ -107,7 +109,7 @@ async function assertTenantWorkspaceUnlocked(
     return;
   }
 
-  redirect('/access-denied?reason=billing_suspended');
+  redirect('/billing?subscribe=required');
 }
 
 /**
@@ -126,18 +128,21 @@ export async function requireTenantPortalAccess(
     redirect('/access-denied?reason=tenant_config');
   }
 
-  const headerInternalPath = (await headers()).get('x-internal-pathname');
+  const requestHeaders = await headers();
+  const headerInternalPath = requestHeaders.get('x-internal-pathname');
+  const headerBrowserPath = requestHeaders.get('x-tenant-pathname');
   const mergedOptions: TenantPortalAccessOptions = {
     allowBillingResume: accessOptions?.allowBillingResume === true,
     internalPathname: accessOptions?.internalPathname ?? headerInternalPath,
+    browserPathname: accessOptions?.browserPathname ?? headerBrowserPath,
   };
 
   const membership = await lookupMembership(auth.user.id, slug);
-  const appRole = auth.claims.appRole;
-  const isPlatformAdmin = appRole === 'super_admin' || appRole === 'admin';
+  const isPlatformAdmin =
+    auth.claims.appRole === 'super_admin' || auth.claims.appRole === 'admin';
 
   if (membership) {
-    await assertTenantWorkspaceUnlocked(membership.tenantId, isPlatformAdmin, mergedOptions);
+    await assertTenantWorkspaceUnlocked(membership.tenantId, mergedOptions);
     return membership;
   }
 
@@ -146,6 +151,7 @@ export async function requireTenantPortalAccess(
   if (isPlatformAdmin) {
     const tenant = await lookupTenantBySlug(slug);
     if (tenant) {
+      await assertTenantWorkspaceUnlocked(tenant.id, mergedOptions);
       return {
         tenantId: tenant.id,
         tenantSlug: tenant.slug,

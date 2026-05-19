@@ -1,0 +1,32 @@
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--color-brand-primary) 22%, var(--color-border));
+
+  &[data-urgency='high'] {
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-warning) 14%, var(--color-surface));
+    border-bottom-color: color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
+  }
+}
+
+.link {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

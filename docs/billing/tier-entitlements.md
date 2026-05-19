@@ -107,10 +107,23 @@ subscription when the trial ends without a payment method. Webhook handler
   `stripe_subscription_id` (so a later Checkout can attach a new subscription)
 - sets `tenants.is_active` to `false`
 
+**Triggers (use all three layers):**
+
+| Layer | When it runs | What it does |
+| ----- | ------------- | ------------- |
+| Stripe webhooks | Trial ends on a platform subscription; ~3 days before end | `customer.subscription.updated/deleted` syncs status; `customer.subscription.trial_will_end` emails the owner (Resend) |
+| In-app | Every tenant portal request | `TrialSubscriptionBanner` + `lib/billing/tenantSubscriptionAccess.ts` countdown / “subscribe” CTA |
+| Cron safety net | Daily (`/api/cron/expire-stale-trials`) | Expires DB-only trials (`status=trialing`, `trial_ends_at` past, no `stripe_subscription_id`) |
+
 Tenant portal access (`lib/auth/tenantAccess.ts`) blocks normal members when the
-workspace is inactive or billing status is `canceled`, with copy at
-`/access-denied?reason=billing_suspended`. Platform admins can still open the
-tenant for support.
+workspace is inactive, billing is `canceled`, or the trial end date has passed without
+an active subscription (`trial_expired`). Users are redirected to `/billing?subscribe=required`.
+Only the **workspace billing hub** (`/billing`) stays reachable so owners can run paid
+Checkout (`kind: 'subscribe'`, card required, no second trial) or Stripe Customer Portal.
+Customer invoice sub-routes (`/billing/invoices`, etc.) stay locked until subscribed.
+Platform admins can still open the tenant for support.
+
+Configure the platform Stripe webhook to include `customer.subscription.trial_will_end`.
 
 ## Ticket template (implementation-ready)
 

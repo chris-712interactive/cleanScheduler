@@ -1,6 +1,13 @@
 import { PortalShell } from '@/components/portal/PortalShell';
 import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
 import { ConnectStatusBanner } from '@/components/billing/ConnectStatusBanner';
+import { TrialSubscriptionBanner } from '@/components/billing/TrialSubscriptionBanner';
+import {
+  needsSubscriptionPurchase,
+  resolveTenantSubscriptionAccess,
+  shouldShowTrialPurchaseBanner,
+  trialDaysRemaining,
+} from '@/lib/billing/tenantSubscriptionAccess';
 import { getPortalContext } from '@/lib/portal';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
@@ -41,11 +48,26 @@ export default async function TenantLayout({ children }: { children: React.React
     (auth?.claims.appRole === 'super_admin' || auth?.claims.appRole === 'admin');
 
   const supabase = createTenantPortalDbClient();
-  const { data: tenantRow } = await supabase
-    .from('tenants')
-    .select('stripe_connect_status')
-    .eq('id', membership.tenantId)
-    .maybeSingle();
+  const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
+    supabase
+      .from('tenants')
+      .select('stripe_connect_status, is_active')
+      .eq('id', membership.tenantId)
+      .maybeSingle(),
+    supabase
+      .from('tenant_billing_accounts')
+      .select('status, trial_ends_at, stripe_subscription_id')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+  ]);
+
+  const subscriptionAccess = resolveTenantSubscriptionAccess({
+    billingStatus: billingRow?.status,
+    trialEndsAt: billingRow?.trial_ends_at,
+    tenantIsActive: tenantRow?.is_active !== false,
+    stripeSubscriptionId: billingRow?.stripe_subscription_id,
+  });
+  const trialDaysLeft = trialDaysRemaining(billingRow?.trial_ends_at ?? null);
 
   let identityName = 'Team member';
   let identityInitials = 'TM';
@@ -77,20 +99,35 @@ export default async function TenantLayout({ children }: { children: React.React
     supabase,
     membership.tenantId,
   );
-  const navItems: NavItem[] = [
-    ...NAV_ITEMS_BASE.slice(0, 6),
-    buildTenantBillingNavItem(connectStatus),
-    ...NAV_ITEMS_BASE.slice(6),
-  ].map((item) => {
-    if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {
-      return item;
-    }
-    const badge = pendingRescheduleCount > 99 ? '99+' : pendingRescheduleCount;
-    return { ...item, badge };
-  });
+
+  const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
+  const billingNavItem = buildTenantBillingNavItem(connectStatus);
+
+  const navItems: NavItem[] = subscriptionLocked
+    ? [billingNavItem]
+    : [
+        ...NAV_ITEMS_BASE.slice(0, 6),
+        billingNavItem,
+        ...NAV_ITEMS_BASE.slice(6),
+      ].map((item) => {
+        if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {
+          return item;
+        }
+        const badge = pendingRescheduleCount > 99 ? '99+' : pendingRescheduleCount;
+        return { ...item, badge };
+      });
 
   const sessionNotices: ReactNode[] = [];
   if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
+  if (shouldShowTrialPurchaseBanner(subscriptionAccess)) {
+    sessionNotices.push(
+      <TrialSubscriptionBanner
+        key="trial"
+        access={subscriptionAccess}
+        daysRemaining={trialDaysLeft}
+      />,
+    );
+  }
   if (connectStatus !== 'complete') {
     sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
   }

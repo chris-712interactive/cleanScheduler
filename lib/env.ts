@@ -96,6 +96,10 @@ const serverEnvSchema = z.object({
   STRIPE_PLATFORM_PRICE_STARTER: z.string().optional(),
   STRIPE_PLATFORM_PRICE_PRO: z.string().optional(),
   STRIPE_PLATFORM_PRICE_BUSINESS: z.string().optional(),
+  /** Paid checkout (no trial) — optional; use when trial signup Price has a default trial in Stripe. */
+  STRIPE_PLATFORM_PRICE_STARTER_SUBSCRIBE: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO_SUBSCRIBE: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS_SUBSCRIBE: z.string().optional(),
   STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
   /** Optional platform fee on tenant invoice Checkout (basis points, e.g. 100 = 1%). Max 10000. */
   STRIPE_CONNECT_APPLICATION_FEE_BPS: z.string().optional(),

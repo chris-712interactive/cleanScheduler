@@ -32,6 +32,11 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { resolveTenantSubscriptionAccessForSlug } from '@/lib/billing/resolveTenantSubscriptionAccessForSlug';
+import {
+  isTenantBillingHubBrowserPath,
+  isTenantPortalSuspended,
+} from '@/lib/billing/tenantSubscriptionAccess';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
 
@@ -198,6 +203,8 @@ export async function middleware(request: NextRequest) {
 
   // Post-rewrite path (e.g. /tenant/billing) for server-side billing gate / layout decisions.
   requestHeaders.set('x-internal-pathname', url.pathname);
+  // Browser-visible path on tenant host (e.g. /quotes) — used for subscription gating.
+  requestHeaders.set('x-tenant-pathname', requestedPath);
 
   const { userId, cookiesToSet } = await resolveUser(request);
   const isProtectedPortal = kind !== 'marketing' && !isPublicCustomerInvite;
@@ -207,6 +214,18 @@ export async function middleware(request: NextRequest) {
     const redirect = NextResponse.redirect(redirectUrl);
     applyCookies(redirect, cookiesToSet);
     return redirect;
+  }
+
+  if (kind === 'tenant' && userId && tenantSlug && !isTenantBillingHubBrowserPath(requestedPath)) {
+    const subscription = await resolveTenantSubscriptionAccessForSlug(tenantSlug);
+    if (subscription && isTenantPortalSuspended(subscription.access)) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/billing';
+      redirectUrl.searchParams.set('subscribe', 'required');
+      const redirect = NextResponse.redirect(redirectUrl);
+      applyCookies(redirect, cookiesToSet);
+      return redirect;
+    }
   }
 
   const rewrite = NextResponse.rewrite(url, {

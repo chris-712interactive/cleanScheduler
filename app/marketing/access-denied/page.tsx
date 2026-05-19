@@ -39,7 +39,7 @@ const COPY: Record<string, { title: string; description: string }> = {
   billing_suspended: {
     title: 'Subscription ended',
     description:
-      'This workspace is paused because the trial or subscription ended without an active payment method. Ask a workspace owner to add billing in Stripe checkout, or start a new workspace from the marketing site.',
+      'This workspace is paused because the trial or subscription ended without an active payment method. A workspace owner can subscribe from Workspace billing, or start a new workspace from the marketing site.',
   },
   no_customer_profile: {
     title: 'Customer profile not linked',
@@ -89,6 +89,11 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
             <Link href="/" className={styles.linkButton}>
               Home
             </Link>
+            {tenantSlug && reason === 'billing_suspended' ? (
+              <Link href="/billing" className={styles.primaryButton}>
+                Workspace billing
+              </Link>
+            ) : null}
           </div>
         </Card>
       </Container>

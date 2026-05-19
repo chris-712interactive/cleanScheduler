@@ -22,6 +22,12 @@ import {
   parsePlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
+import {
+  canAccessCustomerBillingTools,
+  needsSubscriptionPurchase,
+  resolveTenantSubscriptionAccess,
+  trialDaysRemaining,
+} from '@/lib/billing/tenantSubscriptionAccess';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { Tables } from '@/lib/supabase/database.types';
 import { openPlatformBillingPortal, resumePlatformSubscriptionCheckout } from './actions';
@@ -36,11 +42,14 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function formatPlanStatus(status: TenantBillingRow['status'] | null | undefined): {
-  label: string;
-  tone: StatusTone;
-} {
-  switch (status) {
+function formatPlanStatus(
+  access: ReturnType<typeof resolveTenantSubscriptionAccess>,
+  billingStatus: TenantBillingRow['status'] | null | undefined,
+): { label: string; tone: StatusTone } {
+  if (access === 'trial_expired') {
+    return { label: 'Trial ended', tone: 'danger' };
+  }
+  switch (billingStatus) {
     case 'active':
       return { label: 'Active', tone: 'success' };
     case 'trialing':
@@ -54,11 +63,15 @@ function formatPlanStatus(status: TenantBillingRow['status'] | null | undefined)
   }
 }
 
-function formatNextPayment(billing: TenantBillingRow): string {
+function formatNextPayment(
+  access: ReturnType<typeof resolveTenantSubscriptionAccess>,
+  billing: TenantBillingRow,
+): string {
+  if (access === 'trial_expired' || access === 'suspended') {
+    return '—';
+  }
   const dateSource =
-    billing.status === 'trialing' && billing.trial_ends_at
-      ? billing.trial_ends_at
-      : null;
+    billing.status === 'trialing' && billing.trial_ends_at ? billing.trial_ends_at : null;
   if (!dateSource) return '—';
   return new Date(String(dateSource)).toLocaleDateString('en-US', {
     month: 'short',
@@ -87,30 +100,54 @@ const HUB_LINKS = [
 export default async function TenantBillingPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const { tenantSlug } = await getPortalContext();
-  const membership = await requireTenantPortalAccess(tenantSlug, '/billing');
+  const membership = await requireTenantPortalAccess(tenantSlug, '/billing', {
+    internalPathname: '/tenant/billing',
+    browserPathname: '/billing',
+  });
 
   const supabase = createTenantPortalDbClient();
-  const billingRes = await supabase
-    .from('tenant_billing_accounts')
-    .select('*')
-    .eq('tenant_id', membership.tenantId)
-    .maybeSingle();
+  const [billingRes, tenantRes] = await Promise.all([
+    supabase.from('tenant_billing_accounts').select('*').eq('tenant_id', membership.tenantId).maybeSingle(),
+    supabase.from('tenants').select('is_active').eq('id', membership.tenantId).maybeSingle(),
+  ]);
   const billing = billingRes.data as unknown as TenantBillingRow | null;
   const error = billingRes.error;
 
   const resumeMessage = firstParam(params.message);
   const resumeFlag = firstParam(params.resume);
   const checkoutSuccess = firstParam(params.checkout) === 'success';
+  const subscribeRequired = firstParam(params.subscribe) === 'required';
+
+  const subscriptionAccess = resolveTenantSubscriptionAccess({
+    billingStatus: billing?.status,
+    trialEndsAt: billing?.trial_ends_at,
+    tenantIsActive: tenantRes.data?.is_active !== false,
+    stripeSubscriptionId: billing?.stripe_subscription_id,
+  });
+
+  const mustSubscribe = needsSubscriptionPurchase(subscriptionAccess);
+  const customerBillingUnlocked = canAccessCustomerBillingTools(subscriptionAccess);
+  const daysLeft = trialDaysRemaining(billing?.trial_ends_at ?? null);
 
   const planKey = parsePlatformPlanTier(String(billing?.platform_plan ?? ''));
   const planLabel = planKey ? PLATFORM_PLAN_LABELS[planKey] : null;
   const planTagline = planKey ? PLATFORM_PLAN_DESCRIPTIONS[planKey] : null;
   const entitlements = planKey ? getEntitlementsForTier(planKey) : null;
-  const planStatus = formatPlanStatus(billing?.status);
+  const planStatus = formatPlanStatus(subscriptionAccess, billing?.status);
   const marketingPlansUrl = `${getPublicOrigin(null)}/start-trial`;
 
-  const suspended = billing?.status === 'canceled';
-  const canManagePlan = Boolean(billing?.stripe_customer_id) && !suspended;
+  const canManagePlan =
+    Boolean(billing?.stripe_customer_id) &&
+    subscriptionAccess === 'active' &&
+    billing?.status !== 'canceled';
+
+  const subscribeLead = mustSubscribe
+    ? subscriptionAccess === 'trial_expired'
+      ? 'Your free trial has ended. Subscribe to restore access to scheduling, quotes, customers, and the rest of your workspace.'
+      : 'This workspace is paused. Subscribe to turn your cleanScheduler plan back on.'
+    : subscriptionAccess === 'trialing' && daysLeft != null
+      ? `You have ${daysLeft} day${daysLeft === 1 ? '' : 's'} left in your trial. Subscribe now to keep access when it ends.`
+      : null;
 
   return (
     <>
@@ -120,6 +157,13 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
       />
 
       <Stack gap={6}>
+        {subscribeRequired && mustSubscribe ? (
+          <p className={styles.bannerError} role="status">
+            Subscribe below to continue using this workspace. Other pages are unavailable until your
+            plan is active.
+          </p>
+        ) : null}
+
         {resumeFlag === 'error' && resumeMessage ? (
           <p className={styles.bannerError} role="alert">
             {resumeMessage}
@@ -132,18 +176,51 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           </p>
         ) : null}
 
+        {mustSubscribe || subscribeLead ? (
+          <section className={styles.subscribeCard} aria-labelledby="subscribe-heading">
+            <h2 id="subscribe-heading" className={styles.subscribeCardTitle}>
+              {mustSubscribe ? 'Subscribe to continue' : 'Subscribe early'}
+            </h2>
+            {subscribeLead ? <p className={styles.subscribeCardLead}>{subscribeLead}</p> : null}
+            <div className={styles.subscribeCardActions}>
+              <form action={resumePlatformSubscriptionCheckout}>
+                <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                <Button type="submit" variant="primary">
+                  {mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
+                </Button>
+              </form>
+              {planLabel && entitlements ? (
+                <span className={styles.muted}>
+                  {planLabel} · {formatPlanAmount(entitlements.monthlyPriceUsd)}/mo
+                </span>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
         <Card
           title="Customer invoices"
-          description="View and manage your invoices, payments, and billing history."
+          description={
+            customerBillingUnlocked
+              ? 'View and manage your invoices, payments, and billing history.'
+              : 'Available after you subscribe to a workspace plan.'
+          }
         >
-          <nav className={styles.hubNav} aria-label="Customer billing">
-            {HUB_LINKS.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} className={styles.hubNavLink}>
-                <Icon size={18} strokeWidth={2} aria-hidden />
-                {label}
-              </Link>
-            ))}
-          </nav>
+          {customerBillingUnlocked ? (
+            <nav className={styles.hubNav} aria-label="Customer billing">
+              {HUB_LINKS.map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href} className={styles.hubNavLink}>
+                  <Icon size={18} strokeWidth={2} aria-hidden />
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          ) : (
+            <p className={styles.customerBillingLocked}>
+              Customer invoicing, service plans, and payment setup unlock once your workspace
+              subscription is active. Use Subscribe above to continue.
+            </p>
+          )}
         </Card>
 
         <Card title="Current plan">
@@ -185,7 +262,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                   </div>
                   <div className={styles.planFact}>
                     <dt className={styles.planFactLabel}>Next payment</dt>
-                    <dd className={styles.planFactValue}>{formatNextPayment(billing)}</dd>
+                    <dd className={styles.planFactValue}>
+                      {formatNextPayment(subscriptionAccess, billing)}
+                    </dd>
                   </div>
                   <div className={styles.planFact}>
                     <dt className={styles.planFactLabel}>Amount</dt>
@@ -195,32 +274,34 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                   </div>
                 </dl>
 
-                {canManagePlan ? (
-                  <form action={openPlatformBillingPortal} className={styles.planManageForm}>
-                    <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                    <Button type="submit" variant="secondary" className={styles.planManageButton}>
-                      Manage plan
-                    </Button>
-                  </form>
-                ) : null}
+                <div className={styles.planManageForm}>
+                  {mustSubscribe ? (
+                    <form action={resumePlatformSubscriptionCheckout}>
+                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                      <Button type="submit" variant="secondary" className={styles.planManageButton}>
+                        Subscribe now
+                      </Button>
+                    </form>
+                  ) : canManagePlan ? (
+                    <form action={openPlatformBillingPortal}>
+                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                      <Button type="submit" variant="secondary" className={styles.planManageButton}>
+                        Manage plan
+                      </Button>
+                    </form>
+                  ) : subscriptionAccess === 'trialing' ? (
+                    <form action={resumePlatformSubscriptionCheckout}>
+                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                      <Button type="submit" variant="secondary" className={styles.planManageButton}>
+                        Subscribe with Stripe
+                      </Button>
+                    </form>
+                  ) : null}
+                </div>
               </div>
             </div>
           )}
         </Card>
-
-        {suspended ? (
-          <Card
-            title="Resume subscription"
-            description="Your trial or subscription ended without an active payment method. Start checkout again to reactivate this workspace."
-          >
-            <form action={resumePlatformSubscriptionCheckout} className={styles.resumeForm}>
-              <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-              <Button type="submit" variant="primary">
-                Continue to Stripe checkout
-              </Button>
-            </form>
-          </Card>
-        ) : null}
       </Stack>
     </>
   );

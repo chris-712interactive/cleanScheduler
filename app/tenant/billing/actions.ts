@@ -38,6 +38,8 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
   const requestHeaders = await headers();
   const membership = await requireTenantPortalAccess(slug, '/billing', {
     allowBillingResume: true,
+    internalPathname: '/tenant/billing',
+    browserPathname: '/billing',
   });
 
   const requestOrigin = resolveRequestOrigin(requestHeaders);
@@ -73,7 +75,7 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
   }
 
   const stripe = getStripe();
-  const priceId = resolvePlatformPriceId(tier);
+  const priceId = resolvePlatformPriceId(tier, 'subscribe');
   if (!stripe || !priceId) {
     redirect(
       `${billingPath}?resume=error&message=${encodeURIComponent('Stripe checkout is not configured.')}`,
@@ -87,6 +89,8 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
     platformPlan: tier,
     successUrl: billingPath,
     cancelUrl: billingPath,
+    kind: 'subscribe',
+    stripeCustomerId: billing.stripe_customer_id,
   });
 
   if (!checkoutUrl) {
@@ -103,7 +107,11 @@ export async function openPlatformBillingPortal(formData: FormData): Promise<voi
     .trim()
     .toLowerCase();
   const requestHeaders = await headers();
-  const membership = await requireTenantPortalAccess(slug, '/billing');
+  const membership = await requireTenantPortalAccess(slug, '/billing', {
+    allowBillingResume: true,
+    internalPathname: '/tenant/billing',
+    browserPathname: '/billing',
+  });
 
   const requestOrigin = resolveRequestOrigin(requestHeaders);
   const tenantOrigin = buildTenantOrigin(membership.tenantSlug, requestOrigin);
