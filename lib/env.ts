@@ -89,7 +89,10 @@ const serverEnvSchema = z.object({
 
   // Optional now, required when those integrations land.
   STRIPE_SECRET_KEY: z.string().optional(),
+  /** Signing secret for Stripe destination scoped to "Your account" (platform / tenant subscriptions). */
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  /** Signing secret for Stripe destination scoped to "Connected accounts" (Connect). */
+  STRIPE_CONNECT_WEBHOOK_SECRET: z.string().optional(),
   /** @deprecated Use tier-specific prices; used as fallback when a tier id is unset. */
   STRIPE_PLATFORM_PRICE_ID: z.string().optional(),
   /** Stripe recurring Price IDs — cleanScheduler platform subscription per tier. */

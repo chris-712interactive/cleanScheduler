@@ -123,7 +123,7 @@ Checkout (`kind: 'subscribe'`, card required, no second trial) or Stripe Custome
 Customer invoice sub-routes (`/billing/invoices`, etc.) stay locked until subscribed.
 Platform admins can still open the tenant for support.
 
-Configure the platform Stripe webhook to include `customer.subscription.trial_will_end`.
+Configure two Stripe event destinations (see Connect section below): platform includes `customer.subscription.trial_will_end`.
 
 ## Ticket template (implementation-ready)
 
@@ -144,7 +144,8 @@ Configure the platform Stripe webhook to include `customer.subscription.trial_wi
 **Environment**
 
 - `STRIPE_SECRET_KEY` — platform secret (also used to create Express accounts and Checkout on behalf of connected accounts).
-- `STRIPE_WEBHOOK_SECRET` — signing secret for `POST /api/webhooks/stripe`; in the Stripe Dashboard, enable **events from connected accounts** for the same endpoint so Connect events deliver.
+- `STRIPE_WEBHOOK_SECRET` — signing secret for destination scoped to **Your account** → `POST /api/webhooks/stripe` (tenant platform subscriptions).
+- `STRIPE_CONNECT_WEBHOOK_SECRET` — signing secret for destination scoped to **Connected accounts** → `POST /api/webhooks/stripe/connect` (invoice pay, customer subs, disputes, payouts). Stripe does not allow both scopes on one destination; register two destinations in the Dashboard.
 - Optional `STRIPE_CONNECT_APPLICATION_FEE_BPS` — platform application fee on invoice Checkout (basis points).
 
 **Schema** — migration `0023_tenant_billing_stripe_connect.sql`: `tenant_stripe_connect_accounts`, `tenants.stripe_connect_status`, extended `tenant_invoice_payments`, `tenant_usage_snapshots` (rollup TBD), mirror tables for refunds/disputes/payouts (webhook writers TBD).

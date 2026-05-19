@@ -13,7 +13,8 @@ import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { StatusTone } from '@/components/ui/StatusPill';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
+import { syncTenantPlatformBillingFromStripe } from '@/lib/billing/syncTenantPlatformSubscription';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
@@ -172,7 +173,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
 
         {checkoutSuccess ? (
           <p className={styles.bannerOk} role="status">
-            Checkout completed. Subscription details will update from Stripe within a minute.
+            Checkout completed. Your plan status has been refreshed from Stripe.
           </p>
         ) : null}
 

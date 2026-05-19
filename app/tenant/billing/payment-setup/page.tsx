@@ -116,13 +116,22 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
 
         <Card
           title="Webhooks"
-          description="Configure your Stripe webhook to send Connect events to the same endpoint as platform billing."
+          description="Stripe requires two event destinations (one scope each): your account and Connected accounts."
         >
           <p className={styles.muted} style={{ marginTop: 0 }}>
-            Endpoint: <code>/api/webhooks/stripe</code> — include{' '}
-            <code>checkout.session.completed</code> (payment mode) and <code>account.updated</code>{' '}
-            for connected accounts. Use the signing secret from that endpoint in{' '}
-            <code>STRIPE_WEBHOOK_SECRET</code>.
+            <strong>1. Your account</strong> — URL{' '}
+            <code>/api/webhooks/stripe</code> — signing secret →{' '}
+            <code>STRIPE_WEBHOOK_SECRET</code>. Events:{' '}
+            <code>checkout.session.completed</code>, <code>customer.subscription.*</code>,{' '}
+            <code>customer.subscription.trial_will_end</code>.
+          </p>
+          <p className={styles.muted}>
+            <strong>2. Connected accounts</strong> — same URL{' '}
+            <code>/api/webhooks/stripe</code> — signing secret →{' '}
+            <code>STRIPE_CONNECT_WEBHOOK_SECRET</code>. Events:{' '}
+            <code>account.updated</code>, <code>checkout.session.completed</code>,{' '}
+            <code>customer.subscription.*</code>, <code>refund.*</code>,{' '}
+            <code>charge.dispute.*</code>, <code>payout.paid</code>, <code>payout.updated</code>.
           </p>
         </Card>
       </Stack>
