@@ -14,7 +14,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Check, MoreVertical } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { getQuoteBoardCardDisplay } from '@/lib/tenant/quoteBoardCardDisplay';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
@@ -121,9 +121,6 @@ function BoardColumnHeader({
         <h3 className={styles.boardColumnTitle}>{QUOTE_STATUS_LABEL[status]}</h3>
         <span className={styles.boardColumnCount}>{count}</span>
       </div>
-      <button type="button" className={styles.boardColumnMenu} aria-hidden tabIndex={-1}>
-        <MoreVertical size={16} aria-hidden />
-      </button>
     </header>
   );
 }
