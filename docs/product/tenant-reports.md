@@ -2,7 +2,11 @@
 
 One-stop reporting for cleaning businesses: day-to-day operations, monthly bookkeeping close, payroll inputs, and year-end tax prep. Reports live at **`/reports`** (top-level tenant nav). Operational **payment workflows** (mark received / deposited) stay under **`/billing/payment-audits`**.
 
-**Status:** Phase 1 core reports implemented in repo; Phase 1.5+ analytics pending.
+**Status (2026-05):** Phases **1**, **1.5**, and **2 (baseline)** are implemented in the repo. **Phase 3** and several Phase 2 polish items remain (see [Implementation status](#implementation-status) below).
+
+**Migrations:** `supabase/migrations/0034_report_runs.sql`, `supabase/migrations/0035_reports_phase2.sql`
+
+**Code:** `app/tenant/reports/`, `lib/reports/`, `app/api/tenant/reports/export/`
 
 ---
 
@@ -65,15 +69,15 @@ Requires `advancedAnalytics` (`lib/billing/entitlements.ts` — **Pro only** tod
 
 **Employee performance (basic):** hours from `ends_at - starts_at` on assigned completed visits; jobs completed count; optional **labor cost** when `labor_cost_per_hour` exists on team profile (see Schema prerequisites).
 
-### Phase 2 — Payroll, tax, ops
+### Phase 2 — Payroll, tax, ops (baseline shipped)
 
-| Slug | Title | Proposed gate | Notes |
-|------|-------|---------------|-------|
-| `payroll-export` | Payroll export | `advancedAnalytics` + future `payrollExports` | ADP / Gusto / QBO CSV formats |
-| `sales-tax-summary` | Sales tax by jurisdiction | Future `salesTaxSummary` (**Business+**) | Service address → state/ZIP; tax from quote `tax_mode` / `tax_rate_bps` until invoice tax columns exist |
-| `tips-commissions` | Tips & commissions | `jobCosting` | Requires `compensation_rules` |
-| `crew-utilization` | Crew utilization | `advancedAnalytics` | Scheduled hours vs configurable capacity |
-| `on-time-arrival` | On-time arrival | `advancedAnalytics` | Check-in vs `starts_at` (proxy until GPS) |
+| Slug | Title | Gate | Notes |
+|------|-------|------|-------|
+| `sales-tax-summary` | Sales tax by jurisdiction | `salesTaxSummary` (**Business+**) | Accepted quotes + property state/ZIP; tax from `computeQuoteTotals` / quote `tax_mode` |
+| `payroll-export` | Payroll export | `payrollExports` (**Business+**) | Hours per employee from completed visits; generic CSV (not ADP/Gusto/QBO column maps yet) |
+| `tips-commissions` | Tips & commissions | `jobCosting` (**Business+**) | Lists `compensation_rules`; payout math deferred |
+| `crew-utilization` | Crew utilization | `advancedAnalytics` (**Pro**) | Scheduled hours vs 40h/week × weeks in range |
+| `on-time-arrival` | On-time arrival | `advancedAnalytics` (**Pro**) | `checked_in_at` vs `starts_at` with 15-minute grace |
 
 ### Phase 3 — Year-end & strategic
 
@@ -93,13 +97,15 @@ Align with `lib/billing/entitlements.ts`. **Starter gets real reports**, not an 
 | Capability | Starter | Business | Pro |
 |------------|---------|----------|-----|
 | Reports hub + Phase 1 core (5 reports) | Yes | Yes | Yes |
-| CSV export (Phase 1 reports) | Yes | Yes | Yes |
-| PDF export (Phase 1 reports) | Yes | Yes | Yes |
+| CSV export (all implemented reports) | Yes | Yes | Yes |
+| PDF export (all implemented reports) | Yes | Yes | Yes |
 | Phase 1.5 analytics bundle | No | No | Yes (`advancedAnalytics`) |
-| Sales tax summary | No | Yes (future `salesTaxSummary`) | Yes |
-| Payroll provider exports | No | Yes (future `payrollExports`) | Yes |
-| Plaid bank match reports | No | Yes (future `plaidReconciliation`) | Yes |
-| Cohort / forecasting | No | No | Yes (`forecasting`) |
+| Sales tax summary | No | Yes (`salesTaxSummary`) | Yes |
+| Payroll export report | No | Yes (`payrollExports`) | Yes |
+| Tips & commissions (rules directory) | No | Yes (`jobCosting`) | Yes |
+| Crew utilization + on-time arrival | No | No | Yes (`advancedAnalytics`) |
+| Plaid bank match reports | No | No (future `plaidReconciliation`) | No (future) |
+| Cohort / forecasting (Phase 3) | No | No | Yes (`forecasting`) |
 
 **Enforcement pattern** (mirror email campaigns):
 
@@ -109,13 +115,13 @@ Align with `lib/billing/entitlements.ts`. **Starter gets real reports**, not an 
 4. Deep links to locked reports: upgrade panel (not `404`).
 5. **Reports nav always visible** for subscribed tenants (unlike campaigns on Starter).
 
-**Future `EntitlementFeature` keys to add** (Phase 2 — keep in sync with `entitlements.ts`):
+**`EntitlementFeature` keys in `lib/billing/entitlements.ts`:**
 
-- `salesTaxSummary`
-- `payrollExports`
-- `plaidReconciliation`
-
-Until those exist, gate Phase 2 reports with `advancedAnalytics` or `jobCosting` as noted above.
+- `salesTaxSummary` — Business & Pro (sales tax report)
+- `payrollExports` — Business & Pro (payroll export report)
+- `advancedAnalytics` — Pro (Phase 1.5 bundle + crew utilization + on-time arrival)
+- `jobCosting` — Business & Pro (tips & commissions rules report)
+- `plaidReconciliation` — **not yet added** (Plaid reports remain future)
 
 **Not gated by Connect:** cash/check/Zelle reports work without Stripe Connect. Card reconciliation sections show “Connect not set up” empty state when `stripe_connect_status !== 'complete'`.
 
@@ -276,28 +282,70 @@ Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each repor
 
 ---
 
-## Implementation phases
+## Implementation status
 
-### Phase 1 — Foundation (target: first shippable Reports)
+### Shipped
 
-1. Migration `0034_report_runs.sql` + Storage bucket `report_exports`.
-2. `lib/reports/reportCatalog.ts`, `parseReportDateRange.ts`, `toCsv.ts`.
-3. Query modules: `outstandingBalancesReport.ts`, `invoiceAuditReport.ts`, `fieldCheckReport.ts`, `collectionsSummaryReport.ts`, `quotePipelineReport.ts`.
-4. UI: hub page, `[slug]/page.tsx`, shared `ReportDateRangeForm`, `ReportTable`, `ReportExportButtons`.
-5. CSV export route; PDF stub or Phase 1.1.
-6. RBAC: owners/admins run + export; employees/viewers read-only on unlocked reports.
+| Area | Details |
+|------|---------|
+| **Phase 1** | Hub (`app/tenant/reports/page.tsx`), 5 core reports, hub KPIs (`hubMetrics.ts`) |
+| **Phase 1 polish** | `report_runs` cache (`reportRunCache.ts`), date presets (7d/MTD/YTD), pagination (`ReportPagination.tsx`), CSV + PDF export |
+| **Phase 1.5** | Payment reconciliation, revenue by customer/service, MRR, employee performance |
+| **Phase 2 baseline** | Sales tax, payroll export, tips/commissions (rules list), crew utilization, on-time arrival |
+| **RBAC** | `lib/tenant/reportPermissions.ts` — owners/admins export; employees/viewers read unlocked reports |
 
-### Phase 1.5 — Pro analytics bundle
+### Remaining (Phase 2+ / 3)
 
-1. Payout backfill migration + webhook work.
-2. Reports: payment reconciliation, revenue by customer/service, recurring revenue, employee performance.
-3. Gate with `assertFeatureEnabled(tier, 'advancedAnalytics')`.
+- ADP / Gusto / QuickBooks payroll CSV formats
+- Compensation rules settings UI (table exists; seed via SQL today)
+- `stripe_payout_id` backfill for payout-grouped reconciliation
+- PDF cache in Storage + optional async queue
+- Plaid bank reconciliation report (`plaidReconciliation` entitlement)
+- Phase 3: year-end, 1099 prep, cohort/LTV (`forecasting`)
+- Mockup `docs/design/portal-mockups/15-tenant-reports.png` (optional)
 
-### Phase 2 — Payroll & tax
+### Key files
 
-1. New entitlement keys + `compensation_rules` migration.
-2. Sales tax + payroll export reports.
-3. Plaid tables (if shipped) → bank reconciliation report.
+```
+app/tenant/reports/
+  page.tsx                    # Hub + KPI strip
+  [slug]/page.tsx             # Run page (cache, export, pagination)
+  ReportDateRangeForm.tsx
+  ReportResultTable.tsx
+  ReportPagination.tsx
+  ReportSummaryStrip.tsx
+app/api/tenant/reports/export/
+  route.ts                    # CSV
+  pdf/route.ts                  # PDF
+lib/reports/
+  reportCatalog.ts            # Slugs, gates, hub sections
+  runReport.ts                # Dispatcher (15 slugs)
+  reportRunCache.ts           # 60m TTL cache
+  *Report.ts                  # Per-report query modules
+  exportCsv.ts / renderReportPdf.ts
+```
+
+---
+
+## Implementation phases (historical checklist)
+
+### Phase 1 — Foundation ✅
+
+1. ~~Migration `0034_report_runs.sql` + Storage bucket `report_exports`.~~
+2. ~~`reportCatalog`, `parseReportDateRange`, `toCsv`, five core query modules.~~
+3. ~~UI hub + `[slug]` + `ReportDateRangeForm` + `ReportResultTable`.~~
+4. ~~CSV export; PDF via pdfkit; RBAC.~~
+
+### Phase 1.5 — Pro analytics bundle ✅
+
+1. ~~Five Pro reports + `advancedAnalytics` gate.~~
+2. Payout backfill migration + webhook — **pending**.
+
+### Phase 2 — Payroll & tax (partial ✅)
+
+1. ~~`salesTaxSummary` / `payrollExports` entitlements + `0035_reports_phase2.sql` (`compensation_rules`).~~
+2. ~~Five Phase 2 report slugs live.~~
+3. Provider payroll formats, rules UI, Plaid — **pending**.
 
 ### Phase 3 — Year-end pack
 
@@ -309,12 +357,13 @@ Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each repor
 
 ## Testing checklist
 
-- Starter can run Phase 1 reports and export CSV.
-- Business blocked on Pro analytics slugs (upgrade panel).
-- Pro runs full Phase 1.5 bundle.
-- Every query scoped with `.eq('tenant_id', membership.tenantId)`.
-- Masquerade exports only target tenant data.
-- Empty states: no data in range, Connect incomplete (card sections), missing property on tax report (Phase 2 warning).
+- [x] Starter runs Phase 1 reports and exports CSV/PDF.
+- [x] Business blocked on Pro-only slugs (upgrade panel); can run sales tax + payroll when entitled.
+- [x] Pro runs Phase 1.5 + crew utilization + on-time arrival.
+- [x] Queries scoped with `.eq('tenant_id', membership.tenantId)`.
+- [ ] Masquerade exports only target tenant data (verify manually).
+- [x] Sales tax warns when accepted quotes lack property state.
+- [ ] Connect incomplete empty state on card-heavy reconciliation sections (when payout backfill ships).
 
 ---
 

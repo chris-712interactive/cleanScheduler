@@ -57,8 +57,8 @@ todos:
     content: "Mobile-first Accept Payment flow on Schedule appointment detail (employees mark check received with amount, check number, optional photo; sets received_in_field). Office workflow lets Billing admin progress checks through received_in_office \u2192 deposited \u2192 cleared/bounced with audit log entries. Reminder cron skips invoices under active check holds (tenant-configurable hold days; per-status overrides)."
     status: pending
   - id: reportsModule
-    content: "Tenant Reports hub at /reports (spec: docs/product/tenant-reports.md): Phase 1 core (AR aging, invoice audit, field check tracking read-only, collections, quote pipeline) all tiers + CSV; Phase 1.5 Pro analytics (reconciliation, revenue by customer/service, MRR, employee performance) gated by advancedAnalytics; Phase 2 payroll/tax/plaid; report_runs cache + exports."
-    status: in_progress
+    content: "Tenant Reports at /reports (docs/product/tenant-reports.md): Phases 1+1.5+2 baseline shipped (15 slugs, CSV/PDF, cache, pagination). Remaining: ADP/Gusto/QBO payroll formats, compensation rules UI, Plaid reports, Phase 3 year-end/cohort, payout backfill."
+    status: completed
   - id: phase2PlaidZelle
     content: "Phase 2: Plaid Link integration for tenant business bank accounts; daily Plaid transactions sync; Zelle/ACH match-suggestion queue with one-click confirmation against open invoices; bank_links + bank_transactions + payment_match_suggestions tables."
     status: pending
@@ -455,7 +455,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 
 - **Plaid integration (Concern #1)**: tenant bank linking, daily transaction sync, Zelle/ACH match-suggestion queue with one-click confirmation.
 - **Advanced check workflow (Concern #2)**: per-status reminder hold overrides, bounced-check handling (auto-reopen invoice, optional bounce fee), bulk deposit slip view.
-- **Reports module v2 (Concern #4)**: tips per appointment, commission rules per role, payroll exports (ADP / Gusto / QBO formats), Sales Tax Summary by jurisdiction.
+- **Reports module polish (Concern #4)**: ADP / Gusto / QBO payroll CSV formats, compensation rules settings UI, payout-grouped reconciliation (`stripe_payout_id`), Plaid bank reports, Phase 3 year-end pack.
 - Twilio SMS in/out + Integrations admin assignments.
 - Customer Service ticketing (admin) + threaded support.
 - Customizable Quotes Kanban (rename, reorder, hide columns).
@@ -562,7 +562,8 @@ _(None open from the last round — add new rows here when tradeoffs reappear.)_
 - `[supabase/migrations/0005_messaging_audit.sql](supabase/migrations/0005_messaging_audit.sql)` — conversations, messages, audit_log, masquerade_sessions, inquiries, support_tickets (Phase 2).
 - `[supabase/migrations/0006_recurring_billing.sql](supabase/migrations/0006_recurring_billing.sql)` — service_plans, **customer_subscriptions**, recurring_appointment_rules (RRULE-driven appointment generator) per Concern #3.
 - `[supabase/migrations/0007_bank_reconciliation.sql](supabase/migrations/0007_bank_reconciliation.sql)` — Phase 2: bank_links (Plaid items, encrypted access tokens), bank_transactions, payment_match_suggestions per Concern #1.
-- `[supabase/migrations/0008_reports.sql](supabase/migrations/0008_reports.sql)` — report_runs (cached heavy report results) per Concern #4.
+- `[supabase/migrations/0034_report_runs.sql](../../../supabase/migrations/0034_report_runs.sql)` — `report_runs` cache + payment index + `report_exports` bucket.
+- `[supabase/migrations/0035_reports_phase2.sql](../../../supabase/migrations/0035_reports_phase2.sql)` — `compensation_rules` + visit completed index.
 - `[supabase/functions/stripe-webhook/index.ts](supabase/functions/stripe-webhook/index.ts)` — Stripe event handler for cleanScheduler's own subscription events.
 - `[supabase/functions/stripe-connect-webhook/index.ts](supabase/functions/stripe-connect-webhook/index.ts)` — Stripe Connect webhook handling tenant connected-account events: `invoice.paid`, `invoice.payment_failed`, `customer.subscription.*`, `account.updated` (drives the `stripe_connect_status` transitions), payout events.
 - `[lib/billing/requireConnect.ts](lib/billing/requireConnect.ts)` — server-side feature-gate utility used by every Connect-dependent server action and Route Handler; returns a typed `ConnectGateResult` so UIs can render the right inline upgrade prompt.
@@ -743,44 +744,25 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 
 ### Concern #4 — Comprehensive financial audit & reporting
 
-**Status**: Partially covered (original plan mentioned an "Accounting view" but lacked specifics). **Expanded to a dedicated Reports module**, Phase 1 baseline + Phase 2 advanced.
+**Status**: **Reports module shipped** (2026-05). Canonical spec: [`docs/product/tenant-reports.md`](../../../docs/product/tenant-reports.md). Tenant hub at **`/reports`** with 15 report slugs, CSV/PDF export, 60-minute `report_runs` cache, date presets, and pagination.
 
-**Phase 1 Reports module — Tenant `/reports` hub** (canonical spec: [`docs/product/tenant-reports.md`](../../../docs/product/tenant-reports.md); date-range filters, CSV + PDF export):
+**Shipped — all tiers (Phase 1):** AR aging, invoice audit, field check tracking (read-only; actions in `/billing/payment-audits`), collections summary, quote pipeline.
 
-**All tiers (Phase 1 core):**
+**Shipped — Pro (`advancedAnalytics`, Phase 1.5):** Payment reconciliation, revenue by customer/service, MRR, employee performance.
 
-- **Outstanding Balances (AR aging)**: open invoices by customer, buckets 0–30 / 31–60 / 61–90 / 90+.
-- **Invoice Audit**: every invoice in period with status, due/paid dates, days outstanding, customer, total, payment methods.
-- **Field Check Tracking** (read-only report; workflow stays at `/billing/payment-audits`).
-- **Collections summary** + **Quote pipeline** (weekly/monthly owner views).
+**Shipped — Business+ / Pro (Phase 2 baseline):** Sales tax by jurisdiction (`salesTaxSummary`), payroll export hours CSV (`payrollExports`), tips & commissions rules list (`jobCosting` + `compensation_rules`). **Pro only:** crew utilization, on-time arrival.
 
-**Pro only (`advancedAnalytics`, Phase 1.5):**
+**Remaining**:
 
-- **Payment Reconciliation**: payments grouped by method; card payout drill-down when `stripe_payout_id` backfill ships.
-- **Revenue by Service / Customer**.
-- **Recurring revenue (MRR)** from `customer_subscriptions`.
-- **Employee Performance (basic)**: hours, jobs completed, labor cost when hourly rate exists on team profile.
+- Payroll ADP / Gusto / QBO column formats; compensation rules settings UI.
+- `stripe_payout_id` backfill → payout-grouped reconciliation.
+- Plaid tables + `plaidReconciliation` entitlement.
+- Phase 3: year-end / 1099 / cohort-LTV (`forecasting`).
+- Audit-log chain-of-custody links on export rows.
 
-**Phase 2 Reports module — additions**:
+**Migrations**: [`0034_report_runs.sql`](../../../supabase/migrations/0034_report_runs.sql), [`0035_reports_phase2.sql`](../../../supabase/migrations/0035_reports_phase2.sql).
 
-- Tips per appointment + commission rules per role (modeled in `compensation_rules`).
-- Payroll exports formatted for ADP / Gusto / QBO file specifications.
-- Sales Tax Summary by jurisdiction (using customer service address).
-- Operational reports: utilization by employee, on-time-arrival, customer satisfaction inputs.
-
-**Phase 3**:
-
-- Year-end tax summary inputs (1099-relevant totals by customer, W-2 inputs by employee).
-- Cohort / LTV / churn analytics.
-
-**Audit chain-of-custody**: the existing `audit_log` table (security audit) is extended to record every state transition on `invoices` and `payments` (status changes, edits to amount, who marked it deposited/cleared). Reports can link directly to the audit-log row that justified each entry — exactly what the tenant's accountant will want for an end-of-year audit.
-
-**What this changes**:
-
-- New `[supabase/migrations/0008_reports.sql](supabase/migrations/0008_reports.sql)` for `report_runs` (cached heavy report results so re-opens are instant; stale TTL configurable per report).
-- PDF generation via a queued worker (Puppeteer or `pdfkit`); rendered PDFs cached in Supabase Storage keyed off `report_run_id`.
-- New `compensation_rules` table arrives in Phase 2.
-- Audit-log extended with structured action types for invoice/payment lifecycle events.
+**Implementation**: `app/tenant/reports/`, `lib/reports/`, `app/api/tenant/reports/export/` (CSV + pdfkit PDF).
 
 ### Cross-cutting deltas to the original plan (summary)
 

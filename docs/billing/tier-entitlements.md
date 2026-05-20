@@ -14,6 +14,8 @@ type EntitlementFeature =
   | 'customerPortal'
   | 'campaigns'
   | 'advancedAnalytics'
+  | 'salesTaxSummary'
+  | 'payrollExports'
   | 'forecasting'
   | 'fullApiWebhooks'
   | 'multiLocationControls'
@@ -62,25 +64,26 @@ Recommended first checks to implement:
 - multi-location management routes -> `multiLocationControls`
 - `/campaigns` routes and campaign send actions -> `campaigns`
 
-### Tenant Reports (planned — see `docs/product/tenant-reports.md`)
-
-**Do not implement until product approves the spec.**
+### Tenant Reports (implemented — see `docs/product/tenant-reports.md`)
 
 | Reports capability | Starter | Business | Pro |
 |--------------------|---------|----------|-----|
 | Hub + Phase 1 core (AR aging, invoice audit, field checks read-only, collections, quote pipeline) | Yes | Yes | Yes |
-| CSV/PDF export (Phase 1) | Yes | Yes | Yes |
+| CSV/PDF export (all implemented report slugs) | Yes | Yes | Yes |
 | Phase 1.5 analytics (reconciliation, revenue by customer/service, MRR, employee performance) | No | No | Yes (`advancedAnalytics`) |
-| Sales tax summary (Phase 2) | No | Yes (future `salesTaxSummary`) | Yes |
-| Payroll exports (Phase 2) | No | Yes (future `payrollExports`) | Yes |
+| Sales tax summary | No | Yes (`salesTaxSummary`) | Yes |
+| Payroll export report | No | Yes (`payrollExports`) | Yes |
+| Tips & commissions (rules directory) | No | Yes (`jobCosting`) | Yes |
+| Crew utilization + on-time arrival | No | No | Yes (`advancedAnalytics`) |
 | Cohort / LTV (Phase 3) | No | No | Yes (`forecasting`) |
 
-Enforcement (when built):
+Enforcement:
 
 - `lib/reports/reportCatalog.ts` — per-report `ReportGate`
 - Pages: `app/tenant/reports/*` — `isReportEnabled(tier, slug)` on hub cards and `/reports/[slug]`
-- Exports: `assertReportEnabled` on CSV/PDF routes
+- Exports: `isReportEnabled` on `app/api/tenant/reports/export` and `export/pdf`
 - **Reports nav stays visible** on all tiers (unlike campaigns); locked reports show upgrade panel → `/billing`
+- Cache: `report_runs` via service role (`lib/reports/reportRunCache.ts`, migration `0034_report_runs.sql`)
 
 ### Email campaigns (implemented)
 
