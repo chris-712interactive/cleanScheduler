@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -9,23 +8,10 @@ import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
-import { formatUsdFromCents } from '@/lib/format/money';
-import styles from '../billing.module.scss';
+import { TransactionsTable, type TransactionRow } from './TransactionsTable';
+import styles from './transactions.module.scss';
 
 export const dynamic = 'force-dynamic';
-
-function paymentMethodLabel(method: string, recordedVia: string): string {
-  if (recordedVia === 'stripe_checkout') return 'Stripe';
-  const labels: Record<string, string> = {
-    cash: 'Cash',
-    check: 'Check',
-    zelle: 'Zelle',
-    card: 'Card',
-    ach: 'ACH',
-    other: 'Other',
-  };
-  return labels[method] ?? method;
-}
 
 type PaymentRow = {
   id: string;
@@ -54,18 +40,23 @@ function customerLabel(row: PaymentRow): string {
   return name === 'Unnamed' ? '—' : name;
 }
 
-function formatPostedDate(iso: string): { date: string; time: string } {
-  const d = new Date(iso);
+function toTransactionRow(row: PaymentRow): TransactionRow {
+  const inv = row.tenant_invoices;
+
   return {
-    date: d.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    time: d.toLocaleTimeString(undefined, {
-      hour: 'numeric',
-      minute: '2-digit',
-    }),
+    id: row.id,
+    amount_cents: row.amount_cents,
+    method: row.method,
+    recorded_at: row.recorded_at,
+    recorded_via: row.recorded_via,
+    notes: row.notes,
+    tenant_invoices: inv
+      ? {
+          id: inv.id,
+          title: inv.title,
+          customerLabel: customerLabel(row),
+        }
+      : null,
   };
 }
 
@@ -102,6 +93,7 @@ export default async function TenantBillingTransactionsPage() {
     .limit(200);
 
   const rows = (payments ?? []) as PaymentRow[];
+  const tableRows = rows.map(toTransactionRow);
 
   return (
     <>
@@ -110,13 +102,14 @@ export default async function TenantBillingTransactionsPage() {
         backHref="/billing"
         backLabel="Workspace billing"
         titleHint="All payments recorded on customer invoices — manual entries and Stripe Checkout."
+        description="A record of all payments and charges related to your account."
       />
 
       {error ? (
-        <Card title="Could not load transactions">
+        <div className={styles.errorPanel}>
           <p className={styles.muted}>{error.message}</p>
-        </Card>
-      ) : !rows.length ? (
+        </div>
+      ) : !tableRows.length ? (
         <EmptyState
           title="No transactions yet"
           description="Payments appear here when you record them on an invoice or when a customer pays online."
@@ -127,63 +120,7 @@ export default async function TenantBillingTransactionsPage() {
           }
         />
       ) : (
-        <Card
-          title="Payment ledger"
-          description={`${rows.length} most recent · click an invoice to open details`}
-          padded={false}
-        >
-          <div className={styles.tableWrap}>
-            <table className={styles.ledgerTable}>
-              <thead>
-                <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Customer</th>
-                  <th scope="col">Invoice</th>
-                  <th scope="col">Method</th>
-                  <th scope="col" className={styles.amountCol}>
-                    Amount
-                  </th>
-                  <th scope="col">Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => {
-                  const inv = p.tenant_invoices;
-                  const posted = formatPostedDate(p.recorded_at);
-                  const note = p.notes?.trim() ?? '';
-
-                  return (
-                    <tr key={p.id}>
-                      <td className={styles.dateCell}>
-                        <span className={styles.datePrimary}>{posted.date}</span>
-                        <span className={styles.dateSecondary}>{posted.time}</span>
-                      </td>
-                      <td className={styles.customerCell}>{customerLabel(p)}</td>
-                      <td>
-                        {inv ? (
-                          <Link href={`/billing/invoices/${inv.id}`} className={styles.rowLink}>
-                            {inv.title || 'Invoice'}
-                          </Link>
-                        ) : (
-                          <span className={styles.muted}>—</span>
-                        )}
-                      </td>
-                      <td className={styles.methodCell}>
-                        {paymentMethodLabel(p.method, p.recorded_via)}
-                      </td>
-                      <td className={styles.amountCol}>
-                        {formatUsdFromCents(p.amount_cents)}
-                      </td>
-                      <td className={styles.noteCell} title={note || undefined}>
-                        {note || <span className={styles.muted}>—</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <TransactionsTable rows={tableRows} />
       )}
     </>
   );

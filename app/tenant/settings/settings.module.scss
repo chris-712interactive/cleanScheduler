@@ -1,3 +1,5 @@
+@use 'mixins/breakpoints' as mq;
+
 .themeRow {
   display: flex;
   flex-wrap: wrap;
@@ -184,4 +186,395 @@
   margin: var(--space-2) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-success);
+}
+
+.inlineLink {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.readOnlyNotice {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.hubGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @include mq.down(md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hubCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-height: 7rem;
+  padding: var(--space-5);
+  text-decoration: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-fast) var(--easing-standard);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border));
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+  }
+}
+
+.hubCardIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-full);
+}
+
+.hubCardCopy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.hubCardTitle {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.hubCardDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.businessGrid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @include mq.down(lg) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sectionCard {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.sectionCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.sectionCardIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-full);
+}
+
+.sectionCardCopy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sectionCardTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.sectionCardDescription {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.sectionCardBody {
+  min-width: 0;
+}
+
+.settingsForm {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.brandingStack {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.fieldInput,
+.fieldSelect {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.fieldHint {
+  margin: calc(var(--space-1) * -1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+  line-height: 1.45;
+}
+
+.formError {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+}
+
+.formSuccess {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+}
+
+.saveButton {
+  justify-self: start;
+  min-height: 44px;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-brand-primary);
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-on-brand);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: default;
+  }
+}
+
+.dayToggleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dayToggle {
+  position: relative;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    min-height: 2.5rem;
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition:
+      background-color var(--duration-fast) var(--easing-standard),
+      color var(--duration-fast) var(--easing-standard),
+      border-color var(--duration-fast) var(--easing-standard);
+  }
+
+  input:checked + span {
+    color: var(--color-text-on-brand);
+    background: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+  }
+
+  input:focus-visible + span {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  input:disabled + span {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+.timeGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @include mq.down(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.colorFieldRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.colorSwatch {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.logoPreviewWrap {
+  margin-bottom: var(--space-2);
+}
+
+.logoPreview {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 3rem;
+  object-fit: contain;
+}
+
+.logoDropzone {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+
+  input[type='file'] {
+    display: none;
+  }
+}
+
+.logoDropzoneTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.logoDropzoneHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+}
+
+.addressGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
+
+  @include mq.down(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rolesGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @include mq.down(lg) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roleCard {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.roleCardHeader {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.roleCardTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.roleCardSummary {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.rolePermissionList {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.rolesFootnote {
+  margin: var(--space-5) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
 }

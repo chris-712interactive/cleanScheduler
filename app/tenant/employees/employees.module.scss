@@ -1,50 +1,412 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/a11y' as a11y;
+
 .muted {
   margin: 0;
   color: var(--color-text-muted);
 }
 
-.list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.errorPanel {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
-.row {
+.tablePanel {
+  overflow: hidden;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.teamTable {
+  width: 100%;
+  min-width: 52rem;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+// Proportions from mock: Name widest, Role medium, Status narrow, Manage narrowest.
+.colName {
+  width: 44%;
+}
+
+.colRole {
+  width: 28%;
+}
+
+.colStatus {
+  width: 15%;
+}
+
+.colManage {
+  width: 13%;
+}
+
+.teamTable thead {
+  background: var(--color-bg-muted);
+}
+
+.teamTable th {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  text-align: left;
+  white-space: nowrap;
+  background: inherit;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.manageHeader {
+  display: inline-block;
+  width: 100%;
+  text-align: right;
+}
+
+.teamTable td {
+  padding: var(--space-4);
+  color: var(--color-text);
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.teamTable tbody tr:hover {
+  background: color-mix(in srgb, var(--color-brand-primary) 4%, transparent);
+}
+
+.teamTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-circle);
+  background-color: var(--color-bg-muted);
+}
+
+.avatarImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  background-color: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+}
+
+.nameCopy {
+  min-width: 0;
+}
+
+.memberName {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.memberEmail,
+.memberEmailMuted {
+  margin: var(--space-1) 0 0;
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberEmail {
+  color: var(--color-text-muted);
+}
+
+.memberEmailMuted {
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+
+.youBadge {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.roleText {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusDot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: var(--radius-circle);
+  background-color: currentColor;
+}
+
+.manageCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.manageTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.25rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  text-decoration: none;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard);
+
+  &:hover {
+    color: var(--color-text);
+    background-color: var(--color-bg-muted);
+    border-color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.manageEmpty {
+  display: inline-block;
+  min-width: 2.25rem;
+  color: var(--color-text-subtle);
+  text-align: center;
+}
+
+.menuPanel {
+  z-index: var(--z-modal);
+  min-width: 11rem;
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.menuLink {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  outline: none;
+
+  &:hover {
+    background: var(--color-bg-muted);
+    text-decoration: none;
+  }
+
+  &[data-highlighted] {
+    background: var(--color-bg-muted);
+  }
+}
+
+.tableFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border-subtle);
-
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  &:first-child {
-    padding-top: 0;
-  }
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 
-.name {
-  font-weight: 600;
-}
-
-.meta {
-  margin-top: var(--space-1);
-  font-size: var(--font-size-xs);
+.resultsSummary {
+  margin: 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  word-break: break-all;
 }
 
-.badges {
-  display: flex;
+.pagination {
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--space-1);
 }
 
+.pageNav,
+.pageNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+
+  &:hover:not([aria-disabled='true']) {
+    color: var(--color-text);
+    border-color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  &[data-active] {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+    background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-surface));
+    border-color: var(--color-brand-primary);
+  }
+
+  &[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: default;
+  }
+}
+
+.pageEllipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 2rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+// Sidebar + main padding leave a tight content area around ~1143px viewport.
+@media (max-width: 1143px) {
+  .teamTable {
+    min-width: 0;
+  }
+
+  .colName {
+    width: auto;
+  }
+
+  .colRole {
+    width: 7rem;
+  }
+
+  .colStatus {
+    width: 6.75rem;
+  }
+
+  .colManage {
+    width: 7rem;
+  }
+
+  .teamTable th,
+  .teamTable td {
+    padding: var(--space-3);
+  }
+
+  .nameCell {
+    gap: var(--space-2);
+  }
+
+  .avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .memberName {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .manageTrigger {
+    gap: var(--space-1);
+    min-height: 2rem;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .teamTable td:nth-child(3) {
+    overflow: hidden;
+  }
+
+  .tableWrap {
+    overflow-x: visible;
+  }
+}
+
+@include mq.down(md) {
+  .teamTable th,
+  .teamTable td {
+    padding-inline: var(--space-3);
+  }
+}
+
+@include mq.down(sm) {
+  .memberEmail,
+  .memberEmailMuted {
+    white-space: normal;
+  }
+}
+
+// Invite / edit form styles
 .inviteBlock {
   margin-top: var(--space-2);
 }
@@ -88,92 +450,6 @@
   color: var(--color-success);
 }
 
-.memberMain {
-  display: flex;
-  gap: var(--space-3);
-  min-width: 0;
-  flex: 1 1 200px;
-}
-
-.memberSide {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.thumb {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  background-color: var(--color-bg-muted);
-}
-
-.thumbImg {
-  object-fit: cover;
-}
-
-.thumbFallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
-.inlineForm {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.fileLabel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.inlineError {
-  margin: var(--space-1) 0 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-danger);
-}
-
-.inlineOk {
-  margin: var(--space-1) 0 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-success);
-}
-
-.youBadge {
-  margin-left: var(--space-2);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
 .backLink {
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -183,4 +459,8 @@
   &:hover {
     text-decoration: underline;
   }
+}
+
+.srOnly {
+  @include a11y.visually-hidden;
 }

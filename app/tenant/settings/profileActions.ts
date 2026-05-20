@@ -42,6 +42,7 @@ export async function updateOwnDisplayNameAction(
   });
 
   revalidatePath('/settings');
+  revalidatePath('/settings/account');
   revalidatePath('/', 'layout');
   return { success: 'Display name saved.' };
 }
@@ -91,6 +92,7 @@ export async function uploadOwnAvatarAction(
   if (pErr) return { error: pErr.message };
 
   revalidatePath('/settings');
+  revalidatePath('/settings/account');
   revalidatePath('/employees');
   revalidatePath('/', 'layout');
   return { success: 'Profile photo updated.' };

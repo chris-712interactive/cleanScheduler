@@ -18,6 +18,7 @@ import styles from './settings.module.scss';
 export function OperationalSettingsForm({
   tenantSlug,
   snapshot,
+  readOnly = false,
 }: {
   tenantSlug: string;
   snapshot: {
@@ -31,6 +32,7 @@ export function OperationalSettingsForm({
     sms_notify_quote_accepted: boolean;
     sms_notify_quote_declined: boolean;
   };
+  readOnly?: boolean;
 }) {
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
 
@@ -69,6 +71,7 @@ export function OperationalSettingsForm({
                   name="accepted_quote_schedule_mode"
                   value={value}
                   defaultChecked={snapshot.accepted_quote_schedule_mode === value}
+                  disabled={readOnly}
                 />
                 <span>{ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL[value]}</span>
               </label>
@@ -90,6 +93,7 @@ export function OperationalSettingsForm({
                 name="invoice_expectation"
                 value={value}
                 defaultChecked={snapshot.invoice_expectation === value}
+                disabled={readOnly}
               />
               <span>{INVOICE_EXPECTATION_LABEL[value]}</span>
             </label>
@@ -110,6 +114,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="email_notify_quote_sent"
               defaultChecked={snapshot.email_notify_quote_sent}
+              disabled={readOnly}
             />
             <span>Email customer when a quote is marked Sent</span>
           </label>
@@ -118,6 +123,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="email_notify_quote_accepted"
               defaultChecked={snapshot.email_notify_quote_accepted}
+              disabled={readOnly}
             />
             <span>Email your team when a customer accepts a quote</span>
           </label>
@@ -126,6 +132,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="email_notify_quote_declined"
               defaultChecked={snapshot.email_notify_quote_declined}
+              disabled={readOnly}
             />
             <span>Email your team when a customer declines a quote</span>
           </label>
@@ -178,16 +185,18 @@ export function OperationalSettingsForm({
         <div className={styles.opsCheckboxGrid}>
           {CUSTOMER_PAYMENT_METHOD_VALUES.map((m) => (
             <label key={m} className={styles.opsCheckbox}>
-              <input type="checkbox" name={`method_${m}`} defaultChecked={allowed.has(m)} />
+              <input type="checkbox" name={`method_${m}`} defaultChecked={allowed.has(m)} disabled={readOnly} />
               <span>{CUSTOMER_PAYMENT_METHOD_LABEL[m]}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
-      <button type="submit" className={styles.opsSubmit} disabled={pending}>
-        {pending ? 'Saving…' : 'Save workflow & payment options'}
-      </button>
+      {!readOnly ? (
+        <button type="submit" className={styles.opsSubmit} disabled={pending}>
+          {pending ? 'Saving…' : 'Save workflow & payment options'}
+        </button>
+      ) : null}
     </form>
   );
 }

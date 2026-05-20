@@ -39,7 +39,7 @@ export default async function TenantEmployeeEditPage({ params }: PageProps) {
   }
 
   if (auth.user.id === targetUserId) {
-    redirect('/settings');
+    redirect('/settings/account');
   }
 
   const admin = createAdminClient();

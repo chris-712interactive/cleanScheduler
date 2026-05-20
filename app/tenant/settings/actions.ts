@@ -69,5 +69,6 @@ export async function updateTenantOperationalSettings(
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/settings', 'page');
+  revalidatePath('/tenant/settings/operations', 'page');
   return { success: true };
 }

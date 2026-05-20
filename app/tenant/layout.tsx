@@ -16,6 +16,7 @@ import { getAuthContext } from '@/lib/auth/session';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import { buildTenantBillingNavItem } from '@/lib/tenant/buildTenantBillingNav';
+import { buildTenantSettingsNavItem } from '@/lib/tenant/buildTenantSettingsNav';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,6 @@ const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Employees', href: '/employees', icon: 'work' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },
   { label: 'Reports', href: '/reports', icon: 'reports' },
-  { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
@@ -102,6 +102,7 @@ export default async function TenantLayout({ children }: { children: React.React
 
   const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
   const billingNavItem = buildTenantBillingNavItem(connectStatus);
+  const settingsNavItem = buildTenantSettingsNavItem();
 
   const navItems: NavItem[] = subscriptionLocked
     ? [billingNavItem]
@@ -109,6 +110,7 @@ export default async function TenantLayout({ children }: { children: React.React
         ...NAV_ITEMS_BASE.slice(0, 6),
         billingNavItem,
         ...NAV_ITEMS_BASE.slice(6),
+        settingsNavItem,
       ].map((item) => {
         if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {
           return item;

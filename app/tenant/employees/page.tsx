@@ -1,8 +1,9 @@
+import Image from 'next/image';
+import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
-import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { Plus } from 'lucide-react';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -10,12 +11,53 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
 import { canEditTeamMember, canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
-import { TeamMemberRow } from './TeamMemberRow';
+import { teamMemberStatusLabel, teamRoleLabel } from '@/lib/tenant/teamMemberDisplay';
+import { parseTeamPage, TEAM_PAGE_SIZE } from '@/lib/tenant/teamListPaging';
+import { TeamMemberManageMenu } from './TeamMemberManageMenu';
+import { TeamPagination } from './TeamPagination';
 import styles from './employees.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TenantEmployeesPage() {
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function initialsFrom(name: string, fallbackId: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase();
+  }
+  if (parts.length === 1 && parts[0]!.length >= 2) {
+    return parts[0]!.slice(0, 2).toUpperCase();
+  }
+  return fallbackId.slice(0, 2).toUpperCase();
+}
+
+async function fetchEmailsByUserId(
+  admin: ReturnType<typeof createAdminClient>,
+  userIds: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  await Promise.all(
+    userIds.map(async (id) => {
+      const { data } = await admin.auth.admin.getUserById(id);
+      const email = data.user?.email?.trim();
+      if (email) map.set(id, email);
+    }),
+  );
+  return map;
+}
+
+export default async function TenantEmployeesPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const currentPage = parseTeamPage(firstParam(sp.page));
+
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/employees');
   const admin = createAdminClient();
@@ -41,11 +83,46 @@ export default async function TenantEmployeesPage() {
   const actorRole = membership.role as TenantRole;
   const canManage = canManageTeamInvitesAndRoles(actorRole);
 
+  const emailsByUser = await fetchEmailsByUserId(admin, userIds);
+
+  const members = (rows ?? [])
+    .map((row) => {
+      const prof = profileByUser.get(row.user_id);
+      const email = emailsByUser.get(row.user_id) ?? null;
+      const displayName = prof?.display_name?.trim() || email?.split('@')[0] || 'Team member';
+      const role = row.role as TenantRole;
+      const isSelf = currentUserId === row.user_id;
+
+      return {
+        id: row.id,
+        userId: row.user_id,
+        role,
+        isActive: row.is_active,
+        displayName,
+        avatarUrl: prof?.avatar_url ?? null,
+        email,
+        isSelf,
+        canEdit: canEditTeamMember({
+          actor: actorRole,
+          actorUserId: currentUserId,
+          targetUserId: row.user_id,
+          targetRole: role,
+        }),
+      };
+    })
+    .sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }));
+
+  const totalCount = members.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / TEAM_PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const start = (safePage - 1) * TEAM_PAGE_SIZE;
+  const pageMembers = members.slice(start, start + TEAM_PAGE_SIZE);
+
   return (
     <>
       <PageHeader
         title="Team"
-        description="People who can sign in to this workspace."
+        titleHint="People who can sign in to this workspace."
         actions={
           canManage ? (
             <Button
@@ -54,62 +131,117 @@ export default async function TenantEmployeesPage() {
               variant="primary"
               iconLeft={<Plus size={18} aria-hidden />}
             >
-              Add employee
+              Invite member
             </Button>
           ) : undefined
         }
       />
 
-      <Stack gap={4}>
-        {error ? (
-          <Card title="Could not load team">
-            <p className={styles.muted}>{error.message}</p>
-          </Card>
-        ) : !rows?.length ? (
-          <EmptyState
-            title="No members yet"
-            description={
-              canManage
-                ? 'Invite your first teammate to get started.'
-                : 'The workspace owner should appear here after onboarding. If this looks wrong, contact support.'
-            }
+      {error ? (
+        <div className={styles.errorPanel}>
+          <p className={styles.muted}>{error.message}</p>
+        </div>
+      ) : !totalCount ? (
+        <EmptyState
+          title="No members yet"
+          description={
+            canManage
+              ? 'Invite your first teammate to get started.'
+              : 'The workspace owner should appear here after onboarding. If this looks wrong, contact support.'
+          }
+          action={
+            canManage ? (
+              <Button as={Link} href="/employees/new" variant="primary">
+                Invite member
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className={styles.tablePanel}>
+          <div className={styles.tableWrap}>
+            <table className={styles.teamTable}>
+              <colgroup>
+                <col className={styles.colName} />
+                <col className={styles.colRole} />
+                <col className={styles.colStatus} />
+                <col className={styles.colManage} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">
+                    <span className={styles.manageHeader}>Manage</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageMembers.map((member) => (
+                  <tr key={member.id}>
+                    <td>
+                      <div className={styles.nameCell}>
+                        <div className={styles.avatar}>
+                          {member.avatarUrl ? (
+                            <Image
+                              src={member.avatarUrl}
+                              alt=""
+                              width={40}
+                              height={40}
+                              className={styles.avatarImg}
+                            />
+                          ) : (
+                            <span className={styles.avatarFallback} aria-hidden>
+                              {initialsFrom(member.displayName, member.userId)}
+                            </span>
+                          )}
+                        </div>
+                        <div className={styles.nameCopy}>
+                          <p className={styles.memberName}>
+                            {member.displayName}
+                            {member.isSelf ? <span className={styles.youBadge}>You</span> : null}
+                          </p>
+                          {member.email ? (
+                            <p className={styles.memberEmail}>{member.email}</p>
+                          ) : (
+                            <p className={styles.memberEmailMuted}>No email on file</p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={styles.roleText}>{teamRoleLabel(member.role)}</span>
+                    </td>
+                    <td>
+                      <StatusPill
+                        tone={member.isActive ? 'success' : 'warning'}
+                        icon={<span className={styles.statusDot} aria-hidden />}
+                      >
+                        {teamMemberStatusLabel(member.isActive)}
+                      </StatusPill>
+                    </td>
+                    <td className={styles.manageCell}>
+                      <TeamMemberManageMenu
+                        memberUserId={member.userId}
+                        canEdit={member.canEdit}
+                        isSelf={member.isSelf}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <TeamPagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            fromIndex={start + 1}
+            toIndex={start + pageMembers.length}
           />
-        ) : (
-          <Card
-            title="Members"
-            description={`${rows.length} workspace ${rows.length === 1 ? 'member' : 'members'}.`}
-          >
-            <ul className={styles.list}>
-              {rows.map((row) => {
-                const prof = profileByUser.get(row.user_id);
-                const displayName = prof?.display_name ?? '';
-                const avatarUrl = prof?.avatar_url ?? null;
-                const role = row.role as TenantRole;
-                const isSelf = currentUserId === row.user_id;
-                const canEdit =
-                  canEditTeamMember({
-                    actor: actorRole,
-                    actorUserId: currentUserId,
-                    targetUserId: row.user_id,
-                    targetRole: role,
-                  });
-                return (
-                  <TeamMemberRow
-                    key={row.id}
-                    memberUserId={row.user_id}
-                    displayName={displayName}
-                    avatarUrl={avatarUrl}
-                    role={role}
-                    isActive={row.is_active}
-                    isSelf={isSelf}
-                    canEdit={canEdit}
-                  />
-                );
-              })}
-            </ul>
-          </Card>
-        )}
-      </Stack>
+        </div>
+      )}
     </>
   );
 }
