@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  computeEmployeeCompensationTotals,
+  estimatedVariablePayCents,
+} from '@/lib/reports/compensationPayout';
 import type { ReportSummaryLine } from '@/lib/reports/types';
+import { formatUsdFromCents } from '@/lib/format/money';
 
 export interface PayrollExportRow {
   userId: string;
@@ -8,6 +13,10 @@ export interface PayrollExportRow {
   jobsCompleted: number;
   regularHours: number;
   overtimeHours: number;
+  commissionCents: number;
+  flatCents: number;
+  tipSplitCents: number;
+  estimatedVariablePayCents: number;
 }
 
 export interface PayrollExportResult {
@@ -42,7 +51,12 @@ export async function runPayrollExportReport(
   if (fromIso) visitQuery = visitQuery.gte('completed_at', fromIso);
   if (toIso) visitQuery = visitQuery.lte('completed_at', toIso);
 
-  const { data: visits, error } = await visitQuery;
+  const [visitsRes, compensation] = await Promise.all([
+    visitQuery,
+    computeEmployeeCompensationTotals(db, tenantId, fromIso, toIso),
+  ]);
+
+  const { data: visits, error } = visitsRes;
   if (error || !visits?.length) {
     return {
       rows: [],
@@ -99,23 +113,37 @@ export async function runPayrollExportReport(
       const rounded = Math.round(v.hours * 10) / 10;
       const regular = Math.min(rounded, periodRegularCap);
       const overtime = Math.max(0, rounded - periodRegularCap);
+      const comp = compensation.get(userId);
+      const commissionCents = comp?.commissionCents ?? 0;
+      const flatCents = comp?.flatCents ?? 0;
+      const tipSplitCents = comp?.tipSplitCents ?? 0;
+      const variable =
+        comp != null
+          ? estimatedVariablePayCents(comp)
+          : commissionCents + flatCents + tipSplitCents;
       return {
         userId,
         employeeName: profileMap.get(userId) ?? 'Team member',
         jobsCompleted: v.jobs,
         regularHours: Math.round(regular * 10) / 10,
         overtimeHours: Math.round(overtime * 10) / 10,
+        commissionCents,
+        flatCents,
+        tipSplitCents,
+        estimatedVariablePayCents: variable,
       };
     })
     .sort((a, b) => b.regularHours + b.overtimeHours - (a.regularHours + a.overtimeHours));
 
   const totalHours = rows.reduce((s, r) => s + r.regularHours + r.overtimeHours, 0);
+  const totalVariable = rows.reduce((s, r) => s + r.estimatedVariablePayCents, 0);
 
   return {
     rows,
     summary: [
       { label: 'Team members', value: String(rows.length) },
       { label: 'Total hours', value: totalHours.toFixed(1) },
+      { label: 'Est. variable pay', value: formatUsdFromCents(totalVariable) },
       { label: 'Pay period weeks', value: String(periodWeeks) },
     ],
   };

@@ -81,7 +81,7 @@ export default async function TenantReportRunPage({ params, searchParams }: Page
 
   if (enabled && isImplementedReportSlug(slug)) {
     const supabase = createTenantPortalDbClient();
-    result = await getOrRunTenantReport(supabase, admin, {
+    const runPayload = await getOrRunTenantReport(supabase, admin, {
       tenantId: membership.tenantId,
       slug,
       fromIso: range.fromIso,
@@ -90,6 +90,7 @@ export default async function TenantReportRunPage({ params, searchParams }: Page
       toInput: range.toInput,
       userId: null,
     });
+    result = runPayload.result;
     if (result.kind !== 'pro-placeholder') {
       summary = result.data.summary;
     }

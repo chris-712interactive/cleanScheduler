@@ -29,6 +29,11 @@ export function payrollResultToCsv(
         { key: 'name', header: 'Employee Name', format: (r) => r.employeeName },
         { key: 'regular', header: 'Regular Hours', format: (r) => String(r.regularHours) },
         { key: 'ot', header: 'Overtime Hours', format: (r) => String(r.overtimeHours) },
+        {
+          key: 'bonus',
+          header: 'Bonus (est.)',
+          format: (r) => (r.estimatedVariablePayCents / 100).toFixed(2),
+        },
       ];
       return rowsToCsv(cols, rows);
     }

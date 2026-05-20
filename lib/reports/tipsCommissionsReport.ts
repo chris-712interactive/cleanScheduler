@@ -1,9 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  computeEmployeeCompensationTotals,
+  estimatedVariablePayCents,
+} from '@/lib/reports/compensationPayout';
 import type { ReportSummaryLine } from '@/lib/reports/types';
 import { formatUsdFromCents } from '@/lib/format/money';
 
-export interface TipsCommissionsRow {
+export interface TipsCommissionsRuleRow {
   ruleId: string;
   name: string;
   ruleType: string;
@@ -12,8 +16,19 @@ export interface TipsCommissionsRow {
   isActive: boolean;
 }
 
+export interface TipsCommissionsPayoutRow {
+  userId: string;
+  employeeName: string;
+  jobsCompleted: number;
+  commissionCents: number;
+  flatCents: number;
+  tipSplitCents: number;
+  estimatedPayCents: number;
+}
+
 export interface TipsCommissionsResult {
-  rows: TipsCommissionsRow[];
+  payoutRows: TipsCommissionsPayoutRow[];
+  ruleRows: TipsCommissionsRuleRow[];
   summary: ReportSummaryLine[];
 }
 
@@ -34,21 +49,33 @@ function formatRuleRate(
 export async function runTipsCommissionsReport(
   db: SupabaseClient<Database>,
   tenantId: string,
+  fromIso: string | null,
+  toIso: string | null,
 ): Promise<TipsCommissionsResult> {
-  const { data, error } = await db
-    .from('compensation_rules')
-    .select('id, name, rule_type, percent_bps, flat_cents, applies_to_role, is_active')
-    .eq('tenant_id', tenantId)
-    .order('name');
+  const [{ data: rules, error }, compensation, { data: profiles }] = await Promise.all([
+    db
+      .from('compensation_rules')
+      .select('id, name, rule_type, percent_bps, flat_cents, applies_to_role, is_active')
+      .eq('tenant_id', tenantId)
+      .order('name'),
+    computeEmployeeCompensationTotals(db, tenantId, fromIso, toIso),
+    db.from('user_profiles').select('user_id, display_name'),
+  ]);
 
   if (error) {
     return {
-      rows: [],
+      payoutRows: [],
+      ruleRows: [],
       summary: [{ label: 'Active rules', value: '0' }],
     };
   }
 
-  const rows: TipsCommissionsRow[] = (data ?? []).map((rule) => ({
+  const profileMap = new Map<string, string>();
+  for (const p of profiles ?? []) {
+    profileMap.set(p.user_id, p.display_name?.trim() || 'Team member');
+  }
+
+  const ruleRows: TipsCommissionsRuleRow[] = (rules ?? []).map((rule) => ({
     ruleId: rule.id,
     name: rule.name,
     ruleType: rule.rule_type.replace(/_/g, ' '),
@@ -57,19 +84,35 @@ export async function runTipsCommissionsReport(
     isActive: rule.is_active,
   }));
 
-  const activeCount = rows.filter((r) => r.isActive).length;
+  const payoutRows: TipsCommissionsPayoutRow[] = [...compensation.values()]
+    .map((t) => ({
+      userId: t.userId,
+      employeeName: profileMap.get(t.userId) ?? 'Team member',
+      jobsCompleted: t.jobsCompleted,
+      commissionCents: t.commissionCents,
+      flatCents: t.flatCents,
+      tipSplitCents: t.tipSplitCents,
+      estimatedPayCents: estimatedVariablePayCents(t),
+    }))
+    .filter((r) => r.estimatedPayCents > 0 || r.jobsCompleted > 0)
+    .sort((a, b) => b.estimatedPayCents - a.estimatedPayCents);
+
+  const totalPay = payoutRows.reduce((s, r) => s + r.estimatedPayCents, 0);
+  const activeRules = ruleRows.filter((r) => r.isActive).length;
 
   return {
-    rows,
+    payoutRows,
+    ruleRows,
     summary: [
-      { label: 'Active rules', value: String(activeCount) },
-      { label: 'Total rules', value: String(rows.length) },
+      { label: 'Estimated variable pay', value: formatUsdFromCents(totalPay) },
+      { label: 'Team members with payouts', value: String(payoutRows.length) },
+      { label: 'Active rules', value: String(activeRules) },
       {
         label: 'Note',
         value:
-          rows.length === 0
+          activeRules === 0
             ? 'Add rules under Settings → Compensation'
-            : 'Payout calculations use these rules in a future payroll release',
+            : 'Estimates use completed visit revenue and active rules',
       },
     ],
   };

@@ -15,6 +15,10 @@ import { runPayrollExportReport } from '@/lib/reports/payrollExportReport';
 import { runCrewUtilizationReport } from '@/lib/reports/crewUtilizationReport';
 import { runOnTimeArrivalReport } from '@/lib/reports/onTimeArrivalReport';
 import { runTipsCommissionsReport } from '@/lib/reports/tipsCommissionsReport';
+import { runProcessingFeesReport } from '@/lib/reports/processingFeesReport';
+import { runYearEndRevenueReport } from '@/lib/reports/yearEndRevenueReport';
+import { runCustomer1099PrepReport } from '@/lib/reports/customer1099PrepReport';
+import { runCohortLtvReport } from '@/lib/reports/cohortLtvReport';
 import type { ReportSlug } from '@/lib/reports/types';
 
 export type ReportRunResult =
@@ -36,6 +40,10 @@ export type ReportRunResult =
   | { kind: 'crew-utilization'; data: Awaited<ReturnType<typeof runCrewUtilizationReport>> }
   | { kind: 'on-time-arrival'; data: Awaited<ReturnType<typeof runOnTimeArrivalReport>> }
   | { kind: 'tips-commissions'; data: Awaited<ReturnType<typeof runTipsCommissionsReport>> }
+  | { kind: 'processing-fees-deductible'; data: Awaited<ReturnType<typeof runProcessingFeesReport>> }
+  | { kind: 'year-end-revenue'; data: Awaited<ReturnType<typeof runYearEndRevenueReport>> }
+  | { kind: 'customer-1099-prep'; data: Awaited<ReturnType<typeof runCustomer1099PrepReport>> }
+  | { kind: 'cohort-ltv-churn'; data: Awaited<ReturnType<typeof runCohortLtvReport>> }
   | { kind: 'pro-placeholder' };
 
 const IMPLEMENTED_REPORT_SLUGS: ReportSlug[] = [
@@ -54,6 +62,10 @@ const IMPLEMENTED_REPORT_SLUGS: ReportSlug[] = [
   'crew-utilization',
   'on-time-arrival',
   'tips-commissions',
+  'processing-fees-deductible',
+  'year-end-revenue',
+  'customer-1099-prep',
+  'cohort-ltv-churn',
 ];
 
 export function isImplementedReportSlug(slug: ReportSlug): boolean {
@@ -151,7 +163,27 @@ export async function runTenantReport(
     case 'tips-commissions':
       return {
         kind: 'tips-commissions',
-        data: await runTipsCommissionsReport(db, tenantId),
+        data: await runTipsCommissionsReport(db, tenantId, params.fromIso, params.toIso),
+      };
+    case 'processing-fees-deductible':
+      return {
+        kind: 'processing-fees-deductible',
+        data: await runProcessingFeesReport(db, tenantId, params.fromIso, params.toIso),
+      };
+    case 'year-end-revenue':
+      return {
+        kind: 'year-end-revenue',
+        data: await runYearEndRevenueReport(db, tenantId, params.fromIso, params.toIso),
+      };
+    case 'customer-1099-prep':
+      return {
+        kind: 'customer-1099-prep',
+        data: await runCustomer1099PrepReport(db, tenantId, params.fromIso, params.toIso),
+      };
+    case 'cohort-ltv-churn':
+      return {
+        kind: 'cohort-ltv-churn',
+        data: await runCohortLtvReport(db, tenantId, params.fromIso, params.toIso),
       };
     default:
       return { kind: 'pro-placeholder' };

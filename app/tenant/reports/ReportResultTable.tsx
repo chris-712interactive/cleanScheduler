@@ -470,6 +470,7 @@ export function ReportResultTable({
                 <th scope="col">Jobs</th>
                 <th scope="col">Regular hours</th>
                 <th scope="col">Overtime hours</th>
+                <th scope="col">Variable pay (est.)</th>
               </tr>
             </thead>
             <tbody>
@@ -479,6 +480,7 @@ export function ReportResultTable({
                   <td>{row.jobsCompleted}</td>
                   <td>{row.regularHours.toFixed(1)}</td>
                   <td>{row.overtimeHours.toFixed(1)}</td>
+                  <td>{formatUsdFromCents(row.estimatedVariablePayCents)}</td>
                 </tr>
               ))}
             </tbody>
@@ -545,6 +547,72 @@ export function ReportResultTable({
       );
     }
     case 'tips-commissions': {
+      const payoutRows = result.data.payoutRows;
+      const slice = paginate(payoutRows, page, pageSize);
+      return (
+        <>
+          <TableShell
+            total={payoutRows.length}
+            start={slice.start}
+            end={slice.end}
+            showFooter={showFooter}
+          >
+            <table className={styles.directoryTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Team member</th>
+                  <th scope="col">Jobs</th>
+                  <th scope="col">Commission</th>
+                  <th scope="col">Flat</th>
+                  <th scope="col">Tip split</th>
+                  <th scope="col">Total (est.)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {slice.items.map((row) => (
+                  <tr key={row.userId}>
+                    <td>{row.employeeName}</td>
+                    <td>{row.jobsCompleted}</td>
+                    <td>{formatUsdFromCents(row.commissionCents)}</td>
+                    <td>{formatUsdFromCents(row.flatCents)}</td>
+                    <td>{formatUsdFromCents(row.tipSplitCents)}</td>
+                    <td>{formatUsdFromCents(row.estimatedPayCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+          {result.data.ruleRows.length > 0 ? (
+            <>
+              <h3 className={styles.sectionHeading}>Active rules</h3>
+              <table className={styles.directoryTable}>
+                <thead>
+                  <tr>
+                    <th scope="col">Rule</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Rate</th>
+                    <th scope="col">Applies to</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.data.ruleRows
+                    .filter((r) => r.isActive)
+                    .map((row) => (
+                      <tr key={row.ruleId}>
+                        <td>{row.name}</td>
+                        <td>{row.ruleType}</td>
+                        <td>{row.rateLabel}</td>
+                        <td>{row.appliesToRole}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </>
+          ) : null}
+        </>
+      );
+    }
+    case 'processing-fees-deductible': {
       const rows = result.data.rows;
       const slice = paginate(rows, page, pageSize);
       return (
@@ -552,21 +620,113 @@ export function ReportResultTable({
           <table className={styles.directoryTable}>
             <thead>
               <tr>
-                <th scope="col">Rule</th>
-                <th scope="col">Type</th>
-                <th scope="col">Rate</th>
-                <th scope="col">Applies to</th>
-                <th scope="col">Active</th>
+                <th scope="col">Month</th>
+                <th scope="col">Method</th>
+                <th scope="col">Payments</th>
+                <th scope="col">Gross</th>
+                <th scope="col">Fees</th>
+                <th scope="col">Net</th>
               </tr>
             </thead>
             <tbody>
               {slice.items.map((row) => (
-                <tr key={row.ruleId}>
-                  <td>{row.name}</td>
-                  <td>{row.ruleType}</td>
-                  <td>{row.rateLabel}</td>
-                  <td>{row.appliesToRole}</td>
-                  <td>{row.isActive ? 'Yes' : 'No'}</td>
+                <tr key={`${row.periodMonth}-${row.method}`}>
+                  <td>{row.periodMonth}</td>
+                  <td>{row.method}</td>
+                  <td>{row.paymentCount}</td>
+                  <td>{formatUsdFromCents(row.grossCents)}</td>
+                  <td>{formatUsdFromCents(row.feeCents)}</td>
+                  <td>{formatUsdFromCents(row.netCents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableShell>
+      );
+    }
+    case 'year-end-revenue': {
+      const rows = result.data.rows;
+      const slice = paginate(rows, page, pageSize);
+      return (
+        <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+          <table className={styles.directoryTable}>
+            <thead>
+              <tr>
+                <th scope="col">Customer</th>
+                <th scope="col">Payments</th>
+                <th scope="col">Gross</th>
+                <th scope="col">Fees</th>
+                <th scope="col">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slice.items.map((row) => (
+                <tr key={row.customerId}>
+                  <td>{row.customerName}</td>
+                  <td>{row.paymentCount}</td>
+                  <td>{formatUsdFromCents(row.grossCents)}</td>
+                  <td>{formatUsdFromCents(row.feeCents)}</td>
+                  <td>{formatUsdFromCents(row.netCents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableShell>
+      );
+    }
+    case 'customer-1099-prep': {
+      const rows = result.data.rows;
+      const slice = paginate(rows, page, pageSize);
+      return (
+        <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+          <table className={styles.directoryTable}>
+            <thead>
+              <tr>
+                <th scope="col">Customer</th>
+                <th scope="col">Gross collected</th>
+                <th scope="col">Payments</th>
+                <th scope="col">$600+ threshold</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slice.items.map((row) => (
+                <tr key={row.customerId}>
+                  <td>{row.customerName}</td>
+                  <td>{formatUsdFromCents(row.grossCents)}</td>
+                  <td>{row.paymentCount}</td>
+                  <td>{row.meetsThreshold ? 'Yes' : 'No'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableShell>
+      );
+    }
+    case 'cohort-ltv-churn': {
+      const rows = result.data.rows;
+      const slice = paginate(rows, page, pageSize);
+      return (
+        <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+          <table className={styles.directoryTable}>
+            <thead>
+              <tr>
+                <th scope="col">Cohort</th>
+                <th scope="col">Cohort size</th>
+                <th scope="col">Month offset</th>
+                <th scope="col">Active</th>
+                <th scope="col">Retention %</th>
+                <th scope="col">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slice.items.map((row) => (
+                <tr key={`${row.cohortMonth}-${row.monthsSinceFirst}`}>
+                  <td>{row.cohortMonth}</td>
+                  <td>{row.customersInCohort}</td>
+                  <td>{row.monthsSinceFirst}</td>
+                  <td>{row.activeCustomers}</td>
+                  <td>{row.retentionPercent}%</td>
+                  <td>{formatUsdFromCents(row.revenueCents)}</td>
                 </tr>
               ))}
             </tbody>

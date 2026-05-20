@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/expire-stale-trials",
       "schedule": "15 7 * * *"
+    },
+    {
+      "path": "/api/cron/backfill-stripe-payout-links",
+      "schedule": "30 8 * * 0"
     }
   ]
 }

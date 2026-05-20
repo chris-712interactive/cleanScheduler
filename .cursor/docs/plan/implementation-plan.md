@@ -57,7 +57,7 @@ todos:
     content: "Mobile-first Accept Payment flow on Schedule appointment detail (employees mark check received with amount, check number, optional photo; sets received_in_field). Office workflow lets Billing admin progress checks through received_in_office \u2192 deposited \u2192 cleared/bounced with audit log entries. Reminder cron skips invoices under active check holds (tenant-configurable hold days; per-status overrides)."
     status: pending
   - id: reportsModule
-    content: "Tenant Reports at /reports (docs/product/tenant-reports.md): Phases 1+1.5+2 baseline shipped (15 slugs, CSV/PDF, cache, pagination). Shipped polish: ADP/Gusto/QBO payroll CSV, compensation rules UI (/settings/compensation), stripe_payout_id backfill on payout.paid. Remaining: Plaid reports, Phase 3 year-end/cohort, compensation payout math, PDF Storage cache."
+    content: "Tenant Reports at /reports (docs/product/tenant-reports.md): 19 slugs through Phase 3 baseline — CSV/PDF, JSON cache, PDF Storage cache, payout backfill cron. Remaining: Plaid bank reports (blocked on bank_links migration), audit-log export links."
     status: completed
   - id: phase2PlaidZelle
     content: "Phase 2: Plaid Link integration for tenant business bank accounts; daily Plaid transactions sync; Zelle/ACH match-suggestion queue with one-click confirmation against open invoices; bank_links + bank_transactions + payment_match_suggestions tables."
@@ -754,10 +754,7 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 
 **Remaining**:
 
-- Compensation payout math on payroll export.
-- Historical payout backfill for pre-migration card payments (new payouts link on `payout.paid`).
-- Plaid tables + `plaidReconciliation` entitlement.
-- Phase 3: year-end / 1099 / cohort-LTV (`forecasting`).
+- Plaid tables + `plaidReconciliation` entitlement (blocked on `phase2PlaidZelle`).
 - Audit-log chain-of-custody links on export rows.
 
 **Migrations**: [`0034_report_runs.sql`](../../../supabase/migrations/0034_report_runs.sql), [`0035_reports_phase2.sql`](../../../supabase/migrations/0035_reports_phase2.sql).

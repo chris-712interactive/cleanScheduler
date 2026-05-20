@@ -2,7 +2,7 @@
 
 One-stop reporting for cleaning businesses: day-to-day operations, monthly bookkeeping close, payroll inputs, and year-end tax prep. Reports live at **`/reports`** (top-level tenant nav). Operational **payment workflows** (mark received / deposited) stay under **`/billing/payment-audits`**.
 
-**Status (2026-05):** Phases **1**, **1.5**, and **2 (baseline)** are implemented in the repo. **Phase 3** and several Phase 2 polish items remain (see [Implementation status](#implementation-status) below).
+**Status (2026-05):** Phases **1**, **1.5**, **2**, and **3 (baseline)** are implemented — **19 report slugs**. Remaining: Plaid bank reconciliation (needs `bank_links` tables), richer cohort/LTV modeling, audit-log export links (see [Implementation status](#implementation-status) below).
 
 **Migrations:** `supabase/migrations/0034_report_runs.sql`, `supabase/migrations/0035_reports_phase2.sql`
 
@@ -292,16 +292,16 @@ Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each repor
 | **Phase 1 polish** | `report_runs` cache (`reportRunCache.ts`), date presets (7d/MTD/YTD), pagination (`ReportPagination.tsx`), CSV + PDF export |
 | **Phase 1.5** | Payment reconciliation, revenue by customer/service, MRR, employee performance |
 | **Phase 2 baseline** | Sales tax, payroll export (generic + ADP/Gusto/QBO CSV), tips/commissions, crew utilization, on-time arrival |
-| **Phase 2 polish (partial)** | `stripe_payout_id` on payments + `payout.paid` backfill; payment reconciliation by payout batch; compensation rules at `/settings/compensation` |
+| **Phase 2 polish** | `stripe_payout_id` + payout backfill; compensation rules UI + payout math on payroll/tips |
+| **Phase 3 baseline** | Processing fees (all tiers), year-end revenue, 1099 prep (Pro), cohort/LTV (Pro `forecasting`) |
+| **PDF cache** | `report_exports` Storage keyed by `report_runs.id` on PDF export |
+| **Payout backfill cron** | Weekly `/api/cron/backfill-stripe-payout-links` for historical batches |
 | **RBAC** | `lib/tenant/reportPermissions.ts` — owners/admins export; employees/viewers read unlocked reports |
 
-### Remaining (Phase 2+ / 3)
+### Remaining
 
-- Compensation payout math on payroll export (rules UI at `/settings/compensation`)
-- Historical `stripe_payout_id` backfill for payouts before this release (new payouts link on `payout.paid`)
-- PDF cache in Storage + optional async queue
-- Plaid bank reconciliation report (`plaidReconciliation` entitlement)
-- Phase 3: year-end, 1099 prep, cohort/LTV (`forecasting`)
+- Plaid bank reconciliation report (`plaidReconciliation` — requires Phase 2 Plaid tables)
+- Audit-log chain-of-custody links on export rows
 - Mockup `docs/design/portal-mockups/15-tenant-reports.png` (optional)
 
 ### Key files
@@ -347,11 +347,10 @@ lib/reports/
 2. ~~Five Phase 2 report slugs live.~~
 3. ~~Provider payroll formats, rules UI.~~ Plaid — **pending**.
 
-### Phase 3 — Year-end pack
+### Phase 3 — Year-end pack (baseline ✅)
 
-1. 1099 / fee / customer concentration reports.
-2. Cohort/LTV under `forecasting`.
-3. Audit log extension + export row hyperlinks.
+1. ~~Processing fees, year-end revenue, 1099 prep, cohort/LTV reports.~~
+2. Audit log extension + export row hyperlinks — **pending**.
 
 ---
 

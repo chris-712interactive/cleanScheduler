@@ -7,7 +7,7 @@ import { assertReportExportRateLimit } from '@/lib/reports/assertReportExportRat
 import { parseReportDateRange, formatReportDateRangeLabel } from '@/lib/reports/parseReportDateRange';
 import { isReportEnabled, isReportSlug, REPORT_CATALOG_BY_SLUG } from '@/lib/reports/reportCatalog';
 import { getOrRunTenantReport } from '@/lib/reports/reportRunCache';
-import { renderReportPdf } from '@/lib/reports/renderReportPdf';
+import { getCachedOrRenderReportPdf } from '@/lib/reports/reportPdfCache';
 import { isImplementedReportSlug } from '@/lib/reports/runReport';
 import { canExportReports } from '@/lib/tenant/reportPermissions';
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   );
 
   const supabase = createTenantPortalDbClient();
-  const result = await getOrRunTenantReport(supabase, admin, {
+  const { result, runId, pdfStoragePath } = await getOrRunTenantReport(supabase, admin, {
     tenantId: membership.tenantId,
     slug: slugRaw,
     fromIso: range.fromIso,
@@ -58,15 +58,17 @@ export async function GET(request: Request) {
   }
 
   const entry = REPORT_CATALOG_BY_SLUG[slugRaw];
-  const pdf = await renderReportPdf({
+  const pdf = await getCachedOrRenderReportPdf(admin, {
+    tenantId: membership.tenantId,
+    runId,
+    pdfStoragePath,
     title: entry.title,
     dateRangeLabel: formatReportDateRangeLabel(range.fromInput, range.toInput),
-    summary: result.data.summary,
     result,
   });
 
   const filename = `${slugRaw}-${range.fromInput || 'start'}-${range.toInput || 'end'}.pdf`;
-  return new NextResponse(new Uint8Array(pdf), {
+  return new NextResponse(Buffer.from(pdf), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

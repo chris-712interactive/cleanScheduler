@@ -149,12 +149,13 @@ function collectPdfRows(result: ReportRunResult): { headers: string[]; rows: str
       };
     case 'payroll-export':
       return {
-        headers: ['Employee', 'Jobs', 'Regular hrs', 'OT hrs'],
+        headers: ['Employee', 'Jobs', 'Regular hrs', 'OT hrs', 'Variable (est.)'],
         rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
           r.employeeName,
           String(r.jobsCompleted),
           String(r.regularHours),
           String(r.overtimeHours),
+          formatUsdFromCents(r.estimatedVariablePayCents),
         ]),
       };
     case 'crew-utilization':
@@ -180,13 +181,52 @@ function collectPdfRows(result: ReportRunResult): { headers: string[]; rows: str
       };
     case 'tips-commissions':
       return {
-        headers: ['Rule', 'Type', 'Rate', 'Role', 'Active'],
+        headers: ['Team member', 'Jobs', 'Commission', 'Flat', 'Total (est.)'],
+        rows: result.data.payoutRows.slice(0, PDF_MAX_ROWS).map((r) => [
+          r.employeeName,
+          String(r.jobsCompleted),
+          formatUsdFromCents(r.commissionCents),
+          formatUsdFromCents(r.flatCents),
+          formatUsdFromCents(r.estimatedPayCents),
+        ]),
+      };
+    case 'processing-fees-deductible':
+      return {
+        headers: ['Month', 'Method', 'Payments', 'Fees'],
         rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.name,
-          r.ruleType,
-          r.rateLabel,
-          r.appliesToRole,
-          r.isActive ? 'Yes' : 'No',
+          r.periodMonth,
+          r.method,
+          String(r.paymentCount),
+          formatUsdFromCents(r.feeCents),
+        ]),
+      };
+    case 'year-end-revenue':
+      return {
+        headers: ['Customer', 'Gross', 'Fees', 'Net'],
+        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
+          r.customerName,
+          formatUsdFromCents(r.grossCents),
+          formatUsdFromCents(r.feeCents),
+          formatUsdFromCents(r.netCents),
+        ]),
+      };
+    case 'customer-1099-prep':
+      return {
+        headers: ['Customer', 'Gross', 'Threshold'],
+        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
+          r.customerName,
+          formatUsdFromCents(r.grossCents),
+          r.meetsThreshold ? 'Yes' : 'No',
+        ]),
+      };
+    case 'cohort-ltv-churn':
+      return {
+        headers: ['Cohort', 'Offset', 'Retention %', 'Revenue'],
+        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
+          r.cohortMonth,
+          String(r.monthsSinceFirst),
+          `${r.retentionPercent}%`,
+          formatUsdFromCents(r.revenueCents),
         ]),
       };
     default:

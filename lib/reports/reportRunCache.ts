@@ -25,6 +25,10 @@ const IMPLEMENTED_KINDS = new Set<string>([
   'crew-utilization',
   'on-time-arrival',
   'tips-commissions',
+  'processing-fees-deductible',
+  'year-end-revenue',
+  'customer-1099-prep',
+  'cohort-ltv-churn',
 ]);
 
 function toReportParamsJson(params: ReportRunParams): Json {
@@ -38,16 +42,22 @@ export function deserializeReportRunResult(json: unknown): ReportRunResult | nul
   return json as ReportRunResult;
 }
 
+export interface CachedReportRun {
+  id: string;
+  result: ReportRunResult;
+  pdfStoragePath: string | null;
+}
+
 export async function findCachedReportRun(
   admin: SupabaseClient<Database>,
   tenantId: string,
   slug: ReportSlug,
   params: ReportRunParams,
-): Promise<ReportRunResult | null> {
+): Promise<CachedReportRun | null> {
   const now = new Date().toISOString();
   const { data, error } = await admin
     .from('report_runs')
-    .select('result_json, status, expires_at')
+    .select('id, result_json, status, expires_at, pdf_storage_path')
     .eq('tenant_id', tenantId)
     .eq('report_slug', slug)
     .eq('status', 'ready')
@@ -59,7 +69,13 @@ export async function findCachedReportRun(
     .maybeSingle();
 
   if (error || !data?.result_json) return null;
-  return deserializeReportRunResult(data.result_json);
+  const result = deserializeReportRunResult(data.result_json);
+  if (!result) return null;
+  return {
+    id: data.id,
+    result,
+    pdfStoragePath: data.pdf_storage_path,
+  };
 }
 
 export async function saveReportRunCache(
@@ -71,20 +87,27 @@ export async function saveReportRunCache(
     result: ReportRunResult;
     createdByUserId: string | null;
   },
-): Promise<void> {
-  if (input.result.kind === 'pro-placeholder') return;
+): Promise<string | null> {
+  if (input.result.kind === 'pro-placeholder') return null;
 
   const expiresAt = reportRunExpiresAt();
-  await admin.from('report_runs').insert({
-    tenant_id: input.tenantId,
-    report_slug: input.slug,
-    params: toReportParamsJson(input.params),
-    status: 'ready',
-    result_json: input.result as unknown as Database['public']['Tables']['report_runs']['Insert']['result_json'],
-    row_count: countReportRows(input.result),
-    expires_at: expiresAt,
-    created_by_user_id: input.createdByUserId,
-  });
+  const { data, error } = await admin
+    .from('report_runs')
+    .insert({
+      tenant_id: input.tenantId,
+      report_slug: input.slug,
+      params: toReportParamsJson(input.params),
+      status: 'ready',
+      result_json: input.result as unknown as Database['public']['Tables']['report_runs']['Insert']['result_json'],
+      row_count: countReportRows(input.result),
+      expires_at: expiresAt,
+      created_by_user_id: input.createdByUserId,
+    })
+    .select('id')
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data?.id ?? null;
 }
 
 export async function getOrRunTenantReport(
@@ -99,18 +122,25 @@ export async function getOrRunTenantReport(
     toInput: string;
     userId: string | null;
   },
-): Promise<ReportRunResult> {
+): Promise<{ result: ReportRunResult; runId: string | null; pdfStoragePath: string | null }> {
   const params = buildReportRunParams(input.fromInput, input.toInput);
   const cached = await findCachedReportRun(admin, input.tenantId, input.slug, params);
-  if (cached) return cached;
+  if (cached) {
+    return {
+      result: cached.result,
+      runId: cached.id,
+      pdfStoragePath: cached.pdfStoragePath,
+    };
+  }
 
   const result = await runTenantReport(db, input.tenantId, input.slug, {
     fromIso: input.fromIso,
     toIso: input.toIso,
   });
 
+  let runId: string | null = null;
   if (result.kind !== 'pro-placeholder') {
-    await saveReportRunCache(admin, {
+    runId = await saveReportRunCache(admin, {
       tenantId: input.tenantId,
       slug: input.slug,
       params,
@@ -119,5 +149,5 @@ export async function getOrRunTenantReport(
     });
   }
 
-  return result;
+  return { result, runId, pdfStoragePath: null };
 }

@@ -15,7 +15,11 @@ export type ReportSlug =
   | 'payroll-export'
   | 'crew-utilization'
   | 'on-time-arrival'
-  | 'tips-commissions';
+  | 'tips-commissions'
+  | 'processing-fees-deductible'
+  | 'year-end-revenue'
+  | 'customer-1099-prep'
+  | 'cohort-ltv-churn';
 
 export type ReportSection = 'financial' | 'operations' | 'payroll';
 

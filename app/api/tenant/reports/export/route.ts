@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   );
 
   const supabase = createTenantPortalDbClient();
-  const result = await getOrRunTenantReport(supabase, admin, {
+  const { result } = await getOrRunTenantReport(supabase, admin, {
     tenantId: membership.tenantId,
     slug: slugRaw,
     fromIso: range.fromIso,

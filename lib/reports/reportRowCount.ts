@@ -15,6 +15,10 @@ export function isReportPaginated(result: ReportRunResult): boolean {
     case 'crew-utilization':
     case 'on-time-arrival':
     case 'tips-commissions':
+    case 'processing-fees-deductible':
+    case 'year-end-revenue':
+    case 'customer-1099-prep':
+    case 'cohort-ltv-churn':
       return true;
     default:
       return false;
@@ -34,7 +38,7 @@ export function countReportRows(result: ReportRunResult): number {
     case 'quote-pipeline':
       return result.data.byStatus.length;
     case 'payment-reconciliation':
-      return result.data.byMethod.length;
+      return result.data.byMethod.length + result.data.byPayout.length;
     case 'revenue-by-customer':
       return result.data.rows.length;
     case 'revenue-by-service':
@@ -46,7 +50,13 @@ export function countReportRows(result: ReportRunResult): number {
     case 'payroll-export':
     case 'crew-utilization':
     case 'on-time-arrival':
+      return result.data.rows.length;
     case 'tips-commissions':
+      return Math.max(result.data.payoutRows.length, result.data.ruleRows.length);
+    case 'processing-fees-deductible':
+    case 'year-end-revenue':
+    case 'customer-1099-prep':
+    case 'cohort-ltv-churn':
       return result.data.rows.length;
     default:
       return 0;

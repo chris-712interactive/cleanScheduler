@@ -146,6 +146,17 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         { key: 'jobs', header: 'Jobs completed', format: (r) => String(r.jobsCompleted) },
         { key: 'regular', header: 'Regular hours', format: (r) => String(r.regularHours) },
         { key: 'ot', header: 'Overtime hours', format: (r) => String(r.overtimeHours) },
+        {
+          key: 'commission',
+          header: 'Commission (est.)',
+          format: (r) => formatUsdFromCents(r.commissionCents),
+        },
+        { key: 'flat', header: 'Flat (est.)', format: (r) => formatUsdFromCents(r.flatCents) },
+        {
+          key: 'variable',
+          header: 'Variable pay (est.)',
+          format: (r) => formatUsdFromCents(r.estimatedVariablePayCents),
+        },
       ];
       return rowsToCsv(cols, result.data.rows);
     }
@@ -169,12 +180,66 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
       return rowsToCsv(cols, result.data.rows);
     }
     case 'tips-commissions': {
+      const payoutCols: CsvColumn<(typeof result.data.payoutRows)[0]>[] = [
+        { key: 'name', header: 'Team member', format: (r) => r.employeeName },
+        { key: 'jobs', header: 'Jobs', format: (r) => String(r.jobsCompleted) },
+        {
+          key: 'commission',
+          header: 'Commission (est.)',
+          format: (r) => formatUsdFromCents(r.commissionCents),
+        },
+        { key: 'flat', header: 'Flat (est.)', format: (r) => formatUsdFromCents(r.flatCents) },
+        {
+          key: 'tips',
+          header: 'Tip split (est.)',
+          format: (r) => formatUsdFromCents(r.tipSplitCents),
+        },
+        {
+          key: 'total',
+          header: 'Total (est.)',
+          format: (r) => formatUsdFromCents(r.estimatedPayCents),
+        },
+      ];
+      return rowsToCsv(payoutCols, result.data.payoutRows);
+    }
+    case 'processing-fees-deductible': {
       const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [
-        { key: 'name', header: 'Rule name', format: (r) => r.name },
-        { key: 'type', header: 'Type', format: (r) => r.ruleType },
-        { key: 'rate', header: 'Rate', format: (r) => r.rateLabel },
-        { key: 'role', header: 'Applies to', format: (r) => r.appliesToRole },
-        { key: 'active', header: 'Active', format: (r) => (r.isActive ? 'Yes' : 'No') },
+        { key: 'month', header: 'Month', format: (r) => r.periodMonth },
+        { key: 'method', header: 'Method', format: (r) => r.method },
+        { key: 'count', header: 'Payments', format: (r) => String(r.paymentCount) },
+        { key: 'gross', header: 'Gross', format: (r) => formatUsdFromCents(r.grossCents) },
+        { key: 'fee', header: 'Fees', format: (r) => formatUsdFromCents(r.feeCents) },
+        { key: 'net', header: 'Net', format: (r) => formatUsdFromCents(r.netCents) },
+      ];
+      return rowsToCsv(cols, result.data.rows);
+    }
+    case 'year-end-revenue': {
+      const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [
+        { key: 'customer', header: 'Customer', format: (r) => r.customerName },
+        { key: 'payments', header: 'Payments', format: (r) => String(r.paymentCount) },
+        { key: 'gross', header: 'Gross', format: (r) => formatUsdFromCents(r.grossCents) },
+        { key: 'fee', header: 'Fees', format: (r) => formatUsdFromCents(r.feeCents) },
+        { key: 'net', header: 'Net', format: (r) => formatUsdFromCents(r.netCents) },
+      ];
+      return rowsToCsv(cols, result.data.rows);
+    }
+    case 'customer-1099-prep': {
+      const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [
+        { key: 'customer', header: 'Customer', format: (r) => r.customerName },
+        { key: 'gross', header: 'Gross collected', format: (r) => formatUsdFromCents(r.grossCents) },
+        { key: 'payments', header: 'Payments', format: (r) => String(r.paymentCount) },
+        { key: 'flag', header: 'Meets $600 threshold', format: (r) => (r.meetsThreshold ? 'Yes' : 'No') },
+      ];
+      return rowsToCsv(cols, result.data.rows);
+    }
+    case 'cohort-ltv-churn': {
+      const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [
+        { key: 'cohort', header: 'Cohort month', format: (r) => r.cohortMonth },
+        { key: 'size', header: 'Cohort size', format: (r) => String(r.customersInCohort) },
+        { key: 'offset', header: 'Months since first', format: (r) => String(r.monthsSinceFirst) },
+        { key: 'active', header: 'Active customers', format: (r) => String(r.activeCustomers) },
+        { key: 'ret', header: 'Retention %', format: (r) => String(r.retentionPercent) },
+        { key: 'rev', header: 'Revenue', format: (r) => formatUsdFromCents(r.revenueCents) },
       ];
       return rowsToCsv(cols, result.data.rows);
     }

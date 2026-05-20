@@ -46,6 +46,22 @@ export function defaultReportRange(slug: string): { from: string; to: string } {
     return { from: formatDateInput(from), to };
   }
 
+  if (
+    slug === 'year-end-revenue' ||
+    slug === 'customer-1099-prep' ||
+    slug === 'processing-fees-deductible'
+  ) {
+    const from = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+    return { from: formatDateInput(from), to };
+  }
+
+  if (slug === 'cohort-ltv-churn') {
+    const from = new Date(now);
+    from.setUTCMonth(from.getUTCMonth() - 11);
+    from.setUTCDate(1);
+    return { from: formatDateInput(from), to };
+  }
+
   const from = new Date(now);
   from.setUTCDate(from.getUTCDate() - 29);
   return { from: formatDateInput(from), to };
