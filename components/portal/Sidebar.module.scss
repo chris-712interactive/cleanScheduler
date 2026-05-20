@@ -8,9 +8,11 @@
     top: 64px;
 
     display: flex;
+    flex-shrink: 0;
     flex-direction: column;
 
     width: 240px;
+    min-width: 240px;
     max-height: calc(100dvh - 64px);
     padding: var(--space-4) var(--space-3);
     overflow-y: auto;
@@ -21,5 +23,6 @@
 
   @include mq.up(xl) {
     width: 264px;
+    min-width: 264px;
   }
 }

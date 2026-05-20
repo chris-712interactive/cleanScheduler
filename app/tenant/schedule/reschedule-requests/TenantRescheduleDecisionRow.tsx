@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Calendar, Check, X } from 'lucide-react';
 import { useActionState, useEffect, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
@@ -17,14 +18,13 @@ export function TenantRescheduleDecisionRow({
   tenantSlug,
   requestId,
   visitId,
-  applyWhenLabel,
   canApplyTime,
   initialConflicts,
 }: {
   tenantSlug: string;
   requestId: string;
   visitId: string | null;
-  applyWhenLabel: string | null;
+  applyWhenLabel?: string | null;
   canApplyTime: boolean;
   initialConflicts: AssigneeConflictInfo[];
 }) {
@@ -40,77 +40,80 @@ export function TenantRescheduleDecisionRow({
     setOverlapConfirm(false);
   }, [state.error, state.success, state.needsOverlapConfirm]);
 
+  const showMeta = Boolean(state.error || state.success || hasConflicts);
+
   return (
-    <form action={formAction} className={styles.decisionForm}>
+    <form action={formAction} className={styles.actionsColumn}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="request_id" value={requestId} />
 
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Request updated.
-        </p>
-      ) : null}
-
-      {canApplyTime && applyWhenLabel ? (
-        <p className={styles.applyWhen}>
-          Approving will move this visit to <strong>{applyWhenLabel}</strong>.
-        </p>
-      ) : (
-        <p className={styles.hint}>
-          No preferred time on this request — use Schedule for another time to set a time before
-          approving.
-        </p>
-      )}
-
-      <ScheduleOverlapConfirm
-        conflicts={conflicts}
-        showConfirmField={hasConflicts && canApplyTime}
-        confirmChecked={overlapConfirm}
-        onConfirmChange={setOverlapConfirm}
-      />
-
-      <label className={styles.srOnly} htmlFor={`note_${requestId}`}>
-        Optional reply to customer
-      </label>
-      <textarea
-        id={`note_${requestId}`}
-        name="tenant_response_note"
-        className={styles.noteInput}
-        rows={2}
-        placeholder="Optional note (shown internally only for now)"
-        disabled={pending}
-      />
-
-      <div className={styles.decisionRow}>
+      <div className={styles.actionsRow}>
         <button
           type="submit"
           name="resolution"
           value="completed"
-          className={styles.primaryBtn}
+          className={styles.approveBtn}
           disabled={pending || !canApplyTime || approveBlocked}
         >
-          {pending ? 'Saving…' : 'Approve & apply customer’s time'}
+          <Check size={16} strokeWidth={2.5} aria-hidden />
+          {pending ? 'Saving…' : 'Approve'}
         </button>
         <button
           type="submit"
           name="resolution"
           value="declined"
-          className={styles.secondaryBtn}
+          className={styles.declineBtn}
           disabled={pending}
         >
+          <X size={16} strokeWidth={2.5} aria-hidden />
           Decline
         </button>
         {visitId ? (
-          <Link href={`/schedule/${visitId}`} className={styles.secondaryBtn}>
+          <Link href={`/schedule/${visitId}`} className={styles.scheduleBtn}>
+            <Calendar size={16} aria-hidden />
             Schedule for another time
           </Link>
         ) : null}
       </div>
+
+      {showMeta ? (
+        <div className={styles.actionsMeta}>
+          {state.error ? (
+            <p className={styles.formError} role="alert">
+              {state.error}
+            </p>
+          ) : null}
+          {state.success ? (
+            <p className={styles.formSuccess} role="status">
+              Request updated.
+            </p>
+          ) : null}
+          {hasConflicts ? (
+            <div className={styles.overlapCompact}>
+              <ScheduleOverlapConfirm
+                conflicts={conflicts}
+                showConfirmField={hasConflicts && canApplyTime}
+                confirmChecked={overlapConfirm}
+                onConfirmChange={setOverlapConfirm}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <label className={styles.srOnly} htmlFor={`note_${requestId}`}>
+        Optional staff note
+      </label>
+      <textarea
+        id={`note_${requestId}`}
+        name="tenant_response_note"
+        className={styles.srOnly}
+        tabIndex={-1}
+        rows={1}
+        defaultValue=""
+        disabled={pending}
+        aria-hidden
+      />
     </form>
   );
 }

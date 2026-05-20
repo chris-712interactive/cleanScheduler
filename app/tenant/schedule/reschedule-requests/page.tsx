@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
-import { Stack } from '@/components/layout/Stack';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { getPortalContext } from '@/lib/portal';
@@ -20,12 +18,26 @@ import {
 import {
   buildRescheduleHistoryTimes,
   formatRescheduleResolverLabel,
-  formatVisitTimeRange,
 } from '@/lib/schedule/rescheduleRequestTimeLabels';
-import { TenantRescheduleDecisionRow } from './TenantRescheduleDecisionRow';
+import { RescheduleRequestCard } from './RescheduleRequestCard';
 import styles from './rescheduleRequests.module.scss';
 
 export const dynamic = 'force-dynamic';
+
+type RescheduleTab = 'requests' | 'history';
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseTab(raw: string | undefined): RescheduleTab {
+  return raw === 'history' ? 'history' : 'requests';
+}
 
 type ReqRow = {
   id: string;
@@ -47,6 +59,8 @@ type ReqRow = {
       first_name: string | null;
       last_name: string | null;
       full_name: string | null;
+      phone: string | null;
+      email: string | null;
     } | null;
   } | null;
   tenant_scheduled_visits: {
@@ -62,6 +76,14 @@ function customerLabel(row: ReqRow): string {
   if (!ident || !customerHasAnyNameParts(ident)) return 'Customer';
   const n = formatCustomerDisplayName(ident);
   return n === 'Unnamed' ? 'Customer' : n;
+}
+
+function customerContact(row: ReqRow): { phone: string | null; email: string | null } {
+  const ident = row.customers?.customer_identities;
+  return {
+    phone: ident?.phone ?? null,
+    email: ident?.email ?? null,
+  };
 }
 
 type PendingPreview = {
@@ -124,7 +146,9 @@ async function buildPendingPreviews(
   return map;
 }
 
-export default async function TenantRescheduleRequestsPage() {
+export default async function TenantRescheduleRequestsPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const tab = parseTab(firstParam(sp.tab));
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/schedule/reschedule-requests');
   const slug = membership.tenantSlug;
@@ -144,6 +168,7 @@ export default async function TenantRescheduleRequestsPage() {
           timeStyle: 'short',
         })
       : '—';
+
   const { data, error } = await supabase
     .from('visit_reschedule_requests')
     .select(
@@ -166,7 +191,9 @@ export default async function TenantRescheduleRequestsPage() {
         customer_identities (
           first_name,
           last_name,
-          full_name
+          full_name,
+          phone,
+          email
         )
       ),
       tenant_scheduled_visits (
@@ -187,199 +214,182 @@ export default async function TenantRescheduleRequestsPage() {
   const history = rows.filter((r) => r.status !== 'pending');
 
   const admin = createAdminClient();
-  const pendingPreviews = await buildPendingPreviews(
-    admin,
-    pending,
-    membership.tenantId,
-    tenantTimezone,
-    fmtWhen,
-  );
 
-  const resolverIds = [
-    ...new Set(history.map((r) => r.resolved_by_user_id).filter((id): id is string => Boolean(id))),
-  ];
+  const pendingPreviews =
+    tab === 'requests'
+      ? await buildPendingPreviews(admin, pending, membership.tenantId, tenantTimezone, fmtWhen)
+      : new Map<string, PendingPreview>();
+
   const resolverNames = new Map<string, string>();
-  if (resolverIds.length > 0) {
-    const { data: profiles } = await admin
-      .from('user_profiles')
-      .select('user_id, display_name')
-      .in('user_id', resolverIds);
-    for (const p of profiles ?? []) {
-      const name = p.display_name?.trim();
-      if (name) resolverNames.set(p.user_id, name);
+  if (tab === 'history' && history.length > 0) {
+    const resolverIds = [
+      ...new Set(
+        history.map((r) => r.resolved_by_user_id).filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (resolverIds.length > 0) {
+      const { data: profiles } = await admin
+        .from('user_profiles')
+        .select('user_id, display_name')
+        .in('user_id', resolverIds);
+      for (const p of profiles ?? []) {
+        const name = p.display_name?.trim();
+        if (name) resolverNames.set(p.user_id, name);
+      }
     }
   }
+
+  const tabLinks: { key: RescheduleTab; label: string; href: string }[] = [
+    {
+      key: 'requests',
+      label: pending.length ? `Requests (${pending.length})` : 'Requests',
+      href: '/schedule/reschedule-requests',
+    },
+    {
+      key: 'history',
+      label: history.length ? `History (${history.length})` : 'History',
+      href: '/schedule/reschedule-requests?tab=history',
+    },
+  ];
 
   return (
     <>
       <PageHeader
         title="Reschedule requests"
-        description="Review customer preferred times, resolve crew conflicts, then approve to update the visit automatically."
+        titleHint="Review and respond to customer reschedule requests."
+        description="Review and respond to customer reschedule requests."
       />
 
-      <p className={styles.pageHint}>
-        Approving applies the customer&apos;s preferred window to the visit. If assigned crew is
-        already booked, you&apos;ll see a warning and must confirm before double-booking. To set a
-        different time, use <strong>Schedule for another time</strong> on the request.
-      </p>
+      <nav className={styles.tabs} aria-label="Reschedule request views">
+        {tabLinks.map((t) => (
+          <Link
+            key={t.key}
+            href={t.href}
+            className={styles.tab}
+            data-active={tab === t.key || undefined}
+            aria-current={tab === t.key ? 'page' : undefined}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
 
       {error ? (
-        <Card title="Could not load requests">
+        <div className={styles.errorPanel}>
           <p className={styles.muted}>{error.message}</p>
-        </Card>
+        </div>
+      ) : tab === 'requests' ? (
+        <section aria-labelledby="pending-reschedule-heading">
+          <h2 id="pending-reschedule-heading" className={styles.srOnly}>
+            Pending requests
+          </h2>
+          {!pending.length ? (
+            <EmptyState
+              title="No open requests"
+              description="When a customer asks to reschedule, their request will appear here."
+            />
+          ) : (
+            <ul className={styles.list}>
+              {pending.map((r) => {
+                const v = r.tenant_scheduled_visits;
+                const preview = pendingPreviews.get(r.id);
+                const contact = customerContact(r);
+                const originalStarts = r.original_starts_at ?? v?.starts_at ?? null;
+                const originalEnds = r.original_ends_at ?? v?.ends_at ?? null;
+
+                return (
+                  <li key={r.id}>
+                    <RescheduleRequestCard
+                      tenantSlug={slug}
+                      requestId={r.id}
+                      visitId={v?.id ?? null}
+                      customerName={customerLabel(r)}
+                      phone={contact.phone}
+                      email={contact.email}
+                      originalStartsAt={originalStarts}
+                      originalEndsAt={originalEnds}
+                      preferredStartsAt={r.preferred_starts_at}
+                      preferredEndsAt={r.preferred_ends_at}
+                      applyWhenLabel={preview?.applyWhenLabel ?? null}
+                      canApplyTime={preview?.canApplyTime ?? false}
+                      conflicts={preview?.conflicts ?? []}
+                      tenantTimezone={tenantTimezone}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       ) : (
-        <>
-          <section>
-            <h2 className={styles.sectionTitle}>Pending</h2>
-            {!pending.length ? (
-              <EmptyState title="No open requests" description="Nothing waiting for staff action." />
-            ) : (
-              <Stack gap={3}>
-                {pending.map((r) => {
-                  const v = r.tenant_scheduled_visits;
-                  const preview = pendingPreviews.get(r.id);
-                  return (
-                    <Card key={r.id} title={customerLabel(r)} description={fmtWhen(r.created_at)}>
-                      <div className={styles.reqMeta}>
-                        <StatusPill tone="warning">{r.status}</StatusPill>
-                        {v ? (
-                          <>
-                            {' '}
-                            · Visit: <strong>{v.title || 'Cleaning visit'}</strong>
-                            <br />
-                            <span className={styles.reqLabel}>Originally scheduled:</span>{' '}
-                            {formatVisitTimeRange(
-                              r.original_starts_at ?? v.starts_at,
-                              r.original_ends_at ?? v.ends_at,
-                              tenantTimezone,
-                            ) ?? fmtWhen(v.starts_at)}
-                          </>
-                        ) : (
-                          <>
-                            {' '}
-                            · Visit ID:{' '}
-                            <code>{r.visit_id.slice(0, 8)}…</code>
-                          </>
-                        )}
-                      </div>
+        <section aria-labelledby="reschedule-history-heading">
+          <h2 id="reschedule-history-heading" className={styles.srOnly}>
+            Request history
+          </h2>
+          {!history.length ? (
+            <EmptyState
+              title="No history yet"
+              description="Resolved and declined reschedule requests will appear here."
+            />
+          ) : (
+            <ul className={styles.historyList}>
+              {history.map((r) => {
+                const times = buildRescheduleHistoryTimes(r, tenantTimezone);
+                const resolverLabel = formatRescheduleResolverLabel(
+                  r.status,
+                  r.resolved_by_user_id ? resolverNames.get(r.resolved_by_user_id) : null,
+                );
 
-                      {(r.customer_note?.trim() || r.preferred_starts_at || r.preferred_ends_at) && (
-                        <div className={styles.reqBlock}>
-                          {r.customer_note?.trim() ? (
-                            <>
-                              <span className={styles.reqLabel}>Customer message:</span>
-                              {r.customer_note.trim()}
-                              <br />
-                            </>
-                          ) : null}
-                          {r.preferred_starts_at ? (
-                            <>
-                              <span className={styles.reqLabel}>Preferred start:</span>
-                              {fmtWhen(r.preferred_starts_at)}
-                              <br />
-                            </>
-                          ) : null}
-                          {r.preferred_ends_at ? (
-                            <>
-                              <span className={styles.reqLabel}>Preferred end:</span>
-                              {fmtWhen(r.preferred_ends_at)}
-                            </>
-                          ) : null}
-                        </div>
-                      )}
-
-                      {!v ? (
-                        <span className={styles.muted}>Visit missing or deleted.</span>
-                      ) : null}
-
-                      <TenantRescheduleDecisionRow
-                        tenantSlug={slug}
-                        requestId={r.id}
-                        visitId={v?.id ?? null}
-                        applyWhenLabel={preview?.applyWhenLabel ?? null}
-                        canApplyTime={preview?.canApplyTime ?? false}
-                        initialConflicts={preview?.conflicts ?? []}
-                      />
-                    </Card>
-                  );
-                })}
-              </Stack>
-            )}
-          </section>
-
-          <section>
-            <h2 className={styles.sectionTitle}>Recent history</h2>
-            {!history.length ? (
-              <p className={styles.muted}>No completed or declined requests yet.</p>
-            ) : (
-              <Stack gap={2}>
-                {history.map((r) => {
-                  const times = buildRescheduleHistoryTimes(r, tenantTimezone);
-                  const resolverLabel = formatRescheduleResolverLabel(
-                    r.status,
-                    r.resolved_by_user_id ? resolverNames.get(r.resolved_by_user_id) : null,
-                  );
-                  const hasTimeSummary =
-                    times.fromLabel ||
-                    times.requestedLabel ||
-                    times.toLabel ||
-                    times.outcomeNote ||
-                    times.missingOriginalNote;
-
-                  return (
-                    <Card key={`${r.id}-h`} title={customerLabel(r)} description={fmtWhen(r.created_at)}>
-                      <div className={styles.reqMeta}>
+                return (
+                  <li key={`${r.id}-h`}>
+                    <article className={styles.historyCard}>
+                      <div className={styles.historyHeader}>
+                        <p className={styles.historyName}>{customerLabel(r)}</p>
                         <StatusPill tone={r.status === 'completed' ? 'success' : 'neutral'}>
                           {r.status}
                         </StatusPill>
+                      </div>
+                      <p className={styles.historyMeta}>
+                        Submitted {fmtWhen(r.created_at)}
                         {r.resolved_at ? <> · Resolved {fmtWhen(r.resolved_at)}</> : null}
                         {resolverLabel ? <> · {resolverLabel}</> : null}
+                      </p>
+                      <div className={styles.historyTimes}>
+                        {times.fromLabel ? (
+                          <p className={styles.historyTimeRow}>
+                            <span className={styles.reqLabel}>Originally scheduled:</span>
+                            {times.fromLabel}
+                          </p>
+                        ) : null}
+                        {times.requestedLabel ? (
+                          <p className={styles.historyTimeRow}>
+                            <span className={styles.reqLabel}>Customer requested:</span>
+                            {times.requestedLabel}
+                          </p>
+                        ) : null}
+                        {times.toLabel ? (
+                          <p className={styles.historyTimeRow}>
+                            <span className={styles.reqLabel}>Rescheduled to:</span>
+                            {times.toLabel}
+                          </p>
+                        ) : null}
+                        {times.outcomeNote ? (
+                          <p className={styles.historyOutcome}>{times.outcomeNote}</p>
+                        ) : null}
                       </div>
-
-                      {hasTimeSummary ? (
-                        <div className={styles.historyTimes}>
-                          {times.fromLabel ? (
-                            <p className={styles.historyTimeRow}>
-                              <span className={styles.reqLabel}>Originally scheduled:</span>
-                              {times.fromLabel}
-                            </p>
-                          ) : null}
-                          {times.missingOriginalNote ? (
-                            <p className={styles.historyMissing}>{times.missingOriginalNote}</p>
-                          ) : null}
-                          {times.requestedLabel ? (
-                            <p className={styles.historyTimeRow}>
-                              <span className={styles.reqLabel}>Customer requested:</span>
-                              {times.requestedLabel}
-                            </p>
-                          ) : null}
-                          {times.toLabel ? (
-                            <p className={styles.historyTimeRow}>
-                              <span className={styles.reqLabel}>Rescheduled to:</span>
-                              {times.toLabel}
-                            </p>
-                          ) : null}
-                          {times.outcomeNote ? (
-                            <p className={styles.historyOutcome}>{times.outcomeNote}</p>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <p className={styles.muted}>No time details were recorded for this request.</p>
-                      )}
-
                       {r.tenant_response_note?.trim() ? (
-                        <p className={styles.reqBlock}>
+                        <p className={styles.historyMeta}>
                           <span className={styles.reqLabel}>Staff note:</span>
                           {r.tenant_response_note.trim()}
                         </p>
                       ) : null}
-                    </Card>
-                  );
-                })}
-              </Stack>
-            )}
-          </section>
-        </>
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       )}
     </>
   );

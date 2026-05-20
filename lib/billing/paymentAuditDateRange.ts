@@ -29,14 +29,18 @@ export function buildPaymentAuditSearchParams(params: {
   filter?: string;
   from?: string;
   to?: string;
+  page?: number;
 }): string {
   const q = new URLSearchParams();
   if (params.filter && params.filter !== 'all') q.set('filter', params.filter);
   if (params.from) q.set('from', params.from);
   if (params.to) q.set('to', params.to);
+  if (params.page && params.page > 1) q.set('page', String(params.page));
   const s = q.toString();
   return s ? `?${s}` : '';
 }
+
+export const PAYMENT_AUDIT_PAGE_SIZE = 10;
 
 export function formatPaymentAuditDateRangeLabel(fromInput: string, toInput: string): string | null {
   if (!fromInput && !toInput) return null;

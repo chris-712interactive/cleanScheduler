@@ -1,18 +1,18 @@
 'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { ArrowDown, ArrowUpDown } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { formatInvoiceReference } from '@/lib/billing/formatInvoiceReference';
 import {
-  manualPaymentAuditStage,
-  manualPaymentMethodLabel,
-} from '@/lib/billing/manualPaymentAudit';
+  formatPaymentAuditPosted,
+  paymentAuditStageLabel,
+  paymentAuditStageTone,
+} from '@/lib/billing/paymentAuditDisplay';
+import { manualPaymentAuditStage } from '@/lib/billing/manualPaymentAudit';
 import { formatUsdFromCents } from '@/lib/format/money';
-import {
-  markManualPaymentDeposited,
-  markManualPaymentReceived,
-} from './actions';
-import styles from '../billing.module.scss';
+import { PaymentAuditMethodIcon } from './PaymentAuditMethodIcon';
+import { PaymentAuditRowActions } from './PaymentAuditRowActions';
+import styles from './paymentAudits.module.scss';
 
 export type PaymentAuditRow = {
   id: string;
@@ -31,128 +31,98 @@ export type PaymentAuditRow = {
   } | null;
 };
 
-function formatAuditWhen(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function formatPostedDate(iso: string): { date: string; time: string } {
-  const d = new Date(iso);
-  return {
-    date: d.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    time: d.toLocaleTimeString(undefined, {
-      hour: 'numeric',
-      minute: '2-digit',
-    }),
-  };
-}
-
 export function PaymentAuditTable({
   tenantSlug,
   rows,
-  staffNames,
 }: {
   tenantSlug: string;
   rows: PaymentAuditRow[];
-  staffNames: Map<string, string>;
 }) {
   return (
     <div className={styles.tableWrap}>
-      <table className={styles.ledgerTable}>
+      <table className={styles.auditTable}>
+        <colgroup>
+          <col className={styles.colMethod} />
+          <col className={styles.colPosted} />
+          <col className={styles.colCustomer} />
+          <col className={styles.colInvoice} />
+          <col className={styles.colAmount} />
+          <col className={styles.colStage} />
+          <col className={styles.colActions} />
+        </colgroup>
         <thead>
           <tr>
-            <th scope="col">Recorded</th>
-            <th scope="col">Customer</th>
-            <th scope="col">Invoice</th>
-            <th scope="col">Method</th>
-            <th scope="col" className={styles.amountCol}>
-              Amount
+            <th scope="col" className={styles.methodCol}>
+              <span className={styles.methodColLabel}>Type</span>
             </th>
-            <th scope="col">Received</th>
-            <th scope="col">Deposited</th>
-            <th scope="col">Note</th>
+            <th scope="col">
+              <span className={styles.thInner}>
+                Posted
+                <ArrowDown size={14} className={styles.thSortActive} aria-hidden />
+              </span>
+            </th>
+            <th scope="col">
+              <span className={styles.thInner}>
+                Customer
+                <ArrowUpDown size={14} className={styles.thSortMuted} aria-hidden />
+              </span>
+            </th>
+            <th scope="col">
+              <span className={styles.thInner}>
+                Invoice
+                <ArrowUpDown size={14} className={styles.thSortMuted} aria-hidden />
+              </span>
+            </th>
+            <th scope="col">
+              <span className={styles.thInner}>
+                Amount
+                <ArrowUpDown size={14} className={styles.thSortMuted} aria-hidden />
+              </span>
+            </th>
+            <th scope="col">
+              <span className={styles.thInner}>
+                Stage
+                <ArrowUpDown size={14} className={styles.thSortMuted} aria-hidden />
+              </span>
+            </th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((p) => {
             const inv = p.tenant_invoices;
-            const posted = formatPostedDate(p.recorded_at);
             const stage = manualPaymentAuditStage(p);
-            const note = p.notes?.trim() ?? '';
+            const invoiceHref = inv ? `/billing/invoices/${inv.id}` : null;
 
             return (
-              <tr key={p.id} data-audit-stage={stage}>
-                <td className={styles.dateCell}>
-                  <span className={styles.datePrimary}>{posted.date}</span>
-                  <span className={styles.dateSecondary}>{posted.time}</span>
+              <tr key={p.id}>
+                <td className={styles.methodCol}>
+                  <PaymentAuditMethodIcon method={p.method} />
                 </td>
+                <td className={styles.postedCell}>{formatPaymentAuditPosted(p.recorded_at)}</td>
                 <td className={styles.customerCell}>{inv?.customerLabel ?? '—'}</td>
                 <td>
                   {inv ? (
-                    <Link href={`/billing/invoices/${inv.id}`} className={styles.rowLink}>
-                      {inv.title || 'Invoice'}
-                    </Link>
+                    <a href={invoiceHref!} className={styles.invoiceLink}>
+                      {formatInvoiceReference(inv.id, inv.title)}
+                    </a>
                   ) : (
-                    <span className={styles.muted}>—</span>
+                    '—'
                   )}
                 </td>
-                <td className={styles.methodCell}>{manualPaymentMethodLabel(p.method)}</td>
-                <td className={styles.amountCol}>{formatUsdFromCents(p.amount_cents)}</td>
-                <td className={styles.auditCell}>
-                  {p.received_at ? (
-                    <div className={styles.auditDone}>
-                      <StatusPill tone="success">Received</StatusPill>
-                      <span className={styles.auditMeta}>
-                        {formatAuditWhen(p.received_at)}
-                        {p.received_by_user_id && staffNames.get(p.received_by_user_id)
-                          ? ` · ${staffNames.get(p.received_by_user_id)}`
-                          : null}
-                      </span>
-                    </div>
-                  ) : (
-                    <form action={markManualPaymentReceived} className={styles.auditForm}>
-                      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                      <input type="hidden" name="payment_id" value={p.id} />
-                      <Button type="submit" variant="secondary" size="sm">
-                        Mark received
-                      </Button>
-                    </form>
-                  )}
+                <td className={styles.amountCell}>{formatUsdFromCents(p.amount_cents)}</td>
+                <td>
+                  <StatusPill tone={paymentAuditStageTone(stage)}>
+                    {paymentAuditStageLabel(stage)}
+                  </StatusPill>
                 </td>
-                <td className={styles.auditCell}>
-                  {p.deposited_at ? (
-                    <div className={styles.auditDone}>
-                      <StatusPill tone="brand">Deposited</StatusPill>
-                      <span className={styles.auditMeta}>
-                        {formatAuditWhen(p.deposited_at)}
-                        {p.deposited_by_user_id && staffNames.get(p.deposited_by_user_id)
-                          ? ` · ${staffNames.get(p.deposited_by_user_id)}`
-                          : null}
-                      </span>
-                    </div>
-                  ) : p.received_at ? (
-                    <form action={markManualPaymentDeposited} className={styles.auditForm}>
-                      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                      <input type="hidden" name="payment_id" value={p.id} />
-                      <Button type="submit" variant="primary" size="sm">
-                        Mark deposited
-                      </Button>
-                    </form>
-                  ) : (
-                    <span className={styles.muted}>—</span>
-                  )}
-                </td>
-                <td className={styles.noteCell} title={note || undefined}>
-                  {note || <span className={styles.muted}>—</span>}
+                <td className={styles.actionsCell}>
+                  <PaymentAuditRowActions
+                    tenantSlug={tenantSlug}
+                    paymentId={p.id}
+                    stage={stage}
+                    invoiceHref={invoiceHref}
+                  />
                 </td>
               </tr>
             );

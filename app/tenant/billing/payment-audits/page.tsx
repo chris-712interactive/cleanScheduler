@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
@@ -17,10 +16,12 @@ import {
   buildPaymentAuditSearchParams,
   formatPaymentAuditDateRangeLabel,
   parsePaymentAuditDateRange,
+  PAYMENT_AUDIT_PAGE_SIZE,
 } from '@/lib/billing/paymentAuditDateRange';
 import { PaymentAuditDateRangeForm } from './PaymentAuditDateRangeForm';
+import { PaymentAuditPagination } from './PaymentAuditPagination';
 import { PaymentAuditTable, type PaymentAuditRow } from './PaymentAuditTable';
-import styles from '../billing.module.scss';
+import styles from './paymentAudits.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,11 +44,10 @@ function parseFilter(raw: string | undefined): FilterKey {
   return 'all';
 }
 
-const STAGE_SORT: Record<ReturnType<typeof manualPaymentAuditStage>, number> = {
-  awaiting_receipt: 0,
-  awaiting_deposit: 1,
-  complete: 2,
-};
+function parsePage(raw: string | undefined): number {
+  const n = Number.parseInt(String(raw ?? ''), 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
 
 type RawRow = {
   id: string;
@@ -108,6 +108,7 @@ export default async function TenantPaymentAuditsPage({
 }) {
   const sp = await searchParams;
   const filter = parseFilter(firstParam(sp.filter));
+  const page = parsePage(firstParam(sp.page));
   const dateRange = parsePaymentAuditDateRange(firstParam(sp.from), firstParam(sp.to));
   const rangeLabel = formatPaymentAuditDateRangeLabel(
     dateRange.fromInput,
@@ -160,55 +161,30 @@ export default async function TenantPaymentAuditsPage({
     .limit(500);
 
   const rawRows = (payments ?? []) as RawRow[];
-  const sorted = [...rawRows].sort((a, b) => {
-    const stageDiff =
-      STAGE_SORT[manualPaymentAuditStage(a)] - STAGE_SORT[manualPaymentAuditStage(b)];
-    if (stageDiff !== 0) return stageDiff;
-    return new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime();
-  });
-
-  const rows = sorted
+  const filteredRows = rawRows
     .filter((r) => filter === 'all' || manualPaymentAuditStage(r) === filter)
-    .map(toAuditRow);
+    .sort(
+      (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime(),
+    );
 
-  const awaitingReceipt = rawRows.filter((r) => !r.received_at).length;
-  const awaitingDeposit = rawRows.filter((r) => r.received_at && !r.deposited_at).length;
-
-  const staffIds = [
-    ...new Set(
-      rawRows
-        .flatMap((r) => [r.received_by_user_id, r.deposited_by_user_id])
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
-  const staffNames = new Map<string, string>();
-  if (staffIds.length > 0) {
-    const admin = createAdminClient();
-    const { data: profiles } = await admin
-      .from('user_profiles')
-      .select('user_id, display_name')
-      .in('user_id', staffIds);
-    for (const p of profiles ?? []) {
-      const name = p.display_name?.trim();
-      if (name) staffNames.set(p.user_id, name);
-    }
-  }
+  const totalCount = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAYMENT_AUDIT_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const start = (currentPage - 1) * PAYMENT_AUDIT_PAGE_SIZE;
+  const pageRows = filteredRows.slice(start, start + PAYMENT_AUDIT_PAGE_SIZE).map(toAuditRow);
 
   const queryBase = {
     from: dateRange.fromInput || undefined,
     to: dateRange.toInput || undefined,
+    filter: filter === 'all' ? undefined : filter,
   };
 
-  const filterLinks: { key: FilterKey; label: string; count?: number }[] = [
+  const filterLinks: { key: FilterKey; label: string }[] = [
     { key: 'all', label: 'All' },
-    { key: 'awaiting_receipt', label: 'Awaiting receipt', count: awaitingReceipt },
-    { key: 'awaiting_deposit', label: 'Awaiting deposit', count: awaitingDeposit },
+    { key: 'awaiting_receipt', label: 'Awaiting receipt' },
+    { key: 'awaiting_deposit', label: 'Awaiting deposit' },
     { key: 'complete', label: 'Complete' },
   ];
-
-  const ledgerDescription = rangeLabel
-    ? `${rows.length} shown · recorded ${rangeLabel}`
-    : `${rows.length} shown · checks, cash, Zelle, ACH, and other non-Stripe entries`;
 
   return (
     <>
@@ -225,7 +201,7 @@ export default async function TenantPaymentAuditsPage({
         to={dateRange.toInput}
       />
 
-      <nav className={styles.auditFilters} aria-label="Audit filters">
+      <nav className={styles.filters} aria-label="Audit status">
         {filterLinks.map((f) => (
           <Link
             key={f.key}
@@ -233,22 +209,19 @@ export default async function TenantPaymentAuditsPage({
               ...queryBase,
               filter: f.key === 'all' ? undefined : f.key,
             })}`}
-            className={styles.auditFilterLink}
+            className={styles.filterTab}
             data-active={filter === f.key || undefined}
           >
             {f.label}
-            {f.count !== undefined && f.count > 0 ? (
-              <span className={styles.auditFilterCount}>{f.count}</span>
-            ) : null}
           </Link>
         ))}
       </nav>
 
       {error ? (
-        <Card title="Could not load payment audits">
+        <div className={styles.errorPanel}>
           <p className={styles.muted}>{error.message}</p>
-        </Card>
-      ) : !rows.length ? (
+        </div>
+      ) : !pageRows.length ? (
         <EmptyState
           title={
             rangeLabel
@@ -265,19 +238,23 @@ export default async function TenantPaymentAuditsPage({
                 : 'Try another filter or record a manual payment on an invoice.'
           }
           action={
-            <Link href="/billing/invoices" className={styles.backLink}>
+            <Link href="/billing/invoices" className={styles.clearDates}>
               View invoices
             </Link>
           }
         />
       ) : (
-        <Card title="Offline payment ledger" description={ledgerDescription} padded={false}>
-          <PaymentAuditTable
-            tenantSlug={membership.tenantSlug}
-            rows={rows}
-            staffNames={staffNames}
+        <div className={styles.tablePanel}>
+          <PaymentAuditTable tenantSlug={membership.tenantSlug} rows={pageRows} />
+          <PaymentAuditPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            fromIndex={start + 1}
+            toIndex={start + pageRows.length}
+            queryBase={queryBase}
           />
-        </Card>
+        </div>
       )}
     </>
   );

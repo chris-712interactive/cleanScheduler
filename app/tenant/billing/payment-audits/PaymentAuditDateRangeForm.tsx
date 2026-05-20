@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { buildPaymentAuditSearchParams } from '@/lib/billing/paymentAuditDateRange';
-import styles from '../billing.module.scss';
+import styles from './paymentAudits.module.scss';
 
 export function PaymentAuditDateRangeForm({
   filter,
@@ -20,29 +20,24 @@ export function PaymentAuditDateRangeForm({
   });
 
   return (
-    <form method="get" className={styles.dateRangeForm}>
+    <form method="get" className={styles.toolbar}>
       {filter !== 'all' ? <input type="hidden" name="filter" value={filter} /> : null}
-      <div className={styles.dateRangeFields}>
-        <label className={styles.dateRangeField}>
-          <span className={styles.dateRangeLabel}>From</span>
-          <input
-            type="date"
-            name="from"
-            className={styles.dateRangeInput}
-            defaultValue={from}
-          />
+      <div className={styles.dateFields}>
+        <label className={styles.dateField}>
+          <span className={styles.dateLabel}>From</span>
+          <input type="date" name="from" className={styles.dateInput} defaultValue={from} />
         </label>
-        <label className={styles.dateRangeField}>
-          <span className={styles.dateRangeLabel}>To</span>
-          <input type="date" name="to" className={styles.dateRangeInput} defaultValue={to} />
+        <label className={styles.dateField}>
+          <span className={styles.dateLabel}>To</span>
+          <input type="date" name="to" className={styles.dateInput} defaultValue={to} />
         </label>
       </div>
-      <div className={styles.dateRangeActions}>
-        <Button type="submit" variant="secondary" size="sm">
+      <div className={styles.toolbarActions}>
+        <Button type="submit" variant="primary" size="sm">
           Apply range
         </Button>
         {hasRange ? (
-          <Link href={`/billing/payment-audits${clearHref}`} className={styles.dateRangeClear}>
+          <Link href={`/billing/payment-audits${clearHref}`} className={styles.clearDates}>
             Clear dates
           </Link>
         ) : null}

@@ -32,6 +32,16 @@ export function manualPaymentAuditStage(row: {
   return 'complete';
 }
 
+/** Offline payment not yet marked received in the audit workflow. */
+export function canMarkManualPaymentReceived(stage: ManualPaymentAuditStage): boolean {
+  return stage === 'awaiting_receipt';
+}
+
+/** Received but not yet marked deposited in the audit workflow. */
+export function canMarkManualPaymentDeposited(stage: ManualPaymentAuditStage): boolean {
+  return stage === 'awaiting_deposit';
+}
+
 export function manualPaymentMethodLabel(method: string): string {
   const labels: Record<string, string> = {
     cash: 'Cash',
