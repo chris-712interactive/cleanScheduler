@@ -62,7 +62,8 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         company_name,
         preferred_contact_method,
         preferred_payment_method,
-        internal_notes
+        internal_notes,
+        marketing_email_opt_in
       ),
       tenant_customer_properties (
         id,
@@ -173,6 +174,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
                   preferredContactMethod: profile?.preferred_contact_method ?? '',
                   preferredPaymentMethod: profile?.preferred_payment_method ?? 'card',
                   internalNotes: profile?.internal_notes ?? '',
+                  marketingEmailOptIn: profile?.marketing_email_opt_in ?? false,
                 }}
               />
             </div>

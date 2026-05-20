@@ -48,6 +48,7 @@ export async function createTenantCustomer(
     parseCustomerPreferredPaymentMethod(String(formData.get('preferred_payment_method') ?? '')) ??
     'card';
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
+  const marketingEmailOptIn = formData.get('marketing_email_opt_in') === 'on';
 
   if (!slug || !firstName) {
     return { error: 'Workspace and customer first name are required.' };
@@ -191,6 +192,7 @@ export async function updateTenantCustomer(
     parseCustomerPreferredPaymentMethod(String(formData.get('preferred_payment_method') ?? '')) ??
     'card';
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
+  const marketingEmailOptIn = formData.get('marketing_email_opt_in') === 'on';
 
   if (!slug || !customerId || !firstName) {
     return { error: 'Workspace, customer, and first name are required.' };
@@ -245,6 +247,7 @@ export async function updateTenantCustomer(
       preferred_contact_method: preferredContactMethod,
       preferred_payment_method: preferredPaymentMethod as TenantPaymentMethod,
       internal_notes: internalNotes || null,
+      marketing_email_opt_in: marketingEmailOptIn,
     },
     { onConflict: 'customer_id' },
   );

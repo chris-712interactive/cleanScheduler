@@ -19,6 +19,7 @@ export interface CustomerEditSnapshot {
   preferredContactMethod: string;
   preferredPaymentMethod: string;
   internalNotes: string;
+  marketingEmailOptIn: boolean;
 }
 
 export function CustomerEditForm({
@@ -154,6 +155,16 @@ export function CustomerEditForm({
         className={styles.textarea}
         defaultValue={snapshot.internalNotes}
       />
+
+      <label className={styles.checkboxRow} htmlFor="edit_marketing_email_opt_in">
+        <input
+          id="edit_marketing_email_opt_in"
+          name="marketing_email_opt_in"
+          type="checkbox"
+          defaultChecked={snapshot.marketingEmailOptIn}
+        />
+        <span>Customer opted in to marketing emails</span>
+      </label>
 
       <button type="submit" className={styles.submit} disabled={pending}>
         {pending ? 'Saving…' : 'Save changes'}

@@ -13,10 +13,11 @@ import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import { buildTenantBillingNavItem } from '@/lib/tenant/buildTenantBillingNav';
 import { buildTenantSettingsNavItem } from '@/lib/tenant/buildTenantSettingsNav';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -100,6 +101,10 @@ export default async function TenantLayout({ children }: { children: React.React
     membership.tenantId,
   );
 
+  const admin = createAdminClient();
+  const planTier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
+
   const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
   const billingNavItem = buildTenantBillingNavItem(connectStatus);
   const settingsNavItem = buildTenantSettingsNavItem();
@@ -109,7 +114,9 @@ export default async function TenantLayout({ children }: { children: React.React
     : [
         ...NAV_ITEMS_BASE.slice(0, 6),
         billingNavItem,
-        ...NAV_ITEMS_BASE.slice(6),
+        ...NAV_ITEMS_BASE.slice(6).filter(
+          (item) => item.href !== '/campaigns' || campaignsNavEnabled,
+        ),
         settingsNavItem,
       ].map((item) => {
         if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {

@@ -182,6 +182,14 @@ export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
           className={styles.textarea}
           placeholder="Gate code, pets, parking, preferred arrival window…"
         />
+        <label className={styles.checkboxRow} htmlFor="marketing_email_opt_in">
+          <input
+            id="marketing_email_opt_in"
+            name="marketing_email_opt_in"
+            type="checkbox"
+          />
+          <span>Customer opted in to marketing emails</span>
+        </label>
       </section>
 
       <button type="submit" className={styles.submit} disabled={pending}>

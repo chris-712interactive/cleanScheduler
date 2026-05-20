@@ -809,6 +809,7 @@ export type Database = {
           preferred_contact_method: 'email' | 'phone' | 'sms' | null;
           preferred_payment_method: Database['public']['Enums']['tenant_payment_method'];
           internal_notes: string | null;
+          marketing_email_opt_in: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -820,6 +821,7 @@ export type Database = {
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
           preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
+          marketing_email_opt_in?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -831,6 +833,7 @@ export type Database = {
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
           preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
+          marketing_email_opt_in?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1788,6 +1791,236 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      tenant_email_suppressions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          email_normalized: string;
+          reason: 'unsubscribe' | 'bounce' | 'complaint' | 'manual';
+          source: 'unsubscribe_link' | 'manual' | 'webhook' | 'import';
+          campaign_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          email_normalized: string;
+          reason: 'unsubscribe' | 'bounce' | 'complaint' | 'manual';
+          source?: 'unsubscribe_link' | 'manual' | 'webhook' | 'import';
+          campaign_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          email_normalized?: string;
+          reason?: 'unsubscribe' | 'bounce' | 'complaint' | 'manual';
+          source?: 'unsubscribe_link' | 'manual' | 'webhook' | 'import';
+          campaign_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_email_suppressions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_email_campaigns: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          subject: string;
+          template_key: 'promo' | 'seasonal' | 're_engagement' | 'review_ask' | 'service_reminder';
+          body_text: string;
+          audience_preset:
+            | 'all_marketable'
+            | 'email_preferred'
+            | 'residential'
+            | 'portal_nudge'
+            | 'open_balance';
+          status: 'draft' | 'sending' | 'sent' | 'failed' | 'cancelled';
+          recipient_count: number;
+          sent_count: number;
+          delivered_count: number;
+          opened_count: number;
+          clicked_count: number;
+          bounced_count: number;
+          unsubscribed_count: number;
+          scheduled_at: string | null;
+          sent_at: string | null;
+          created_by_user_id: string | null;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          subject: string;
+          template_key: 'promo' | 'seasonal' | 're_engagement' | 'review_ask' | 'service_reminder';
+          body_text?: string;
+          audience_preset:
+            | 'all_marketable'
+            | 'email_preferred'
+            | 'residential'
+            | 'portal_nudge'
+            | 'open_balance';
+          status?: 'draft' | 'sending' | 'sent' | 'failed' | 'cancelled';
+          recipient_count?: number;
+          sent_count?: number;
+          delivered_count?: number;
+          opened_count?: number;
+          clicked_count?: number;
+          bounced_count?: number;
+          unsubscribed_count?: number;
+          scheduled_at?: string | null;
+          sent_at?: string | null;
+          created_by_user_id?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          subject?: string;
+          template_key?: 'promo' | 'seasonal' | 're_engagement' | 'review_ask' | 'service_reminder';
+          body_text?: string;
+          audience_preset?:
+            | 'all_marketable'
+            | 'email_preferred'
+            | 'residential'
+            | 'portal_nudge'
+            | 'open_balance';
+          status?: 'draft' | 'sending' | 'sent' | 'failed' | 'cancelled';
+          recipient_count?: number;
+          sent_count?: number;
+          delivered_count?: number;
+          opened_count?: number;
+          clicked_count?: number;
+          bounced_count?: number;
+          unsubscribed_count?: number;
+          scheduled_at?: string | null;
+          sent_at?: string | null;
+          created_by_user_id?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_email_campaigns_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_email_campaign_recipients: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          campaign_id: string;
+          customer_id: string;
+          email: string;
+          status: 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced' | 'skipped';
+          resend_email_id: string | null;
+          sent_at: string | null;
+          delivered_at: string | null;
+          opened_at: string | null;
+          clicked_at: string | null;
+          bounced_at: string | null;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          campaign_id: string;
+          customer_id: string;
+          email: string;
+          status?: 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced' | 'skipped';
+          resend_email_id?: string | null;
+          sent_at?: string | null;
+          delivered_at?: string | null;
+          opened_at?: string | null;
+          clicked_at?: string | null;
+          bounced_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          campaign_id?: string;
+          customer_id?: string;
+          email?: string;
+          status?: 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced' | 'skipped';
+          resend_email_id?: string | null;
+          sent_at?: string | null;
+          delivered_at?: string | null;
+          opened_at?: string | null;
+          clicked_at?: string | null;
+          bounced_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_email_campaign_recipients_campaign_id_fkey';
+            columns: ['campaign_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_email_campaigns';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_email_campaign_recipients_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_email_campaign_recipients_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      resend_webhook_events: {
+        Row: {
+          id: string;
+          resend_event_id: string;
+          event_type: string;
+          payload: Json;
+          processed_at: string;
+        };
+        Insert: {
+          id?: string;
+          resend_event_id: string;
+          event_type: string;
+          payload: Json;
+          processed_at?: string;
+        };
+        Update: {
+          id?: string;
+          resend_event_id?: string;
+          event_type?: string;
+          payload?: Json;
+          processed_at?: string;
+        };
+        Relationships: [];
       };
       tenant_usage_snapshots: {
         Row: {

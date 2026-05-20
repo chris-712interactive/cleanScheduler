@@ -25,7 +25,11 @@ type EntitlementLimitKey =
   | 'maxAutomationWorkflows'
   | 'includedSmsCreditsMonthly'
   | 'includedEmailCreditsMonthly'
-  | 'includedIntegrations';
+  | 'includedIntegrations'
+  | 'maxCampaignSendsMonthly'
+  | 'maxConcurrentActiveCampaigns'
+  | 'maxCampaignAudienceSize'
+  | 'maxCampaignDrafts';
 
 interface PlanEntitlements {
   plan: 'starter' | 'business' | 'pro';
@@ -56,6 +60,15 @@ Recommended first checks to implement:
 - forecast endpoints -> `forecasting`
 - onboarding concierge flows -> `dedicatedOnboarding`
 - multi-location management routes -> `multiLocationControls`
+- `/campaigns` routes and campaign send actions -> `campaigns`
+
+### Email campaigns (implemented)
+
+See `docs/product/email-campaigns.md`.
+
+- `app/tenant/campaigns/*` — `assertFeatureEnabled(tier, 'campaigns')` on pages and actions
+- Before send: `maxCampaignSendsMonthly`, `includedEmailCreditsMonthly`, `maxCampaignAudienceSize`, `maxConcurrentActiveCampaigns`
+- Marketing sends only; transactional Resend mail is not metered
 
 ### 2) Soft limits (metered caps)
 
@@ -67,6 +80,8 @@ Current implementation:
 
 - `app/tenant/customers/actions.ts`
   - checks `maxActiveCustomers` before creating a customer
+- `app/tenant/campaigns/campaignActions.ts`
+  - checks campaign send limits before broadcast send
 - `app/admin/tenants/page.tsx`
   - shows plan label + monthly price from canonical entitlement config
 - `app/admin/tenants/[slug]/page.tsx`
@@ -77,7 +92,6 @@ Next checks to add:
 - seat invites / membership creation -> `includedSeats`
 - workflow creation actions -> `maxAutomationWorkflows`
 - SMS send pipeline -> `includedSmsCreditsMonthly`
-- campaign email sends -> `includedEmailCreditsMonthly`
 - integration connection actions -> `includedIntegrations`
 
 ## Stripe mapping and fulfillment

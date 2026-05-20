@@ -10,7 +10,11 @@ export type CustomerListEmbedRow = Pick<Tables<'customers'>, 'id' | 'status' | '
 
 type ProfilePick = Pick<
   Tables<'tenant_customer_profiles'>,
-  'company_name' | 'preferred_contact_method' | 'preferred_payment_method' | 'internal_notes'
+  | 'company_name'
+  | 'preferred_contact_method'
+  | 'preferred_payment_method'
+  | 'internal_notes'
+  | 'marketing_email_opt_in'
 >;
 
 type PropertyPick = Pick<

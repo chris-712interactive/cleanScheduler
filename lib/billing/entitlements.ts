@@ -19,7 +19,11 @@ export type EntitlementLimitKey =
   | 'maxAutomationWorkflows'
   | 'includedSmsCreditsMonthly'
   | 'includedEmailCreditsMonthly'
-  | 'includedIntegrations';
+  | 'includedIntegrations'
+  | 'maxCampaignSendsMonthly'
+  | 'maxConcurrentActiveCampaigns'
+  | 'maxCampaignAudienceSize'
+  | 'maxCampaignDrafts';
 
 export interface PlanEntitlements {
   plan: PlatformPlanTier;
@@ -58,6 +62,10 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       includedSmsCreditsMonthly: 500,
       includedEmailCreditsMonthly: 2500,
       includedIntegrations: 1,
+      maxCampaignSendsMonthly: 0,
+      maxConcurrentActiveCampaigns: 0,
+      maxCampaignAudienceSize: 0,
+      maxCampaignDrafts: 0,
     },
   },
   business: {
@@ -83,6 +91,10 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       includedSmsCreditsMonthly: 5000,
       includedEmailCreditsMonthly: 25000,
       includedIntegrations: 5,
+      maxCampaignSendsMonthly: 10000,
+      maxConcurrentActiveCampaigns: 3,
+      maxCampaignAudienceSize: 5000,
+      maxCampaignDrafts: 20,
     },
   },
   pro: {
@@ -108,6 +120,10 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       includedSmsCreditsMonthly: 25000,
       includedEmailCreditsMonthly: 100000,
       includedIntegrations: 20,
+      maxCampaignSendsMonthly: 40000,
+      maxConcurrentActiveCampaigns: 10,
+      maxCampaignAudienceSize: 15000,
+      maxCampaignDrafts: 50,
     },
   },
 };

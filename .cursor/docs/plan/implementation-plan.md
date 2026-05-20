@@ -108,8 +108,8 @@ todos:
     content: "Phase 2: tenant Accounting view + founder Accounting (MRR, revenue YTD, CSV exports)."
     status: pending
   - id: phase3Campaigns
-    content: "Phase 3: Email Campaigns (gated by feature key 'email_campaigns' \u2014 see section 15): builder, audience selection, send infra, metrics dashboard (open/click)."
-    status: pending
+    content: "Phase 3: Email Campaigns (gated by feature key 'campaigns' — see docs/product/email-campaigns.md and section 15): list + create + detail UI, audience presets, Resend send loop, webhook metrics, marketing opt-in."
+    status: in_progress
   - id: phase3MasqueradePolish
     content: "Phase 3: full masquerade UX with tenant-side consent flow, per-action audit UI, and revocation."
     status: pending
@@ -465,7 +465,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 **Phase 3 — Growth & Polish**
 
 - **CSV / OFX bank statement import (Concern #1 fallback)** for banks with poor Plaid coverage.
-- Email Campaigns (gated by plan): builder, sends, open/click metrics.
+- **Email Campaigns** (gated by plan; spec: [`docs/product/email-campaigns.md`](../../../docs/product/email-campaigns.md)): list/create/detail UI, audience presets, Resend transactional send loop with webhook open/click metrics, marketing opt-in on customer profiles.
 - Founder masquerade UX polish + tenant-side consent flow + per-action audit UI.
 - Customer portal multi-tenant polish (consolidated billing, switch-tenant chip).
 - PWA / installable mobile experience for employees (offline-tolerant Schedule + Accept Payment).
