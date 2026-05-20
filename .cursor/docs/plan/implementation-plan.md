@@ -57,8 +57,8 @@ todos:
     content: "Mobile-first Accept Payment flow on Schedule appointment detail (employees mark check received with amount, check number, optional photo; sets received_in_field). Office workflow lets Billing admin progress checks through received_in_office \u2192 deposited \u2192 cleared/bounced with audit log entries. Reminder cron skips invoices under active check holds (tenant-configurable hold days; per-status overrides)."
     status: pending
   - id: reportsModule
-    content: "Tenant Billing > Reports: Invoice Audit, Payment Reconciliation (grouped by method), Outstanding Balances (aging buckets), Field Check Tracking (Concern #2), Revenue by Service / Customer, basic Employee Performance & Compensation. CSV + PDF export, date-range filters, report_runs cache table for heavy queries."
-    status: pending
+    content: "Tenant Reports hub at /reports (spec: docs/product/tenant-reports.md): Phase 1 core (AR aging, invoice audit, field check tracking read-only, collections, quote pipeline) all tiers + CSV; Phase 1.5 Pro analytics (reconciliation, revenue by customer/service, MRR, employee performance) gated by advancedAnalytics; Phase 2 payroll/tax/plaid; report_runs cache + exports."
+    status: in_progress
   - id: phase2PlaidZelle
     content: "Phase 2: Plaid Link integration for tenant business bank accounts; daily Plaid transactions sync; Zelle/ACH match-suggestion queue with one-click confirmation against open invoices; bank_links + bank_transactions + payment_match_suggestions tables."
     status: pending
@@ -445,7 +445,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - **Field Accept Payment flow (Concern #2)**: mobile-first capture of cash / check (with check number, amount, optional photo). `received_in_field` -> office workflow `received_in_office` -> `deposited` -> `cleared`.
 - **Manual Zelle recording (Concern #1)**: "Record Zelle payment" form with confirmation number, optional screenshot upload, and notes. Plaid auto-reconcile arrives in Phase 2.
 - **Reminder cron with check holds (Concern #2)**: tenant-configurable hold days per check status; reminders suppressed during holds.
-- **Reports module v1 (Concern #4)**: Invoice Audit, Payment Reconciliation, Outstanding Balances (aging), Field Check Tracking, Revenue by Service / Customer, basic Employee Performance & Compensation. CSV + PDF export.
+- **Reports module v1 (Concern #4)** — see [`docs/product/tenant-reports.md`](../../../docs/product/tenant-reports.md): Phase 1 core reports on all tiers; Pro analytics bundle (`advancedAnalytics`); Payment audits workflow stays under `/billing/payment-audits`.
 - Customer portal: Dashboard, Schedule (read + reschedule-request), Billing (view + pay outstanding), Messages (basic 1:1), Settings.
 - Founder admin: Dashboard (key metrics), Inquiries (list + filters + manual status), Customers/Tenants (list + detail + manual onboard), Settings (skeleton), basic masquerade with audit log.
 - Foundation: subdomain routing, Supabase Auth, RLS everywhere, pgsodium for encrypted columns, Stripe + Stripe Connect + webhooks, **Resend** transactional email.
@@ -495,7 +495,7 @@ This section reconciles the YAML todos at the top of this file with the current 
 4. **Transactional email (`transactionalEmail`)** — **Partially shipped:** quotes + portal invites + **tenant invoice summary** (`sendTenantInvoiceEmailAction`) + **dispute-opened** email to tenant owner. **Still missing:** auth-adjacent mail, richer HTML/receipt templates, productized template management.
 5. **Recurring (`recurringBilling`)** — ~~Core generator + cron.~~ **Shipped with `0025` + app** (see todo `recurringBilling`): RRULE rules UI, materializer cron, subscription anchor UX, customer/tenant cancel + billing portal.
 6. **Field + office money (`checkPaymentWorkflow`)** — Accept payment on visit detail; check state machine; Zelle manual entry already partially aligned with §14.
-7. **Reports (`reportsModule`)** — Replace tenant `/reports` placeholder with v1 reports + exports.
+7. **Reports (`reportsModule`)** — Replace tenant `/reports` placeholder per `docs/product/tenant-reports.md` (hub + Phase 1 reports + exports).
 8. **Feature gating (`featureGatingMetering`)** — `requireFeature` / `checkLimit` / usage rollup cron populating `tenant_usage_snapshots` (table exists empty).
 9. **RLS tests (`rlsTestSuite`)** — pg_tap or SQL fixtures for tenant isolation + masquerade.
 10. **Portal MVP gaps** — Customer reschedule request UX; founder dashboard metrics; tenant dashboard KPIs.
@@ -745,14 +745,21 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 
 **Status**: Partially covered (original plan mentioned an "Accounting view" but lacked specifics). **Expanded to a dedicated Reports module**, Phase 1 baseline + Phase 2 advanced.
 
-**Phase 1 Reports module — Tenant Billing > Reports** (date-range filters, CSV + PDF export on every report):
+**Phase 1 Reports module — Tenant `/reports` hub** (canonical spec: [`docs/product/tenant-reports.md`](../../../docs/product/tenant-reports.md); date-range filters, CSV + PDF export):
 
-- **Invoice Audit Report**: every invoice in period with status (draft/sent/paid/overdue/void), due date, paid date, days outstanding, customer, total, payment method(s).
-- **Payment Reconciliation Report**: every payment grouped by method (card / cash / check / Zelle / ACH), with reconciliation status (auto-matched / manually-matched / unmatched / pending). Designed for monthly bookkeeping.
-- **Outstanding Balances Report**: open invoices grouped by customer with aging buckets (0–30 / 31–60 / 61–90 / 90+).
-- **Field Check Tracking Report** (per Concern #2 above).
-- **Revenue by Service / Customer**: groupings useful for pricing analysis and identifying top customers.
-- **Employee Performance & Compensation Report (basic)**: per employee — hours worked (from appointment durations), jobs completed, gross labor cost using `employees.labor_cost_per_hour`. Designed as a payroll input the tenant exports to ADP / Gusto / QBO.
+**All tiers (Phase 1 core):**
+
+- **Outstanding Balances (AR aging)**: open invoices by customer, buckets 0–30 / 31–60 / 61–90 / 90+.
+- **Invoice Audit**: every invoice in period with status, due/paid dates, days outstanding, customer, total, payment methods.
+- **Field Check Tracking** (read-only report; workflow stays at `/billing/payment-audits`).
+- **Collections summary** + **Quote pipeline** (weekly/monthly owner views).
+
+**Pro only (`advancedAnalytics`, Phase 1.5):**
+
+- **Payment Reconciliation**: payments grouped by method; card payout drill-down when `stripe_payout_id` backfill ships.
+- **Revenue by Service / Customer**.
+- **Recurring revenue (MRR)** from `customer_subscriptions`.
+- **Employee Performance (basic)**: hours, jobs completed, labor cost when hourly rate exists on team profile.
 
 **Phase 2 Reports module — additions**:
 

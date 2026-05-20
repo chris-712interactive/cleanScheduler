@@ -1998,6 +1998,106 @@ export type Database = {
           },
         ];
       };
+      compensation_rules: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          rule_type: 'commission_percent_bps' | 'tip_split_percent_bps' | 'flat_per_job_cents';
+          percent_bps: number | null;
+          flat_cents: number | null;
+          applies_to_role: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          rule_type: 'commission_percent_bps' | 'tip_split_percent_bps' | 'flat_per_job_cents';
+          percent_bps?: number | null;
+          flat_cents?: number | null;
+          applies_to_role?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          rule_type?: 'commission_percent_bps' | 'tip_split_percent_bps' | 'flat_per_job_cents';
+          percent_bps?: number | null;
+          flat_cents?: number | null;
+          applies_to_role?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'compensation_rules_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      report_runs: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          report_slug: string;
+          params: Json;
+          status: 'pending' | 'ready' | 'failed';
+          result_json: Json | null;
+          row_count: number | null;
+          csv_storage_path: string | null;
+          pdf_storage_path: string | null;
+          expires_at: string | null;
+          created_by_user_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          report_slug: string;
+          params?: Json;
+          status?: 'pending' | 'ready' | 'failed';
+          result_json?: Json | null;
+          row_count?: number | null;
+          csv_storage_path?: string | null;
+          pdf_storage_path?: string | null;
+          expires_at?: string | null;
+          created_by_user_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          report_slug?: string;
+          params?: Json;
+          status?: 'pending' | 'ready' | 'failed';
+          result_json?: Json | null;
+          row_count?: number | null;
+          csv_storage_path?: string | null;
+          pdf_storage_path?: string | null;
+          expires_at?: string | null;
+          created_by_user_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'report_runs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       resend_webhook_events: {
         Row: {
           id: string;

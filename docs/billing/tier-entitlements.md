@@ -56,11 +56,31 @@ Before premium operations run, call `assertFeatureEnabled(planTier, feature)`.
 Recommended first checks to implement:
 
 - API integrations / webhooks endpoints -> `fullApiWebhooks`
-- analytics/reporting endpoints -> `advancedAnalytics`
+- analytics/reporting endpoints -> `advancedAnalytics` (Phase 1.5 tenant reports: reconciliation, revenue breakdowns, MRR, employee performance — see `docs/product/tenant-reports.md`)
 - forecast endpoints -> `forecasting`
 - onboarding concierge flows -> `dedicatedOnboarding`
 - multi-location management routes -> `multiLocationControls`
 - `/campaigns` routes and campaign send actions -> `campaigns`
+
+### Tenant Reports (planned — see `docs/product/tenant-reports.md`)
+
+**Do not implement until product approves the spec.**
+
+| Reports capability | Starter | Business | Pro |
+|--------------------|---------|----------|-----|
+| Hub + Phase 1 core (AR aging, invoice audit, field checks read-only, collections, quote pipeline) | Yes | Yes | Yes |
+| CSV/PDF export (Phase 1) | Yes | Yes | Yes |
+| Phase 1.5 analytics (reconciliation, revenue by customer/service, MRR, employee performance) | No | No | Yes (`advancedAnalytics`) |
+| Sales tax summary (Phase 2) | No | Yes (future `salesTaxSummary`) | Yes |
+| Payroll exports (Phase 2) | No | Yes (future `payrollExports`) | Yes |
+| Cohort / LTV (Phase 3) | No | No | Yes (`forecasting`) |
+
+Enforcement (when built):
+
+- `lib/reports/reportCatalog.ts` — per-report `ReportGate`
+- Pages: `app/tenant/reports/*` — `isReportEnabled(tier, slug)` on hub cards and `/reports/[slug]`
+- Exports: `assertReportEnabled` on CSV/PDF routes
+- **Reports nav stays visible** on all tiers (unlike campaigns); locked reports show upgrade panel → `/billing`
 
 ### Email campaigns (implemented)
 

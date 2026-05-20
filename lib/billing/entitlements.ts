@@ -8,6 +8,8 @@ export type EntitlementFeature =
   | 'customerPortal'
   | 'campaigns'
   | 'advancedAnalytics'
+  | 'salesTaxSummary'
+  | 'payrollExports'
   | 'forecasting'
   | 'fullApiWebhooks'
   | 'multiLocationControls'
@@ -50,6 +52,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customerPortal: false,
       campaigns: false,
       advancedAnalytics: false,
+      salesTaxSummary: false,
+      payrollExports: false,
       forecasting: false,
       fullApiWebhooks: false,
       multiLocationControls: false,
@@ -79,6 +83,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customerPortal: true,
       campaigns: true,
       advancedAnalytics: false,
+      salesTaxSummary: true,
+      payrollExports: true,
       forecasting: false,
       fullApiWebhooks: false,
       multiLocationControls: false,
@@ -108,6 +114,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customerPortal: true,
       campaigns: true,
       advancedAnalytics: true,
+      salesTaxSummary: true,
+      payrollExports: true,
       forecasting: true,
       fullApiWebhooks: true,
       multiLocationControls: true,
