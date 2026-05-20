@@ -9,6 +9,7 @@
  * tree as the desktop sidebar.
  */
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -57,7 +58,14 @@ export function TopBar({
 
         <Link href={brandHref} className={styles.brand}>
           <span className={styles.brandMark}>
-            <img src="/brand/logo.svg" alt="" className={styles.brandLogo} decoding="async" />
+            <Image
+              src="/brand/logo.svg"
+              alt=""
+              width={160}
+              height={32}
+              className={styles.brandLogo}
+              priority
+            />
           </span>
           <span className={styles.brandLabel}>{brandLabel}</span>
         </Link>

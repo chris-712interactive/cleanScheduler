@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import { useActionState, useCallback, useEffect, useMemo, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { Button } from '@/components/ui/Button';
@@ -97,7 +97,7 @@ export function CompleteVisitPaymentModal({
   const isLastStep = stepIndex === steps.length - 1;
   const totalSteps = steps.length;
 
-  function resetFlow() {
+  const resetFlow = useCallback(() => {
     setStepIndex(0);
     setCollected(null);
     setOnSiteMethod(null);
@@ -106,7 +106,7 @@ export function CompleteVisitPaymentModal({
     setCashAmountDollars('');
     setInvoiceAmountDollars('');
     setStepError(null);
-  }
+  }, [defaultAmountDollars]);
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
@@ -119,7 +119,7 @@ export function CompleteVisitPaymentModal({
       setOpen(false);
       resetFlow();
     }
-  }, [state.success]);
+  }, [state.success, resetFlow]);
 
   function resolveBillingAmountDollars(): string {
     if (collected === 'no') {

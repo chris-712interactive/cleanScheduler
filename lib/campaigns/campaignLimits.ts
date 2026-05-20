@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   assertFeatureEnabled,
   assertLimitNotExceeded,
-  getEntitlementsForTier,
   resolveTenantPlanTier,
 } from '@/lib/billing/entitlements';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
@@ -70,7 +69,6 @@ export async function assertCanSendCampaign(params: {
   const tier = await resolveTenantCampaignTier(params.admin, params.tenantId);
   assertCampaignFeatureEnabled(tier);
 
-  const entitlements = getEntitlementsForTier(tier);
   const [sendsThisMonth, activeCampaigns] = await Promise.all([
     countMarketingSendsThisMonth(params.admin, params.tenantId),
     countActiveCampaigns(params.admin, params.tenantId),

@@ -26,7 +26,7 @@ export async function updateOwnDisplayNameAction(
     return { error: 'Enter a display name (max 120 characters).' };
   }
 
-  const membership = await requireTenantPortalAccess(slug, '/settings');
+  await requireTenantPortalAccess(slug, '/settings');
   const auth = await getAuthContext();
   if (!auth) return { error: 'Not signed in.' };
 

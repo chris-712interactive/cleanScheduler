@@ -132,6 +132,7 @@ export async function createTenantCustomer(
     preferred_contact_method: preferredContactMethod,
     preferred_payment_method: preferredPaymentMethod,
     internal_notes: internalNotes || null,
+    marketing_email_opt_in: marketingEmailOptIn,
   });
 
   if (profileInsert.error) {

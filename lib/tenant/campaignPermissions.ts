@@ -1,6 +1,6 @@
 import type { TenantRole } from '@/lib/auth/types';
 
-export function canViewEmailCampaigns(_role: TenantRole): boolean {
+export function canViewEmailCampaigns(): boolean {
   return true;
 }
 

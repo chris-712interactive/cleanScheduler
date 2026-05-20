@@ -11,19 +11,6 @@ type ResendWebhookPayload = {
   };
 };
 
-function tagValue(
-  tags: ResendWebhookPayload['data'] extends infer D ? D : never,
-  name: string,
-): string | null {
-  if (!tags?.tags) return null;
-  if (Array.isArray(tags.tags)) {
-    const hit = tags.tags.find((tag) => tag.name === name);
-    return hit?.value ?? null;
-  }
-  const record = tags.tags as Record<string, string>;
-  return record[name] ?? null;
-}
-
 async function refreshCampaignMetrics(
   admin: SupabaseClient<Database>,
   campaignId: string,
@@ -55,11 +42,11 @@ export async function handleResendWebhookEvent(
   const emailId = payload.data?.email_id;
   if (!emailId) return;
 
-  let query = admin
+  const { data: recipient } = await admin
     .from('tenant_email_campaign_recipients')
     .select('id, campaign_id, tenant_id, email, opened_at, clicked_at')
-    .eq('resend_email_id', emailId);
-  const { data: recipient } = await query.maybeSingle();
+    .eq('resend_email_id', emailId)
+    .maybeSingle();
   if (!recipient) return;
 
   const now = new Date().toISOString();
