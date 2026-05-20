@@ -212,32 +212,100 @@ export function ReportResultTable({
       );
     }
     case 'payment-reconciliation': {
-      const rows = result.data.byMethod;
+      const { connectComplete, byMethod, byPayout, pendingCardCount, pendingCardNetCents } =
+        result.data;
+
       return (
-        <TableShell total={rows.length} start={1} end={rows.length} showFooter={showFooter}>
-          <table className={styles.directoryTable}>
-            <thead>
-              <tr>
-                <th scope="col">Method</th>
-                <th scope="col">Payments</th>
-                <th scope="col">Gross</th>
-                <th scope="col">Fees</th>
-                <th scope="col">Net</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.method}>
-                  <td>{row.method}</td>
-                  <td>{row.paymentCount}</td>
-                  <td>{formatUsdFromCents(row.grossCents)}</td>
-                  <td>{formatUsdFromCents(row.feeCents)}</td>
-                  <td>{formatUsdFromCents(row.netCents)}</td>
+        <>
+          {!connectComplete ? (
+            <p className={styles.hint}>
+              Stripe Connect is not complete — card payout batches appear after payment setup at{' '}
+              <Link href="/billing/payment-setup" className={styles.actionLink}>
+                Payment setup
+              </Link>
+              .
+            </p>
+          ) : null}
+
+          {connectComplete && byPayout.length > 0 ? (
+            <>
+              <h3 className={styles.sectionHeading}>Card deposits by payout</h3>
+              <TableShell
+                total={byPayout.length}
+                start={1}
+                end={byPayout.length}
+                showFooter={showFooter}
+              >
+                <table className={styles.directoryTable}>
+                  <thead>
+                    <tr>
+                      <th scope="col">Arrival</th>
+                      <th scope="col">Payout</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Payments</th>
+                      <th scope="col">Gross</th>
+                      <th scope="col">Fees</th>
+                      <th scope="col">Net</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {byPayout.map((row) => (
+                      <tr key={row.stripePayoutId}>
+                        <td>{row.arrivalDate ? formatDate(row.arrivalDate) : '—'}</td>
+                        <td>
+                          <code className={styles.mono}>{row.stripePayoutId}</code>
+                        </td>
+                        <td>{row.status ?? '—'}</td>
+                        <td>{row.paymentCount}</td>
+                        <td>{formatUsdFromCents(row.grossCents)}</td>
+                        <td>{formatUsdFromCents(row.feeCents)}</td>
+                        <td>{formatUsdFromCents(row.netCents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableShell>
+            </>
+          ) : connectComplete ? (
+            <p className={styles.hint}>
+              No linked card payouts in this range yet. New deposits are linked when Stripe sends{' '}
+              <code className={styles.mono}>payout.paid</code>.
+            </p>
+          ) : null}
+
+          {pendingCardCount > 0 ? (
+            <p className={styles.hint}>
+              {pendingCardCount} card payment(s) ({formatUsdFromCents(pendingCardNetCents)} net) not
+              assigned to a payout batch yet.
+            </p>
+          ) : null}
+
+          <h3 className={styles.sectionHeading}>All methods</h3>
+          <TableShell total={byMethod.length} start={1} end={byMethod.length} showFooter={showFooter}>
+            <table className={styles.directoryTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Method</th>
+                  <th scope="col">Payments</th>
+                  <th scope="col">Gross</th>
+                  <th scope="col">Fees</th>
+                  <th scope="col">Net</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableShell>
+              </thead>
+              <tbody>
+                {byMethod.map((row) => (
+                  <tr key={row.method}>
+                    <td>{row.method}</td>
+                    <td>{row.paymentCount}</td>
+                    <td>{formatUsdFromCents(row.grossCents)}</td>
+                    <td>{formatUsdFromCents(row.feeCents)}</td>
+                    <td>{formatUsdFromCents(row.netCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </>
       );
     }
     case 'revenue-by-customer': {

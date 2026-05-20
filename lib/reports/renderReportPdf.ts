@@ -71,17 +71,34 @@ function collectPdfRows(result: ReportRunResult): { headers: string[]; rows: str
           formatUsdFromCents(r.totalCents),
         ]),
       };
-    case 'payment-reconciliation':
+    case 'payment-reconciliation': {
+      const payoutRows = result.data.byPayout.map((r) => [
+        r.arrivalDate ?? '—',
+        r.stripePayoutId,
+        r.status ?? '—',
+        String(r.paymentCount),
+        formatUsdFromCents(r.grossCents),
+        formatUsdFromCents(r.feeCents),
+        formatUsdFromCents(r.netCents),
+      ]);
+      const methodRows = result.data.byMethod.map((r) => [
+        r.method,
+        String(r.paymentCount),
+        formatUsdFromCents(r.grossCents),
+        formatUsdFromCents(r.feeCents),
+        formatUsdFromCents(r.netCents),
+      ]);
+      if (payoutRows.length > 0) {
+        return {
+          headers: ['Arrival', 'Payout', 'Status', 'Payments', 'Gross', 'Fees', 'Net'],
+          rows: [...payoutRows, ['—', '—', '—', '—', '—', '—', '—'], ...methodRows],
+        };
+      }
       return {
         headers: ['Method', 'Payments', 'Gross', 'Fees', 'Net'],
-        rows: result.data.byMethod.map((r) => [
-          r.method,
-          String(r.paymentCount),
-          formatUsdFromCents(r.grossCents),
-          formatUsdFromCents(r.feeCents),
-          formatUsdFromCents(r.netCents),
-        ]),
+        rows: methodRows,
       };
+    }
     case 'revenue-by-customer':
       return {
         headers: ['Customer', 'Payments', 'Net revenue'],

@@ -70,14 +70,30 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
       return rowsToCsv(cols, result.data.byStatus);
     }
     case 'payment-reconciliation': {
-      const cols: CsvColumn<(typeof result.data.byMethod)[0]>[] = [
+      const payoutCols: CsvColumn<(typeof result.data.byPayout)[0]>[] = [
+        {
+          key: 'arrival',
+          header: 'Arrival date',
+          format: (r) => (r.arrivalDate ? formatDate(r.arrivalDate) : ''),
+        },
+        { key: 'payout', header: 'Stripe payout id', format: (r) => r.stripePayoutId },
+        { key: 'status', header: 'Status', format: (r) => r.status ?? '' },
+        { key: 'count', header: 'Payments', format: (r) => String(r.paymentCount) },
+        { key: 'gross', header: 'Gross', format: (r) => formatUsdFromCents(r.grossCents) },
+        { key: 'fee', header: 'Fees', format: (r) => formatUsdFromCents(r.feeCents) },
+        { key: 'net', header: 'Net', format: (r) => formatUsdFromCents(r.netCents) },
+      ];
+      const methodCols: CsvColumn<(typeof result.data.byMethod)[0]>[] = [
         { key: 'method', header: 'Method', format: (r) => r.method },
         { key: 'count', header: 'Payments', format: (r) => String(r.paymentCount) },
         { key: 'gross', header: 'Gross', format: (r) => formatUsdFromCents(r.grossCents) },
         { key: 'fee', header: 'Fees', format: (r) => formatUsdFromCents(r.feeCents) },
         { key: 'net', header: 'Net', format: (r) => formatUsdFromCents(r.netCents) },
       ];
-      return rowsToCsv(cols, result.data.byMethod);
+      const payoutCsv = rowsToCsv(payoutCols, result.data.byPayout);
+      const methodCsv = rowsToCsv(methodCols, result.data.byMethod);
+      if (result.data.byPayout.length === 0) return methodCsv;
+      return `# Card deposits by payout\n${payoutCsv}\n\n# All methods\n${methodCsv}`;
     }
     case 'revenue-by-customer': {
       const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [

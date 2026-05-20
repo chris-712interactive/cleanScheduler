@@ -68,8 +68,8 @@ export async function runTipsCommissionsReport(
         label: 'Note',
         value:
           rows.length === 0
-            ? 'Add compensation rules in Settings (coming soon) or seed via SQL'
-            : 'Payout calculations ship with payroll export Phase 2.1',
+            ? 'Add rules under Settings → Compensation'
+            : 'Payout calculations use these rules in a future payroll release',
       },
     ],
   };

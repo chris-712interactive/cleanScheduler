@@ -16,12 +16,21 @@
 }
 
 .sectionHeading {
-  margin: 0 0 var(--space-3);
+  margin: var(--space-5) 0 var(--space-3);
   font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--font-size-xs);
 }
 
 .hubGrid {

@@ -499,6 +499,7 @@ export type Database = {
           received_by_user_id: string | null;
           deposited_at: string | null;
           deposited_by_user_id: string | null;
+          stripe_payout_id: string | null;
         };
         Insert: {
           id?: string;
@@ -522,6 +523,7 @@ export type Database = {
           received_by_user_id?: string | null;
           deposited_at?: string | null;
           deposited_by_user_id?: string | null;
+          stripe_payout_id?: string | null;
         };
         Update: {
           id?: string;
@@ -545,6 +547,7 @@ export type Database = {
           received_by_user_id?: string | null;
           deposited_at?: string | null;
           deposited_by_user_id?: string | null;
+          stripe_payout_id?: string | null;
         };
         Relationships: [
           {

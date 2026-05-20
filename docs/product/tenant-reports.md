@@ -74,8 +74,8 @@ Requires `advancedAnalytics` (`lib/billing/entitlements.ts` — **Pro only** tod
 | Slug | Title | Gate | Notes |
 |------|-------|------|-------|
 | `sales-tax-summary` | Sales tax by jurisdiction | `salesTaxSummary` (**Business+**) | Accepted quotes + property state/ZIP; tax from `computeQuoteTotals` / quote `tax_mode` |
-| `payroll-export` | Payroll export | `payrollExports` (**Business+**) | Hours per employee from completed visits; generic CSV (not ADP/Gusto/QBO column maps yet) |
-| `tips-commissions` | Tips & commissions | `jobCosting` (**Business+**) | Lists `compensation_rules`; payout math deferred |
+| `payroll-export` | Payroll export | `payrollExports` (**Business+**) | Hours per employee; CSV export with generic, ADP, Gusto, or QuickBooks column layouts |
+| `tips-commissions` | Tips & commissions | `jobCosting` (**Business+**) | Lists `compensation_rules` (manage at Settings → Compensation); payout math deferred |
 | `crew-utilization` | Crew utilization | `advancedAnalytics` (**Pro**) | Scheduled hours vs 40h/week × weeks in range |
 | `on-time-arrival` | On-time arrival | `advancedAnalytics` (**Pro**) | `checked_in_at` vs `starts_at` with 15-minute grace |
 
@@ -291,14 +291,14 @@ Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each repor
 | **Phase 1** | Hub (`app/tenant/reports/page.tsx`), 5 core reports, hub KPIs (`hubMetrics.ts`) |
 | **Phase 1 polish** | `report_runs` cache (`reportRunCache.ts`), date presets (7d/MTD/YTD), pagination (`ReportPagination.tsx`), CSV + PDF export |
 | **Phase 1.5** | Payment reconciliation, revenue by customer/service, MRR, employee performance |
-| **Phase 2 baseline** | Sales tax, payroll export, tips/commissions (rules list), crew utilization, on-time arrival |
+| **Phase 2 baseline** | Sales tax, payroll export (generic + ADP/Gusto/QBO CSV), tips/commissions, crew utilization, on-time arrival |
+| **Phase 2 polish (partial)** | `stripe_payout_id` on payments + `payout.paid` backfill; payment reconciliation by payout batch; compensation rules at `/settings/compensation` |
 | **RBAC** | `lib/tenant/reportPermissions.ts` — owners/admins export; employees/viewers read unlocked reports |
 
 ### Remaining (Phase 2+ / 3)
 
-- ADP / Gusto / QuickBooks payroll CSV formats
-- Compensation rules settings UI (table exists; seed via SQL today)
-- `stripe_payout_id` backfill for payout-grouped reconciliation
+- Compensation payout math on payroll export (rules UI at `/settings/compensation`)
+- Historical `stripe_payout_id` backfill for payouts before this release (new payouts link on `payout.paid`)
 - PDF cache in Storage + optional async queue
 - Plaid bank reconciliation report (`plaidReconciliation` entitlement)
 - Phase 3: year-end, 1099 prep, cohort/LTV (`forecasting`)
@@ -339,13 +339,13 @@ lib/reports/
 ### Phase 1.5 — Pro analytics bundle ✅
 
 1. ~~Five Pro reports + `advancedAnalytics` gate.~~
-2. Payout backfill migration + webhook — **pending**.
+2. ~~Payout backfill migration + webhook (`0036`, `payout.paid`).~~
 
 ### Phase 2 — Payroll & tax (partial ✅)
 
 1. ~~`salesTaxSummary` / `payrollExports` entitlements + `0035_reports_phase2.sql` (`compensation_rules`).~~
 2. ~~Five Phase 2 report slugs live.~~
-3. Provider payroll formats, rules UI, Plaid — **pending**.
+3. ~~Provider payroll formats, rules UI.~~ Plaid — **pending**.
 
 ### Phase 3 — Year-end pack
 

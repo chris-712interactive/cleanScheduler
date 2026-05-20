@@ -49,6 +49,11 @@ const IMPLEMENTED_REPORT_SLUGS: ReportSlug[] = [
   'revenue-by-service',
   'recurring-revenue',
   'employee-performance',
+  'sales-tax-summary',
+  'payroll-export',
+  'crew-utilization',
+  'on-time-arrival',
+  'tips-commissions',
 ];
 
 export function isImplementedReportSlug(slug: ReportSlug): boolean {

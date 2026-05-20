@@ -162,7 +162,8 @@ export const REPORT_CATALOG: ReportCatalogEntry[] = [
   {
     slug: 'payroll-export',
     title: 'Payroll export',
-    description: 'Hours and job counts per team member for ADP, Gusto, or QuickBooks import.',
+    description:
+      'Hours and job counts per team member. Export CSV for generic, ADP, Gusto, or QuickBooks column layouts.',
     section: 'payroll',
     sectionLabel: 'Payroll & labor',
     icon: ClipboardList,

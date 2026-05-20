@@ -72,7 +72,7 @@ Recommended first checks to implement:
 | CSV/PDF export (all implemented report slugs) | Yes | Yes | Yes |
 | Phase 1.5 analytics (reconciliation, revenue by customer/service, MRR, employee performance) | No | No | Yes (`advancedAnalytics`) |
 | Sales tax summary | No | Yes (`salesTaxSummary`) | Yes |
-| Payroll export report | No | Yes (`payrollExports`) | Yes |
+| Payroll export report (generic + ADP/Gusto/QBO CSV) | No | Yes (`payrollExports`) | Yes |
 | Tips & commissions (rules directory) | No | Yes (`jobCosting`) | Yes |
 | Crew utilization + on-time arrival | No | No | Yes (`advancedAnalytics`) |
 | Cohort / LTV (Phase 3) | No | No | Yes (`forecasting`) |

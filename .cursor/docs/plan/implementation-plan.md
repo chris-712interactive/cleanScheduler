@@ -57,7 +57,7 @@ todos:
     content: "Mobile-first Accept Payment flow on Schedule appointment detail (employees mark check received with amount, check number, optional photo; sets received_in_field). Office workflow lets Billing admin progress checks through received_in_office \u2192 deposited \u2192 cleared/bounced with audit log entries. Reminder cron skips invoices under active check holds (tenant-configurable hold days; per-status overrides)."
     status: pending
   - id: reportsModule
-    content: "Tenant Reports at /reports (docs/product/tenant-reports.md): Phases 1+1.5+2 baseline shipped (15 slugs, CSV/PDF, cache, pagination). Remaining: ADP/Gusto/QBO payroll formats, compensation rules UI, Plaid reports, Phase 3 year-end/cohort, payout backfill."
+    content: "Tenant Reports at /reports (docs/product/tenant-reports.md): Phases 1+1.5+2 baseline shipped (15 slugs, CSV/PDF, cache, pagination). Shipped polish: ADP/Gusto/QBO payroll CSV, compensation rules UI (/settings/compensation), stripe_payout_id backfill on payout.paid. Remaining: Plaid reports, Phase 3 year-end/cohort, compensation payout math, PDF Storage cache."
     status: completed
   - id: phase2PlaidZelle
     content: "Phase 2: Plaid Link integration for tenant business bank accounts; daily Plaid transactions sync; Zelle/ACH match-suggestion queue with one-click confirmation against open invoices; bank_links + bank_transactions + payment_match_suggestions tables."
@@ -81,7 +81,7 @@ todos:
     content: "Shipped: platform `checkout.session.completed` (subscription), `customer.subscription.*` (no `event.account`); **Connect:** `checkout.session.completed` payment + `tenant_invoice_pay` (fee columns backfilled from expanded PI → charge → balance_transaction); **Connect** `checkout.session.completed` subscription + `tenant_customer_subscription`; `customer.subscription.*` when `event.account` set + `metadata.kind=tenant_customer_subscription`; `account.updated` \u2192 `tenant_stripe_connect_accounts`; Connect **`refund.*`**, **`charge.dispute.*`**, **`payout.*`** \u2192 mirror tables + dispute email to `tenant_onboarding_profiles.owner_email`. **Remaining:** inquiry/trial lifecycle automation; Edge Function parity; Stripe Billing **`invoice.*`** for hosted-invoice products."
     status: in_progress
   - id: tenantPortalMvp
-    content: "Routes live for dashboard, customers CRUD, schedule (list + new visit + **recurring rules**), quotes Kanban + detail + Resend-backed notifications, billing invoices (**email**, **Stripe refund**, card pay) + **service plans** + Connect payment setup + **invoice + subscription Checkout**, employees list, settings (incl. operational / quote email toggles). **Gaps:** Reports placeholder; KPI depth per \u00a711."
+    content: "Routes live for dashboard, customers CRUD, schedule (list + new visit + **recurring rules**), quotes Kanban + detail + Resend-backed notifications, billing invoices (**email**, **Stripe refund**, card pay) + **service plans** + Connect payment setup + **invoice + subscription Checkout**, employees list, **reports hub (15 slugs)**, settings (operational, **compensation**). **Gaps:** KPI depth per \u00a711."
     status: in_progress
   - id: customerPortalMvp
     content: "Dashboard, visits (read), **invoice list + detail + Pay balance (Connect Checkout on `my`)**, **subscriptions** (list + **Billing portal** + cancel at period end), messages threads, quotes (view/respond w/ e-sign), settings, payment methods, invite completion. **Gaps:** explicit reschedule-request workflow vs read-only schedule; consolidated cross-tenant billing rollups."
@@ -495,7 +495,7 @@ This section reconciles the YAML todos at the top of this file with the current 
 4. **Transactional email (`transactionalEmail`)** — **Partially shipped:** quotes + portal invites + **tenant invoice summary** (`sendTenantInvoiceEmailAction`) + **dispute-opened** email to tenant owner. **Still missing:** auth-adjacent mail, richer HTML/receipt templates, productized template management.
 5. **Recurring (`recurringBilling`)** — ~~Core generator + cron.~~ **Shipped with `0025` + app** (see todo `recurringBilling`): RRULE rules UI, materializer cron, subscription anchor UX, customer/tenant cancel + billing portal.
 6. **Field + office money (`checkPaymentWorkflow`)** — Accept payment on visit detail; check state machine; Zelle manual entry already partially aligned with §14.
-7. **Reports (`reportsModule`)** — Replace tenant `/reports` placeholder per `docs/product/tenant-reports.md` (hub + Phase 1 reports + exports).
+7. ~~**Reports (`reportsModule`)**~~ — Shipped at `/reports` per `docs/product/tenant-reports.md`; ongoing polish in Phase 2 todos.
 8. **Feature gating (`featureGatingMetering`)** — `requireFeature` / `checkLimit` / usage rollup cron populating `tenant_usage_snapshots` (table exists empty).
 9. **RLS tests (`rlsTestSuite`)** — pg_tap or SQL fixtures for tenant isolation + masquerade.
 10. **Portal MVP gaps** — Customer reschedule request UX; founder dashboard metrics; tenant dashboard KPIs.
@@ -754,8 +754,8 @@ Stripe Connect requires identity verification (legal name, EIN/SSN, bank account
 
 **Remaining**:
 
-- Payroll ADP / Gusto / QBO column formats; compensation rules settings UI.
-- `stripe_payout_id` backfill → payout-grouped reconciliation.
+- Compensation payout math on payroll export.
+- Historical payout backfill for pre-migration card payments (new payouts link on `payout.paid`).
 - Plaid tables + `plaidReconciliation` entitlement.
 - Phase 3: year-end / 1099 / cohort-LTV (`forecasting`).
 - Audit-log chain-of-custody links on export rows.

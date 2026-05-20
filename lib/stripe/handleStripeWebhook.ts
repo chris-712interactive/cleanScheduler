@@ -14,6 +14,7 @@ import {
   upsertCustomerSubscriptionFromStripe,
 } from '@/lib/stripe/connectWebhookHandlers';
 import { notifyTenantTrialEndingSoon } from '@/lib/billing/trialEndingNotifications';
+import { backfillInvoicePaymentsForPayout } from '@/lib/stripe/backfillPayoutPayments';
 import {
   notifyTenantDisputeOpened,
   resolveConnectTenantId,
@@ -112,6 +113,13 @@ async function dispatchStripeWebhookEvent(
       if (!connectAccountId) break;
       const payout = event.data.object as Stripe.Payout;
       await upsertConnectPayout(admin, payout, connectAccountId);
+      if (event.type === 'payout.paid' && stripe) {
+        try {
+          await backfillInvoicePaymentsForPayout(admin, stripe, payout, connectAccountId);
+        } catch {
+          // Backfill is best-effort; payout mirror row is already stored.
+        }
+      }
       break;
     }
     default:

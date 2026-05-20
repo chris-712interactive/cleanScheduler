@@ -63,8 +63,18 @@ export default async function TenantReportRunPage({ params, searchParams }: Page
   const querySuffix = `${range.fromInput ? `&from=${encodeURIComponent(range.fromInput)}` : ''}${
     range.toInput ? `&to=${encodeURIComponent(range.toInput)}` : ''
   }`;
-  const exportCsvHref = `/api/tenant/reports/export?slug=${encodeURIComponent(slug)}${querySuffix}`;
+  const exportBase = `/api/tenant/reports/export?slug=${encodeURIComponent(slug)}${querySuffix}`;
+  const exportCsvHref = exportBase;
   const exportPdfHref = `/api/tenant/reports/export/pdf?slug=${encodeURIComponent(slug)}${querySuffix}`;
+  const payrollExportLinks =
+    slug === 'payroll-export'
+      ? ([
+          { label: 'CSV (generic)', href: exportBase },
+          { label: 'ADP', href: `${exportBase}&format=adp` },
+          { label: 'Gusto', href: `${exportBase}&format=gusto` },
+          { label: 'QuickBooks', href: `${exportBase}&format=quickbooks` },
+        ] as const)
+      : null;
 
   let summary = [{ label: 'Status', value: enabled ? 'Ready' : 'Locked' }];
   let result: ReportRunResult = { kind: 'pro-placeholder' };
@@ -104,9 +114,17 @@ export default async function TenantReportRunPage({ params, searchParams }: Page
         actions={
           enabled && canExport && isImplementedReportSlug(slug) ? (
             <div className={styles.exportActions}>
-              <Link href={exportCsvHref} className={styles.exportLink}>
-                Export CSV
-              </Link>
+              {payrollExportLinks ? (
+                payrollExportLinks.map((link) => (
+                  <Link key={link.label} href={link.href} className={styles.exportLink}>
+                    {link.label}
+                  </Link>
+                ))
+              ) : (
+                <Link href={exportCsvHref} className={styles.exportLink}>
+                  Export CSV
+                </Link>
+              )}
               <Link href={exportPdfHref} className={styles.exportLink}>
                 Export PDF
               </Link>

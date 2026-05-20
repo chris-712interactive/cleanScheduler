@@ -578,3 +578,76 @@
   color: var(--color-text-muted);
   line-height: 1.45;
 }
+
+.compForm {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 28rem;
+}
+
+.compField {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.compInput,
+.compSelect {
+  font: inherit;
+  font-weight: 400;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.compList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.compListItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.compListMain {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.compListTitle {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.compInactive {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.compListMeta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.compListActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

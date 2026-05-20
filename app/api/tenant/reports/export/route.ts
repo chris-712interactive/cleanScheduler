@@ -5,6 +5,10 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { assertReportExportRateLimit } from '@/lib/reports/assertReportExportRateLimit';
 import { reportResultToCsv } from '@/lib/reports/exportCsv';
+import {
+  parsePayrollExportFormat,
+  payrollResultToCsv,
+} from '@/lib/reports/payrollExportFormats';
 import { parseReportDateRange } from '@/lib/reports/parseReportDateRange';
 import { isReportEnabled, isReportSlug } from '@/lib/reports/reportCatalog';
 import { getOrRunTenantReport } from '@/lib/reports/reportRunCache';
@@ -53,12 +57,22 @@ export async function GET(request: Request) {
     userId: null,
   });
 
-  const csv = reportResultToCsv(result);
+  let csv: string | null = null;
+  if (slugRaw === 'payroll-export' && result.kind === 'payroll-export') {
+    const format = parsePayrollExportFormat(url.searchParams.get('format'));
+    csv = payrollResultToCsv(result.data, format);
+  } else {
+    csv = reportResultToCsv(result);
+  }
   if (!csv) {
     return NextResponse.json({ error: 'Nothing to export' }, { status: 400 });
   }
 
-  const filename = `${slugRaw}-${range.fromInput || 'start'}-${range.toInput || 'end'}.csv`;
+  const formatSuffix =
+    slugRaw === 'payroll-export'
+      ? `-${parsePayrollExportFormat(url.searchParams.get('format'))}`
+      : '';
+  const filename = `${slugRaw}${formatSuffix}-${range.fromInput || 'start'}-${range.toInput || 'end'}.csv`;
   return new NextResponse(csv, {
     status: 200,
     headers: {
