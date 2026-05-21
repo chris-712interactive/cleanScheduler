@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { customerLabelFromIdentity } from '@/lib/reports/customerLabel';
+import { fetchPaymentEventSummaries } from '@/lib/audit/recordTenantPaymentEvent';
 import type { ReportSummaryLine } from '@/lib/reports/types';
 import { formatUsdFromCents } from '@/lib/format/money';
 import {
@@ -17,6 +18,9 @@ export interface FieldCheckRow {
   amountCents: number;
   checkReference: string;
   stage: ManualPaymentAuditStage;
+  chainOfCustody: string;
+  paymentAuditHref: string;
+  invoiceHref: string;
 }
 
 export interface FieldCheckResult {
@@ -76,6 +80,14 @@ export async function runFieldCheckReport(
   const rows: FieldCheckRow[] = [];
   let totalCents = 0;
   let openCount = 0;
+  const paymentIds: string[] = [];
+
+  for (const row of data) {
+    if (row.amount_cents <= 0) continue;
+    paymentIds.push(row.id);
+  }
+
+  const eventSummaries = await fetchPaymentEventSummaries(db, tenantId, paymentIds);
 
   for (const row of data) {
     if (row.amount_cents <= 0) continue;
@@ -84,15 +96,27 @@ export async function runFieldCheckReport(
     totalCents += row.amount_cents;
 
     const ident = row.tenant_invoices?.customers?.customer_identities ?? null;
+    const invoiceId = row.tenant_invoices?.id ?? '';
     rows.push({
       paymentId: row.id,
       recordedAt: row.recorded_at,
       customerName: customerLabelFromIdentity(ident),
-      invoiceId: row.tenant_invoices?.id ?? '',
+      invoiceId,
       invoiceTitle: row.tenant_invoices?.title ?? '—',
       amountCents: row.amount_cents,
       checkReference: row.notes?.trim() || '—',
       stage,
+      chainOfCustody:
+        eventSummaries.get(row.id) ??
+        ([
+          row.received_at ? `Received ${new Date(row.received_at).toLocaleDateString()}` : null,
+          row.deposited_at ? `Deposited ${new Date(row.deposited_at).toLocaleDateString()}` : null,
+        ]
+          .filter(Boolean)
+          .join('; ') ||
+          '—'),
+      paymentAuditHref: '/billing/payment-audits',
+      invoiceHref: invoiceId ? `/billing/invoices/${invoiceId}` : '/billing/payment-audits',
     });
   }
 

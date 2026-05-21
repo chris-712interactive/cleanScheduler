@@ -19,6 +19,7 @@ export function isReportPaginated(result: ReportRunResult): boolean {
     case 'year-end-revenue':
     case 'customer-1099-prep':
     case 'cohort-ltv-churn':
+    case 'bank-reconciliation':
       return true;
     default:
       return false;
@@ -57,6 +58,8 @@ export function countReportRows(result: ReportRunResult): number {
     case 'year-end-revenue':
     case 'customer-1099-prep':
     case 'cohort-ltv-churn':
+      return result.data.rows.length;
+    case 'bank-reconciliation':
       return result.data.rows.length;
     default:
       return 0;

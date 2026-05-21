@@ -19,6 +19,8 @@ export interface InvoiceAuditRow {
   remainingCents: number;
   daysOutstanding: number | null;
   paymentMethods: string;
+  invoiceHref: string;
+  paymentAuditHref: string;
 }
 
 export interface InvoiceAuditResult {
@@ -96,6 +98,8 @@ export async function runInvoiceAuditReport(
       remainingCents: remaining,
       daysOutstanding: daysOutstanding(inv.due_date, now),
       paymentMethods: methods.size > 0 ? [...methods].join(', ') : '—',
+      invoiceHref: `/billing/invoices/${inv.id}`,
+      paymentAuditHref: '/billing/payment-audits',
     };
   });
 

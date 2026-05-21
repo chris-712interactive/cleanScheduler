@@ -8,6 +8,7 @@ import { canManageBankReconciliation } from '@/lib/auth/tenantRoleAccess';
 import { isPlaidConfigured } from '@/lib/plaid/server';
 import { DisconnectBankButton, SyncBankButton } from './BankConnectionControls';
 import { DepositCandidatesTable } from './DepositCandidatesTable';
+import { BankStatementImportForm } from './BankStatementImportForm';
 import { PlaidLinkButton } from './PlaidLinkButton';
 import { MatchSuggestionsPanel, type MatchSuggestionRow } from './MatchSuggestionsPanel';
 import styles from '../billing.module.scss';
@@ -39,6 +40,8 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
   const matched = firstParam(sp.matched) === '1';
   const dismissed = firstParam(sp.dismissed) === '1';
   const disconnected = firstParam(sp.disconnected) === '1';
+  const imported = Number(firstParam(sp.imported) ?? '0');
+  const skipped = Number(firstParam(sp.skipped) ?? '0');
   const plaidReady = isPlaidConfigured();
   const canManageBank = canManageBankReconciliation(membership.role);
 
@@ -176,6 +179,13 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
           Bank connection removed.
         </p>
       ) : null}
+      {imported > 0 ? (
+        <p className={styles.bannerOk} role="status">
+          Imported {imported} bank deposit row{imported === 1 ? '' : 's'}
+          {skipped > 0 ? ` (${skipped} duplicate or invalid rows skipped)` : ''}. Match suggestions
+          were refreshed.
+        </p>
+      ) : null}
 
       <Stack gap={6}>
         <Card
@@ -238,6 +248,15 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
             ) : null}
           </div>
         </Card>
+
+        {canManageBank ? (
+          <Card
+            title="Import bank statement (CSV)"
+            description="Fallback when Plaid does not cover your bank — same matching workflow as live sync."
+          >
+            <BankStatementImportForm tenantSlug={membership.tenantSlug} />
+          </Card>
+        ) : null}
 
         <Card title="Suggested matches" description="Review before confirming — this records an invoice payment.">
           <MatchSuggestionsPanel

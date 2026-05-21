@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fieldCheckStageLabel } from '@/lib/reports/fieldCheckReport';
+import { bankDepositMatchStatusLabel } from '@/lib/reports/bankReconciliationReport';
 import type { ReportRunResult } from '@/lib/reports/runReport';
 import { AGING_BUCKET_LABEL } from '@/lib/reports/types';
 import { formatUsdFromCents } from '@/lib/format/money';
@@ -131,6 +132,7 @@ export function ReportResultTable({
                   <th scope="col">Check ref</th>
                   <th scope="col">Amount</th>
                   <th scope="col">Stage</th>
+                  <th scope="col">Chain of custody</th>
                 </tr>
               </thead>
               <tbody>
@@ -153,6 +155,7 @@ export function ReportResultTable({
                     <td>{row.checkReference}</td>
                     <td>{formatUsdFromCents(row.amountCents)}</td>
                     <td>{fieldCheckStageLabel(row.stage)}</td>
+                    <td>{row.chainOfCustody}</td>
                   </tr>
                 ))}
               </tbody>
@@ -752,6 +755,65 @@ export function ReportResultTable({
             </tbody>
           </table>
         </TableShell>
+      );
+    }
+    case 'bank-reconciliation': {
+      const rows = result.data.rows;
+      const slice = paginate(rows, page, pageSize);
+      return (
+        <>
+          {!result.data.hasBankLink ? (
+            <p className={styles.hint}>
+              Connect a bank account or import a CSV under{' '}
+              <Link href="/billing/bank-connection" className={styles.actionLink}>
+                Bank connection
+              </Link>{' '}
+              to populate this report.
+            </p>
+          ) : null}
+          <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+            <table className={styles.directoryTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Posted</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Invoice</th>
+                  <th scope="col">Suggestions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {slice.items.map((row) => (
+                  <tr key={row.transactionId}>
+                    <td>{formatDate(row.postedDate)}</td>
+                    <td>{row.name}</td>
+                    <td>{formatUsdFromCents(row.amountCents)}</td>
+                    <td>{bankDepositMatchStatusLabel(row.matchStatus)}</td>
+                    <td>
+                      {row.invoiceHref && row.invoiceTitle ? (
+                        <Link href={row.invoiceHref} className={styles.actionLink}>
+                          {row.invoiceTitle}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td>
+                      {row.openSuggestions > 0 ? (
+                        <Link href={row.bankConnectionHref} className={styles.actionLink}>
+                          {row.openSuggestions} open
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </>
       );
     }
     default:

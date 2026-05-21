@@ -18,6 +18,7 @@ import { runTipsCommissionsReport } from '@/lib/reports/tipsCommissionsReport';
 import { runProcessingFeesReport } from '@/lib/reports/processingFeesReport';
 import { runYearEndRevenueReport } from '@/lib/reports/yearEndRevenueReport';
 import { runCustomer1099PrepReport } from '@/lib/reports/customer1099PrepReport';
+import { runBankReconciliationReport } from '@/lib/reports/bankReconciliationReport';
 import { runCohortLtvReport } from '@/lib/reports/cohortLtvReport';
 import type { ReportSlug } from '@/lib/reports/types';
 
@@ -44,6 +45,7 @@ export type ReportRunResult =
   | { kind: 'year-end-revenue'; data: Awaited<ReturnType<typeof runYearEndRevenueReport>> }
   | { kind: 'customer-1099-prep'; data: Awaited<ReturnType<typeof runCustomer1099PrepReport>> }
   | { kind: 'cohort-ltv-churn'; data: Awaited<ReturnType<typeof runCohortLtvReport>> }
+  | { kind: 'bank-reconciliation'; data: Awaited<ReturnType<typeof runBankReconciliationReport>> }
   | { kind: 'pro-placeholder' };
 
 const IMPLEMENTED_REPORT_SLUGS: ReportSlug[] = [
@@ -66,6 +68,7 @@ const IMPLEMENTED_REPORT_SLUGS: ReportSlug[] = [
   'year-end-revenue',
   'customer-1099-prep',
   'cohort-ltv-churn',
+  'bank-reconciliation',
 ];
 
 export function isImplementedReportSlug(slug: ReportSlug): boolean {
@@ -184,6 +187,11 @@ export async function runTenantReport(
       return {
         kind: 'cohort-ltv-churn',
         data: await runCohortLtvReport(db, tenantId, params.fromIso, params.toIso),
+      };
+    case 'bank-reconciliation':
+      return {
+        kind: 'bank-reconciliation',
+        data: await runBankReconciliationReport(db, tenantId, params.fromIso, params.toIso),
       };
     default:
       return { kind: 'pro-placeholder' };

@@ -6,6 +6,7 @@ import { isManualAuditPayment } from '@/lib/billing/manualPaymentAudit';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
+import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -60,6 +61,14 @@ export async function markManualPaymentReceived(formData: FormData): Promise<voi
     .eq('id', paymentId)
     .eq('tenant_id', membership.tenantId);
 
+  await recordTenantPaymentEvent(admin, {
+    tenantId: membership.tenantId,
+    paymentId,
+    actorUserId: auth?.user?.id ?? null,
+    action: 'payment.received',
+    detail: 'Marked received in payment audits',
+  });
+
   revalidatePaymentAuditPaths();
 }
 
@@ -89,6 +98,14 @@ export async function markManualPaymentDeposited(formData: FormData): Promise<vo
     })
     .eq('id', paymentId)
     .eq('tenant_id', membership.tenantId);
+
+  await recordTenantPaymentEvent(admin, {
+    tenantId: membership.tenantId,
+    paymentId,
+    actorUserId: auth?.user?.id ?? null,
+    action: 'payment.deposited',
+    detail: 'Marked deposited in payment audits',
+  });
 
   revalidatePaymentAuditPaths();
 }

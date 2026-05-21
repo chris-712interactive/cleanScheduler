@@ -71,6 +71,71 @@ export type Database = {
         };
         Relationships: [];
       };
+      tenant_payment_events: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          payment_id: string | null;
+          invoice_id: string | null;
+          bank_transaction_id: string | null;
+          actor_user_id: string | null;
+          action: string;
+          detail: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          payment_id?: string | null;
+          invoice_id?: string | null;
+          bank_transaction_id?: string | null;
+          actor_user_id?: string | null;
+          action: string;
+          detail?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          payment_id?: string | null;
+          invoice_id?: string | null;
+          bank_transaction_id?: string | null;
+          actor_user_id?: string | null;
+          action?: string;
+          detail?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_payment_events_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_payment_events_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_invoice_payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_payment_events_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_invoices';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_payment_events_bank_transaction_id_fkey';
+            columns: ['bank_transaction_id'];
+            isOneToOne: false;
+            referencedRelation: 'bank_transactions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       bank_links: {
         Row: {
           id: string;

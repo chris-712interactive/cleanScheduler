@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 
 type Admin = SupabaseClient<Database>;
 
@@ -91,6 +92,15 @@ export async function matchBankDepositToInvoice(
     .update({ status: 'dismissed' })
     .eq('bank_transaction_id', transaction.id)
     .eq('status', 'suggested');
+
+  await recordTenantPaymentEvent(admin, {
+    tenantId,
+    paymentId: payment.id,
+    invoiceId: invoice.id,
+    bankTransactionId: transaction.id,
+    action: 'bank.matched',
+    detail: `Matched bank deposit to invoice ${invoice.title}`,
+  });
 
   return { paymentId: payment.id };
 }

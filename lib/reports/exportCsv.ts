@@ -1,5 +1,6 @@
 import type { ReportRunResult } from '@/lib/reports/runReport';
 import { fieldCheckStageLabel } from '@/lib/reports/fieldCheckReport';
+import { bankDepositMatchStatusLabel } from '@/lib/reports/bankReconciliationReport';
 import { rowsToCsv, type CsvColumn } from '@/lib/reports/toCsv';
 import { AGING_BUCKET_LABEL } from '@/lib/reports/types';
 import { formatUsdFromCents } from '@/lib/format/money';
@@ -37,6 +38,8 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         { key: 'paid', header: 'Paid', format: (r) => formatUsdFromCents(r.paidCents) },
         { key: 'remaining', header: 'Balance', format: (r) => formatUsdFromCents(r.remainingCents) },
         { key: 'methods', header: 'Payment methods', format: (r) => r.paymentMethods },
+        { key: 'invoiceLink', header: 'Invoice link', format: (r) => r.invoiceHref },
+        { key: 'auditLink', header: 'Payment audits link', format: (r) => r.paymentAuditHref },
       ];
       return rowsToCsv(cols, result.data.rows);
     }
@@ -48,6 +51,9 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         { key: 'check', header: 'Check reference', format: (r) => r.checkReference },
         { key: 'amount', header: 'Amount', format: (r) => formatUsdFromCents(r.amountCents) },
         { key: 'stage', header: 'Stage', format: (r) => fieldCheckStageLabel(r.stage) },
+        { key: 'chain', header: 'Chain of custody', format: (r) => r.chainOfCustody },
+        { key: 'invoiceLink', header: 'Invoice link', format: (r) => r.invoiceHref },
+        { key: 'auditLink', header: 'Payment audits link', format: (r) => r.paymentAuditHref },
       ];
       return rowsToCsv(cols, result.data.rows);
     }
@@ -240,6 +246,24 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         { key: 'active', header: 'Active customers', format: (r) => String(r.activeCustomers) },
         { key: 'ret', header: 'Retention %', format: (r) => String(r.retentionPercent) },
         { key: 'rev', header: 'Revenue', format: (r) => formatUsdFromCents(r.revenueCents) },
+      ];
+      return rowsToCsv(cols, result.data.rows);
+    }
+    case 'bank-reconciliation': {
+      const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [
+        { key: 'date', header: 'Posted', format: (r) => formatDate(r.postedDate) },
+        { key: 'name', header: 'Description', format: (r) => r.name },
+        { key: 'amount', header: 'Amount', format: (r) => formatUsdFromCents(r.amountCents) },
+        {
+          key: 'status',
+          header: 'Match status',
+          format: (r) => bankDepositMatchStatusLabel(r.matchStatus),
+        },
+        { key: 'invoice', header: 'Matched invoice', format: (r) => r.invoiceTitle ?? '' },
+        { key: 'customer', header: 'Customer', format: (r) => r.customerName ?? '' },
+        { key: 'suggestions', header: 'Open suggestions', format: (r) => String(r.openSuggestions) },
+        { key: 'bankLink', header: 'Bank connection link', format: (r) => r.bankConnectionHref },
+        { key: 'invoiceLink', header: 'Invoice link', format: (r) => r.invoiceHref ?? '' },
       ];
       return rowsToCsv(cols, result.data.rows);
     }

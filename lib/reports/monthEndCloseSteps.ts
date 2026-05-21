@@ -47,8 +47,9 @@ export const MONTH_END_CLOSE_STEPS: MonthEndCloseStep[] = [
     id: 'bank',
     title: 'Match bank deposits',
     detail: 'Confirm Plaid suggestions or manually match Zelle/ACH deposits.',
-    href: '/billing/bank-connection',
-    kind: 'billing',
+    href: '/reports/bank-reconciliation',
+    reportSlug: 'bank-reconciliation',
+    kind: 'report',
   },
   {
     id: 'checks',

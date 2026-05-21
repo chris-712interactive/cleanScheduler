@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { fieldCheckStageLabel } from '@/lib/reports/fieldCheckReport';
+import { bankDepositMatchStatusLabel } from '@/lib/reports/bankReconciliationReport';
 import type { ReportRunResult } from '@/lib/reports/runReport';
 import { AGING_BUCKET_LABEL } from '@/lib/reports/types';
 import { formatUsdFromCents } from '@/lib/format/money';
@@ -227,6 +228,17 @@ function collectPdfRows(result: ReportRunResult): { headers: string[]; rows: str
           String(r.monthsSinceFirst),
           `${r.retentionPercent}%`,
           formatUsdFromCents(r.revenueCents),
+        ]),
+      };
+    case 'bank-reconciliation':
+      return {
+        headers: ['Posted', 'Description', 'Amount', 'Status', 'Invoice'],
+        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
+          formatDate(r.postedDate),
+          r.name,
+          formatUsdFromCents(r.amountCents),
+          bankDepositMatchStatusLabel(r.matchStatus),
+          r.invoiceTitle ?? '—',
         ]),
       };
     default:

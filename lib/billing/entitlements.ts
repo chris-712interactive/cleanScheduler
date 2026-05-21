@@ -13,7 +13,8 @@ export type EntitlementFeature =
   | 'forecasting'
   | 'fullApiWebhooks'
   | 'multiLocationControls'
-  | 'dedicatedOnboarding';
+  | 'dedicatedOnboarding'
+  | 'plaidReconciliation';
 
 export type EntitlementLimitKey =
   | 'includedSeats'
@@ -58,6 +59,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       fullApiWebhooks: false,
       multiLocationControls: false,
       dedicatedOnboarding: false,
+      plaidReconciliation: false,
     },
     limits: {
       includedSeats: 1,
@@ -89,6 +91,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       fullApiWebhooks: false,
       multiLocationControls: false,
       dedicatedOnboarding: false,
+      plaidReconciliation: true,
     },
     limits: {
       includedSeats: 5,
@@ -120,6 +123,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       fullApiWebhooks: true,
       multiLocationControls: true,
       dedicatedOnboarding: true,
+      plaidReconciliation: true,
     },
     limits: {
       includedSeats: 10,

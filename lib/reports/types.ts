@@ -19,7 +19,8 @@ export type ReportSlug =
   | 'processing-fees-deductible'
   | 'year-end-revenue'
   | 'customer-1099-prep'
-  | 'cohort-ltv-churn';
+  | 'cohort-ltv-churn'
+  | 'bank-reconciliation';
 
 export type ReportSection = 'financial' | 'operations' | 'payroll';
 

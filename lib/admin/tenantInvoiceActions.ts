@@ -7,6 +7,8 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
   tenantRoleError,
 } from '@/lib/auth/tenantRoleAccess';
+import { getAuthContext } from '@/lib/auth/session';
+import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 import type { Database } from '@/lib/supabase/database.types';
 
 type InvoiceStatus = Database['public']['Enums']['tenant_invoice_status'];
@@ -117,17 +119,32 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
 
   const payAmount = Math.min(amountCents, remaining);
 
-  const { error } = await admin.from('tenant_invoice_payments').insert({
-    tenant_id: membership.tenantId,
-    invoice_id: invoiceId,
-    amount_cents: payAmount,
-    method: safeMethod,
-    notes,
-  });
+  const auth = await getAuthContext();
 
-  if (error) {
+  const { data: paymentRow, error } = await admin
+    .from('tenant_invoice_payments')
+    .insert({
+      tenant_id: membership.tenantId,
+      invoice_id: invoiceId,
+      amount_cents: payAmount,
+      method: safeMethod,
+      notes,
+    })
+    .select('id')
+    .single();
+
+  if (error || !paymentRow) {
     redirect(`/billing/invoices/${invoiceId}?error=save`);
   }
+
+  await recordTenantPaymentEvent(admin, {
+    tenantId: membership.tenantId,
+    paymentId: paymentRow.id,
+    invoiceId,
+    actorUserId: auth?.user.id ?? null,
+    action: 'payment.recorded',
+    detail: `${safeMethod} payment recorded (${(payAmount / 100).toFixed(2)} USD)`,
+  });
 
   revalidatePath('/billing');
   revalidatePath('/billing/invoices');

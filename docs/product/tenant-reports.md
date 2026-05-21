@@ -2,7 +2,7 @@
 
 One-stop reporting for cleaning businesses: day-to-day operations, monthly bookkeeping close, payroll inputs, and year-end tax prep. Reports live at **`/reports`** (top-level tenant nav). Operational **payment workflows** (mark received / deposited) stay under **`/billing/payment-audits`**.
 
-**Status (2026-05):** Phases **1**, **1.5**, **2**, and **3 (baseline)** are implemented — **19 report slugs**. Remaining: Plaid bank reconciliation (needs `bank_links` tables), richer cohort/LTV modeling, audit-log export links (see [Implementation status](#implementation-status) below).
+**Status (2026-05):** Phases **1**, **1.5**, **2**, and **3 (baseline)** are implemented — **20 report slugs**. Remaining polish: richer cohort/LTV modeling, optional reports mockup (see [Implementation status](#implementation-status) below).
 
 **Migrations:** `supabase/migrations/0034_report_runs.sql`, `supabase/migrations/0035_reports_phase2.sql`
 
@@ -78,6 +78,7 @@ Requires `advancedAnalytics` (`lib/billing/entitlements.ts` — **Pro only** tod
 | `tips-commissions` | Tips & commissions | `jobCosting` (**Business+**) | Lists `compensation_rules` (manage at Settings → Compensation); payout math deferred |
 | `crew-utilization` | Crew utilization | `advancedAnalytics` (**Pro**) | Scheduled hours vs 40h/week × weeks in range |
 | `on-time-arrival` | On-time arrival | `advancedAnalytics` (**Pro**) | `checked_in_at` vs `starts_at` with 15-minute grace |
+| `bank-reconciliation` | Bank deposit reconciliation | `plaidReconciliation` (**Business+**) | `bank_transactions`, match suggestions, CSV import fallback |
 
 ### Phase 3 — Year-end & strategic
 
@@ -104,7 +105,7 @@ Align with `lib/billing/entitlements.ts`. **Starter gets real reports**, not an 
 | Payroll export report | No | Yes (`payrollExports`) | Yes |
 | Tips & commissions (rules directory) | No | Yes (`jobCosting`) | Yes |
 | Crew utilization + on-time arrival | No | No | Yes (`advancedAnalytics`) |
-| Plaid bank match reports | No | No (future `plaidReconciliation`) | No (future) |
+| Plaid bank match reports | No | Yes (`plaidReconciliation`) | Yes (`plaidReconciliation`) |
 | Cohort / forecasting (Phase 3) | No | No | Yes (`forecasting`) |
 
 **Enforcement pattern** (mirror email campaigns):
@@ -121,7 +122,7 @@ Align with `lib/billing/entitlements.ts`. **Starter gets real reports**, not an 
 - `payrollExports` — Business & Pro (payroll export report)
 - `advancedAnalytics` — Pro (Phase 1.5 bundle + crew utilization + on-time arrival)
 - `jobCosting` — Business & Pro (tips & commissions rules report)
-- `plaidReconciliation` — **not yet added** (Plaid reports remain future)
+- `plaidReconciliation` — Business & Pro (bank deposit reconciliation report)
 
 **Not gated by Connect:** cash/check/Zelle reports work without Stripe Connect. Card reconciliation sections show “Connect not set up” empty state when `stripe_connect_status !== 'complete'`.
 
@@ -294,15 +295,17 @@ Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each repor
 | **Phase 2 baseline** | Sales tax, payroll export (generic + ADP/Gusto/QBO CSV), tips/commissions, crew utilization, on-time arrival |
 | **Phase 2 polish** | `stripe_payout_id` + payout backfill; compensation rules UI + payout math on payroll/tips |
 | **Phase 3 baseline** | Processing fees (all tiers), year-end revenue, 1099 prep (Pro), cohort/LTV (Pro `forecasting`) |
+| **Bank reconciliation** | `bank-reconciliation` report, `plaidReconciliation` entitlement, CSV import fallback on bank connection |
+| **Chain-of-custody exports** | `tenant_payment_events` log; field check + invoice audit CSV/PDF link columns |
 | **PDF cache** | `report_exports` Storage keyed by `report_runs.id` on PDF export |
 | **Payout backfill cron** | Weekly `/api/cron/backfill-stripe-payout-links` for historical batches |
 | **RBAC** | `lib/tenant/reportPermissions.ts` — owners/admins export; employees/viewers read unlocked reports |
 
 ### Remaining
 
-- Plaid bank reconciliation report (`plaidReconciliation` — requires Phase 2 Plaid tables)
-- Audit-log chain-of-custody links on export rows
+- Richer cohort/LTV modeling (beyond baseline retention curves)
 - Mockup `docs/design/portal-mockups/15-tenant-reports.png` (optional)
+- Manual QA: masquerade export scoping
 
 ### Key files
 
@@ -345,12 +348,12 @@ lib/reports/
 
 1. ~~`salesTaxSummary` / `payrollExports` entitlements + `0035_reports_phase2.sql` (`compensation_rules`).~~
 2. ~~Five Phase 2 report slugs live.~~
-3. ~~Provider payroll formats, rules UI.~~ Plaid — **pending**.
+3. ~~Provider payroll formats, rules UI, Plaid bank report, and CSV import fallback.~~
 
 ### Phase 3 — Year-end pack (baseline ✅)
 
 1. ~~Processing fees, year-end revenue, 1099 prep, cohort/LTV reports.~~
-2. Audit log extension + export row hyperlinks — **pending**.
+2. ~~Payment event log + export row link columns for chain-of-custody.~~
 
 ---
 
