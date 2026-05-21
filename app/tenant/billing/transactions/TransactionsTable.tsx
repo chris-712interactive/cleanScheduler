@@ -24,7 +24,13 @@ export type TransactionRow = {
   } | null;
 };
 
-export function TransactionsTable({ rows }: { rows: TransactionRow[] }) {
+export function TransactionsTable({
+  rows,
+  footer,
+}: {
+  rows: TransactionRow[];
+  footer?: React.ReactNode;
+}) {
   return (
     <div className={styles.tablePanel}>
       <div className={styles.tableWrap}>
@@ -109,6 +115,7 @@ export function TransactionsTable({ rows }: { rows: TransactionRow[] }) {
           </tbody>
         </table>
       </div>
+      {footer}
     </div>
   );
 }

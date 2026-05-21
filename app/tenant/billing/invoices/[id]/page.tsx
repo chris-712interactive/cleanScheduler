@@ -13,6 +13,8 @@ import { sendTenantInvoiceEmailAction } from '@/app/tenant/billing/invoiceEmailA
 import { refundStripeInvoicePaymentAction } from '@/app/tenant/billing/invoiceRefundActions';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { isResendConfigured } from '@/lib/email/resend';
+import { getInvoiceRelatedRecords } from '@/lib/tenant/relatedRecords';
+import { RelatedRecordsPanel } from '@/app/tenant/RelatedRecordsPanel';
 import styles from '../../billing.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -71,6 +73,11 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
   const connectComplete = tenantRow?.stripe_connect_status === 'complete';
 
   const remaining = inv.amount_cents - inv.amount_paid_cents;
+  const relatedRecords = await getInvoiceRelatedRecords(db, membership.tenantId, {
+    id: inv.id,
+    customer_id: inv.customer_id,
+    visit_id: inv.visit_id,
+  });
 
   return (
     <>
@@ -109,6 +116,8 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
       ) : null}
 
       <Stack gap={4}>
+        <RelatedRecordsPanel snapshot={relatedRecords} />
+
         <Card title="Summary">
           <KeyValueList
             items={[

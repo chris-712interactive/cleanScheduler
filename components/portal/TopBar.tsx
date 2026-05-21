@@ -26,6 +26,7 @@ export interface TopBarProps {
   settingsHref?: string;
   tenantBadge?: React.ReactNode;
   navItems: NavItem[];
+  searchSlot?: React.ReactNode;
 }
 
 export function TopBar({
@@ -35,6 +36,7 @@ export function TopBar({
   settingsHref,
   tenantBadge,
   navItems,
+  searchSlot,
 }: TopBarProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -73,6 +75,7 @@ export function TopBar({
       </div>
 
       <div className={styles.right}>
+        {searchSlot}
         <ThemeToggle />
         {identity ? <AccountMenu {...identity} settingsHref={settingsHref} /> : null}
       </div>

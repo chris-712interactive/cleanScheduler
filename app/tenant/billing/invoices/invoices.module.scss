@@ -7,6 +7,14 @@
   list-style: none;
 }
 
+.tablePanel {
+  overflow: hidden;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
 .cardLink {
   display: block;
   color: inherit;

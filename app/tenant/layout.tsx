@@ -1,4 +1,5 @@
 import { PortalShell } from '@/components/portal/PortalShell';
+import { GlobalSearch } from '@/components/portal/GlobalSearch';
 import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
 import { ConnectStatusBanner } from '@/components/billing/ConnectStatusBanner';
 import { TrialSubscriptionBanner } from '@/components/billing/TrialSubscriptionBanner';
@@ -151,6 +152,7 @@ export default async function TenantLayout({ children }: { children: React.React
       tenantBadge={<span>{slug}.cleanscheduler.com</span>}
       environmentBanner={nonProdBanner}
       sessionNotice={sessionNotice}
+      searchSlot={subscriptionLocked ? undefined : <GlobalSearch />}
     >
       {children}
     </PortalShell>

@@ -28,6 +28,8 @@ import {
   canManageScheduledVisit,
 } from '@/lib/schedule/visitFieldWork';
 import type { TenantRole } from '@/lib/auth/types';
+import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
+import { RelatedRecordsPanel } from '@/app/tenant/RelatedRecordsPanel';
 import { DeleteVisitButton } from '../DeleteVisitButton';
 import { VisitFieldWorkPanel } from '../VisitFieldWorkPanel';
 import { VisitTimeRescheduleForm } from '../VisitTimeRescheduleForm';
@@ -89,6 +91,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
       ends_at,
       status,
       notes,
+      customer_id,
       checked_in_at,
       checked_in_by_user_id,
       completed_at,
@@ -162,6 +165,12 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
   const showCheckIn = canCheckInToVisit(fieldParams);
   const showComplete = canCompleteVisit(fieldParams);
   const canDelete = canManageScheduledVisit(actorRole);
+  const relatedRecords = await getVisitRelatedRecords(supabase, membership.tenantId, {
+    id: row.id,
+    customer_id: row.customer_id,
+    quote_id: row.quote_id,
+    completion_invoice_id: row.completion_invoice_id,
+  });
 
   return (
     <>
@@ -181,6 +190,8 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
       />
 
       <Stack gap={4}>
+        <RelatedRecordsPanel snapshot={relatedRecords} />
+
         <Card title="Visit details">
           <div className={styles.stack}>
             <div>
@@ -227,7 +238,11 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Quote</span>
                   <p className={styles.detailValue}>
-                    {row.tenant_quotes.title}
+                    {row.quote_id ? (
+                      <Link href={`/quotes/${row.quote_id}`}>{row.tenant_quotes.title}</Link>
+                    ) : (
+                      row.tenant_quotes.title
+                    )}
                     {defaultAmountCents != null
                       ? ` · $${formatCentsAsDollars(defaultAmountCents)}`
                       : ''}

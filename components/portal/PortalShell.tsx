@@ -30,6 +30,8 @@ export interface PortalShellProps {
   environmentBanner?: ReactNode;
   /** Optional banner (e.g. masquerade exit) below env banner, above the top bar. */
   sessionNotice?: ReactNode;
+  /** Optional center slot (e.g. tenant global search). */
+  searchSlot?: ReactNode;
   children: ReactNode;
 }
 
@@ -43,6 +45,7 @@ export function PortalShell({
   tenantBadge,
   environmentBanner,
   sessionNotice,
+  searchSlot,
   children,
 }: PortalShellProps) {
   return (
@@ -67,6 +70,7 @@ export function PortalShell({
         settingsHref={settingsHref}
         tenantBadge={tenantBadge}
         navItems={navItems}
+        searchSlot={searchSlot}
       />
       <div className={styles.body}>
         <Sidebar items={navItems} />

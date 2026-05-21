@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Wallet, Receipt, FileSpreadsheet } from 'lucide-react';
+import { Wallet, Receipt, FileSpreadsheet, ClipboardCheck } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { DashboardStatCard } from '@/app/tenant/DashboardStatCard';
@@ -33,6 +33,18 @@ export default async function TenantReportsHubPage() {
         title="Reports"
         titleHint="Financial close, operations, and payroll exports for your cleaning business."
       />
+
+      <Link href="/reports/close" className={styles.closeBanner}>
+        <span className={styles.closeBannerIcon} aria-hidden>
+          <ClipboardCheck size={22} strokeWidth={2} />
+        </span>
+        <span className={styles.closeBannerCopy}>
+          <span className={styles.closeBannerTitle}>Month-end close checklist</span>
+          <span className={styles.closeBannerDescription}>
+            Ordered workflow for collections, audits, bank matching, and financial reports.
+          </span>
+        </span>
+      </Link>
 
       <div className={styles.statGrid}>
         <DashboardStatCard

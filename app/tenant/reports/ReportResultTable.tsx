@@ -49,7 +49,11 @@ export function ReportResultTable({
             <tbody>
               {slice.items.map((row) => (
                 <tr key={row.invoiceId}>
-                  <td>{row.customerName}</td>
+                  <td>
+                    <Link href={`/customers/${row.customerId}`} className={styles.actionLink}>
+                      {row.customerName}
+                    </Link>
+                  </td>
                   <td>
                     <Link href={`/billing/invoices/${row.invoiceId}`} className={styles.actionLink}>
                       {row.invoiceTitle}
