@@ -11,6 +11,7 @@ const config: NextConfig = {
       bodySizeLimit: '12mb',
     },
   },
+  allowedDevOrigins: ['*.lvh.me'],
   images: {
     remotePatterns: [
       {

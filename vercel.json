@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/backfill-stripe-payout-links",
       "schedule": "30 8 * * 0"
+    },
+    {
+      "path": "/api/cron/plaid-sync",
+      "schedule": "0 9 * * *"
     }
   ]
 }

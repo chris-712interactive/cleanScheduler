@@ -14,6 +14,7 @@ import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { RecurringBillingPanel } from '../RecurringBillingPanel';
+import { CustomerActivityPanel } from '../CustomerActivityPanel';
 import styles from '../customers.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -180,6 +181,8 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
             </div>
           </div>
         </Card>
+
+        <CustomerActivityPanel tenantId={membership.tenantId} customerId={customer.id} />
 
         <Card
           title="Customer portal access"

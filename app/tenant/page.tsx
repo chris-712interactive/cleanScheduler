@@ -12,11 +12,13 @@ import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
 import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingInvoices';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
+import { getDashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
 import {
   getTenantCustomersAddedThisMonthCount,
   getTenantSentQuotesCount,
 } from '@/lib/tenant/dashboardMetrics';
 import { DashboardStatCard } from './DashboardStatCard';
+import { TodayQueuePanel } from './TodayQueuePanel';
 import styles from './dashboard.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +29,7 @@ export default async function TenantDashboardPage() {
   const trial = await getTenantTrialSummaryBySlug(membership.tenantSlug);
   const supabase = createTenantPortalDbClient();
 
-  const [customersCountRes, quotesCountRes, sentQuotesCount, customersAddedThisMonth, outstandingInvoices, todaysJobs] =
+  const [customersCountRes, quotesCountRes, sentQuotesCount, customersAddedThisMonth, outstandingInvoices, todaysJobs, todayQueue] =
     await Promise.all([
       supabase
         .from('customers')
@@ -43,6 +45,7 @@ export default async function TenantDashboardPage() {
       getTenantCustomersAddedThisMonthCount(supabase, membership.tenantId),
       getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
       getTenantTodaysJobsSummary(supabase, membership.tenantId),
+      getDashboardTodayQueue(supabase, membership.tenantId),
     ]);
 
   const activeCustomerCount = customersCountRes.error ? 0 : (customersCountRes.count ?? 0);
@@ -105,6 +108,8 @@ export default async function TenantDashboardPage() {
             </StatusPill>
           </Card>
         ) : null}
+
+        <TodayQueuePanel queue={todayQueue} />
 
         <div className={styles.statGrid}>
           <DashboardStatCard

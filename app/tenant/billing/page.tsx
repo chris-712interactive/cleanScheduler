@@ -4,6 +4,7 @@ import {
   Briefcase,
   CreditCard,
   FileText,
+  Landmark,
   Layers,
   ShieldCheck,
 } from 'lucide-react';
@@ -30,6 +31,7 @@ import {
   trialDaysRemaining,
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { CUSTOMER_AR_NAV_LINKS } from '@/lib/tenant/customerBillingNav';
 import type { Tables } from '@/lib/supabase/database.types';
 import { openPlatformBillingPortal, resumePlatformSubscriptionCheckout } from './actions';
 import styles from './billing.module.scss';
@@ -90,13 +92,14 @@ interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const HUB_LINKS = [
-  { href: '/billing/invoices', label: 'Open invoices', icon: FileText },
-  { href: '/billing/service-plans', label: 'Service plans', icon: Layers },
-  { href: '/billing/payment-setup', label: 'Payment setup', icon: CreditCard },
-  { href: '/billing/transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { href: '/billing/payment-audits', label: 'Payment audits', icon: ShieldCheck },
-] as const;
+const CUSTOMER_AR_ICONS = {
+  '/billing/invoices': FileText,
+  '/billing/service-plans': Layers,
+  '/billing/transactions': ArrowLeftRight,
+  '/billing/payment-audits': ShieldCheck,
+  '/billing/bank-connection': Landmark,
+  '/billing/payment-setup': CreditCard,
+} as const;
 
 export default async function TenantBillingPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -200,21 +203,24 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
         ) : null}
 
         <Card
-          title="Customer invoices"
+          title="Customer accounts receivable"
           description={
             customerBillingUnlocked
-              ? 'View and manage your invoices, payments, and billing history.'
+              ? 'Invoices, offline payment tracking, Stripe setup, and bank reconciliation for your clients.'
               : 'Available after you subscribe to a workspace plan.'
           }
         >
           {customerBillingUnlocked ? (
             <nav className={styles.hubNav} aria-label="Customer billing">
-              {HUB_LINKS.map(({ href, label, icon: Icon }) => (
-                <Link key={href} href={href} className={styles.hubNavLink}>
-                  <Icon size={18} strokeWidth={2} aria-hidden />
-                  {label}
-                </Link>
-              ))}
+              {CUSTOMER_AR_NAV_LINKS.map(({ href, label }) => {
+                const Icon = CUSTOMER_AR_ICONS[href as keyof typeof CUSTOMER_AR_ICONS];
+                return (
+                  <Link key={href} href={href} className={styles.hubNavLink}>
+                    <Icon size={18} strokeWidth={2} aria-hidden />
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
           ) : (
             <p className={styles.customerBillingLocked}>
@@ -224,7 +230,10 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           )}
         </Card>
 
-        <Card title="Current plan">
+        <Card
+          title="Your cleanScheduler subscription"
+          description="Platform plan for this workspace — separate from customer invoices above."
+        >
           {error || !billing ? (
             <p className={styles.muted}>No billing record found for this workspace.</p>
           ) : (

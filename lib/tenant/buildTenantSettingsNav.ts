@@ -10,6 +10,7 @@ export function buildTenantSettingsNavItem(): NavItem {
       { label: 'Business', href: '/settings/business', icon: 'settings' },
       { label: 'Account', href: '/settings/account', icon: 'settings' },
       { label: 'Operations', href: '/settings/operations', icon: 'settings' },
+      { label: 'Compensation', href: '/settings/compensation', icon: 'settings' },
       { label: 'Roles', href: '/settings/roles', icon: 'settings' },
     ],
   };

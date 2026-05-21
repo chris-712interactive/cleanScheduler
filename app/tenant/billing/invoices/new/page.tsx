@@ -11,7 +11,22 @@ import styles from '../../billing.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-export default async function NewTenantInvoicePage() {
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function NewTenantInvoicePage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const defaultCustomerId = firstParam(sp.customer_id)?.trim() ?? '';
+  const defaultTitle = firstParam(sp.title)?.trim() ?? '';
+  const defaultAmount = firstParam(sp.amount_dollars)?.trim() ?? '';
+  const defaultNotes = firstParam(sp.notes)?.trim() ?? '';
+
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/invoices/new');
   const db = createTenantPortalDbClient();
@@ -45,7 +60,12 @@ export default async function NewTenantInvoicePage() {
             <Stack gap={4} as="div">
               <label className={styles.field}>
                 <span>Customer</span>
-                <select name="customer_id" required className={styles.select}>
+                <select
+                  name="customer_id"
+                  required
+                  className={styles.select}
+                  defaultValue={defaultCustomerId}
+                >
                   <option value="">Select…</option>
                   {(customers ?? []).map((c) => {
                     const idRow = c.customer_identities as {
@@ -74,6 +94,7 @@ export default async function NewTenantInvoicePage() {
                   type="text"
                   className={styles.input}
                   placeholder="e.g. March deep clean"
+                  defaultValue={defaultTitle}
                 />
               </label>
               <label className={styles.field}>
@@ -84,6 +105,7 @@ export default async function NewTenantInvoicePage() {
                   className={styles.input}
                   placeholder="120.00"
                   required
+                  defaultValue={defaultAmount}
                 />
               </label>
               <label className={styles.field}>
@@ -92,7 +114,12 @@ export default async function NewTenantInvoicePage() {
               </label>
               <label className={styles.field}>
                 <span>Notes (optional)</span>
-                <textarea name="notes" className={styles.textarea} rows={3} />
+                <textarea
+                  name="notes"
+                  className={styles.textarea}
+                  rows={3}
+                  defaultValue={defaultNotes}
+                />
               </label>
               <Button type="submit" variant="primary">
                 Create invoice

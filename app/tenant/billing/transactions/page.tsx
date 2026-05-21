@@ -98,11 +98,11 @@ export default async function TenantBillingTransactionsPage() {
   return (
     <>
       <PageHeader
-        title="Transactions"
+        title="Customer payments"
         backHref="/billing"
         backLabel="Workspace billing"
         titleHint="All payments recorded on customer invoices — manual entries and Stripe Checkout."
-        description="A record of all payments and charges related to your account."
+        description="Payment ledger for your customers. For bank deposit matching, use Bank connection; for check/cash stages, use Payment audits."
       />
 
       {error ? (

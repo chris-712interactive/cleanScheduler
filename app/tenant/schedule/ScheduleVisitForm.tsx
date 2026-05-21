@@ -18,17 +18,24 @@ export function ScheduleVisitForm({
   customerPropertyGroups,
   quoteOptions,
   employeeOptions,
+  defaults,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
   customerPropertyGroups: CustomerPropertyGroup[];
   quoteOptions: { id: string; label: string }[];
   employeeOptions: EmployeeOption[];
+  defaults?: {
+    customerId?: string;
+    propertyId?: string;
+    quoteId?: string;
+    title?: string;
+  };
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
   useRefreshOnServerActionSuccess(state.success);
 
-  const [customerId, setCustomerId] = useState('');
+  const [customerId, setCustomerId] = useState(defaults?.customerId ?? '');
   const [crewFilter, setCrewFilter] = useState('');
 
   const propertyOptions = useMemo(() => {
@@ -83,7 +90,7 @@ export function ScheduleVisitForm({
             id="visit_property"
             name="property_id"
             className={styles.select}
-            defaultValue=""
+            defaultValue={defaults?.propertyId ?? ''}
             disabled={!customerId || propertyOptions.length === 0}
           >
             <option value="">— Any / TBD —</option>
@@ -98,7 +105,7 @@ export function ScheduleVisitForm({
           <label className={styles.label} htmlFor="visit_quote">
             Related quote (optional)
           </label>
-          <select id="visit_quote" name="quote_id" className={styles.select} defaultValue="">
+          <select id="visit_quote" name="quote_id" className={styles.select} defaultValue={defaults?.quoteId ?? ''}>
             <option value="">— None —</option>
             {quoteOptions.map((q) => (
               <option key={q.id} value={q.id}>
@@ -114,7 +121,12 @@ export function ScheduleVisitForm({
           <label className={styles.label} htmlFor="visit_title">
             Title
           </label>
-          <input id="visit_title" name="title" className={styles.input} defaultValue="Visit" />
+          <input
+            id="visit_title"
+            name="title"
+            className={styles.input}
+            defaultValue={defaults?.title?.trim() || 'Visit'}
+          />
         </div>
         <div className={styles.formField}>
           <label className={styles.label} htmlFor="visit_status">

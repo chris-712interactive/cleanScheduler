@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isManualAuditPayment } from '@/lib/billing/manualPaymentAudit';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -37,6 +38,8 @@ export async function markManualPaymentReceived(formData: FormData): Promise<voi
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const paymentId = String(formData.get('payment_id') ?? '').trim();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/payment-audits');
+  const roleErr = tenantRoleError(membership.role, 'employee');
+  if (roleErr) return;
 
   if (!UUID_RE.test(paymentId)) return;
 
@@ -64,6 +67,8 @@ export async function markManualPaymentDeposited(formData: FormData): Promise<vo
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const paymentId = String(formData.get('payment_id') ?? '').trim();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/payment-audits');
+  const roleErr = tenantRoleError(membership.role, 'employee');
+  if (roleErr) return;
 
   if (!UUID_RE.test(paymentId)) return;
 

@@ -86,7 +86,7 @@ export default async function TenantCompensationSettingsPage({ searchParams }: P
       {canEdit ? (
         <Card
           title="Add rule"
-          description="Rules appear on the Tips & commissions report. Payroll calculations will use active rules in a future release."
+          description="Rules feed the Payroll export and Tips & commissions reports."
         >
           <form action={createCompensationRuleAction} className={styles.compForm}>
             <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />

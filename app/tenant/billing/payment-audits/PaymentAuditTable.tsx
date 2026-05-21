@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ArrowDown, ArrowUpDown } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatInvoiceReference } from '@/lib/billing/formatInvoiceReference';
@@ -27,7 +28,13 @@ export type PaymentAuditRow = {
   tenant_invoices: {
     id: string;
     title: string;
+    customerId: string | null;
     customerLabel: string;
+  } | null;
+  bankMatch: {
+    id: string;
+    postedDate: string;
+    name: string;
   } | null;
 };
 
@@ -100,12 +107,27 @@ export function PaymentAuditTable({
                   <PaymentAuditMethodIcon method={p.method} />
                 </td>
                 <td className={styles.postedCell}>{formatPaymentAuditPosted(p.recorded_at)}</td>
-                <td className={styles.customerCell}>{inv?.customerLabel ?? '—'}</td>
+                <td className={styles.customerCell}>
+                  {inv?.customerId ? (
+                    <Link href={`/customers/${inv.customerId}`} className={styles.customerLink}>
+                      {inv.customerLabel}
+                    </Link>
+                  ) : (
+                    inv?.customerLabel ?? '—'
+                  )}
+                </td>
                 <td>
                   {inv ? (
-                    <a href={invoiceHref!} className={styles.invoiceLink}>
-                      {formatInvoiceReference(inv.id, inv.title)}
-                    </a>
+                    <div className={styles.invoiceCell}>
+                      <a href={invoiceHref!} className={styles.invoiceLink}>
+                        {formatInvoiceReference(inv.id, inv.title)}
+                      </a>
+                      {p.bankMatch ? (
+                        <Link href="/billing/bank-connection" className={styles.bankMatchLink}>
+                          Bank deposit · {p.bankMatch.postedDate} · {p.bankMatch.name}
+                        </Link>
+                      ) : null}
+                    </div>
                   ) : (
                     '—'
                   )}

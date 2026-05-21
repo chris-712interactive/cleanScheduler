@@ -71,6 +71,202 @@ export type Database = {
         };
         Relationships: [];
       };
+      bank_links: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          plaid_item_id: string;
+          plaid_access_token: string;
+          plaid_institution_id: string | null;
+          institution_name: string | null;
+          plaid_account_id: string;
+          account_name: string | null;
+          account_mask: string | null;
+          account_type: string | null;
+          account_subtype: string | null;
+          transactions_cursor: string | null;
+          status: Database['public']['Enums']['bank_link_status'];
+          last_synced_at: string | null;
+          last_sync_error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          plaid_item_id: string;
+          plaid_access_token: string;
+          plaid_institution_id?: string | null;
+          institution_name?: string | null;
+          plaid_account_id: string;
+          account_name?: string | null;
+          account_mask?: string | null;
+          account_type?: string | null;
+          account_subtype?: string | null;
+          transactions_cursor?: string | null;
+          status?: Database['public']['Enums']['bank_link_status'];
+          last_synced_at?: string | null;
+          last_sync_error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          plaid_item_id?: string;
+          plaid_access_token?: string;
+          plaid_institution_id?: string | null;
+          institution_name?: string | null;
+          plaid_account_id?: string;
+          account_name?: string | null;
+          account_mask?: string | null;
+          account_type?: string | null;
+          account_subtype?: string | null;
+          transactions_cursor?: string | null;
+          status?: Database['public']['Enums']['bank_link_status'];
+          last_synced_at?: string | null;
+          last_sync_error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bank_links_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      bank_transactions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          bank_link_id: string;
+          plaid_transaction_id: string;
+          amount_cents: number;
+          posted_date: string;
+          authorized_date: string | null;
+          name: string | null;
+          merchant_name: string | null;
+          payment_channel: string | null;
+          pending: boolean;
+          iso_currency_code: string;
+          matched_payment_id: string | null;
+          raw: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          bank_link_id: string;
+          plaid_transaction_id: string;
+          amount_cents: number;
+          posted_date: string;
+          authorized_date?: string | null;
+          name?: string | null;
+          merchant_name?: string | null;
+          payment_channel?: string | null;
+          pending?: boolean;
+          iso_currency_code?: string;
+          matched_payment_id?: string | null;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          bank_link_id?: string;
+          plaid_transaction_id?: string;
+          amount_cents?: number;
+          posted_date?: string;
+          authorized_date?: string | null;
+          name?: string | null;
+          merchant_name?: string | null;
+          payment_channel?: string | null;
+          pending?: boolean;
+          iso_currency_code?: string;
+          matched_payment_id?: string | null;
+          raw?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bank_transactions_bank_link_id_fkey';
+            columns: ['bank_link_id'];
+            isOneToOne: false;
+            referencedRelation: 'bank_links';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bank_transactions_matched_payment_id_fkey';
+            columns: ['matched_payment_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_invoice_payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bank_transactions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_match_suggestions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          bank_transaction_id: string;
+          invoice_id: string;
+          confidence_score: number;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          bank_transaction_id: string;
+          invoice_id: string;
+          confidence_score: number;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          bank_transaction_id?: string;
+          invoice_id?: string;
+          confidence_score?: number;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payment_match_suggestions_bank_transaction_id_fkey';
+            columns: ['bank_transaction_id'];
+            isOneToOne: false;
+            referencedRelation: 'bank_transactions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payment_match_suggestions_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_invoices';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payment_match_suggestions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       customer_support_messages: {
         Row: {
           id: string;
@@ -2310,6 +2506,7 @@ export type Database = {
       };
     };
     Enums: {
+      bank_link_status: 'active' | 'login_required' | 'disconnected';
       app_role: 'super_admin' | 'admin' | 'employee' | 'customer';
       tenant_role: 'owner' | 'admin' | 'employee' | 'viewer';
       tenant_billing_status: 'trialing' | 'active' | 'past_due' | 'canceled';

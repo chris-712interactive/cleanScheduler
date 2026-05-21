@@ -54,7 +54,22 @@ function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyG
   return Array.from(map.entries()).map(([customerId, options]) => ({ customerId, options }));
 }
 
-export default async function TenantScheduleNewPage() {
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function TenantScheduleNewPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const defaultCustomerId = firstParam(sp.customer_id)?.trim() ?? '';
+  const defaultQuoteId = firstParam(sp.quote_id)?.trim() ?? '';
+  const defaultPropertyId = firstParam(sp.property_id)?.trim() ?? '';
+  const defaultTitle = firstParam(sp.title)?.trim() ?? '';
+
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule/new');
 
@@ -155,6 +170,12 @@ export default async function TenantScheduleNewPage() {
           customerPropertyGroups={customerPropertyGroups}
           quoteOptions={quoteOptions}
           employeeOptions={employeeOptions}
+          defaults={{
+            customerId: defaultCustomerId,
+            quoteId: defaultQuoteId,
+            propertyId: defaultPropertyId,
+            title: defaultTitle,
+          }}
         />
       </Card>
     </>

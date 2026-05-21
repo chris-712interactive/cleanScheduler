@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Calendar, FileText } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
+import { Button } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -230,15 +232,53 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   const canCreateAmendment =
     row.is_locked && row.status === 'accepted' && !row.superseded_by_quote_id;
 
+  const showWorkflowActions = row.status === 'accepted' && !row.superseded_by_quote_id;
+  const schedulePrefill = new URLSearchParams({
+    customer_id: row.customer_id ?? '',
+    quote_id: row.id,
+    title: row.title,
+  });
+  if (row.property_id) {
+    schedulePrefill.set('property_id', row.property_id);
+  }
+  const invoicePrefill = new URLSearchParams({
+    customer_id: row.customer_id ?? '',
+    title: row.title,
+    amount_dollars: ((row.amount_cents ?? 0) / 100).toFixed(2),
+    notes: `From quote ${row.id.slice(0, 8)}`,
+  });
+
   return (
     <>
       <PageHeader
         title={row.title}
         description={`${QUOTE_STATUS_LABEL[row.status]} · ${formatQuoteMoney(row.amount_cents, row.currency)} · Version ${row.version_number}`}
         actions={
-          <Link href="/quotes" className={styles.backLink}>
-            ← All quotes
-          </Link>
+          <div className={styles.quoteHeaderActions}>
+            {showWorkflowActions ? (
+              <>
+                <Button as="a" href={`/schedule/new?${schedulePrefill.toString()}`} iconLeft={<Calendar size={16} />}>
+                  Schedule visit
+                </Button>
+                <Button
+                  as="a"
+                  href={`/billing/invoices/new?${invoicePrefill.toString()}`}
+                  variant="secondary"
+                  iconLeft={<FileText size={16} />}
+                >
+                  Create invoice
+                </Button>
+              </>
+            ) : null}
+            {row.customer_id ? (
+              <Button as="a" href={`/customers/${row.customer_id}`} variant="secondary">
+                View customer
+              </Button>
+            ) : null}
+            <Link href="/quotes" className={styles.backLink}>
+              ← All quotes
+            </Link>
+          </div>
         }
       />
 

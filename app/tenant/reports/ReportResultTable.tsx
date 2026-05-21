@@ -462,7 +462,15 @@ export function ReportResultTable({
       const rows = result.data.rows;
       const slice = paginate(rows, page, pageSize);
       return (
-        <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+        <>
+          <p className={styles.hint}>
+            Variable pay uses active rules from{' '}
+            <Link href="/settings/compensation" className={styles.actionLink}>
+              Settings → Compensation
+            </Link>
+            .
+          </p>
+          <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
           <table className={styles.directoryTable}>
             <thead>
               <tr>
@@ -486,6 +494,7 @@ export function ReportResultTable({
             </tbody>
           </table>
         </TableShell>
+        </>
       );
     }
     case 'crew-utilization': {
@@ -551,6 +560,13 @@ export function ReportResultTable({
       const slice = paginate(payoutRows, page, pageSize);
       return (
         <>
+          <p className={styles.hint}>
+            Manage commission and tip rules under{' '}
+            <Link href="/settings/compensation" className={styles.actionLink}>
+              Settings → Compensation
+            </Link>
+            .
+          </p>
           <TableShell
             total={payoutRows.length}
             start={slice.start}

@@ -128,3 +128,64 @@
 .trialBanner {
   margin-bottom: var(--space-4);
 }
+
+.queueEmpty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.queueList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.queueItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  text-decoration: none;
+  background-color: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-brand-primary) 6%, var(--color-bg-muted));
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.queueTone_brand {
+  border-left: 3px solid var(--color-brand-primary);
+}
+
+.queueTone_warn {
+  border-left: 3px solid var(--color-warning);
+}
+
+.queueTone_muted {
+  border-left: 3px solid var(--color-text-muted);
+}
+
+.queueLabel {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.queueDetail {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

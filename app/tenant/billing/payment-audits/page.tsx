@@ -62,6 +62,7 @@ type RawRow = {
   tenant_invoices: {
     id: string;
     title: string;
+    customer_id: string | null;
     customers: {
       customer_identities: {
         first_name: string | null;
@@ -72,6 +73,14 @@ type RawRow = {
   } | null;
 };
 
+type BankMatchRow = {
+  id: string;
+  matched_payment_id: string | null;
+  posted_date: string;
+  name: string;
+  merchant_name: string | null;
+};
+
 function customerLabelFromRow(row: RawRow): string {
   const ident = row.tenant_invoices?.customers?.customer_identities;
   if (!ident || !customerHasAnyNameParts(ident)) return '—';
@@ -79,7 +88,7 @@ function customerLabelFromRow(row: RawRow): string {
   return name === 'Unnamed' ? '—' : name;
 }
 
-function toAuditRow(row: RawRow): PaymentAuditRow {
+function toAuditRow(row: RawRow, bankMatch?: BankMatchRow): PaymentAuditRow {
   const inv = row.tenant_invoices;
   return {
     id: row.id,
@@ -95,7 +104,15 @@ function toAuditRow(row: RawRow): PaymentAuditRow {
       ? {
           id: inv.id,
           title: inv.title,
+          customerId: inv.customer_id,
           customerLabel: customerLabelFromRow(row),
+        }
+      : null,
+    bankMatch: bankMatch
+      ? {
+          id: bankMatch.id,
+          postedDate: bankMatch.posted_date,
+          name: bankMatch.merchant_name?.trim() || bankMatch.name,
         }
       : null,
   };
@@ -135,6 +152,7 @@ export default async function TenantPaymentAuditsPage({
       tenant_invoices (
         id,
         title,
+        customer_id,
         customers (
           customer_identities (
             first_name,
@@ -171,7 +189,27 @@ export default async function TenantPaymentAuditsPage({
   const totalPages = Math.max(1, Math.ceil(totalCount / PAYMENT_AUDIT_PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * PAYMENT_AUDIT_PAGE_SIZE;
-  const pageRows = filteredRows.slice(start, start + PAYMENT_AUDIT_PAGE_SIZE).map(toAuditRow);
+  const pageRawRows = filteredRows.slice(start, start + PAYMENT_AUDIT_PAGE_SIZE);
+  const paymentIds = pageRawRows.map((row) => row.id);
+
+  const bankMatchByPaymentId = new Map<string, BankMatchRow>();
+  if (paymentIds.length > 0) {
+    const { data: bankRows } = await db
+      .from('bank_transactions')
+      .select('id, matched_payment_id, posted_date, name, merchant_name')
+      .eq('tenant_id', membership.tenantId)
+      .in('matched_payment_id', paymentIds);
+
+    for (const row of (bankRows ?? []) as BankMatchRow[]) {
+      if (row.matched_payment_id) {
+        bankMatchByPaymentId.set(row.matched_payment_id, row);
+      }
+    }
+  }
+
+  const pageRows = pageRawRows.map((row) =>
+    toAuditRow(row, bankMatchByPaymentId.get(row.id)),
+  );
 
   const queryBase = {
     from: dateRange.fromInput || undefined,

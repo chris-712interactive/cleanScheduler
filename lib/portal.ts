@@ -8,6 +8,57 @@
 import { headers } from 'next/headers';
 import type { PortalKind } from '@/middleware';
 
+const RESERVED_SUBDOMAINS = new Set([
+  'admin',
+  'my',
+  'www',
+  'api',
+  'app',
+  'auth',
+  'static',
+  'cdn',
+  'assets',
+  'mail',
+  'support',
+  'help',
+  'docs',
+  'blog',
+  'status',
+  'staging',
+  'dev',
+  'preview',
+]);
+
+function getApexHost(): string {
+  return process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'lvh.me:3000';
+}
+
+function extractSubdomainLabel(host: string, apex: string): string | null {
+  const apexWithoutPort = apex.split(':')[0]!.toLowerCase();
+  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
+
+  if (hostWithoutPort === apexWithoutPort) return null;
+
+  if (hostWithoutPort.endsWith(`.${apexWithoutPort}`)) {
+    const prefix = hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
+    const firstLabel = prefix.split('.')[0];
+    return firstLabel ?? null;
+  }
+
+  return null;
+}
+
+/** Fallback for `/api/*` requests where middleware does not set `x-tenant-slug`. */
+export function resolveTenantSlugFromHost(host: string | null | undefined): string | null {
+  if (!host) return null;
+  const subdomain = extractSubdomainLabel(host, getApexHost());
+  if (!subdomain || subdomain === 'admin' || subdomain === 'my' || subdomain === 'www') {
+    return null;
+  }
+  if (RESERVED_SUBDOMAINS.has(subdomain)) return null;
+  return subdomain;
+}
+
 export interface PortalContext {
   kind: PortalKind;
   tenantSlug: string | null;
@@ -23,6 +74,6 @@ export async function getPortalContext(): Promise<PortalContext> {
 
   return {
     kind,
-    tenantSlug: h.get('x-tenant-slug'),
+    tenantSlug: h.get('x-tenant-slug') ?? resolveTenantSlugFromHost(h.get('host')),
   };
 }

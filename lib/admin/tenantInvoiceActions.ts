@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import {
+  tenantRoleError,
+} from '@/lib/auth/tenantRoleAccess';
 import type { Database } from '@/lib/supabase/database.types';
 
 type InvoiceStatus = Database['public']['Enums']['tenant_invoice_status'];
@@ -20,6 +23,10 @@ function parseCentsFromDollars(raw: string): number | null {
 export async function createTenantInvoiceAction(formData: FormData): Promise<void> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/invoices/new');
+  const roleErr = tenantRoleError(membership.role, 'employee');
+  if (roleErr) {
+    redirect(`/billing/invoices/new?error=${encodeURIComponent(roleErr)}`);
+  }
 
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const title = String(formData.get('title') ?? 'Invoice').trim() || 'Invoice';
@@ -68,8 +75,12 @@ export async function createTenantInvoiceAction(formData: FormData): Promise<voi
 export async function recordInvoicePaymentAction(formData: FormData): Promise<void> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/invoices');
-
   const invoiceId = String(formData.get('invoice_id') ?? '').trim();
+  const roleErr = tenantRoleError(membership.role, 'employee');
+  if (roleErr) {
+    redirect(`/billing/invoices/${invoiceId || 'unknown'}?error=${encodeURIComponent(roleErr)}`);
+  }
+
   const amountCents = parseCentsFromDollars(String(formData.get('amount_dollars') ?? ''));
   const method = String(formData.get('method') ?? 'other').trim() as PaymentMethod;
   const notes = String(formData.get('notes') ?? '').trim() || null;

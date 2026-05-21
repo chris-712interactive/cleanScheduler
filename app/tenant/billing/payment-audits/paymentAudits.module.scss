@@ -233,12 +233,39 @@ $control-height: 2.75rem;
   white-space: nowrap;
 }
 
+.customerLink {
+  font-weight: 500;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.invoiceCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .invoiceLink {
   font-weight: 600;
   color: var(--color-brand-primary);
   text-decoration: none;
 
   &:hover {
+    text-decoration: underline;
+  }
+}
+
+.bankMatchLink {
+  font-size: var(--font-size-xs, 0.8125rem);
+  color: var(--color-text-muted);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-brand-primary);
     text-decoration: underline;
   }
 }
