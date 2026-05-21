@@ -9,6 +9,10 @@
       "schedule": "15 7 * * *"
     },
     {
+      "path": "/api/cron/purge-unconverted-trials",
+      "schedule": "30 7 * * *"
+    },
+    {
       "path": "/api/cron/backfill-stripe-payout-links",
       "schedule": "30 8 * * 0"
     },

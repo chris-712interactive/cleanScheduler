@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import {
   isTenantBillingHubPath,
   isTenantPortalSuspended,
+  isTenantSuspendedEscapePath,
   resolveTenantSubscriptionAccess,
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { requirePortalAccess } from './portalAccess';
@@ -82,7 +83,7 @@ async function assertTenantWorkspaceUnlocked(
 ): Promise<void> {
   const allowWhenSuspended =
     options?.allowBillingResume === true ||
-    isTenantBillingHubPath(options?.internalPathname, options?.browserPathname);
+    isTenantSuspendedEscapePath(options?.internalPathname, options?.browserPathname);
 
   const admin = createAdminClient();
   const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([

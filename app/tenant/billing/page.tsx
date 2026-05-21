@@ -32,6 +32,7 @@ import {
   resolveTenantSubscriptionAccess,
   trialDaysRemaining,
 } from '@/lib/billing/tenantSubscriptionAccess';
+import { formatAutoPurgeDate, getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { CUSTOMER_AR_NAV_LINKS } from '@/lib/tenant/customerBillingNav';
 import type { Tables } from '@/lib/supabase/database.types';
@@ -135,6 +136,8 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const customerBillingUnlocked = canAccessCustomerBillingTools(subscriptionAccess);
   const canManageSubscription = canManageTeamInvitesAndRoles(membership.role as TenantRole);
   const daysLeft = trialDaysRemaining(billing?.trial_ends_at ?? null);
+  const purgeStatus = getTenantPurgeStatus(billing);
+  const isOwner = membership.role === 'owner';
 
   const planKey = parsePlatformPlanTier(String(billing?.platform_plan ?? ''));
   const planLabel = planKey ? PLATFORM_PLAN_LABELS[planKey] : null;
@@ -185,6 +188,24 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
         {checkoutSuccess ? (
           <p className={styles.bannerOk} role="status">
             Checkout completed. Your plan status has been refreshed from Stripe.
+          </p>
+        ) : null}
+
+        {purgeStatus.neverActivated && purgeStatus.autoPurgeAt && mustSubscribe ? (
+          <p className={styles.bannerError} role="status">
+            {purgeStatus.autoPurgeOverdue
+              ? 'This workspace is scheduled for automatic deletion because the free trial ended without a subscription.'
+              : `If you do not subscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`}
+            {isOwner ? (
+              <>
+                {' '}
+                You can also{' '}
+                <Link href="/settings/account" className={styles.inlineLink}>
+                  delete the workspace yourself
+                </Link>
+                .
+              </>
+            ) : null}
           </p>
         ) : null}
 

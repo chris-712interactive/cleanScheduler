@@ -151,14 +151,32 @@ subscription when the trial ends without a payment method. Webhook handler
 | Stripe webhooks | Trial ends on a platform subscription; ~3 days before end | `customer.subscription.updated/deleted` syncs status; `customer.subscription.trial_will_end` emails the owner (Resend) |
 | In-app | Every tenant portal request | `TrialSubscriptionBanner` + `lib/billing/tenantSubscriptionAccess.ts` countdown / “subscribe” CTA |
 | Cron safety net | Daily (`/api/cron/expire-stale-trials`) | Expires DB-only trials (`status=trialing`, `trial_ends_at` past, no `stripe_subscription_id`) |
+| Auto-purge | Daily (`/api/cron/purge-unconverted-trials`) | Hard-deletes never-activated workspaces 30 days after trial end |
 
 Tenant portal access (`lib/auth/tenantAccess.ts`) blocks normal members when the
 workspace is inactive, billing is `canceled`, or the trial end date has passed without
 an active subscription (`trial_expired`). Users are redirected to `/billing?subscribe=required`.
-Only the **workspace billing hub** (`/billing`) stays reachable so owners can run paid
-Checkout (`kind: 'subscribe'`, card required, no second trial) or Stripe Customer Portal.
+Only the **workspace billing hub** (`/billing`) and **owner account settings**
+(`/settings/account`, for self-service workspace deletion) stay reachable while suspended.
 Customer invoice sub-routes (`/billing/invoices`, etc.) stay locked until subscribed.
 Platform admins can still open the tenant for support.
+
+### Unconverted trial auto-purge (30-day grace)
+
+Workspaces that **never activated** a paid subscription (`tenant_billing_accounts.activated_at`
+is null) are hard-deleted **30 days after `trial_ends_at`**. This applies to trial-only
+workspaces that never completed Checkout or whose Stripe subscription was canceled at trial end.
+
+| Layer | When it runs | What it does |
+| ----- | ------------- | ------------- |
+| Daily cron | `/api/cron/purge-unconverted-trials` (07:30 UTC, after `expire-stale-trials`) | Finds `activated_at IS NULL` rows with `trial_ends_at` at least 30 days ago; hard-deletes tenant (DB cascade); best-effort Stripe subscription cancel |
+| In-app UX | Billing page + paused banner + Account settings | Countdown to auto-purge date; owner can delete immediately via slug confirmation |
+| Audit | Before delete | `audit_log_entries` row `tenant.workspace_purged` with reason (`auto_unconverted_trial` or `owner_requested`) |
+
+Owner self-delete: **Account → Delete workspace** (`app/tenant/settings/deleteWorkspaceActions.ts`).
+Only the workspace **owner** may delete; slug must be typed to confirm. Auth users are not
+deleted (they may belong to other workspaces). Voluntary closure by an owner on an activated
+workspace follows the general retention schedule (export window), not the 30-day auto-purge rule.
 
 Configure two Stripe event destinations (see Connect section below): platform includes `customer.subscription.trial_will_end`.
 

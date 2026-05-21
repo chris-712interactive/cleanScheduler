@@ -34,8 +34,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { resolveTenantSubscriptionAccessForSlug } from '@/lib/billing/resolveTenantSubscriptionAccessForSlug';
 import {
-  isTenantBillingHubBrowserPath,
   isTenantPortalSuspended,
+  isTenantSuspendedEscapePath,
 } from '@/lib/billing/tenantSubscriptionAccess';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
@@ -216,7 +216,7 @@ export async function middleware(request: NextRequest) {
     return redirect;
   }
 
-  if (kind === 'tenant' && userId && tenantSlug && !isTenantBillingHubBrowserPath(requestedPath)) {
+  if (kind === 'tenant' && userId && tenantSlug && !isTenantSuspendedEscapePath(null, requestedPath)) {
     const subscription = await resolveTenantSubscriptionAccessForSlug(tenantSlug);
     if (subscription && isTenantPortalSuspended(subscription.access)) {
       const redirectUrl = request.nextUrl.clone();

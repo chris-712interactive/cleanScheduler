@@ -181,6 +181,16 @@
   font-size: var(--font-size-sm);
 }
 
+.inlineLink {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .bannerOk {
   margin: 0;
   padding: var(--space-3);

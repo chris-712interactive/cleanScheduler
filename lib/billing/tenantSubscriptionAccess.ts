@@ -93,12 +93,35 @@ export function isTenantBillingHubInternalPath(path: string | null | undefined):
   return normalized === '/tenant/billing' || normalized === '/billing';
 }
 
+/** Owner workspace deletion — allowed while billing is suspended. */
+export function isTenantWorkspaceDeletePath(
+  internalPath: string | null | undefined,
+  browserPath?: string | null | undefined,
+): boolean {
+  const paths = [internalPath, browserPath]
+    .map((path) => path?.split('?')[0]?.replace(/\/$/, '') || '')
+    .filter(Boolean);
+  return paths.some(
+    (path) => path === '/settings/account' || path === '/tenant/settings/account',
+  );
+}
+
 export function isTenantBillingHubPath(
   internalPath: string | null | undefined,
   browserPath?: string | null | undefined,
 ): boolean {
   return (
     isTenantBillingHubBrowserPath(browserPath) || isTenantBillingHubInternalPath(internalPath)
+  );
+}
+
+export function isTenantSuspendedEscapePath(
+  internalPath: string | null | undefined,
+  browserPath?: string | null | undefined,
+): boolean {
+  return (
+    isTenantBillingHubPath(internalPath, browserPath) ||
+    isTenantWorkspaceDeletePath(internalPath, browserPath)
   );
 }
 

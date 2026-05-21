@@ -10,6 +10,7 @@ import {
   shouldShowTrialPurchaseBanner,
   trialDaysRemaining,
 } from '@/lib/billing/tenantSubscriptionAccess';
+import { getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
 import { getPortalContext } from '@/lib/portal';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
@@ -66,7 +67,7 @@ export default async function TenantLayout({ children }: { children: React.React
       .maybeSingle(),
     supabase
       .from('tenant_billing_accounts')
-      .select('status, trial_ends_at, stripe_subscription_id')
+      .select('status, trial_ends_at, stripe_subscription_id, activated_at')
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
   ]);
@@ -78,6 +79,7 @@ export default async function TenantLayout({ children }: { children: React.React
     stripeSubscriptionId: billingRow?.stripe_subscription_id,
   });
   const trialDaysLeft = trialDaysRemaining(billingRow?.trial_ends_at ?? null);
+  const purgeStatus = getTenantPurgeStatus(billingRow);
 
   let identityName = 'Team member';
   let identityInitials = 'TM';
@@ -152,6 +154,7 @@ export default async function TenantLayout({ children }: { children: React.React
         key="paused"
         access={subscriptionAccess}
         role={membership.role}
+        purgeStatus={purgeStatus}
       />,
     );
   }
