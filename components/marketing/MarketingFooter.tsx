@@ -17,6 +17,9 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/terms">
               Terms of Service
             </Link>
+            <Link className={styles.link} href="/data-retention">
+              Data Retention
+            </Link>
             <Link className={styles.link} href="/contact">
               Contact
             </Link>

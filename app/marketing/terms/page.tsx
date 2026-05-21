@@ -142,7 +142,9 @@ export default function TermsOfServicePage() {
               The Service integrates with third parties such as Supabase, Stripe, Resend, Google,
               and Vercel as described in our <Link href="/privacy">Privacy Policy</Link>. Your use
               of those features may also be subject to the third party&apos;s terms. We are not
-              responsible for third-party services we do not control.
+              responsible for third-party services we do not control. How long we and those
+              providers retain data is set out in our{' '}
+              <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
             </p>
 
             <h2>10. Disclaimers</h2>

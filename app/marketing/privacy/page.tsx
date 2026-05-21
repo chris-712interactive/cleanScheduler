@@ -149,6 +149,9 @@ export default function PrivacyPolicyPage() {
               the Service, resolve disputes, enforce agreements, and meet legal obligations. When
               you close an account, we delete or anonymize data within a reasonable period unless
               retention is required by law or legitimate business needs (such as billing records).
+              Category-specific periods, disposal methods, backup handling, and subprocessor
+              retention are described in our{' '}
+              <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
             </p>
 
             <h2>8. Security</h2>
