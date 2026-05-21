@@ -290,6 +290,18 @@
   box-shadow: var(--shadow-xs);
 }
 
+.scheduleFilterField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.scheduleFilterLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
 .dayBoard {
   display: grid;
   grid-template-columns: 4.75rem 1fr;
@@ -685,6 +697,12 @@
   overflow: hidden;
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
+
+  @include mq.down(md) {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
 }
 
 .weekColumn {
@@ -693,6 +711,15 @@
 
   &:last-child {
     border-right: none;
+  }
+
+  @include mq.down(md) {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+
+    &:last-child {
+      border-bottom: none;
+    }
   }
 }
 

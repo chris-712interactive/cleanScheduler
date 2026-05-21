@@ -6,6 +6,7 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { formatUsdFromCents } from '@/lib/format/money';
+import { RecurringConceptCallout } from '@/components/billing/RecurringConceptCallout';
 import { deactivateServicePlanAction, createServicePlanAction } from './actions';
 import styles from '../billing.module.scss';
 
@@ -43,10 +44,10 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
   return (
     <>
       <PageHeader
-        title="Service plans"
+        title="Subscription plans (Stripe)"
         backHref="/billing"
         backLabel="Workspace billing"
-        titleHint="Recurring prices you offer end customers. Checkout runs on your Stripe Connect account."
+        titleHint="Recurring prices you charge customers through Stripe Connect — separate from calendar recurring visits."
       />
 
       {created ? (
@@ -61,6 +62,8 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
       ) : null}
 
       <Stack gap={6}>
+        <RecurringConceptCallout variant="billing" />
+
         <Card title="Add a plan" description="Amount is billed each billing period (USD).">
           <form action={createServicePlanAction} className={styles.invoiceRow}>
             <label className={styles.field}>

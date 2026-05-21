@@ -14,6 +14,7 @@ import type { TenantRole } from '@/lib/auth/types';
 import { teamMemberStatusLabel, teamRoleLabel } from '@/lib/tenant/teamMemberDisplay';
 import { parseTeamPage, TEAM_PAGE_SIZE } from '@/lib/tenant/teamListPaging';
 import { TeamMemberManageMenu } from './TeamMemberManageMenu';
+import { PendingInviteActions } from './PendingInviteActions';
 import { TeamPagination } from './TeamPagination';
 import styles from './employees.module.scss';
 
@@ -63,12 +64,24 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
   const admin = createAdminClient();
   const auth = await getAuthContext();
   const currentUserId = auth?.user.id ?? '';
+  const actorRole = membership.role as TenantRole;
+  const canManage = canManageTeamInvitesAndRoles(actorRole);
 
   const { data: rows, error } = await admin
     .from('tenant_memberships')
     .select('id, role, is_active, user_id')
     .eq('tenant_id', membership.tenantId)
     .order('role', { ascending: true });
+
+  const { data: pendingInvites } = canManage
+    ? await admin
+        .from('employee_invites')
+        .select('token, email_normalized, invited_role, expires_at, created_at')
+        .eq('tenant_id', membership.tenantId)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+    : { data: [] as { token: string; email_normalized: string; invited_role: TenantRole; expires_at: string; created_at: string }[] };
 
   const userIds = [...new Set((rows ?? []).map((r) => r.user_id))];
   const { data: profiles } =
@@ -79,9 +92,6 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
   const profileByUser = new Map(
     (profiles ?? []).map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }]),
   );
-
-  const actorRole = membership.role as TenantRole;
-  const canManage = canManageTeamInvitesAndRoles(actorRole);
 
   const emailsByUser = await fetchEmailsByUserId(admin, userIds);
 
@@ -158,7 +168,46 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
           }
         />
       ) : (
-        <div className={styles.tablePanel}>
+        <>
+          {canManage && (pendingInvites?.length ?? 0) > 0 ? (
+            <div className={styles.tablePanel} style={{ marginBottom: 'var(--space-6)' }}>
+              <div className={styles.pendingHeader}>
+                <h2 className={styles.pendingTitle}>Pending invites</h2>
+                <p className={styles.muted}>Invites expire after 7 days if not accepted.</p>
+              </div>
+              <div className={styles.tableWrap}>
+                <table className={styles.teamTable}>
+                  <thead>
+                    <tr>
+                      <th scope="col">Email</th>
+                      <th scope="col">Role</th>
+                      <th scope="col">Expires</th>
+                      <th scope="col">
+                        <span className={styles.manageHeader}>Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(pendingInvites ?? []).map((invite) => (
+                      <tr key={invite.token}>
+                        <td>{invite.email_normalized}</td>
+                        <td>{teamRoleLabel(invite.invited_role)}</td>
+                        <td>{new Date(invite.expires_at).toLocaleDateString()}</td>
+                        <td className={styles.manageCell}>
+                          <PendingInviteActions
+                            tenantSlug={membership.tenantSlug}
+                            token={invite.token}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
+
+          <div className={styles.tablePanel}>
           <div className={styles.tableWrap}>
             <table className={styles.teamTable}>
               <colgroup>
@@ -179,7 +228,10 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
               </thead>
               <tbody>
                 {pageMembers.map((member) => (
-                  <tr key={member.id}>
+                  <tr
+                    key={member.id}
+                    className={member.canEdit ? styles.clickableRow : undefined}
+                  >
                     <td>
                       <div className={styles.nameCell}>
                         <div className={styles.avatar}>
@@ -198,10 +250,19 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
                           )}
                         </div>
                         <div className={styles.nameCopy}>
-                          <p className={styles.memberName}>
-                            {member.displayName}
-                            {member.isSelf ? <span className={styles.youBadge}>You</span> : null}
-                          </p>
+                          {member.canEdit ? (
+                            <Link href={`/employees/${member.userId}`} className={styles.memberNameLink}>
+                              <p className={styles.memberName}>
+                                {member.displayName}
+                                {member.isSelf ? <span className={styles.youBadge}>You</span> : null}
+                              </p>
+                            </Link>
+                          ) : (
+                            <p className={styles.memberName}>
+                              {member.displayName}
+                              {member.isSelf ? <span className={styles.youBadge}>You</span> : null}
+                            </p>
+                          )}
                           {member.email ? (
                             <p className={styles.memberEmail}>{member.email}</p>
                           ) : (
@@ -241,6 +302,7 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
             toIndex={start + pageMembers.length}
           />
         </div>
+        </>
       )}
     </>
   );

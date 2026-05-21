@@ -90,6 +90,41 @@
   border-bottom: none;
 }
 
+.clickableRow {
+  cursor: pointer;
+}
+
+.memberNameLink {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover .memberName {
+    color: var(--color-brand-primary);
+  }
+}
+
+.pendingHeader {
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.pendingTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.inviteActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.inviteActionForm {
+  margin: 0;
+}
+
 .nameCell {
   display: flex;
   align-items: center;

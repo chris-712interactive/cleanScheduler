@@ -75,8 +75,8 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
 
   return (
     <Card
-      title="Recurring billing (Stripe)"
-      description="Charge this customer on a schedule through your connected Stripe account. They complete payment on Stripe Checkout."
+      title="Subscription billing (Stripe)"
+      description="Charge this customer on a billing cycle through your connected Stripe account. This is separate from recurring visits on the schedule."
     >
       {!connectComplete ? (
         <p className={styles.muted}>
@@ -85,15 +85,15 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
         </p>
       ) : plans.length === 0 ? (
         <p className={styles.muted}>
-          Create at least one active service plan under Billing → Service plans, then return here to
-          send checkout.
+          Create at least one active subscription plan under Billing → Subscription plans, then
+          return here to send checkout.
         </p>
       ) : (
         <form action={createCustomerSubscriptionCheckoutSessionAction} className={styles.row}>
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="customer_id" value={customerId} />
           <label className={styles.field}>
-            Service plan
+            Subscription plan
             <select className={styles.select} name="service_plan_id" required defaultValue="">
               <option value="" disabled>
                 Select a plan…

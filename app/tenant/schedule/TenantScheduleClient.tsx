@@ -35,6 +35,7 @@ export type ScheduleVisitVM = {
   siteLine: string;
   quoteTitle: string | null;
   assignees: ScheduleAssigneeChip[];
+  assigneeUserIds: string[];
 };
 
 function formatTimeRange(startsAt: string, endsAt: string): string {
@@ -49,12 +50,18 @@ export function TenantScheduleClient({
   dateKey,
   view,
   weekDayKeys,
+  employeeFilter,
+  employeeOptions,
+  currentUserId,
 }: {
   tenantSlug: string;
   visits: ScheduleVisitVM[];
   dateKey: string;
   view: ScheduleView;
   weekDayKeys: string[];
+  employeeFilter: string;
+  employeeOptions: { id: string; label: string }[];
+  currentUserId: string;
 }) {
   const router = useRouter();
   const [, setNowTick] = useState(0);
@@ -69,12 +76,23 @@ export function TenantScheduleClient({
     setExpandedVisitId(null);
   }, [dateKey, view]);
 
-  const push = (next: { date?: string; view?: ScheduleView }) => {
+  const push = (next: { date?: string; view?: ScheduleView; employee?: string }) => {
     const params = new URLSearchParams();
     params.set('date', next.date ?? dateKey);
     params.set('view', next.view ?? view);
+    const employee = next.employee ?? employeeFilter;
+    if (employee && employee !== 'all') {
+      params.set('employee', employee);
+    }
     router.push(`/schedule?${params.toString()}`);
   };
+
+  const filteredVisits = useMemo(() => {
+    if (employeeFilter === 'all') return visits;
+    const targetUserId = employeeFilter === 'me' ? currentUserId : employeeFilter;
+    if (!targetUserId) return visits;
+    return visits.filter((visit) => visit.assigneeUserIds.includes(targetUserId));
+  }, [visits, employeeFilter, currentUserId]);
 
   const todayKey = formatLocalYmd(new Date());
   const isLocalToday = dateKey === todayKey;
@@ -92,10 +110,10 @@ export function TenantScheduleClient({
 
   const dayVisits = useMemo(
     () =>
-      visits
+      filteredVisits
         .filter((v) => visitOverlapsLocalDay(v, dateKey))
         .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
-    [visits, dateKey],
+    [filteredVisits, dateKey],
   );
 
   const hours = useMemo(() => hourLabels(), []);
@@ -157,12 +175,23 @@ export function TenantScheduleClient({
       </div>
 
       <div className={styles.scheduleFilters}>
-        <select className={styles.filterSelect} disabled aria-label="Employee filter">
-          <option>All employees</option>
-        </select>
-        <select className={styles.filterSelect} disabled aria-label="Service filter">
-          <option>All services</option>
-        </select>
+        <label className={styles.scheduleFilterField}>
+          <span className={styles.scheduleFilterLabel}>Crew member</span>
+          <select
+            className={styles.filterSelect}
+            aria-label="Employee filter"
+            value={employeeFilter}
+            onChange={(event) => push({ employee: event.target.value })}
+          >
+            <option value="all">All crew</option>
+            <option value="me">My jobs</option>
+            {employeeOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {view === 'day' ? (
@@ -217,7 +246,7 @@ export function TenantScheduleClient({
       {view === 'week' ? (
         <div className={styles.weekBoard}>
           {weekDayKeys.map((k) => {
-            const dayVisitsWeek = visits
+            const dayVisitsWeek = filteredVisits
               .filter((v) => visitOverlapsUtcCalendarDay(v, k))
               .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
             const label = new Date(`${k}T12:00:00.000Z`).toLocaleDateString(undefined, {
@@ -264,7 +293,7 @@ export function TenantScheduleClient({
           </div>
           <div className={styles.monthGrid}>
             {monthCells.map((cell) => {
-              const n = visits.filter((v) => visitOverlapsUtcCalendarDay(v, cell.key)).length;
+              const n = filteredVisits.filter((v) => visitOverlapsUtcCalendarDay(v, cell.key)).length;
               const inView = cell.key === dateKey;
               return (
                 <button

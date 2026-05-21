@@ -48,8 +48,10 @@ export function PortalShell({
   searchSlot,
   children,
 }: PortalShellProps) {
+  const hasBottomNav = Boolean(bottomNavItems && bottomNavItems.length > 0);
+
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-bottom-nav={hasBottomNav || undefined}>
       <a href="#main" className="skip-link">
         Skip to main content
       </a>

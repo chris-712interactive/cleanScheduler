@@ -3,6 +3,7 @@ import { GlobalSearch } from '@/components/portal/GlobalSearch';
 import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
 import { ConnectStatusBanner } from '@/components/billing/ConnectStatusBanner';
 import { TrialSubscriptionBanner } from '@/components/billing/TrialSubscriptionBanner';
+import { WorkspacePausedBanner } from '@/components/billing/WorkspacePausedBanner';
 import {
   needsSubscriptionPurchase,
   resolveTenantSubscriptionAccess,
@@ -36,6 +37,13 @@ const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Employees', href: '/employees', icon: 'work' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },
   { label: 'Reports', href: '/reports', icon: 'reports' },
+];
+
+const TENANT_BOTTOM_NAV: NavItem[] = [
+  { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
+  { label: 'Schedule', href: '/schedule', icon: 'schedule' },
+  { label: 'Customers', href: '/customers', icon: 'customers' },
+  { label: 'Billing', href: '/billing', icon: 'billing' },
 ];
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
@@ -138,7 +146,16 @@ export default async function TenantLayout({ children }: { children: React.React
       />,
     );
   }
-  if (connectStatus !== 'complete') {
+  if (subscriptionLocked) {
+    sessionNotices.push(
+      <WorkspacePausedBanner
+        key="paused"
+        access={subscriptionAccess}
+        role={membership.role}
+      />,
+    );
+  }
+  if (!subscriptionLocked && connectStatus !== 'complete') {
     sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
   }
   const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;
@@ -153,6 +170,7 @@ export default async function TenantLayout({ children }: { children: React.React
       environmentBanner={nonProdBanner}
       sessionNotice={sessionNotice}
       searchSlot={subscriptionLocked ? undefined : <GlobalSearch />}
+      bottomNavItems={subscriptionLocked ? undefined : TENANT_BOTTOM_NAV}
     >
       {children}
     </PortalShell>

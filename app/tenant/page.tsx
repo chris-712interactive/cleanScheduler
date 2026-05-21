@@ -13,6 +13,10 @@ import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingIn
 import { formatUsdFromCents } from '@/lib/format/money';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 import { getDashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
+import { getOwnerOnboardingChecklist } from '@/lib/tenant/ownerOnboardingChecklist';
+import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
+import type { TenantRole } from '@/lib/auth/types';
+import { OwnerOnboardingPanel } from './OwnerOnboardingPanel';
 import {
   getTenantCustomersAddedThisMonthCount,
   getTenantSentQuotesCount,
@@ -28,9 +32,19 @@ export default async function TenantDashboardPage() {
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/');
   const trial = await getTenantTrialSummaryBySlug(membership.tenantSlug);
   const supabase = createTenantPortalDbClient();
+  const actorRole = membership.role as TenantRole;
+  const showOnboarding = canManageTeamInvitesAndRoles(actorRole);
 
-  const [customersCountRes, quotesCountRes, sentQuotesCount, customersAddedThisMonth, outstandingInvoices, todaysJobs, todayQueue] =
-    await Promise.all([
+  const [
+    customersCountRes,
+    quotesCountRes,
+    sentQuotesCount,
+    customersAddedThisMonth,
+    outstandingInvoices,
+    todaysJobs,
+    todayQueue,
+    tenantRowRes,
+  ] = await Promise.all([
       supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
@@ -46,7 +60,20 @@ export default async function TenantDashboardPage() {
       getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
       getTenantTodaysJobsSummary(supabase, membership.tenantId),
       getDashboardTodayQueue(supabase, membership.tenantId),
+      supabase
+        .from('tenants')
+        .select('stripe_connect_status')
+        .eq('id', membership.tenantId)
+        .maybeSingle(),
     ]);
+
+  const onboardingChecklist = showOnboarding
+    ? await getOwnerOnboardingChecklist(
+        supabase,
+        membership.tenantId,
+        tenantRowRes.data?.stripe_connect_status,
+      )
+    : null;
 
   const activeCustomerCount = customersCountRes.error ? 0 : (customersCountRes.count ?? 0);
   const quoteCount = quotesCountRes.error ? 0 : (quotesCountRes.count ?? 0);
@@ -107,6 +134,10 @@ export default async function TenantDashboardPage() {
                 : `${trial.daysRemaining ?? 0} day${trial.daysRemaining === 1 ? '' : 's'} left`}
             </StatusPill>
           </Card>
+        ) : null}
+
+        {onboardingChecklist ? (
+          <OwnerOnboardingPanel tenantId={membership.tenantId} checklist={onboardingChecklist} />
         ) : null}
 
         <TodayQueuePanel queue={todayQueue} />

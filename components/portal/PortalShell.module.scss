@@ -47,3 +47,11 @@
     padding: var(--space-6) var(--space-7) var(--space-10);
   }
 }
+
+.shell[data-bottom-nav] .main {
+  padding-bottom: calc(var(--space-9) + 4.5rem + env(safe-area-inset-bottom, 0px));
+
+  @include mq.up(md) {
+    padding-bottom: var(--space-10);
+  }
+}

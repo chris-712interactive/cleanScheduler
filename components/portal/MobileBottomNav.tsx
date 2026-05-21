@@ -2,8 +2,8 @@
 
 /**
  * MobileBottomNav - icon + short-label navigation along the bottom edge of
- * the viewport on small screens. Shown only on `< md`. The customer portal
- * uses this; the tenant portal opts out and lets the drawer handle nav.
+ * the viewport on small screens. Shown only on `< md`. Customer and tenant
+ * portals opt in; other routes use the drawer for full navigation.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

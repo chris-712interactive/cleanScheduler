@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -100,14 +99,11 @@ export default async function TenantEmployeeEditPage({ params }: PageProps) {
 
   return (
     <>
-      <p className={styles.backWrap}>
-        <Link href="/employees" className={styles.backLink}>
-          ← Back to team
-        </Link>
-      </p>
       <PageHeader
         title={displayName}
-        description="Manage profile, photo, and workspace access for this teammate."
+        titleHint="Manage profile, photo, and workspace access for this teammate."
+        backHref="/employees"
+        backLabel="Team"
       />
       <Card title="Member details">
         <EmployeeMemberEditForm

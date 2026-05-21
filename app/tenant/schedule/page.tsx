@@ -10,10 +10,12 @@ import {
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
 import { resolveVisitSiteLine } from '@/lib/schedule/resolveVisitSiteLine';
+import { getAuthContext } from '@/lib/auth/session';
 import {
   dbOverlapRangeForQuery,
   isLocalCalendarToday,
   normalizeDateKey,
+  normalizeEmployeeFilter,
   normalizeView,
   utcWeekDayKeys,
 } from '@/lib/tenant/scheduleDateRange';
@@ -70,6 +72,9 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const view = normalizeView(sp.view);
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule');
+  const auth = await getAuthContext();
+  const currentUserId = auth?.user.id ?? '';
+  const employeeFilter = normalizeEmployeeFilter(sp.employee, membership.role);
 
   const supabase = createTenantPortalDbClient();
   const range = dbOverlapRangeForQuery(view, dateKey);
@@ -125,6 +130,24 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     .order('starts_at', { ascending: true })
     .overrideTypes<VisitListRow[], { merge: false }>();
 
+  const membersRes = await supabase
+    .from('tenant_memberships')
+    .select('user_id, role')
+    .eq('tenant_id', membership.tenantId)
+    .eq('is_active', true)
+    .order('role', { ascending: true });
+
+  const memberUserIds = [...new Set((membersRes.data ?? []).map((m) => m.user_id))];
+  const { data: memberProfiles } =
+    memberUserIds.length > 0
+      ? await supabase
+          .from('user_profiles')
+          .select('user_id, display_name')
+          .in('user_id', memberUserIds)
+      : { data: [] as { user_id: string; display_name: string | null }[] };
+
+  const displayByUserId = new Map((memberProfiles ?? []).map((p) => [p.user_id, p.display_name]));
+
   if (visitsErr) {
     throw new Error(visitsErr.message);
   }
@@ -152,8 +175,14 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       siteLine: site,
       quoteTitle: v.tenant_quotes?.title ?? null,
       assignees,
+      assigneeUserIds: assignees.map((a) => a.userId),
     };
   });
+
+  const employeeOptions = (membersRes.data ?? []).map((m) => ({
+    id: m.user_id,
+    label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
+  }));
 
   const weekDayKeys = utcWeekDayKeys(dateKey);
   const subtitle =
@@ -174,7 +203,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         actions={
           <div className={styles.scheduleHeaderActions}>
             <Button as="a" href="/schedule/recurring" variant="secondary">
-              Recurring rules
+              Recurring visits
             </Button>
             <Button
               as="a"
@@ -194,6 +223,9 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         dateKey={dateKey}
         view={view}
         weekDayKeys={weekDayKeys}
+        employeeFilter={employeeFilter}
+        employeeOptions={employeeOptions}
+        currentUserId={currentUserId}
       />
     </div>
   );

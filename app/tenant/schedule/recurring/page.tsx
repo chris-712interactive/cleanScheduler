@@ -7,8 +7,12 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
-import { createRecurringVisitRuleAction, deactivateRecurringVisitRuleAction } from './actions';
-import { TimezoneOffsetField } from './TimezoneOffsetField';
+import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
+import type { Tables } from '@/lib/supabase/database.types';
+import { RecurringConceptCallout } from '@/components/billing/RecurringConceptCallout';
+import { deactivateRecurringVisitRuleAction } from './actions';
+import { RecurringRuleForm } from './RecurringRuleForm';
 import styles from '../schedule.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +31,35 @@ type CustomerPickRow = {
   } | null;
 };
 
+type PropertyPickRow = Pick<
+  Tables<'tenant_customer_properties'>,
+  | 'id'
+  | 'customer_id'
+  | 'label'
+  | 'address_line1'
+  | 'address_line2'
+  | 'city'
+  | 'state'
+  | 'postal_code'
+  | 'is_primary'
+>;
+
+function propertyOptionLabel(property: PropertyPickRow): string {
+  const line = formatPropertyAddressLine(property);
+  const base = property.label?.trim() || line || 'Location';
+  return property.is_primary ? `${base} (primary)` : base;
+}
+
+function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyGroup[] {
+  const map = new Map<string, { id: string; label: string }[]>();
+  for (const property of rows) {
+    const list = map.get(property.customer_id) ?? [];
+    list.push({ id: property.id, label: propertyOptionLabel(property) });
+    map.set(property.customer_id, list);
+  }
+  return Array.from(map.entries()).map(([customerId, options]) => ({ customerId, options }));
+}
+
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
@@ -40,7 +73,7 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
   const err = firstParam(sp.error);
   const created = firstParam(sp.created) === '1';
 
-  const [{ data: customers }, { data: rules }] = await Promise.all([
+  const [{ data: customers }, { data: properties }, { data: rules }] = await Promise.all([
     db
       .from('customers')
       .select(
@@ -53,6 +86,13 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
       .order('created_at', { ascending: false })
       .limit(200),
     db
+      .from('tenant_customer_properties')
+      .select(
+        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+      )
+      .eq('tenant_id', membership.tenantId)
+      .order('is_primary', { ascending: false }),
+    db
       .from('recurring_appointment_rules')
       .select('id, title, rrule_definition, anchor_starts_at, is_active, horizon_days, customer_id')
       .eq('tenant_id', membership.tenantId)
@@ -60,12 +100,19 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
   ]);
 
   const custList = (customers ?? []) as CustomerPickRow[];
+  const customerOptions = custList.map((customer) => ({
+    id: customer.id,
+    label: formatCustomerDisplayName(customer.customer_identities ?? {}),
+  }));
+  const customerPropertyGroups = buildCustomerPropertyGroups(
+    (properties ?? []) as PropertyPickRow[],
+  );
 
   return (
     <>
       <PageHeader
         title="Recurring visits"
-        description="Rules use RFC 5545 RRULE strings. A nightly job materializes visits for the next horizon window."
+        titleHint="Automatically add calendar appointments on a repeating schedule. Nightly sync materializes visits for the next horizon window."
         actions={
           <Button as="a" href="/schedule" variant="secondary">
             ← Schedule
@@ -86,86 +133,17 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
       ) : null}
 
       <Stack gap={6}>
+        <RecurringConceptCallout variant="visits" />
+
         <Card
           title="Add rule"
           description="First occurrence anchors the series (same local-time idea as new appointments)."
         >
-          <form action={createRecurringVisitRuleAction} className={styles.form}>
-            <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-            <TimezoneOffsetField />
-            <label className={styles.label}>
-              Customer
-              <select name="customer_id" className={styles.select} required defaultValue="">
-                <option value="" disabled>
-                  Select customer…
-                </option>
-                {custList.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {formatCustomerDisplayName(c.customer_identities ?? {})}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.label}>
-              Service location ID (optional)
-              <input
-                name="property_id"
-                className={styles.input}
-                placeholder="UUID of tenant_customer_properties"
-              />
-            </label>
-            <label className={styles.label}>
-              Pattern
-              <select name="preset" className={styles.select} required defaultValue="weekly_mon">
-                <option value="weekly_mon">Weekly · Monday</option>
-                <option value="weekly_tue">Weekly · Tuesday</option>
-                <option value="weekly_wed">Weekly · Wednesday</option>
-                <option value="weekly_thu">Weekly · Thursday</option>
-                <option value="weekly_fri">Weekly · Friday</option>
-                <option value="biweekly_mon">Every other week · Monday</option>
-                <option value="monthly_1">Monthly · 1st</option>
-                <option value="monthly_15">Monthly · 15th</option>
-              </select>
-            </label>
-            <label className={styles.label}>
-              Title
-              <input
-                name="title"
-                className={styles.input}
-                type="text"
-                placeholder="Bi-weekly clean"
-              />
-            </label>
-            <label className={styles.label}>
-              First occurrence (local)
-              <input name="starts_at" className={styles.input} type="datetime-local" required />
-            </label>
-            <label className={styles.label}>
-              Visit length (minutes)
-              <input
-                name="visit_duration_minutes"
-                className={styles.input}
-                type="number"
-                min={30}
-                max={1440}
-                defaultValue={120}
-              />
-            </label>
-            <label className={styles.label}>
-              Horizon (days)
-              <input
-                name="horizon_days"
-                className={styles.input}
-                type="number"
-                min={1}
-                max={120}
-                defaultValue={60}
-              />
-            </label>
-            <Button type="submit" variant="primary">
-              Save rule
-            </Button>
-          </form>
+          <RecurringRuleForm
+            tenantSlug={membership.tenantSlug}
+            customers={customerOptions}
+            customerPropertyGroups={customerPropertyGroups}
+          />
         </Card>
 
         <Card title="Existing rules">

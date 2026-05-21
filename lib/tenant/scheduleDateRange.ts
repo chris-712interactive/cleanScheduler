@@ -1,6 +1,7 @@
 export type ScheduleView = 'day' | 'week' | 'month';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function normalizeDateKey(raw: string | string[] | undefined): string {
   const t = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? '';
@@ -12,6 +13,31 @@ export function normalizeView(raw: string | string[] | undefined): ScheduleView 
   const v = (Array.isArray(raw) ? raw[0] : raw)?.trim().toLowerCase() ?? '';
   if (v === 'week' || v === 'month') return v;
   return 'day';
+}
+
+export type ScheduleEmployeeFilter = 'all' | 'me' | string;
+
+export function normalizeEmployeeFilter(
+  raw: string | string[] | undefined,
+  defaultForRole?: 'employee' | 'owner' | 'admin' | 'viewer',
+): ScheduleEmployeeFilter {
+  const v = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? '';
+  if (v === 'all' || v === 'me') return v;
+  if (UUID_RE.test(v)) return v;
+  return defaultForRole === 'employee' ? 'me' : 'all';
+}
+
+export function buildScheduleSearchParams(params: {
+  date?: string;
+  view?: ScheduleView;
+  employee?: string;
+}): string {
+  const q = new URLSearchParams();
+  if (params.date) q.set('date', params.date);
+  if (params.view) q.set('view', params.view);
+  if (params.employee && params.employee !== 'all') q.set('employee', params.employee);
+  const s = q.toString();
+  return s ? `?${s}` : '';
 }
 
 /** UTC bounds for DB overlap: visits where starts_at <= end AND ends_at >= start. */

@@ -18,6 +18,8 @@ import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/se
 import { syncTenantPlatformBillingFromStripe } from '@/lib/billing/syncTenantPlatformSubscription';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
+import type { TenantRole } from '@/lib/auth/types';
 import {
   PLATFORM_PLAN_DESCRIPTIONS,
   PLATFORM_PLAN_LABELS,
@@ -131,6 +133,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
 
   const mustSubscribe = needsSubscriptionPurchase(subscriptionAccess);
   const customerBillingUnlocked = canAccessCustomerBillingTools(subscriptionAccess);
+  const canManageSubscription = canManageTeamInvitesAndRoles(membership.role as TenantRole);
   const daysLeft = trialDaysRemaining(billing?.trial_ends_at ?? null);
 
   const planKey = parsePlatformPlanTier(String(billing?.platform_plan ?? ''));
@@ -147,8 +150,12 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
 
   const subscribeLead = mustSubscribe
     ? subscriptionAccess === 'trial_expired'
-      ? 'Your free trial has ended. Subscribe to restore access to scheduling, quotes, customers, and the rest of your workspace.'
-      : 'This workspace is paused. Subscribe to turn your cleanScheduler plan back on.'
+      ? canManageSubscription
+        ? 'Your free trial has ended. Subscribe to restore access to scheduling, quotes, customers, and the rest of your workspace.'
+        : 'Your free trial has ended. Scheduling and other workspace areas are unavailable until an owner or admin renews the plan.'
+      : canManageSubscription
+        ? 'This workspace is paused. Subscribe to turn your cleanScheduler plan back on.'
+        : 'This workspace is paused. Contact an owner or admin to renew the plan.'
     : subscriptionAccess === 'trialing' && daysLeft != null
       ? `You have ${daysLeft} day${daysLeft === 1 ? '' : 's'} left in your trial. Subscribe now to keep access when it ends.`
       : null;
@@ -163,8 +170,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
       <Stack gap={6}>
         {subscribeRequired && mustSubscribe ? (
           <p className={styles.bannerError} role="status">
-            Subscribe below to continue using this workspace. Other pages are unavailable until your
-            plan is active.
+            {canManageSubscription
+              ? 'Subscribe below to continue using this workspace. Other pages are unavailable until your plan is active.'
+              : 'This workspace needs an active subscription. Ask an owner or admin to renew on this billing page.'}
           </p>
         ) : null}
 
@@ -183,22 +191,28 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
         {mustSubscribe || subscribeLead ? (
           <section className={styles.subscribeCard} aria-labelledby="subscribe-heading">
             <h2 id="subscribe-heading" className={styles.subscribeCardTitle}>
-              {mustSubscribe ? 'Subscribe to continue' : 'Subscribe early'}
+              {mustSubscribe
+                ? canManageSubscription
+                  ? 'Subscribe to continue'
+                  : 'Workspace paused'
+                : 'Subscribe early'}
             </h2>
             {subscribeLead ? <p className={styles.subscribeCardLead}>{subscribeLead}</p> : null}
-            <div className={styles.subscribeCardActions}>
-              <form action={resumePlatformSubscriptionCheckout}>
-                <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                <Button type="submit" variant="primary">
-                  {mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
-                </Button>
-              </form>
-              {planLabel && entitlements ? (
-                <span className={styles.muted}>
-                  {planLabel} · {formatPlanAmount(entitlements.monthlyPriceUsd)}/mo
-                </span>
-              ) : null}
-            </div>
+            {canManageSubscription ? (
+              <div className={styles.subscribeCardActions}>
+                <form action={resumePlatformSubscriptionCheckout}>
+                  <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                  <Button type="submit" variant="primary">
+                    {mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
+                  </Button>
+                </form>
+                {planLabel && entitlements ? (
+                  <span className={styles.muted}>
+                    {planLabel} · {formatPlanAmount(entitlements.monthlyPriceUsd)}/mo
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -224,8 +238,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
             </nav>
           ) : (
             <p className={styles.customerBillingLocked}>
-              Customer invoicing, service plans, and payment setup unlock once your workspace
-              subscription is active. Use Subscribe above to continue.
+              {canManageSubscription
+                ? 'Customer invoicing, subscription plans, and payment setup unlock once your workspace subscription is active. Use Subscribe above to continue.'
+                : 'Customer invoicing and payment tools are unavailable until an owner or admin renews the workspace subscription.'}
             </p>
           )}
         </Card>
@@ -285,7 +300,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                 </dl>
 
                 <div className={styles.planManageForm}>
-                  {mustSubscribe ? (
+                  {mustSubscribe && canManageSubscription ? (
                     <form action={resumePlatformSubscriptionCheckout}>
                       <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
                       <Button type="submit" variant="secondary" className={styles.planManageButton}>
@@ -299,7 +314,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                         Manage plan
                       </Button>
                     </form>
-                  ) : subscriptionAccess === 'trialing' ? (
+                  ) : subscriptionAccess === 'trialing' && canManageSubscription ? (
                     <form action={resumePlatformSubscriptionCheckout}>
                       <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
                       <Button type="submit" variant="secondary" className={styles.planManageButton}>
