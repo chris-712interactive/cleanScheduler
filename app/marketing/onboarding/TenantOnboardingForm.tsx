@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useActionState } from 'react';
 import zxcvbn from 'zxcvbn';
@@ -448,7 +449,17 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
             onChange={(event) => setAcceptedTerms(event.target.checked)}
             required
           />
-          <span>I agree to start a 7-day trial and accept the terms.</span>
+          <span>
+            I agree to start a 7-day trial and accept the{' '}
+            <Link href="/terms" target="_blank" rel="noopener noreferrer">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </Link>
+            .
+          </span>
         </label>
       </section>
 

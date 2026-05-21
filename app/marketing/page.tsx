@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { Grid } from '@/components/layout/Grid';
 import { Stack } from '@/components/layout/Stack';
+import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import styles from './landing.module.scss';
 
@@ -91,13 +92,7 @@ export default function MarketingHome() {
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <Container>
-          <p className={styles.footerCopy}>
-            (c) {new Date().getFullYear()} cleanScheduler. All rights reserved.
-          </p>
-        </Container>
-      </footer>
+      <MarketingFooter />
     </>
   );
 }

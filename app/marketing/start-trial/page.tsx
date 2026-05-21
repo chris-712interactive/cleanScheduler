@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
+import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { publicEnv } from '@/lib/env';
 import { TenantOnboardingForm } from '../onboarding/TenantOnboardingForm';
@@ -35,6 +36,7 @@ export default function StartTrialPage() {
           </Card>
         </Container>
       </main>
+      <MarketingFooter />
     </>
   );
 }

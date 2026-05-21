@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { getAuthContext } from '@/lib/auth/session';
+import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { SignInForm } from './SignInForm';
 import styles from './sign-in.module.scss';
 
@@ -34,6 +35,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     rawError && AUTHORIZATION_QUERY_ERRORS.has(rawError) ? undefined : rawError;
 
   return (
+    <>
     <main className={styles.page}>
       <Container size="sm">
         <Card
@@ -47,5 +49,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         </Card>
       </Container>
     </main>
+    <MarketingFooter />
+    </>
   );
 }

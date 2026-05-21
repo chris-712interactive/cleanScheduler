@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Container';
+import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { submitMarketingInquiryAction } from './actions';
 import styles from './contact.module.scss';
 
@@ -25,6 +26,7 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
   const err = firstParam(sp.error) === '1';
 
   return (
+    <>
     <main className={styles.page}>
       <Container size="sm">
         <PageHeader
@@ -87,5 +89,7 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
         </Card>
       </Container>
     </main>
+    <MarketingFooter />
+    </>
   );
 }
