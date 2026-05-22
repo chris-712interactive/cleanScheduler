@@ -87,6 +87,11 @@ const serverEnvSchema = z.object({
     .string()
     .min(1, 'SUPABASE_SERVICE_ROLE_KEY must be set on the server'),
 
+  /** Supabase Management API — white-label OAuth redirect URL automation. */
+  SUPABASE_ACCESS_TOKEN: z.string().optional(),
+  /** Optional override; defaults to project ref parsed from NEXT_PUBLIC_SUPABASE_URL. */
+  SUPABASE_PROJECT_REF: z.string().optional(),
+
   // Optional now, required when those integrations land.
   STRIPE_SECRET_KEY: z.string().optional(),
   /** Signing secret for Stripe destination scoped to "Your account" (platform / tenant subscriptions). */
@@ -130,6 +135,14 @@ const serverEnvSchema = z.object({
   ONBOARDING_EMAIL_CONFIRM_MODE: z.enum(['auto', 'required', 'disabled']).default('auto'),
   /** Vercel Cron / manual GET `/api/cron/materialize-recurring-visits` — `Authorization: Bearer …`. */
   CRON_SECRET: z.string().optional(),
+  /** Vercel REST API — white-label customer portal domain registration (server-only). */
+  VERCEL_API_TOKEN: z.string().optional(),
+  /** Vercel project id or name that serves cleanScheduler (prod/dev deployment). */
+  VERCEL_PROJECT_ID: z.string().optional(),
+  /** Alias for VERCEL_PROJECT_ID when using the project slug/name instead of id. */
+  VERCEL_PROJECT_NAME: z.string().optional(),
+  /** Optional Vercel team id when the project lives under a team account. */
+  VERCEL_TEAM_ID: z.string().optional(),
   /**
    * Optional guard: when set, `getServerEnv()` refuses to start if `NEXT_PUBLIC_APP_ENV` is
    * `local` or `dev` and `NEXT_PUBLIC_SUPABASE_URL` contains this substring (e.g. your production

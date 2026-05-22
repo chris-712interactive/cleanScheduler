@@ -9,21 +9,61 @@ import {
   assertWhiteLabelCustomerPortalAllowed,
   whiteLabelPortalGateErrorMessage,
 } from '@/lib/billing/whiteLabelPortalGate';
-import { verifyCustomerPortalDomainTxt } from '@/lib/portal/customerPortalDnsVerify';
+import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHostname';
 import {
-  customerPortalVerificationRecordName,
-  normalizeCustomerPortalHostname,
-} from '@/lib/portal/customerPortalHostname';
+  cleanupCustomerPortalDomainResources,
+  recordCustomerPortalDomainActivation,
+} from '@/lib/portal/customerPortalDomainActivation';
+import {
+  customerPortalDomainSyncUserMessage,
+  syncCustomerPortalDomainVerification,
+} from '@/lib/portal/customerPortalDomainSync';
+import {
+  isVercelDomainAutomationConfigured,
+  registerVercelProjectDomain,
+  removeVercelProjectDomain,
+  vercelDomainErrorMessage,
+  whiteLabelAutomationUnavailableMessage,
+} from '@/lib/portal/vercelProjectDomains';
 import { publicEnv } from '@/lib/env';
+import type { Json } from '@/lib/supabase/database.types';
 
 export interface CustomerPortalDomainActionState {
   error?: string;
   success?: string;
 }
 
-function cnameTarget(): string {
-  const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN.split(':')[0]!;
-  return `my.${apex}`;
+type DomainRow = {
+  hostname: string;
+  status: string;
+  verification_token: string | null;
+};
+
+async function loadDomainRow(tenantId: string): Promise<DomainRow | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('tenant_customer_portal_domains')
+    .select('hostname, status, verification_token')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function cleanupHostname(hostname: string | null | undefined): Promise<void> {
+  const host = hostname?.trim();
+  if (!host) return;
+
+  await cleanupCustomerPortalDomainResources(host);
+
+  if (isVercelDomainAutomationConfigured()) {
+    try {
+      await removeVercelProjectDomain(host);
+    } catch (error) {
+      console.error('[customerPortalDomain] Vercel remove failed:', error);
+    }
+  }
 }
 
 export async function saveCustomerPortalDomainAction(
@@ -57,14 +97,72 @@ export async function saveCustomerPortalDomainAction(
     return { error: whiteLabelPortalGateErrorMessage(error) ?? 'Cannot save domain.' };
   }
 
-  const verificationToken = randomBytes(16).toString('hex');
+  const existing = await loadDomainRow(membership.tenantId);
+  if (existing?.hostname && existing.hostname !== hostname) {
+    await cleanupHostname(existing.hostname);
+  }
 
+  if (isVercelDomainAutomationConfigured()) {
+    let vercelDomain;
+    try {
+      vercelDomain = await registerVercelProjectDomain(hostname);
+    } catch (error) {
+      return { error: vercelDomainErrorMessage(error) ?? 'Could not register domain with Vercel.' };
+    }
+
+    const { error } = await admin.from('tenant_customer_portal_domains').upsert(
+      {
+        tenant_id: membership.tenantId,
+        hostname,
+        status: vercelDomain.verified ? 'active' : 'pending',
+        verification_token: null,
+        vercel_verification: vercelDomain.verification as unknown as Json,
+        vercel_last_error: null,
+        verified_at: vercelDomain.verified ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'tenant_id' },
+    );
+
+    if (error) {
+      if (error.code === '23505') {
+        return { error: 'That hostname is already used by another workspace.' };
+      }
+      return { error: error.message };
+    }
+
+    if (vercelDomain.verified) {
+      await recordCustomerPortalDomainActivation(admin, membership.tenantId, {
+        hostname,
+        vercelVerification: vercelDomain.verification,
+      });
+    }
+
+    revalidatePath('/tenant/settings/customer-portal', 'page');
+    if (vercelDomain.verified) {
+      return {
+        success: `${hostname} is live. Customer invites and portal links will use https://${hostname}.`,
+      };
+    }
+
+    return {
+      success: `${hostname} is registered. Add the DNS records below — we will activate automatically once DNS propagates (usually within a few minutes).`,
+    };
+  }
+
+  if (publicEnv.NEXT_PUBLIC_APP_ENV !== 'local') {
+    return { error: whiteLabelAutomationUnavailableMessage() };
+  }
+
+  const verificationToken = randomBytes(16).toString('hex');
   const { error } = await admin.from('tenant_customer_portal_domains').upsert(
     {
       tenant_id: membership.tenantId,
       hostname,
       status: 'pending',
       verification_token: verificationToken,
+      vercel_verification: null,
+      vercel_last_error: null,
       verified_at: null,
       updated_at: new Date().toISOString(),
     },
@@ -80,7 +178,7 @@ export async function saveCustomerPortalDomainAction(
 
   revalidatePath('/tenant/settings/customer-portal', 'page');
   return {
-    success: `Saved ${hostname}. Add the DNS records below, then verify ownership.`,
+    success: `Saved ${hostname} (local dev mode). Add the DNS records below, then verify ownership.`,
   };
 }
 
@@ -103,42 +201,9 @@ export async function verifyCustomerPortalDomainAction(
     return { error: whiteLabelPortalGateErrorMessage(error) ?? 'Cannot verify domain.' };
   }
 
-  const { data: row, error: rowErr } = await admin
-    .from('tenant_customer_portal_domains')
-    .select('hostname, verification_token, status')
-    .eq('tenant_id', membership.tenantId)
-    .maybeSingle();
-
-  if (rowErr || !row) {
-    return { error: 'Save a custom domain before verifying DNS.' };
-  }
-
-  if (row.status === 'active') {
-    return { success: `${row.hostname} is already active.` };
-  }
-
-  const verified = await verifyCustomerPortalDomainTxt(row.hostname, row.verification_token);
-  if (!verified) {
-    return {
-      error: `TXT record not found yet. Add a TXT record at ${customerPortalVerificationRecordName(row.hostname)} with value ${row.verification_token}, then try again.`,
-    };
-  }
-
-  const { error: updateErr } = await admin
-    .from('tenant_customer_portal_domains')
-    .update({
-      status: 'active',
-      verified_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('tenant_id', membership.tenantId);
-
-  if (updateErr) return { error: updateErr.message };
-
+  const outcome = await syncCustomerPortalDomainVerification(admin, membership.tenantId);
   revalidatePath('/tenant/settings/customer-portal', 'page');
-  return {
-    success: `${row.hostname} is verified and active. Customer invites will use this URL. Add the hostname in your Vercel project (Settings → Domains) if you have not already.`,
-  };
+  return customerPortalDomainSyncUserMessage(outcome);
 }
 
 export async function removeCustomerPortalDomainAction(
@@ -154,6 +219,16 @@ export async function removeCustomerPortalDomainAction(
   }
 
   const admin = createAdminClient();
+  const { data: row } = await admin
+    .from('tenant_customer_portal_domains')
+    .select('hostname')
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (row?.hostname) {
+    await cleanupHostname(row.hostname);
+  }
+
   const { error } = await admin
     .from('tenant_customer_portal_domains')
     .delete()

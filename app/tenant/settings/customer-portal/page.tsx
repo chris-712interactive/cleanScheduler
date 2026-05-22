@@ -15,18 +15,34 @@ import {
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { customerPortalCnameTarget } from '@/lib/portal/customerPortalHostname';
+import { isVercelDomainAutomationConfigured } from '@/lib/portal/vercelProjectDomains';
 import { publicEnv } from '@/lib/env';
 import { SettingsSectionCard } from '../SettingsSectionCard';
 import { CustomerPortalDomainPanel } from './CustomerPortalDomainPanel';
+import type { VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
 import styles from '../settings.module.scss';
 
 export const dynamic = 'force-dynamic';
+
+function parseVercelVerification(value: unknown): VercelDomainVerificationRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (row): row is VercelDomainVerificationRecord =>
+      typeof row === 'object' &&
+      row !== null &&
+      typeof (row as VercelDomainVerificationRecord).type === 'string' &&
+      typeof (row as VercelDomainVerificationRecord).domain === 'string' &&
+      typeof (row as VercelDomainVerificationRecord).value === 'string',
+  );
+}
 
 export default async function TenantCustomerPortalSettingsPage() {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/settings/customer-portal');
   const canEdit = canManageTeamInvitesAndRoles(membership.role);
   const admin = createAdminClient();
+  const vercelAutomationConfigured = isVercelDomainAutomationConfigured();
+  const localDevFallback = publicEnv.NEXT_PUBLIC_APP_ENV === 'local';
 
   const [{ data: billing }, tier, { data: domainRow }] = await Promise.all([
     admin
@@ -37,7 +53,9 @@ export default async function TenantCustomerPortalSettingsPage() {
     resolveTenantPlanTier(admin, membership.tenantId),
     admin
       .from('tenant_customer_portal_domains')
-      .select('hostname, status, verification_token, verified_at')
+      .select(
+        'hostname, status, verification_token, verified_at, vercel_verification, vercel_last_error, auth_redirect_last_error',
+      )
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
   ]);
@@ -46,7 +64,7 @@ export default async function TenantCustomerPortalSettingsPage() {
   const billingStatus = (billing?.status ?? 'trialing') as TenantBillingStatus;
   const paid = canUsePaidSubscriptionFeatures(billingStatus);
   const whiteLabelAllowed = tierEnabled && paid;
-  const cnameTarget = customerPortalCnameTarget(publicEnv.NEXT_PUBLIC_APP_DOMAIN);
+  const sharedPortalHost = customerPortalCnameTarget(publicEnv.NEXT_PUBLIC_APP_DOMAIN);
 
   const domain =
     domainRow?.hostname && (domainRow.status === 'pending' || domainRow.status === 'active')
@@ -55,6 +73,9 @@ export default async function TenantCustomerPortalSettingsPage() {
           status: domainRow.status as 'pending' | 'active',
           verificationToken: domainRow.verification_token,
           verifiedAt: domainRow.verified_at,
+          vercelVerification: parseVercelVerification(domainRow.vercel_verification),
+          vercelLastError: domainRow.vercel_last_error,
+          authRedirectLastError: domainRow.auth_redirect_last_error,
         }
       : null;
 
@@ -94,13 +115,15 @@ export default async function TenantCustomerPortalSettingsPage() {
           <CustomerPortalDomainPanel
             tenantSlug={membership.tenantSlug}
             canEdit={canEdit}
-            cnameTarget={cnameTarget}
+            sharedPortalHost={sharedPortalHost}
+            vercelAutomationConfigured={vercelAutomationConfigured}
+            localDevFallback={localDevFallback}
             domain={domain}
           />
         ) : (
           <p className={styles.opsIntro}>
             Available on Pro with an active subscription. Customers on Business continue to use the
-            shared customer portal at <code>{cnameTarget}</code>.
+            shared customer portal at <code>{sharedPortalHost}</code>.
           </p>
         )}
       </SettingsSectionCard>

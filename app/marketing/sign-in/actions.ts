@@ -2,10 +2,8 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import {
-  parseAllowedRedirectOrigin,
-  sanitizeAuthenticationNext,
-} from '@/lib/auth/allowedRedirectOrigin';
+import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
+import { parseAllowedAuthRedirectOrigin } from '@/lib/auth/whiteLabelRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
 
 export interface SignInState {
@@ -28,8 +26,13 @@ function getOriginFromHeaders(h: Headers): string {
 async function resolveRedirectOrigin(formData: FormData): Promise<string> {
   const h = await headers();
   const headerOrigin = getOriginFromHeaders(h);
-  const clientOrigin = parseAllowedRedirectOrigin(String(formData.get('return_origin') ?? ''));
-  return clientOrigin ?? headerOrigin;
+  const clientOrigin = await parseAllowedAuthRedirectOrigin(
+    String(formData.get('return_origin') ?? ''),
+  );
+  if (clientOrigin) return clientOrigin;
+
+  const headerAllowed = await parseAllowedAuthRedirectOrigin(headerOrigin);
+  return headerAllowed ?? headerOrigin;
 }
 
 function normalizeNextFromForm(formData: FormData): string {
