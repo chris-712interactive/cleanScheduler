@@ -48,6 +48,9 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   if (features.dedicatedOnboarding) {
     bullets.push('Dedicated onboarding support');
   }
+  if (features.smsCommunication) {
+    bullets.push('SMS customer communication (visit reminders, review requests)');
+  }
 
   return bullets;
 }

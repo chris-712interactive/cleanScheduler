@@ -19,7 +19,9 @@ type EntitlementFeature =
   | 'forecasting'
   | 'fullApiWebhooks'
   | 'multiLocationControls'
-  | 'dedicatedOnboarding';
+  | 'dedicatedOnboarding'
+  | 'plaidReconciliation'
+  | 'smsCommunication';
 
 type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -72,6 +74,16 @@ Enforcement (active memberships + pending invites):
 - `app/marketing/complete-employee-invite/actions.ts` — before accepting an invite
 
 Inactive members do not consume seats. Pending invites reserve a seat until accepted, expired, or revoked.
+
+## SMS (Pro — planned send pipeline)
+
+| Tier | `smsCommunication` | `includedSmsCreditsMonthly` |
+| ---- | -------------------- | --------------------------- |
+| Starter | No | 0 |
+| Business | No | 0 |
+| Pro | Yes | 25,000 |
+
+Entitlement flag is defined and marketed; Twilio send pipeline enforcement is not built yet.
 
 ## Required API/server-action checks
 
@@ -135,10 +147,16 @@ Current implementation:
   - shows per-tenant hard-gated feature list and soft-limit values
 - `lib/billing/teamSeats.ts` + employee invite/member actions
   - enforces office/field seat caps before invites, accept, role change, reactivation
+- `lib/billing/tenantFeatureGate.ts` + gated routes/actions:
+  - `customerPortal` — portal invites (`inviteActions.ts`)
+  - `plaidReconciliation` — bank connection UI + Plaid link token
+  - `jobCosting` — compensation settings mutations
+  - `rolePermissions` — admin/viewer team invites and role changes
+- `lib/billing/automationWorkflows.ts`
+  - enforces `maxAutomationWorkflows` when creating recurring visit rules
 
 Next checks to add:
-- workflow creation actions -> `maxAutomationWorkflows`
-- SMS send pipeline -> `includedSmsCreditsMonthly`
+- SMS send pipeline -> `includedSmsCreditsMonthly` + `smsCommunication`
 - integration connection actions -> `includedIntegrations`
 
 ## Stripe mapping and fulfillment

@@ -3,9 +3,12 @@ import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
+import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { isResendApiConfigured } from '@/lib/email/resend';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
 import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
@@ -41,6 +44,9 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, `/customers/${id}`);
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const customerPortalEnabled = isFeatureEnabled(tier, 'customerPortal');
 
   const supabase = createTenantPortalDbClient();
   const { data: row, error } = await supabase
@@ -188,13 +194,20 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
           title="Customer portal access"
           description="Invite this customer by email so they can create a login and view their portal on my."
         >
-          <CustomerPortalInvitePanel
-            tenantSlug={membership.tenantSlug}
-            customerId={customer.id}
-            customerEmail={email}
-            portalLinked={portalLinked}
-            emailReady={emailReady}
-          />
+          {customerPortalEnabled ? (
+            <CustomerPortalInvitePanel
+              tenantSlug={membership.tenantSlug}
+              customerId={customer.id}
+              customerEmail={email}
+              portalLinked={portalLinked}
+              emailReady={emailReady}
+            />
+          ) : (
+            <FeatureUpgradePanel
+              title="Upgrade to unlock the customer portal"
+              description={`${minimumTierLabelForFeature('customerPortal')} plans let customers view visits, pay invoices, accept quotes, and request reschedules online.`}
+            />
+          )}
         </Card>
 
         <RecurringBillingPanel

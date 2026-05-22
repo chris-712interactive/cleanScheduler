@@ -1,9 +1,12 @@
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import {
   COMPENSATION_RULE_TYPE_LABEL,
@@ -46,6 +49,9 @@ export default async function TenantCompensationSettingsPage({ searchParams }: P
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/settings/compensation');
   const canEdit = canManageTeamInvitesAndRoles(membership.role);
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const jobCostingEnabled = isFeatureEnabled(tier, 'jobCosting');
 
   const supabase = createTenantPortalDbClient();
   const { data: rules } = await supabase
@@ -77,6 +83,13 @@ export default async function TenantCompensationSettingsPage({ searchParams }: P
         </p>
       ) : null}
 
+      {!jobCostingEnabled ? (
+        <FeatureUpgradePanel
+          title="Upgrade to unlock tips & commissions"
+          description={`${minimumTierLabelForFeature('jobCosting')} plans include compensation rules that feed payroll export and tips & commissions reports.`}
+        />
+      ) : (
+        <>
       {!canEdit ? (
         <p className={styles.readOnlyNotice} role="status">
           You can view compensation rules here. Only owners and admins can make changes.
@@ -193,6 +206,8 @@ export default async function TenantCompensationSettingsPage({ searchParams }: P
           </ul>
         )}
       </Card>
+        </>
+      )}
     </>
   );
 }

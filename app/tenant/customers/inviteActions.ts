@@ -7,6 +7,7 @@ import { getAuthContext } from '@/lib/auth/session';
 import { sendCustomerPortalInviteEmail, isResendApiConfigured } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { inviteTemplateCustomerFirstName } from '@/lib/tenant/customerIdentityName';
+import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 
 export interface CustomerInviteFormState {
   error?: string;
@@ -40,6 +41,15 @@ export async function sendCustomerPortalInviteAction(
   }
 
   const admin = createAdminClient();
+
+  try {
+    await assertTenantFeatureEnabled(admin, membership.tenantId, 'customerPortal');
+  } catch (error) {
+    const message = featureGateErrorMessage(error);
+    if (message) return { error: message };
+    throw error;
+  }
+
   const { data: row, error: rowErr } = await admin
     .from('customers')
     .select(

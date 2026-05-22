@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageBankReconciliation } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
+import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { importBankStatementRows } from '@/lib/plaid/importBankStatement';
 import { parseBankStatementCsv } from '@/lib/plaid/parseBankStatementCsv';
 
@@ -15,6 +16,14 @@ export async function importBankStatementAction(formData: FormData): Promise<voi
 
   if (!canManageBankReconciliation(membership.role)) {
     redirect('/billing/bank-connection?error=Admin access required to import bank statements.');
+  }
+
+  const admin = createAdminClient();
+  try {
+    await assertTenantFeatureEnabled(admin, membership.tenantId, 'plaidReconciliation');
+  } catch (error) {
+    const message = featureGateErrorMessage(error) ?? 'Upgrade your subscription to import bank statements.';
+    redirect(`/billing/bank-connection?error=${encodeURIComponent(message)}`);
   }
 
   const file = formData.get('statement_file');
@@ -33,7 +42,6 @@ export async function importBankStatementAction(formData: FormData): Promise<voi
   }
 
   const auth = await getAuthContext();
-  const admin = createAdminClient();
   const result = await importBankStatementRows(
     admin,
     membership.tenantId,

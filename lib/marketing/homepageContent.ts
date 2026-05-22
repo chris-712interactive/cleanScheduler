@@ -136,12 +136,27 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Run collections, payment audits, bank matching, payroll exports, and year-end prep from one reports hub.',
     bullets: [
       'Ordered month-end close checklist',
-      'Payroll export for ADP, Gusto, and QuickBooks',
-      'Sales tax summary and 1099 prep on higher tiers',
+      'Payroll export for ADP, Gusto, and QuickBooks (Business+)',
+      'Advanced analytics and forecasting on Pro',
     ],
     imageSrc: '/marketing/feature-reports.png',
     imageAlt: 'cleanScheduler payment audits report for check and cash tracking',
-    tierBadge: { label: 'Business & Pro', tier: 'business' },
+    tierBadge: { label: 'Business+', tier: 'business' },
+  },
+  {
+    id: 'sms',
+    eyebrow: 'Communication',
+    title: 'SMS reminders and review requests on Pro',
+    description:
+      'Reach customers on the channel they actually read — visit reminders, quote follow-ups, and review nudges via text message.',
+    bullets: [
+      '25,000 SMS segments per month included',
+      'Visit reminders and on-my-way notifications',
+      'Review request campaigns alongside email',
+    ],
+    imageSrc: '/marketing/feature-portals.png',
+    imageAlt: 'cleanScheduler customer communication features',
+    tierBadge: { label: 'Pro plan', tier: 'pro' },
   },
 ];
 

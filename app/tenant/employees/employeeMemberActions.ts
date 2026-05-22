@@ -16,6 +16,7 @@ import {
   countTeamSeatUsage,
   teamSeatGateErrorMessage,
 } from '@/lib/billing/teamSeats';
+import { assertFeatureEnabledForTier, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
   AVATAR_MAX_UPLOAD_BYTES,
@@ -145,6 +146,9 @@ export async function updateTenantMemberRoleAction(
 
   try {
     const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+    if (nextRole === 'admin' || nextRole === 'viewer') {
+      assertFeatureEnabledForTier(tier, 'rolePermissions');
+    }
     const usage = await countTeamSeatUsage(admin, membership.tenantId);
     assertCanAssignTeamSeat({
       tier,

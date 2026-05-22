@@ -1,10 +1,13 @@
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageBankReconciliation } from '@/lib/auth/tenantRoleAccess';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
+import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { isPlaidConfigured } from '@/lib/plaid/server';
 import { DisconnectBankButton, SyncBankButton } from './BankConnectionControls';
 import { DepositCandidatesTable } from './DepositCandidatesTable';
@@ -33,6 +36,9 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
   const sp = await searchParams;
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const bankReconciliationEnabled = isFeatureEnabled(tier, 'plaidReconciliation');
 
   const err = firstParam(sp.error);
   const connected = firstParam(sp.connected) === '1';
@@ -187,6 +193,12 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
         </p>
       ) : null}
 
+      {!bankReconciliationEnabled ? (
+        <FeatureUpgradePanel
+          title="Upgrade to unlock bank reconciliation"
+          description={`${minimumTierLabelForFeature('plaidReconciliation')} plans include Plaid bank connection, deposit import, and invoice matching for Zelle and ACH payments.`}
+        />
+      ) : (
       <Stack gap={6}>
         <Card
           title="Plaid Link"
@@ -278,6 +290,7 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
           />
         </Card>
       </Stack>
+      )}
     </>
   );
 }

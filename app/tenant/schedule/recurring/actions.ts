@@ -5,6 +5,10 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
+import {
+  assertTenantCanCreateAutomationWorkflow,
+  automationWorkflowGateErrorMessage,
+} from '@/lib/billing/automationWorkflows';
 
 const PRESETS: Record<string, string> = {
   weekly_mon: 'FREQ=WEEKLY;BYDAY=MO;INTERVAL=1',
@@ -69,6 +73,15 @@ export async function createRecurringVisitRuleAction(formData: FormData): Promis
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
   if (!cust) redirect('/schedule/recurring?error=bad_customer');
+
+  try {
+    await assertTenantCanCreateAutomationWorkflow(admin, membership.tenantId);
+  } catch (error) {
+    const message = automationWorkflowGateErrorMessage(error);
+    redirect(
+      `/schedule/recurring?error=${encodeURIComponent(message ?? 'Recurring rule limit reached.')}`,
+    );
+  }
 
   const { error } = await admin.from('recurring_appointment_rules').insert({
     tenant_id: membership.tenantId,

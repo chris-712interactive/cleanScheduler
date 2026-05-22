@@ -14,7 +14,8 @@ export type EntitlementFeature =
   | 'fullApiWebhooks'
   | 'multiLocationControls'
   | 'dedicatedOnboarding'
-  | 'plaidReconciliation';
+  | 'plaidReconciliation'
+  | 'smsCommunication';
 
 export type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -67,13 +68,14 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       multiLocationControls: false,
       dedicatedOnboarding: false,
       plaidReconciliation: false,
+      smsCommunication: false,
     },
     limits: {
       includedOfficeSeats: 1,
       includedFieldSeats: 3,
       maxActiveCustomers: 500,
       maxAutomationWorkflows: 3,
-      includedSmsCreditsMonthly: 500,
+      includedSmsCreditsMonthly: 0,
       includedEmailCreditsMonthly: 2500,
       includedIntegrations: 1,
       maxCampaignSendsMonthly: 0,
@@ -100,13 +102,14 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       multiLocationControls: false,
       dedicatedOnboarding: false,
       plaidReconciliation: true,
+      smsCommunication: false,
     },
     limits: {
       includedOfficeSeats: 2,
       includedFieldSeats: 10,
       maxActiveCustomers: 5000,
       maxAutomationWorkflows: 20,
-      includedSmsCreditsMonthly: 5000,
+      includedSmsCreditsMonthly: 0,
       includedEmailCreditsMonthly: 25000,
       includedIntegrations: 5,
       maxCampaignSendsMonthly: 10000,
@@ -133,6 +136,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       multiLocationControls: true,
       dedicatedOnboarding: true,
       plaidReconciliation: true,
+      smsCommunication: true,
     },
     limits: {
       includedOfficeSeats: 10,

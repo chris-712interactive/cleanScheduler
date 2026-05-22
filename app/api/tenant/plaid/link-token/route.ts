@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import {
   createPlaidLinkToken,
   createPlaidUpdateLinkToken,
@@ -20,6 +21,13 @@ export async function GET() {
 
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
   const admin = createAdminClient();
+
+  try {
+    await assertTenantFeatureEnabled(admin, membership.tenantId, 'plaidReconciliation');
+  } catch (error) {
+    const message = featureGateErrorMessage(error) ?? 'Upgrade your subscription to connect a bank account.';
+    return NextResponse.json({ error: message }, { status: 403 });
+  }
 
   const { data: link } = await admin
     .from('bank_links')

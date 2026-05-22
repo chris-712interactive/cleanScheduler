@@ -26,6 +26,7 @@ import {
   parsePlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
 import { getPlatformPricingDisplay, formatPlanPriceUsd } from '@/lib/billing/platformPricing';
+import { getMarketingFeatureBullets } from '@/lib/billing/marketingPlanCatalog';
 import {
   canAccessCustomerBillingTools,
   needsSubscriptionPurchase,
@@ -146,6 +147,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const currentPlanPricing = planKey
     ? (pricingTiers.find((tier) => tier.tier === planKey) ?? null)
     : null;
+  const planFeatureBullets = planKey ? getMarketingFeatureBullets(planKey) : [];
   const planStatus = formatPlanStatus(subscriptionAccess, billing?.status);
   const marketingPlansUrl = `${getPublicOrigin(null)}/pricing`;
 
@@ -284,6 +286,13 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                 <div className={styles.planSummaryCopy}>
                   <h3 className={styles.planName}>{planLabel ?? 'No plan selected'}</h3>
                   {planTagline ? <p className={styles.planTagline}>{planTagline}</p> : null}
+                  {planFeatureBullets.length > 0 ? (
+                    <ul className={styles.planFeatureList}>
+                      {planFeatureBullets.map((bullet) => (
+                        <li key={bullet}>{bullet}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                   <a
                     href={marketingPlansUrl}
                     className={styles.planDetailsLink}

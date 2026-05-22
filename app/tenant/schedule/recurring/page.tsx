@@ -3,9 +3,14 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import {
+  countActiveAutomationWorkflows,
+  formatAutomationWorkflowUsage,
+} from '@/lib/billing/automationWorkflows';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
@@ -68,6 +73,9 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
   const sp = await searchParams;
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/schedule/recurring');
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const activeWorkflowCount = await countActiveAutomationWorkflows(admin, membership.tenantId);
   const db = createTenantPortalDbClient();
 
   const err = firstParam(sp.error);
@@ -131,6 +139,11 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
           {err}
         </p>
       ) : null}
+
+      <p className={styles.rowMeta} style={{ marginBottom: 'var(--space-4)' }}>
+        Automation usage: {formatAutomationWorkflowUsage(activeWorkflowCount, tier)}.{' '}
+        <Link href="/billing">Upgrade plan</Link>
+      </p>
 
       <Stack gap={6}>
         <RecurringConceptCallout variant="visits" />

@@ -10,6 +10,7 @@ import {
   type PlaidLinkInstitutionMetadata,
 } from '@/lib/plaid/exchangePublicToken';
 import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
+import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { confirmPaymentMatchSuggestion, matchBankDepositToInvoice } from '@/lib/plaid/confirmPaymentMatch';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
 import {
@@ -28,6 +29,18 @@ function requireBankAdmin(membership: { role: import('@/lib/auth/types').TenantR
   return tenantRoleError(membership.role, 'admin');
 }
 
+async function bankReconciliationGateError(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+): Promise<string | null> {
+  try {
+    await assertTenantFeatureEnabled(admin, tenantId, 'plaidReconciliation');
+    return null;
+  } catch (error) {
+    return featureGateErrorMessage(error);
+  }
+}
+
 export async function fetchPlaidLinkTokenAction(
   tenantSlug: string,
 ): Promise<{ link_token: string } | { error: string }> {
@@ -36,11 +49,14 @@ export async function fetchPlaidLinkTokenAction(
   const roleErr = requireBankAdmin(membership);
   if (roleErr) return { error: roleErr };
 
+  const admin = createAdminClient();
+  const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
+  if (tierErr) return { error: tierErr };
+
   if (!isPlaidConfigured()) {
     return { error: 'Plaid is not configured on this server.' };
   }
 
-  const admin = createAdminClient();
   const { data: link } = await admin
     .from('bank_links')
     .select('plaid_access_token, status')
@@ -74,6 +90,10 @@ export async function connectBankFromPlaidAction(
   const roleErr = requireBankAdmin(membership);
   if (roleErr) return { error: roleErr };
 
+  const admin = createAdminClient();
+  const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
+  if (tierErr) return { error: tierErr };
+
   if (!isPlaidConfigured()) {
     return { error: 'Plaid is not configured on this server.' };
   }
@@ -92,8 +112,6 @@ export async function connectBankFromPlaidAction(
   } catch {
     return { error: 'Invalid Plaid account metadata.' };
   }
-
-  const admin = createAdminClient();
 
   try {
     await exchangeAndSaveBankLink(admin, membership.tenantId, publicToken, account, institution);
@@ -115,11 +133,13 @@ export async function syncBankTransactionsAction(
   const roleErr = requireBankAdmin(membership);
   if (roleErr) return { error: roleErr };
 
+  const admin = createAdminClient();
+  const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
+  if (tierErr) return { error: tierErr };
+
   if (!isPlaidConfigured()) {
     return { error: 'Plaid is not configured on this server.' };
   }
-
-  const admin = createAdminClient();
 
   try {
     await syncBankTransactionsForTenant(admin, membership.tenantId);
@@ -147,6 +167,8 @@ export async function confirmPaymentMatchAction(
   }
 
   const admin = createAdminClient();
+  const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
+  if (tierErr) return { error: tierErr };
 
   try {
     await confirmPaymentMatchSuggestion(admin, membership.tenantId, suggestionId);
@@ -178,6 +200,9 @@ export async function dismissPaymentMatchAction(
   }
 
   const admin = createAdminClient();
+  const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
+  if (tierErr) return { error: tierErr };
+
   const { error } = await admin
     .from('payment_match_suggestions')
     .update({ status: 'dismissed' })
@@ -203,6 +228,9 @@ export async function disconnectBankLinkAction(
   if (roleErr) return { error: roleErr };
 
   const admin = createAdminClient();
+  const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
+  if (tierErr) return { error: tierErr };
+
   const { data: link } = await admin
     .from('bank_links')
     .select('id, plaid_access_token')
@@ -255,6 +283,8 @@ export async function manualMatchBankDepositAction(
   }
 
   const admin = createAdminClient();
+  const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
+  if (tierErr) return { error: tierErr };
 
   try {
     await matchBankDepositToInvoice(admin, membership.tenantId, bankTransactionId, invoiceId);

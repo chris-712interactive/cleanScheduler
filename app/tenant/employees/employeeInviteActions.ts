@@ -10,6 +10,10 @@ import {
   countTeamSeatUsage,
   teamSeatGateErrorMessage,
 } from '@/lib/billing/teamSeats';
+import {
+  assertFeatureEnabledForTier,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
 import { isResendConfigured, sendEmployeeInviteEmail } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
@@ -64,6 +68,27 @@ export async function sendEmployeeInviteAction(
     return { error: 'You cannot assign that role.' };
   }
 
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+
+  if (invitedRole === 'admin' || invitedRole === 'viewer') {
+    try {
+      assertFeatureEnabledForTier(tier, 'rolePermissions');
+    } catch (error) {
+      const message = featureGateErrorMessage(error);
+      if (message) return { error: message };
+      throw error;
+    }
+  }
+
+  const { data: existingUsers, error: listErr } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 200,
+  });
+  if (listErr) {
+    return { error: listErr.message };
+  }
+
   const auth = await getAuthContext();
   if (!auth) {
     return { error: 'You must be signed in to send an invite.' };
@@ -76,15 +101,6 @@ export async function sendEmployeeInviteAction(
     };
   }
 
-  const admin = createAdminClient();
-
-  const { data: existingUsers, error: listErr } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 200,
-  });
-  if (listErr) {
-    return { error: listErr.message };
-  }
   const existing = existingUsers.users.find((u) => (u.email ?? '').trim().toLowerCase() === emailRaw);
   if (existing) {
     const { data: already } = await admin

@@ -18,6 +18,22 @@ function fieldSeatValue(tier: PlatformPlanTier): string {
   return formatFieldSeatLimit(PLATFORM_TIER_ENTITLEMENTS[tier].limits.includedFieldSeats);
 }
 
+function workflowValue(tier: PlatformPlanTier): string {
+  return String(PLATFORM_TIER_ENTITLEMENTS[tier].limits.maxAutomationWorkflows);
+}
+
+function smsValue(tier: PlatformPlanTier): string {
+  const credits = PLATFORM_TIER_ENTITLEMENTS[tier].limits.includedSmsCreditsMonthly;
+  if (credits === 0) return '—';
+  return credits.toLocaleString();
+}
+
+function campaignSendsValue(tier: PlatformPlanTier): string {
+  const sends = PLATFORM_TIER_ENTITLEMENTS[tier].limits.maxCampaignSendsMonthly;
+  if (sends === 0) return '—';
+  return sends.toLocaleString();
+}
+
 const COMPARISON_ROWS: ComparisonRow[] = [
   {
     label: 'Office seats (owner, admin, viewer)',
@@ -44,15 +60,47 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     },
   },
   {
+    label: 'Recurring visit rules',
+    values: {
+      starter: workflowValue('starter'),
+      business: workflowValue('business'),
+      pro: workflowValue('pro'),
+    },
+  },
+  {
     label: 'Customer portal',
     values: { starter: false, business: true, pro: true },
   },
   {
-    label: 'Email campaigns',
+    label: 'Role permissions (admin/viewer)',
     values: { starter: false, business: true, pro: true },
   },
   {
+    label: 'Email campaigns',
+    values: {
+      starter: false,
+      business: campaignSendsValue('business') + '/mo',
+      pro: campaignSendsValue('pro') + '/mo',
+    },
+  },
+  {
+    label: 'SMS customer communication',
+    values: {
+      starter: false,
+      business: false,
+      pro: smsValue('pro') + '/mo',
+    },
+  },
+  {
     label: 'Payroll export',
+    values: { starter: false, business: true, pro: true },
+  },
+  {
+    label: 'Tips & commissions',
+    values: { starter: false, business: true, pro: true },
+  },
+  {
+    label: 'Sales tax summary',
     values: { starter: false, business: true, pro: true },
   },
   {
@@ -64,6 +112,10 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: { starter: false, business: false, pro: true },
   },
   {
+    label: 'Forecasting (LTV / churn)',
+    values: { starter: false, business: false, pro: true },
+  },
+  {
     label: 'API & webhooks',
     values: { starter: false, business: false, pro: true },
   },
@@ -71,6 +123,9 @@ const COMPARISON_ROWS: ComparisonRow[] = [
 
 function CellValue({ value }: { value: boolean | string }) {
   if (typeof value === 'string') {
+    if (value === '—') {
+      return <Minus size={18} aria-hidden className={styles.minusIcon} />;
+    }
     return <span className={styles.textValue}>{value}</span>;
   }
 
