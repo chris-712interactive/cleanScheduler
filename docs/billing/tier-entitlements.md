@@ -143,7 +143,7 @@ Migration `0041_invoice_reminders_locations.sql`.
 
 Flow: tenant saves hostname → cleanScheduler registers it on the Vercel project via API → tenant adds the DNS records Vercel returns → cron `/api/cron/verify-customer-portal-domains` (every 5 min) or **Verify DNS** activates the domain → status `active`. Middleware routes the hostname to `/customer/*` scoped to that tenant. Invite links use the custom origin when active.
 
-**Server env (platform admin, one-time):** `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID` (or `VERCEL_PROJECT_NAME`), optional `VERCEL_TEAM_ID`. `SUPABASE_ACCESS_TOKEN` (Management API, [account tokens](https://supabase.com/dashboard/account/tokens) with Auth config write) auto-adds `https://<hostname>/auth/callback` to Supabase Redirect URLs when a domain activates; optional `SUPABASE_PROJECT_REF` overrides project ref parsed from `NEXT_PUBLIC_SUPABASE_URL`.
+**Server env (platform admin, one-time):** `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID` (or `VERCEL_PROJECT_NAME`), optional `VERCEL_TEAM_ID`. On **dev** deployments only, optionally set `VERCEL_DOMAIN_GIT_BRANCH` (Preview branch) or `VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID` (Vercel custom environment) so tenant domains attach to dev instead of Production; leave both unset on prod. `SUPABASE_ACCESS_TOKEN` (Management API, [account tokens](https://supabase.com/dashboard/account/tokens) with Auth config write) auto-adds `https://<hostname>/auth/callback` to Supabase Redirect URLs when a domain activates; optional `SUPABASE_PROJECT_REF` overrides project ref parsed from `NEXT_PUBLIC_SUPABASE_URL`.
 
 Migrations `0042_tenant_customer_portal_domains.sql`, `0043_tenant_customer_portal_domains_vercel.sql`, `0044_tenant_customer_portal_auth_redirect.sql`.
 

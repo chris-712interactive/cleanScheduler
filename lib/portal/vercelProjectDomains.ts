@@ -29,6 +29,45 @@ interface VercelConfig {
   teamId?: string;
 }
 
+interface VercelDomainTargetConfig {
+  gitBranch?: string;
+  customEnvironmentId?: string;
+}
+
+function readVercelDomainTargetConfig(): VercelDomainTargetConfig {
+  const gitBranch = process.env.VERCEL_DOMAIN_GIT_BRANCH?.trim();
+  const customEnvironmentId = process.env.VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID?.trim();
+  return {
+    gitBranch: gitBranch || undefined,
+    customEnvironmentId: customEnvironmentId || undefined,
+  };
+}
+
+function hasVercelDomainTargetConfig(config: VercelDomainTargetConfig): boolean {
+  return Boolean(config.gitBranch || config.customEnvironmentId);
+}
+
+function buildVercelDomainTargetPayload(
+  config: VercelDomainTargetConfig,
+): Record<string, string> {
+  const payload: Record<string, string> = {};
+  if (config.gitBranch) payload.gitBranch = config.gitBranch;
+  if (config.customEnvironmentId) payload.customEnvironmentId = config.customEnvironmentId;
+  return payload;
+}
+
+/** Human-readable label for which Vercel deployment receives new white-label domains. */
+export function describeVercelDomainTarget(): string | null {
+  const target = readVercelDomainTargetConfig();
+  if (target.customEnvironmentId) {
+    return `custom environment ${target.customEnvironmentId}`;
+  }
+  if (target.gitBranch) {
+    return `branch “${target.gitBranch}”`;
+  }
+  return null;
+}
+
 function readVercelConfig(): Partial<VercelConfig> {
   const token = process.env.VERCEL_API_TOKEN?.trim();
   const projectId =
@@ -107,15 +146,38 @@ export function isVercelDomainFullyVerified(result: VercelProjectDomainResult): 
   return result.verified === true && result.verification.length === 0;
 }
 
+/** Apply git branch / custom environment targeting when configured for this deployment. */
+export async function ensureVercelProjectDomainTarget(hostname: string): Promise<void> {
+  const target = readVercelDomainTargetConfig();
+  if (!hasVercelDomainTargetConfig(target)) return;
+
+  const { projectId } = requireVercelConfig();
+  const response = await vercelRequest(
+    `/v9/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(hostname)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(buildVercelDomainTargetPayload(target)),
+    },
+  );
+
+  if (!response.ok) {
+    throw new VercelDomainError(await parseVercelError(response), response.status);
+  }
+}
+
 /** Register (or refresh) a hostname on the cleanScheduler Vercel project. */
 export async function registerVercelProjectDomain(
   hostname: string,
 ): Promise<VercelProjectDomainResult> {
   const { projectId } = requireVercelConfig();
+  const target = readVercelDomainTargetConfig();
 
   const response = await vercelRequest(`/v10/projects/${encodeURIComponent(projectId)}/domains`, {
     method: 'POST',
-    body: JSON.stringify({ name: hostname }),
+    body: JSON.stringify({
+      name: hostname,
+      ...buildVercelDomainTargetPayload(target),
+    }),
   });
 
   if (response.ok) {
@@ -130,6 +192,7 @@ export async function registerVercelProjectDomain(
   if (response.status === 400) {
     const message = await parseVercelError(response);
     if (/already exists/i.test(message)) {
+      await ensureVercelProjectDomainTarget(hostname);
       return getVercelProjectDomain(hostname);
     }
     throw new VercelDomainError(message, response.status);

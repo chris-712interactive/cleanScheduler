@@ -144,6 +144,16 @@ const serverEnvSchema = z.object({
   /** Optional Vercel team id when the project lives under a team account. */
   VERCEL_TEAM_ID: z.string().optional(),
   /**
+   * Optional. Pin tenant white-label domains to a Vercel Preview branch instead of Production.
+   * Set on dev deployments (e.g. `develop`). Leave unset on production.
+   */
+  VERCEL_DOMAIN_GIT_BRANCH: z.string().optional(),
+  /**
+   * Optional. Pin tenant white-label domains to a Vercel custom environment (Pro/Enterprise).
+   * Takes precedence over branch assignment when both are set. Find the id in Project → Settings → Environments.
+   */
+  VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID: z.string().optional(),
+  /**
    * Optional guard: when set, `getServerEnv()` refuses to start if `NEXT_PUBLIC_APP_ENV` is
    * `local` or `dev` and `NEXT_PUBLIC_SUPABASE_URL` contains this substring (e.g. your production
    * Supabase project ref). Prevents accidental reads/writes against prod from a dev build.

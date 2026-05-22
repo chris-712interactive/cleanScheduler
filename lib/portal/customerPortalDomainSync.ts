@@ -6,6 +6,7 @@ import {
 import { verifyCustomerPortalDomainTxt } from '@/lib/portal/customerPortalDnsVerify';
 import { customerPortalVerificationRecordName } from '@/lib/portal/customerPortalHostname';
 import {
+  ensureVercelProjectDomainTarget,
   getVercelProjectDomain,
   isVercelDomainAutomationConfigured,
   isVercelDomainFullyVerified,
@@ -331,6 +332,12 @@ export async function reconcileCustomerPortalDomainWithVercel(
 
   if (rowErr || !row?.hostname) {
     return null;
+  }
+
+  try {
+    await ensureVercelProjectDomainTarget(row.hostname);
+  } catch (error) {
+    console.error('[customerPortalDomain] Vercel domain target update failed:', error);
   }
 
   let vercelDomain;

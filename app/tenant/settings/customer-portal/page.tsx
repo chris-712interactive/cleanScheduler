@@ -15,7 +15,11 @@ import {
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { customerPortalCnameTarget } from '@/lib/portal/customerPortalHostname';
-import { isVercelDomainAutomationConfigured, type VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
+import {
+  describeVercelDomainTarget,
+  isVercelDomainAutomationConfigured,
+  type VercelDomainVerificationRecord,
+} from '@/lib/portal/vercelProjectDomains';
 import { publicEnv } from '@/lib/env';
 import { SettingsSectionCard } from '../SettingsSectionCard';
 import { CustomerPortalDomainPanel } from './CustomerPortalDomainPanel';
@@ -45,6 +49,7 @@ export default async function TenantCustomerPortalSettingsPage() {
   const admin = createAdminClient();
   const vercelAutomationConfigured = isVercelDomainAutomationConfigured();
   const localDevFallback = publicEnv.NEXT_PUBLIC_APP_ENV === 'local';
+  const vercelDomainTarget = describeVercelDomainTarget();
 
   const [{ data: billing }, tier, { data: domainRowRaw }] = await Promise.all([
     admin
@@ -125,6 +130,7 @@ export default async function TenantCustomerPortalSettingsPage() {
             canEdit={canEdit}
             sharedPortalHost={sharedPortalHost}
             vercelAutomationConfigured={vercelAutomationConfigured}
+            vercelDomainTarget={vercelDomainTarget}
             localDevFallback={localDevFallback}
             domain={domain}
           />

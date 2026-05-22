@@ -26,6 +26,7 @@ export function CustomerPortalDomainPanel({
   canEdit,
   sharedPortalHost,
   vercelAutomationConfigured,
+  vercelDomainTarget,
   localDevFallback,
   domain,
 }: {
@@ -33,6 +34,7 @@ export function CustomerPortalDomainPanel({
   canEdit: boolean;
   sharedPortalHost: string;
   vercelAutomationConfigured: boolean;
+  vercelDomainTarget: string | null;
   localDevFallback: boolean;
   domain: {
     hostname: string;
@@ -122,6 +124,14 @@ export function CustomerPortalDomainPanel({
         <p className={styles.opsIntro} role="status">
           Local dev mode: set <code>VERCEL_API_TOKEN</code> and <code>VERCEL_PROJECT_ID</code> in
           `.env.local` for production-like DNS instructions from Vercel.
+        </p>
+      ) : null}
+
+      {vercelAutomationConfigured && vercelDomainTarget ? (
+        <p className={styles.opsIntro} role="status">
+          Custom domains on this deployment attach to Vercel {vercelDomainTarget}. Production
+          deployments leave both <code>VERCEL_DOMAIN_GIT_BRANCH</code> and{' '}
+          <code>VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID</code> unset.
         </p>
       ) : null}
 
