@@ -312,7 +312,10 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               </div>
             ) : null}
 
-            <VisitProofPhotos photos={proofPhotos} />
+            <VisitProofPhotos
+              photos={proofPhotos}
+              description="Uploaded by your crew when this job was marked complete."
+            />
 
             <VisitFieldWorkPanel
               tenantSlug={membership.tenantSlug}

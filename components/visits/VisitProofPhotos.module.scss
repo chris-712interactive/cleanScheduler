@@ -1,20 +1,79 @@
 .wrap {
   margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.titleIcon {
+  color: var(--color-brand-primary);
+  flex-shrink: 0;
 }
 
 .title {
-  margin: 0 0 var(--space-3);
-  font-size: var(--text-sm);
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.count {
+  font-size: var(--font-size-xs);
   font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 2px var(--space-2);
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-full);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+.photoButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
 }
 
 .photo {
@@ -24,4 +83,63 @@
   object-fit: cover;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+  transition: transform 0.15s ease;
+
+  .photoButton:hover & {
+    transform: scale(1.02);
+  }
+}
+
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background: rgb(0 0 0 / 88%);
+}
+
+.lightboxContent {
+  position: fixed;
+  inset: var(--space-4);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightboxImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.lightboxClose {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: calc(var(--z-modal) + 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 16%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

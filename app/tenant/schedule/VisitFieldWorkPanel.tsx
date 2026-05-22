@@ -46,7 +46,10 @@ export function VisitFieldWorkPanel({
           Checked in {new Date(checkedInAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
         </p>
       ) : (
-        <p className={styles.fieldHint}>Check in when you arrive, then complete the job when finished.</p>
+        <p className={styles.fieldHint}>
+          Check in when you arrive. When the job is done, tap Complete job to record payment and add proof
+          photos.
+        </p>
       )}
 
       {canCheckIn ? (

@@ -1,11 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  PROOF_PHOTO_ACCEPT,
+  PROOF_PHOTO_MAX_BYTES,
+  PROOF_PHOTO_MAX_COUNT,
+} from '@/lib/visits/proofPhotoLimits';
 
 const BUCKET = 'visit_proof_photos';
-const MAX_PHOTOS = 5;
-const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_PHOTOS = PROOF_PHOTO_MAX_COUNT;
+const MAX_BYTES = PROOF_PHOTO_MAX_BYTES;
+const ALLOWED_TYPES = new Set(PROOF_PHOTO_ACCEPT.split(','));
 
 type Admin = SupabaseClient<Database>;
 

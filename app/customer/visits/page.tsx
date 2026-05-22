@@ -218,7 +218,11 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
                   <div className={styles.row}>
                     <StatusPill tone="success">{completedLabel}</StatusPill>
                   </div>
-                  <VisitProofPhotos photos={photos} title="Photos from your crew" />
+                  <VisitProofPhotos
+                    photos={photos}
+                    title="Photos from your crew"
+                    description="Tap a photo to view it full size."
+                  />
                 </Card>
               );
             })}

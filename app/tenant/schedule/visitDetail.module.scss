@@ -75,6 +75,10 @@
 
 .fieldForm {
   margin-bottom: var(--space-3);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .error {

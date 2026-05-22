@@ -1,9 +1,14 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useMemo, useState } from 'react';
+import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { Button } from '@/components/ui/Button';
+import {
+  ProofPhotoCapture,
+  revokeProofPhotoPreviews,
+  type ProofPhotoCaptureItem,
+} from '@/components/visits/ProofPhotoCapture';
 import {
   formatCustomerPreferredBilling,
   isElectronicPreferredBilling,
@@ -80,6 +85,7 @@ export function CompleteVisitPaymentModal({
   const [cashAmountDollars, setCashAmountDollars] = useState('');
   const [invoiceAmountDollars, setInvoiceAmountDollars] = useState('');
   const [stepError, setStepError] = useState<string | null>(null);
+  const [proofPhotos, setProofPhotos] = useState<ProofPhotoCaptureItem[]>([]);
 
   const [state, formAction, pending] = useActionState(completeVisitWithPaymentAction, initial);
   useRefreshOnServerActionSuccess(state.success);
@@ -110,6 +116,10 @@ export function CompleteVisitPaymentModal({
     setCashAmountDollars('');
     setInvoiceAmountDollars('');
     setStepError(null);
+    setProofPhotos((current) => {
+      revokeProofPhotoPreviews(current);
+      return [];
+    });
   }, [defaultAmountDollars]);
 
   function handleOpenChange(next: boolean) {
@@ -183,12 +193,38 @@ export function CompleteVisitPaymentModal({
     setStepIndex((i) => Math.max(0, i - 1));
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const err = validateCurrentStep();
+    if (err) {
+      setStepError(err);
+      return;
+    }
+    setStepError(null);
+
+    const formData = new FormData();
+    formData.set('tenant_slug', tenantSlug);
+    formData.set('visit_id', visitId);
+    formData.set('payment_collected', collected ?? '');
+    formData.set('collected_method', onSiteMethod ?? '');
+    formData.set('check_number', checkNumber);
+    formData.set('amount_dollars', resolveBillingAmountDollars());
+
+    if (canAttachProofPhotos) {
+      for (const photo of proofPhotos) {
+        formData.append('proof_photos', photo.file);
+      }
+    }
+
+    formAction(formData);
+  }
+
   const billingAmountDollars = resolveBillingAmountDollars();
 
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger asChild>
-        <Button type="button" variant="secondary">
+        <Button type="button" variant="secondary" className={styles.completeTrigger}>
           Complete job
         </Button>
       </Dialog.Trigger>
@@ -204,6 +240,15 @@ export function CompleteVisitPaymentModal({
             <p className={styles.stepTitle}>{STEP_LABELS[currentStep]}</p>
           </div>
 
+          {canAttachProofPhotos ? (
+            <ProofPhotoCapture
+              photos={proofPhotos}
+              onPhotosChange={setProofPhotos}
+              sharedWithCustomers={proofPhotosSharedWithCustomers}
+              disabled={pending}
+            />
+          ) : null}
+
           {preferredPaymentMethod && stepIndex === 0 ? (
             <p className={styles.preferenceHint}>
               Customer billing preference: <strong>{preferredLabel}</strong>
@@ -212,25 +257,7 @@ export function CompleteVisitPaymentModal({
             </p>
           ) : null}
 
-          <form
-            action={formAction}
-            className={styles.form}
-            encType="multipart/form-data"
-            onSubmit={(e) => {
-              const err = validateCurrentStep();
-              if (err) {
-                e.preventDefault();
-                setStepError(err);
-              }
-            }}
-          >
-            <input type="hidden" name="tenant_slug" value={tenantSlug} />
-            <input type="hidden" name="visit_id" value={visitId} />
-            <input type="hidden" name="payment_collected" value={collected ?? ''} />
-            <input type="hidden" name="collected_method" value={onSiteMethod ?? ''} />
-            <input type="hidden" name="check_number" value={checkNumber} />
-            <input type="hidden" name="amount_dollars" value={billingAmountDollars} />
-
+          <form action={formAction} className={styles.form} onSubmit={handleSubmit}>
             {currentStep === 'collected' ? (
               <fieldset className={styles.fieldset}>
                 <legend className={styles.legend}>Did you collect payment from the customer?</legend>
@@ -410,28 +437,6 @@ export function CompleteVisitPaymentModal({
               </p>
             ) : null}
 
-            {isLastStep && canAttachProofPhotos ? (
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="proof_photos">
-                  Proof photos (optional)
-                </label>
-                <input
-                  id="proof_photos"
-                  name="proof_photos"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  className={styles.fileInput}
-                />
-                <p className={styles.fieldHint}>
-                  Add up to 5 photos from the job site.
-                  {proofPhotosSharedWithCustomers
-                    ? ' Customers can view these in their portal.'
-                    : null}
-                </p>
-              </div>
-            ) : null}
-
             <div className={styles.actions}>
               {stepIndex > 0 ? (
                 <Button type="button" variant="ghost" disabled={pending} onClick={goBack}>
@@ -446,7 +451,11 @@ export function CompleteVisitPaymentModal({
               )}
               {isLastStep ? (
                 <Button type="submit" variant="primary" disabled={pending} onClick={() => setStepError(null)}>
-                  {pending ? 'Completing…' : 'Mark complete'}
+                  {pending
+                    ? proofPhotos.length > 0
+                      ? 'Uploading photos…'
+                      : 'Completing…'
+                    : 'Mark complete'}
                 </Button>
               ) : (
                 <Button type="button" variant="primary" onClick={goNext}>
