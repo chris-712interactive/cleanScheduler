@@ -10,15 +10,13 @@ import {
   whiteLabelPortalGateErrorMessage,
 } from '@/lib/billing/whiteLabelPortalGate';
 import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHostname';
-import {
-  cleanupCustomerPortalDomainResources,
-  recordCustomerPortalDomainActivation,
-} from '@/lib/portal/customerPortalDomainActivation';
+import { cleanupCustomerPortalDomainResources } from '@/lib/portal/customerPortalDomainActivation';
 import {
   customerPortalDomainSyncUserMessage,
   syncCustomerPortalDomainVerification,
 } from '@/lib/portal/customerPortalDomainSync';
 import {
+  getVercelProjectDomain,
   isVercelDomainAutomationConfigured,
   registerVercelProjectDomain,
   removeVercelProjectDomain,
@@ -31,6 +29,7 @@ import type { Json } from '@/lib/supabase/database.types';
 export interface CustomerPortalDomainActionState {
   error?: string;
   success?: string;
+  step?: 'dns' | 'active';
 }
 
 type DomainRow = {
@@ -66,15 +65,34 @@ async function cleanupHostname(hostname: string | null | undefined): Promise<voi
   }
 }
 
-export async function saveCustomerPortalDomainAction(
-  _prev: CustomerPortalDomainActionState,
-  formData: FormData,
-): Promise<CustomerPortalDomainActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+async function registerHostnameWithVercel(hostname: string) {
+  let vercelDomain = await registerVercelProjectDomain(hostname);
+  if (!vercelDomain.verification.length) {
+    try {
+      vercelDomain = await getVercelProjectDomain(hostname);
+    } catch {
+      // Keep register response when refresh fails.
+    }
+  }
+  return vercelDomain;
+}
+
+async function assertCanManageCustomerPortalDomain(slug: string) {
+  const membership = await requireTenantPortalAccess(slug, '/settings/customer-portal');
+  if (!canManageTeamInvitesAndRoles(membership.role)) {
+    throw new Error('Only owners and admins can manage the customer portal domain.');
+  }
+  const admin = createAdminClient();
+  try {
+    await assertWhiteLabelCustomerPortalAllowed(admin, membership.tenantId);
+  } catch (error) {
+    throw new Error(whiteLabelPortalGateErrorMessage(error) ?? 'Cannot manage customer portal domain.');
+  }
+  return { membership, admin };
+}
+
+function parseHostnameFromForm(formData: FormData): string | { error: string } {
   const rawHostname = String(formData.get('hostname') ?? '');
-
-  if (!slug) return { error: 'Workspace is required.' };
-
   const hostname = normalizeCustomerPortalHostname(rawHostname);
   if (!hostname) {
     return { error: 'Enter a valid hostname like portal.yourcompany.com.' };
@@ -85,16 +103,61 @@ export async function saveCustomerPortalDomainAction(
     return { error: 'Use your own domain, not a cleanScheduler subdomain.' };
   }
 
-  const membership = await requireTenantPortalAccess(slug, '/settings/customer-portal');
-  if (!canManageTeamInvitesAndRoles(membership.role)) {
-    return { error: 'Only owners and admins can manage the customer portal domain.' };
-  }
+  return hostname;
+}
 
-  const admin = createAdminClient();
+async function upsertPendingDomain(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  input: {
+    hostname: string;
+    verificationToken?: string | null;
+    vercelVerification?: Json | null;
+  },
+): Promise<{ error?: string }> {
+  const { error } = await admin.from('tenant_customer_portal_domains').upsert(
+    {
+      tenant_id: tenantId,
+      hostname: input.hostname,
+      status: 'pending',
+      verification_token: input.verificationToken ?? null,
+      vercel_verification: input.vercelVerification ?? null,
+      vercel_last_error: null,
+      verified_at: null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'tenant_id' },
+  );
+
+  if (error?.code === '23505') {
+    return { error: 'That hostname is already used by another workspace.' };
+  }
+  if (error) {
+    return { error: error.message };
+  }
+  return {};
+}
+
+/** Step 1 → 2: reserve hostname and load DNS instructions from Vercel. */
+export async function continueCustomerPortalDomainAction(
+  _prev: CustomerPortalDomainActionState,
+  formData: FormData,
+): Promise<CustomerPortalDomainActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  if (!slug) return { error: 'Workspace is required.' };
+
+  const hostnameResult = parseHostnameFromForm(formData);
+  if (typeof hostnameResult !== 'string') {
+    return { error: hostnameResult.error };
+  }
+  const hostname = hostnameResult;
+
+  let membership;
+  let admin;
   try {
-    await assertWhiteLabelCustomerPortalAllowed(admin, membership.tenantId);
+    ({ membership, admin } = await assertCanManageCustomerPortalDomain(slug));
   } catch (error) {
-    return { error: whiteLabelPortalGateErrorMessage(error) ?? 'Cannot save domain.' };
+    return { error: error instanceof Error ? error.message : 'Cannot continue.' };
   }
 
   const existing = await loadDomainRow(membership.tenantId);
@@ -105,48 +168,29 @@ export async function saveCustomerPortalDomainAction(
   if (isVercelDomainAutomationConfigured()) {
     let vercelDomain;
     try {
-      vercelDomain = await registerVercelProjectDomain(hostname);
+      vercelDomain = await registerHostnameWithVercel(hostname);
     } catch (error) {
       return { error: vercelDomainErrorMessage(error) ?? 'Could not register domain with Vercel.' };
     }
 
-    const { error } = await admin.from('tenant_customer_portal_domains').upsert(
-      {
-        tenant_id: membership.tenantId,
-        hostname,
-        status: vercelDomain.verified ? 'active' : 'pending',
-        verification_token: null,
-        vercel_verification: vercelDomain.verification as unknown as Json,
-        vercel_last_error: null,
-        verified_at: vercelDomain.verified ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'tenant_id' },
-    );
-
-    if (error) {
-      if (error.code === '23505') {
-        return { error: 'That hostname is already used by another workspace.' };
-      }
-      return { error: error.message };
-    }
+    const upsertResult = await upsertPendingDomain(admin, membership.tenantId, {
+      hostname,
+      vercelVerification: vercelDomain.verification as unknown as Json,
+    });
+    if (upsertResult.error) return { error: upsertResult.error };
 
     if (vercelDomain.verified) {
-      await recordCustomerPortalDomainActivation(admin, membership.tenantId, {
-        hostname,
-        vercelVerification: vercelDomain.verification,
-      });
+      const outcome = await syncCustomerPortalDomainVerification(admin, membership.tenantId);
+      revalidatePath('/tenant/settings/customer-portal', 'page');
+      const message = customerPortalDomainSyncUserMessage(outcome);
+      if (message.success) return { ...message, step: 'active' };
+      return message;
     }
 
     revalidatePath('/tenant/settings/customer-portal', 'page');
-    if (vercelDomain.verified) {
-      return {
-        success: `${hostname} is live. Customer invites and portal links will use https://${hostname}.`,
-      };
-    }
-
     return {
-      success: `${hostname} is registered. Add the DNS records below — we will activate automatically once DNS propagates (usually within a few minutes).`,
+      success: `Add the DNS records below for ${hostname}, then click Verify DNS.`,
+      step: 'dns',
     };
   }
 
@@ -155,33 +199,68 @@ export async function saveCustomerPortalDomainAction(
   }
 
   const verificationToken = randomBytes(16).toString('hex');
-  const { error } = await admin.from('tenant_customer_portal_domains').upsert(
-    {
-      tenant_id: membership.tenantId,
-      hostname,
-      status: 'pending',
-      verification_token: verificationToken,
-      vercel_verification: null,
-      vercel_last_error: null,
-      verified_at: null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'tenant_id' },
-  );
-
-  if (error) {
-    if (error.code === '23505') {
-      return { error: 'That hostname is already used by another workspace.' };
-    }
-    return { error: error.message };
-  }
+  const upsertResult = await upsertPendingDomain(admin, membership.tenantId, {
+    hostname,
+    verificationToken,
+  });
+  if (upsertResult.error) return { error: upsertResult.error };
 
   revalidatePath('/tenant/settings/customer-portal', 'page');
   return {
-    success: `Saved ${hostname} (local dev mode). Add the DNS records below, then verify ownership.`,
+    success: `Add the DNS records below for ${hostname}, then click Verify DNS.`,
+    step: 'dns',
   };
 }
 
+/** Refresh DNS instructions for a pending hostname. */
+export async function refreshCustomerPortalDomainDnsAction(
+  _prev: CustomerPortalDomainActionState,
+  formData: FormData,
+): Promise<CustomerPortalDomainActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  if (!slug) return { error: 'Workspace is required.' };
+
+  let membership;
+  let admin;
+  try {
+    ({ membership, admin } = await assertCanManageCustomerPortalDomain(slug));
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Cannot refresh DNS instructions.' };
+  }
+
+  const { data: row, error: rowErr } = await admin
+    .from('tenant_customer_portal_domains')
+    .select('hostname, status')
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (rowErr || !row || row.status !== 'pending') {
+    return { error: 'No pending domain to refresh.' };
+  }
+
+  if (!isVercelDomainAutomationConfigured()) {
+    return { success: 'DNS instructions are shown below.', step: 'dns' };
+  }
+
+  try {
+    const vercelDomain = await getVercelProjectDomain(row.hostname);
+    await admin
+      .from('tenant_customer_portal_domains')
+      .update({
+        vercel_verification: vercelDomain.verification as unknown as Json,
+        vercel_last_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('tenant_id', membership.tenantId);
+  } catch (error) {
+    return { error: vercelDomainErrorMessage(error) ?? 'Could not refresh DNS instructions.' };
+  }
+
+  revalidatePath('/tenant/settings/customer-portal', 'page');
+  return { success: 'DNS instructions updated.', step: 'dns' };
+}
+
+/** Step 2: verify DNS and activate the customer portal domain. */
 export async function verifyCustomerPortalDomainAction(
   _prev: CustomerPortalDomainActionState,
   formData: FormData,
@@ -189,21 +268,31 @@ export async function verifyCustomerPortalDomainAction(
   const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
-  const membership = await requireTenantPortalAccess(slug, '/settings/customer-portal');
-  if (!canManageTeamInvitesAndRoles(membership.role)) {
-    return { error: 'Only owners and admins can verify the customer portal domain.' };
+  let membership;
+  let admin;
+  try {
+    ({ membership, admin } = await assertCanManageCustomerPortalDomain(slug));
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Cannot verify domain.' };
   }
 
-  const admin = createAdminClient();
-  try {
-    await assertWhiteLabelCustomerPortalAllowed(admin, membership.tenantId);
-  } catch (error) {
-    return { error: whiteLabelPortalGateErrorMessage(error) ?? 'Cannot verify domain.' };
+  const { data: row } = await admin
+    .from('tenant_customer_portal_domains')
+    .select('status')
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (!row || row.status !== 'pending') {
+    return { error: 'Enter your domain and continue to the DNS step before verifying.' };
   }
 
   const outcome = await syncCustomerPortalDomainVerification(admin, membership.tenantId);
   revalidatePath('/tenant/settings/customer-portal', 'page');
-  return customerPortalDomainSyncUserMessage(outcome);
+  const message = customerPortalDomainSyncUserMessage(outcome);
+  if (outcome.status === 'activated') {
+    return { ...message, step: 'active' };
+  }
+  return message;
 }
 
 export async function removeCustomerPortalDomainAction(

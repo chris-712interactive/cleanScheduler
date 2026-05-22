@@ -727,6 +727,88 @@
   gap: var(--space-2);
 }
 
+.wizardStepLabel {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dnsInstructionsWrap {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dnsInstructionsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.dnsInstructionCard {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-subtle);
+}
+
+.dnsInstructionTitle {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.dnsInstructionPurpose {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.dnsInstructionFields {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.dnsInstructionField {
+  display: grid;
+  gap: var(--space-1);
+
+  dt {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  code {
+    word-break: break-all;
+  }
+}
+
+.dnsInstructionDetail {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.dnsInstructionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
 .integrationsForm {
   display: grid;
   gap: var(--space-3);

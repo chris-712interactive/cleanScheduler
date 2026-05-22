@@ -1,12 +1,19 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { customerPortalVerificationRecordName } from '@/lib/portal/customerPortalHostname';
-import type { VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
 import {
+  buildDnsInstructionsFromVercel,
+  buildFallbackDnsInstructions,
+  buildLocalDevTxtInstruction,
+} from '@/lib/portal/customerPortalDnsInstructions';
+import type { VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
+import { CustomerPortalDnsInstructions } from './CustomerPortalDnsInstructions';
+import {
+  continueCustomerPortalDomainAction,
+  refreshCustomerPortalDomainDnsAction,
   removeCustomerPortalDomainAction,
-  saveCustomerPortalDomainAction,
   verifyCustomerPortalDomainAction,
   type CustomerPortalDomainActionState,
 } from './actions';
@@ -37,12 +44,16 @@ export function CustomerPortalDomainPanel({
     authRedirectLastError: string | null;
   } | null;
 }) {
-  const [saveState, saveAction, savePending] = useActionState(
-    saveCustomerPortalDomainAction,
+  const [continueState, continueAction, continuePending] = useActionState(
+    continueCustomerPortalDomainAction,
     initialState,
   );
   const [verifyState, verifyAction, verifyPending] = useActionState(
     verifyCustomerPortalDomainAction,
+    initialState,
+  );
+  const [refreshState, refreshAction, refreshPending] = useActionState(
+    refreshCustomerPortalDomainDnsAction,
     initialState,
   );
   const [removeState, removeAction, removePending] = useActionState(
@@ -52,20 +63,43 @@ export function CustomerPortalDomainPanel({
   const [banner, setBanner] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   useEffect(() => {
-    const error = saveState.error ?? verifyState.error ?? removeState.error;
-    const success = saveState.success ?? verifyState.success ?? removeState.success;
+    const error =
+      continueState.error ?? verifyState.error ?? refreshState.error ?? removeState.error;
+    const success =
+      continueState.success ?? verifyState.success ?? refreshState.success ?? removeState.success;
     if (error) setBanner({ kind: 'error', text: error });
     else if (success) setBanner({ kind: 'success', text: success });
     else setBanner(null);
-  }, [saveState, verifyState, removeState]);
+  }, [continueState, verifyState, refreshState, removeState]);
 
   const activeDomain = domain?.status === 'active' ? domain : null;
   const pendingDomain = domain?.status === 'pending' ? domain : null;
-  const vercelRecords = pendingDomain?.vercelVerification ?? [];
-  const localTxtRecord =
-    pendingDomain?.verificationToken && localDevFallback && !vercelAutomationConfigured
-      ? customerPortalVerificationRecordName(pendingDomain.hostname)
-      : null;
+  const wizardStep: 1 | 2 = pendingDomain ? 2 : 1;
+
+  const dnsInstructions = useMemo(() => {
+    if (!pendingDomain) return [];
+
+    if (pendingDomain.vercelVerification.length > 0) {
+      return buildDnsInstructionsFromVercel(
+        pendingDomain.hostname,
+        pendingDomain.vercelVerification,
+      );
+    }
+
+    if (pendingDomain.verificationToken && localDevFallback && !vercelAutomationConfigured) {
+      return [
+        buildLocalDevTxtInstruction(
+          pendingDomain.hostname,
+          pendingDomain.verificationToken,
+          customerPortalVerificationRecordName(pendingDomain.hostname),
+        ),
+      ];
+    }
+
+    return buildFallbackDnsInstructions(pendingDomain.hostname);
+  }, [pendingDomain, localDevFallback, vercelAutomationConfigured]);
+
+  const setupAvailable = vercelAutomationConfigured || localDevFallback;
 
   return (
     <div className={styles.integrationsStack}>
@@ -78,7 +112,7 @@ export function CustomerPortalDomainPanel({
         </p>
       ) : null}
 
-      {!vercelAutomationConfigured && !localDevFallback ? (
+      {!setupAvailable ? (
         <p className={styles.opsIntro} role="status">
           Custom domain setup is temporarily unavailable. Please contact support.
         </p>
@@ -87,14 +121,13 @@ export function CustomerPortalDomainPanel({
       {!vercelAutomationConfigured && localDevFallback ? (
         <p className={styles.opsIntro} role="status">
           Local dev mode: set <code>VERCEL_API_TOKEN</code> and <code>VERCEL_PROJECT_ID</code> in
-          `.env.local` to exercise the production Vercel registration flow.
+          `.env.local` for production-like DNS instructions from Vercel.
         </p>
       ) : null}
 
       <p className={styles.opsIntro}>
-        Point your own domain at the customer portal so clients see your brand and URL in invites
-        and bookmarks. Business workspaces use <code>{sharedPortalHost}</code> by default; Pro can
-        replace that with a custom hostname after DNS verification.
+        Serve your customer portal on your own domain so clients see your brand in invites and
+        bookmarks. Business workspaces use <code>{sharedPortalHost}</code> by default.
       </p>
 
       {activeDomain ? (
@@ -129,12 +162,15 @@ export function CustomerPortalDomainPanel({
         </section>
       ) : null}
 
-      {canEdit && (vercelAutomationConfigured || localDevFallback) ? (
+      {canEdit && setupAvailable && !activeDomain && wizardStep === 1 ? (
         <section className={styles.integrationsSection}>
-          <h3 className={styles.integrationsHeading}>
-            {pendingDomain ? 'Update pending domain' : 'Custom domain'}
-          </h3>
-          <form action={saveAction} className={styles.opsForm}>
+          <p className={styles.wizardStepLabel}>Step 1 of 2 — Choose your domain</p>
+          <h3 className={styles.integrationsHeading}>Customer portal hostname</h3>
+          <p className={styles.opsIntro}>
+            Enter the full hostname your customers will use, such as{' '}
+            <code>portal.yourcompany.com</code>. You must be able to edit DNS for this domain.
+          </p>
+          <form action={continueAction} className={styles.opsForm}>
             <input type="hidden" name="tenant_slug" value={tenantSlug} />
             <label className={styles.fieldLabel} htmlFor="customer_portal_hostname">
               Hostname
@@ -145,62 +181,59 @@ export function CustomerPortalDomainPanel({
               type="text"
               className={styles.input}
               placeholder="portal.yourcompany.com"
-              defaultValue={pendingDomain?.hostname ?? ''}
               required
             />
-            <Button type="submit" disabled={savePending}>
-              {pendingDomain ? 'Update domain' : 'Save domain'}
+            <Button type="submit" disabled={continuePending}>
+              {continuePending ? 'Loading DNS instructions…' : 'Continue'}
             </Button>
           </form>
         </section>
       ) : null}
 
-      {pendingDomain && (vercelRecords.length > 0 || localTxtRecord) ? (
+      {canEdit && setupAvailable && !activeDomain && wizardStep === 2 && pendingDomain ? (
         <section className={styles.integrationsSection}>
-          <h3 className={styles.integrationsHeading}>DNS records</h3>
+          <p className={styles.wizardStepLabel}>Step 2 of 2 — Configure DNS</p>
+          <h3 className={styles.integrationsHeading}>Add DNS records for {pendingDomain.hostname}</h3>
+
           {pendingDomain.vercelLastError ? (
             <p className={styles.opsError} role="alert">
               {pendingDomain.vercelLastError}
             </p>
           ) : null}
-          <ol className={styles.opsIntro}>
-            {vercelRecords.map((record) => (
-              <li key={`${record.type}-${record.domain}-${record.value}`}>
-                Add a <strong>{record.type}</strong> record:
-                <br />
-                Host / name: <code>{record.domain}</code>
-                <br />
-                Value: <code>{record.value}</code>
-                {record.reason ? (
-                  <>
-                    <br />
-                    <span>{record.reason}</span>
-                  </>
-                ) : null}
-              </li>
-            ))}
-            {localTxtRecord && pendingDomain.verificationToken ? (
-              <li>
-                Add a <strong>TXT</strong> record (local dev fallback):
-                <br />
-                Host / name: <code>{localTxtRecord}</code>
-                <br />
-                Value: <code>{pendingDomain.verificationToken}</code>
-              </li>
-            ) : null}
-          </ol>
-          <p className={styles.opsIntro}>
-            DNS changes can take up to an hour to propagate. We re-check automatically every few
-            minutes once records are saved — you can also click Verify DNS for an immediate check.
-          </p>
-          {canEdit ? (
-            <form action={verifyAction}>
+
+          <CustomerPortalDnsInstructions
+            portalHostname={pendingDomain.hostname}
+            instructions={dnsInstructions}
+          />
+
+          {vercelAutomationConfigured && pendingDomain.vercelVerification.length === 0 ? (
+            <form action={refreshAction} className={styles.dnsInstructionActions}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
-              <Button type="submit" disabled={verifyPending}>
-                Verify DNS
+              <Button type="submit" variant="secondary" disabled={refreshPending}>
+                Refresh instructions
               </Button>
             </form>
           ) : null}
+
+          <p className={styles.opsIntro}>
+            After saving the records at your domain provider, click Verify DNS. We also re-check
+            automatically every few minutes.
+          </p>
+
+          <div className={styles.dnsInstructionActions}>
+            <form action={verifyAction}>
+              <input type="hidden" name="tenant_slug" value={tenantSlug} />
+              <Button type="submit" disabled={verifyPending}>
+                {verifyPending ? 'Verifying…' : 'Verify DNS'}
+              </Button>
+            </form>
+            <form action={removeAction}>
+              <input type="hidden" name="tenant_slug" value={tenantSlug} />
+              <Button type="submit" variant="secondary" disabled={removePending}>
+                Use a different domain
+              </Button>
+            </form>
+          </div>
         </section>
       ) : null}
     </div>
