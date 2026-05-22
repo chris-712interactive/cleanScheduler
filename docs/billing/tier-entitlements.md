@@ -22,7 +22,9 @@ type EntitlementFeature =
   | 'dedicatedOnboarding'
   | 'plaidReconciliation'
   | 'smsCommunication'
-  | 'whiteLabelCustomerPortal';
+  | 'whiteLabelCustomerPortal'
+  | 'proofOfServicePhotos'
+  | 'proofOfServicePortalShare';
 
 type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -145,7 +147,25 @@ Flow: tenant saves hostname → cleanScheduler registers it on the Vercel projec
 
 **Server env (platform admin, one-time):** `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID` (or `VERCEL_PROJECT_NAME`), optional `VERCEL_TEAM_ID`. On **dev** deployments only, optionally set `VERCEL_DOMAIN_GIT_BRANCH` (Preview branch) or `VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID` (Vercel custom environment) so tenant domains attach to dev instead of Production; leave both unset on prod. `SUPABASE_ACCESS_TOKEN` (Management API, [account tokens](https://supabase.com/dashboard/account/tokens) with Auth config write) auto-adds `https://<hostname>/auth/callback` to Supabase Redirect URLs when a domain activates; optional `SUPABASE_PROJECT_REF` overrides project ref parsed from `NEXT_PUBLIC_SUPABASE_URL`.
 
-Migrations `0042_tenant_customer_portal_domains.sql`, `0043_tenant_customer_portal_domains_vercel.sql`, `0044_tenant_customer_portal_auth_redirect.sql`.
+Migrations `0042_tenant_customer_portal_domains.sql`, `0043_tenant_customer_portal_domains_vercel.sql`, `0044_tenant_customer_portal_auth_redirect.sql`, `0045_visit_proof_photos.sql`.
+
+## Proof-of-service photos (Business upload / Pro portal share)
+
+| Tier | `proofOfServicePhotos` (crew upload + tenant visit detail) | `proofOfServicePortalShare` (customer portal) |
+| ---- | ------------------------------------------------------------ | --------------------------------------------- |
+| Starter | No | No |
+| Business | Yes | No |
+| Pro | Yes | Yes |
+
+Crew attach up to 5 photos when completing a visit (`CompleteVisitPaymentModal` → `visitFieldActions.ts`). Tenant staff see photos on visit detail. Pro customers see recent completed visits with photos under Customer portal → Visits.
+
+Enforcement:
+
+- `app/tenant/schedule/visitFieldActions.ts` — `assertFeatureEnabled(tier, 'proofOfServicePhotos')` when files are uploaded
+- `app/tenant/schedule/[id]/page.tsx` — hides upload UI and visit-detail photos when not entitled
+- `app/customer/visits/page.tsx` — `proofOfServicePortalShare` before loading or rendering proof photos
+
+Storage: `visit_proof_photos` bucket + `tenant_visit_proof_photos` table (migration `0045_visit_proof_photos.sql`).
 
 ## Required API/server-action checks
 
@@ -214,6 +234,8 @@ Current implementation:
   - `plaidReconciliation` — bank connection UI + Plaid link token
   - `jobCosting` — compensation settings mutations
   - `rolePermissions` — admin/viewer team invites and role changes
+  - `proofOfServicePhotos` — visit completion photo uploads (`visitFieldActions.ts`)
+  - `proofOfServicePortalShare` — customer portal completed-visit photos (`app/customer/visits/page.tsx`)
 - `lib/billing/automationWorkflows.ts`
   - enforces `maxAutomationWorkflows` when creating recurring visit rules
 

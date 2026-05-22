@@ -6,7 +6,7 @@ import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getStripe } from '@/lib/stripe/server';
-import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { getCustomerPortalOriginFromRequest } from '@/lib/portal/customerPortalOrigin';
 import {
   parseConnectApplicationFeeBps,
   paymentIntentApplicationFeeAmountCents,
@@ -65,7 +65,7 @@ export async function createCustomerInvoicePayCheckoutSessionAction(
     redirect(`/invoices/${invoiceId}?error=${encodeURIComponent('Stripe is not configured.')}`);
   }
 
-  const origin = getPublicOrigin('my');
+  const origin = await getCustomerPortalOriginFromRequest();
   const feeBps = parseConnectApplicationFeeBps();
   const applicationFeeAmount = paymentIntentApplicationFeeAmountCents(remaining, feeBps);
 

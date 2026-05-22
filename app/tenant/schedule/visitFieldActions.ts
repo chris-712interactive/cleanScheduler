@@ -13,6 +13,9 @@ import {
 } from '@/lib/schedule/visitFieldWork';
 import { applyVisitCompletionBilling } from '@/lib/billing/completeVisitWithBilling';
 import { emitVisitWebhookEvent } from '@/lib/integrations/emitVisitWebhook';
+import { assertFeatureEnabled, isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import { saveVisitProofPhotosFromForm } from '@/lib/visits/visitProofPhotos';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -185,6 +188,35 @@ export async function completeVisitWithPaymentAction(
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId);
   if (upErr) return { error: upErr.message };
+
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const hasProofPhotoUpload = formData
+    .getAll('proof_photos')
+    .some((entry) => entry instanceof File && entry.size > 0);
+
+  if (hasProofPhotoUpload) {
+    try {
+      assertFeatureEnabled(tier, 'proofOfServicePhotos');
+    } catch (error) {
+      return {
+        error:
+          featureGateErrorMessage(error) ??
+          'Your plan does not include proof-of-service photos. Upgrade to continue.',
+      };
+    }
+  }
+
+  if (isFeatureEnabled(tier, 'proofOfServicePhotos')) {
+    const photoResult = await saveVisitProofPhotosFromForm(admin, {
+      tenantId: membership.tenantId,
+      visitId,
+      uploadedByUserId: auth.user.id,
+      formData,
+    });
+    if (photoResult.error) {
+      return { error: photoResult.error };
+    }
+  }
 
   await emitVisitWebhookEvent(admin, 'visit.completed', {
     tenantId: membership.tenantId,

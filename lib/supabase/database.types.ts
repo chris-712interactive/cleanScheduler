@@ -1897,6 +1897,51 @@ export type Database = {
           },
         ];
       };
+      tenant_visit_proof_photos: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          visit_id: string;
+          storage_path: string;
+          public_url: string;
+          uploaded_by_user_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          visit_id: string;
+          storage_path: string;
+          public_url: string;
+          uploaded_by_user_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          visit_id?: string;
+          storage_path?: string;
+          public_url?: string;
+          uploaded_by_user_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_visit_proof_photos_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_visit_proof_photos_visit_id_fkey';
+            columns: ['visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_stripe_connect_accounts: {
         Row: {
           tenant_id: string;

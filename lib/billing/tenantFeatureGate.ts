@@ -25,6 +25,8 @@ const FEATURE_MINIMUM_TIER: Record<EntitlementFeature, PlatformPlanTier> = {
   plaidReconciliation: 'business',
   smsCommunication: 'pro',
   whiteLabelCustomerPortal: 'pro',
+  proofOfServicePhotos: 'business',
+  proofOfServicePortalShare: 'pro',
 };
 
 export function minimumTierForFeature(feature: EntitlementFeature): PlatformPlanTier {

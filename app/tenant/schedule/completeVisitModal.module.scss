@@ -109,6 +109,12 @@
   background: var(--color-surface);
 }
 
+.fileInput {
+  display: block;
+  width: 100%;
+  font-size: var(--font-size-sm);
+}
+
 .fieldHint,
 .amountSummary,
 .invoiceHint {

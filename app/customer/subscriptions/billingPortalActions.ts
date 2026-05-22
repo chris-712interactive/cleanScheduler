@@ -6,7 +6,7 @@ import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getStripe } from '@/lib/stripe/server';
-import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { customerPortalUrlFromRequest } from '@/lib/portal/customerPortalOrigin';
 import { createConnectCustomerBillingPortalSession } from '@/lib/billing/connectCustomerBillingPortal';
 
 export async function openCustomerBillingPortalAction(formData: FormData): Promise<void> {
@@ -53,7 +53,7 @@ export async function openCustomerBillingPortalAction(formData: FormData): Promi
     redirect(`/subscriptions?error=${encodeURIComponent('Stripe is not configured.')}`);
   }
 
-  const returnUrl = `${getPublicOrigin('my')}/subscriptions`;
+  const returnUrl = await customerPortalUrlFromRequest('/subscriptions');
   const url = await createConnectCustomerBillingPortalSession({
     stripe,
     stripeAccountId: conn.stripe_account_id,

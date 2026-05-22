@@ -33,6 +33,10 @@ import { RelatedRecordsPanel } from '@/app/tenant/RelatedRecordsPanel';
 import { DeleteVisitButton } from '../DeleteVisitButton';
 import { VisitFieldWorkPanel } from '../VisitFieldWorkPanel';
 import { VisitTimeRescheduleForm } from '../VisitTimeRescheduleForm';
+import { createAdminClient } from '@/lib/supabase/server';
+import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
+import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import styles from '../visitDetail.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -172,6 +176,16 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
     completion_invoice_id: row.completion_invoice_id,
   });
 
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const canUseProofPhotos = isFeatureEnabled(tier, 'proofOfServicePhotos');
+  const proofPhotosSharedWithCustomers = isFeatureEnabled(tier, 'proofOfServicePortalShare');
+
+  const proofPhotos =
+    row.status === 'completed' && canUseProofPhotos
+      ? await listVisitProofPhotos(admin, visitId)
+      : [];
+
   return (
     <>
       <p className={styles.backWrap}>
@@ -298,6 +312,8 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               </div>
             ) : null}
 
+            <VisitProofPhotos photos={proofPhotos} />
+
             <VisitFieldWorkPanel
               tenantSlug={membership.tenantSlug}
               visitId={visitId}
@@ -307,6 +323,8 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               preferredPaymentMethod={preferredPaymentMethod}
               defaultAmountCents={defaultAmountCents}
               customerHasEmail={Boolean(customerEmail)}
+              canAttachProofPhotos={canUseProofPhotos}
+              proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
             />
 
             {row.status === 'scheduled' && !row.checked_in_at ? (

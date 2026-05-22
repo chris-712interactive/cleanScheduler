@@ -16,7 +16,9 @@ export type EntitlementFeature =
   | 'dedicatedOnboarding'
   | 'plaidReconciliation'
   | 'smsCommunication'
-  | 'whiteLabelCustomerPortal';
+  | 'whiteLabelCustomerPortal'
+  | 'proofOfServicePhotos'
+  | 'proofOfServicePortalShare';
 
 export type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -71,6 +73,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       plaidReconciliation: false,
       smsCommunication: false,
       whiteLabelCustomerPortal: false,
+      proofOfServicePhotos: false,
+      proofOfServicePortalShare: false,
     },
     limits: {
       includedOfficeSeats: 1,
@@ -106,6 +110,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       plaidReconciliation: true,
       smsCommunication: false,
       whiteLabelCustomerPortal: false,
+      proofOfServicePhotos: true,
+      proofOfServicePortalShare: false,
     },
     limits: {
       includedOfficeSeats: 2,
@@ -141,6 +147,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       plaidReconciliation: true,
       smsCommunication: true,
       whiteLabelCustomerPortal: true,
+      proofOfServicePhotos: true,
+      proofOfServicePortalShare: true,
     },
     limits: {
       includedOfficeSeats: 10,

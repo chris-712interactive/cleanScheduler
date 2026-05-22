@@ -4,6 +4,7 @@ import { resolveCampaignAudience } from '@/lib/campaigns/resolveCampaignAudience
 import { assertCanSendCampaign } from '@/lib/campaigns/campaignLimits';
 import { buildCampaignEmailContent } from '@/lib/email/campaignEmailBody';
 import { campaignFromAddress, sendCampaignEmail } from '@/lib/email/sendCampaignEmail';
+import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { DEFAULT_BRAND_COLOR } from '@/lib/tenant/tenantBusinessSettings';
@@ -80,7 +81,7 @@ export async function sendEmailCampaignNow(params: {
     state: tenant.state,
     postal_code: tenant.postal_code,
   });
-  const portalOrigin = getPublicOrigin('my');
+  const portalOrigin = await getCustomerPortalOriginForTenant(params.admin, params.tenantId);
 
   const { error: markSendingError } = await params.admin
     .from('tenant_email_campaigns')

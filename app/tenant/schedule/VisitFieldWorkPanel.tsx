@@ -19,6 +19,8 @@ export function VisitFieldWorkPanel({
   preferredPaymentMethod,
   defaultAmountCents,
   customerHasEmail,
+  canAttachProofPhotos,
+  proofPhotosSharedWithCustomers,
 }: {
   tenantSlug: string;
   visitId: string;
@@ -28,6 +30,8 @@ export function VisitFieldWorkPanel({
   preferredPaymentMethod: TenantPaymentMethod | null;
   defaultAmountCents: number | null;
   customerHasEmail: boolean;
+  canAttachProofPhotos: boolean;
+  proofPhotosSharedWithCustomers: boolean;
 }) {
   const [checkInState, checkInAction, checkInPending] = useActionState(checkInToVisitAction, initial);
   useRefreshOnServerActionSuccess(checkInState.success);
@@ -69,6 +73,8 @@ export function VisitFieldWorkPanel({
             preferredPaymentMethod={preferredPaymentMethod}
             defaultAmountCents={defaultAmountCents}
             customerHasEmail={customerHasEmail}
+            canAttachProofPhotos={canAttachProofPhotos}
+            proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
           />
         </div>
       ) : null}

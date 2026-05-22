@@ -60,12 +60,16 @@ export function CompleteVisitPaymentModal({
   preferredPaymentMethod,
   defaultAmountCents,
   customerHasEmail,
+  canAttachProofPhotos,
+  proofPhotosSharedWithCustomers,
 }: {
   tenantSlug: string;
   visitId: string;
   preferredPaymentMethod: TenantPaymentMethod | null;
   defaultAmountCents: number | null;
   customerHasEmail: boolean;
+  canAttachProofPhotos: boolean;
+  proofPhotosSharedWithCustomers: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -211,6 +215,7 @@ export function CompleteVisitPaymentModal({
           <form
             action={formAction}
             className={styles.form}
+            encType="multipart/form-data"
             onSubmit={(e) => {
               const err = validateCurrentStep();
               if (err) {
@@ -403,6 +408,28 @@ export function CompleteVisitPaymentModal({
               <p className={styles.error} role="alert">
                 {state.error}
               </p>
+            ) : null}
+
+            {isLastStep && canAttachProofPhotos ? (
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="proof_photos">
+                  Proof photos (optional)
+                </label>
+                <input
+                  id="proof_photos"
+                  name="proof_photos"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className={styles.fileInput}
+                />
+                <p className={styles.fieldHint}>
+                  Add up to 5 photos from the job site.
+                  {proofPhotosSharedWithCustomers
+                    ? ' Customers can view these in their portal.'
+                    : null}
+                </p>
+              </div>
             ) : null}
 
             <div className={styles.actions}>

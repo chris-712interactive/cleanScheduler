@@ -4,7 +4,7 @@ import { isFeatureEnabled } from '@/lib/billing/entitlements';
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import type { Database } from '@/lib/supabase/database.types';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
-import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
 import { formatUsdFromCents } from '@/lib/format/money';
 
@@ -158,6 +158,7 @@ export async function sendOverdueInvoiceReminders(
     }
 
     const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your provider';
+    const portalOrigin = await getCustomerPortalOriginForTenant(admin, tenantId);
 
     for (const inv of invoices ?? []) {
       const balance = inv.amount_cents - inv.amount_paid_cents;
@@ -172,7 +173,7 @@ export async function sendOverdueInvoiceReminders(
       }
 
       const contact = await loadCustomerContact(admin, inv.customer_id);
-      const portalUrl = `${getPublicOrigin('my')}/invoices/${inv.id}`;
+      const portalUrl = `${portalOrigin}/invoices/${inv.id}`;
       const dueLabel = inv.due_date
         ? new Date(String(inv.due_date)).toLocaleDateString()
         : 'the due date';

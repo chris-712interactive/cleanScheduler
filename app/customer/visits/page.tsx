@@ -12,6 +12,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { getCustomerPendingRescheduleVisitIds } from '@/lib/customer/pendingRescheduleVisits';
 import { formatVisitWhenCompact } from '@/lib/datetime/formatInTimeZone';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import styles from './visits.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -73,6 +75,57 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
       : { data: [], error: null };
 
   const pendingRescheduleVisitIds = await getCustomerPendingRescheduleVisitIds(ctx.customerIds);
+
+  const completedCutoff = new Date();
+  completedCutoff.setDate(completedCutoff.getDate() - 90);
+
+  const { data: completedVisits } =
+    ctx.customerIds.length > 0
+      ? await admin
+          .from('tenant_scheduled_visits')
+          .select(
+            `
+            id,
+            title,
+            completed_at,
+            tenants:tenants!inner ( id, name, slug, timezone )
+          `,
+          )
+          .in('customer_id', ctx.customerIds)
+          .eq('status', 'completed')
+          .gte('completed_at', completedCutoff.toISOString())
+          .order('completed_at', { ascending: false })
+          .limit(10)
+      : { data: [] as [] };
+
+  const portalShareTenantIds = new Set<string>();
+  for (const tenantId of new Set(
+    (completedVisits ?? []).map((row) => (row.tenants as { id: string }).id),
+  )) {
+    const tier = await resolveTenantPlanTier(admin, tenantId);
+    if (isFeatureEnabled(tier, 'proofOfServicePortalShare')) portalShareTenantIds.add(tenantId);
+  }
+
+  const shareableCompletedVisits = (completedVisits ?? []).filter((row) =>
+    portalShareTenantIds.has((row.tenants as { id: string }).id),
+  );
+
+  const completedVisitIds = shareableCompletedVisits.map((row) => row.id);
+  const { data: proofPhotoRows } =
+    completedVisitIds.length > 0
+      ? await admin
+          .from('tenant_visit_proof_photos')
+          .select('id, visit_id, public_url, created_at')
+          .in('visit_id', completedVisitIds)
+          .order('created_at', { ascending: true })
+      : { data: [] as [] };
+
+  const photosByVisit = new Map<string, typeof proofPhotoRows>();
+  for (const photo of proofPhotoRows ?? []) {
+    const list = photosByVisit.get(photo.visit_id) ?? [];
+    list.push(photo);
+    photosByVisit.set(photo.visit_id, list);
+  }
 
   return (
     <>
@@ -145,6 +198,33 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
           })}
         </Stack>
       )}
+
+      {shareableCompletedVisits.length > 0 ? (
+        <>
+          <PageHeader
+            title="Recent completed visits"
+            description="Proof-of-service photos from your cleaning providers."
+          />
+          <Stack gap={3}>
+            {shareableCompletedVisits.map((row) => {
+              const t = row.tenants as { name: string; slug: string; timezone: string };
+              const photos = photosByVisit.get(row.id) ?? [];
+              const completedLabel = row.completed_at
+                ? new Date(row.completed_at).toLocaleDateString(undefined, { dateStyle: 'medium' })
+                : 'Completed';
+
+              return (
+                <Card key={row.id} title={row.title || 'Visit'} description={t?.name ?? 'Provider'}>
+                  <div className={styles.row}>
+                    <StatusPill tone="success">{completedLabel}</StatusPill>
+                  </div>
+                  <VisitProofPhotos photos={photos} title="Photos from your crew" />
+                </Card>
+              );
+            })}
+          </Stack>
+        </>
+      ) : null}
     </>
   );
 }

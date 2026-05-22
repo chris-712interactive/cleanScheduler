@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
 import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
 import type { QuoteNotificationEvent } from '@/lib/tenant/quoteNotifications';
 
@@ -80,8 +80,8 @@ async function tenantName(admin: Admin, tenantId: string): Promise<string> {
   return (data?.name ?? '').trim() || 'Your provider';
 }
 
-function quoteUrlForCustomer(quoteId: string): string {
-  return `${getPublicOrigin('my')}/quotes/${quoteId}`;
+async function quoteUrlForCustomer(admin: Admin, tenantId: string, quoteId: string): Promise<string> {
+  return customerPortalUrlForTenant(admin, tenantId, `/quotes/${quoteId}`);
 }
 
 export async function sendQuoteNotificationSms(
@@ -98,7 +98,7 @@ export async function sendQuoteNotificationSms(
     const { phone, prefersEmailOnly } = await customerPhoneAndContactPref(admin, params.customerId);
     if (!phone || prefersEmailOnly) return;
 
-    const link = quoteUrlForCustomer(params.quoteId);
+    const link = await quoteUrlForCustomer(admin, params.tenantId, params.quoteId);
     const body = `${tname}: New quote "${params.quoteTitle}". View & respond: ${link}`;
     const sent = await sendTransactionalSms({
       admin,

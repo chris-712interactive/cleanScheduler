@@ -76,6 +76,14 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: { starter: false, business: false, pro: true },
   },
   {
+    label: 'Proof-of-service photos (crew upload)',
+    values: { starter: false, business: true, pro: true },
+  },
+  {
+    label: 'Proof photos in customer portal',
+    values: { starter: false, business: false, pro: true },
+  },
+  {
     label: 'Role permissions (admin/viewer)',
     values: { starter: false, business: true, pro: true },
   },
