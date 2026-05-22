@@ -253,9 +253,23 @@
   gap: var(--space-1);
 }
 
+.tierNameRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .tierName {
   font-weight: 700;
   color: var(--color-text);
+}
+
+.tierPrice {
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .tierDesc {

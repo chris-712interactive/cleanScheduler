@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:migrations": "node scripts/check-migration-prefixes.mjs",
+    "marketing:screenshots": "playwright test -c playwright.config.ts",
     "db:types": "supabase gen types typescript --linked --schema public",
     "db:prod-baseline": "bash supabase/scripts/build-prod-baseline.sh"
   },
@@ -44,6 +45,7 @@
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",

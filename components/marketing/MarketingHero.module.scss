@@ -1,0 +1,70 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/typography' as type;
+
+.hero {
+  padding: var(--space-9) 0 var(--space-10);
+  background: radial-gradient(
+    ellipse at top,
+    color-mix(in srgb, var(--color-brand-primary) 14%, transparent) 0%,
+    transparent 60%
+  );
+
+  @include mq.up(md) {
+    padding: var(--space-12) 0;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-8);
+  align-items: center;
+
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: var(--space-9);
+  }
+}
+
+.eyebrow {
+  display: inline-flex;
+  padding: 2px var(--space-2);
+  background-color: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  max-width: 16ch;
+
+  @include type.display-2;
+
+  @include mq.up(md) {
+    @include type.display-1;
+  }
+}
+
+.lead {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+}

@@ -8,8 +8,11 @@ import { createTenantAndOwner, type TenantOnboardingState } from './actions';
 import {
   PLATFORM_PLAN_DESCRIPTIONS,
   PLATFORM_PLAN_LABELS,
+  parsePlatformPlanTier,
   type PlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
+import type { PlatformPricingTier } from '@/lib/billing/platformPricing';
+import { formatPlanPriceUsd } from '@/lib/billing/platformPricing';
 import {
   formatPasswordFeedback,
   passwordStrengthLabel,
@@ -19,7 +22,15 @@ import styles from './onboarding.module.scss';
 
 const initialState: TenantOnboardingState = {};
 
-export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string }) {
+export function TenantOnboardingForm({
+  domainSuffix,
+  planOptions,
+  defaultTier = 'business',
+}: {
+  domainSuffix: string;
+  planOptions: PlatformPricingTier[];
+  defaultTier?: PlatformPlanTier;
+}) {
   const [state, formAction, pending] = useActionState(createTenantAndOwner, initialState);
   const [step, setStep] = useState(0);
   const [slug, setSlug] = useState('');
@@ -37,12 +48,22 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [step1Error, setStep1Error] = useState<string | null>(null);
   const [referralSource, setReferralSource] = useState('');
-  const [platformPlan, setPlatformPlan] = useState<PlatformPlanTier>('pro');
+  const [platformPlan, setPlatformPlan] = useState<PlatformPlanTier>(defaultTier);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [slugStatus, setSlugStatus] = useState<{
     tone: 'idle' | 'ok' | 'warn' | 'error';
     message: string;
   }>({ tone: 'idle', message: 'Choose a unique slug for your workspace URL.' });
+
+  const planOptionsByTier = useMemo(
+    () => new Map(planOptions.map((option) => [option.tier, option])),
+    [planOptions],
+  );
+
+  useEffect(() => {
+    const parsed = parsePlatformPlanTier(defaultTier);
+    if (parsed) setPlatformPlan(parsed);
+  }, [defaultTier]);
 
   useEffect(() => {
     if (!slug.trim()) {
@@ -353,7 +374,9 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
             All plans include a 7-day free trial with no credit card required. Pick the tier that
             fits your team.
           </p>
-          {(['starter', 'business', 'pro'] as const).map((tier) => (
+          {(['starter', 'business', 'pro'] as const).map((tier) => {
+            const pricing = planOptionsByTier.get(tier);
+            return (
             <label
               key={tier}
               className={styles.tierOption}
@@ -368,11 +391,19 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
                 required
               />
               <span className={styles.tierCopy}>
-                <span className={styles.tierName}>{PLATFORM_PLAN_LABELS[tier]}</span>
+                <span className={styles.tierNameRow}>
+                  <span className={styles.tierName}>{PLATFORM_PLAN_LABELS[tier]}</span>
+                  {pricing ? (
+                    <span className={styles.tierPrice}>
+                      {formatPlanPriceUsd(pricing.monthlyPriceUsd)}/mo
+                    </span>
+                  ) : null}
+                </span>
                 <span className={styles.tierDesc}>{PLATFORM_PLAN_DESCRIPTIONS[tier]}</span>
               </span>
             </label>
-          ))}
+            );
+          })}
         </fieldset>
 
         <label className={styles.label} htmlFor="business_type">

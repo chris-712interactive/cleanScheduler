@@ -1,95 +1,145 @@
-import { ArrowRight, Calendar, ClipboardList, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import type { Metadata } from 'next';
 import { Container } from '@/components/layout/Container';
-import { Grid } from '@/components/layout/Grid';
 import { Stack } from '@/components/layout/Stack';
+import { Faq } from '@/components/marketing/Faq';
+import { FeatureShowcase } from '@/components/marketing/FeatureShowcase';
+import { FinalCta } from '@/components/marketing/FinalCta';
+import { HowItWorks } from '@/components/marketing/HowItWorks';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { MarketingHero } from '@/components/marketing/MarketingHero';
+import { MarketingNav } from '@/components/marketing/MarketingNav';
+import { PersonaCards } from '@/components/marketing/PersonaCards';
+import { PricingTable } from '@/components/marketing/PricingTable';
+import { SocialProof } from '@/components/marketing/SocialProof';
+import { ThreePortals } from '@/components/marketing/ThreePortals';
+import { getPlatformPricingDisplay } from '@/lib/billing/platformPricing';
+import { buildFaqJsonLd } from '@/lib/marketing/faqJsonLd';
+import {
+  MARKETING_FAQ,
+  MARKETING_FEATURE_SHOWCASES,
+  MARKETING_HERO,
+  MARKETING_HOW_IT_WORKS,
+  MARKETING_PERSONAS,
+  MARKETING_SOCIAL_PROOF,
+  MARKETING_THREE_PORTALS,
+} from '@/lib/marketing/homepageContent';
+import { PRODUCT_NAME } from '@/lib/legal/site';
 import styles from './landing.module.scss';
 
-export default function MarketingHome() {
+const pageTitle = 'Run your cleaning business from one console';
+const pageDescription =
+  'Schedule crews, send quotes, invoice clients, and close the books — built for residential and commercial cleaning businesses. 7-day free trial, no credit card required.';
+
+export const metadata: Metadata = {
+  title: pageTitle,
+  description: pageDescription,
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: pageTitle,
+    description: pageDescription,
+    type: 'website',
+    siteName: PRODUCT_NAME,
+    images: [
+      {
+        url: '/marketing/og-home.png',
+        width: 1280,
+        height: 800,
+        alt: 'cleanScheduler dashboard for cleaning businesses',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: pageTitle,
+    description: pageDescription,
+    images: ['/marketing/og-home.png'],
+  },
+};
+
+export default async function MarketingHome() {
+  const tiers = await getPlatformPricingDisplay();
+  const faqJsonLd = buildFaqJsonLd(MARKETING_FAQ);
+
   return (
     <>
-      <header className={styles.header}>
-        <Container>
-          <div className={styles.headerInner}>
-            <span className={styles.brand}>
-              <span className={styles.brandMark} aria-hidden="true">
-                cs
-              </span>
-              cleanScheduler
-            </span>
-            <ThemeToggle />
-          </div>
-        </Container>
-      </header>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
+      <MarketingNav />
 
       <main className={styles.main}>
-        <section className={styles.hero}>
-          <Container size="md">
-            <Stack gap={5} align="start">
-              <span className={styles.eyebrow}>Built for cleaning businesses</span>
-              <h1 className={styles.heroTitle}>
-                Schedule, quote, bill, and grow - all from one tidy console.
-              </h1>
-              <p className={styles.heroLead}>
-                cleanScheduler is the multi-tenant scheduling, billing, and customer portal stack
-                for residential and commercial cleaning teams. Manage jobs, get paid faster, and
-                give every customer a clear, branded view of their service.
+        <MarketingHero
+          eyebrow={MARKETING_HERO.eyebrow}
+          title={MARKETING_HERO.title}
+          lead={MARKETING_HERO.lead}
+          note={MARKETING_HERO.note}
+        />
+
+        <SocialProof
+          headline={MARKETING_SOCIAL_PROOF.headline}
+          highlights={MARKETING_SOCIAL_PROOF.highlights}
+        />
+
+        <section className={styles.personasIntro}>
+          <Container>
+            <Stack gap={2} align="center" as="div">
+              <h2 className={styles.sectionTitle}>Built for how cleaning businesses actually run</h2>
+              <p className={styles.sectionLead}>
+                Whether you are the owner wearing every hat, running the office, or closing the
+                books — cleanScheduler meets you where you work.
               </p>
-              <div className={styles.heroActions}>
-                <Button size="lg" href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>
-                  Start your free trial
-                </Button>
-                <Button size="lg" variant="secondary" as="a" href="/contact">
-                  Contact sales
-                </Button>
-              </div>
             </Stack>
           </Container>
         </section>
 
-        <section className={styles.features}>
+        <PersonaCards personas={MARKETING_PERSONAS} />
+
+        <section className={styles.featuresIntro} id="features">
           <Container>
+            <Stack gap={2} align="center" as="div">
+              <h2 className={styles.sectionTitle}>Everything your team needs in one workspace</h2>
+              <p className={styles.sectionLead}>
+                From first quote to month-end close — with product screenshots from the actual
+                tenant portal.
+              </p>
+            </Stack>
+          </Container>
+        </section>
+
+        {MARKETING_FEATURE_SHOWCASES.map((feature, index) => (
+          <FeatureShowcase
+            key={feature.id}
+            feature={feature}
+            reverse={index % 2 === 1}
+            surface={index % 2 === 1}
+          />
+        ))}
+
+        <ThreePortals portals={MARKETING_THREE_PORTALS} />
+
+        <HowItWorks steps={MARKETING_HOW_IT_WORKS} />
+
+        <section className={styles.pricing} id="pricing">
+          <Container size="lg">
             <Stack gap={6}>
               <Stack gap={2} align="center" as="div">
-                <h2 className={styles.sectionTitle}>Everything in one workspace</h2>
+                <h2 className={styles.sectionTitle}>Simple, transparent pricing</h2>
                 <p className={styles.sectionLead}>
-                  Three portals - one for your team, one for each tenant, one for every customer -
-                  sharing a clean, consistent design system.
+                  Pick the plan that fits your team today. Upgrade anytime as you grow.
                 </p>
               </Stack>
-
-              <Grid min="280px" gap={4}>
-                <Card
-                  title="Smart scheduling"
-                  description="Drag-and-drop calendar, recurring services, and route-aware day views."
-                >
-                  <div className={styles.featureIcon} aria-hidden="true">
-                    <Calendar size={20} />
-                  </div>
-                </Card>
-                <Card
-                  title="Quotes that close"
-                  description="Branded estimates with line items, photos, and one-click acceptance."
-                >
-                  <div className={styles.featureIcon} aria-hidden="true">
-                    <ClipboardList size={20} />
-                  </div>
-                </Card>
-                <Card
-                  title="Payments without the chase"
-                  description="Cards, ACH, Zelle, and check tracking with built-in reconciliation."
-                >
-                  <div className={styles.featureIcon} aria-hidden="true">
-                    <ShieldCheck size={20} />
-                  </div>
-                </Card>
-              </Grid>
+              <PricingTable tiers={tiers} />
             </Stack>
           </Container>
         </section>
+
+        <Faq items={MARKETING_FAQ} />
+
+        <FinalCta />
       </main>
 
       <MarketingFooter />

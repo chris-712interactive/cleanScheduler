@@ -25,7 +25,7 @@ import {
   PLATFORM_PLAN_LABELS,
   parsePlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
-import { getEntitlementsForTier } from '@/lib/billing/entitlements';
+import { getPlatformPricingDisplay, formatPlanPriceUsd } from '@/lib/billing/platformPricing';
 import {
   canAccessCustomerBillingTools,
   needsSubscriptionPurchase,
@@ -88,7 +88,7 @@ function formatNextPayment(
 
 function formatPlanAmount(monthlyPriceUsd: number | null): string {
   if (monthlyPriceUsd == null) return '—';
-  return `$${monthlyPriceUsd.toFixed(2)} USD`;
+  return `${formatPlanPriceUsd(monthlyPriceUsd, { showCents: true })} USD`;
 }
 
 interface PageProps {
@@ -142,9 +142,12 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const planKey = parsePlatformPlanTier(String(billing?.platform_plan ?? ''));
   const planLabel = planKey ? PLATFORM_PLAN_LABELS[planKey] : null;
   const planTagline = planKey ? PLATFORM_PLAN_DESCRIPTIONS[planKey] : null;
-  const entitlements = planKey ? getEntitlementsForTier(planKey) : null;
+  const pricingTiers = await getPlatformPricingDisplay();
+  const currentPlanPricing = planKey
+    ? (pricingTiers.find((tier) => tier.tier === planKey) ?? null)
+    : null;
   const planStatus = formatPlanStatus(subscriptionAccess, billing?.status);
-  const marketingPlansUrl = `${getPublicOrigin(null)}/start-trial`;
+  const marketingPlansUrl = `${getPublicOrigin(null)}/pricing`;
 
   const canManagePlan =
     Boolean(billing?.stripe_customer_id) &&
@@ -227,9 +230,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                     {mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
                   </Button>
                 </form>
-                {planLabel && entitlements ? (
+                {planLabel && currentPlanPricing ? (
                   <span className={styles.muted}>
-                    {planLabel} · {formatPlanAmount(entitlements.monthlyPriceUsd)}/mo
+                    {planLabel} · {formatPlanAmount(currentPlanPricing.monthlyPriceUsd)}/mo
                   </span>
                 ) : null}
               </div>
@@ -315,7 +318,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                   <div className={styles.planFact}>
                     <dt className={styles.planFactLabel}>Amount</dt>
                     <dd className={styles.planFactValue}>
-                      {formatPlanAmount(entitlements?.monthlyPriceUsd ?? null)}
+                      {formatPlanAmount(currentPlanPricing?.monthlyPriceUsd ?? null)}
                     </dd>
                   </div>
                 </dl>
