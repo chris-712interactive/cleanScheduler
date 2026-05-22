@@ -179,14 +179,6 @@ export async function continueCustomerPortalDomainAction(
     });
     if (upsertResult.error) return { error: upsertResult.error };
 
-    if (vercelDomain.verified) {
-      const outcome = await syncCustomerPortalDomainVerification(admin, membership.tenantId);
-      revalidatePath('/tenant/settings/customer-portal', 'page');
-      const message = customerPortalDomainSyncUserMessage(outcome);
-      if (message.success) return { ...message, step: 'active' };
-      return message;
-    }
-
     revalidatePath('/tenant/settings/customer-portal', 'page');
     return {
       success: `Add the DNS records below for ${hostname}, then click Verify DNS.`,

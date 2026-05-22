@@ -15,11 +15,13 @@ import {
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { customerPortalCnameTarget } from '@/lib/portal/customerPortalHostname';
-import { isVercelDomainAutomationConfigured } from '@/lib/portal/vercelProjectDomains';
+import { isVercelDomainAutomationConfigured, type VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
 import { publicEnv } from '@/lib/env';
 import { SettingsSectionCard } from '../SettingsSectionCard';
 import { CustomerPortalDomainPanel } from './CustomerPortalDomainPanel';
-import type { VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
+import {
+  reconcileCustomerPortalDomainWithVercel,
+} from '@/lib/portal/customerPortalDomainSync';
 import styles from '../settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +46,7 @@ export default async function TenantCustomerPortalSettingsPage() {
   const vercelAutomationConfigured = isVercelDomainAutomationConfigured();
   const localDevFallback = publicEnv.NEXT_PUBLIC_APP_ENV === 'local';
 
-  const [{ data: billing }, tier, { data: domainRow }] = await Promise.all([
+  const [{ data: billing }, tier, { data: domainRowRaw }] = await Promise.all([
     admin
       .from('tenant_billing_accounts')
       .select('status')
@@ -59,6 +61,12 @@ export default async function TenantCustomerPortalSettingsPage() {
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
   ]);
+
+  const domainRow =
+    domainRowRaw && vercelAutomationConfigured
+      ? ((await reconcileCustomerPortalDomainWithVercel(admin, membership.tenantId)) ??
+        domainRowRaw)
+      : domainRowRaw;
 
   const tierEnabled = isFeatureEnabled(tier, 'whiteLabelCustomerPortal');
   const billingStatus = (billing?.status ?? 'trialing') as TenantBillingStatus;

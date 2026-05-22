@@ -8,10 +8,12 @@ import { customerPortalVerificationRecordName } from '@/lib/portal/customerPorta
 import {
   getVercelProjectDomain,
   isVercelDomainAutomationConfigured,
+  isVercelDomainFullyVerified,
   vercelDomainErrorMessage,
   verifyVercelProjectDomain,
 } from '@/lib/portal/vercelProjectDomains';
 import {
+  cleanupCustomerPortalDomainResources,
   processPendingSupabaseAuthRedirects,
   recordCustomerPortalDomainActivation,
 } from '@/lib/portal/customerPortalDomainActivation';
@@ -129,7 +131,7 @@ async function syncViaVercel(
     return { status: 'error', hostname, message };
   }
 
-  if (!vercelDomain.verified) {
+  if (!isVercelDomainFullyVerified(vercelDomain)) {
     try {
       vercelDomain = await getVercelProjectDomain(hostname);
     } catch {
@@ -298,4 +300,89 @@ export function customerPortalDomainSyncUserMessage(
 export interface CustomerPortalDomainActionMessages {
   error?: string;
   success?: string;
+}
+
+type CustomerPortalDomainRow = {
+  hostname: string;
+  status: string;
+  verification_token: string | null;
+  verified_at: string | null;
+  vercel_verification: Json | null;
+  vercel_last_error: string | null;
+  auth_redirect_last_error: string | null;
+};
+
+/** Refresh Vercel DNS state and fix domains that were marked active before DNS was configured. */
+export async function reconcileCustomerPortalDomainWithVercel(
+  admin: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<CustomerPortalDomainRow | null> {
+  if (!isVercelDomainAutomationConfigured()) {
+    return null;
+  }
+
+  const { data: row, error: rowErr } = await admin
+    .from('tenant_customer_portal_domains')
+    .select(
+      'hostname, status, verification_token, verified_at, vercel_verification, vercel_last_error, auth_redirect_last_error',
+    )
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (rowErr || !row?.hostname) {
+    return null;
+  }
+
+  let vercelDomain;
+  try {
+    vercelDomain = await getVercelProjectDomain(row.hostname);
+  } catch (error) {
+    const message = vercelDomainErrorMessage(error) ?? 'Could not load DNS instructions from Vercel.';
+    if (row.vercel_last_error === message) {
+      return row;
+    }
+
+    await admin
+      .from('tenant_customer_portal_domains')
+      .update({
+        vercel_last_error: message,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('tenant_id', tenantId);
+
+    return { ...row, vercel_last_error: message };
+  }
+
+  const fullyVerified = isVercelDomainFullyVerified(vercelDomain);
+  const now = new Date().toISOString();
+  const updatePayload: {
+    vercel_verification: Json;
+    vercel_last_error: null;
+    updated_at: string;
+    status?: string;
+    verified_at?: string | null;
+  } = {
+    vercel_verification: vercelDomain.verification as unknown as Json,
+    vercel_last_error: null,
+    updated_at: now,
+  };
+
+  if (row.status === 'active' && !fullyVerified) {
+    await cleanupCustomerPortalDomainResources(row.hostname);
+    updatePayload.status = 'pending';
+    updatePayload.verified_at = null;
+  }
+
+  await admin
+    .from('tenant_customer_portal_domains')
+    .update(updatePayload)
+    .eq('tenant_id', tenantId);
+
+  return {
+    ...row,
+    status: updatePayload.status ?? row.status,
+    verified_at: updatePayload.verified_at === null ? null : row.verified_at,
+    vercel_verification: updatePayload.vercel_verification,
+    vercel_last_error: null,
+  };
 }

@@ -102,6 +102,11 @@ function toDomainResult(payload: {
   };
 }
 
+/** Vercel may return verified=true on register before DNS is configured; pending records must be cleared too. */
+export function isVercelDomainFullyVerified(result: VercelProjectDomainResult): boolean {
+  return result.verified === true && result.verification.length === 0;
+}
+
 /** Register (or refresh) a hostname on the cleanScheduler Vercel project. */
 export async function registerVercelProjectDomain(
   hostname: string,
