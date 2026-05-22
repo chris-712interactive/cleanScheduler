@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
+import { getPortalContext } from '@/lib/portal';
 
 export interface CustomerTenantLink {
   linkId: string;
@@ -23,8 +24,17 @@ export interface CustomerPortalContext {
  */
 export async function getCustomerPortalContext(
   userId: string,
+  options?: { scopeTenantSlug?: string | null },
 ): Promise<CustomerPortalContext | null> {
   const admin = createAdminClient();
+  let scopeSlug = options?.scopeTenantSlug?.trim().toLowerCase() || null;
+  if (!scopeSlug) {
+    const portal = await getPortalContext();
+    if (portal.whiteLabelCustomerPortal && portal.tenantSlug) {
+      scopeSlug = portal.tenantSlug.toLowerCase();
+    }
+  }
+
   const { data: identity, error: idErr } = await admin
     .from('customer_identities')
     .select('id')
@@ -67,7 +77,8 @@ export async function getCustomerPortalContext(
         isPrimary: row.is_primary,
       };
     })
-    .filter((x): x is CustomerTenantLink => x !== null);
+    .filter((x): x is CustomerTenantLink => x !== null)
+    .filter((link) => !scopeSlug || link.tenantSlug.toLowerCase() === scopeSlug);
 
   const customerIds = [...new Set(links.map((l) => l.customerId))];
 

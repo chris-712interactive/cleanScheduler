@@ -2637,6 +2637,47 @@ export type Database = {
           },
         ];
       };
+      tenant_customer_portal_domains: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          hostname: string;
+          status: string;
+          verification_token: string;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          hostname: string;
+          status?: string;
+          verification_token: string;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          hostname?: string;
+          status?: string;
+          verification_token?: string;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_customer_portal_domains_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_sms_messages: {
         Row: {
           id: string;

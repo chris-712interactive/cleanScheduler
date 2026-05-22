@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Cable, MapPin, Percent, Shield, SlidersHorizontal, UserRound } from 'lucide-react';
+import { Building2, Cable, Globe, MapPin, Percent, Shield, SlidersHorizontal, UserRound } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -25,6 +25,12 @@ const HUB_LINKS = [
     label: 'Operations',
     description: 'Quotes, scheduling defaults, payments, and notifications.',
     icon: SlidersHorizontal,
+  },
+  {
+    href: '/settings/customer-portal',
+    label: 'Customer portal',
+    description: 'White-label custom domain for client-facing portal (Pro).',
+    icon: Globe,
   },
   {
     href: '/settings/integrations',

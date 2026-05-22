@@ -3,6 +3,8 @@ import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
+import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerPortalBranding';
+import { getPortalContext } from '@/lib/portal';
 import { headers } from 'next/headers';
 import styles from './customer-layout.module.scss';
 
@@ -41,15 +43,28 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const auth = await requirePortalAccess('customer', '/');
   const nonProdBanner = getNonProdPortalBanner();
   const identity = await getCustomerShellIdentity(auth.user.id);
+  const portal = await getPortalContext();
+  const branding =
+    portal.whiteLabelCustomerPortal && portal.tenantSlug
+      ? await getCustomerPortalBrandingForTenantSlug(portal.tenantSlug)
+      : null;
 
   return (
     <PortalShell
-      brandLabel="cleanScheduler"
+      brandLabel={branding?.tenantName ?? 'cleanScheduler'}
+      brandLogoUrl={branding?.logoUrl}
+      hidePlatformLogo={Boolean(branding)}
       brandHref="/"
       navItems={NAV_ITEMS}
       bottomNavItems={BOTTOM_NAV}
       identity={identity ?? IDENTITY}
-      tenantBadge={<span>my.cleanscheduler.com</span>}
+      tenantBadge={
+        portal.whiteLabelHostname ? (
+          <span>{portal.whiteLabelHostname}</span>
+        ) : (
+          <span>my.cleanscheduler.com</span>
+        )
+      }
       environmentBanner={nonProdBanner}
     >
       {children}

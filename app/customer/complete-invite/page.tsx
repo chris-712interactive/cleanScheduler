@@ -2,7 +2,8 @@ import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
-import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { getCustomerPortalOriginFromRequestHost } from '@/lib/portal/customerPortalOrigin';
+import { headers } from 'next/headers';
 import { CompleteInviteForms } from './CompleteInviteForms';
 import styles from './complete-invite.module.scss';
 
@@ -114,13 +115,15 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
   const auth = await getAuthContext();
   const hasSession = Boolean(auth?.user);
 
-  const returnToMy = `${getPublicOrigin('my')}/complete-invite?token=${raw}`;
-  const marketingSignInUrl = `${getPublicOrigin(null)}/sign-in?next=${encodeURIComponent(returnToMy)}`;
+  const h = await headers();
+  const portalOrigin = getCustomerPortalOriginFromRequestHost(h.get('host'));
+  const returnToInvite = `${portalOrigin}/complete-invite?token=${raw}`;
+  const signInUrl = `${portalOrigin}/sign-in?next=${encodeURIComponent(returnToInvite)}`;
 
   return (
     <Container size="sm">
       <Card
-        title={`Join ${tenantName} on cleanScheduler`}
+        title={`Join ${tenantName}`}
         description="Finish setup for your customer portal."
       >
         <p className={styles.lead}>
@@ -131,7 +134,7 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
           tenantName={tenantName}
           inviteEmail={inviteEmail}
           hasSession={hasSession}
-          marketingSignInUrl={marketingSignInUrl}
+          marketingSignInUrl={signInUrl}
         />
       </Card>
     </Container>

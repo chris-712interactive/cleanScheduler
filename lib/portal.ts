@@ -62,6 +62,9 @@ export function resolveTenantSlugFromHost(host: string | null | undefined): stri
 export interface PortalContext {
   kind: PortalKind;
   tenantSlug: string | null;
+  /** True when the request arrived on a Pro white-label customer portal hostname. */
+  whiteLabelCustomerPortal: boolean;
+  whiteLabelHostname: string | null;
 }
 
 export async function getPortalContext(): Promise<PortalContext> {
@@ -75,5 +78,7 @@ export async function getPortalContext(): Promise<PortalContext> {
   return {
     kind,
     tenantSlug: h.get('x-tenant-slug') ?? resolveTenantSlugFromHost(h.get('host')),
+    whiteLabelCustomerPortal: h.get('x-white-label-customer-portal') === '1',
+    whiteLabelHostname: h.get('x-white-label-hostname'),
   };
 }

@@ -37,6 +37,8 @@ import {
   isTenantPortalSuspended,
   isTenantSuspendedEscapePath,
 } from '@/lib/billing/tenantSubscriptionAccess';
+import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
+import { resolveActiveWhiteLabelCustomerPortal } from '@/lib/portal/resolveWhiteLabelCustomerPortal';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
 
@@ -166,16 +168,23 @@ async function resolveUser(request: NextRequest): Promise<{
 export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const apex = getApexHost();
-  const subdomain = extractSubdomainLabel(host, apex);
+  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
+  const isOurApexHost = isPlatformApexHost(host, apex);
+  const whiteLabelPortal =
+    !isOurApexHost ? await resolveActiveWhiteLabelCustomerPortal(hostWithoutPort) : null;
+
+  const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
   const requestedPath = request.nextUrl.pathname;
   const isPublicMarketingPath =
     PUBLIC_MARKETING_PATHS.has(requestedPath) ||
-    (requestedPath === '/contact' && subdomain === null);
+    (requestedPath === '/contact' && subdomain === null && !whiteLabelPortal);
   const isPublicCustomerInvite =
-    subdomain === 'my' &&
+    (subdomain === 'my' || whiteLabelPortal) &&
     (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
 
-  const baseClassification = classify(subdomain);
+  const baseClassification = whiteLabelPortal
+    ? { kind: 'customer' as const, tenantSlug: whiteLabelPortal.tenantSlug }
+    : classify(subdomain);
   const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
   // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.
   const tenantSlug =
@@ -187,6 +196,10 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-portal', kind);
   if (tenantSlug) {
     requestHeaders.set('x-tenant-slug', tenantSlug);
+  }
+  if (whiteLabelPortal) {
+    requestHeaders.set('x-white-label-customer-portal', '1');
+    requestHeaders.set('x-white-label-hostname', whiteLabelPortal.hostname);
   }
 
   // Build the rewritten URL. Avoid double-prefixing if the request is already

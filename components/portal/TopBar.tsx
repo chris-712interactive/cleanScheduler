@@ -21,6 +21,8 @@ import styles from './TopBar.module.scss';
 
 export interface TopBarProps {
   brandLabel: string;
+  brandLogoUrl?: string | null;
+  hidePlatformLogo?: boolean;
   brandHref?: string;
   identity?: IdentityChipModel;
   settingsHref?: string;
@@ -31,6 +33,8 @@ export interface TopBarProps {
 
 export function TopBar({
   brandLabel,
+  brandLogoUrl,
+  hidePlatformLogo = false,
   brandHref = '/',
   identity,
   settingsHref,
@@ -59,16 +63,30 @@ export function TopBar({
         </Dialog.Root>
 
         <Link href={brandHref} className={styles.brand}>
-          <span className={styles.brandMark}>
-            <Image
-              src="/brand/logo.svg"
-              alt=""
-              width={160}
-              height={32}
-              className={styles.brandLogo}
-              priority
-            />
-          </span>
+          {!hidePlatformLogo ? (
+            <span className={styles.brandMark}>
+              <Image
+                src="/brand/logo.svg"
+                alt=""
+                width={160}
+                height={32}
+                className={styles.brandLogo}
+                priority
+              />
+            </span>
+          ) : brandLogoUrl ? (
+            <span className={styles.brandMark}>
+              <Image
+                src={brandLogoUrl}
+                alt=""
+                width={160}
+                height={32}
+                className={styles.brandLogo}
+                priority
+                unoptimized
+              />
+            </span>
+          ) : null}
           <span className={styles.brandLabel}>{brandLabel}</span>
         </Link>
         {tenantBadge ? <div className={styles.tenantBadge}>{tenantBadge}</div> : null}

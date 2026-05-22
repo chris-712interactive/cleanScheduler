@@ -21,6 +21,9 @@ export interface PortalShellProps {
   navItems: NavItem[];
   bottomNavItems?: NavItem[];
   brandLabel: string;
+  brandLogoUrl?: string | null;
+  /** When true, hide the cleanScheduler mark and show tenant logo or label only. */
+  hidePlatformLogo?: boolean;
   brandHref?: string;
   identity?: IdentityChipModel;
   /** Account menu link; omit to hide Settings in the menu. Defaults to `/settings`. */
@@ -39,6 +42,8 @@ export function PortalShell({
   navItems,
   bottomNavItems,
   brandLabel,
+  brandLogoUrl,
+  hidePlatformLogo = false,
   brandHref = '/',
   identity,
   settingsHref = '/settings',
@@ -67,6 +72,8 @@ export function PortalShell({
       ) : null}
       <TopBar
         brandLabel={brandLabel}
+        brandLogoUrl={brandLogoUrl}
+        hidePlatformLogo={hidePlatformLogo}
         brandHref={brandHref}
         identity={identity}
         settingsHref={settingsHref}

@@ -72,6 +72,10 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: { starter: false, business: true, pro: true },
   },
   {
+    label: 'White-label portal (custom domain)',
+    values: { starter: false, business: false, pro: true },
+  },
+  {
     label: 'Role permissions (admin/viewer)',
     values: { starter: false, business: true, pro: true },
   },

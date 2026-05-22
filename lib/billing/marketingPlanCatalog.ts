@@ -51,6 +51,9 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   if (features.smsCommunication) {
     bullets.push('SMS customer communication (visit reminders, review requests)');
   }
+  if (features.whiteLabelCustomerPortal) {
+    bullets.push('White-label customer portal (custom domain)');
+  }
 
   return bullets;
 }

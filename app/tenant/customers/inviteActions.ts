@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { sendCustomerPortalInviteEmail, isResendApiConfigured } from '@/lib/email/resend';
-import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { inviteTemplateCustomerFirstName } from '@/lib/tenant/customerIdentityName';
 import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 
@@ -129,7 +129,8 @@ export async function sendCustomerPortalInviteAction(
     return { error: invErr?.message ?? 'Could not create invite.' };
   }
 
-  const acceptUrl = `${getPublicOrigin('my')}/complete-invite?token=${invite.token}`;
+  const portalOrigin = await getCustomerPortalOriginForTenant(admin, membership.tenantId);
+  const acceptUrl = `${portalOrigin}/complete-invite?token=${invite.token}`;
   const tenantName =
     String(tenant.name ?? 'Your cleaning provider').trim() || 'Your cleaning provider';
   const customerName = inviteTemplateCustomerFirstName(identity);

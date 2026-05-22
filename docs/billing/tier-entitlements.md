@@ -21,7 +21,8 @@ type EntitlementFeature =
   | 'multiLocationControls'
   | 'dedicatedOnboarding'
   | 'plaidReconciliation'
-  | 'smsCommunication';
+  | 'smsCommunication'
+  | 'whiteLabelCustomerPortal';
 
 type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -129,6 +130,20 @@ Daily cron `/api/cron/invoice-reminders` (11:00 UTC). Respects `check_reminder_h
 `multiLocationControls` — Settings → Locations; schedule filter by `location_id` on visits.
 
 Migration `0041_invoice_reminders_locations.sql`.
+
+## White-label customer portal (Pro — paid)
+
+`whiteLabelCustomerPortal` — Settings → Customer portal; one custom hostname per workspace.
+
+| Tier | Shared `my.*` portal | Custom domain + branded shell |
+| ---- | -------------------- | ------------------------------ |
+| Starter | No | No |
+| Business | Yes (`customerPortal`) | No |
+| Pro | Yes | Yes (paid subscription required) |
+
+Flow: tenant saves hostname → adds TXT + CNAME DNS records → **Verify DNS** → status `active`. Middleware routes the hostname to `/customer/*` scoped to that tenant. Invite links use the custom origin when active.
+
+Migration `0042_tenant_customer_portal_domains.sql`.
 
 ## Required API/server-action checks
 
