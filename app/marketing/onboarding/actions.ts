@@ -244,7 +244,6 @@ export async function createTenantAndOwner(
 
   const requestOrigin = resolveRequestOrigin(requestHeaders);
   const tenantOrigin = buildTenantOrigin(slug, requestOrigin);
-  const marketingOrigin = requestOrigin;
 
   const checkoutUrl = await createPlatformSubscriptionCheckoutUrl({
     tenantId,
@@ -252,7 +251,7 @@ export async function createTenantAndOwner(
     customerEmail: email,
     platformPlan,
     successUrl: `${tenantOrigin.replace(/\/$/, '')}/`,
-    cancelUrl: `${marketingOrigin.origin}/start-trial`,
+    cancelUrl: `${tenantOrigin.replace(/\/$/, '')}/?checkout=cancelled`,
   });
 
   if (checkoutUrl) {

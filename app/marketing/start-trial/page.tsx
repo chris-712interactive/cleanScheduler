@@ -32,7 +32,7 @@ export default async function StartTrialPage({ searchParams }: PageProps) {
         <Container size="md">
           <Card
             title="Start your 7-day free trial"
-            description="Three quick steps: workspace setup, owner account, and launch preferences. No credit card required."
+            description="Three quick steps: workspace, your account, and plan selection. No credit card required."
           >
             <TenantOnboardingForm
               domainSuffix={domainSuffix}

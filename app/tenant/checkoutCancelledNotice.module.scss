@@ -1,0 +1,18 @@
+.banner {
+  border-color: color-mix(in srgb, var(--color-info) 35%, var(--color-border));
+  background-color: var(--color-info-bg);
+}
+
+.lead {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
+.link {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

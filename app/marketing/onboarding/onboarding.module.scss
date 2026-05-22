@@ -38,6 +38,18 @@
   display: none !important;
 }
 
+.stepHint {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.optional {
+  font-weight: 500;
+  color: var(--color-text-subtle);
+}
+
 .label {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

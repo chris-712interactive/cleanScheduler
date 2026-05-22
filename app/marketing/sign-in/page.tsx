@@ -40,7 +40,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       <Container size="sm">
         <Card
           title="Sign in to cleanScheduler"
-          description="Sign in with email and password or Google."
+      description="Sign in to your existing workspace. New businesses should start a free trial first."
         >
           <SignInForm nextPath={nextPath} urlError={signInUrlError} />
           <p className={styles.helpText}>

@@ -154,7 +154,8 @@ export const MARKETING_HOW_IT_WORKS = [
   {
     step: 2,
     title: 'Add your first quote or customer',
-    description: 'Our onboarding checklist walks you through the basics.',
+    description:
+      'Your dashboard includes a Getting started checklist — follow it to price jobs and build your customer list.',
   },
   {
     step: 3,

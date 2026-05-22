@@ -17,6 +17,9 @@ import { getOwnerOnboardingChecklist } from '@/lib/tenant/ownerOnboardingCheckli
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
 import { OwnerOnboardingPanel } from './OwnerOnboardingPanel';
+import { OwnerOnboardingSurveyPanel } from './OwnerOnboardingSurveyPanel';
+import { CheckoutCancelledNotice } from './CheckoutCancelledNotice';
+import { needsOnboardingSurvey } from '@/lib/tenant/onboardingSurvey';
 import {
   getTenantCustomersAddedThisMonthCount,
   getTenantSentQuotesCount,
@@ -27,7 +30,18 @@ import styles from './dashboard.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TenantDashboardPage() {
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function TenantDashboardPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const checkoutCancelled = firstParam(params.checkout) === 'cancelled';
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/');
   const trial = await getTenantTrialSummaryBySlug(membership.tenantSlug);
@@ -44,6 +58,7 @@ export default async function TenantDashboardPage() {
     todaysJobs,
     todayQueue,
     tenantRowRes,
+    onboardingProfileRes,
   ] = await Promise.all([
       supabase
         .from('customers')
@@ -65,6 +80,13 @@ export default async function TenantDashboardPage() {
         .select('stripe_connect_status')
         .eq('id', membership.tenantId)
         .maybeSingle(),
+      showOnboarding
+        ? supabase
+            .from('tenant_onboarding_profiles')
+            .select('service_area, team_size, referral_source')
+            .eq('tenant_id', membership.tenantId)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
   const onboardingChecklist = showOnboarding
@@ -74,6 +96,10 @@ export default async function TenantDashboardPage() {
         tenantRowRes.data?.stripe_connect_status,
       )
     : null;
+
+  const onboardingProfile = onboardingProfileRes.data;
+  const showOnboardingSurvey =
+    showOnboarding && needsOnboardingSurvey(onboardingProfile ?? null);
 
   const activeCustomerCount = customersCountRes.error ? 0 : (customersCountRes.count ?? 0);
   const quoteCount = quotesCountRes.error ? 0 : (quotesCountRes.count ?? 0);
@@ -126,6 +152,8 @@ export default async function TenantDashboardPage() {
       />
 
       <Stack gap={6}>
+        {checkoutCancelled ? <CheckoutCancelledNotice /> : null}
+
         {trial?.status === 'trialing' ? (
           <Card title="Free trial" titleHint="Your workspace is in trial mode." className={styles.trialBanner}>
             <StatusPill tone="brand" icon={<Calendar size={14} />}>
@@ -134,6 +162,13 @@ export default async function TenantDashboardPage() {
                 : `${trial.daysRemaining ?? 0} day${trial.daysRemaining === 1 ? '' : 's'} left`}
             </StatusPill>
           </Card>
+        ) : null}
+
+        {showOnboardingSurvey ? (
+          <OwnerOnboardingSurveyPanel
+            tenantId={membership.tenantId}
+            tenantSlug={membership.tenantSlug}
+          />
         ) : null}
 
         {onboardingChecklist ? (

@@ -60,51 +60,6 @@ export async function signInWithPassword(
   redirect(nextPath);
 }
 
-export async function signUpWithPassword(
-  _prevState: SignInState,
-  formData: FormData,
-): Promise<SignInState> {
-  const email = String(formData.get('email') ?? '')
-    .trim()
-    .toLowerCase();
-  const password = String(formData.get('password') ?? '');
-  const confirm = String(formData.get('confirm_password') ?? '');
-  const nextPath = normalizeNextFromForm(formData);
-
-  if (!email || !password) {
-    return { error: 'Email and password are required.' };
-  }
-
-  if (password.length < 8) {
-    return { error: 'Password must be at least 8 characters.' };
-  }
-
-  if (password !== confirm) {
-    return { error: 'Passwords do not match.' };
-  }
-
-  const supabase = await createClient();
-  const origin = await resolveRedirectOrigin(formData);
-  const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
-
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo,
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  return {
-    success:
-      'Account created. If email confirmation is enabled in Supabase, check your inbox to verify before signing in.',
-  };
-}
-
 export async function signInWithGoogle(formData: FormData): Promise<void> {
   const nextPath = normalizeNextFromForm(formData);
   const origin = await resolveRedirectOrigin(formData);

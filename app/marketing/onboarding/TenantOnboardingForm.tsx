@@ -35,11 +35,6 @@ export function TenantOnboardingForm({
   const [step, setStep] = useState(0);
   const [slug, setSlug] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [companyEmail, setCompanyEmail] = useState('');
-  const [companyPhone, setCompanyPhone] = useState('');
-  const [companyWebsite, setCompanyWebsite] = useState('');
-  const [serviceArea, setServiceArea] = useState('');
-  const [teamSize, setTeamSize] = useState('');
   const [businessType, setBusinessType] = useState('residential');
   const [displayName, setDisplayName] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
@@ -47,7 +42,6 @@ export function TenantOnboardingForm({
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [step1Error, setStep1Error] = useState<string | null>(null);
-  const [referralSource, setReferralSource] = useState('');
   const [platformPlan, setPlatformPlan] = useState<PlatformPlanTier>(defaultTier);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [slugStatus, setSlugStatus] = useState<{
@@ -115,7 +109,7 @@ export function TenantOnboardingForm({
 
   function goNext() {
     if (step === 0) {
-      if (!businessName.trim() || !slug.trim() || !teamSize || !serviceArea.trim()) return;
+      if (!businessName.trim() || !slug.trim()) return;
       if (slugStatus.tone === 'warn' || slugStatus.tone === 'error') return;
     }
     if (step === 1) {
@@ -148,9 +142,9 @@ export function TenantOnboardingForm({
       ) : null}
 
       <div className={styles.steps} aria-label="Trial setup progress">
-        <span data-active={step === 0 || undefined}>1. Company</span>
-        <span data-active={step === 1 || undefined}>2. Owner account</span>
-        <span data-active={step === 2 || undefined}>3. Preferences</span>
+        <span data-active={step === 0 || undefined}>1. Workspace</span>
+        <span data-active={step === 1 || undefined}>2. Your account</span>
+        <span data-active={step === 2 || undefined}>3. Plan & launch</span>
       </div>
 
       <section
@@ -161,6 +155,11 @@ export function TenantOnboardingForm({
           step === 0 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`
         }
       >
+        <p className={styles.stepHint}>
+          Name your business and pick a workspace URL. You can add service area and team size after
+          signup.
+        </p>
+
         <label className={styles.label} htmlFor="business_name">
           Business name
         </label>
@@ -193,38 +192,6 @@ export function TenantOnboardingForm({
         <p className={styles.slugStatus} data-tone={slugStatus.tone}>
           {slugStatus.message}
         </p>
-
-        <label className={styles.label} htmlFor="service_area">
-          Primary service area
-        </label>
-        <input
-          id="service_area"
-          name="service_area"
-          className={styles.input}
-          placeholder="Charlotte, NC metro"
-          required
-          value={serviceArea}
-          onChange={(event) => setServiceArea(event.target.value)}
-        />
-
-        <label className={styles.label} htmlFor="team_size">
-          Team size
-        </label>
-        <select
-          id="team_size"
-          name="team_size"
-          className={styles.input}
-          required
-          value={teamSize}
-          onChange={(event) => setTeamSize(event.target.value)}
-        >
-          <option value="">Select team size</option>
-          <option value="solo">Just me</option>
-          <option value="2-5">2-5 staff</option>
-          <option value="6-15">6-15 staff</option>
-          <option value="16-40">16-40 staff</option>
-          <option value="40+">40+ staff</option>
-        </select>
       </section>
 
       <section
@@ -262,7 +229,7 @@ export function TenantOnboardingForm({
         />
 
         <label className={styles.label} htmlFor="owner_phone">
-          Owner phone
+          Owner phone <span className={styles.optional}>(optional)</span>
         </label>
         <input
           id="owner_phone"
@@ -377,31 +344,31 @@ export function TenantOnboardingForm({
           {(['starter', 'business', 'pro'] as const).map((tier) => {
             const pricing = planOptionsByTier.get(tier);
             return (
-            <label
-              key={tier}
-              className={styles.tierOption}
-              data-selected={platformPlan === tier || undefined}
-            >
-              <input
-                type="radio"
-                name="platform_plan"
-                value={tier}
-                checked={platformPlan === tier}
-                onChange={() => setPlatformPlan(tier)}
-                required
-              />
-              <span className={styles.tierCopy}>
-                <span className={styles.tierNameRow}>
-                  <span className={styles.tierName}>{PLATFORM_PLAN_LABELS[tier]}</span>
-                  {pricing ? (
-                    <span className={styles.tierPrice}>
-                      {formatPlanPriceUsd(pricing.monthlyPriceUsd)}/mo
-                    </span>
-                  ) : null}
+              <label
+                key={tier}
+                className={styles.tierOption}
+                data-selected={platformPlan === tier || undefined}
+              >
+                <input
+                  type="radio"
+                  name="platform_plan"
+                  value={tier}
+                  checked={platformPlan === tier}
+                  onChange={() => setPlatformPlan(tier)}
+                  required
+                />
+                <span className={styles.tierCopy}>
+                  <span className={styles.tierNameRow}>
+                    <span className={styles.tierName}>{PLATFORM_PLAN_LABELS[tier]}</span>
+                    {pricing ? (
+                      <span className={styles.tierPrice}>
+                        {formatPlanPriceUsd(pricing.monthlyPriceUsd)}/mo
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className={styles.tierDesc}>{PLATFORM_PLAN_DESCRIPTIONS[tier]}</span>
                 </span>
-                <span className={styles.tierDesc}>{PLATFORM_PLAN_DESCRIPTIONS[tier]}</span>
-              </span>
-            </label>
+              </label>
             );
           })}
         </fieldset>
@@ -420,57 +387,6 @@ export function TenantOnboardingForm({
           <option value="commercial">Commercial cleaning</option>
           <option value="both">Both residential and commercial</option>
         </select>
-
-        <label className={styles.label} htmlFor="company_email">
-          Company support email
-        </label>
-        <input
-          id="company_email"
-          name="company_email"
-          type="email"
-          className={styles.input}
-          placeholder="support@acmecleaning.com"
-          value={companyEmail}
-          onChange={(event) => setCompanyEmail(event.target.value)}
-        />
-
-        <label className={styles.label} htmlFor="company_phone">
-          Company phone
-        </label>
-        <input
-          id="company_phone"
-          name="company_phone"
-          type="tel"
-          className={styles.input}
-          placeholder="(555) 555-0123"
-          value={companyPhone}
-          onChange={(event) => setCompanyPhone(event.target.value)}
-        />
-
-        <label className={styles.label} htmlFor="company_website">
-          Company website
-        </label>
-        <input
-          id="company_website"
-          name="company_website"
-          type="url"
-          className={styles.input}
-          placeholder="https://www.acmecleaning.com"
-          value={companyWebsite}
-          onChange={(event) => setCompanyWebsite(event.target.value)}
-        />
-
-        <label className={styles.label} htmlFor="referral_source">
-          How did you hear about us?
-        </label>
-        <input
-          id="referral_source"
-          name="referral_source"
-          className={styles.input}
-          placeholder="Google, referral, podcast..."
-          value={referralSource}
-          onChange={(event) => setReferralSource(event.target.value)}
-        />
 
         <label className={styles.checkboxRow}>
           <input

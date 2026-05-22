@@ -68,6 +68,21 @@
   font-size: var(--font-size-sm);
 }
 
+.trialPrompt {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  text-align: center;
+}
+
+.trialLink {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .wrapper {
   display: flex;
   flex-direction: column;
