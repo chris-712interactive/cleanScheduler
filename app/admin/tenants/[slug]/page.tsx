@@ -14,6 +14,7 @@ import {
   type PlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
+import { formatOfficeFieldSeatLine } from '@/lib/billing/teamSeats';
 import { startMasqueradeAction } from '@/lib/admin/masqueradeActions';
 import styles from '../tenants.module.scss';
 
@@ -175,7 +176,10 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
                   },
                   { key: 'Hard-gated features', value: disabledFeatures || 'None' },
                   { key: 'Enabled features', value: enabledFeatures || 'None' },
-                  { key: 'Included seats', value: String(entitlements.limits.includedSeats) },
+                  {
+                    key: 'Team seats',
+                    value: formatOfficeFieldSeatLine(entitlements.limits),
+                  },
                   {
                     key: 'Max active customers',
                     value: String(entitlements.limits.maxActiveCustomers),

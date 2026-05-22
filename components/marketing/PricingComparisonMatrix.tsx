@@ -2,6 +2,7 @@ import { Check, Minus } from 'lucide-react';
 import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
 import { MARKETING_PLAN_ORDER } from '@/lib/billing/marketingPlanCatalog';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
+import { formatFieldSeatLimit } from '@/lib/billing/teamSeats';
 import styles from './PricingComparisonMatrix.module.scss';
 
 type ComparisonRow = {
@@ -9,13 +10,29 @@ type ComparisonRow = {
   values: Record<PlatformPlanTier, boolean | string>;
 };
 
+function officeSeatValue(tier: PlatformPlanTier): string {
+  return String(PLATFORM_TIER_ENTITLEMENTS[tier].limits.includedOfficeSeats);
+}
+
+function fieldSeatValue(tier: PlatformPlanTier): string {
+  return formatFieldSeatLimit(PLATFORM_TIER_ENTITLEMENTS[tier].limits.includedFieldSeats);
+}
+
 const COMPARISON_ROWS: ComparisonRow[] = [
   {
-    label: 'Team seats',
+    label: 'Office seats (owner, admin, viewer)',
     values: {
-      starter: '1',
-      business: '5',
-      pro: '10',
+      starter: officeSeatValue('starter'),
+      business: officeSeatValue('business'),
+      pro: officeSeatValue('pro'),
+    },
+  },
+  {
+    label: 'Field seats (employees)',
+    values: {
+      starter: fieldSeatValue('starter'),
+      business: fieldSeatValue('business'),
+      pro: fieldSeatValue('pro'),
     },
   },
   {

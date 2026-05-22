@@ -21,7 +21,8 @@ export type PlatformPricingTier = {
   featureBullets: string[];
   isMostPopular: boolean;
   limits: {
-    includedSeats: number;
+    includedOfficeSeats: number;
+    includedFieldSeats: number | null;
     maxActiveCustomers: number;
   };
   priceSource: 'stripe' | 'entitlements';
@@ -70,7 +71,8 @@ async function resolveTierPricing(tier: PlatformPlanTier): Promise<PlatformPrici
     featureBullets: getMarketingFeatureBullets(tier),
     isMostPopular: tier === MARKETING_MOST_POPULAR_TIER,
     limits: {
-      includedSeats: entitlements.limits.includedSeats,
+      includedOfficeSeats: entitlements.limits.includedOfficeSeats,
+      includedFieldSeats: entitlements.limits.includedFieldSeats,
       maxActiveCustomers: entitlements.limits.maxActiveCustomers,
     },
     priceSource,

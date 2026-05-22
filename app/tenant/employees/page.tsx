@@ -10,6 +10,8 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
 import { canEditTeamMember, canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
+import { resolveTenantEntitlements } from '@/lib/billing/entitlements';
+import { countTeamSeatUsage, formatTeamSeatUsageSummary } from '@/lib/billing/teamSeats';
 import type { TenantRole } from '@/lib/auth/types';
 import { teamMemberStatusLabel, teamRoleLabel } from '@/lib/tenant/teamMemberDisplay';
 import { parseTeamPage, TEAM_PAGE_SIZE } from '@/lib/tenant/teamListPaging';
@@ -66,6 +68,11 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
   const currentUserId = auth?.user.id ?? '';
   const actorRole = membership.role as TenantRole;
   const canManage = canManageTeamInvitesAndRoles(actorRole);
+
+  const entitlements = canManage
+    ? await resolveTenantEntitlements(admin, membership.tenantId)
+    : null;
+  const seatUsage = canManage ? await countTeamSeatUsage(admin, membership.tenantId) : null;
 
   const { data: rows, error } = await admin
     .from('tenant_memberships')
@@ -146,6 +153,13 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
           ) : undefined
         }
       />
+
+      {canManage && entitlements && seatUsage ? (
+        <p className={styles.seatUsageBanner}>
+          Team seats: {formatTeamSeatUsageSummary(seatUsage, entitlements.limits)}.{' '}
+          <Link href="/billing">Upgrade plan</Link>
+        </p>
+      ) : null}
 
       {error ? (
         <div className={styles.errorPanel}>

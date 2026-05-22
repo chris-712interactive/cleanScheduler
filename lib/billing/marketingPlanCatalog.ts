@@ -1,5 +1,6 @@
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
+import { formatOfficeFieldSeatLine } from '@/lib/billing/teamSeats';
 
 /** Curated feature bullets for marketing surfaces (pricing page, trial signup, homepage). */
 export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
@@ -9,7 +10,7 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   const bullets: string[] = [
     'Quotes, customers, schedule & recurring visits',
     'Invoices, manual payments & Stripe Connect (cards/ACH)',
-    `${limits.includedSeats} team seat${limits.includedSeats === 1 ? '' : 's'}`,
+    formatOfficeFieldSeatLine(limits),
     `Up to ${limits.maxActiveCustomers.toLocaleString()} active customers`,
     'Core financial reports & month-end close checklist',
   ];

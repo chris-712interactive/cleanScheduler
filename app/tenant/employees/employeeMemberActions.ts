@@ -10,6 +10,12 @@ import {
   canToggleMemberActive,
 } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
+import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import {
+  assertCanAssignTeamSeat,
+  countTeamSeatUsage,
+  teamSeatGateErrorMessage,
+} from '@/lib/billing/teamSeats';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
   AVATAR_MAX_UPLOAD_BYTES,
@@ -137,6 +143,21 @@ export async function updateTenantMemberRoleAction(
     return { error: 'You cannot assign that role change.' };
   }
 
+  try {
+    const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+    const usage = await countTeamSeatUsage(admin, membership.tenantId);
+    assertCanAssignTeamSeat({
+      tier,
+      role: nextRole,
+      usage,
+      replaceRole: targetCurrentRole,
+    });
+  } catch (error) {
+    const message = teamSeatGateErrorMessage(error);
+    if (message) return { error: message };
+    throw error;
+  }
+
   if (targetCurrentRole === 'owner') {
     const { count, error: cErr } = await admin
       .from('tenant_memberships')
@@ -214,6 +235,22 @@ export async function setTenantMemberActiveAction(
     })
   ) {
     return { error: 'You cannot change activation for this member.' };
+  }
+
+  if (isActive) {
+    try {
+      const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+      const usage = await countTeamSeatUsage(admin, membership.tenantId);
+      assertCanAssignTeamSeat({
+        tier,
+        role: targetRow.role as TenantRole,
+        usage,
+      });
+    } catch (error) {
+      const message = teamSeatGateErrorMessage(error);
+      if (message) return { error: message };
+      throw error;
+    }
   }
 
   if (!isActive && (targetRow.role as TenantRole) === 'owner') {

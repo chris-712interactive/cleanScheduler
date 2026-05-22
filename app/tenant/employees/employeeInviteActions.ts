@@ -4,6 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
+import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import {
+  assertCanAssignTeamSeat,
+  countTeamSeatUsage,
+  teamSeatGateErrorMessage,
+} from '@/lib/billing/teamSeats';
 import { isResendConfigured, sendEmployeeInviteEmail } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
@@ -119,6 +125,31 @@ export async function sendEmployeeInviteAction(
     .maybeSingle();
   if (tErr || !tenant) {
     return { error: 'Could not load workspace.' };
+  }
+
+  const { data: existingPendingInvite } = await admin
+    .from('employee_invites')
+    .select('invited_role')
+    .eq('tenant_id', membership.tenantId)
+    .eq('email_normalized', emailRaw)
+    .is('used_at', null)
+    .maybeSingle();
+
+  try {
+    const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+    const usage = await countTeamSeatUsage(admin, membership.tenantId);
+    assertCanAssignTeamSeat({
+      tier,
+      role: invitedRole,
+      usage,
+      replaceRole: existingPendingInvite
+        ? (existingPendingInvite.invited_role as TenantRole)
+        : undefined,
+    });
+  } catch (error) {
+    const message = teamSeatGateErrorMessage(error);
+    if (message) return { error: message };
+    throw error;
   }
 
   const expires = new Date();

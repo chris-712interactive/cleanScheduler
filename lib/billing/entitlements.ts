@@ -17,7 +17,8 @@ export type EntitlementFeature =
   | 'plaidReconciliation';
 
 export type EntitlementLimitKey =
-  | 'includedSeats'
+  | 'includedOfficeSeats'
+  | 'includedFieldSeats'
   | 'maxActiveCustomers'
   | 'maxAutomationWorkflows'
   | 'includedSmsCreditsMonthly'
@@ -28,13 +29,19 @@ export type EntitlementLimitKey =
   | 'maxCampaignAudienceSize'
   | 'maxCampaignDrafts';
 
+/** Limits stored as plain numbers (excludes nullable field-seat cap). */
+export type NumericEntitlementLimitKey = Exclude<EntitlementLimitKey, 'includedFieldSeats'>;
+
 export interface PlanEntitlements {
   plan: PlatformPlanTier;
   displayName: string;
   monthlyPriceUsd: number;
   annualEffectiveMonthlyUsd: number;
   features: Record<EntitlementFeature, boolean>;
-  limits: Record<EntitlementLimitKey, number>;
+  limits: Record<NumericEntitlementLimitKey, number> & {
+    /** `null` = unlimited field seats (Pro). */
+    includedFieldSeats: number | null;
+  };
 }
 
 /**
@@ -62,7 +69,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       plaidReconciliation: false,
     },
     limits: {
-      includedSeats: 1,
+      includedOfficeSeats: 1,
+      includedFieldSeats: 3,
       maxActiveCustomers: 500,
       maxAutomationWorkflows: 3,
       includedSmsCreditsMonthly: 500,
@@ -94,7 +102,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       plaidReconciliation: true,
     },
     limits: {
-      includedSeats: 5,
+      includedOfficeSeats: 2,
+      includedFieldSeats: 10,
       maxActiveCustomers: 5000,
       maxAutomationWorkflows: 20,
       includedSmsCreditsMonthly: 5000,
@@ -126,7 +135,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       plaidReconciliation: true,
     },
     limits: {
-      includedSeats: 10,
+      includedOfficeSeats: 10,
+      includedFieldSeats: null,
       maxActiveCustomers: 25000,
       maxAutomationWorkflows: 100,
       includedSmsCreditsMonthly: 25000,
@@ -148,7 +158,7 @@ export function isFeatureEnabled(tier: PlatformPlanTier, feature: EntitlementFea
   return PLATFORM_TIER_ENTITLEMENTS[tier].features[feature];
 }
 
-export function getTierLimit(tier: PlatformPlanTier, limit: EntitlementLimitKey): number {
+export function getTierLimit(tier: PlatformPlanTier, limit: NumericEntitlementLimitKey): number {
   return PLATFORM_TIER_ENTITLEMENTS[tier].limits[limit];
 }
 
@@ -173,7 +183,7 @@ export function assertFeatureEnabled(tier: PlatformPlanTier, feature: Entitlemen
 
 export function assertLimitNotExceeded(
   tier: PlatformPlanTier,
-  limit: EntitlementLimitKey,
+  limit: NumericEntitlementLimitKey,
   currentValue: number,
 ): void {
   const allowed = getTierLimit(tier, limit);

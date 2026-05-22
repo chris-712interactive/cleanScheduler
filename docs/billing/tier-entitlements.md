@@ -22,7 +22,8 @@ type EntitlementFeature =
   | 'dedicatedOnboarding';
 
 type EntitlementLimitKey =
-  | 'includedSeats'
+  | 'includedOfficeSeats'
+  | 'includedFieldSeats'
   | 'maxActiveCustomers'
   | 'maxAutomationWorkflows'
   | 'includedSmsCreditsMonthly'
@@ -39,7 +40,10 @@ interface PlanEntitlements {
   monthlyPriceUsd: number; // 39, 129, 299
   annualEffectiveMonthlyUsd: number; // 31, 103, 239
   features: Record<EntitlementFeature, boolean>;
-  limits: Record<EntitlementLimitKey, number>;
+  limits: Record<EntitlementLimitKey, number> & {
+    /** `null` = unlimited field seats (Pro). */
+    includedFieldSeats: number | null;
+  };
 }
 ```
 
@@ -48,6 +52,26 @@ interface PlanEntitlements {
 - Starter: `$39/mo` (`$31` annual-effective)
 - Business: `$129/mo` (`$103` annual-effective)
 - Pro: `$299/mo` (`$239` annual-effective)
+
+## Team seats (office vs field)
+
+Office seats count **owner**, **admin**, and **viewer** logins. Field seats count **employee** logins only.
+
+| Tier | Office seats | Field seats |
+| ---- | ------------ | ----------- |
+| Starter | 1 | 3 |
+| Business | 2 | 10 |
+| Pro | 10 | Unlimited |
+
+Implementation: `lib/billing/teamSeats.ts` (`countTeamSeatUsage`, `assertCanAssignTeamSeat`).
+
+Enforcement (active memberships + pending invites):
+
+- `app/tenant/employees/employeeInviteActions.ts` — before creating an invite
+- `app/tenant/employees/employeeMemberActions.ts` — role changes and reactivation
+- `app/marketing/complete-employee-invite/actions.ts` — before accepting an invite
+
+Inactive members do not consume seats. Pending invites reserve a seat until accepted, expired, or revoked.
 
 ## Required API/server-action checks
 
@@ -109,10 +133,10 @@ Current implementation:
   - shows plan label + monthly price from canonical entitlement config
 - `app/admin/tenants/[slug]/page.tsx`
   - shows per-tenant hard-gated feature list and soft-limit values
+- `lib/billing/teamSeats.ts` + employee invite/member actions
+  - enforces office/field seat caps before invites, accept, role change, reactivation
 
 Next checks to add:
-
-- seat invites / membership creation -> `includedSeats`
 - workflow creation actions -> `maxAutomationWorkflows`
 - SMS send pipeline -> `includedSmsCreditsMonthly`
 - integration connection actions -> `includedIntegrations`

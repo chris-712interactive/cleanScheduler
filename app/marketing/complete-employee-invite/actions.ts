@@ -8,6 +8,12 @@ import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { TenantRole } from '@/lib/auth/types';
+import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import {
+  assertCanAssignTeamSeat,
+  countTeamSeatUsage,
+  teamSeatGateErrorMessage,
+} from '@/lib/billing/teamSeats';
 
 const TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -128,6 +134,21 @@ export async function linkExistingEmployeeInviteAction(
   const invitedRole = invite.invited_role as TenantRole;
   const nextAppRole = appRoleForTenantRole(invitedRole);
 
+  try {
+    const tier = await resolveTenantPlanTier(admin, invite.tenant_id);
+    const usage = await countTeamSeatUsage(admin, invite.tenant_id);
+    assertCanAssignTeamSeat({
+      tier,
+      role: invitedRole,
+      usage,
+      replaceRole: invitedRole,
+    });
+  } catch (error) {
+    const message = teamSeatGateErrorMessage(error);
+    if (message) return { error: message };
+    throw error;
+  }
+
   const { error: insErr } = await admin.from('tenant_memberships').insert({
     tenant_id: invite.tenant_id,
     user_id: auth.user.id,
@@ -240,6 +261,21 @@ export async function acceptEmployeeInviteAction(
   }
 
   const userId = created.data.user.id;
+
+  try {
+    const tier = await resolveTenantPlanTier(admin, invite.tenant_id);
+    const usage = await countTeamSeatUsage(admin, invite.tenant_id);
+    assertCanAssignTeamSeat({
+      tier,
+      role: invitedRole,
+      usage,
+      replaceRole: invitedRole,
+    });
+  } catch (error) {
+    await admin.auth.admin.deleteUser(userId);
+    const message = teamSeatGateErrorMessage(error);
+    return { error: message ?? 'This workspace has reached its team seat limit.' };
+  }
 
   const { error: memErr } = await admin.from('tenant_memberships').insert({
     tenant_id: invite.tenant_id,
