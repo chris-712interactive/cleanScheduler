@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/visit-sms-reminders",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/deliver-tenant-webhooks",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

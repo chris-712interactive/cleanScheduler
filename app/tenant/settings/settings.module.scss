@@ -678,3 +678,94 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+.integrationsStack {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.integrationsSection {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.integrationsHeading {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.integrationsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.integrationsListItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.integrationsMeta {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.integrationsActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.integrationsForm {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 36rem;
+}
+
+.opsField {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.opsLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.opsInput {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.secretReveal {
+  padding: var(--space-3);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+}
+
+.secretCode {
+  display: block;
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+  word-break: break-all;
+}

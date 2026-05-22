@@ -2389,6 +2389,166 @@ export type Database = {
         };
         Relationships: [];
       };
+      tenant_api_keys: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+          created_by_user_id: string | null;
+          last_used_at: string | null;
+          revoked_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+          created_by_user_id?: string | null;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          key_prefix?: string;
+          key_hash?: string;
+          created_by_user_id?: string | null;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_api_keys_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_webhook_endpoints: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          url: string;
+          description: string | null;
+          signing_secret: string;
+          signing_secret_prefix: string;
+          event_types: string[];
+          enabled: boolean;
+          created_by_user_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          url: string;
+          description?: string | null;
+          signing_secret: string;
+          signing_secret_prefix: string;
+          event_types?: string[];
+          enabled?: boolean;
+          created_by_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          url?: string;
+          description?: string | null;
+          signing_secret?: string;
+          signing_secret_prefix?: string;
+          event_types?: string[];
+          enabled?: boolean;
+          created_by_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_webhook_endpoints_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_webhook_deliveries: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          endpoint_id: string;
+          event_type: string;
+          event_id: string;
+          payload: Json;
+          status: string;
+          attempt_count: number;
+          http_status: number | null;
+          response_body_preview: string | null;
+          error_message: string | null;
+          next_retry_at: string | null;
+          delivered_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          endpoint_id: string;
+          event_type: string;
+          event_id: string;
+          payload: Json;
+          status?: string;
+          attempt_count?: number;
+          http_status?: number | null;
+          response_body_preview?: string | null;
+          error_message?: string | null;
+          next_retry_at?: string | null;
+          delivered_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          endpoint_id?: string;
+          event_type?: string;
+          event_id?: string;
+          payload?: Json;
+          status?: string;
+          attempt_count?: number;
+          http_status?: number | null;
+          response_body_preview?: string | null;
+          error_message?: string | null;
+          next_retry_at?: string | null;
+          delivered_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_webhook_deliveries_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_webhook_deliveries_endpoint_id_fkey';
+            columns: ['endpoint_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_webhook_endpoints';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_sms_messages: {
         Row: {
           id: string;

@@ -95,6 +95,25 @@ Entitlement flag is defined and enforced at send time. Requires Twilio env vars 
 
 **Not yet built:** SMS marketing campaigns, inbound/two-way SMS.
 
+## API & webhooks (Pro)
+
+| Tier | `fullApiWebhooks` | `includedIntegrations` |
+| ---- | ----------------- | ---------------------- |
+| Starter | No | 1 |
+| Business | No | 5 |
+| Pro | Yes | 20 |
+
+**Not available during the free trial** — requires paid subscription (`canUsePaidSubscriptionFeatures`).
+
+**Implemented:**
+
+- REST API v1 read routes — `/api/v1/customers`, `/quotes`, `/visits`, `/invoices`
+- API key management — Settings → Integrations
+- Outbound webhooks — quote sent/accepted/declined; HMAC-signed delivery + retry cron
+- Enforcement — `lib/integrations/integrationLimits.ts`, `authenticateTenantApiRequest.ts`
+
+See `docs/product/tenant-api-webhooks.md`.
+
 ## Required API/server-action checks
 
 ### 1) Hard gates (feature flags)
@@ -103,7 +122,7 @@ Before premium operations run, call `assertFeatureEnabled(planTier, feature)`.
 
 Recommended first checks to implement:
 
-- API integrations / webhooks endpoints -> `fullApiWebhooks`
+- ~~API integrations / webhooks endpoints -> `fullApiWebhooks`~~ (shipped — see Integrations settings + `/api/v1`)
 - analytics/reporting endpoints -> `advancedAnalytics` (Phase 1.5 tenant reports: reconciliation, revenue breakdowns, MRR, employee performance — see `docs/product/tenant-reports.md`)
 - forecast endpoints -> `forecasting`
 - onboarding concierge flows -> `dedicatedOnboarding`
@@ -166,7 +185,7 @@ Current implementation:
   - enforces `maxAutomationWorkflows` when creating recurring visit rules
 
 Next checks to add:
-- integration connection actions -> `includedIntegrations`
+- ~~integration connection actions -> `includedIntegrations`~~ (shipped — API keys + webhooks count toward cap)
 - SMS review-request campaigns (email `review_ask` template parity)
 
 ## Stripe mapping and fulfillment

@@ -17,6 +17,7 @@ import {
 import { createTenantCustomerInlineForQuote } from '@/lib/tenant/createTenantCustomerInline';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
+import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 
 export interface QuoteFormState {
   error?: string;
@@ -117,6 +118,13 @@ export async function moveTenantQuoteStatus(
         quoteId,
         quoteTitle: (qrow.title as string) ?? 'Quote',
         customerId: qrow.customer_id as string,
+      });
+      await emitQuoteWebhookEvent(admin, 'quote.sent', {
+        tenantId: membership.tenantId,
+        quoteId,
+        quoteTitle: (qrow.title as string) ?? 'Quote',
+        customerId: qrow.customer_id as string,
+        status: 'sent',
       });
     }
   }
@@ -499,6 +507,13 @@ export async function updateTenantQuote(
       quoteId,
       quoteTitle: title,
       customerId,
+    });
+    await emitQuoteWebhookEvent(admin, 'quote.sent', {
+      tenantId: membership.tenantId,
+      quoteId,
+      quoteTitle: title,
+      customerId,
+      status: 'sent',
     });
   }
 
