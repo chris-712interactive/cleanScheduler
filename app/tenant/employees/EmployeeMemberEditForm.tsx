@@ -17,7 +17,7 @@ const initial: MemberActionState = {};
 
 function roleLabel(role: TenantRole): string {
   if (role === 'admin') return 'Admin — billing, settings, and team management';
-  if (role === 'employee') return 'Employee — day-to-day work';
+  if (role === 'employee') return 'Field employee — assigned schedule and job completion';
   if (role === 'viewer') return 'Viewer — read-only';
   return role;
 }

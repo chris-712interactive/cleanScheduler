@@ -10,7 +10,7 @@ const initial: EmployeeInviteFormState = {};
 
 function roleLabel(r: TenantRole): string {
   if (r === 'admin') return 'Admin — billing, settings, and team management';
-  if (r === 'employee') return 'Employee — day-to-day work (quotes, schedule, customers)';
+  if (r === 'employee') return 'Field employee — assigned schedule, check-in, and job completion';
   if (r === 'viewer') return 'Viewer — read-only access';
   return r;
 }

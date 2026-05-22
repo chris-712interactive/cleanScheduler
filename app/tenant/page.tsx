@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { Calendar, ClipboardList, CreditCard, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,6 +17,7 @@ import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 import { getDashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
 import { getOwnerOnboardingChecklist } from '@/lib/tenant/ownerOnboardingChecklist';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
+import { fieldEmployeeHomePath, isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import type { TenantRole } from '@/lib/auth/types';
 import { OwnerOnboardingPanel } from './OwnerOnboardingPanel';
 import { OwnerOnboardingSurveyPanel } from './OwnerOnboardingSurveyPanel';
@@ -44,6 +47,9 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
   const checkoutCancelled = firstParam(params.checkout) === 'cancelled';
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/');
+  if (isFieldEmployeeRole(membership.role)) {
+    redirect(fieldEmployeeHomePath());
+  }
   const trial = await getTenantTrialSummaryBySlug(membership.tenantSlug);
   const supabase = createTenantPortalDbClient();
   const actorRole = membership.role as TenantRole;

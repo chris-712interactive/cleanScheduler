@@ -83,13 +83,13 @@ export function roleOptionsForMemberEditor(actor: TenantRole): { value: Exclude<
   if (actor === 'owner') {
     return [
       { value: 'admin', label: 'Admin' },
-      { value: 'employee', label: 'Employee' },
+      { value: 'employee', label: 'Field employee' },
       { value: 'viewer', label: 'Viewer' },
     ];
   }
   if (actor === 'admin') {
     return [
-      { value: 'employee', label: 'Employee' },
+      { value: 'employee', label: 'Field employee' },
       { value: 'viewer', label: 'Viewer' },
     ];
   }

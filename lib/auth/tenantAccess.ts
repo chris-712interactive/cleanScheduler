@@ -7,6 +7,7 @@ import {
   isTenantSuspendedEscapePath,
   resolveTenantSubscriptionAccess,
 } from '@/lib/billing/tenantSubscriptionAccess';
+import { enforceFieldEmployeeRouteAccess } from '@/lib/tenant/fieldEmployeeAccess';
 import { requirePortalAccess } from './portalAccess';
 import type { TenantRole } from './types';
 
@@ -24,6 +25,8 @@ export interface TenantPortalAccessOptions {
   browserPathname?: string | null;
   /** Allow access when subscription is canceled (resume-checkout server action). */
   allowBillingResume?: boolean;
+  /** Skip field-employee route allowlist (server actions, API routes). */
+  skipFieldEmployeeRouteEnforcement?: boolean;
 }
 
 async function lookupMembership(
@@ -144,6 +147,17 @@ export async function requireTenantPortalAccess(
 
   if (membership) {
     await assertTenantWorkspaceUnlocked(membership.tenantId, mergedOptions);
+    if (
+      accessOptions?.skipFieldEmployeeRouteEnforcement !== true &&
+      !isPlatformAdmin
+    ) {
+      const pathForFieldCheck =
+        mergedOptions.browserPathname ??
+        (nextPath.startsWith('/tenant/') ? null : nextPath);
+      if (pathForFieldCheck) {
+        enforceFieldEmployeeRouteAccess(membership.role, pathForFieldCheck);
+      }
+    }
     return membership;
   }
 

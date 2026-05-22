@@ -1,8 +1,10 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Building2, Cable, Globe, MapPin, Percent, Shield, SlidersHorizontal, UserRound } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import styles from './settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -60,7 +62,10 @@ const HUB_LINKS = [
 
 export default async function TenantSettingsHubPage() {
   const { tenantSlug } = await getPortalContext();
-  await requireTenantPortalAccess(tenantSlug, '/settings');
+  const membership = await requireTenantPortalAccess(tenantSlug, '/settings');
+  if (isFieldEmployeeRole(membership.role)) {
+    redirect('/settings/account');
+  }
 
   return (
     <>

@@ -28,7 +28,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 function roleLabel(r: TenantRole): string {
   if (r === 'admin') return 'Admin';
   if (r === 'viewer') return 'Viewer';
-  if (r === 'employee') return 'Employee';
+  if (r === 'employee') return 'Field employee';
   if (r === 'owner') return 'Owner';
   return r;
 }

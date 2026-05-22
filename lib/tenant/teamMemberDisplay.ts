@@ -4,7 +4,7 @@ import type { TenantRole } from '@/lib/auth/types';
 export function teamRoleLabel(role: TenantRole): string {
   if (role === 'owner') return 'Owner';
   if (role === 'admin') return 'Admin';
-  if (role === 'employee') return 'Employee';
+  if (role === 'employee') return 'Field employee';
   if (role === 'viewer') return 'Viewer';
   return role;
 }

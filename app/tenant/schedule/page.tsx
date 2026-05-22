@@ -21,6 +21,8 @@ import {
   utcWeekDayKeys,
 } from '@/lib/tenant/scheduleDateRange';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
+import { isVisitAssignee } from '@/lib/schedule/visitFieldWork';
+import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { TenantScheduleClient, type ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
 
@@ -75,7 +77,10 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule');
   const auth = await getAuthContext();
   const currentUserId = auth?.user.id ?? '';
-  const employeeFilter = normalizeEmployeeFilter(sp.employee, membership.role);
+  const isFieldEmployee = isFieldEmployeeRole(membership.role as import('@/lib/auth/types').TenantRole);
+  const employeeFilter = isFieldEmployee
+    ? 'me'
+    : normalizeEmployeeFilter(sp.employee, membership.role);
   const locationFilter = typeof sp.location === 'string' ? sp.location.trim() : '';
 
   const admin = createAdminClient();
@@ -174,7 +179,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     throw new Error(visitsErr.message);
   }
 
-  const visits: ScheduleVisitVM[] = (visitRows ?? []).map((v) => {
+  let visits: ScheduleVisitVM[] = (visitRows ?? []).map((v) => {
     const ident = v.customers?.customer_identities;
     const who =
       ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : 'Customer';
@@ -201,14 +206,19 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     };
   });
 
+  if (isFieldEmployee) {
+    visits = visits.filter((visit) => isVisitAssignee(visit.assigneeUserIds, currentUserId));
+  }
+
   const employeeOptions = (membersRes.data ?? []).map((m) => ({
     id: m.user_id,
     label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
   }));
 
   const weekDayKeys = utcWeekDayKeys(dateKey);
-  const subtitle =
-    view === 'day' && isLocalCalendarToday(dateKey)
+  const subtitle = isFieldEmployee
+    ? 'Your assigned jobs — tap a visit to check in or complete.'
+    : view === 'day' && isLocalCalendarToday(dateKey)
       ? "Today's appointments"
       : view === 'day'
         ? 'Day view — appointments on the timeline below.'
@@ -220,26 +230,28 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     <div className={styles.schedulePage}>
       <PageHeader
         className={styles.schedulePageHeader}
-        title="Schedule"
+        title={isFieldEmployee ? 'My schedule' : 'Schedule'}
         description={<span className={styles.scheduleSubtitle}>{subtitle}</span>}
         actions={
-          <div className={styles.scheduleHeaderActions}>
-            <Button as="a" href="/schedule/recurring" variant="secondary">
-              Recurring visits
-            </Button>
-            <Button
-              as="a"
-              href="/schedule/new"
-              variant="primary"
-              iconLeft={<Plus size={18} aria-hidden />}
-            >
-              New appointment
-            </Button>
-          </div>
+          isFieldEmployee ? undefined : (
+            <div className={styles.scheduleHeaderActions}>
+              <Button as="a" href="/schedule/recurring" variant="secondary">
+                Recurring visits
+              </Button>
+              <Button
+                as="a"
+                href="/schedule/new"
+                variant="primary"
+                iconLeft={<Plus size={18} aria-hidden />}
+              >
+                New appointment
+              </Button>
+            </div>
+          )
         }
       />
 
-      {locationsEnabled && (locationRows?.length ?? 0) > 0 ? (
+      {locationsEnabled && !isFieldEmployee && (locationRows?.length ?? 0) > 0 ? (
         <form method="get" className={styles.scheduleLocationFilter}>
           <input type="hidden" name="date" value={dateKey} />
           <input type="hidden" name="view" value={view} />
@@ -269,6 +281,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         employeeFilter={employeeFilter}
         employeeOptions={employeeOptions}
         currentUserId={currentUserId}
+        fieldEmployeeMode={isFieldEmployee}
       />
     </div>
   );

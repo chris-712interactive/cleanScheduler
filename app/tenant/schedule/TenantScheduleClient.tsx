@@ -53,6 +53,7 @@ export function TenantScheduleClient({
   employeeFilter,
   employeeOptions,
   currentUserId,
+  fieldEmployeeMode = false,
 }: {
   tenantSlug: string;
   visits: ScheduleVisitVM[];
@@ -62,6 +63,7 @@ export function TenantScheduleClient({
   employeeFilter: string;
   employeeOptions: { id: string; label: string }[];
   currentUserId: string;
+  fieldEmployeeMode?: boolean;
 }) {
   const router = useRouter();
   const [, setNowTick] = useState(0);
@@ -174,25 +176,27 @@ export function TenantScheduleClient({
         </div>
       </div>
 
-      <div className={styles.scheduleFilters}>
-        <label className={styles.scheduleFilterField}>
-          <span className={styles.scheduleFilterLabel}>Crew member</span>
-          <select
-            className={styles.filterSelect}
-            aria-label="Employee filter"
-            value={employeeFilter}
-            onChange={(event) => push({ employee: event.target.value })}
-          >
-            <option value="all">All crew</option>
-            <option value="me">My jobs</option>
-            {employeeOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {!fieldEmployeeMode ? (
+        <div className={styles.scheduleFilters}>
+          <label className={styles.scheduleFilterField}>
+            <span className={styles.scheduleFilterLabel}>Crew member</span>
+            <select
+              className={styles.filterSelect}
+              aria-label="Employee filter"
+              value={employeeFilter}
+              onChange={(event) => push({ employee: event.target.value })}
+            >
+              <option value="all">All crew</option>
+              <option value="me">My jobs</option>
+              {employeeOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
 
       {view === 'day' ? (
         <div

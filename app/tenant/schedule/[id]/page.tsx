@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
@@ -26,8 +26,10 @@ import {
   canCheckInToVisit,
   canCompleteVisit,
   canManageScheduledVisit,
+  isVisitAssignee,
 } from '@/lib/schedule/visitFieldWork';
 import type { TenantRole } from '@/lib/auth/types';
+import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
 import { RelatedRecordsPanel } from '@/app/tenant/RelatedRecordsPanel';
 import { DeleteVisitButton } from '../DeleteVisitButton';
@@ -76,6 +78,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
   const auth = await getAuthContext();
   const actorUserId = auth?.user.id ?? '';
   const actorRole = membership.role as TenantRole;
+  const isFieldEmployee = isFieldEmployeeRole(actorRole);
 
   const supabase = createTenantPortalDbClient();
   const { data: tenantRow } = await supabase
@@ -158,6 +161,10 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
   );
   const assigneeUserIds = assignees.map((a) => a.userId);
 
+  if (isFieldEmployee && !isVisitAssignee(assigneeUserIds, actorUserId)) {
+    redirect('/schedule?employee=me&access=visit');
+  }
+
   const fieldParams = {
     status: row.status,
     checkedInAt: row.checked_in_at,
@@ -204,7 +211,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
       />
 
       <Stack gap={4}>
-        <RelatedRecordsPanel snapshot={relatedRecords} />
+        {!isFieldEmployee ? <RelatedRecordsPanel snapshot={relatedRecords} /> : null}
 
         <Card title="Visit details">
           <div className={styles.stack}>
@@ -252,7 +259,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Quote</span>
                   <p className={styles.detailValue}>
-                    {row.quote_id ? (
+                    {row.quote_id && !isFieldEmployee ? (
                       <Link href={`/quotes/${row.quote_id}`}>{row.tenant_quotes.title}</Link>
                     ) : (
                       row.tenant_quotes.title
@@ -290,7 +297,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                         ? `${CUSTOMER_PAYMENT_METHOD_LABEL[row.completion_collected_method]} · $${formatCentsAsDollars(row.completion_collected_amount_cents ?? 0)}${row.completion_check_number ? ` · Check #${row.completion_check_number}` : ''}`
                         : 'Collected on site'
                       : 'Not collected — invoice sent'}
-                    {row.completion_invoice_id ? (
+                    {row.completion_invoice_id && !isFieldEmployee ? (
                       <>
                         {' '}
                         <Link href={`/billing/invoices/${row.completion_invoice_id}`}>
@@ -330,7 +337,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
             />
 
-            {row.status === 'scheduled' && !row.checked_in_at ? (
+            {row.status === 'scheduled' && !row.checked_in_at && canManageScheduledVisit(actorRole) ? (
               <VisitTimeRescheduleForm
                 tenantSlug={membership.tenantSlug}
                 tenantTimezone={tenantTimezone}

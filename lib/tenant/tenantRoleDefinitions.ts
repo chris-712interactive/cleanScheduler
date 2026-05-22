@@ -34,13 +34,13 @@ export const TENANT_ROLE_DEFINITIONS: TenantRoleDefinition[] = [
   },
   {
     role: 'employee',
-    label: 'Employee',
-    summary: 'Operational access for field and office staff.',
+    label: 'Field employee',
+    summary: 'Mobile-first access for crew — assigned jobs, check-in, and proof photos only.',
     permissions: [
-      'View and update assigned schedule work',
-      'Create and manage quotes and customers',
-      'View team directory',
-      'Update personal account settings',
+      'View assigned schedule and visit details',
+      'Check in, complete jobs, and attach proof photos',
+      'Record on-site cash or check payments at completion',
+      'Update personal account settings (profile, password, appearance)',
     ],
   },
   {

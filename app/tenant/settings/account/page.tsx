@@ -10,6 +10,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
+import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { teamRoleLabel } from '@/lib/tenant/teamMemberDisplay';
 import type { TenantRole } from '@/lib/auth/types';
 import { ProfileSettingsForm } from '../ProfileSettingsForm';
@@ -41,6 +42,7 @@ export default async function TenantAccountSettingsPage() {
     'Team member';
   const avatarUrl = myProfile?.avatar_url ?? null;
   const isOwner = membership.role === 'owner';
+  const isFieldEmployee = isFieldEmployeeRole(membership.role);
 
   const admin = createAdminClient();
   const { data: billing } = await admin
@@ -83,13 +85,15 @@ export default async function TenantAccountSettingsPage() {
               { key: 'Your role', value: teamRoleLabel(membership.role as TenantRole) },
             ]}
           />
-          <p className={styles.muted}>
-            Billing and Stripe Connect are managed under{' '}
-            <Link href="/billing" className={styles.inlineLink}>
-              Billing
-            </Link>
-            .
-          </p>
+          {!isFieldEmployee ? (
+            <p className={styles.muted}>
+              Billing and Stripe Connect are managed under{' '}
+              <Link href="/billing" className={styles.inlineLink}>
+                Billing
+              </Link>
+              .
+            </p>
+          ) : null}
         </Card>
 
         <Card title="Sign out" description="End your session on this device.">

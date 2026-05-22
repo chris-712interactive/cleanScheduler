@@ -13,15 +13,22 @@ import {
 import { getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
 import { getPortalContext } from '@/lib/portal';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
-import type { NavItem, IdentityChipModel } from '@/components/portal/types';
+import type { IdentityChipModel } from '@/components/portal/types';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import { buildTenantBillingNavItem } from '@/lib/tenant/buildTenantBillingNav';
 import { buildTenantSettingsNavItem } from '@/lib/tenant/buildTenantSettingsNav';
+import { buildTenantBottomNavItems, buildTenantNavItems } from '@/lib/tenant/buildTenantNavItems';
+import {
+  fieldEmployeeHomePath,
+  identitySubtitleForRole,
+  isFieldEmployeeRole,
+} from '@/lib/tenant/fieldEmployeeAccess';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import type { ReactNode } from 'react';
+import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,27 +36,14 @@ export const dynamic = 'force-dynamic';
  * Sidebar order matches product build priority for net-new tenant work (after
  * Dashboard): quotes → customers → schedule (`lib/tenant/portalBuildOrder.ts`).
  */
-const NAV_ITEMS_BASE: NavItem[] = [
-  { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
-  { label: 'Quotes', href: '/quotes', icon: 'quotes' },
-  { label: 'Customers', href: '/customers', icon: 'customers' },
-  { label: 'Schedule', href: '/schedule', icon: 'schedule' },
-  { label: 'Reschedule requests', href: '/schedule/reschedule-requests', icon: 'rescheduleRequests' },
-  { label: 'Employees', href: '/employees', icon: 'work' },
-  { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },
-  { label: 'Reports', href: '/reports', icon: 'reports' },
-];
-
-const TENANT_BOTTOM_NAV: NavItem[] = [
-  { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
-  { label: 'Schedule', href: '/schedule', icon: 'schedule' },
-  { label: 'Customers', href: '/customers', icon: 'customers' },
-  { label: 'Billing', href: '/billing', icon: 'billing' },
-];
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
   const { tenantSlug } = await getPortalContext();
-  const membership = await requireTenantPortalAccess(tenantSlug, '/');
+  const requestHeaders = await headers();
+  const browserPath = requestHeaders.get('x-tenant-pathname') ?? '/';
+  const membership = await requireTenantPortalAccess(tenantSlug, browserPath, {
+    browserPathname: browserPath,
+  });
   const slug = membership.tenantSlug;
 
   const nonProdBanner = getNonProdPortalBanner();
@@ -100,7 +94,7 @@ export default async function TenantLayout({ children }: { children: React.React
 
   const identity: IdentityChipModel = {
     name: identityName,
-    subtitle: membership.role,
+    subtitle: identitySubtitleForRole(membership.role),
     initials: identityInitials,
     avatarUrl: identityAvatar,
   };
@@ -120,22 +114,22 @@ export default async function TenantLayout({ children }: { children: React.React
   const billingNavItem = buildTenantBillingNavItem(connectStatus);
   const settingsNavItem = buildTenantSettingsNavItem();
 
-  const navItems: NavItem[] = subscriptionLocked
-    ? [billingNavItem]
-    : [
-        ...NAV_ITEMS_BASE.slice(0, 6),
-        billingNavItem,
-        ...NAV_ITEMS_BASE.slice(6).filter(
-          (item) => item.href !== '/campaigns' || campaignsNavEnabled,
-        ),
-        settingsNavItem,
-      ].map((item) => {
-        if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {
-          return item;
-        }
-        const badge = pendingRescheduleCount > 99 ? '99+' : pendingRescheduleCount;
-        return { ...item, badge };
-      });
+  const navItems = buildTenantNavItems({
+    role: membership.role,
+    subscriptionLocked,
+    billingNavItem,
+    settingsNavItem,
+    campaignsNavEnabled,
+    pendingRescheduleCount,
+  });
+
+  const bottomNavItems = buildTenantBottomNavItems({
+    role: membership.role,
+    subscriptionLocked,
+  });
+
+  const showGlobalSearch = !subscriptionLocked && !isFieldEmployeeRole(membership.role);
+  const brandHref = isFieldEmployeeRole(membership.role) ? fieldEmployeeHomePath() : '/';
 
   const sessionNotices: ReactNode[] = [];
   if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
@@ -158,7 +152,7 @@ export default async function TenantLayout({ children }: { children: React.React
       />,
     );
   }
-  if (!subscriptionLocked && connectStatus !== 'complete') {
+  if (!subscriptionLocked && connectStatus !== 'complete' && !isFieldEmployeeRole(membership.role)) {
     sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
   }
   const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;
@@ -166,14 +160,14 @@ export default async function TenantLayout({ children }: { children: React.React
   return (
     <PortalShell
       brandLabel={slug}
-      brandHref="/"
+      brandHref={brandHref}
       navItems={navItems}
       identity={identity}
       tenantBadge={<span>{slug}.cleanscheduler.com</span>}
       environmentBanner={nonProdBanner}
       sessionNotice={sessionNotice}
-      searchSlot={subscriptionLocked ? undefined : <GlobalSearch />}
-      bottomNavItems={subscriptionLocked ? undefined : TENANT_BOTTOM_NAV}
+      searchSlot={showGlobalSearch ? <GlobalSearch /> : undefined}
+      bottomNavItems={bottomNavItems}
     >
       {children}
     </PortalShell>
