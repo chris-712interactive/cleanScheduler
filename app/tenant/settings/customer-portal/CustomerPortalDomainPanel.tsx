@@ -4,11 +4,13 @@ import { useActionState, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { customerPortalVerificationRecordName } from '@/lib/portal/customerPortalHostname';
 import {
-  buildDnsInstructionsFromVercel,
-  buildFallbackDnsInstructions,
+  buildCustomerPortalDnsInstructions,
   buildLocalDevTxtInstruction,
 } from '@/lib/portal/customerPortalDnsInstructions';
-import type { VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
+import type {
+  VercelDomainDnsConfig,
+  VercelDomainVerificationRecord,
+} from '@/lib/portal/vercelProjectDomains';
 import { CustomerPortalDnsInstructions } from './CustomerPortalDnsInstructions';
 import {
   continueCustomerPortalDomainAction,
@@ -27,6 +29,7 @@ export function CustomerPortalDomainPanel({
   sharedPortalHost,
   vercelAutomationConfigured,
   vercelDomainTarget,
+  vercelDnsConfig,
   localDevFallback,
   domain,
 }: {
@@ -35,6 +38,7 @@ export function CustomerPortalDomainPanel({
   sharedPortalHost: string;
   vercelAutomationConfigured: boolean;
   vercelDomainTarget: string | null;
+  vercelDnsConfig: VercelDomainDnsConfig | null;
   localDevFallback: boolean;
   domain: {
     hostname: string;
@@ -81,14 +85,15 @@ export function CustomerPortalDomainPanel({
   const dnsInstructions = useMemo(() => {
     if (!pendingDomain) return [];
 
-    if (pendingDomain.vercelVerification.length > 0) {
-      return buildDnsInstructionsFromVercel(
-        pendingDomain.hostname,
-        pendingDomain.vercelVerification,
-      );
+    if (vercelAutomationConfigured) {
+      return buildCustomerPortalDnsInstructions({
+        portalHostname: pendingDomain.hostname,
+        vercelVerification: pendingDomain.vercelVerification,
+        vercelDnsConfig,
+      });
     }
 
-    if (pendingDomain.verificationToken && localDevFallback && !vercelAutomationConfigured) {
+    if (pendingDomain.verificationToken && localDevFallback) {
       return [
         buildLocalDevTxtInstruction(
           pendingDomain.hostname,
@@ -98,8 +103,11 @@ export function CustomerPortalDomainPanel({
       ];
     }
 
-    return buildFallbackDnsInstructions(pendingDomain.hostname);
-  }, [pendingDomain, localDevFallback, vercelAutomationConfigured]);
+    return buildCustomerPortalDnsInstructions({
+      portalHostname: pendingDomain.hostname,
+      vercelVerification: pendingDomain.vercelVerification,
+    });
+  }, [pendingDomain, localDevFallback, vercelAutomationConfigured, vercelDnsConfig]);
 
   const setupAvailable = vercelAutomationConfigured || localDevFallback;
 
@@ -216,7 +224,7 @@ export function CustomerPortalDomainPanel({
             instructions={dnsInstructions}
           />
 
-          {vercelAutomationConfigured && pendingDomain.vercelVerification.length === 0 ? (
+          {vercelAutomationConfigured && pendingDomain.vercelVerification.length === 0 && !vercelDnsConfig?.recommendedCname ? (
             <form action={refreshAction} className={styles.dnsInstructionActions}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <Button type="submit" variant="secondary" disabled={refreshPending}>

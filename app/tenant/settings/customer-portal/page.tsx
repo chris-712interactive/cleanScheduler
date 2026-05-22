@@ -17,7 +17,9 @@ import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { customerPortalCnameTarget } from '@/lib/portal/customerPortalHostname';
 import {
   describeVercelDomainTarget,
+  getVercelDomainDnsConfig,
   isVercelDomainAutomationConfigured,
+  type VercelDomainDnsConfig,
   type VercelDomainVerificationRecord,
 } from '@/lib/portal/vercelProjectDomains';
 import { publicEnv } from '@/lib/env';
@@ -38,7 +40,8 @@ function parseVercelVerification(value: unknown): VercelDomainVerificationRecord
       row !== null &&
       typeof (row as VercelDomainVerificationRecord).type === 'string' &&
       typeof (row as VercelDomainVerificationRecord).domain === 'string' &&
-      typeof (row as VercelDomainVerificationRecord).value === 'string',
+      typeof (row as VercelDomainVerificationRecord).value === 'string' &&
+      (row as VercelDomainVerificationRecord).value.trim().length > 0,
   );
 }
 
@@ -72,6 +75,19 @@ export default async function TenantCustomerPortalSettingsPage() {
       ? ((await reconcileCustomerPortalDomainWithVercel(admin, membership.tenantId)) ??
         domainRowRaw)
       : domainRowRaw;
+
+  let vercelDnsConfig: VercelDomainDnsConfig | null = null;
+  if (
+    domainRow?.status === 'pending' &&
+    vercelAutomationConfigured &&
+    domainRow.hostname
+  ) {
+    try {
+      vercelDnsConfig = await getVercelDomainDnsConfig(domainRow.hostname);
+    } catch {
+      vercelDnsConfig = null;
+    }
+  }
 
   const tierEnabled = isFeatureEnabled(tier, 'whiteLabelCustomerPortal');
   const billingStatus = (billing?.status ?? 'trialing') as TenantBillingStatus;
@@ -131,6 +147,7 @@ export default async function TenantCustomerPortalSettingsPage() {
             sharedPortalHost={sharedPortalHost}
             vercelAutomationConfigured={vercelAutomationConfigured}
             vercelDomainTarget={vercelDomainTarget}
+            vercelDnsConfig={vercelDnsConfig}
             localDevFallback={localDevFallback}
             domain={domain}
           />

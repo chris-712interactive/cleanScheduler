@@ -13,6 +13,13 @@ export interface VercelProjectDomainResult {
   verification: VercelDomainVerificationRecord[];
 }
 
+export interface VercelDomainDnsConfig {
+  misconfigured: boolean;
+  configuredBy: string | null;
+  recommendedCname: string | null;
+  recommendedARecords: string[];
+}
+
 export class VercelDomainError extends Error {
   constructor(
     message: string,
@@ -225,6 +232,32 @@ export async function getVercelProjectDomain(hostname: string): Promise<VercelPr
     verification?: VercelDomainVerificationRecord[];
   };
   return toDomainResult(body);
+}
+
+/** DNS routing targets from Vercel (CNAME/A) — separate from ownership TXT challenges. */
+export async function getVercelDomainDnsConfig(hostname: string): Promise<VercelDomainDnsConfig> {
+  const response = await vercelRequest(`/v6/domains/${encodeURIComponent(hostname)}/config`);
+
+  if (!response.ok) {
+    throw new VercelDomainError(await parseVercelError(response), response.status);
+  }
+
+  const body = (await response.json()) as {
+    misconfigured?: boolean;
+    configuredBy?: string | null;
+    recommendedCNAME?: Array<{ rank: number; value: string }>;
+    recommendedIPv4?: Array<{ rank: number; value: string[] }>;
+  };
+
+  const cnameEntry = [...(body.recommendedCNAME ?? [])].sort((a, b) => a.rank - b.rank)[0];
+  const aEntry = [...(body.recommendedIPv4 ?? [])].sort((a, b) => a.rank - b.rank)[0];
+
+  return {
+    misconfigured: body.misconfigured === true,
+    configuredBy: body.configuredBy ?? null,
+    recommendedCname: cnameEntry?.value?.replace(/\.$/, '') ?? null,
+    recommendedARecords: aEntry?.value ?? [],
+  };
 }
 
 /** Ask Vercel to re-check DNS and return the latest verification state. */

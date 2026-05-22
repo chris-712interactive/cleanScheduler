@@ -7,6 +7,7 @@ import { verifyCustomerPortalDomainTxt } from '@/lib/portal/customerPortalDnsVer
 import { customerPortalVerificationRecordName } from '@/lib/portal/customerPortalHostname';
 import {
   ensureVercelProjectDomainTarget,
+  getVercelDomainDnsConfig,
   getVercelProjectDomain,
   isVercelDomainAutomationConfigured,
   isVercelDomainFullyVerified,
@@ -54,6 +55,19 @@ function pendingHintMessage(
 ): string | undefined {
   if (!hint) return undefined;
   return `Add a ${hint.type} record for ${hint.domain} with value ${hint.value}.`;
+}
+
+function routingHintMessage(
+  hostname: string,
+  config: { recommendedCname: string | null; recommendedARecords: string[] },
+): string {
+  if (config.recommendedCname) {
+    return `Add a CNAME for ${hostname} pointing to ${config.recommendedCname}.`;
+  }
+  if (config.recommendedARecords.length > 0) {
+    return `Add an A record for ${hostname} pointing to ${config.recommendedARecords.join(' or ')}.`;
+  }
+  return 'Add the DNS routing records shown below.';
 }
 
 async function tenantEligibleForWhiteLabel(
@@ -153,6 +167,31 @@ async function syncViaVercel(
       status: 'pending',
       hostname,
       hint: pendingHintMessage(hostname, hint),
+    };
+  }
+
+  let dnsConfig;
+  try {
+    dnsConfig = await getVercelDomainDnsConfig(hostname);
+  } catch (error) {
+    const message = vercelDomainErrorMessage(error) ?? 'Could not load DNS routing requirements from Vercel.';
+    return { status: 'error', hostname, message };
+  }
+
+  if (dnsConfig.misconfigured) {
+    await admin
+      .from('tenant_customer_portal_domains')
+      .update({
+        vercel_verification: vercelDomain.verification as unknown as Json,
+        vercel_last_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('tenant_id', tenantId);
+
+    return {
+      status: 'pending',
+      hostname,
+      hint: routingHintMessage(hostname, dnsConfig),
     };
   }
 
@@ -360,7 +399,16 @@ export async function reconcileCustomerPortalDomainWithVercel(
     return { ...row, vercel_last_error: message };
   }
 
+  let dnsConfig;
+  try {
+    dnsConfig = await getVercelDomainDnsConfig(row.hostname);
+  } catch (error) {
+    console.error('[customerPortalDomain] Vercel DNS config load failed:', error);
+    dnsConfig = null;
+  }
+
   const fullyVerified = isVercelDomainFullyVerified(vercelDomain);
+  const routingReady = dnsConfig ? !dnsConfig.misconfigured : fullyVerified;
   const now = new Date().toISOString();
   const updatePayload: {
     vercel_verification: Json;
@@ -374,7 +422,7 @@ export async function reconcileCustomerPortalDomainWithVercel(
     updated_at: now,
   };
 
-  if (row.status === 'active' && !fullyVerified) {
+  if (row.status === 'active' && (!fullyVerified || !routingReady)) {
     await cleanupCustomerPortalDomainResources(row.hostname);
     updatePayload.status = 'pending';
     updatePayload.verified_at = null;

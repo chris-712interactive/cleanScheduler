@@ -1,4 +1,7 @@
-import type { VercelDomainVerificationRecord } from '@/lib/portal/vercelProjectDomains';
+import type {
+  VercelDomainDnsConfig,
+  VercelDomainVerificationRecord,
+} from '@/lib/portal/vercelProjectDomains';
 
 export interface CustomerPortalDnsInstruction {
   id: string;
@@ -40,14 +43,80 @@ export function buildDnsInstructionsFromVercel(
   portalHostname: string,
   records: VercelDomainVerificationRecord[],
 ): CustomerPortalDnsInstruction[] {
-  return records.map((record, index) => ({
-    id: `${record.type}-${record.domain}-${index}`,
-    type: record.type.toUpperCase(),
-    hostLabel: dnsHostLabel(record.domain, portalHostname),
-    value: record.value,
-    purpose: purposeForRecord(record.type, record.reason),
-    detail: record.reason?.trim() || undefined,
-  }));
+  return records
+    .filter((record) => record.value.trim().length > 0)
+    .map((record, index) => ({
+      id: `${record.type}-${record.domain}-${index}`,
+      type: record.type.toUpperCase(),
+      hostLabel: dnsHostLabel(record.domain, portalHostname),
+      value: record.value,
+      purpose: purposeForRecord(record.type, record.reason),
+      detail: record.reason?.trim() || undefined,
+    }));
+}
+
+function subdomainHostLabel(portalHostname: string): string {
+  return portalHostname.includes('.') ? portalHostname.split('.')[0]! : portalHostname;
+}
+
+function buildRoutingInstructionsFromVercelConfig(
+  portalHostname: string,
+  config: VercelDomainDnsConfig,
+): CustomerPortalDnsInstruction[] {
+  if (!config.misconfigured) return [];
+
+  const hostLabel = subdomainHostLabel(portalHostname);
+
+  if (config.recommendedCname) {
+    return [
+      {
+        id: 'vercel-cname',
+        type: 'CNAME',
+        hostLabel,
+        value: config.recommendedCname,
+        purpose: 'Route customer portal traffic to cleanScheduler',
+        detail:
+          'This is your project-specific CNAME from Vercel. Generic cname.vercel-dns.com may not clear invalid configuration.',
+      },
+    ];
+  }
+
+  if (config.recommendedARecords.length > 0) {
+    return config.recommendedARecords.map((ip, index) => ({
+      id: `vercel-a-${index}`,
+      type: 'A',
+      hostLabel,
+      value: ip,
+      purpose: 'Route customer portal traffic to cleanScheduler',
+    }));
+  }
+
+  return [];
+}
+
+/** Merge ownership TXT challenges with routing CNAME/A from Vercel domain config. */
+export function buildCustomerPortalDnsInstructions(options: {
+  portalHostname: string;
+  vercelVerification: VercelDomainVerificationRecord[];
+  vercelDnsConfig?: VercelDomainDnsConfig | null;
+}): CustomerPortalDnsInstruction[] {
+  const { portalHostname, vercelVerification, vercelDnsConfig } = options;
+  const instructions = buildDnsInstructionsFromVercel(portalHostname, vercelVerification);
+
+  if (vercelDnsConfig) {
+    for (const record of buildRoutingInstructionsFromVercelConfig(portalHostname, vercelDnsConfig)) {
+      const duplicate = instructions.some(
+        (existing) =>
+          existing.type === record.type &&
+          existing.hostLabel === record.hostLabel &&
+          existing.value === record.value,
+      );
+      if (!duplicate) instructions.push(record);
+    }
+  }
+
+  if (instructions.length > 0) return instructions;
+  return buildFallbackDnsInstructions(portalHostname);
 }
 
 export function buildLocalDevTxtInstruction(
