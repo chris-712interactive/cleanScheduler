@@ -14,13 +14,16 @@ import {
 import {
   currentTimeLinePct,
   formatLocalYmd,
+  formatVisitTimeRange,
   hourLabels,
   layoutVisitOnLocalDay,
+  resolveTimelineWindow,
   visitOverlapsLocalDay,
 } from './scheduleTimelineUtils';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import { VisitStatusPill } from './VisitStatusPill';
 import { ScheduleVisitBlock } from './ScheduleVisitBlock';
+import { FieldEmployeeDayJobs } from './FieldEmployeeDayJobs';
 import styles from './schedule.module.scss';
 
 export type ScheduleVisitVM = {
@@ -37,13 +40,6 @@ export type ScheduleVisitVM = {
   assignees: ScheduleAssigneeChip[];
   assigneeUserIds: string[];
 };
-
-function formatTimeRange(startsAt: string, endsAt: string): string {
-  const s = new Date(startsAt);
-  const e = new Date(endsAt);
-  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
-  return `${s.toLocaleString(undefined, opts)} – ${e.toLocaleString(undefined, opts)}`;
-}
 
 export function TenantScheduleClient({
   visits,
@@ -98,6 +94,8 @@ export function TenantScheduleClient({
 
   const todayKey = formatLocalYmd(new Date());
   const isLocalToday = dateKey === todayKey;
+  const showingFieldJobs = fieldEmployeeMode && view === 'today';
+  const showingFieldCalendar = fieldEmployeeMode && view !== 'today';
 
   const centerLabel = useMemo(() => {
     const anchor = new Date(`${dateKey}T12:00:00`);
@@ -107,8 +105,11 @@ export function TenantScheduleClient({
       day: 'numeric',
       year: 'numeric',
     });
+    if (showingFieldJobs) {
+      return isLocalToday ? `Today · ${long}` : long;
+    }
     return isLocalToday ? `Today, ${long}` : long;
-  }, [dateKey, isLocalToday]);
+  }, [dateKey, isLocalToday, showingFieldJobs]);
 
   const dayVisits = useMemo(
     () =>
@@ -118,8 +119,13 @@ export function TenantScheduleClient({
     [filteredVisits, dateKey],
   );
 
-  const hours = useMemo(() => hourLabels(), []);
-  const nowLinePct = currentTimeLinePct(dateKey);
+  const timelineWindow = useMemo(
+    () => resolveTimelineWindow(dateKey, dayVisits),
+    [dateKey, dayVisits],
+  );
+
+  const hours = useMemo(() => hourLabels(timelineWindow), [timelineWindow]);
+  const nowLinePct = currentTimeLinePct(dateKey, timelineWindow);
   const monthCells = useMemo(() => buildUtcMonthGrid(dateKey), [dateKey]);
 
   const goPrev = () => {
@@ -134,6 +140,11 @@ export function TenantScheduleClient({
     else push({ date: shiftDateKey(dateKey, 1) });
   };
 
+  const prevLabel =
+    view === 'month' ? 'Previous month' : view === 'week' ? 'Previous week' : 'Previous day';
+  const nextLabel =
+    view === 'month' ? 'Next month' : view === 'week' ? 'Next week' : 'Next day';
+
   return (
     <div className={styles.scheduleShell}>
       <div className={styles.scheduleControlBar}>
@@ -141,7 +152,7 @@ export function TenantScheduleClient({
           <button
             type="button"
             className={styles.iconNavBtn}
-            aria-label="Previous day"
+            aria-label={prevLabel}
             onClick={goPrev}
           >
             <ChevronLeft size={20} aria-hidden="true" />
@@ -152,29 +163,73 @@ export function TenantScheduleClient({
               <button
                 type="button"
                 className={styles.todayLink}
-                onClick={() => push({ date: todayKey })}
+                onClick={() => push({ date: todayKey, view: fieldEmployeeMode ? 'today' : view })}
               >
                 Jump to today
               </button>
             ) : null}
           </div>
-          <button type="button" className={styles.iconNavBtn} aria-label="Next day" onClick={goNext}>
+          <button type="button" className={styles.iconNavBtn} aria-label={nextLabel} onClick={goNext}>
             <ChevronRight size={20} aria-hidden="true" />
           </button>
         </div>
-        <div className={styles.viewToggle} role="group" aria-label="Calendar view">
-          {(['day', 'week', 'month'] as const).map((v) => (
+
+        {fieldEmployeeMode ? (
+          <div className={styles.viewToggle} role="group" aria-label="Schedule view">
             <button
-              key={v}
               type="button"
-              className={view === v ? styles.viewToggleBtnActive : styles.viewToggleBtn}
-              onClick={() => push({ view: v })}
+              className={view === 'today' ? styles.viewToggleBtnActive : styles.viewToggleBtn}
+              onClick={() => push({ view: 'today', date: isLocalToday ? dateKey : todayKey })}
             >
-              {v === 'day' ? 'Day' : v === 'week' ? 'Week' : 'Month'}
+              My jobs
             </button>
-          ))}
-        </div>
+            <button
+              type="button"
+              className={view !== 'today' ? styles.viewToggleBtnActive : styles.viewToggleBtn}
+              onClick={() => push({ view: 'week' })}
+            >
+              Calendar
+            </button>
+          </div>
+        ) : (
+          <div className={styles.viewToggle} role="group" aria-label="Calendar view">
+            {(['day', 'week', 'month'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={view === v ? styles.viewToggleBtnActive : styles.viewToggleBtn}
+                onClick={() => push({ view: v })}
+              >
+                {v === 'day' ? 'Day' : v === 'week' ? 'Week' : 'Month'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {showingFieldCalendar ? (
+        <div className={styles.fieldBrowseBar}>
+          <button type="button" className={styles.fieldBrowseBack} onClick={() => push({ view: 'today' })}>
+            ← Back to job list
+          </button>
+          <div className={styles.fieldBrowseViews} role="group" aria-label="Calendar range">
+            <button
+              type="button"
+              className={view === 'week' ? styles.fieldBrowseViewActive : styles.fieldBrowseView}
+              onClick={() => push({ view: 'week' })}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              className={view === 'month' ? styles.fieldBrowseViewActive : styles.fieldBrowseView}
+              onClick={() => push({ view: 'month' })}
+            >
+              Month
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {!fieldEmployeeMode ? (
         <div className={styles.scheduleFilters}>
@@ -198,11 +253,14 @@ export function TenantScheduleClient({
         </div>
       ) : null}
 
-      {view === 'day' ? (
+      {showingFieldJobs ? <FieldEmployeeDayJobs visits={dayVisits} isLocalToday={isLocalToday} /> : null}
+
+      {view === 'day' && !showingFieldJobs ? (
         <div
           className={[styles.dayBoard, expandedVisitId ? styles.dayBoardExpanded : '']
             .filter(Boolean)
             .join(' ')}
+          style={{ minHeight: `${Math.max(480, hours.length * 56)}px` }}
         >
           <div className={styles.hourRail}>
             {hours.map((h) => (
@@ -228,7 +286,7 @@ export function TenantScheduleClient({
               </div>
             ) : null}
             {dayVisits.map((v) => {
-              const { topPct, heightPct, visible } = layoutVisitOnLocalDay(v, dateKey);
+              const { topPct, heightPct, visible } = layoutVisitOnLocalDay(v, dateKey, timelineWindow);
               if (!visible) return null;
               return (
                 <ScheduleVisitBlock
@@ -247,7 +305,7 @@ export function TenantScheduleClient({
         </div>
       ) : null}
 
-      {view === 'week' ? (
+      {view === 'week' && showingFieldCalendar ? (
         <div className={styles.weekBoard}>
           {weekDayKeys.map((k) => {
             const dayVisitsWeek = filteredVisits
@@ -273,7 +331,46 @@ export function TenantScheduleClient({
                             <VisitStatusPill status={v.status} />
                           </span>
                           <span className={styles.weekItemMeta}>
-                            {formatTimeRange(v.starts_at, v.ends_at)}
+                            {formatVisitTimeRange(v.starts_at, v.ends_at)}
+                          </span>
+                        </Link>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {view === 'week' && !fieldEmployeeMode ? (
+        <div className={styles.weekBoard}>
+          {weekDayKeys.map((k) => {
+            const dayVisitsWeek = filteredVisits
+              .filter((v) => visitOverlapsUtcCalendarDay(v, k))
+              .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+            const label = new Date(`${k}T12:00:00.000Z`).toLocaleDateString(undefined, {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            });
+            return (
+              <div key={k} className={styles.weekColumn}>
+                <div className={styles.weekColumnHead}>{label}</div>
+                <ul className={styles.weekList}>
+                  {dayVisitsWeek.length === 0 ? (
+                    <li className={styles.weekEmpty}>—</li>
+                  ) : (
+                    dayVisitsWeek.map((v) => (
+                      <li key={v.id}>
+                        <Link href={`/schedule/${v.id}`} className={styles.weekItem}>
+                          <span className={styles.weekItemTop}>
+                            <span className={styles.weekItemTitle}>{v.customerName}</span>
+                            <VisitStatusPill status={v.status} />
+                          </span>
+                          <span className={styles.weekItemMeta}>
+                            {formatVisitTimeRange(v.starts_at, v.ends_at)}
                           </span>
                         </Link>
                       </li>
@@ -310,7 +407,12 @@ export function TenantScheduleClient({
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  onClick={() => push({ date: cell.key, view: 'day' })}
+                  onClick={() =>
+                    push({
+                      date: cell.key,
+                      view: fieldEmployeeMode ? 'today' : 'day',
+                    })
+                  }
                 >
                   <span className={styles.monthCellDay}>{cell.day}</span>
                   {n > 0 ? (
@@ -323,7 +425,7 @@ export function TenantScheduleClient({
         </div>
       ) : null}
 
-      {view === 'day' && dayVisits.length === 0 ? (
+      {view === 'day' && !showingFieldJobs && dayVisits.length === 0 ? (
         <p className={styles.emptyBoard}>
           No appointments on this day. Use New appointment to add one.
         </p>

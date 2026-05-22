@@ -71,13 +71,13 @@ interface PageProps {
 
 export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const sp = await searchParams;
-  const dateKey = normalizeDateKey(sp.date);
-  const view = normalizeView(sp.view);
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule');
   const auth = await getAuthContext();
   const currentUserId = auth?.user.id ?? '';
   const isFieldEmployee = isFieldEmployeeRole(membership.role as import('@/lib/auth/types').TenantRole);
+  const dateKey = normalizeDateKey(sp.date);
+  const view = normalizeView(sp.view, { defaultForFieldEmployee: isFieldEmployee });
   const employeeFilter = isFieldEmployee
     ? 'me'
     : normalizeEmployeeFilter(sp.employee, membership.role);
@@ -217,7 +217,11 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
 
   const weekDayKeys = utcWeekDayKeys(dateKey);
   const subtitle = isFieldEmployee
-    ? 'Your assigned jobs — tap a visit to check in or complete.'
+    ? view === 'today'
+      ? isLocalCalendarToday(dateKey)
+        ? 'Tap a job to check in, add photos, and mark complete.'
+        : 'Jobs assigned to you on this day.'
+      : 'Browse upcoming weeks — tap a job to open it.'
     : view === 'day' && isLocalCalendarToday(dateKey)
       ? "Today's appointments"
       : view === 'day'
@@ -230,7 +234,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     <div className={styles.schedulePage}>
       <PageHeader
         className={styles.schedulePageHeader}
-        title={isFieldEmployee ? 'My schedule' : 'Schedule'}
+        title={isFieldEmployee ? (view === 'today' ? 'My jobs' : 'My schedule') : 'Schedule'}
         description={<span className={styles.scheduleSubtitle}>{subtitle}</span>}
         actions={
           isFieldEmployee ? undefined : (

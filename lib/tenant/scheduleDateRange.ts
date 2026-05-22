@@ -1,4 +1,4 @@
-export type ScheduleView = 'day' | 'week' | 'month';
+export type ScheduleView = 'day' | 'week' | 'month' | 'today';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -9,9 +9,13 @@ export function normalizeDateKey(raw: string | string[] | undefined): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function normalizeView(raw: string | string[] | undefined): ScheduleView {
+export function normalizeView(
+  raw: string | string[] | undefined,
+  options?: { defaultForFieldEmployee?: boolean },
+): ScheduleView {
   const v = (Array.isArray(raw) ? raw[0] : raw)?.trim().toLowerCase() ?? '';
-  if (v === 'week' || v === 'month') return v;
+  if (v === 'week' || v === 'month' || v === 'day' || v === 'today') return v;
+  if (options?.defaultForFieldEmployee) return 'today';
   return 'day';
 }
 
@@ -47,7 +51,7 @@ export function visibleRangeUtc(
 ): { start: string; end: string } {
   const d = new Date(`${dateKey}T12:00:00.000Z`);
 
-  if (view === 'day') {
+  if (view === 'day' || view === 'today') {
     return {
       start: `${dateKey}T00:00:00.000Z`,
       end: `${dateKey}T23:59:59.999Z`,
@@ -149,7 +153,7 @@ export function dbOverlapRangeForQuery(
   view: ScheduleView,
   dateKey: string,
 ): { start: string; end: string } {
-  if (view === 'day') {
+  if (view === 'day' || view === 'today') {
     return {
       start: `${shiftDateKey(dateKey, -1)}T00:00:00.000Z`,
       end: `${shiftDateKey(dateKey, 1)}T23:59:59.999Z`,

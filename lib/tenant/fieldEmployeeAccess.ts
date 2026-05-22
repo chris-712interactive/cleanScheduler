@@ -16,7 +16,7 @@ export function isFieldEmployeeRole(role: TenantRole): boolean {
 }
 
 export function fieldEmployeeHomePath(): string {
-  return '/schedule?employee=me';
+  return '/schedule?employee=me&view=today';
 }
 
 function normalizeBrowserPath(path: string): string {
