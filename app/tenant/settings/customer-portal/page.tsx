@@ -16,7 +16,6 @@ import {
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { customerPortalCnameTarget } from '@/lib/portal/customerPortalHostname';
 import {
-  describeVercelDomainTarget,
   getVercelDomainDnsConfig,
   isVercelDomainAutomationConfigured,
   type VercelDomainDnsConfig,
@@ -52,7 +51,6 @@ export default async function TenantCustomerPortalSettingsPage() {
   const admin = createAdminClient();
   const vercelAutomationConfigured = isVercelDomainAutomationConfigured();
   const localDevFallback = publicEnv.NEXT_PUBLIC_APP_ENV === 'local';
-  const vercelDomainTarget = describeVercelDomainTarget();
 
   const [{ data: billing }, tier, { data: domainRowRaw }] = await Promise.all([
     admin
@@ -112,7 +110,7 @@ export default async function TenantCustomerPortalSettingsPage() {
     <>
       <PageHeader
         title="Customer portal"
-        titleHint="White-label your customer portal with a custom domain (Pro)."
+        titleHint="Use your own web address and branding for the customer portal (Pro)."
         backHref="/settings"
         backLabel="Settings"
       />
@@ -125,20 +123,20 @@ export default async function TenantCustomerPortalSettingsPage() {
 
       {!tierEnabled ? (
         <FeatureUpgradePanel
-          title="Upgrade to unlock white-label portal"
-          description={`Pro includes a custom customer portal domain, tenant branding in the portal shell, and branded invite links. ${getEntitlementsForTier('business').displayName} includes the shared my.* portal.`}
+          title="Upgrade to use your own portal address"
+          description={`Pro lets you use a custom web address, your logo, and your business name in the customer portal. ${getEntitlementsForTier('business').displayName} includes the shared portal at my.*.`}
         />
       ) : !paid ? (
         <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }} role="status">
-          White-label portal is included with Pro after you subscribe. Add a payment method from
-          Workspace billing to configure a custom domain during your trial.
+          A custom portal address is included with Pro after you subscribe. Add a payment method from
+          Workspace billing to set one up during your trial.
         </p>
       ) : null}
 
       <SettingsSectionCard
         icon={Globe}
-        title="Custom domain"
-        description="Serve the customer portal on your own hostname with your logo and business name."
+        title="Custom web address"
+        description="Let customers open the portal on your domain with your logo and business name."
       >
         {whiteLabelAllowed ? (
           <CustomerPortalDomainPanel
@@ -146,15 +144,14 @@ export default async function TenantCustomerPortalSettingsPage() {
             canEdit={canEdit}
             sharedPortalHost={sharedPortalHost}
             vercelAutomationConfigured={vercelAutomationConfigured}
-            vercelDomainTarget={vercelDomainTarget}
             vercelDnsConfig={vercelDnsConfig}
             localDevFallback={localDevFallback}
             domain={domain}
           />
         ) : (
           <p className={styles.opsIntro}>
-            Available on Pro with an active subscription. Customers on Business continue to use the
-            shared customer portal at <code>{sharedPortalHost}</code>.
+            Available on Pro with an active subscription. Customers on Business use the shared
+            portal at <code>{sharedPortalHost}</code>.
           </p>
         )}
       </SettingsSectionCard>

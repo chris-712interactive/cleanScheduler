@@ -54,7 +54,7 @@ function pendingHintMessage(
   hint?: { type: string; domain: string; value: string },
 ): string | undefined {
   if (!hint) return undefined;
-  return `Add a ${hint.type} record for ${hint.domain} with value ${hint.value}.`;
+  return `Add a ${hint.type} record for ${hint.domain} with the value shown below.`;
 }
 
 function routingHintMessage(
@@ -62,12 +62,12 @@ function routingHintMessage(
   config: { recommendedCname: string | null; recommendedARecords: string[] },
 ): string {
   if (config.recommendedCname) {
-    return `Add a CNAME for ${hostname} pointing to ${config.recommendedCname}.`;
+    return `Add a CNAME record so ${hostname} points to ${config.recommendedCname}.`;
   }
   if (config.recommendedARecords.length > 0) {
     return `Add an A record for ${hostname} pointing to ${config.recommendedARecords.join(' or ')}.`;
   }
-  return 'Add the DNS routing records shown below.';
+  return 'Add the DNS records shown on this page.';
 }
 
 async function tenantEligibleForWhiteLabel(
@@ -317,18 +317,18 @@ export function customerPortalDomainSyncUserMessage(
 ): CustomerPortalDomainActionMessages {
   switch (outcome.status) {
     case 'missing':
-      return { error: 'Save a custom domain before verifying DNS.' };
+      return { error: 'Enter your portal address before checking the connection.' };
     case 'already_active':
-      return { success: `${outcome.hostname} is already active.` };
+      return { success: `${outcome.hostname} is already connected.` };
     case 'activated':
       return {
-        success: `${outcome.hostname} is verified and live. Customer invites will use https://${outcome.hostname}.`,
+        success: `${outcome.hostname} is connected. Customer invite links will use https://${outcome.hostname}.`,
       };
     case 'pending':
       return {
         error: outcome.hint
-          ? `DNS not verified yet. ${outcome.hint} Wait a few minutes for propagation, then try again (we also re-check automatically every few minutes).`
-          : 'DNS not verified yet. Confirm the records below are published, wait for propagation, then try again (we also re-check automatically every few minutes).',
+          ? `Not connected yet. ${outcome.hint} DNS changes can take a few minutes — try again shortly.`
+          : 'Not connected yet. Make sure the records below are saved at your domain provider, wait a few minutes, then try again.',
       };
     case 'skipped':
       return { error: outcome.reason };

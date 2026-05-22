@@ -16,7 +16,7 @@ function dnsHostLabel(recordHost: string, portalHostname: string): string {
   const host = recordHost.trim().toLowerCase();
   const portal = portalHostname.trim().toLowerCase();
 
-  if (host === portal) return '@ or root (apex) — use your registrar’s apex/root field';
+  if (host === portal) return '@ (root) — some providers label this “@” or leave the name blank';
   if (host.endsWith(`.${portal}`)) {
     const prefix = host.slice(0, -(portal.length + 1));
     return prefix || '@';
@@ -28,15 +28,12 @@ function dnsHostLabel(recordHost: string, portalHostname: string): string {
 function purposeForRecord(type: string, reason: string | undefined): string {
   const normalized = type.toUpperCase();
   if (normalized === 'TXT') {
-    return reason?.trim() || 'Prove you control this domain';
+    return 'Confirms that you own this domain';
   }
-  if (normalized === 'CNAME') {
-    return 'Route customer portal traffic to cleanScheduler';
+  if (normalized === 'CNAME' || normalized === 'A' || normalized === 'AAAA') {
+    return 'Connects your portal address to cleanScheduler';
   }
-  if (normalized === 'A' || normalized === 'AAAA') {
-    return 'Route customer portal traffic to cleanScheduler';
-  }
-  return reason?.trim() || 'Required for domain setup';
+  return reason?.trim() || 'Required to finish setup';
 }
 
 export function buildDnsInstructionsFromVercel(
@@ -74,9 +71,9 @@ function buildRoutingInstructionsFromVercelConfig(
         type: 'CNAME',
         hostLabel,
         value: config.recommendedCname,
-        purpose: 'Route customer portal traffic to cleanScheduler',
+        purpose: 'Connects your portal address to cleanScheduler',
         detail:
-          'This is your project-specific CNAME from Vercel. Generic cname.vercel-dns.com may not clear invalid configuration.',
+          'Copy this value exactly. Some providers call this field “Target”, “Points to”, or “Alias”.',
       },
     ];
   }
@@ -87,7 +84,7 @@ function buildRoutingInstructionsFromVercelConfig(
       type: 'A',
       hostLabel,
       value: ip,
-      purpose: 'Route customer portal traffic to cleanScheduler',
+      purpose: 'Connects your portal address to cleanScheduler',
     }));
   }
 
@@ -129,7 +126,7 @@ export function buildLocalDevTxtInstruction(
     type: 'TXT',
     hostLabel: txtRecordName,
     value: verificationToken,
-    purpose: `Prove you control ${portalHostname} (local dev)`,
+    purpose: `Confirms that you own ${portalHostname}`,
   };
 }
 
@@ -139,18 +136,18 @@ export function buildFallbackDnsInstructions(portalHostname: string): CustomerPo
       id: 'fallback-txt',
       type: 'TXT',
       hostLabel: `_vercel.${portalHostname}`,
-      value: '(provided after registration — click Refresh instructions if empty)',
-      purpose: 'Prove you control this domain',
+      value: 'Loading… click Refresh below if this stays empty',
+      purpose: 'Confirms that you own this domain',
       detail:
-        'Your registrar may show the host as _vercel or _vercel.portal depending on the provider.',
+        'Your DNS provider may show only part of the name (for example _vercel or _vercel.portal).',
     },
     {
       id: 'fallback-cname',
       type: 'CNAME',
       hostLabel: portalHostname.includes('.') ? portalHostname.split('.')[0]! : portalHostname,
       value: 'cname.vercel-dns.com',
-      purpose: 'Route customer portal traffic to cleanScheduler',
-      detail: 'Some providers want only the subdomain label (e.g. portal) in the host field.',
+      purpose: 'Connects your portal address to cleanScheduler',
+      detail: 'Enter only the first part of your address (for example portal, not the full domain).',
     },
   ];
 }

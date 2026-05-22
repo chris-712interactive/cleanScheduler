@@ -9,6 +9,7 @@ import {
   assertWhiteLabelCustomerPortalAllowed,
   whiteLabelPortalGateErrorMessage,
 } from '@/lib/billing/whiteLabelPortalGate';
+import { customerPortalDomainUserError } from '@/lib/portal/customerPortalDomainCopy';
 import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHostname';
 import { cleanupCustomerPortalDomainResources } from '@/lib/portal/customerPortalDomainActivation';
 import {
@@ -20,8 +21,6 @@ import {
   isVercelDomainAutomationConfigured,
   registerVercelProjectDomain,
   removeVercelProjectDomain,
-  vercelDomainErrorMessage,
-  whiteLabelAutomationUnavailableMessage,
 } from '@/lib/portal/vercelProjectDomains';
 import { publicEnv } from '@/lib/env';
 import type { Json } from '@/lib/supabase/database.types';
@@ -80,7 +79,7 @@ async function registerHostnameWithVercel(hostname: string) {
 async function assertCanManageCustomerPortalDomain(slug: string) {
   const membership = await requireTenantPortalAccess(slug, '/settings/customer-portal');
   if (!canManageTeamInvitesAndRoles(membership.role)) {
-    throw new Error('Only owners and admins can manage the customer portal domain.');
+    throw new Error('Only owners and admins can change the customer portal address.');
   }
   const admin = createAdminClient();
   try {
@@ -95,12 +94,12 @@ function parseHostnameFromForm(formData: FormData): string | { error: string } {
   const rawHostname = String(formData.get('hostname') ?? '');
   const hostname = normalizeCustomerPortalHostname(rawHostname);
   if (!hostname) {
-    return { error: 'Enter a valid hostname like portal.yourcompany.com.' };
+    return { error: 'Enter a valid address like portal.yourcompany.com.' };
   }
 
   const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN.split(':')[0]!.toLowerCase();
   if (hostname === apex || hostname.endsWith(`.${apex}`)) {
-    return { error: 'Use your own domain, not a cleanScheduler subdomain.' };
+    return { error: 'Use your own domain, not a cleanScheduler address.' };
   }
 
   return hostname;
@@ -170,7 +169,12 @@ export async function continueCustomerPortalDomainAction(
     try {
       vercelDomain = await registerHostnameWithVercel(hostname);
     } catch (error) {
-      return { error: vercelDomainErrorMessage(error) ?? 'Could not register domain with Vercel.' };
+      return {
+        error: customerPortalDomainUserError(
+          error,
+          'We could not save your address. Please try again or contact support.',
+        ),
+      };
     }
 
     const upsertResult = await upsertPendingDomain(admin, membership.tenantId, {
@@ -181,13 +185,13 @@ export async function continueCustomerPortalDomainAction(
 
     revalidatePath('/tenant/settings/customer-portal', 'page');
     return {
-      success: `Add the DNS records below for ${hostname}, then click Verify DNS.`,
+      success: `Next, add the DNS records below for ${hostname}, then click Check connection.`,
       step: 'dns',
     };
   }
 
   if (publicEnv.NEXT_PUBLIC_APP_ENV !== 'local') {
-    return { error: whiteLabelAutomationUnavailableMessage() };
+    return { error: 'Custom portal setup is not available right now. Please contact support.' };
   }
 
   const verificationToken = randomBytes(16).toString('hex');
@@ -199,7 +203,7 @@ export async function continueCustomerPortalDomainAction(
 
   revalidatePath('/tenant/settings/customer-portal', 'page');
   return {
-    success: `Add the DNS records below for ${hostname}, then click Verify DNS.`,
+    success: `Next, add the DNS records below for ${hostname}, then click Check connection.`,
     step: 'dns',
   };
 }
@@ -231,7 +235,7 @@ export async function refreshCustomerPortalDomainDnsAction(
   }
 
   if (!isVercelDomainAutomationConfigured()) {
-    return { success: 'DNS instructions are shown below.', step: 'dns' };
+    return { success: 'Your DNS records are shown below.', step: 'dns' };
   }
 
   try {
@@ -245,11 +249,16 @@ export async function refreshCustomerPortalDomainDnsAction(
       })
       .eq('tenant_id', membership.tenantId);
   } catch (error) {
-    return { error: vercelDomainErrorMessage(error) ?? 'Could not refresh DNS instructions.' };
+    return {
+      error: customerPortalDomainUserError(
+        error,
+        'We could not refresh your DNS records. Please try again.',
+      ),
+    };
   }
 
   revalidatePath('/tenant/settings/customer-portal', 'page');
-  return { success: 'DNS instructions updated.', step: 'dns' };
+  return { success: 'DNS records updated.', step: 'dns' };
 }
 
 /** Step 2: verify DNS and activate the customer portal domain. */
@@ -275,7 +284,7 @@ export async function verifyCustomerPortalDomainAction(
     .maybeSingle();
 
   if (!row || row.status !== 'pending') {
-    return { error: 'Enter your domain and continue to the DNS step before verifying.' };
+    return { error: 'Enter your address and click Continue before checking the connection.' };
   }
 
   const outcome = await syncCustomerPortalDomainVerification(admin, membership.tenantId);
@@ -296,7 +305,7 @@ export async function removeCustomerPortalDomainAction(
 
   const membership = await requireTenantPortalAccess(slug, '/settings/customer-portal');
   if (!canManageTeamInvitesAndRoles(membership.role)) {
-    return { error: 'Only owners and admins can remove the customer portal domain.' };
+    return { error: 'Only owners and admins can remove the custom portal address.' };
   }
 
   const admin = createAdminClient();
@@ -318,5 +327,5 @@ export async function removeCustomerPortalDomainAction(
   if (error) return { error: error.message };
 
   revalidatePath('/tenant/settings/customer-portal', 'page');
-  return { success: 'Custom domain removed. Invites will use my.cleanscheduler.com again.' };
+  return { success: 'Custom address removed. Invite links will use the shared portal again.' };
 }

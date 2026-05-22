@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { customerPortalVerificationRecordName } from '@/lib/portal/customerPortalHostname';
+import { customerPortalDomainStoredError } from '@/lib/portal/customerPortalDomainCopy';
 import {
   buildCustomerPortalDnsInstructions,
   buildLocalDevTxtInstruction,
@@ -28,7 +29,6 @@ export function CustomerPortalDomainPanel({
   canEdit,
   sharedPortalHost,
   vercelAutomationConfigured,
-  vercelDomainTarget,
   vercelDnsConfig,
   localDevFallback,
   domain,
@@ -37,7 +37,6 @@ export function CustomerPortalDomainPanel({
   canEdit: boolean;
   sharedPortalHost: string;
   vercelAutomationConfigured: boolean;
-  vercelDomainTarget: string | null;
   vercelDnsConfig: VercelDomainDnsConfig | null;
   localDevFallback: boolean;
   domain: {
@@ -124,39 +123,25 @@ export function CustomerPortalDomainPanel({
 
       {!setupAvailable ? (
         <p className={styles.opsIntro} role="status">
-          Custom domain setup is temporarily unavailable. Please contact support.
-        </p>
-      ) : null}
-
-      {!vercelAutomationConfigured && localDevFallback ? (
-        <p className={styles.opsIntro} role="status">
-          Local dev mode: set <code>VERCEL_API_TOKEN</code> and <code>VERCEL_PROJECT_ID</code> in
-          `.env.local` for production-like DNS instructions from Vercel.
-        </p>
-      ) : null}
-
-      {vercelAutomationConfigured && vercelDomainTarget ? (
-        <p className={styles.opsIntro} role="status">
-          Custom domains on this deployment attach to Vercel {vercelDomainTarget}. Production
-          deployments leave both <code>VERCEL_DOMAIN_GIT_BRANCH</code> and{' '}
-          <code>VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID</code> unset.
+          Custom domain setup is not available right now. Please contact support for help.
         </p>
       ) : null}
 
       <p className={styles.opsIntro}>
-        Serve your customer portal on your own domain so clients see your brand in invites and
-        bookmarks. Business workspaces use <code>{sharedPortalHost}</code> by default.
+        Use your own web address for the customer portal so clients see your brand in invite links
+        and bookmarks. Without a custom domain, clients use{' '}
+        <code>{sharedPortalHost}</code>.
       </p>
 
       {activeDomain ? (
         <section className={styles.integrationsSection}>
-          <h3 className={styles.integrationsHeading}>Active domain</h3>
+          <h3 className={styles.integrationsHeading}>Your portal address</h3>
           <p className={styles.opsIntro}>
-            Customer portal URL: <code>https://{activeDomain.hostname}</code>
+            Customers can sign in at <code>https://{activeDomain.hostname}</code>
             {activeDomain.verifiedAt ? (
               <>
                 {' '}
-                (verified{' '}
+                (connected{' '}
                 {new Date(activeDomain.verifiedAt).toLocaleDateString(undefined, {
                   dateStyle: 'medium',
                 })}
@@ -166,14 +151,15 @@ export function CustomerPortalDomainPanel({
           </p>
           {activeDomain.authRedirectLastError ? (
             <p className={styles.opsError} role="alert">
-              Google sign-in callback pending: {activeDomain.authRedirectLastError}
+              Sign-in is still being set up for this address. If customers cannot log in after a
+              day, contact support.
             </p>
           ) : null}
           {canEdit ? (
             <form action={removeAction}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <Button type="submit" variant="secondary" disabled={removePending}>
-                Remove custom domain
+                Remove custom address
               </Button>
             </form>
           ) : null}
@@ -182,16 +168,17 @@ export function CustomerPortalDomainPanel({
 
       {canEdit && setupAvailable && !activeDomain && wizardStep === 1 ? (
         <section className={styles.integrationsSection}>
-          <p className={styles.wizardStepLabel}>Step 1 of 2 — Choose your domain</p>
-          <h3 className={styles.integrationsHeading}>Customer portal hostname</h3>
+          <p className={styles.wizardStepLabel}>Step 1 of 2 — Enter your address</p>
+          <h3 className={styles.integrationsHeading}>Portal web address</h3>
           <p className={styles.opsIntro}>
-            Enter the full hostname your customers will use, such as{' '}
-            <code>portal.yourcompany.com</code>. You must be able to edit DNS for this domain.
+            Enter the full address your customers will use, such as{' '}
+            <code>portal.yourcompany.com</code>. You will need access to your domain settings to
+            add a few DNS records in the next step.
           </p>
           <form action={continueAction} className={styles.opsForm}>
             <input type="hidden" name="tenant_slug" value={tenantSlug} />
             <label className={styles.fieldLabel} htmlFor="customer_portal_hostname">
-              Hostname
+              Web address
             </label>
             <input
               id="customer_portal_hostname"
@@ -202,7 +189,7 @@ export function CustomerPortalDomainPanel({
               required
             />
             <Button type="submit" disabled={continuePending}>
-              {continuePending ? 'Loading DNS instructions…' : 'Continue'}
+              {continuePending ? 'Preparing instructions…' : 'Continue'}
             </Button>
           </form>
         </section>
@@ -210,12 +197,12 @@ export function CustomerPortalDomainPanel({
 
       {canEdit && setupAvailable && !activeDomain && wizardStep === 2 && pendingDomain ? (
         <section className={styles.integrationsSection}>
-          <p className={styles.wizardStepLabel}>Step 2 of 2 — Configure DNS</p>
-          <h3 className={styles.integrationsHeading}>Add DNS records for {pendingDomain.hostname}</h3>
+          <p className={styles.wizardStepLabel}>Step 2 of 2 — Add DNS records</p>
+          <h3 className={styles.integrationsHeading}>DNS settings for {pendingDomain.hostname}</h3>
 
           {pendingDomain.vercelLastError ? (
             <p className={styles.opsError} role="alert">
-              {pendingDomain.vercelLastError}
+              {customerPortalDomainStoredError(pendingDomain.vercelLastError)}
             </p>
           ) : null}
 
@@ -228,13 +215,13 @@ export function CustomerPortalDomainPanel({
             <form action={refreshAction} className={styles.dnsInstructionActions}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <Button type="submit" variant="secondary" disabled={refreshPending}>
-                Refresh instructions
+                Refresh records
               </Button>
             </form>
           ) : null}
 
           <p className={styles.opsIntro}>
-            After saving the records at your domain provider, click Verify DNS. We also re-check
+            After you save the records, click Check connection below. We will also check
             automatically every few minutes.
           </p>
 
@@ -242,13 +229,13 @@ export function CustomerPortalDomainPanel({
             <form action={verifyAction}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <Button type="submit" disabled={verifyPending}>
-                {verifyPending ? 'Verifying…' : 'Verify DNS'}
+                {verifyPending ? 'Checking…' : 'Check connection'}
               </Button>
             </form>
             <form action={removeAction}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <Button type="submit" variant="secondary" disabled={removePending}>
-                Use a different domain
+                Start over
               </Button>
             </form>
           </div>
