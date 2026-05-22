@@ -56,7 +56,7 @@ export function parseTenantInvoiceExpectation(raw: string): TenantInvoiceExpecta
   return raw === 'prepay' ? 'prepay' : 'pay_after_service';
 }
 
-export function parseQuoteEmailNotifyFromForm(formData: FormData) {
+export function parseQuoteNotifyFromForm(formData: FormData) {
   return {
     email_notify_quote_sent: formData.get('email_notify_quote_sent') === 'on',
     email_notify_quote_accepted: formData.get('email_notify_quote_accepted') === 'on',
@@ -64,6 +64,20 @@ export function parseQuoteEmailNotifyFromForm(formData: FormData) {
     sms_notify_quote_sent: formData.get('sms_notify_quote_sent') === 'on',
     sms_notify_quote_accepted: formData.get('sms_notify_quote_accepted') === 'on',
     sms_notify_quote_declined: formData.get('sms_notify_quote_declined') === 'on',
+    sms_notify_visit_reminder: formData.get('sms_notify_visit_reminder') === 'on',
+  };
+}
+
+/** @deprecated Use parseQuoteNotifyFromForm */
+export function parseQuoteEmailNotifyFromForm(formData: FormData) {
+  const n = parseQuoteNotifyFromForm(formData);
+  return {
+    email_notify_quote_sent: n.email_notify_quote_sent,
+    email_notify_quote_accepted: n.email_notify_quote_accepted,
+    email_notify_quote_declined: n.email_notify_quote_declined,
+    sms_notify_quote_sent: n.sms_notify_quote_sent,
+    sms_notify_quote_accepted: n.sms_notify_quote_accepted,
+    sms_notify_quote_declined: n.sms_notify_quote_declined,
   };
 }
 

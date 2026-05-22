@@ -16,6 +16,7 @@ import {
 } from '@/lib/tenant/quoteHeaderPricingForm';
 import { createTenantCustomerInlineForQuote } from '@/lib/tenant/createTenantCustomerInline';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
+import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
 
 export interface QuoteFormState {
   error?: string;
@@ -106,6 +107,12 @@ export async function moveTenantQuoteStatus(
       .maybeSingle();
     if (qrow?.customer_id) {
       await sendQuoteNotificationEmail(admin, 'quote_sent', {
+        tenantId: membership.tenantId,
+        quoteId,
+        quoteTitle: (qrow.title as string) ?? 'Quote',
+        customerId: qrow.customer_id as string,
+      });
+      await sendQuoteNotificationSms(admin, 'quote_sent', {
         tenantId: membership.tenantId,
         quoteId,
         quoteTitle: (qrow.title as string) ?? 'Quote',
@@ -482,6 +489,12 @@ export async function updateTenantQuote(
 
   if (priorStatus !== 'sent' && status === 'sent') {
     await sendQuoteNotificationEmail(admin, 'quote_sent', {
+      tenantId: membership.tenantId,
+      quoteId,
+      quoteTitle: title,
+      customerId,
+    });
+    await sendQuoteNotificationSms(admin, 'quote_sent', {
       tenantId: membership.tenantId,
       quoteId,
       quoteTitle: title,

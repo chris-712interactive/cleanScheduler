@@ -83,7 +83,17 @@ Inactive members do not consume seats. Pending invites reserve a seat until acce
 | Business | No | 0 |
 | Pro | Yes | 25,000 |
 
-Entitlement flag is defined and marketed; Twilio send pipeline enforcement is not built yet.
+Entitlement flag is defined and enforced at send time. Requires Twilio env vars on the server.
+**Not available during the free trial** — tenant billing status must be `active` or `past_due` (see `canUseSmsCommunication` in `lib/billing/tenantSubscriptionAccess.ts`).
+
+**Implemented (Pro + Twilio configured):**
+
+- Quote SMS (customer sent; team accept/decline) — `lib/sms/quoteNotificationSms.ts`
+- Visit reminder SMS (~24h before) — daily cron `/api/cron/visit-sms-reminders`
+- Metering via `tenant_sms_messages.segment_count` — `lib/billing/smsCredits.ts`
+- Settings toggles — Settings → Operations (Pro only)
+
+**Not yet built:** SMS marketing campaigns, inbound/two-way SMS.
 
 ## Required API/server-action checks
 
@@ -156,8 +166,8 @@ Current implementation:
   - enforces `maxAutomationWorkflows` when creating recurring visit rules
 
 Next checks to add:
-- SMS send pipeline -> `includedSmsCreditsMonthly` + `smsCommunication`
 - integration connection actions -> `includedIntegrations`
+- SMS review-request campaigns (email `review_ask` template parity)
 
 ## Stripe mapping and fulfillment
 

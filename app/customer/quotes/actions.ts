@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
+import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
 import type { Database } from '@/lib/supabase/database.types';
 
 export type CustomerQuoteResponseState = { error?: string; success?: boolean };
@@ -129,8 +130,20 @@ export async function respondToCustomerQuote(
       quoteTitle: (quote.title as string) ?? 'Quote',
       customerId: quote.customer_id as string,
     });
+    await sendQuoteNotificationSms(admin, 'quote_accepted', {
+      tenantId: quote.tenant_id as string,
+      quoteId,
+      quoteTitle: (quote.title as string) ?? 'Quote',
+      customerId: quote.customer_id as string,
+    });
   } else {
     await sendQuoteNotificationEmail(admin, 'quote_declined', {
+      tenantId: quote.tenant_id as string,
+      quoteId,
+      quoteTitle: (quote.title as string) ?? 'Quote',
+      customerId: quote.customer_id as string,
+    });
+    await sendQuoteNotificationSms(admin, 'quote_declined', {
       tenantId: quote.tenant_id as string,
       quoteId,
       quoteTitle: (quote.title as string) ?? 'Quote',

@@ -62,6 +62,14 @@ export const ACTIVE_THIRD_PARTY_SERVICES: ThirdPartyService[] = [
       'HTTP request metadata (IP address, user agent, URLs); application logs; environment configuration secrets (not exposed to end users).',
     privacyPolicyUrl: 'https://vercel.com/legal/privacy-policy',
   },
+  {
+    name: 'Twilio',
+    status: 'active',
+    purpose:
+      'Pro plan transactional SMS — quote notifications, visit reminders, and team alerts via Twilio when configured.',
+    dataShared: 'Phone numbers and message content for outbound SMS.',
+    privacyPolicyUrl: 'https://www.twilio.com/en-us/legal/privacy',
+  },
 ];
 
 /**
@@ -84,13 +92,6 @@ export const PLANNED_THIRD_PARTY_SERVICES: ThirdPartyService[] = [
     dataShared:
       'Bank connection tokens, account and transaction metadata (when a tenant or user connects a bank).',
     privacyPolicyUrl: 'https://plaid.com/legal/#end-user-privacy-policy',
-  },
-  {
-    name: 'Twilio',
-    status: 'planned',
-    purpose: 'SMS notifications for visits, quotes, and operational alerts when enabled.',
-    dataShared: 'Phone numbers and message content for outbound SMS.',
-    privacyPolicyUrl: 'https://www.twilio.com/en-us/legal/privacy',
   },
 ];
 

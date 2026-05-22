@@ -1020,6 +1020,7 @@ export type Database = {
           sms_notify_quote_sent: boolean;
           sms_notify_quote_accepted: boolean;
           sms_notify_quote_declined: boolean;
+          sms_notify_visit_reminder: boolean;
           check_reminder_hold_days: number;
           created_at: string;
           updated_at: string;
@@ -1035,6 +1036,7 @@ export type Database = {
           sms_notify_quote_sent?: boolean;
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
+          sms_notify_visit_reminder?: boolean;
           check_reminder_hold_days?: number;
           created_at?: string;
           updated_at?: string;
@@ -1050,6 +1052,7 @@ export type Database = {
           sms_notify_quote_sent?: boolean;
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
+          sms_notify_visit_reminder?: boolean;
           check_reminder_hold_days?: number;
           created_at?: string;
           updated_at?: string;
@@ -2385,6 +2388,63 @@ export type Database = {
           processed_at?: string;
         };
         Relationships: [];
+      };
+      tenant_sms_messages: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          to_phone_e164: string;
+          body_preview: string;
+          segment_count: number;
+          purpose: string;
+          status: string;
+          twilio_sid: string | null;
+          error_message: string | null;
+          related_visit_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          to_phone_e164: string;
+          body_preview: string;
+          segment_count?: number;
+          purpose: string;
+          status?: string;
+          twilio_sid?: string | null;
+          error_message?: string | null;
+          related_visit_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          to_phone_e164?: string;
+          body_preview?: string;
+          segment_count?: number;
+          purpose?: string;
+          status?: string;
+          twilio_sid?: string | null;
+          error_message?: string | null;
+          related_visit_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_sms_messages_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_sms_messages_related_visit_id_fkey';
+            columns: ['related_visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       tenant_usage_snapshots: {
         Row: {

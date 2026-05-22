@@ -8,8 +8,10 @@ import {
   parseAcceptedQuoteScheduleMode,
   parseTenantInvoiceExpectation,
   parseTenantPaymentMethodsFromForm,
-  parseQuoteEmailNotifyFromForm,
+  parseQuoteNotifyFromForm,
 } from '@/lib/tenant/operationalSettings';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
 import type { OperationalSettingsFormState } from './operationalSettingsFormState';
 
 export async function updateTenantOperationalSettings(
@@ -25,19 +27,23 @@ export async function updateTenantOperationalSettings(
 
   const membership = await requireTenantPortalAccess(slug, '/settings');
   const admin = createAdminClient();
-
-  const { data: existingOps } = await admin
-    .from('tenant_operational_settings')
-    .select('sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined')
-    .eq('tenant_id', membership.tenantId)
-    .maybeSingle();
+  const [{ data: billing }, tier] = await Promise.all([
+    admin
+      .from('tenant_billing_accounts')
+      .select('status')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+    resolveTenantPlanTier(admin, membership.tenantId),
+  ]);
+  const smsAllowed =
+    isFeatureEnabled(tier, 'smsCommunication') && canUseSmsCommunication(billing?.status);
 
   const methods = parseTenantPaymentMethodsFromForm(formData);
   if (!methods) {
     return { error: 'Select at least one payment method for customers.' };
   }
 
-  const notify = parseQuoteEmailNotifyFromForm(formData);
+  const notify = parseQuoteNotifyFromForm(formData);
 
   const scheduleMode = parseAcceptedQuoteScheduleMode(
     String(formData.get('accepted_quote_schedule_mode') ?? ''),
@@ -54,9 +60,10 @@ export async function updateTenantOperationalSettings(
     email_notify_quote_sent: notify.email_notify_quote_sent,
     email_notify_quote_accepted: notify.email_notify_quote_accepted,
     email_notify_quote_declined: notify.email_notify_quote_declined,
-    sms_notify_quote_sent: existingOps?.sms_notify_quote_sent ?? false,
-    sms_notify_quote_accepted: existingOps?.sms_notify_quote_accepted ?? false,
-    sms_notify_quote_declined: existingOps?.sms_notify_quote_declined ?? false,
+    sms_notify_quote_sent: smsAllowed ? notify.sms_notify_quote_sent : false,
+    sms_notify_quote_accepted: smsAllowed ? notify.sms_notify_quote_accepted : false,
+    sms_notify_quote_declined: smsAllowed ? notify.sms_notify_quote_declined : false,
+    sms_notify_visit_reminder: smsAllowed ? notify.sms_notify_visit_reminder : false,
   };
 
   const res = await admin

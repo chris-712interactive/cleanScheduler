@@ -19,6 +19,9 @@ export function OperationalSettingsForm({
   tenantSlug,
   snapshot,
   readOnly = false,
+  smsEditable = false,
+  smsTrialLocked = false,
+  twilioConfigured = false,
 }: {
   tenantSlug: string;
   snapshot: {
@@ -31,8 +34,12 @@ export function OperationalSettingsForm({
     sms_notify_quote_sent: boolean;
     sms_notify_quote_accepted: boolean;
     sms_notify_quote_declined: boolean;
+    sms_notify_visit_reminder: boolean;
   };
   readOnly?: boolean;
+  smsEditable?: boolean;
+  smsTrialLocked?: boolean;
+  twilioConfigured?: boolean;
 }) {
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
 
@@ -140,10 +147,15 @@ export function OperationalSettingsForm({
       </fieldset>
 
       <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>Quote SMS notifications (saved — not sent yet)</legend>
+        <legend className={styles.opsLegend}>SMS notifications (Pro)</legend>
         <p className={styles.opsIntro}>
-          Twilio SMS delivery for these events is planned; toggles are stored now so you can choose
-          preferences ahead of implementation.
+          {smsEditable
+            ? twilioConfigured
+              ? 'Transactional SMS via Twilio. Counts against your monthly Pro SMS segment allowance. Customers with email-only preference are skipped.'
+              : 'Twilio is not configured on this server. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER to enable sends.'
+            : smsTrialLocked
+              ? 'SMS is included with Pro after you subscribe. Add a payment method from Workspace billing to unlock these toggles during your trial.'
+              : 'Upgrade to Pro to send quote and visit reminder texts to customers.'}
         </p>
         <div className={styles.opsCheckboxGrid}>
           <label className={styles.opsCheckbox}>
@@ -151,7 +163,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_quote_sent"
               defaultChecked={snapshot.sms_notify_quote_sent}
-              disabled
+              disabled={readOnly || !smsEditable || !twilioConfigured}
             />
             <span>SMS customer when a quote is marked Sent</span>
           </label>
@@ -160,7 +172,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_quote_accepted"
               defaultChecked={snapshot.sms_notify_quote_accepted}
-              disabled
+              disabled={readOnly || !smsEditable || !twilioConfigured}
             />
             <span>SMS your team when a customer accepts</span>
           </label>
@@ -169,9 +181,18 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_quote_declined"
               defaultChecked={snapshot.sms_notify_quote_declined}
-              disabled
+              disabled={readOnly || !smsEditable || !twilioConfigured}
             />
             <span>SMS your team when a customer declines</span>
+          </label>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="sms_notify_visit_reminder"
+              defaultChecked={snapshot.sms_notify_visit_reminder}
+              disabled={readOnly || !smsEditable || !twilioConfigured}
+            />
+            <span>SMS visit reminder ~24 hours before scheduled cleanings</span>
           </label>
         </div>
       </fieldset>

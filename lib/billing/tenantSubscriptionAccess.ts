@@ -79,6 +79,17 @@ export function canAccessCustomerBillingTools(access: TenantSubscriptionAccess):
   return access === 'active' || access === 'trialing' || access === 'past_due';
 }
 
+/**
+ * Pro SMS is a paid feature — not available during the free trial, even when the
+ * selected plan tier is Pro. Requires an active or past_due platform subscription.
+ */
+export function canUseSmsCommunication(
+  billingStatus: TenantBillingStatus | null | undefined,
+): boolean {
+  const status = billingStatus ?? 'trialing';
+  return status === 'active' || status === 'past_due';
+}
+
 /** Browser URL path on a tenant subdomain (e.g. `/billing`, `/quotes`). */
 export function isTenantBillingHubBrowserPath(path: string | null | undefined): boolean {
   if (!path) return false;
