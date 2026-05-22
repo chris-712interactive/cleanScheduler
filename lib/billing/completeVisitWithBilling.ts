@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 import { sendTenantInvoiceEmailForInvoice } from '@/lib/billing/sendTenantInvoiceEmail';
+import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 
 type AdminClient = SupabaseClient<Database>;
 type PaymentMethod = Database['public']['Enums']['tenant_payment_method'];
@@ -125,6 +126,11 @@ export async function applyVisitCompletionBilling(
     if (payErr) {
       return { error: payErr.message };
     }
+
+    await afterInvoicePaymentRecorded(admin, {
+      tenantId: params.tenantId,
+      invoiceId: created.invoiceId,
+    });
 
     return { invoiceId: created.invoiceId, emailed: false, amountCents };
   }

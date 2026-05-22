@@ -9,6 +9,7 @@ import {
 } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
+import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import type { Database } from '@/lib/supabase/database.types';
 
 type InvoiceStatus = Database['public']['Enums']['tenant_invoice_status'];
@@ -144,6 +145,11 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
     actorUserId: auth?.user.id ?? null,
     action: 'payment.recorded',
     detail: `${safeMethod} payment recorded (${(payAmount / 100).toFixed(2)} USD)`,
+  });
+
+  await afterInvoicePaymentRecorded(admin, {
+    tenantId: membership.tenantId,
+    invoiceId,
   });
 
   revalidatePath('/billing');

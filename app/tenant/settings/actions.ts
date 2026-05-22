@@ -37,6 +37,7 @@ export async function updateTenantOperationalSettings(
   ]);
   const smsAllowed =
     isFeatureEnabled(tier, 'smsCommunication') && canUseSmsCommunication(billing?.status);
+  const invoiceEmailAllowed = tier === 'business' || tier === 'pro';
 
   const methods = parseTenantPaymentMethodsFromForm(formData);
   if (!methods) {
@@ -64,6 +65,8 @@ export async function updateTenantOperationalSettings(
     sms_notify_quote_accepted: smsAllowed ? notify.sms_notify_quote_accepted : false,
     sms_notify_quote_declined: smsAllowed ? notify.sms_notify_quote_declined : false,
     sms_notify_visit_reminder: smsAllowed ? notify.sms_notify_visit_reminder : false,
+    email_notify_invoice_overdue: invoiceEmailAllowed ? notify.email_notify_invoice_overdue : false,
+    sms_notify_invoice_overdue: smsAllowed ? notify.sms_notify_invoice_overdue : false,
   };
 
   const res = await admin

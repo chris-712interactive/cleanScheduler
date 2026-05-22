@@ -12,7 +12,8 @@ export type SmsPurpose =
   | 'quote_sent'
   | 'quote_accepted'
   | 'quote_declined'
-  | 'visit_reminder';
+  | 'visit_reminder'
+  | 'invoice_overdue';
 
 export async function sendTransactionalSms(params: {
   admin: SupabaseClient<Database>;

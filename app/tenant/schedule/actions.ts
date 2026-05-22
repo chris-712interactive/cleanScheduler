@@ -9,6 +9,7 @@ import type { Database } from '@/lib/supabase/database.types';
 
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
 import { applyVisitScheduleTime } from '@/lib/schedule/applyVisitScheduleTime';
+import { emitVisitWebhookEvent } from '@/lib/integrations/emitVisitWebhook';
 import {
   resolveRescheduleTargetWindow,
   type AssigneeConflictInfo,
@@ -193,6 +194,17 @@ export async function createScheduledVisit(
       await admin.from('tenant_scheduled_visits').delete().eq('id', visitId);
       return { error: insA.error.message };
     }
+  }
+
+  if (status === 'scheduled') {
+    await emitVisitWebhookEvent(admin, 'visit.scheduled', {
+      tenantId: membership.tenantId,
+      visitId,
+      customerId,
+      title,
+      startsAt: startsAt,
+      status,
+    });
   }
 
   revalidatePath('/schedule');

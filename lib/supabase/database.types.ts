@@ -833,6 +833,7 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           visit_id: string | null;
+          location_id: string | null;
           title: string;
           status: 'draft' | 'open' | 'paid' | 'void';
           currency: string;
@@ -1021,6 +1022,8 @@ export type Database = {
           sms_notify_quote_accepted: boolean;
           sms_notify_quote_declined: boolean;
           sms_notify_visit_reminder: boolean;
+          email_notify_invoice_overdue: boolean;
+          sms_notify_invoice_overdue: boolean;
           check_reminder_hold_days: number;
           created_at: string;
           updated_at: string;
@@ -1037,6 +1040,8 @@ export type Database = {
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
           sms_notify_visit_reminder?: boolean;
+          email_notify_invoice_overdue?: boolean;
+          sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           created_at?: string;
           updated_at?: string;
@@ -1053,6 +1058,8 @@ export type Database = {
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
           sms_notify_visit_reminder?: boolean;
+          email_notify_invoice_overdue?: boolean;
+          sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           created_at?: string;
           updated_at?: string;
@@ -1751,6 +1758,7 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           property_id: string | null;
+          location_id: string | null;
           quote_id: string | null;
           title: string;
           starts_at: string;
@@ -2388,6 +2396,86 @@ export type Database = {
           processed_at?: string;
         };
         Relationships: [];
+      };
+      tenant_invoice_reminder_log: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          invoice_id: string;
+          channel: string;
+          reminder_kind: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          invoice_id: string;
+          channel: string;
+          reminder_kind?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          invoice_id?: string;
+          channel?: string;
+          reminder_kind?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_invoice_reminder_log_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_invoice_reminder_log_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_invoices';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_locations: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          code: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          code?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          code?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_locations_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       tenant_api_keys: {
         Row: {

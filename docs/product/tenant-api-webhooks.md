@@ -65,9 +65,9 @@ HMAC is computed over `{timestamp}.{raw_json_body}` using the endpoint signing s
 | `quote.sent` | Yes — tenant marks quote sent |
 | `quote.accepted` | Yes — customer accepts |
 | `quote.declined` | Yes — customer declines |
-| `invoice.paid` | Planned |
-| `visit.scheduled` | Planned |
-| `visit.completed` | Planned |
+| `invoice.paid` | Yes — payment records + Stripe Checkout |
+| `visit.scheduled` | Yes — manual visit create |
+| `visit.completed` | Yes — field visit completion |
 
 Delivery: immediate attempt + cron retry (`/api/cron/deliver-tenant-webhooks`, every 5 min, max 5 attempts with exponential backoff).
 

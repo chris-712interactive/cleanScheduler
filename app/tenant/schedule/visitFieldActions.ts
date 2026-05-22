@@ -12,6 +12,7 @@ import {
   isVisitAssignee,
 } from '@/lib/schedule/visitFieldWork';
 import { applyVisitCompletionBilling } from '@/lib/billing/completeVisitWithBilling';
+import { emitVisitWebhookEvent } from '@/lib/integrations/emitVisitWebhook';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -184,6 +185,14 @@ export async function completeVisitWithPaymentAction(
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId);
   if (upErr) return { error: upErr.message };
+
+  await emitVisitWebhookEvent(admin, 'visit.completed', {
+    tenantId: membership.tenantId,
+    visitId,
+    customerId: loaded.visit.customer_id,
+    title: loaded.visit.title,
+    status: 'completed',
+  });
 
   revalidateVisitPaths(visitId);
   if (billing.emailed) {

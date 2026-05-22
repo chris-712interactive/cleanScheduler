@@ -114,6 +114,22 @@ Entitlement flag is defined and enforced at send time. Requires Twilio env vars 
 
 See `docs/product/tenant-api-webhooks.md`.
 
+## Invoice reminders (Business email / Pro SMS)
+
+| Tier | Overdue email | Overdue SMS |
+| ---- | ------------- | ----------- |
+| Starter | No | No |
+| Business | Yes | No |
+| Pro | Yes | Yes (paid + Twilio) |
+
+Daily cron `/api/cron/invoice-reminders` (11:00 UTC). Respects `check_reminder_hold_days` for unreceived check payments. Settings → Operations toggles.
+
+## Multi-location (Pro)
+
+`multiLocationControls` — Settings → Locations; schedule filter by `location_id` on visits.
+
+Migration `0041_invoice_reminders_locations.sql`.
+
 ## Required API/server-action checks
 
 ### 1) Hard gates (feature flags)
@@ -126,7 +142,7 @@ Recommended first checks to implement:
 - analytics/reporting endpoints -> `advancedAnalytics` (Phase 1.5 tenant reports: reconciliation, revenue breakdowns, MRR, employee performance — see `docs/product/tenant-reports.md`)
 - forecast endpoints -> `forecasting`
 - onboarding concierge flows -> `dedicatedOnboarding`
-- multi-location management routes -> `multiLocationControls`
+- multi-location management routes -> `multiLocationControls` (Settings → Locations; schedule filter)
 - `/campaigns` routes and campaign send actions -> `campaigns`
 
 ### Tenant Reports (implemented — see `docs/product/tenant-reports.md`)

@@ -1,16 +1,17 @@
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { getAuthContext } from '@/lib/auth/session';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import type { Tables } from '@/lib/supabase/database.types';
 import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
 import { resolveVisitSiteLine } from '@/lib/schedule/resolveVisitSiteLine';
-import { getAuthContext } from '@/lib/auth/session';
 import {
   dbOverlapRangeForQuery,
   isLocalCalendarToday,
@@ -75,11 +76,24 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const auth = await getAuthContext();
   const currentUserId = auth?.user.id ?? '';
   const employeeFilter = normalizeEmployeeFilter(sp.employee, membership.role);
+  const locationFilter = typeof sp.location === 'string' ? sp.location.trim() : '';
+
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const locationsEnabled = isFeatureEnabled(tier, 'multiLocationControls');
+  const { data: locationRows } = locationsEnabled
+    ? await admin
+        .from('tenant_locations')
+        .select('id, name, code, is_active')
+        .eq('tenant_id', membership.tenantId)
+        .eq('is_active', true)
+        .order('name')
+    : { data: [] };
 
   const supabase = createTenantPortalDbClient();
   const range = dbOverlapRangeForQuery(view, dateKey);
 
-  const { data: visitRows, error: visitsErr } = await supabase
+  let visitsQuery = supabase
     .from('tenant_scheduled_visits')
     .select(
       `
@@ -127,8 +141,16 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     .eq('tenant_id', membership.tenantId)
     .lte('starts_at', range.end)
     .gte('ends_at', range.start)
-    .order('starts_at', { ascending: true })
-    .overrideTypes<VisitListRow[], { merge: false }>();
+    .order('starts_at', { ascending: true });
+
+  if (locationFilter && locationFilter !== 'all') {
+    visitsQuery = visitsQuery.eq('location_id', locationFilter);
+  }
+
+  const { data: visitRows, error: visitsErr } = await visitsQuery.overrideTypes<
+    VisitListRow[],
+    { merge: false }
+  >();
 
   const membersRes = await supabase
     .from('tenant_memberships')
@@ -216,6 +238,27 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           </div>
         }
       />
+
+      {locationsEnabled && (locationRows?.length ?? 0) > 0 ? (
+        <form method="get" className={styles.scheduleLocationFilter}>
+          <input type="hidden" name="date" value={dateKey} />
+          <input type="hidden" name="view" value={view} />
+          {employeeFilter !== 'all' ? <input type="hidden" name="employee" value={employeeFilter} /> : null}
+          <label htmlFor="schedule-location-filter">Location</label>
+          <select id="schedule-location-filter" name="location" defaultValue={locationFilter || 'all'}>
+            <option value="all">All locations</option>
+            {(locationRows ?? []).map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+                {loc.code ? ` (${loc.code})` : ''}
+              </option>
+            ))}
+          </select>
+          <Button type="submit" size="sm" variant="secondary">
+            Apply
+          </Button>
+        </form>
+      ) : null}
 
       <TenantScheduleClient
         tenantSlug={membership.tenantSlug}

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { Database, Json } from '@/lib/supabase/database.types';
+import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 
 type Admin = SupabaseClient<Database>;
 
@@ -86,6 +87,8 @@ export async function handleTenantInvoiceCheckoutCompleted(
   if (insErr) {
     throw new Error(insErr.message);
   }
+
+  await afterInvoicePaymentRecorded(admin, { tenantId, invoiceId });
 
   const paymentRowId = inserted?.id;
   if (!paymentRowId || !options?.stripe || !options?.connectAccountId || !pi) {

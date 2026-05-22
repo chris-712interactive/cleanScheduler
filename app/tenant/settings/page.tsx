@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Cable, Percent, Shield, SlidersHorizontal, UserRound } from 'lucide-react';
+import { Building2, Cable, MapPin, Percent, Shield, SlidersHorizontal, UserRound } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -31,6 +31,12 @@ const HUB_LINKS = [
     label: 'Integrations',
     description: 'REST API keys and outbound webhooks (Pro).',
     icon: Cable,
+  },
+  {
+    href: '/settings/locations',
+    label: 'Locations',
+    description: 'Branches and territories for multi-crew ops (Pro).',
+    icon: MapPin,
   },
   {
     href: '/settings/compensation',

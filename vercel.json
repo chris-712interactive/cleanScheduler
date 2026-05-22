@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/deliver-tenant-webhooks",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/invoice-reminders",
+      "schedule": "0 11 * * *"
     }
   ]
 }

@@ -22,6 +22,8 @@ export function OperationalSettingsForm({
   smsEditable = false,
   smsTrialLocked = false,
   twilioConfigured = false,
+  invoiceReminderEmailEditable = false,
+  invoiceReminderSmsEditable = false,
 }: {
   tenantSlug: string;
   snapshot: {
@@ -35,11 +37,15 @@ export function OperationalSettingsForm({
     sms_notify_quote_accepted: boolean;
     sms_notify_quote_declined: boolean;
     sms_notify_visit_reminder: boolean;
+    email_notify_invoice_overdue: boolean;
+    sms_notify_invoice_overdue: boolean;
   };
   readOnly?: boolean;
   smsEditable?: boolean;
   smsTrialLocked?: boolean;
   twilioConfigured?: boolean;
+  invoiceReminderEmailEditable?: boolean;
+  invoiceReminderSmsEditable?: boolean;
 }) {
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
 
@@ -193,6 +199,35 @@ export function OperationalSettingsForm({
               disabled={readOnly || !smsEditable || !twilioConfigured}
             />
             <span>SMS visit reminder ~24 hours before scheduled cleanings</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset className={styles.opsFieldset}>
+        <legend className={styles.opsLegend}>Invoice reminders</legend>
+        <p className={styles.opsIntro}>
+          {invoiceReminderEmailEditable
+            ? 'Daily cron sends overdue reminders when an open invoice is past due. Check payments in holding status respect your check hold window.'
+            : 'Upgrade to Business to send automated overdue invoice reminder emails.'}
+        </p>
+        <div className={styles.opsCheckboxGrid}>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="email_notify_invoice_overdue"
+              defaultChecked={snapshot.email_notify_invoice_overdue}
+              disabled={readOnly || !invoiceReminderEmailEditable}
+            />
+            <span>Email customer when an invoice is overdue</span>
+          </label>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="sms_notify_invoice_overdue"
+              defaultChecked={snapshot.sms_notify_invoice_overdue}
+              disabled={readOnly || !invoiceReminderSmsEditable || !twilioConfigured}
+            />
+            <span>SMS customer when an invoice is overdue (Pro)</span>
           </label>
         </div>
       </fieldset>

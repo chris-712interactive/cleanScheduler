@@ -38,12 +38,14 @@ export default async function TenantOperationsSettingsPage() {
   const smsTrialLocked = smsTierEnabled && !canUseSmsCommunication(billing?.status);
   const twilioConfigured = isTwilioConfigured();
   const smsUsed = smsAllowed ? await countSmsSegmentsUsedThisMonth(admin, membership.tenantId) : 0;
+  const invoiceReminderEmailEditable = tier === 'business' || tier === 'pro';
+  const invoiceReminderSmsEditable = smsAllowed;
 
   const supabase = createTenantPortalDbClient();
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder',
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue',
     )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -62,6 +64,8 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_quote_accepted: opsRow.sms_notify_quote_accepted,
         sms_notify_quote_declined: opsRow.sms_notify_quote_declined,
         sms_notify_visit_reminder: opsRow.sms_notify_visit_reminder,
+        email_notify_invoice_overdue: opsRow.email_notify_invoice_overdue,
+        sms_notify_invoice_overdue: opsRow.sms_notify_invoice_overdue,
       }
     : {
         accepted_quote_schedule_mode: 'prompt_staff' as const,
@@ -74,6 +78,8 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_quote_accepted: false,
         sms_notify_quote_declined: false,
         sms_notify_visit_reminder: false,
+        email_notify_invoice_overdue: true,
+        sms_notify_invoice_overdue: false,
       };
 
   return (
@@ -119,6 +125,8 @@ export default async function TenantOperationsSettingsPage() {
           smsEditable={smsAllowed}
           smsTrialLocked={smsTrialLocked}
           twilioConfigured={twilioConfigured}
+          invoiceReminderEmailEditable={invoiceReminderEmailEditable}
+          invoiceReminderSmsEditable={invoiceReminderSmsEditable}
         />
       </Card>
     </>
