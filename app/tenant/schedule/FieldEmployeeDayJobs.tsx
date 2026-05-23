@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ChevronRight, MapPin, Phone } from 'lucide-react';
 import { VisitStatusPill } from './VisitStatusPill';
 import { formatVisitTimeRange } from './scheduleTimelineUtils';
+import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import type { ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
 
@@ -47,6 +48,11 @@ export function FieldEmployeeDayJobs({
               </div>
               <h3 className={styles.fieldJobCardCustomer}>{visit.customerName}</h3>
               <p className={styles.fieldJobCardService}>{serviceLabel}</p>
+              {visit.expectedAmountCents != null ? (
+                <p className={styles.fieldJobCardMeta}>
+                  Job amount: ${formatCentsAsDollars(visit.expectedAmountCents)}
+                </p>
+              ) : null}
               {visit.siteLine ? (
                 <p className={styles.fieldJobCardMeta}>
                   <MapPin size={16} aria-hidden className={styles.fieldJobCardIcon} />

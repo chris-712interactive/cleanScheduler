@@ -1,8 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { TenantRole } from '@/lib/auth/types';
 import type { Database } from '@/lib/supabase/database.types';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
+import {
+  FIELD_EMPLOYEE_NO_PRICE_MESSAGE,
+  positiveAmountCents,
+  resolveVisitExpectedAmountCents,
+} from '@/lib/billing/resolveVisitExpectedAmount';
 import { sendTenantInvoiceEmailForInvoice } from '@/lib/billing/sendTenantInvoiceEmail';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
+import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 
 type AdminClient = SupabaseClient<Database>;
 type PaymentMethod = Database['public']['Enums']['tenant_payment_method'];
@@ -14,6 +21,7 @@ export interface CompleteVisitBillingInput {
   amountDollars: string;
 }
 
+/** @deprecated Use resolveVisitExpectedAmountCents — kept for callers loading quote only. */
 export async function resolveVisitBillingAmountCents(
   admin: AdminClient,
   quoteId: string | null,
@@ -24,18 +32,19 @@ export async function resolveVisitBillingAmountCents(
     .select('amount_cents')
     .eq('id', quoteId)
     .maybeSingle();
-  if (quote?.amount_cents == null) return null;
-  const cents = Number(quote.amount_cents);
-  return Number.isFinite(cents) && cents > 0 ? cents : null;
+  return positiveAmountCents(quote?.amount_cents);
 }
 
 function parseBillingAmountCents(
   amountDollars: string,
-  quoteAmountCents: number | null,
+  expectedAmountCents: number | null,
+  options: { allowFormOverride: boolean },
 ): number | null {
-  const fromForm = parseCentsFromDollars(amountDollars);
-  if (fromForm != null && fromForm > 0) return fromForm;
-  if (quoteAmountCents != null && quoteAmountCents > 0) return quoteAmountCents;
+  if (options.allowFormOverride) {
+    const fromForm = parseCentsFromDollars(amountDollars);
+    if (fromForm != null && fromForm > 0) return fromForm;
+  }
+  if (expectedAmountCents != null && expectedAmountCents > 0) return expectedAmountCents;
   return null;
 }
 
@@ -77,14 +86,32 @@ export async function applyVisitCompletionBilling(
     visitId: string;
     customerId: string;
     quoteId: string | null;
+    expectedAmountCents: number | null;
     visitTitle: string;
+    actorRole: TenantRole;
     billing: CompleteVisitBillingInput;
   },
 ): Promise<{ invoiceId: string; emailed: boolean; amountCents: number } | { error: string }> {
-  const quoteAmountCents = await resolveVisitBillingAmountCents(admin, params.quoteId);
-  const amountCents = parseBillingAmountCents(params.billing.amountDollars, quoteAmountCents);
+  const expectedAmountCents = await resolveVisitExpectedAmountCents(admin, {
+    tenantId: params.tenantId,
+    expectedAmountCents: params.expectedAmountCents,
+    quoteId: params.quoteId,
+  });
+
+  if (isFieldEmployeeRole(params.actorRole) && expectedAmountCents == null) {
+    return { error: FIELD_EMPLOYEE_NO_PRICE_MESSAGE };
+  }
+
+  const amountCents = parseBillingAmountCents(params.billing.amountDollars, expectedAmountCents, {
+    allowFormOverride: !isFieldEmployeeRole(params.actorRole),
+  });
+
   if (amountCents == null || amountCents <= 0) {
-    return { error: 'Enter the job amount to bill.' };
+    return {
+      error: isFieldEmployeeRole(params.actorRole)
+        ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE
+        : 'Enter the job amount to bill.',
+    };
   }
 
   const invoiceTitle = params.visitTitle.trim() || 'Service visit';

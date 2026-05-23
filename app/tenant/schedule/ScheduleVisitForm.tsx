@@ -6,6 +6,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { createScheduledVisit, type ScheduleFormState } from './actions';
 import type { QuoteCustomerOption } from '@/app/tenant/quotes/QuoteCreateForm';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
+import { OFFICE_SET_PRICE_HINT } from '@/lib/billing/resolveVisitExpectedAmount';
 import styles from './schedule.module.scss';
 
 const initial: ScheduleFormState = {};
@@ -114,6 +115,25 @@ export function ScheduleVisitForm({
             ))}
           </select>
         </div>
+      </div>
+
+      <div className={styles.formGridTwo}>
+        <div className={styles.formField}>
+          <label className={styles.label} htmlFor="visit_job_price">
+            Job price (USD)
+          </label>
+          <input
+            id="visit_job_price"
+            name="job_price_dollars"
+            className={styles.input}
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="150.00"
+          />
+          <p className={styles.crewHint}>{OFFICE_SET_PRICE_HINT}</p>
+        </div>
+        <div className={styles.formField} aria-hidden />
       </div>
 
       <div className={styles.formGridTwo}>

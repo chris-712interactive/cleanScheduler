@@ -15,6 +15,7 @@ import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
 import type { Tables } from '@/lib/supabase/database.types';
+import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { RecurringConceptCallout } from '@/components/billing/RecurringConceptCallout';
 import { deactivateRecurringVisitRuleAction } from './actions';
 import { RecurringRuleForm } from './RecurringRuleForm';
@@ -81,7 +82,7 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
   const err = firstParam(sp.error);
   const created = firstParam(sp.created) === '1';
 
-  const [{ data: customers }, { data: properties }, { data: rules }] = await Promise.all([
+  const [{ data: customers }, { data: properties }, { data: quotes }, { data: rules }] = await Promise.all([
     db
       .from('customers')
       .select(
@@ -101,8 +102,16 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false }),
     db
+      .from('tenant_quotes')
+      .select('id, title, amount_cents')
+      .eq('tenant_id', membership.tenantId)
+      .order('created_at', { ascending: false })
+      .limit(40),
+    db
       .from('recurring_appointment_rules')
-      .select('id, title, rrule_definition, anchor_starts_at, is_active, horizon_days, customer_id')
+      .select(
+        'id, title, rrule_definition, anchor_starts_at, is_active, horizon_days, customer_id, expected_amount_cents',
+      )
       .eq('tenant_id', membership.tenantId)
       .order('created_at', { ascending: false }),
   ]);
@@ -115,6 +124,16 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
   const customerPropertyGroups = buildCustomerPropertyGroups(
     (properties ?? []) as PropertyPickRow[],
   );
+  const quoteOptions = (quotes ?? []).map((quote) => {
+    const amount =
+      quote.amount_cents != null && Number(quote.amount_cents) > 0
+        ? ` · $${formatCentsAsDollars(Number(quote.amount_cents))}`
+        : '';
+    return {
+      id: quote.id,
+      label: `${quote.title}${amount}`,
+    };
+  });
 
   return (
     <>
@@ -156,6 +175,7 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
             tenantSlug={membership.tenantSlug}
             customers={customerOptions}
             customerPropertyGroups={customerPropertyGroups}
+            quoteOptions={quoteOptions}
           />
         </Card>
 
@@ -171,6 +191,9 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
                     <div className={styles.rowMeta}>
                       {r.is_active ? 'active' : 'inactive'} · horizon {r.horizon_days}d · anchor{' '}
                       {new Date(String(r.anchor_starts_at)).toLocaleString()}
+                      {r.expected_amount_cents != null && r.expected_amount_cents > 0
+                        ? ` · $${formatCentsAsDollars(r.expected_amount_cents)}/visit`
+                        : ' · no job price'}
                     </div>
                     <pre
                       style={{

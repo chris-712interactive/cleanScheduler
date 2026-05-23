@@ -20,6 +20,10 @@ import {
 } from '@/lib/tenant/customerBillingPreference';
 import { CUSTOMER_PAYMENT_METHOD_LABEL } from '@/lib/tenant/operationalSettings';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
+import {
+  resolveExpectedAmountCentsSync,
+  visitHasBillableAmount,
+} from '@/lib/billing/resolveVisitExpectedAmount';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
 import {
@@ -109,6 +113,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
       completion_collected_amount_cents,
       completion_invoice_id,
       quote_id,
+      expected_amount_cents,
       customers (
         customer_identities (
           first_name,
@@ -150,8 +155,14 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
   const preferredPaymentMethod =
     row.customers?.tenant_customer_profiles?.preferred_payment_method ?? null;
   const quoteAmountRaw = row.tenant_quotes?.amount_cents;
-  const defaultAmountCents =
-    quoteAmountRaw != null && Number(quoteAmountRaw) > 0 ? Number(quoteAmountRaw) : null;
+  const defaultAmountCents = resolveExpectedAmountCentsSync({
+    expectedAmountCents: row.expected_amount_cents,
+    quoteAmountCents: quoteAmountRaw,
+  });
+  const hasBillableAmount = visitHasBillableAmount({
+    expectedAmountCents: row.expected_amount_cents,
+    quoteAmountCents: quoteAmountRaw,
+  });
   const prop = row.tenant_customer_properties;
   const siteLine = prop
     ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ')
@@ -255,6 +266,12 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                   </p>
                 </div>
               ) : null}
+              {hasBillableAmount ? (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Job price</span>
+                  <p className={styles.detailValue}>${formatCentsAsDollars(defaultAmountCents ?? 0)}</p>
+                </div>
+              ) : null}
               {row.tenant_quotes?.title ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Quote</span>
@@ -264,9 +281,6 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                     ) : (
                       row.tenant_quotes.title
                     )}
-                    {defaultAmountCents != null
-                      ? ` · $${formatCentsAsDollars(defaultAmountCents)}`
-                      : ''}
                   </p>
                 </div>
               ) : null}
@@ -335,6 +349,8 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               customerHasEmail={Boolean(customerEmail)}
               canAttachProofPhotos={canUseProofPhotos}
               proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
+              isFieldEmployee={isFieldEmployee}
+              hasBillableAmount={hasBillableAmount}
             />
 
             {row.status === 'scheduled' && !row.checked_in_at && canManageScheduledVisit(actorRole) ? (

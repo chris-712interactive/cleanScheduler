@@ -14,6 +14,7 @@ import {
   resolveRescheduleTargetWindow,
   type AssigneeConflictInfo,
 } from '@/lib/schedule/visitAssigneeConflicts';
+import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 
 export interface ScheduleFormState {
   error?: string;
@@ -102,6 +103,7 @@ export async function createScheduledVisit(
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
   const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
   const notes = String(formData.get('notes') ?? '').trim();
+  const jobPriceDollars = String(formData.get('job_price_dollars') ?? '').trim();
   const statusRaw = String(formData.get('status') ?? 'scheduled').trim();
 
   if (!slug || !customerId || !startsRaw || !endsRaw) {
@@ -149,6 +151,15 @@ export async function createScheduledVisit(
     return { error: 'End time must be after start time.' };
   }
 
+  const pricing = await resolveScheduleJobPriceCents(admin, {
+    tenantId: membership.tenantId,
+    quoteId,
+    jobPriceDollars,
+  });
+  if ('error' in pricing) {
+    return { error: pricing.error };
+  }
+
   const ins = await admin
     .from('tenant_scheduled_visits')
     .insert({
@@ -156,6 +167,7 @@ export async function createScheduledVisit(
       customer_id: customerId,
       property_id: propertyId,
       quote_id: quoteId,
+      expected_amount_cents: pricing.expectedAmountCents,
       title,
       starts_at: startsAt,
       ends_at: endsAt,

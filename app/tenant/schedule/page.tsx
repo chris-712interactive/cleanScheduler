@@ -22,6 +22,8 @@ import {
 } from '@/lib/tenant/scheduleDateRange';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { isVisitAssignee } from '@/lib/schedule/visitFieldWork';
+import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
+import { visitHasBillableAmount } from '@/lib/billing/resolveVisitExpectedAmount';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { TenantScheduleClient, type ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
@@ -35,6 +37,7 @@ type VisitListRow = {
   ends_at: string;
   status: Tables<'tenant_scheduled_visits'>['status'];
   notes: string | null;
+  expected_amount_cents: number | null;
   customers: {
     customer_identities: {
       first_name: string | null;
@@ -56,7 +59,7 @@ type VisitListRow = {
     Tables<'tenant_customer_properties'>,
     'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
   > | null;
-  tenant_quotes: { title: string } | null;
+  tenant_quotes: { title: string; amount_cents: number | null } | null;
   tenant_scheduled_visit_assignees:
     | {
         user_id: string;
@@ -108,6 +111,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       ends_at,
       status,
       notes,
+      expected_amount_cents,
       customers (
         customer_identities (
           first_name,
@@ -132,7 +136,8 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         postal_code
       ),
       tenant_quotes (
-        title
+        title,
+        amount_cents
       ),
       tenant_scheduled_visit_assignees (
         user_id,
@@ -201,6 +206,12 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       customerPhone: ident?.phone?.trim() || null,
       siteLine: site,
       quoteTitle: v.tenant_quotes?.title ?? null,
+      expectedAmountCents:
+        v.expected_amount_cents != null && v.expected_amount_cents > 0
+          ? v.expected_amount_cents
+          : v.tenant_quotes?.amount_cents != null && v.tenant_quotes.amount_cents > 0
+            ? v.tenant_quotes.amount_cents
+            : null,
       assignees,
       assigneeUserIds: assignees.map((a) => a.userId),
     };
@@ -216,6 +227,27 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   }));
 
   const weekDayKeys = utcWeekDayKeys(dateKey);
+
+  let unpricedUpcomingCount = 0;
+  if (!isFieldEmployee) {
+    const weekAheadIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: upcomingRows } = await supabase
+      .from('tenant_scheduled_visits')
+      .select('expected_amount_cents, tenant_quotes ( amount_cents )')
+      .eq('tenant_id', membership.tenantId)
+      .eq('status', 'scheduled')
+      .gte('starts_at', new Date().toISOString())
+      .lte('starts_at', weekAheadIso);
+
+    unpricedUpcomingCount = (upcomingRows ?? []).filter(
+      (row) =>
+        !visitHasBillableAmount({
+          expectedAmountCents: row.expected_amount_cents,
+          quoteAmountCents: row.tenant_quotes?.amount_cents ?? null,
+        }),
+    ).length;
+  }
+
   const subtitle = isFieldEmployee
     ? view === 'today'
       ? isLocalCalendarToday(dateKey)
@@ -274,6 +306,14 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
             Apply
           </Button>
         </form>
+      ) : null}
+
+      {!isFieldEmployee && unpricedUpcomingCount > 0 ? (
+        <p className={styles.scheduleWarning} role="status">
+          {unpricedUpcomingCount} upcoming visit{unpricedUpcomingCount === 1 ? '' : 's'} in the next 7
+          days {unpricedUpcomingCount === 1 ? 'has' : 'have'} no job price — field crews cannot complete
+          them until you add a quote or job price when scheduling.
+        </p>
       ) : null}
 
       <TenantScheduleClient

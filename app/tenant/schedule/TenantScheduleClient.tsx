@@ -37,6 +37,7 @@ export type ScheduleVisitVM = {
   customerPhone: string | null;
   siteLine: string;
   quoteTitle: string | null;
+  expectedAmountCents: number | null;
   assignees: ScheduleAssigneeChip[];
   assigneeUserIds: string[];
 };

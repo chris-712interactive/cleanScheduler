@@ -1609,6 +1609,8 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           property_id: string | null;
+          quote_id: string | null;
+          expected_amount_cents: number | null;
           title: string;
           rrule_definition: string;
           anchor_starts_at: string;
@@ -1623,6 +1625,8 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           property_id?: string | null;
+          quote_id?: string | null;
+          expected_amount_cents?: number | null;
           title?: string;
           rrule_definition: string;
           anchor_starts_at: string;
@@ -1637,6 +1641,8 @@ export type Database = {
           tenant_id?: string;
           customer_id?: string;
           property_id?: string | null;
+          quote_id?: string | null;
+          expected_amount_cents?: number | null;
           title?: string;
           rrule_definition?: string;
           anchor_starts_at?: string;
@@ -1760,6 +1766,7 @@ export type Database = {
           property_id: string | null;
           location_id: string | null;
           quote_id: string | null;
+          expected_amount_cents: number | null;
           title: string;
           starts_at: string;
           ends_at: string;
@@ -1784,6 +1791,7 @@ export type Database = {
           customer_id: string;
           property_id?: string | null;
           quote_id?: string | null;
+          expected_amount_cents?: number | null;
           title?: string;
           starts_at: string;
           ends_at: string;
@@ -1808,6 +1816,7 @@ export type Database = {
           customer_id?: string;
           property_id?: string | null;
           quote_id?: string | null;
+          expected_amount_cents?: number | null;
           title?: string;
           starts_at?: string;
           ends_at?: string;

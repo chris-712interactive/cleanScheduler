@@ -5,16 +5,19 @@ import { Button } from '@/components/ui/Button';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
 import { createRecurringVisitRuleAction } from './actions';
 import { TimezoneOffsetField } from './TimezoneOffsetField';
+import { OFFICE_SET_PRICE_HINT } from '@/lib/billing/resolveVisitExpectedAmount';
 import styles from '../schedule.module.scss';
 
 export function RecurringRuleForm({
   tenantSlug,
   customers,
   customerPropertyGroups,
+  quoteOptions,
 }: {
   tenantSlug: string;
   customers: { id: string; label: string }[];
   customerPropertyGroups: CustomerPropertyGroup[];
+  quoteOptions: { id: string; label: string }[];
 }) {
   const [customerId, setCustomerId] = useState('');
 
@@ -77,6 +80,31 @@ export function RecurringRuleForm({
         Title
         <input name="title" className={styles.input} type="text" placeholder="Bi-weekly clean" />
       </label>
+      <div className={styles.formGridTwo}>
+        <label className={styles.label}>
+          Related quote (optional)
+          <select name="quote_id" className={styles.select} defaultValue="">
+            <option value="">— None —</option>
+            {quoteOptions.map((quote) => (
+              <option key={quote.id} value={quote.id}>
+                {quote.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.label}>
+          Job price per visit (USD)
+          <input
+            name="job_price_dollars"
+            className={styles.input}
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="150.00"
+          />
+        </label>
+      </div>
+      <p className={styles.crewHint}>{OFFICE_SET_PRICE_HINT}</p>
       <label className={styles.label}>
         First occurrence (local)
         <input name="starts_at" className={styles.input} type="datetime-local" required />

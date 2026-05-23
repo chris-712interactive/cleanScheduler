@@ -67,6 +67,7 @@ export function CompleteVisitPaymentModal({
   customerHasEmail,
   canAttachProofPhotos,
   proofPhotosSharedWithCustomers,
+  isFieldEmployee = false,
 }: {
   tenantSlug: string;
   visitId: string;
@@ -75,6 +76,7 @@ export function CompleteVisitPaymentModal({
   customerHasEmail: boolean;
   canAttachProofPhotos: boolean;
   proofPhotosSharedWithCustomers: boolean;
+  isFieldEmployee?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -94,7 +96,7 @@ export function CompleteVisitPaymentModal({
     defaultAmountCents != null && defaultAmountCents > 0
       ? formatCentsAsDollars(defaultAmountCents)
       : '';
-  const needsAmountInput = !defaultAmountDollars;
+  const needsAmountInput = !isFieldEmployee && !defaultAmountDollars;
   const preferredLabel = formatCustomerPreferredBilling(preferredPaymentMethod);
   const electronicHint = isElectronicPreferredBilling(preferredPaymentMethod);
   const inPersonHint = isInPersonPreferredBilling(preferredPaymentMethod);
@@ -249,6 +251,13 @@ export function CompleteVisitPaymentModal({
             />
           ) : null}
 
+          {defaultAmountDollars && (isFieldEmployee || !needsAmountInput) ? (
+            <p className={styles.preferenceHint}>
+              Job amount: <strong>${defaultAmountDollars}</strong>
+              {isFieldEmployee ? ' — set by your office.' : null}
+            </p>
+          ) : null}
+
           {preferredPaymentMethod && stepIndex === 0 ? (
             <p className={styles.preferenceHint}>
               Customer billing preference: <strong>{preferredLabel}</strong>
@@ -377,6 +386,8 @@ export function CompleteVisitPaymentModal({
                     value={checkAmountDollars}
                     onChange={(e) => setCheckAmountDollars(e.target.value)}
                     placeholder={defaultAmountDollars || '0.00'}
+                    readOnly={isFieldEmployee && Boolean(defaultAmountDollars)}
+                    autoFocus={!(isFieldEmployee && defaultAmountDollars)}
                   />
                   <p className={styles.fieldHint}>
                     Enter the dollar amount printed on the check to verify before completing.

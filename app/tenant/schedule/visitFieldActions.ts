@@ -29,7 +29,9 @@ async function loadVisitForActor(
 ) {
   const { data: visit, error } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status, checked_in_at, checked_in_by_user_id, customer_id, quote_id, title')
+    .select(
+      'id, status, checked_in_at, checked_in_by_user_id, customer_id, quote_id, expected_amount_cents, title',
+    )
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -152,7 +154,9 @@ export async function completeVisitWithPaymentAction(
     visitId,
     customerId: loaded.visit.customer_id,
     quoteId: loaded.visit.quote_id,
+    expectedAmountCents: loaded.visit.expected_amount_cents,
     visitTitle: loaded.visit.title,
+    actorRole,
     billing: {
       paymentCollected,
       collectedMethod,

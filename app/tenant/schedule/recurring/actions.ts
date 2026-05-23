@@ -9,6 +9,7 @@ import {
   assertTenantCanCreateAutomationWorkflow,
   automationWorkflowGateErrorMessage,
 } from '@/lib/billing/automationWorkflows';
+import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 
 const PRESETS: Record<string, string> = {
   weekly_mon: 'FREQ=WEEKLY;BYDAY=MO;INTERVAL=1',
@@ -31,6 +32,8 @@ export async function createRecurringVisitRuleAction(formData: FormData): Promis
   const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
   const horizonRaw = String(formData.get('horizon_days') ?? '60').trim();
   const durationRaw = String(formData.get('visit_duration_minutes') ?? '120').trim();
+  const quoteRaw = String(formData.get('quote_id') ?? '').trim();
+  const jobPriceDollars = String(formData.get('job_price_dollars') ?? '').trim();
 
   const rruleDefinition = PRESETS[preset];
   if (!slug || !customerId || !rruleDefinition || !startsRaw) {
@@ -83,10 +86,33 @@ export async function createRecurringVisitRuleAction(formData: FormData): Promis
     );
   }
 
+  let quoteId: string | null = null;
+  if (quoteRaw) {
+    const { data: quote } = await admin
+      .from('tenant_quotes')
+      .select('id')
+      .eq('id', quoteRaw)
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle();
+    if (!quote) redirect('/schedule/recurring?error=bad_quote');
+    quoteId = quoteRaw;
+  }
+
+  const pricing = await resolveScheduleJobPriceCents(admin, {
+    tenantId: membership.tenantId,
+    quoteId,
+    jobPriceDollars,
+  });
+  if ('error' in pricing) {
+    redirect(`/schedule/recurring?error=${encodeURIComponent(pricing.error)}`);
+  }
+
   const { error } = await admin.from('recurring_appointment_rules').insert({
     tenant_id: membership.tenantId,
     customer_id: customerId,
     property_id: propertyId,
+    quote_id: quoteId,
+    expected_amount_cents: pricing.expectedAmountCents,
     title,
     rrule_definition: rruleDefinition,
     anchor_starts_at: anchorIso,

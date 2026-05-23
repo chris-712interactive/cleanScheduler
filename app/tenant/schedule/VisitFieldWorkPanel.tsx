@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { Button } from '@/components/ui/Button';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
+import { FIELD_EMPLOYEE_NO_PRICE_MESSAGE } from '@/lib/billing/resolveVisitExpectedAmount';
 import { checkInToVisitAction, type VisitFieldActionState } from './visitFieldActions';
 import { CompleteVisitPaymentModal } from './CompleteVisitPaymentModal';
 import styles from './visitDetail.module.scss';
@@ -21,6 +22,8 @@ export function VisitFieldWorkPanel({
   customerHasEmail,
   canAttachProofPhotos,
   proofPhotosSharedWithCustomers,
+  isFieldEmployee = false,
+  hasBillableAmount = true,
 }: {
   tenantSlug: string;
   visitId: string;
@@ -32,11 +35,15 @@ export function VisitFieldWorkPanel({
   customerHasEmail: boolean;
   canAttachProofPhotos: boolean;
   proofPhotosSharedWithCustomers: boolean;
+  isFieldEmployee?: boolean;
+  hasBillableAmount?: boolean;
 }) {
   const [checkInState, checkInAction, checkInPending] = useActionState(checkInToVisitAction, initial);
   useRefreshOnServerActionSuccess(checkInState.success);
 
   if (!canCheckIn && !canComplete) return null;
+
+  const fieldBlockedFromComplete = isFieldEmployee && canComplete && !hasBillableAmount;
 
   return (
     <section className={styles.fieldWork}>
@@ -68,7 +75,13 @@ export function VisitFieldWorkPanel({
       ) : null}
       {checkInState.success ? <p className={styles.ok}>{checkInState.success}</p> : null}
 
-      {canComplete ? (
+      {fieldBlockedFromComplete ? (
+        <p className={styles.error} role="alert">
+          {FIELD_EMPLOYEE_NO_PRICE_MESSAGE}
+        </p>
+      ) : null}
+
+      {canComplete && !fieldBlockedFromComplete ? (
         <div className={styles.fieldForm}>
           <CompleteVisitPaymentModal
             tenantSlug={tenantSlug}
@@ -78,6 +91,7 @@ export function VisitFieldWorkPanel({
             customerHasEmail={customerHasEmail}
             canAttachProofPhotos={canAttachProofPhotos}
             proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
+            isFieldEmployee={isFieldEmployee}
           />
         </div>
       ) : null}

@@ -9,6 +9,7 @@ import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import type { QuoteCustomerOption } from '@/app/tenant/quotes/QuoteCreateForm';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
+import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { ScheduleVisitForm } from '../ScheduleVisitForm';
 import styles from '../schedule.module.scss';
 
@@ -36,7 +37,7 @@ type PropertyPickRow = Pick<
   | 'is_primary'
 >;
 
-type QuotePickRow = Pick<Tables<'tenant_quotes'>, 'id' | 'title'>;
+type QuotePickRow = Pick<Tables<'tenant_quotes'>, 'id' | 'title' | 'amount_cents'>;
 
 function propertyOptionLabel(p: PropertyPickRow): string {
   const line = formatPropertyAddressLine(p);
@@ -102,7 +103,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
       .overrideTypes<PropertyPickRow[], { merge: false }>(),
     supabase
       .from('tenant_quotes')
-      .select('id, title')
+      .select('id, title, amount_cents')
       .eq('tenant_id', membership.tenantId)
       .order('created_at', { ascending: false })
       .limit(40)
@@ -138,10 +139,16 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
 
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
 
-  const quoteOptions = quoteRows.map((q) => ({
-    id: q.id,
-    label: q.title,
-  }));
+  const quoteOptions = quoteRows.map((q) => {
+    const amount =
+      q.amount_cents != null && Number(q.amount_cents) > 0
+        ? ` · $${formatCentsAsDollars(Number(q.amount_cents))}`
+        : '';
+    return {
+      id: q.id,
+      label: `${q.title}${amount}`,
+    };
+  });
 
   const employeeOptions = (membersRes.data ?? []).map((m) => ({
     id: m.user_id,
