@@ -15,7 +15,12 @@ import {
   parseQuoteTaxMode,
 } from '@/lib/tenant/quoteHeaderPricingForm';
 import { createTenantCustomerInlineForQuote } from '@/lib/tenant/createTenantCustomerInline';
-import { composeQuoteNotesFromWizardFields } from '@/lib/tenant/composeQuoteNotes';
+import type { ParsedQuoteLineItem } from '@/lib/tenant/quoteLineItemsForm';
+import {
+  parseCustomerPropertyKind,
+  parseQuoteWizardStructuredFromForm,
+  type QuotePropertySnapshot,
+} from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
@@ -217,22 +222,55 @@ function parseQuoteHeaderPricingFromForm(formData: FormData):
   return { ok: true, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value };
 }
 
-function parseScopeInclusionsFromForm(formData: FormData): string[] {
-  const raw = String(formData.get('scope_inclusions') ?? '').trim();
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((item) => String(item).trim()).filter(Boolean);
-  } catch {
-    return [];
-  }
+function linePayloadFromParsed(lines: ParsedQuoteLineItem[]) {
+  return lines.map((l) => ({
+    sort_order: l.sort_order,
+    service_label: l.service_label,
+    frequency: l.frequency,
+    frequency_detail: l.frequency_detail,
+    amount_cents: l.amount_cents,
+    line_discount_kind: l.line_discount_kind,
+    line_discount_value: l.line_discount_value,
+    pricing_method: l.pricing_method,
+    estimated_hours: l.estimated_hours,
+  }));
+}
+
+async function syncPropertyFactsFromSnapshot(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  propertyId: string | null,
+  snapshot: QuotePropertySnapshot,
+) {
+  if (!propertyId) return;
+
+  const patch: {
+    bedrooms?: number;
+    bathrooms?: number;
+    sqft?: number;
+    stories?: number;
+    property_kind?: CustomerPropertyKind;
+    site_notes?: string;
+  } = {};
+
+  if (snapshot.bedrooms != null) patch.bedrooms = snapshot.bedrooms;
+  if (snapshot.bathrooms != null) patch.bathrooms = snapshot.bathrooms;
+  if (snapshot.sqft != null) patch.sqft = snapshot.sqft;
+  if (snapshot.stories != null) patch.stories = snapshot.stories;
+  if (snapshot.property_kind) patch.property_kind = snapshot.property_kind;
+  if (snapshot.access_notes?.trim()) patch.site_notes = snapshot.access_notes.trim();
+
+  if (Object.keys(patch).length === 0) return;
+
+  await admin
+    .from('tenant_customer_properties')
+    .update(patch)
+    .eq('id', propertyId)
+    .eq('tenant_id', tenantId);
 }
 
 function parseInlinePropertyKind(raw: string): CustomerPropertyKind {
-  const t = raw.trim();
-  if (t === 'commercial' || t === 'short_term_rental' || t === 'other') return t;
-  return 'residential';
+  return parseCustomerPropertyKind(raw);
 }
 
 export async function createTenantQuote(
@@ -262,26 +300,7 @@ export async function createTenantQuote(
   const inlinePropertyKind = parseInlinePropertyKind(
     String(formData.get('inline_property_kind') ?? 'residential'),
   );
-  const scopeInclusions = parseScopeInclusionsFromForm(formData);
-  const scopeExclusions = String(formData.get('scope_exclusions') ?? '').trim();
-  const quotePropertyType = String(formData.get('quote_property_type') ?? '').trim();
-  const quotePropertySqft = String(formData.get('quote_property_sqft') ?? '').trim();
-  const quotePropertyBedsBaths = String(formData.get('quote_property_beds_baths') ?? '').trim();
-  const quotePropertyStories = String(formData.get('quote_property_stories') ?? '').trim();
-  const accessNotes = String(formData.get('access_notes') ?? '').trim();
-  const officeNotes = String(formData.get('office_notes') ?? '').trim();
-
-  const composedNotes =
-    composeQuoteNotesFromWizardFields({
-      scopeInclusions,
-      scopeExclusions,
-      propertyType: quotePropertyType,
-      propertySqft: quotePropertySqft,
-      propertyBedsBaths: quotePropertyBedsBaths,
-      propertyStories: quotePropertyStories,
-      accessNotes,
-      officeNotes,
-    }) ?? notes;
+  const structured = parseQuoteWizardStructuredFromForm(formData);
 
   if (!slug || !title) {
     return { error: 'Workspace and quote title are required.' };
@@ -306,7 +325,11 @@ export async function createTenantQuote(
         state: inlinePropertyState || undefined,
         postal_code: inlinePropertyPostal || undefined,
         property_kind: inlinePropertyKind,
-        site_notes: accessNotes || undefined,
+        site_notes: structured.propertySnapshot.access_notes ?? undefined,
+        bedrooms: structured.propertySnapshot.bedrooms ?? undefined,
+        bathrooms: structured.propertySnapshot.bathrooms ?? undefined,
+        sqft: structured.propertySnapshot.sqft ?? undefined,
+        stories: structured.propertySnapshot.stories ?? undefined,
       },
     });
     if (!created.ok) {
@@ -365,15 +388,14 @@ export async function createTenantQuote(
       ? null
       : totals.total_cents;
 
-  const linePayload = parsedLines.lines.map((l) => ({
-    sort_order: l.sort_order,
-    service_label: l.service_label,
-    frequency: l.frequency,
-    frequency_detail: l.frequency_detail,
-    amount_cents: l.amount_cents,
-    line_discount_kind: l.line_discount_kind,
-    line_discount_value: l.line_discount_value,
-  }));
+  const linePayload = linePayloadFromParsed(parsedLines.lines);
+
+  await syncPropertyFactsFromSnapshot(
+    admin,
+    membership.tenantId,
+    propertyId,
+    structured.propertySnapshot,
+  );
 
   const rpc = await admin.rpc('tenant_quote_create_with_line_items', {
     p_tenant_id: membership.tenantId,
@@ -382,13 +404,17 @@ export async function createTenantQuote(
     p_title: title,
     p_status: 'draft',
     p_amount_cents: amountCents,
-    p_notes: composedNotes || null,
+    p_notes: structured.customerNotes || notes || null,
     p_valid_until: validUntil,
     p_tax_mode: pricing.tax_mode,
     p_tax_rate_bps: pricing.tax_rate_bps,
     p_quote_discount_kind: pricing.quote_discount_kind,
     p_quote_discount_value: pricing.quote_discount_value,
     p_line_items: linePayload,
+    p_job_type: structured.jobType,
+    p_scope_snapshot: structured.scopeSnapshot,
+    p_property_snapshot: structured.propertySnapshot,
+    p_internal_notes: structured.internalNotes,
   });
 
   if (rpc.error) {
@@ -440,7 +466,9 @@ export async function updateTenantQuote(
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
-    .select('id, is_locked, status, customer_id, title')
+    .select(
+      'id, is_locked, status, customer_id, title, scope_snapshot, property_snapshot, internal_notes, job_type',
+    )
     .eq('id', quoteId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -511,15 +539,10 @@ export async function updateTenantQuote(
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
-  const linePayload = parsedLines.lines.map((l) => ({
-    sort_order: l.sort_order,
-    service_label: l.service_label,
-    frequency: l.frequency,
-    frequency_detail: l.frequency_detail,
-    amount_cents: l.amount_cents,
-    line_discount_kind: l.line_discount_kind,
-    line_discount_value: l.line_discount_value,
-  }));
+  const linePayload = linePayloadFromParsed(parsedLines.lines);
+
+  const fromWizard = formData.has('scope_template_id');
+  const structured = fromWizard ? parseQuoteWizardStructuredFromForm(formData) : null;
 
   const rpc = await admin.rpc('tenant_quote_save_with_line_items', {
     p_quote_id: quoteId,
@@ -529,13 +552,17 @@ export async function updateTenantQuote(
     p_customer_id: customerId,
     p_property_id: propertyId,
     p_amount_cents: amountCents,
-    p_notes: notes || null,
+    p_notes: (structured?.customerNotes ?? notes) || null,
     p_valid_until: validUntil,
     p_tax_mode: pricing.tax_mode,
     p_tax_rate_bps: pricing.tax_rate_bps,
     p_quote_discount_kind: pricing.quote_discount_kind,
     p_quote_discount_value: pricing.quote_discount_value,
     p_line_items: linePayload,
+    p_job_type: structured?.jobType ?? existing.job_type,
+    p_scope_snapshot: structured?.scopeSnapshot ?? existing.scope_snapshot,
+    p_property_snapshot: structured?.propertySnapshot ?? existing.property_snapshot,
+    p_internal_notes: structured?.internalNotes ?? existing.internal_notes,
   });
 
   if (rpc.error) {
@@ -609,7 +636,7 @@ export async function createTenantQuoteAmendment(
   const { data: prior, error: priorErr } = await admin
     .from('tenant_quotes')
     .select(
-      'id, tenant_id, customer_id, property_id, title, status, amount_cents, currency, notes, valid_until, quote_group_id, version_number, is_locked, superseded_by_quote_id, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value',
+      'id, tenant_id, customer_id, property_id, title, status, amount_cents, currency, notes, valid_until, quote_group_id, version_number, is_locked, superseded_by_quote_id, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value, job_type, scope_snapshot, property_snapshot, internal_notes',
     )
     .eq('id', priorQuoteId)
     .eq('tenant_id', membership.tenantId)
@@ -651,6 +678,10 @@ export async function createTenantQuoteAmendment(
       tax_rate_bps: prior.tax_rate_bps,
       quote_discount_kind: prior.quote_discount_kind,
       quote_discount_value: prior.quote_discount_value,
+      job_type: prior.job_type,
+      scope_snapshot: prior.scope_snapshot,
+      property_snapshot: prior.property_snapshot,
+      internal_notes: prior.internal_notes,
       notes: prior.notes,
       valid_until: prior.valid_until,
       quote_group_id: prior.quote_group_id,
@@ -670,7 +701,7 @@ export async function createTenantQuoteAmendment(
   const { data: lineRows } = await admin
     .from('tenant_quote_line_items')
     .select(
-      'sort_order, service_label, frequency, frequency_detail, amount_cents, line_discount_kind, line_discount_value',
+      'sort_order, service_label, frequency, frequency_detail, amount_cents, line_discount_kind, line_discount_value, pricing_method, estimated_hours',
     )
     .eq('quote_id', priorQuoteId)
     .order('sort_order', { ascending: true });
@@ -685,6 +716,8 @@ export async function createTenantQuoteAmendment(
       amount_cents: l.amount_cents,
       line_discount_kind: l.line_discount_kind,
       line_discount_value: l.line_discount_value,
+      pricing_method: l.pricing_method,
+      estimated_hours: l.estimated_hours,
     }));
     const liErr = await admin.from('tenant_quote_line_items').insert(copy);
     if (liErr.error) {

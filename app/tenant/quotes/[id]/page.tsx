@@ -20,6 +20,7 @@ import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
+import { parseQuoteScopeSnapshot } from '@/lib/tenant/quoteStructuredFields';
 import { quoteHeaderPricingDefaultsFromQuote } from '@/lib/tenant/quoteHeaderPricingDefaults';
 import styles from '../quotes.module.scss';
 
@@ -115,7 +116,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           frequency_detail,
           amount_cents,
           line_discount_kind,
-          line_discount_value
+          line_discount_value,
+          pricing_method,
+          estimated_hours
         )
       `,
     )
@@ -196,6 +199,8 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   const eSign = eSignRes.data;
   const versionRows = versionsRes.data ?? [];
 
+  const scopeSnapshot = parseQuoteScopeSnapshot(row.scope_snapshot);
+
   const summaryItems = [
     { key: 'Quote ID', value: row.id },
     { key: 'Version', value: String(row.version_number) },
@@ -227,6 +232,12 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       key: 'Service location',
       value: siteLine || '—',
     },
+    ...(scopeSnapshot.inclusions.length > 0
+      ? [{ key: 'Scope items', value: String(scopeSnapshot.inclusions.length) }]
+      : []),
+    ...(row.internal_notes
+      ? [{ key: 'Office notes', value: row.internal_notes }]
+      : []),
   ];
 
   const canCreateAmendment =

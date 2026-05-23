@@ -10,6 +10,8 @@ import {
 } from '@/lib/tenant/quoteLineFrequency';
 import type { QuoteLineDiscountKind } from '@/lib/tenant/quoteHeaderPricingForm';
 import { QUOTE_LINE_DISCOUNT_OPTIONS } from '@/lib/tenant/quoteHeaderPricingForm';
+import type { QuoteLinePricingMethod } from '@/lib/tenant/quoteLinePricingMethod';
+import { QUOTE_LINE_PRICING_METHOD_OPTIONS } from '@/lib/tenant/quoteLinePricingMethod';
 import styles from './quotes.module.scss';
 
 export type QuoteLineItemDraft = {
@@ -20,6 +22,8 @@ export type QuoteLineItemDraft = {
   amount_dollars: string;
   line_discount_kind: QuoteLineDiscountKind;
   line_discount_input: string;
+  pricing_method: QuoteLinePricingMethod;
+  estimated_hours: string;
 };
 
 type QuoteLineItemRow = Pick<
@@ -32,6 +36,8 @@ type QuoteLineItemRow = Pick<
   | 'amount_cents'
   | 'line_discount_kind'
   | 'line_discount_value'
+  | 'pricing_method'
+  | 'estimated_hours'
 >;
 
 function discountInputFromRow(kind: QuoteLineDiscountKind, value: number): string {
@@ -52,6 +58,8 @@ export function createEmptyQuoteLineDraft(): QuoteLineItemDraft {
     amount_dollars: '',
     line_discount_kind: 'none',
     line_discount_input: '',
+    pricing_method: 'flat',
+    estimated_hours: '',
   };
 }
 
@@ -70,6 +78,11 @@ export function draftsFromQuoteLineRows(
       amount_dollars: (l.amount_cents / 100).toFixed(2),
       line_discount_kind: l.line_discount_kind,
       line_discount_input: discountInputFromRow(l.line_discount_kind, l.line_discount_value),
+      pricing_method: l.pricing_method ?? 'flat',
+      estimated_hours:
+        l.estimated_hours != null && Number(l.estimated_hours) > 0
+          ? String(l.estimated_hours)
+          : '',
     }));
 }
 
@@ -208,6 +221,44 @@ function LineItemFields({
             />
           </div>
         </div>
+        <div className={styles.lineItemCardGrid}>
+          <div>
+            <label className={styles.label} htmlFor={`line_pricing_method_${row.key}`}>
+              Pricing method
+            </label>
+            <select
+              id={`line_pricing_method_${row.key}`}
+              name="line_pricing_method"
+              className={styles.select}
+              value={row.pricing_method}
+              onChange={(e) =>
+                updateRow(row.key, {
+                  pricing_method: e.target.value as QuoteLinePricingMethod,
+                })
+              }
+            >
+              {QUOTE_LINE_PRICING_METHOD_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={styles.label} htmlFor={`line_estimated_hours_${row.key}`}>
+              Est. hours
+            </label>
+            <input
+              id={`line_estimated_hours_${row.key}`}
+              name="line_estimated_hours"
+              className={styles.input}
+              inputMode="decimal"
+              placeholder="Optional"
+              value={row.estimated_hours}
+              onChange={(e) => updateRow(row.key, { estimated_hours: e.target.value })}
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -296,6 +347,20 @@ function LineItemFields({
         onChange={(e) => updateRow(row.key, { line_discount_input: e.target.value })}
         readOnly={row.line_discount_kind === 'none'}
         aria-label="Line discount value"
+      />
+      <input
+        type="hidden"
+        name="line_pricing_method"
+        value={row.pricing_method}
+        readOnly
+        aria-hidden
+      />
+      <input
+        type="hidden"
+        name="line_estimated_hours"
+        value={row.estimated_hours}
+        readOnly
+        aria-hidden
       />
     </>
   );

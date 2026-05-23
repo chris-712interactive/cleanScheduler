@@ -45,6 +45,8 @@ export type QuoteDetailEmbedRow = Tables<'tenant_quotes'> & {
         | 'amount_cents'
         | 'line_discount_kind'
         | 'line_discount_value'
+        | 'pricing_method'
+        | 'estimated_hours'
       >[]
     | null;
 };

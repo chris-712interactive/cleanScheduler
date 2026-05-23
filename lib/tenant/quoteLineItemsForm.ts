@@ -6,8 +6,10 @@ import {
   parseDiscountPercentToBps,
   parseQuoteLineDiscountKind,
 } from '@/lib/tenant/quoteHeaderPricingForm';
+import { parseQuoteLinePricingMethod } from '@/lib/tenant/quoteLinePricingMethod';
 
 export type QuoteLineDiscountKind = Database['public']['Enums']['quote_line_discount_kind'];
+export type QuoteLinePricingMethod = Database['public']['Enums']['quote_line_pricing_method'];
 
 export interface ParsedQuoteLineItem {
   sort_order: number;
@@ -17,6 +19,8 @@ export interface ParsedQuoteLineItem {
   amount_cents: number;
   line_discount_kind: QuoteLineDiscountKind;
   line_discount_value: number;
+  pricing_method: QuoteLinePricingMethod;
+  estimated_hours: number | null;
 }
 
 function parseDollarsToCents(
@@ -46,6 +50,8 @@ export function parseQuoteLineItemsFromForm(
   const amounts = formData.getAll('line_amount').map((v) => String(v));
   const discKinds = formData.getAll('line_discount_kind').map((v) => String(v));
   const discInputs = formData.getAll('line_discount_input').map((v) => String(v));
+  const pricingMethods = formData.getAll('line_pricing_method').map((v) => String(v));
+  const estimatedHours = formData.getAll('line_estimated_hours').map((v) => String(v));
 
   const n = Math.max(
     services.length,
@@ -54,6 +60,8 @@ export function parseQuoteLineItemsFromForm(
     amounts.length,
     discKinds.length,
     discInputs.length,
+    pricingMethods.length,
+    estimatedHours.length,
   );
   const lines: ParsedQuoteLineItem[] = [];
 
@@ -64,6 +72,8 @@ export function parseQuoteLineItemsFromForm(
     const amountRaw = amounts[i] ?? '';
     const line_discount_kind = parseQuoteLineDiscountKind(discKinds[i] ?? '');
     const discInputRaw = discInputs[i] ?? '';
+    const pricing_method = parseQuoteLinePricingMethod(pricingMethods[i] ?? 'flat');
+    const hoursRaw = (estimatedHours[i] ?? '').trim();
 
     const rowBlank =
       !service_label && !amountRaw.trim() && line_discount_kind === 'none' && !discInputRaw.trim();
@@ -94,6 +104,15 @@ export function parseQuoteLineItemsFromForm(
       line_discount_value = d.cents;
     }
 
+    let estimated_hours: number | null = null;
+    if (hoursRaw) {
+      const h = Number(hoursRaw.replace(/,/g, ''));
+      if (!Number.isFinite(h) || h < 0) {
+        return { ok: false, error: 'Enter a valid estimated hours value on each service line.' };
+      }
+      estimated_hours = Math.round(h * 100) / 100;
+    }
+
     lines.push({
       sort_order: lines.length,
       service_label,
@@ -102,6 +121,8 @@ export function parseQuoteLineItemsFromForm(
       amount_cents: parsed.cents,
       line_discount_kind,
       line_discount_value,
+      pricing_method,
+      estimated_hours,
     });
   }
 

@@ -27,6 +27,8 @@ export type QuoteEditLineItem = Pick<
   | 'amount_cents'
   | 'line_discount_kind'
   | 'line_discount_value'
+  | 'pricing_method'
+  | 'estimated_hours'
 >;
 
 export interface QuoteEditSnapshot {

@@ -14,6 +14,10 @@ export interface InlineQuotePropertyInput {
   postal_code?: string;
   property_kind?: CustomerPropertyKind;
   site_notes?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  sqft?: number;
+  stories?: number;
 }
 
 /**
@@ -144,6 +148,10 @@ export async function createTenantCustomerInlineForQuote(options: {
       state: options.property?.state?.trim() || null,
       postal_code: options.property?.postal_code?.trim() || null,
       site_notes: options.property?.site_notes?.trim() || null,
+      bedrooms: options.property?.bedrooms ?? null,
+      bathrooms: options.property?.bathrooms ?? null,
+      sqft: options.property?.sqft ?? null,
+      stories: options.property?.stories ?? null,
       is_primary: true,
     })
     .select('id')

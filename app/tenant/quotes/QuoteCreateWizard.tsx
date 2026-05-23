@@ -78,7 +78,8 @@ export function QuoteCreateWizard({
 
   const [quotePropertyType, setQuotePropertyType] = useState('residential');
   const [quotePropertySqft, setQuotePropertySqft] = useState('');
-  const [quotePropertyBedsBaths, setQuotePropertyBedsBaths] = useState('');
+  const [quotePropertyBedrooms, setQuotePropertyBedrooms] = useState('');
+  const [quotePropertyBathrooms, setQuotePropertyBathrooms] = useState('');
   const [quotePropertyStories, setQuotePropertyStories] = useState('');
   const [accessNotes, setAccessNotes] = useState('');
 
@@ -215,15 +216,13 @@ export function QuoteCreateWizard({
     }
   };
 
-  const propertyTypeLabel =
-    PROPERTY_KIND_OPTIONS.find((o) => o.value === quotePropertyType)?.label ?? quotePropertyType;
-
   return (
     <form action={formAction} className={styles.wizardForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_source" value={customerSource} />
       <input type="hidden" name="scope_inclusions" value={JSON.stringify(scopeInclusions)} />
-      <input type="hidden" name="quote_property_type" value={propertyTypeLabel} />
+      <input type="hidden" name="scope_template_id" value={scopeTemplateId} />
+      <input type="hidden" name="quote_property_kind" value={quotePropertyType} />
 
       {state.error ? (
         <p className={styles.error} role="alert">
@@ -532,16 +531,31 @@ export function QuoteCreateWizard({
                   />
                 </div>
                 <div>
-                  <label className={styles.label} htmlFor="quote_property_beds_baths">
-                    Beds / baths
+                  <label className={styles.label} htmlFor="quote_property_bedrooms">
+                    Bedrooms
                   </label>
                   <input
-                    id="quote_property_beds_baths"
-                    name="quote_property_beds_baths"
+                    id="quote_property_bedrooms"
+                    name="quote_property_bedrooms"
                     className={styles.input}
-                    value={quotePropertyBedsBaths}
-                    onChange={(e) => setQuotePropertyBedsBaths(e.target.value)}
-                    placeholder="3 / 2"
+                    inputMode="numeric"
+                    value={quotePropertyBedrooms}
+                    onChange={(e) => setQuotePropertyBedrooms(e.target.value)}
+                    placeholder="3"
+                  />
+                </div>
+                <div>
+                  <label className={styles.label} htmlFor="quote_property_bathrooms">
+                    Bathrooms
+                  </label>
+                  <input
+                    id="quote_property_bathrooms"
+                    name="quote_property_bathrooms"
+                    className={styles.input}
+                    inputMode="decimal"
+                    value={quotePropertyBathrooms}
+                    onChange={(e) => setQuotePropertyBathrooms(e.target.value)}
+                    placeholder="2.5"
                   />
                 </div>
                 <div>

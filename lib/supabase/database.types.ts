@@ -1142,6 +1142,10 @@ export type Database = {
           postal_code: string | null;
           site_notes: string | null;
           is_primary: boolean;
+          bedrooms: number | null;
+          bathrooms: number | null;
+          sqft: number | null;
+          stories: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -1158,6 +1162,10 @@ export type Database = {
           postal_code?: string | null;
           site_notes?: string | null;
           is_primary?: boolean;
+          bedrooms?: number | null;
+          bathrooms?: number | null;
+          sqft?: number | null;
+          stories?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1174,6 +1182,10 @@ export type Database = {
           postal_code?: string | null;
           site_notes?: string | null;
           is_primary?: boolean;
+          bedrooms?: number | null;
+          bathrooms?: number | null;
+          sqft?: number | null;
+          stories?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1394,6 +1406,8 @@ export type Database = {
           amount_cents: number;
           line_discount_kind: Database['public']['Enums']['quote_line_discount_kind'];
           line_discount_value: number;
+          pricing_method: Database['public']['Enums']['quote_line_pricing_method'];
+          estimated_hours: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -1408,6 +1422,8 @@ export type Database = {
           amount_cents: number;
           line_discount_kind?: Database['public']['Enums']['quote_line_discount_kind'];
           line_discount_value?: number;
+          pricing_method?: Database['public']['Enums']['quote_line_pricing_method'];
+          estimated_hours?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1422,6 +1438,8 @@ export type Database = {
           amount_cents?: number;
           line_discount_kind?: Database['public']['Enums']['quote_line_discount_kind'];
           line_discount_value?: number;
+          pricing_method?: Database['public']['Enums']['quote_line_pricing_method'];
+          estimated_hours?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1435,6 +1453,77 @@ export type Database = {
           },
           {
             foreignKeyName: 'tenant_quote_line_items_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_service_templates: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          kind: Database['public']['Enums']['tenant_service_template_kind'];
+          name: string;
+          service_label: string | null;
+          amount_cents: number | null;
+          frequency: Database['public']['Enums']['quote_line_frequency'] | null;
+          frequency_detail: string | null;
+          pricing_method: Database['public']['Enums']['quote_line_pricing_method'];
+          estimated_hours: number | null;
+          scope_template_id: string | null;
+          scope_inclusions: Json;
+          scope_exclusions: string | null;
+          job_type: Database['public']['Enums']['customer_property_kind'] | null;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          kind: Database['public']['Enums']['tenant_service_template_kind'];
+          name: string;
+          service_label?: string | null;
+          amount_cents?: number | null;
+          frequency?: Database['public']['Enums']['quote_line_frequency'] | null;
+          frequency_detail?: string | null;
+          pricing_method?: Database['public']['Enums']['quote_line_pricing_method'];
+          estimated_hours?: number | null;
+          scope_template_id?: string | null;
+          scope_inclusions?: Json;
+          scope_exclusions?: string | null;
+          job_type?: Database['public']['Enums']['customer_property_kind'] | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          kind?: Database['public']['Enums']['tenant_service_template_kind'];
+          name?: string;
+          service_label?: string | null;
+          amount_cents?: number | null;
+          frequency?: Database['public']['Enums']['quote_line_frequency'] | null;
+          frequency_detail?: string | null;
+          pricing_method?: Database['public']['Enums']['quote_line_pricing_method'];
+          estimated_hours?: number | null;
+          scope_template_id?: string | null;
+          scope_inclusions?: Json;
+          scope_exclusions?: string | null;
+          job_type?: Database['public']['Enums']['customer_property_kind'] | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_service_templates_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -1458,6 +1547,10 @@ export type Database = {
           quote_discount_value: number;
           notes: string | null;
           valid_until: string | null;
+          job_type: Database['public']['Enums']['customer_property_kind'] | null;
+          scope_snapshot: Json;
+          property_snapshot: Json;
+          internal_notes: string | null;
           quote_group_id: string;
           version_number: number;
           version_reason: string | null;
@@ -1483,6 +1576,10 @@ export type Database = {
           quote_discount_value?: number;
           notes?: string | null;
           valid_until?: string | null;
+          job_type?: Database['public']['Enums']['customer_property_kind'] | null;
+          scope_snapshot?: Json;
+          property_snapshot?: Json;
+          internal_notes?: string | null;
           quote_group_id?: string;
           version_number?: number;
           version_reason?: string | null;
@@ -1508,6 +1605,10 @@ export type Database = {
           quote_discount_value?: number;
           notes?: string | null;
           valid_until?: string | null;
+          job_type?: Database['public']['Enums']['customer_property_kind'] | null;
+          scope_snapshot?: Json;
+          property_snapshot?: Json;
+          internal_notes?: string | null;
           quote_group_id?: string;
           version_number?: number;
           version_reason?: string | null;
@@ -2962,6 +3063,10 @@ export type Database = {
           p_quote_discount_kind: Database['public']['Enums']['quote_discount_kind'];
           p_quote_discount_value: number;
           p_line_items: Json;
+          p_job_type?: Database['public']['Enums']['customer_property_kind'] | null;
+          p_scope_snapshot?: Json;
+          p_property_snapshot?: Json;
+          p_internal_notes?: string | null;
         };
         Returns: string;
       };
@@ -2981,6 +3086,10 @@ export type Database = {
           p_quote_discount_kind: Database['public']['Enums']['quote_discount_kind'];
           p_quote_discount_value: number;
           p_line_items: Json;
+          p_job_type?: Database['public']['Enums']['customer_property_kind'] | null;
+          p_scope_snapshot?: Json;
+          p_property_snapshot?: Json;
+          p_internal_notes?: string | null;
         };
         Returns: undefined;
       };
@@ -2996,6 +3105,8 @@ export type Database = {
       quote_tax_mode: 'none' | 'exclusive';
       quote_discount_kind: 'none' | 'percent' | 'fixed_cents';
       quote_line_discount_kind: 'none' | 'percent' | 'fixed_cents';
+      quote_line_pricing_method: 'flat' | 'hourly' | 'per_sqft';
+      tenant_service_template_kind: 'service_line' | 'scope_template' | 'addon';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';
