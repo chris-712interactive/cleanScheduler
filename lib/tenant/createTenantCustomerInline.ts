@@ -2,11 +2,22 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 
 type AdminClient = SupabaseClient<Database>;
 
+export interface InlineQuotePropertyInput {
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  property_kind?: CustomerPropertyKind;
+  site_notes?: string;
+}
+
 /**
- * Creates customer + identity + link + profile + primary property (minimal address)
+ * Creates customer + identity + link + profile + primary property
  * for the quote flow. Does not revalidate or redirect — caller handles paths.
  */
 export async function createTenantCustomerInlineForQuote(options: {
@@ -16,7 +27,10 @@ export async function createTenantCustomerInlineForQuote(options: {
   lastName?: string;
   email: string;
   phone?: string;
-}): Promise<{ ok: true; customerId: string } | { ok: false; error: string }> {
+  property?: InlineQuotePropertyInput;
+}): Promise<
+  { ok: true; customerId: string; propertyId: string } | { ok: false; error: string }
+> {
   const firstName = options.firstName.trim();
   const lastName = (options.lastName ?? '').trim();
   const email = options.email.trim().toLowerCase();
@@ -117,26 +131,33 @@ export async function createTenantCustomerInlineForQuote(options: {
     return { ok: false, error: profileInsert.error.message };
   }
 
-  const propertyInsert = await options.admin.from('tenant_customer_properties').insert({
-    tenant_id: options.tenantId,
-    customer_id: customerId,
-    label: 'Primary service location',
-    property_kind: 'residential',
-    address_line1: null,
-    address_line2: null,
-    city: null,
-    state: null,
-    postal_code: null,
-    is_primary: true,
-  });
+  const propertyInsert = await options.admin
+    .from('tenant_customer_properties')
+    .insert({
+      tenant_id: options.tenantId,
+      customer_id: customerId,
+      label: 'Primary service location',
+      property_kind: options.property?.property_kind ?? 'residential',
+      address_line1: options.property?.address_line1?.trim() || null,
+      address_line2: options.property?.address_line2?.trim() || null,
+      city: options.property?.city?.trim() || null,
+      state: options.property?.state?.trim() || null,
+      postal_code: options.property?.postal_code?.trim() || null,
+      site_notes: options.property?.site_notes?.trim() || null,
+      is_primary: true,
+    })
+    .select('id')
+    .single();
 
-  if (propertyInsert.error) {
+  if (propertyInsert.error || !propertyInsert.data) {
     await options.admin.from('tenant_customer_profiles').delete().eq('customer_id', customerId);
     await options.admin.from('customer_tenant_links').delete().eq('customer_id', customerId);
     await options.admin.from('customers').delete().eq('id', customerId);
     await options.admin.from('customer_identities').delete().eq('id', identityId);
-    return { ok: false, error: propertyInsert.error.message };
+    return { ok: false, error: propertyInsert.error?.message ?? 'Could not create service location.' };
   }
 
-  return { ok: true, customerId };
+  const propertyId = propertyInsert.data.id as string;
+
+  return { ok: true, customerId, propertyId };
 }

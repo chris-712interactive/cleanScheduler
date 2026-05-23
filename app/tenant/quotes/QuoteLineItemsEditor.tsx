@@ -40,7 +40,7 @@ function discountInputFromRow(kind: QuoteLineDiscountKind, value: number): strin
   return (value / 100).toFixed(2);
 }
 
-function emptyDraft(): QuoteLineItemDraft {
+export function createEmptyQuoteLineDraft(): QuoteLineItemDraft {
   return {
     key:
       typeof crypto !== 'undefined' && crypto.randomUUID
@@ -73,66 +73,36 @@ export function draftsFromQuoteLineRows(
     }));
 }
 
-export function QuoteLineItemsEditor({
-  initialRows,
+function LineItemFields({
+  row,
+  updateRow,
+  layout,
 }: {
-  /** When empty or omitted, one blank row is shown for data entry. */
-  initialRows?: QuoteLineItemRow[] | null;
+  row: QuoteLineItemDraft;
+  updateRow: (key: string, patch: Partial<QuoteLineItemDraft>) => void;
+  layout: 'grid' | 'cards';
 }) {
-  const [rows, setRows] = useState<QuoteLineItemDraft[]>(() => {
-    const fromDb = draftsFromQuoteLineRows(initialRows ?? null);
-    return fromDb.length > 0 ? fromDb : [emptyDraft()];
-  });
-
-  const updateRow = useCallback((key: string, patch: Partial<QuoteLineItemDraft>) => {
-    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  }, []);
-
-  const addRow = useCallback(() => {
-    setRows((prev) => [...prev, emptyDraft()]);
-  }, []);
-
-  const removeRow = useCallback((key: string) => {
-    setRows((prev) => {
-      if (prev.length <= 1) {
-        return [emptyDraft()];
-      }
-      return prev.filter((r) => r.key !== key);
-    });
-  }, []);
-
-  return (
-    <fieldset className={styles.lineItemsFieldset}>
-      <legend className={styles.lineItemsLegend}>Services &amp; pricing</legend>
-      <p className={styles.lineItemsIntro}>
-        Add one row per priced service. Cadence describes how often that price applies. Line
-        discounts reduce that row&apos;s amount before the quote subtotal. If you enter any complete
-        rows here, the header amount field below is ignored for the total (tax and quote-level
-        discount still apply).
-      </p>
-
-      <div className={styles.lineItemsHeaderRow} aria-hidden="true">
-        <span className={styles.lineItemsHeaderCell}>Service</span>
-        <span className={styles.lineItemsHeaderCell}>Cadence</span>
-        <span className={styles.lineItemsHeaderCell}>Cadence detail</span>
-        <span className={styles.lineItemsHeaderCell}>List ($)</span>
-        <span className={styles.lineItemsHeaderCell}>Line disc.</span>
-        <span className={styles.lineItemsHeaderCell}>Disc. value</span>
-        <span className={styles.lineItemsHeaderCellAction} />
-      </div>
-
-      <div className={styles.lineItemsRows}>
-        {rows.map((row) => (
-          <div key={row.key} className={styles.lineItemRow}>
-            <input
-              name="line_service"
-              className={styles.input}
-              placeholder="e.g. Deep clean, Weekly tidy"
-              value={row.service_label}
-              onChange={(e) => updateRow(row.key, { service_label: e.target.value })}
-              aria-label="Service name"
-            />
+  if (layout === 'cards') {
+    return (
+      <div className={styles.lineItemCardFields}>
+        <label className={styles.label} htmlFor={`line_service_${row.key}`}>
+          Service
+        </label>
+        <input
+          id={`line_service_${row.key}`}
+          name="line_service"
+          className={styles.input}
+          placeholder="e.g. Deep clean, Weekly maintenance"
+          value={row.service_label}
+          onChange={(e) => updateRow(row.key, { service_label: e.target.value })}
+        />
+        <div className={styles.lineItemCardGrid}>
+          <div>
+            <label className={styles.label} htmlFor={`line_frequency_${row.key}`}>
+              Cadence
+            </label>
             <select
+              id={`line_frequency_${row.key}`}
               name="line_frequency"
               className={styles.select}
               value={row.frequency}
@@ -143,7 +113,6 @@ export function QuoteLineItemsEditor({
                   frequency_detail: frequency === 'custom' ? row.frequency_detail : '',
                 });
               }}
-              aria-label="Cadence"
             >
               {QUOTE_LINE_FREQUENCY_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
@@ -151,30 +120,53 @@ export function QuoteLineItemsEditor({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className={styles.label} htmlFor={`line_amount_${row.key}`}>
+              List price ($)
+            </label>
             <input
-              name="line_frequency_detail"
-              className={
-                row.frequency === 'custom'
-                  ? styles.input
-                  : `${styles.input} ${styles.visuallyHidden}`
-              }
-              placeholder={row.frequency === 'custom' ? 'e.g. Every other Thursday' : ''}
-              value={row.frequency_detail}
-              onChange={(e) => updateRow(row.key, { frequency_detail: e.target.value })}
-              tabIndex={row.frequency === 'custom' ? 0 : -1}
-              readOnly={row.frequency !== 'custom'}
-              aria-label="Cadence detail"
-            />
-            <input
+              id={`line_amount_${row.key}`}
               name="line_amount"
               className={styles.input}
               inputMode="decimal"
               placeholder="0.00"
               value={row.amount_dollars}
               onChange={(e) => updateRow(row.key, { amount_dollars: e.target.value })}
-              aria-label="Line list amount USD"
             />
+          </div>
+        </div>
+        {row.frequency === 'custom' ? (
+          <>
+            <label className={styles.label} htmlFor={`line_detail_${row.key}`}>
+              Cadence detail
+            </label>
+            <input
+              id={`line_detail_${row.key}`}
+              name="line_frequency_detail"
+              className={styles.input}
+              placeholder='e.g. Every other Thursday'
+              value={row.frequency_detail}
+              onChange={(e) => updateRow(row.key, { frequency_detail: e.target.value })}
+            />
+          </>
+        ) : (
+          <input
+            name="line_frequency_detail"
+            className={styles.visuallyHidden}
+            value=""
+            readOnly
+            tabIndex={-1}
+            aria-hidden
+          />
+        )}
+        <div className={styles.lineItemCardGrid}>
+          <div>
+            <label className={styles.label} htmlFor={`line_disc_kind_${row.key}`}>
+              Line discount
+            </label>
             <select
+              id={`line_disc_kind_${row.key}`}
               name="line_discount_kind"
               className={styles.select}
               value={row.line_discount_kind}
@@ -182,10 +174,10 @@ export function QuoteLineItemsEditor({
                 const line_discount_kind = e.target.value as QuoteLineDiscountKind;
                 updateRow(row.key, {
                   line_discount_kind,
-                  line_discount_input: line_discount_kind === 'none' ? '' : row.line_discount_input,
+                  line_discount_input:
+                    line_discount_kind === 'none' ? '' : row.line_discount_input,
                 });
               }}
-              aria-label="Line discount type"
             >
               {QUOTE_LINE_DISCOUNT_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
@@ -193,7 +185,13 @@ export function QuoteLineItemsEditor({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className={styles.label} htmlFor={`line_disc_val_${row.key}`}>
+              Discount value
+            </label>
             <input
+              id={`line_disc_val_${row.key}`}
               name="line_discount_input"
               className={styles.input}
               inputMode="decimal"
@@ -207,21 +205,219 @@ export function QuoteLineItemsEditor({
               value={row.line_discount_input}
               onChange={(e) => updateRow(row.key, { line_discount_input: e.target.value })}
               readOnly={row.line_discount_kind === 'none'}
-              aria-label="Line discount value"
             />
-            <div className={styles.lineItemActions}>
-              <button
-                type="button"
-                className={styles.lineItemIconButton}
-                onClick={() => removeRow(row.key)}
-                aria-label="Remove service row"
-              >
-                <Trash2 size={18} aria-hidden />
-              </button>
-            </div>
           </div>
-        ))}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <>
+      <input
+        name="line_service"
+        className={styles.input}
+        placeholder="e.g. Deep clean, Weekly tidy"
+        value={row.service_label}
+        onChange={(e) => updateRow(row.key, { service_label: e.target.value })}
+        aria-label="Service name"
+      />
+      <select
+        name="line_frequency"
+        className={styles.select}
+        value={row.frequency}
+        onChange={(e) => {
+          const frequency = parseQuoteLineFrequency(e.target.value);
+          updateRow(row.key, {
+            frequency,
+            frequency_detail: frequency === 'custom' ? row.frequency_detail : '',
+          });
+        }}
+        aria-label="Cadence"
+      >
+        {QUOTE_LINE_FREQUENCY_OPTIONS.map(({ value, label }) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <input
+        name="line_frequency_detail"
+        className={
+          row.frequency === 'custom' ? styles.input : `${styles.input} ${styles.visuallyHidden}`
+        }
+        placeholder={row.frequency === 'custom' ? 'e.g. Every other Thursday' : ''}
+        value={row.frequency_detail}
+        onChange={(e) => updateRow(row.key, { frequency_detail: e.target.value })}
+        tabIndex={row.frequency === 'custom' ? 0 : -1}
+        readOnly={row.frequency !== 'custom'}
+        aria-label="Cadence detail"
+      />
+      <input
+        name="line_amount"
+        className={styles.input}
+        inputMode="decimal"
+        placeholder="0.00"
+        value={row.amount_dollars}
+        onChange={(e) => updateRow(row.key, { amount_dollars: e.target.value })}
+        aria-label="Line list amount USD"
+      />
+      <select
+        name="line_discount_kind"
+        className={styles.select}
+        value={row.line_discount_kind}
+        onChange={(e) => {
+          const line_discount_kind = e.target.value as QuoteLineDiscountKind;
+          updateRow(row.key, {
+            line_discount_kind,
+            line_discount_input: line_discount_kind === 'none' ? '' : row.line_discount_input,
+          });
+        }}
+        aria-label="Line discount type"
+      >
+        {QUOTE_LINE_DISCOUNT_OPTIONS.map(({ value, label }) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <input
+        name="line_discount_input"
+        className={styles.input}
+        inputMode="decimal"
+        placeholder={
+          row.line_discount_kind === 'percent'
+            ? '%'
+            : row.line_discount_kind === 'fixed_cents'
+              ? '$'
+              : '—'
+        }
+        value={row.line_discount_input}
+        onChange={(e) => updateRow(row.key, { line_discount_input: e.target.value })}
+        readOnly={row.line_discount_kind === 'none'}
+        aria-label="Line discount value"
+      />
+    </>
+  );
+}
+
+export function QuoteLineItemsEditor({
+  initialRows,
+  layout = 'grid',
+  rows: controlledRows,
+  onRowsChange,
+  hideLegend = false,
+}: {
+  initialRows?: QuoteLineItemRow[] | null;
+  layout?: 'grid' | 'cards';
+  rows?: QuoteLineItemDraft[];
+  onRowsChange?: (rows: QuoteLineItemDraft[]) => void;
+  hideLegend?: boolean;
+}) {
+  const [internalRows, setInternalRows] = useState<QuoteLineItemDraft[]>(() => {
+    const fromDb = draftsFromQuoteLineRows(initialRows ?? null);
+    return fromDb.length > 0 ? fromDb : [createEmptyQuoteLineDraft()];
+  });
+
+  const controlled = controlledRows !== undefined && onRowsChange !== undefined;
+  const rows = controlled ? controlledRows : internalRows;
+
+  const setRows = useCallback(
+    (updater: QuoteLineItemDraft[] | ((prev: QuoteLineItemDraft[]) => QuoteLineItemDraft[])) => {
+      if (controlled) {
+        const next = typeof updater === 'function' ? updater(controlledRows) : updater;
+        onRowsChange(next);
+      } else {
+        setInternalRows(updater);
+      }
+    },
+    [controlled, controlledRows, onRowsChange],
+  );
+
+  const updateRow = useCallback(
+    (key: string, patch: Partial<QuoteLineItemDraft>) => {
+      setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+    },
+    [setRows],
+  );
+
+  const addRow = useCallback(() => {
+    setRows((prev) => [...prev, createEmptyQuoteLineDraft()]);
+  }, [setRows]);
+
+  const removeRow = useCallback(
+    (key: string) => {
+      setRows((prev) => {
+        if (prev.length <= 1) {
+          return [createEmptyQuoteLineDraft()];
+        }
+        return prev.filter((r) => r.key !== key);
+      });
+    },
+    [setRows],
+  );
+
+  return (
+    <fieldset className={styles.lineItemsFieldset}>
+      {!hideLegend ? (
+        <>
+          <legend className={styles.lineItemsLegend}>Services &amp; pricing</legend>
+          <p className={styles.lineItemsIntro}>
+            Add one row per priced service. Cadence describes how often that price applies. Line
+            discounts reduce that row&apos;s amount before the quote subtotal.
+          </p>
+        </>
+      ) : null}
+
+      {layout === 'grid' ? (
+        <>
+          <div className={styles.lineItemsHeaderRow} aria-hidden="true">
+            <span className={styles.lineItemsHeaderCell}>Service</span>
+            <span className={styles.lineItemsHeaderCell}>Cadence</span>
+            <span className={styles.lineItemsHeaderCell}>Cadence detail</span>
+            <span className={styles.lineItemsHeaderCell}>List ($)</span>
+            <span className={styles.lineItemsHeaderCell}>Line disc.</span>
+            <span className={styles.lineItemsHeaderCell}>Disc. value</span>
+            <span className={styles.lineItemsHeaderCellAction} />
+          </div>
+          <div className={styles.lineItemsRows}>
+            {rows.map((row) => (
+              <div key={row.key} className={styles.lineItemRow}>
+                <LineItemFields row={row} updateRow={updateRow} layout="grid" />
+                <div className={styles.lineItemActions}>
+                  <button
+                    type="button"
+                    className={styles.lineItemIconButton}
+                    onClick={() => removeRow(row.key)}
+                    aria-label="Remove service row"
+                  >
+                    <Trash2 size={18} aria-hidden />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className={styles.lineItemCards}>
+          {rows.map((row) => (
+            <div key={row.key} className={styles.lineItemCard}>
+              <div className={styles.lineItemCardHeader}>
+                <strong>{row.service_label.trim() || 'Service line'}</strong>
+                <button
+                  type="button"
+                  className={styles.lineItemIconButton}
+                  onClick={() => removeRow(row.key)}
+                  aria-label="Remove service row"
+                >
+                  <Trash2 size={18} aria-hidden />
+                </button>
+              </div>
+              <LineItemFields row={row} updateRow={updateRow} layout="cards" />
+            </div>
+          ))}
+        </div>
+      )}
 
       <button type="button" className={styles.lineItemAddButton} onClick={addRow}>
         <Plus size={18} aria-hidden />

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -8,7 +7,8 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
-import { QuoteCreateForm, type CustomerPropertyGroup } from '../QuoteCreateForm';
+import { QuoteCreateWizard } from '../QuoteCreateWizard';
+import type { CustomerPropertyGroup } from '../quoteFormTypes';
 import styles from '../quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -98,7 +98,7 @@ export default async function TenantQuoteNewPage() {
     <>
       <PageHeader
         title="New quote"
-        description="Creates a draft you can send or refine."
+        description="Step through customer, property, scope, and pricing — then save a draft to send."
         breadcrumbs={[{ label: 'Quotes', href: '/quotes' }, { label: 'New quote' }]}
         actions={
           <Link href="/quotes" className={styles.backLink}>
@@ -108,16 +108,11 @@ export default async function TenantQuoteNewPage() {
       />
 
       <Stack gap={6}>
-        <Card
-          title="Quote details"
-          description="Optional customer and service location help downstream scheduling."
-        >
-          <QuoteCreateForm
-            tenantSlug={membership.tenantSlug}
-            customerOptions={customerOptions}
-            customerPropertyGroups={customerPropertyGroups}
-          />
-        </Card>
+        <QuoteCreateWizard
+          tenantSlug={membership.tenantSlug}
+          customerOptions={customerOptions}
+          customerPropertyGroups={customerPropertyGroups}
+        />
       </Stack>
     </>
   );

@@ -15,6 +15,8 @@ import {
   parseQuoteTaxMode,
 } from '@/lib/tenant/quoteHeaderPricingForm';
 import { createTenantCustomerInlineForQuote } from '@/lib/tenant/createTenantCustomerInline';
+import { composeQuoteNotesFromWizardFields } from '@/lib/tenant/composeQuoteNotes';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
@@ -215,6 +217,24 @@ function parseQuoteHeaderPricingFromForm(formData: FormData):
   return { ok: true, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value };
 }
 
+function parseScopeInclusionsFromForm(formData: FormData): string[] {
+  const raw = String(formData.get('scope_inclusions') ?? '').trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => String(item).trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function parseInlinePropertyKind(raw: string): CustomerPropertyKind {
+  const t = raw.trim();
+  if (t === 'commercial' || t === 'short_term_rental' || t === 'other') return t;
+  return 'residential';
+}
+
 export async function createTenantQuote(
   _prev: QuoteFormState,
   formData: FormData,
@@ -235,6 +255,33 @@ export async function createTenantQuote(
     .trim()
     .toLowerCase();
   const inlinePhone = String(formData.get('inline_customer_phone') ?? '').trim();
+  const inlinePropertyAddress = String(formData.get('inline_property_address_line1') ?? '').trim();
+  const inlinePropertyCity = String(formData.get('inline_property_city') ?? '').trim();
+  const inlinePropertyState = String(formData.get('inline_property_state') ?? '').trim();
+  const inlinePropertyPostal = String(formData.get('inline_property_postal_code') ?? '').trim();
+  const inlinePropertyKind = parseInlinePropertyKind(
+    String(formData.get('inline_property_kind') ?? 'residential'),
+  );
+  const scopeInclusions = parseScopeInclusionsFromForm(formData);
+  const scopeExclusions = String(formData.get('scope_exclusions') ?? '').trim();
+  const quotePropertyType = String(formData.get('quote_property_type') ?? '').trim();
+  const quotePropertySqft = String(formData.get('quote_property_sqft') ?? '').trim();
+  const quotePropertyBedsBaths = String(formData.get('quote_property_beds_baths') ?? '').trim();
+  const quotePropertyStories = String(formData.get('quote_property_stories') ?? '').trim();
+  const accessNotes = String(formData.get('access_notes') ?? '').trim();
+  const officeNotes = String(formData.get('office_notes') ?? '').trim();
+
+  const composedNotes =
+    composeQuoteNotesFromWizardFields({
+      scopeInclusions,
+      scopeExclusions,
+      propertyType: quotePropertyType,
+      propertySqft: quotePropertySqft,
+      propertyBedsBaths: quotePropertyBedsBaths,
+      propertyStories: quotePropertyStories,
+      accessNotes,
+      officeNotes,
+    }) ?? notes;
 
   if (!slug || !title) {
     return { error: 'Workspace and quote title are required.' };
@@ -244,6 +291,7 @@ export async function createTenantQuote(
   const admin = createAdminClient();
 
   let customerId: string;
+  let defaultPropertyId: string | null = null;
   if (customerSource === 'new') {
     const created = await createTenantCustomerInlineForQuote({
       admin,
@@ -252,11 +300,20 @@ export async function createTenantQuote(
       lastName: inlineLastName,
       email: inlineEmail,
       phone: inlinePhone,
+      property: {
+        address_line1: inlinePropertyAddress || undefined,
+        city: inlinePropertyCity || undefined,
+        state: inlinePropertyState || undefined,
+        postal_code: inlinePropertyPostal || undefined,
+        property_kind: inlinePropertyKind,
+        site_notes: accessNotes || undefined,
+      },
     });
     if (!created.ok) {
       return { error: created.error };
     }
     customerId = created.customerId;
+    defaultPropertyId = created.propertyId;
     revalidatePath('/tenant/customers', 'page');
   } else {
     if (!customerRaw) {
@@ -272,6 +329,8 @@ export async function createTenantQuote(
     const ok = await assertPropertyForCustomer(admin, membership.tenantId, customerId, propertyRaw);
     if (!ok) return { error: 'Service location does not belong to this customer.' };
     propertyId = propertyRaw;
+  } else if (defaultPropertyId) {
+    propertyId = defaultPropertyId;
   }
 
   const parsedLines = parseQuoteLineItemsFromForm(formData);
@@ -323,7 +382,7 @@ export async function createTenantQuote(
     p_title: title,
     p_status: 'draft',
     p_amount_cents: amountCents,
-    p_notes: notes || null,
+    p_notes: composedNotes || null,
     p_valid_until: validUntil,
     p_tax_mode: pricing.tax_mode,
     p_tax_rate_bps: pricing.tax_rate_bps,
