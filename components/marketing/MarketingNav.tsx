@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Container';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { MarketingLogo } from '@/components/marketing/MarketingLogo';
 import styles from './MarketingNav.module.scss';
 
@@ -30,7 +29,6 @@ export function MarketingNav() {
           </nav>
 
           <div className={styles.actions}>
-            <ThemeToggle />
             <Link href="/sign-in" className={styles.signInLink}>
               Sign in
             </Link>

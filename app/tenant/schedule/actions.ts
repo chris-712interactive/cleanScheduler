@@ -15,6 +15,7 @@ import {
   type AssigneeConflictInfo,
 } from '@/lib/schedule/visitAssigneeConflicts';
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
+import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 
 export interface ScheduleFormState {
   error?: string;
@@ -478,5 +479,64 @@ export async function resolveVisitRescheduleRequest(
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${request.visit_id}`);
   revalidatePath('/', 'layout');
+  return { success: true };
+}
+
+export async function updateVisitJobPrice(
+  _prev: ScheduleFormState,
+  formData: FormData,
+): Promise<ScheduleFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const visitId = String(formData.get('visit_id') ?? '').trim();
+  const jobPriceDollars = String(formData.get('job_price_dollars') ?? '').trim();
+
+  if (!slug || !visitId) {
+    return { error: 'Missing visit.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  const actorRole = membership.role as import('@/lib/auth/types').TenantRole;
+  if (actorRole !== 'owner' && actorRole !== 'admin') {
+    return { error: 'Only owners and admins can update job pricing.' };
+  }
+
+  const cents = parseCentsFromDollars(jobPriceDollars);
+  if (cents == null || cents <= 0) {
+    return { error: 'Enter a job price greater than zero.' };
+  }
+
+  const admin = createAdminClient();
+  const { data: visit, error: loadErr } = await admin
+    .from('tenant_scheduled_visits')
+    .select('id, status')
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (loadErr || !visit) {
+    return { error: 'Visit not found.' };
+  }
+
+  if (visit.status !== 'scheduled') {
+    return { error: 'Job price can only be updated on scheduled visits.' };
+  }
+
+  const { error: upErr } = await admin
+    .from('tenant_scheduled_visits')
+    .update({
+      expected_amount_cents: cents,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId);
+
+  if (upErr) {
+    return { error: upErr.message };
+  }
+
+  revalidatePath('/schedule');
+  revalidatePath(`/schedule/${visitId}`);
   return { success: true };
 }

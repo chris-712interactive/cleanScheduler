@@ -5,6 +5,9 @@
  * and keeps the resolved theme synchronised with the OS when "system" is
  * selected.
  *
+ * Marketing hosts always stay in light mode; user preference is restored on
+ * tenant, admin, and customer portals.
+ *
  * The pre-hydration script (themeScript.ts) handles the *initial* paint by
  * setting `data-theme` on <html> before React renders. This provider then
  * takes over for runtime updates (user toggles + OS-level changes).
@@ -19,12 +22,18 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { THEME_STORAGE_KEY, type ResolvedTheme, type ThemePreference } from './themeScript';
+import {
+  THEME_STORAGE_KEY,
+  isMarketingHostname,
+  type ResolvedTheme,
+  type ThemePreference,
+} from './themeScript';
 
 interface ThemeContextValue {
   preference: ThemePreference;
   resolved: ResolvedTheme;
   setPreference: (next: ThemePreference) => void;
+  marketingThemeLocked: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -48,13 +57,36 @@ function applyToDom(preference: ThemePreference, resolved: ResolvedTheme) {
   document.documentElement.setAttribute('data-theme-pref', preference);
 }
 
+function applyMarketingLightTheme() {
+  applyToDom('light', 'light');
+  document.documentElement.setAttribute('data-marketing-theme', 'locked');
+}
+
+function clearMarketingLightTheme() {
+  document.documentElement.removeAttribute('data-marketing-theme');
+}
+
+function isMarketingPortal(): boolean {
+  if (typeof window === 'undefined') return false;
+  return isMarketingHostname(window.location.hostname);
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Important: initialise from `null` and hydrate inside an effect so the
-  // server-rendered HTML and the first client render match exactly.
+  const [marketingThemeLocked] = useState(() =>
+    typeof window === 'undefined' ? false : isMarketingPortal(),
+  );
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
   const [resolved, setResolved] = useState<ResolvedTheme>('light');
 
   useEffect(() => {
+    if (isMarketingPortal()) {
+      applyMarketingLightTheme();
+      setPreferenceState('light');
+      setResolved('light');
+      return;
+    }
+
+    clearMarketingLightTheme();
     const initial = readInitialPreference();
     const initialResolved = resolve(initial);
     setPreferenceState(initial);
@@ -62,8 +94,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyToDom(initial, initialResolved);
   }, []);
 
-  // Watch OS color-scheme changes while the user is on `system`.
   useEffect(() => {
+    if (isMarketingPortal()) return;
     if (preference !== 'system') return;
     if (typeof window === 'undefined') return;
 
@@ -78,6 +110,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [preference]);
 
   const setPreference = useCallback((next: ThemePreference) => {
+    if (isMarketingPortal()) return;
+
     const nextResolved = resolve(next);
     setPreferenceState(next);
     setResolved(nextResolved);
@@ -90,8 +124,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ preference, resolved, setPreference }),
-    [preference, resolved, setPreference],
+    () => ({ preference, resolved, setPreference, marketingThemeLocked }),
+    [preference, resolved, setPreference, marketingThemeLocked],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

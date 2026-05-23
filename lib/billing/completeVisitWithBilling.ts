@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { TenantRole } from '@/lib/auth/types';
 import type { Database } from '@/lib/supabase/database.types';
-import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 import {
   FIELD_EMPLOYEE_NO_PRICE_MESSAGE,
+  OFFICE_NO_PRICE_MESSAGE,
   positiveAmountCents,
   resolveVisitExpectedAmountCents,
 } from '@/lib/billing/resolveVisitExpectedAmount';
@@ -35,15 +35,7 @@ export async function resolveVisitBillingAmountCents(
   return positiveAmountCents(quote?.amount_cents);
 }
 
-function parseBillingAmountCents(
-  amountDollars: string,
-  expectedAmountCents: number | null,
-  options: { allowFormOverride: boolean },
-): number | null {
-  if (options.allowFormOverride) {
-    const fromForm = parseCentsFromDollars(amountDollars);
-    if (fromForm != null && fromForm > 0) return fromForm;
-  }
+function resolveCompletionAmountCents(expectedAmountCents: number | null): number | null {
   if (expectedAmountCents != null && expectedAmountCents > 0) return expectedAmountCents;
   return null;
 }
@@ -98,19 +90,21 @@ export async function applyVisitCompletionBilling(
     quoteId: params.quoteId,
   });
 
-  if (isFieldEmployeeRole(params.actorRole) && expectedAmountCents == null) {
-    return { error: FIELD_EMPLOYEE_NO_PRICE_MESSAGE };
+  if (expectedAmountCents == null) {
+    return {
+      error: isFieldEmployeeRole(params.actorRole)
+        ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE
+        : OFFICE_NO_PRICE_MESSAGE,
+    };
   }
 
-  const amountCents = parseBillingAmountCents(params.billing.amountDollars, expectedAmountCents, {
-    allowFormOverride: !isFieldEmployeeRole(params.actorRole),
-  });
+  const amountCents = resolveCompletionAmountCents(expectedAmountCents);
 
   if (amountCents == null || amountCents <= 0) {
     return {
       error: isFieldEmployeeRole(params.actorRole)
         ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE
-        : 'Enter the job amount to bill.',
+        : OFFICE_NO_PRICE_MESSAGE,
     };
   }
 

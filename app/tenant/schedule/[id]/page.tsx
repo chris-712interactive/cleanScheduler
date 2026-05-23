@@ -39,6 +39,7 @@ import { RelatedRecordsPanel } from '@/app/tenant/RelatedRecordsPanel';
 import { DeleteVisitButton } from '../DeleteVisitButton';
 import { VisitFieldWorkPanel } from '../VisitFieldWorkPanel';
 import { VisitTimeRescheduleForm } from '../VisitTimeRescheduleForm';
+import { VisitJobPriceForm } from '../VisitJobPriceForm';
 import { createAdminClient } from '@/lib/supabase/server';
 import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
@@ -186,7 +187,8 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
 
   const showCheckIn = canCheckInToVisit(fieldParams);
   const showComplete = canCompleteVisit(fieldParams);
-  const canDelete = canManageScheduledVisit(actorRole);
+  const canManage = canManageScheduledVisit(actorRole);
+  const canDelete = canManage;
   const relatedRecords = await getVisitRelatedRecords(supabase, membership.tenantId, {
     id: row.id,
     customer_id: row.customer_id,
@@ -266,7 +268,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
                   </p>
                 </div>
               ) : null}
-              {hasBillableAmount ? (
+              {hasBillableAmount && !(canManage && row.status === 'scheduled') ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Job price</span>
                   <p className={styles.detailValue}>${formatCentsAsDollars(defaultAmountCents ?? 0)}</p>
@@ -338,6 +340,14 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               description="Uploaded by your crew when this job was marked complete."
             />
 
+            {canManage && row.status === 'scheduled' ? (
+              <VisitJobPriceForm
+                tenantSlug={membership.tenantSlug}
+                visitId={visitId}
+                currentAmountCents={defaultAmountCents}
+              />
+            ) : null}
+
             <VisitFieldWorkPanel
               tenantSlug={membership.tenantSlug}
               visitId={visitId}
@@ -353,7 +363,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               hasBillableAmount={hasBillableAmount}
             />
 
-            {row.status === 'scheduled' && !row.checked_in_at && canManageScheduledVisit(actorRole) ? (
+            {row.status === 'scheduled' && !row.checked_in_at && canManage ? (
               <VisitTimeRescheduleForm
                 tenantSlug={membership.tenantSlug}
                 tenantTimezone={tenantTimezone}

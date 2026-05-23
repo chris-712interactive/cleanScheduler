@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { Button } from '@/components/ui/Button';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
-import { FIELD_EMPLOYEE_NO_PRICE_MESSAGE } from '@/lib/billing/resolveVisitExpectedAmount';
+import { FIELD_EMPLOYEE_NO_PRICE_MESSAGE, OFFICE_NO_PRICE_MESSAGE } from '@/lib/billing/resolveVisitExpectedAmount';
 import { checkInToVisitAction, type VisitFieldActionState } from './visitFieldActions';
 import { CompleteVisitPaymentModal } from './CompleteVisitPaymentModal';
 import styles from './visitDetail.module.scss';
@@ -43,7 +43,8 @@ export function VisitFieldWorkPanel({
 
   if (!canCheckIn && !canComplete) return null;
 
-  const fieldBlockedFromComplete = isFieldEmployee && canComplete && !hasBillableAmount;
+  const blockedFromComplete = canComplete && !hasBillableAmount;
+  const noPriceMessage = isFieldEmployee ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE : OFFICE_NO_PRICE_MESSAGE;
 
   return (
     <section className={styles.fieldWork}>
@@ -75,13 +76,13 @@ export function VisitFieldWorkPanel({
       ) : null}
       {checkInState.success ? <p className={styles.ok}>{checkInState.success}</p> : null}
 
-      {fieldBlockedFromComplete ? (
+      {blockedFromComplete ? (
         <p className={styles.error} role="alert">
-          {FIELD_EMPLOYEE_NO_PRICE_MESSAGE}
+          {noPriceMessage}
         </p>
       ) : null}
 
-      {canComplete && !fieldBlockedFromComplete ? (
+      {canComplete && !blockedFromComplete ? (
         <div className={styles.fieldForm}>
           <CompleteVisitPaymentModal
             tenantSlug={tenantSlug}

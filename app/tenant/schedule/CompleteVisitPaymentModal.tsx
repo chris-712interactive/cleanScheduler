@@ -15,7 +15,7 @@ import {
   isInPersonPreferredBilling,
 } from '@/lib/tenant/customerBillingPreference';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
-import { formatCentsAsDollars, parseCentsFromDollars } from '@/lib/billing/parseMoney';
+import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { completeVisitWithPaymentAction, type VisitFieldActionState } from './visitFieldActions';
 import styles from './completeVisitModal.module.scss';
 
@@ -24,38 +24,20 @@ const initial: VisitFieldActionState = {};
 type CollectedChoice = 'yes' | 'no';
 type OnSiteMethod = 'cash' | 'check';
 
-type StepId =
-  | 'collected'
-  | 'payment-method'
-  | 'cash-amount'
-  | 'check-details'
-  | 'invoice-amount'
-  | 'send-invoice';
+type StepId = 'collected' | 'payment-method' | 'check-details' | 'send-invoice';
 
 const STEP_LABELS: Record<StepId, string> = {
   collected: 'Payment collected?',
   'payment-method': 'Payment type',
-  'cash-amount': 'Cash amount',
   'check-details': 'Check details',
-  'invoice-amount': 'Invoice amount',
   'send-invoice': 'Send invoice',
 };
 
-function stepSequence(
-  collected: CollectedChoice | null,
-  method: OnSiteMethod | null,
-  needsAmountInput: boolean,
-): StepId[] {
+function stepSequence(collected: CollectedChoice | null, method: OnSiteMethod | null): StepId[] {
   if (!collected) return ['collected'];
-  if (collected === 'no') {
-    return needsAmountInput ? ['collected', 'invoice-amount', 'send-invoice'] : ['collected', 'send-invoice'];
-  }
+  if (collected === 'no') return ['collected', 'send-invoice'];
   if (!method) return ['collected', 'payment-method'];
-  if (method === 'cash') {
-    return needsAmountInput
-      ? ['collected', 'payment-method', 'cash-amount']
-      : ['collected', 'payment-method'];
-  }
+  if (method === 'cash') return ['collected', 'payment-method'];
   return ['collected', 'payment-method', 'check-details'];
 }
 
@@ -84,8 +66,6 @@ export function CompleteVisitPaymentModal({
   const [onSiteMethod, setOnSiteMethod] = useState<OnSiteMethod | null>(null);
   const [checkNumber, setCheckNumber] = useState('');
   const [checkAmountDollars, setCheckAmountDollars] = useState('');
-  const [cashAmountDollars, setCashAmountDollars] = useState('');
-  const [invoiceAmountDollars, setInvoiceAmountDollars] = useState('');
   const [stepError, setStepError] = useState<string | null>(null);
   const [proofPhotos, setProofPhotos] = useState<ProofPhotoCaptureItem[]>([]);
 
@@ -96,14 +76,13 @@ export function CompleteVisitPaymentModal({
     defaultAmountCents != null && defaultAmountCents > 0
       ? formatCentsAsDollars(defaultAmountCents)
       : '';
-  const needsAmountInput = !isFieldEmployee && !defaultAmountDollars;
   const preferredLabel = formatCustomerPreferredBilling(preferredPaymentMethod);
   const electronicHint = isElectronicPreferredBilling(preferredPaymentMethod);
   const inPersonHint = isInPersonPreferredBilling(preferredPaymentMethod);
 
   const steps = useMemo(
-    () => stepSequence(collected, onSiteMethod, needsAmountInput),
-    [collected, onSiteMethod, needsAmountInput],
+    () => stepSequence(collected, onSiteMethod),
+    [collected, onSiteMethod],
   );
   const currentStep = steps[stepIndex] ?? 'collected';
   const isLastStep = stepIndex === steps.length - 1;
@@ -115,8 +94,6 @@ export function CompleteVisitPaymentModal({
     setOnSiteMethod(null);
     setCheckNumber('');
     setCheckAmountDollars(defaultAmountDollars);
-    setCashAmountDollars('');
-    setInvoiceAmountDollars('');
     setStepError(null);
     setProofPhotos((current) => {
       revokeProofPhotoPreviews(current);
@@ -137,17 +114,6 @@ export function CompleteVisitPaymentModal({
     }
   }, [state.success, resetFlow]);
 
-  function resolveBillingAmountDollars(): string {
-    if (collected === 'no') {
-      return needsAmountInput ? invoiceAmountDollars : defaultAmountDollars;
-    }
-    if (onSiteMethod === 'check') return checkAmountDollars;
-    if (onSiteMethod === 'cash') {
-      return needsAmountInput ? cashAmountDollars : defaultAmountDollars;
-    }
-    return defaultAmountDollars;
-  }
-
   function validateCurrentStep(): string | null {
     if (currentStep === 'collected') {
       if (!collected) return 'Select whether payment was collected.';
@@ -160,20 +126,8 @@ export function CompleteVisitPaymentModal({
       if (!onSiteMethod) return 'Select cash or check.';
       return null;
     }
-    if (currentStep === 'cash-amount') {
-      const cents = parseCentsFromDollars(cashAmountDollars);
-      if (cents == null || cents <= 0) return 'Enter the cash amount collected.';
-      return null;
-    }
     if (currentStep === 'check-details') {
       if (!checkNumber.trim()) return 'Enter the check number.';
-      const cents = parseCentsFromDollars(checkAmountDollars);
-      if (cents == null || cents <= 0) return 'Enter the dollar amount on the check.';
-      return null;
-    }
-    if (currentStep === 'invoice-amount') {
-      const cents = parseCentsFromDollars(invoiceAmountDollars);
-      if (cents == null || cents <= 0) return 'Enter the amount to invoice.';
       return null;
     }
     return null;
@@ -210,7 +164,7 @@ export function CompleteVisitPaymentModal({
     formData.set('payment_collected', collected ?? '');
     formData.set('collected_method', onSiteMethod ?? '');
     formData.set('check_number', checkNumber);
-    formData.set('amount_dollars', resolveBillingAmountDollars());
+    formData.set('amount_dollars', defaultAmountDollars);
 
     if (canAttachProofPhotos) {
       for (const photo of proofPhotos) {
@@ -220,8 +174,6 @@ export function CompleteVisitPaymentModal({
 
     formAction(formData);
   }
-
-  const billingAmountDollars = resolveBillingAmountDollars();
 
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
@@ -251,7 +203,7 @@ export function CompleteVisitPaymentModal({
             />
           ) : null}
 
-          {defaultAmountDollars && (isFieldEmployee || !needsAmountInput) ? (
+          {defaultAmountDollars ? (
             <p className={styles.preferenceHint}>
               Job amount: <strong>${defaultAmountDollars}</strong>
               {isFieldEmployee ? ' — set by your office.' : null}
@@ -300,11 +252,9 @@ export function CompleteVisitPaymentModal({
             {currentStep === 'payment-method' ? (
               <fieldset className={styles.fieldset}>
                 <legend className={styles.legend}>How did the customer pay?</legend>
-                {!needsAmountInput ? (
-                  <p className={styles.fieldHint}>
-                    Expected job amount: <strong>${defaultAmountDollars}</strong>
-                  </p>
-                ) : null}
+                <p className={styles.fieldHint}>
+                  Job amount: <strong>${defaultAmountDollars}</strong>
+                </p>
                 <div className={styles.choiceRow}>
                   <button
                     type="button"
@@ -331,34 +281,12 @@ export function CompleteVisitPaymentModal({
               </fieldset>
             ) : null}
 
-            {currentStep === 'cash-amount' ? (
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="cash_amount_dollars">
-                  Cash collected (USD)
-                </label>
-                <input
-                  id="cash_amount_dollars"
-                  type="number"
-                  className={styles.input}
-                  min="0"
-                  step="0.01"
-                  value={cashAmountDollars}
-                  onChange={(e) => setCashAmountDollars(e.target.value)}
-                  placeholder="0.00"
-                  autoFocus
-                />
-                <p className={styles.fieldHint}>Enter the amount of cash you received from the customer.</p>
-              </div>
-            ) : null}
-
             {currentStep === 'check-details' ? (
               <div className={styles.stepFields}>
-                {!needsAmountInput ? (
-                  <p className={styles.fieldHint}>
-                    Expected job amount: <strong>${defaultAmountDollars}</strong> — confirm the amount written on
-                    the check matches.
-                  </p>
-                ) : null}
+                <p className={styles.fieldHint}>
+                  Job amount: <strong>${defaultAmountDollars}</strong> — confirm the amount on the check
+                  matches.
+                </p>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="check_number_input">
                     Check number
@@ -384,52 +312,21 @@ export function CompleteVisitPaymentModal({
                     min="0"
                     step="0.01"
                     value={checkAmountDollars}
-                    onChange={(e) => setCheckAmountDollars(e.target.value)}
-                    placeholder={defaultAmountDollars || '0.00'}
-                    readOnly={isFieldEmployee && Boolean(defaultAmountDollars)}
-                    autoFocus={!(isFieldEmployee && defaultAmountDollars)}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly="true"
                   />
                   <p className={styles.fieldHint}>
-                    Enter the dollar amount printed on the check to verify before completing.
+                    Amount comes from the job price set by your office — not entered at close-out.
                   </p>
-                  {defaultAmountCents != null &&
-                  parseCentsFromDollars(checkAmountDollars) != null &&
-                  parseCentsFromDollars(checkAmountDollars) !== defaultAmountCents ? (
-                    <p className={styles.warning} role="status">
-                      This differs from the expected ${defaultAmountDollars}. Double-check the check before
-                      completing.
-                    </p>
-                  ) : null}
                 </div>
-              </div>
-            ) : null}
-
-            {currentStep === 'invoice-amount' ? (
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="invoice_amount_dollars">
-                  Invoice amount (USD)
-                </label>
-                <input
-                  id="invoice_amount_dollars"
-                  type="number"
-                  className={styles.input}
-                  min="0"
-                  step="0.01"
-                  value={invoiceAmountDollars}
-                  onChange={(e) => setInvoiceAmountDollars(e.target.value)}
-                  placeholder="0.00"
-                  autoFocus
-                />
-                <p className={styles.fieldHint}>
-                  No quote amount on file — enter the amount to include on the invoice.
-                </p>
               </div>
             ) : null}
 
             {currentStep === 'send-invoice' ? (
               <div className={styles.reviewBlock}>
                 <p className={styles.reviewLine}>
-                  Amount to invoice: <strong>${billingAmountDollars}</strong>
+                  Amount to invoice: <strong>${defaultAmountDollars}</strong>
                 </p>
                 <p className={styles.invoiceHint}>
                   An invoice will be emailed immediately so the customer can pay online via Stripe.

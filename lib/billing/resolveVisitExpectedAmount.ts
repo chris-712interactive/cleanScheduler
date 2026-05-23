@@ -87,5 +87,8 @@ export async function resolveScheduleJobPriceCents(
 export const FIELD_EMPLOYEE_NO_PRICE_MESSAGE =
   'Your office has not set a price for this job yet. Contact them before completing the visit.';
 
+export const OFFICE_NO_PRICE_MESSAGE =
+  'Set a job price on this visit before completing it. Use the Job price section above.';
+
 export const OFFICE_SET_PRICE_HINT =
   'Field crews use this amount at job close — set it here before dispatch.';
