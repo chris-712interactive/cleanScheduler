@@ -4,11 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { getAuthContext } from '@/lib/auth/session';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import type { Tables } from '@/lib/supabase/database.types';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 import { parseCustomerPreferredPaymentMethod } from '@/lib/tenant/customerBillingPreference';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
+import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 
 export interface CustomerFormState {
   error?: string;
@@ -161,6 +163,20 @@ export async function createTenantCustomer(
     await admin.from('customers').delete().eq('id', customerId);
     await admin.from('customer_identities').delete().eq('id', identityId);
     return { error: propertyInsert.error.message };
+  }
+
+  if (email) {
+    const auth = await getAuthContext();
+    const invite = await ensureCustomerPortalInvite({
+      admin,
+      tenantId: membership.tenantId,
+      customerId,
+      invitedByUserId: auth?.user.id ?? null,
+      sendEmail: true,
+    });
+    if (!invite.ok) {
+      console.warn('[createTenantCustomer] Portal invite not sent:', invite.error);
+    }
   }
 
   revalidatePath('/tenant', 'layout');

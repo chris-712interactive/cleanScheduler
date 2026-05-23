@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
+import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
@@ -15,6 +16,10 @@ export interface CompleteInviteState {
   success?: string;
   /** When set, UI can prompt for sign-in + link instead of password signup. */
   duplicateAccount?: boolean;
+}
+
+function redirectAfterInviteComplete(rawNext: string | null | undefined): never {
+  redirect(sanitizeAuthenticationNext(rawNext));
 }
 
 async function loadActiveInvite(admin: SupabaseClient<Database>, token: string) {
@@ -64,6 +69,7 @@ export async function linkExistingCustomerInviteAction(
   const token = String(formData.get('token') ?? '')
     .trim()
     .toLowerCase();
+  const nextPath = String(formData.get('next') ?? '').trim();
   if (!TOKEN_RE.test(token)) {
     return { error: 'Invalid invite link.' };
   }
@@ -98,7 +104,7 @@ export async function linkExistingCustomerInviteAction(
         .from('customer_portal_invites')
         .update({ used_at: new Date().toISOString() })
         .eq('token', token);
-      redirect('/');
+      redirectAfterInviteComplete(nextPath);
     }
     return { error: 'This customer record is already linked to a different login.' };
   }
@@ -150,7 +156,7 @@ export async function linkExistingCustomerInviteAction(
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
 
-  redirect('/');
+  redirectAfterInviteComplete(nextPath);
 }
 
 export async function acceptCustomerPortalInviteAction(
@@ -160,6 +166,7 @@ export async function acceptCustomerPortalInviteAction(
   const token = String(formData.get('token') ?? '')
     .trim()
     .toLowerCase();
+  const nextPath = String(formData.get('next') ?? '').trim();
   if (!TOKEN_RE.test(token)) {
     return { error: 'Invalid invite link.' };
   }
@@ -284,5 +291,5 @@ export async function acceptCustomerPortalInviteAction(
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
 
-  redirect('/');
+  redirectAfterInviteComplete(nextPath);
 }

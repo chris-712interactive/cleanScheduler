@@ -3,6 +3,7 @@ import { Container } from '@/components/layout/Container';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
 import { getCustomerPortalOriginFromRequestHost } from '@/lib/portal/customerPortalOrigin';
+import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { headers } from 'next/headers';
 import { CompleteInviteForms } from './CompleteInviteForms';
 import styles from './complete-invite.module.scss';
@@ -115,10 +116,15 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
   const auth = await getAuthContext();
   const hasSession = Boolean(auth?.user);
 
+  const returnPath = sanitizeAuthenticationNext(firstParam(sp.next));
   const h = await headers();
   const portalOrigin = getCustomerPortalOriginFromRequestHost(h.get('host'));
-  const returnToInvite = `${portalOrigin}/complete-invite?token=${raw}`;
-  const signInUrl = `${portalOrigin}/sign-in?next=${encodeURIComponent(returnToInvite)}`;
+  const returnToInvite =
+    returnPath && returnPath !== '/'
+      ? `${portalOrigin}/complete-invite?token=${raw}&next=${encodeURIComponent(returnPath)}`
+      : `${portalOrigin}/complete-invite?token=${raw}`;
+  const signInEmail = encodeURIComponent(inviteEmail);
+  const signInUrl = `${portalOrigin}/sign-in?email=${signInEmail}&next=${encodeURIComponent(returnToInvite)}`;
 
   return (
     <Container size="sm">
@@ -127,12 +133,13 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
         description="Finish setup for your customer portal."
       >
         <p className={styles.lead}>
-          Invited email: <strong>{inviteEmail}</strong>
+          Use this email for your account — it must match what your provider entered:
         </p>
         <CompleteInviteForms
           token={raw}
           tenantName={tenantName}
           inviteEmail={inviteEmail}
+          returnPath={returnPath}
           hasSession={hasSession}
           marketingSignInUrl={signInUrl}
         />

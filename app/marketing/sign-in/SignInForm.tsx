@@ -11,10 +11,12 @@ const initialState: SignInState = {};
 export function SignInForm({
   nextPath,
   urlError,
+  defaultEmail,
 }: {
   nextPath: string;
   /** Auth failures only (wrong password, OAuth). Authorization issues use /access-denied. */
   urlError?: string | null;
+  defaultEmail?: string;
 }) {
   const [returnOrigin, setReturnOrigin] = useState('');
 
@@ -49,6 +51,7 @@ export function SignInForm({
           type="email"
           autoComplete="email"
           required
+          defaultValue={defaultEmail ?? ''}
           placeholder="you@company.com"
           className={styles.input}
         />

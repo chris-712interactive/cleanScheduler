@@ -4,10 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { sendCustomerPortalInviteEmail, isResendApiConfigured } from '@/lib/email/resend';
-import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
-import { inviteTemplateCustomerFirstName } from '@/lib/tenant/customerIdentityName';
-import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 
 export interface CustomerInviteFormState {
   error?: string;
@@ -33,121 +30,24 @@ export async function sendCustomerPortalInviteAction(
     return { error: 'You must be signed in to send an invite.' };
   }
 
-  if (!isResendApiConfigured()) {
-    return {
-      error:
-        'Email is not configured. Add RESEND_API_KEY to the server environment (Resend dashboard template supplies from/subject for invites).',
-    };
-  }
-
   const admin = createAdminClient();
-
-  try {
-    await assertTenantFeatureEnabled(admin, membership.tenantId, 'customerPortal');
-  } catch (error) {
-    const message = featureGateErrorMessage(error);
-    if (message) return { error: message };
-    throw error;
-  }
-
-  const { data: row, error: rowErr } = await admin
-    .from('customers')
-    .select(
-      `
-      id,
-      customer_identities (
-        id,
-        email,
-        first_name,
-        full_name,
-        auth_user_id
-      )
-    `,
-    )
-    .eq('id', customerId)
-    .eq('tenant_id', membership.tenantId)
-    .maybeSingle();
-
-  if (rowErr || !row) {
-    return { error: 'Customer not found in this workspace.' };
-  }
-
-  const rawIdentity = row.customer_identities as unknown;
-  const identity = (Array.isArray(rawIdentity) ? rawIdentity[0] : rawIdentity) as {
-    id: string;
-    email: string | null;
-    first_name: string | null;
-    full_name: string | null;
-    auth_user_id: string | null;
-  } | null;
-
-  if (!identity) {
-    return { error: 'Customer identity is missing.' };
-  }
-
-  if (identity.auth_user_id) {
-    return { error: 'This customer already has a portal login linked.' };
-  }
-
-  const email = (identity.email ?? '').trim().toLowerCase();
-  if (!email) {
-    return { error: 'Add an email address on the customer profile before sending an invite.' };
-  }
-
-  const { data: tenant, error: tErr } = await admin
-    .from('tenants')
-    .select('name')
-    .eq('id', membership.tenantId)
-    .maybeSingle();
-  if (tErr || !tenant) {
-    return { error: 'Could not load workspace name.' };
-  }
-
-  const expires = new Date();
-  expires.setUTCDate(expires.getUTCDate() + 7);
-
-  await admin
-    .from('customer_portal_invites')
-    .delete()
-    .eq('customer_id', customerId)
-    .is('used_at', null);
-
-  const { data: invite, error: invErr } = await admin
-    .from('customer_portal_invites')
-    .insert({
-      tenant_id: membership.tenantId,
-      customer_id: customerId,
-      customer_identity_id: identity.id,
-      email_normalized: email,
-      invited_by_user_id: auth.user.id,
-      expires_at: expires.toISOString(),
-    })
-    .select('token')
-    .single();
-
-  if (invErr || !invite?.token) {
-    return { error: invErr?.message ?? 'Could not create invite.' };
-  }
-
-  const portalOrigin = await getCustomerPortalOriginForTenant(admin, membership.tenantId);
-  const acceptUrl = `${portalOrigin}/complete-invite?token=${invite.token}`;
-  const tenantName =
-    String(tenant.name ?? 'Your cleaning provider').trim() || 'Your cleaning provider';
-  const customerName = inviteTemplateCustomerFirstName(identity);
-
-  const sent = await sendCustomerPortalInviteEmail({
-    to: email,
-    tenantName,
-    customerName,
-    createCustomerLink: acceptUrl,
+  const result = await ensureCustomerPortalInvite({
+    admin,
+    tenantId: membership.tenantId,
+    customerId,
+    invitedByUserId: auth.user.id,
+    sendEmail: true,
   });
-  if (!sent.ok) {
-    console.error('[customerInvite] Resend failed:', sent.error);
-    await admin.from('customer_portal_invites').delete().eq('token', invite.token);
-    return { error: sent.error };
+
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  if (result.alreadyLinked) {
+    return { error: 'This customer already has a portal login linked.' };
   }
 
   revalidatePath(`/customers/${customerId}`);
   revalidatePath('/customers');
-  return { success: `Invite sent to ${email}.` };
+  return { success: `Invite sent to ${result.email}.` };
 }

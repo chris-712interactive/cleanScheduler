@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { getAuthContext } from '@/lib/auth/session';
 import type { Database } from '@/lib/supabase/database.types';
 import { parseQuoteLineItemsFromForm } from '@/lib/tenant/quoteLineItemsForm';
 import { computeQuoteTotals } from '@/lib/tenant/quoteTotals';
@@ -25,6 +26,7 @@ import {
 } from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
+import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 
@@ -346,6 +348,18 @@ export async function createTenantQuote(
     customerId = created.customerId;
     defaultPropertyId = created.propertyId;
     revalidatePath('/tenant/customers', 'page');
+
+    const auth = await getAuthContext();
+    const invite = await ensureCustomerPortalInvite({
+      admin,
+      tenantId: membership.tenantId,
+      customerId,
+      invitedByUserId: auth?.user.id ?? null,
+      sendEmail: true,
+    });
+    if (!invite.ok) {
+      console.warn('[createTenantQuote] Portal invite not sent:', invite.error);
+    }
   } else {
     if (!customerRaw) {
       return { error: 'Select a customer or create a new one before saving the quote.' };

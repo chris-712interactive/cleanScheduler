@@ -18,12 +18,14 @@ export function CompleteInviteForms({
   token,
   tenantName,
   inviteEmail,
+  returnPath,
   hasSession,
   marketingSignInUrl,
 }: {
   token: string;
   tenantName: string;
   inviteEmail: string;
+  returnPath: string;
   hasSession: boolean;
   marketingSignInUrl: string;
 }) {
@@ -37,10 +39,11 @@ export function CompleteInviteForms({
     <Stack gap={6} as="div">
       <Card
         title="Create your password"
-        description={`You will sign in as ${inviteEmail} for invitations from ${tenantName}.`}
+        description={`Finish your profile for ${tenantName}. Your login email is fixed to this invite.`}
       >
         <form action={pwAction} className={styles.form}>
           <input type="hidden" name="token" value={token} />
+          <input type="hidden" name="next" value={returnPath} />
           {pwState.error ? (
             <p className={styles.error} role="alert">
               {pwState.error}
@@ -53,6 +56,18 @@ export function CompleteInviteForms({
               and return here.
             </p>
           ) : null}
+          <label className={styles.label} htmlFor="invite_email">
+            Email
+          </label>
+          <input
+            id="invite_email"
+            name="email"
+            type="email"
+            className={styles.input}
+            value={inviteEmail}
+            readOnly
+            autoComplete="username email"
+          />
           <label className={styles.label} htmlFor="password">
             Password
           </label>
@@ -92,6 +107,7 @@ export function CompleteInviteForms({
         {hasSession ? (
           <form action={linkAction} className={styles.form}>
             <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="next" value={returnPath} />
             {linkState.error ? (
               <p className={styles.error} role="alert">
                 {linkState.error}

@@ -5,8 +5,14 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
+import { getAuthContext } from '@/lib/auth/session';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createAdminClient } from '@/lib/supabase/server';
+import {
+  buildCompleteInvitePath,
+  customerHasPortalLogin,
+  ensureCustomerPortalInvite,
+} from '@/lib/tenant/customerPortalInvite';
 import type { Tables } from '@/lib/supabase/database.types';
 import { formatQuoteMoney, formatQuoteLineDiscountShort } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
@@ -48,8 +54,35 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const auth = await requirePortalAccess('customer', `/quotes/${id}`);
-  const ctx = await getCustomerPortalContext(auth.user.id);
+  const quotePath = `/quotes/${id}`;
+  const auth = await getAuthContext();
+  if (!auth) {
+    const admin = createAdminClient();
+    const { data: quoteGate } = await admin
+      .from('tenant_quotes')
+      .select('id, customer_id, tenant_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (quoteGate?.customer_id) {
+      const hasLogin = await customerHasPortalLogin(admin, quoteGate.customer_id);
+      if (!hasLogin) {
+        const invite = await ensureCustomerPortalInvite({
+          admin,
+          tenantId: quoteGate.tenant_id,
+          customerId: quoteGate.customer_id,
+          returnPath: quotePath,
+          sendEmail: false,
+        });
+        if (invite.ok && !invite.alreadyLinked) {
+          redirect(buildCompleteInvitePath(invite.token, quotePath));
+        }
+      }
+    }
+  }
+
+  const portalAuth = await requirePortalAccess('customer', quotePath);
+  const ctx = await getCustomerPortalContext(portalAuth.user.id);
   if (!ctx) redirect('/access-denied?reason=no_customer_profile');
 
   const admin = createAdminClient();

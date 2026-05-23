@@ -34,6 +34,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   const signInUrlError =
     rawError && AUTHORIZATION_QUERY_ERRORS.has(rawError) ? undefined : rawError;
 
+  const defaultEmail = firstParam(params.email)?.trim().toLowerCase() ?? '';
+
   return (
     <>
     <main className={styles.page}>
@@ -42,7 +44,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           title="Sign in to cleanScheduler"
       description="Sign in to your existing workspace. New businesses should start a free trial first."
         >
-          <SignInForm nextPath={nextPath} urlError={signInUrlError} />
+          <SignInForm nextPath={nextPath} urlError={signInUrlError} defaultEmail={defaultEmail} />
           <p className={styles.helpText}>
             Need the public site instead? <Link href="/">Return to homepage</Link>.
           </p>

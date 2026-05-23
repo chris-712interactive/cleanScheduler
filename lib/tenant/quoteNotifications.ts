@@ -2,6 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
+import {
+  customerHasPortalLogin,
+  ensureCustomerPortalInvite,
+} from '@/lib/tenant/customerPortalInvite';
 
 type Admin = SupabaseClient<Database>;
 
@@ -89,12 +93,33 @@ export async function sendQuoteNotificationEmail(
   const tname = await tenantName(admin, params.tenantId);
   const staffEmail = await tenantStaffEmail(admin, params.tenantId);
   const customerEmail = await customerIdentityEmail(admin, params.customerId);
-  const link = await quoteUrlForCustomer(admin, params.tenantId, params.quoteId);
+  const hasLogin = await customerHasPortalLogin(admin, params.customerId);
+  const quotePath = `/quotes/${params.quoteId}`;
+
+  let link = await quoteUrlForCustomer(admin, params.tenantId, params.quoteId);
+
+  if (event === 'quote_sent' && flags.email_sent && customerEmail && !hasLogin) {
+    const invite = await ensureCustomerPortalInvite({
+      admin,
+      tenantId: params.tenantId,
+      customerId: params.customerId,
+      returnPath: quotePath,
+      sendEmail: false,
+    });
+    if (invite.ok && !invite.alreadyLinked) {
+      link = invite.acceptUrl;
+    }
+  }
 
   if (event === 'quote_sent' && flags.email_sent && customerEmail) {
     const subject = `Quote from ${tname}: ${params.quoteTitle}`;
-    const text = `You have a new quote from ${tname}.\n\nTitle: ${params.quoteTitle}\n\nView and respond: ${link}\n`;
-    const html = `<p>You have a new quote from <strong>${escapeHtml(tname)}</strong>.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p><a href="${link}">View and respond</a></p>`;
+    const setupHint = hasLogin
+      ? ''
+      : '\n\nYou will need to finish setting up your customer portal account before you can view this quote.';
+    const text = `You have a new quote from ${tname}.\n\nTitle: ${params.quoteTitle}\n\nView and respond: ${link}${setupHint}\n`;
+    const html = hasLogin
+      ? `<p>You have a new quote from <strong>${escapeHtml(tname)}</strong>.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p><a href="${link}">View and respond</a></p>`
+      : `<p>You have a new quote from <strong>${escapeHtml(tname)}</strong>.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p><a href="${link}">Create your account &amp; view quote</a></p><p>Use the same email address your provider has on file (${escapeHtml(customerEmail)}).</p>`;
     const sent = await sendTransactionalEmail({ to: customerEmail, subject, text, html });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_sent email failed:', sent.error);
