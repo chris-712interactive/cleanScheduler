@@ -1,9 +1,5 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
-import { Stack } from '@/components/layout/Stack';
-import { KeyValueList } from '@/components/ui/KeyValueList';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
@@ -14,13 +10,18 @@ import {
   ensureCustomerPortalInvite,
 } from '@/lib/tenant/customerPortalInvite';
 import type { Tables } from '@/lib/supabase/database.types';
-import { formatQuoteMoney, formatQuoteLineDiscountShort } from '@/lib/tenant/quoteMoney';
-import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
-import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
-import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
+import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import { type QuoteStatus } from '@/lib/tenant/quoteLabels';
+import type { ComputeQuoteTotalsInput } from '@/lib/tenant/quoteTotals';
+import {
+  composeCustomerQuoteNotes,
+  parseQuotePropertySnapshot,
+  parseQuoteScopeSnapshot,
+} from '@/lib/tenant/quoteStructuredFields';
 import { parseAcceptanceSnapshotLines } from '@/lib/customer/quoteAcceptanceSnapshot';
-import { CustomerQuoteResponseForm } from '../CustomerQuoteResponseForm';
-import styles from '../quotes.module.scss';
+import { CustomerQuoteReview } from '../CustomerQuoteReview';
+import type { CustomerQuoteLineView } from '../CustomerQuoteLineCards';
+import type { CustomerQuoteVersionRow } from '../CustomerQuoteVersionHistory';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,13 +39,71 @@ type LineRow = Pick<
   | 'line_discount_value'
 >;
 
-type VersionRow = Pick<
+type PropertyEmbed = Pick<
+  Tables<'tenant_customer_properties'>,
+  'label' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+>;
+
+type QuoteRow = Pick<
   Tables<'tenant_quotes'>,
-  'id' | 'version_number' | 'title' | 'status' | 'created_at'
+  | 'id'
+  | 'customer_id'
+  | 'tenant_id'
+  | 'title'
+  | 'status'
+  | 'amount_cents'
+  | 'currency'
+  | 'tax_mode'
+  | 'tax_rate_bps'
+  | 'quote_discount_kind'
+  | 'quote_discount_value'
+  | 'notes'
+  | 'valid_until'
+  | 'scope_snapshot'
+  | 'property_snapshot'
+  | 'quote_group_id'
+  | 'version_number'
+  | 'version_reason'
+  | 'superseded_by_quote_id'
+  | 'accepted_at'
+  | 'is_locked'
 >;
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+function toLineViews(lines: LineRow[]): CustomerQuoteLineView[] {
+  return lines.map((line) => ({
+    key: line.id,
+    service_label: line.service_label,
+    frequency: line.frequency,
+    frequency_detail: line.frequency_detail,
+    amount_cents: line.amount_cents,
+    line_discount_kind: line.line_discount_kind,
+    line_discount_value: line.line_discount_value,
+  }));
+}
+
+function snapshotToLineViews(
+  snapshotLines: ReturnType<typeof parseAcceptanceSnapshotLines>,
+): CustomerQuoteLineView[] {
+  return snapshotLines.map((line, idx) => ({
+    key: `snap_${line.sort_order}_${idx}`,
+    service_label: line.service_label,
+    frequency: line.frequency,
+    frequency_detail: line.frequency_detail,
+    amount_cents: line.amount_cents,
+    line_discount_kind: line.line_discount_kind,
+    line_discount_value: line.line_discount_value,
+  }));
+}
+
+function propertyDisplayAddress(property: PropertyEmbed | null): string | null {
+  if (!property) return null;
+  const line = formatPropertyAddressLine(property);
+  if (line) return line;
+  return property.label?.trim() || null;
 }
 
 export default async function CustomerQuoteDetailPage({ params }: PageProps) {
@@ -91,8 +150,36 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
     .from('tenant_quotes')
     .select(
       `
-      *,
+      id,
+      customer_id,
+      tenant_id,
+      title,
+      status,
+      amount_cents,
+      currency,
+      tax_mode,
+      tax_rate_bps,
+      quote_discount_kind,
+      quote_discount_value,
+      notes,
+      valid_until,
+      scope_snapshot,
+      property_snapshot,
+      quote_group_id,
+      version_number,
+      version_reason,
+      superseded_by_quote_id,
+      accepted_at,
+      is_locked,
       tenants:tenants!inner ( name ),
+      tenant_customer_properties (
+        label,
+        address_line1,
+        address_line2,
+        city,
+        state,
+        postal_code
+      ),
       tenant_quote_line_items (
         id,
         sort_order,
@@ -112,13 +199,24 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const customerId = quote.customer_id as string | null;
+  const row = quote as QuoteRow & {
+    tenants: { name: string } | null;
+    tenant_customer_properties: PropertyEmbed | null;
+    tenant_quote_line_items: LineRow[] | null;
+  };
+
+  const customerId = row.customer_id;
   if (!customerId || !ctx.customerIds.includes(customerId)) {
     notFound();
   }
 
-  const tenantName = (quote.tenants as { name: string } | null)?.name ?? 'Your provider';
-  const currency = quote.currency as string;
+  const status = row.status as QuoteStatus;
+  if (status === 'draft') {
+    notFound();
+  }
+
+  const tenantName = row.tenants?.name ?? 'Your provider';
+  const currency = row.currency;
 
   const [snapRes, versionsRes] = await Promise.all([
     admin
@@ -128,9 +226,10 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
       .maybeSingle(),
     admin
       .from('tenant_quotes')
-      .select('id, version_number, title, status, created_at')
-      .eq('quote_group_id', quote.quote_group_id as string)
-      .eq('tenant_id', quote.tenant_id as string)
+      .select('id, version_number, title, status')
+      .eq('quote_group_id', row.quote_group_id)
+      .eq('tenant_id', row.tenant_id)
+      .neq('status', 'draft')
       .order('version_number', { ascending: true }),
   ]);
 
@@ -138,174 +237,84 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
   const snapshotLines = acceptanceSnapshot
     ? parseAcceptanceSnapshotLines(acceptanceSnapshot.payload)
     : [];
-  const versionRows = (versionsRes.data ?? []) as VersionRow[];
+  const versionRows = (versionsRes.data ?? []) as CustomerQuoteVersionRow[];
 
-  const liveLines = [...((quote.tenant_quote_line_items ?? []) as LineRow[])].sort(
+  const liveLines = [...(row.tenant_quote_line_items ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order,
   );
 
-  const showAgreementTable = snapshotLines.length > 0;
-  const agreementTitle = showAgreementTable
-    ? 'What was agreed (acceptance record)'
-    : 'Services & pricing (current quote)';
+  const showAgreement = snapshotLines.length > 0;
+  const displayLines = showAgreement ? snapshotToLineViews(snapshotLines) : toLineViews(liveLines);
 
-  const status = quote.status as QuoteStatus;
-  const isLocked = Boolean(quote.is_locked);
+  const totalsLines = showAgreement
+    ? snapshotLines.map((line) => ({
+        amount_cents: line.amount_cents,
+        line_discount_kind: line.line_discount_kind,
+        line_discount_value: line.line_discount_value,
+      }))
+    : liveLines.map((line) => ({
+        amount_cents: line.amount_cents,
+        line_discount_kind: line.line_discount_kind,
+        line_discount_value: line.line_discount_value,
+      }));
+
+  const totalsInput: ComputeQuoteTotalsInput = {
+    lines: totalsLines,
+    header_subtotal_cents: totalsLines.length > 0 ? null : row.amount_cents,
+    tax_mode: row.tax_mode,
+    tax_rate_bps: row.tax_rate_bps,
+    quote_discount_kind: row.quote_discount_kind,
+    quote_discount_value: row.quote_discount_value,
+  };
+
+  const scope = parseQuoteScopeSnapshot(row.scope_snapshot);
+  const property = parseQuotePropertySnapshot(row.property_snapshot);
+  const structuredNotes = composeCustomerQuoteNotes({ scope, property });
+  const rawNotes = row.notes?.trim() || null;
+  const providerNotes =
+    rawNotes && rawNotes !== structuredNotes ? rawNotes : structuredNotes ? null : rawNotes;
+
+  const isLocked = Boolean(row.is_locked);
   const isExpired = status === 'expired';
-  const canRespond = status === 'sent' && !isLocked && !isExpired;
+  const canRespond = status === 'sent' && !isLocked && !isExpired && !row.superseded_by_quote_id;
+
+  const acceptedAt =
+    (acceptanceSnapshot?.captured_at as string | undefined) ??
+    (row.accepted_at as string | null);
 
   return (
     <>
       <PageHeader
-        title={quote.title as string}
-        description={`${QUOTE_STATUS_LABEL[status]} · ${formatQuoteMoney(quote.amount_cents as number | null, currency)} · Version ${quote.version_number as number}`}
-        actions={
-          <Link href="/quotes" className={styles.backLink}>
-            ← All quotes
-          </Link>
-        }
+        title="Quote"
+        backHref="/quotes"
+        backLabel="All quotes"
+        description={tenantName}
       />
 
-      <Stack gap={6}>
-        <Card title="Summary" description={tenantName}>
-          <KeyValueList
-            items={[
-              { key: 'Status', value: QUOTE_STATUS_LABEL[status] },
-              {
-                key: 'Valid until',
-                value: quote.valid_until
-                  ? new Date(String(quote.valid_until)).toLocaleDateString()
-                  : '—',
-              },
-              ...(acceptanceSnapshot
-                ? [
-                    {
-                      key: 'Accepted at',
-                      value: new Date(acceptanceSnapshot.captured_at).toLocaleString(),
-                    },
-                  ]
-                : []),
-              ...(quote.version_reason
-                ? [{ key: 'Note on this version', value: String(quote.version_reason) }]
-                : []),
-            ]}
-          />
-        </Card>
-
-        {canRespond ? (
-          <Card
-            title="Your decision"
-            description="Accept to tell your provider you agree to this quote, or decline if it is not a fit."
-          >
-            <CustomerQuoteResponseForm quoteId={id} />
-          </Card>
-        ) : null}
-
-        <Card
-          title="Version history"
-          description="All revisions your provider created for this quote thread. Open any version to review what changed."
-        >
-          <ul className={styles.versionList}>
-            {versionRows.map((v) => (
-              <li key={v.id} className={styles.versionItem}>
-                <Link href={`/quotes/${v.id}`} className={styles.titleLink}>
-                  Version {v.version_number}
-                </Link>
-                <span>{QUOTE_STATUS_LABEL[v.status as QuoteStatus]}</span>
-                <span className={styles.muted}>{v.title}</span>
-                {v.id === id ? <span className={styles.currentMark}>You are here</span> : null}
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        {showAgreementTable || liveLines.length > 0 ? (
-          <Card
-            title={agreementTitle}
-            description={
-              showAgreementTable
-                ? 'Frozen copy of line items at the moment this quote was marked accepted.'
-                : 'Line items on this revision (may change until the quote is accepted).'
-            }
-          >
-            <div className={styles.servicesTableWrap}>
-              <table className={styles.servicesTable}>
-                <thead>
-                  <tr>
-                    <th scope="col">Service</th>
-                    <th scope="col">Cadence</th>
-                    <th scope="col">Detail</th>
-                    <th scope="col">List</th>
-                    <th scope="col">Line discount</th>
-                    <th scope="col">After discount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {showAgreementTable
-                    ? snapshotLines.map((line, idx) => (
-                        <tr key={`snap_${line.sort_order}_${idx}`}>
-                          <td>{line.service_label}</td>
-                          <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
-                          <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
-                          <td>{formatQuoteMoney(line.amount_cents, currency)}</td>
-                          <td>
-                            {formatQuoteLineDiscountShort(
-                              line.line_discount_kind,
-                              line.line_discount_value,
-                              currency,
-                            )}
-                          </td>
-                          <td>
-                            {formatQuoteMoney(
-                              effectiveLineSubtotalCents({
-                                amount_cents: line.amount_cents,
-                                line_discount_kind: line.line_discount_kind,
-                                line_discount_value: line.line_discount_value,
-                              }),
-                              currency,
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    : liveLines.map((line) => (
-                        <tr key={line.id}>
-                          <td>{line.service_label}</td>
-                          <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
-                          <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
-                          <td>{formatQuoteMoney(line.amount_cents, currency)}</td>
-                          <td>
-                            {formatQuoteLineDiscountShort(
-                              line.line_discount_kind,
-                              line.line_discount_value,
-                              currency,
-                            )}
-                          </td>
-                          <td>
-                            {formatQuoteMoney(
-                              effectiveLineSubtotalCents({
-                                amount_cents: line.amount_cents,
-                                line_discount_kind: line.line_discount_kind,
-                                line_discount_value: line.line_discount_value,
-                              }),
-                              currency,
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        ) : null}
-
-        {quote.notes ? (
-          <Card title="Notes from your provider">
-            <p className={styles.meta} style={{ marginTop: 0 }}>
-              {String(quote.notes)}
-            </p>
-          </Card>
-        ) : null}
-      </Stack>
+      <CustomerQuoteReview
+        quoteId={id}
+        title={row.title}
+        tenantName={tenantName}
+        status={status}
+        currency={currency}
+        amountCents={row.amount_cents}
+        validUntil={row.valid_until}
+        canRespond={canRespond}
+        acceptedAt={acceptedAt}
+        propertyAddress={propertyDisplayAddress(row.tenant_customer_properties)}
+        scopeInclusions={scope.inclusions}
+        scopeExclusions={scope.exclusions ?? null}
+        accessNotes={property.access_notes ?? null}
+        providerNotes={providerNotes}
+        lines={displayLines}
+        isAgreementFrozen={showAgreement}
+        totalsInput={totalsInput}
+        versions={versionRows}
+        supersededByQuoteId={row.superseded_by_quote_id}
+        versionReason={row.version_reason}
+        versionNumber={row.version_number}
+        userEmail={portalAuth.user.email?.trim() || null}
+      />
     </>
   );
 }

@@ -27,6 +27,19 @@ type CustomerQuoteListRow = {
   tenants: { name: string } | null;
 };
 
+function listStatusLabel(status: QuoteStatus): string {
+  if (status === 'sent') return 'Awaiting your response';
+  return QUOTE_STATUS_LABEL[status];
+}
+
+function listStatusTone(status: QuoteStatus) {
+  if (status === 'accepted') return 'brand' as const;
+  if (status === 'declined') return 'neutral' as const;
+  if (status === 'expired') return 'warning' as const;
+  if (status === 'sent') return 'info' as const;
+  return 'neutral' as const;
+}
+
 export default async function CustomerQuotesPage() {
   const auth = await requirePortalAccess('customer', '/quotes');
   const ctx = await getCustomerPortalContext(auth.user.id);
@@ -53,6 +66,7 @@ export default async function CustomerQuotesPage() {
           `,
           )
           .in('customer_id', ctx.customerIds)
+          .neq('status', 'draft')
           .is('superseded_by_quote_id', null)
           .order('updated_at', { ascending: false })
       : { data: [] as CustomerQuoteListRow[], error: null };
@@ -63,7 +77,7 @@ export default async function CustomerQuotesPage() {
     <>
       <PageHeader
         title="Quotes"
-        description="Proposals and pricing from your connected providers. Open a quote to see line items and version history."
+        description="Review pricing from your providers and accept or decline when you are ready."
       />
 
       {error ? (
@@ -79,36 +93,23 @@ export default async function CustomerQuotesPage() {
         <Stack gap={3}>
           {list.map((row) => {
             const t = row.tenants as { name: string } | null;
+            const isActionable = row.status === 'sent';
             return (
               <Card key={row.id} title={row.title} description={t?.name ?? 'Provider'}>
                 <div className={styles.row}>
-                  <StatusPill
-                    tone={
-                      row.status === 'accepted'
-                        ? 'brand'
-                        : row.status === 'declined'
-                          ? 'neutral'
-                          : 'info'
-                    }
-                  >
-                    {QUOTE_STATUS_LABEL[row.status]}
+                  <StatusPill tone={listStatusTone(row.status)}>
+                    {listStatusLabel(row.status)}
                   </StatusPill>
                   <span>
                     <strong>{formatQuoteMoney(row.amount_cents, row.currency)}</strong>
-                    {row.version_number > 1 ? (
-                      <span className={styles.muted}> · version {row.version_number}</span>
-                    ) : null}
                   </span>
                 </div>
                 <p className={styles.meta}>
                   Updated {new Date(row.updated_at).toLocaleDateString()}
-                  {row.created_at !== row.updated_at
-                    ? ` · created ${new Date(row.created_at).toLocaleDateString()}`
-                    : ''}
                 </p>
                 <p className={styles.meta}>
                   <Link href={`/quotes/${row.id}`} className={styles.titleLink}>
-                    View details →
+                    {isActionable ? 'Review & respond →' : 'View quote →'}
                   </Link>
                 </p>
               </Card>
