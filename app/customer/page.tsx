@@ -11,6 +11,12 @@ import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { resolveVisitSiteLine } from '@/lib/schedule/resolveVisitSiteLine';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import { getCustomerPendingRescheduleVisitIds } from '@/lib/customer/pendingRescheduleVisits';
+import {
+  fetchCustomerQuoteList,
+  pendingCustomerQuotes,
+  type CustomerQuoteListRow,
+} from '@/lib/customer/customerQuoteList';
+import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import {
   formatNextAppointmentWhen,
@@ -201,6 +207,12 @@ export default async function CustomerHomePage() {
         })[0]?.row ?? null;
   }
 
+  let pendingQuote: CustomerQuoteListRow | null = null;
+  if (ctx.customerIds.length > 0) {
+    const { rows: quoteRows } = await fetchCustomerQuoteList(admin, ctx.customerIds);
+    pendingQuote = pendingCustomerQuotes(quoteRows)[0] ?? null;
+  }
+
   const nextSite = nextVisit
     ? resolveVisitSiteLine(
         nextVisit.tenant_customer_properties,
@@ -304,6 +316,34 @@ export default async function CustomerHomePage() {
                   </div>
                   <Button variant="primary" as="a" href={`/invoices/${openInvoice.id}`}>
                     Pay now
+                  </Button>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {pendingQuote ? (
+            <section className={`${styles.card} ${styles.quoteAwaitingCard}`}>
+              <div className={styles.cardBody}>
+                <p className={`${styles.eyebrow} ${styles.quoteAwaitingEyebrow}`}>Quote awaiting review</p>
+                <div className={styles.quoteAwaitingInner}>
+                  <div>
+                    <p className={styles.quoteAwaitingAmount}>
+                      {formatQuoteMoney(pendingQuote.amount_cents, pendingQuote.currency)}
+                    </p>
+                    <p className={styles.nextMeta}>{pendingQuote.title}</p>
+                    <p className={styles.nextMeta}>
+                      From {pendingQuote.tenants?.name ?? 'your provider'}
+                      {pendingQuote.valid_until
+                        ? ` · Valid through ${new Date(String(pendingQuote.valid_until)).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}`
+                        : ''}
+                    </p>
+                  </div>
+                  <Button variant="primary" as="a" href={`/quotes/${pendingQuote.id}`}>
+                    Review quote
                   </Button>
                 </div>
               </div>

@@ -3,8 +3,14 @@ import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
+import { getCustomerPortalContext } from '@/lib/customer/customerContext';
+import {
+  fetchCustomerQuoteList,
+  pendingCustomerQuotes,
+} from '@/lib/customer/customerQuoteList';
 import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerPortalBranding';
 import { getPortalContext } from '@/lib/portal';
+import { createAdminClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import styles from './customer-layout.module.scss';
 
@@ -14,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
   { label: 'Schedule', href: '/visits', icon: 'visits' },
   { label: 'Billing', href: '/invoices', icon: 'invoices' },
+  { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Messages', href: '/messages', icon: 'messages' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
@@ -44,6 +51,19 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const nonProdBanner = getNonProdPortalBanner();
   const identity = await getCustomerShellIdentity(auth.user.id);
   const portal = await getPortalContext();
+  const ctx = await getCustomerPortalContext(auth.user.id);
+  const admin = createAdminClient();
+  const { rows: quoteRows } = ctx
+    ? await fetchCustomerQuoteList(admin, ctx.customerIds)
+    : { rows: [] };
+  const pendingQuoteCount = pendingCustomerQuotes(quoteRows).length;
+
+  const navItems: NavItem[] = NAV_ITEMS.map((item) =>
+    item.href === '/quotes' && pendingQuoteCount > 0
+      ? { ...item, badge: pendingQuoteCount }
+      : item,
+  );
+
   const branding =
     portal.whiteLabelCustomerPortal && portal.tenantSlug
       ? await getCustomerPortalBrandingForTenantSlug(portal.tenantSlug)
@@ -55,7 +75,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       brandLogoUrl={branding?.logoUrl}
       hidePlatformLogo={Boolean(branding)}
       brandHref="/"
-      navItems={NAV_ITEMS}
+      navItems={navItems}
       bottomNavItems={BOTTOM_NAV}
       identity={identity ?? IDENTITY}
       tenantBadge={

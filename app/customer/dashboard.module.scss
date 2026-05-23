@@ -192,6 +192,34 @@
   line-height: 1.1;
 }
 
+.quoteAwaitingCard {
+  border-left: 4px solid color-mix(in srgb, var(--color-brand-primary) 80%, var(--color-info-500));
+}
+
+.quoteAwaitingEyebrow {
+  color: color-mix(in srgb, var(--color-brand-primary) 85%, var(--color-info-500));
+}
+
+.quoteAwaitingInner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  @include mq.up(sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.quoteAwaitingAmount {
+  margin: 0 0 var(--space-2);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  line-height: 1.15;
+}
+
 .invoiceTable {
   width: 100%;
   border-collapse: collapse;
