@@ -1,3 +1,5 @@
+@use 'mixins/breakpoints' as mq;
+
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -118,6 +120,139 @@
   color: var(--color-brand-primary);
 }
 
+.reviewPage {
+  max-width: 1400px;
+  margin-inline: auto;
+  display: grid;
+  gap: var(--space-5);
+}
+
+.reviewHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.reviewHeaderMain {
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.reviewHeaderStatus {
+  flex: 0 0 auto;
+
+  @include mq.up(lg) {
+    display: none;
+  }
+}
+
+.reviewBannerMobileOnly {
+  @include mq.up(lg) {
+    display: none;
+  }
+}
+
+.reviewGrid {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+.reviewMain {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  order: 2;
+
+  @include mq.up(lg) {
+    order: 1;
+  }
+}
+
+.reviewAside {
+  min-width: 0;
+  order: 1;
+
+  @include mq.up(lg) {
+    order: 2;
+  }
+}
+
+.mobileHero {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  text-align: center;
+
+  @include mq.up(md) {
+    display: none;
+  }
+}
+
+.decisionPanel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 25%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+
+  @include mq.up(lg) {
+    position: sticky;
+    top: var(--space-6);
+  }
+}
+
+.decisionPanelChrome {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.decisionPanelStatusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.decisionPanelTotalBlock {
+  padding-top: var(--space-1);
+}
+
+.decisionPanelTotalAmount {
+  margin: var(--space-1) 0 0;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.decisionPanelMeta {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.decisionPanelHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.panelActions {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .reviewHero {
   display: grid;
   gap: var(--space-4);
@@ -225,6 +360,12 @@
   gap: var(--space-2);
 }
 
+.lineCardListTwoCol {
+  @include mq.up(xl) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .lineCard {
   display: flex;
   align-items: flex-start;
@@ -269,6 +410,13 @@
   display: grid;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
+}
+
+.scopeListTwoCol {
+  @include mq.up(xl) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-6);
+  }
 }
 
 .scopeAccessNotes {
@@ -513,11 +661,21 @@
 }
 
 @media (max-width: 767px) {
-  .reviewHero {
-    padding: var(--space-4);
+  .decisionPanel {
+    padding: 0;
+    border: none;
+    background: transparent;
   }
 
-  .responseActions {
+  .decisionPanelChrome {
+    display: none;
+  }
+
+  .reviewPage {
+    padding-bottom: calc(var(--space-16) + var(--customer-nav-height, 64px));
+  }
+
+  .panelActions {
     display: none;
   }
 
@@ -542,8 +700,10 @@
       flex: 2;
     }
   }
+}
 
-  .decisionSection {
-    padding-bottom: calc(var(--space-16) + var(--customer-nav-height, 64px));
+@media (min-width: 768px) {
+  .stickyDecisionBar {
+    display: none !important;
   }
 }

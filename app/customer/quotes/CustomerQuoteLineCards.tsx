@@ -31,9 +31,11 @@ function lineHasDiscount(line: CustomerQuoteLineView): boolean {
 export function CustomerQuoteLineCards({
   lines,
   currency,
+  listClassName,
 }: {
   lines: CustomerQuoteLineView[];
   currency: string;
+  listClassName?: string;
 }) {
   if (lines.length === 0) {
     return (
@@ -44,7 +46,7 @@ export function CustomerQuoteLineCards({
   const anyDiscount = lines.some(lineHasDiscount);
 
   return (
-    <ul className={styles.lineCardList}>
+    <ul className={listClassName ?? styles.lineCardList}>
       {lines.map((line) => {
         const discounted = lineHasDiscount(line);
         const yourPrice = effectiveLineSubtotalCents({

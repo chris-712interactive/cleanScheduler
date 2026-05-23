@@ -1,9 +1,7 @@
 import { StatusPill } from '@/components/ui/StatusPill';
-import { Stack } from '@/components/layout/Stack';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
-import type { QuoteScopeSnapshot } from '@/lib/tenant/quoteStructuredFields';
 import type { ComputeQuoteTotalsInput } from '@/lib/tenant/quoteTotals';
 import { CustomerQuoteLineCards, type CustomerQuoteLineView } from './CustomerQuoteLineCards';
 import { CustomerQuoteTotalsBreakdown } from './CustomerQuoteTotalsBreakdown';
@@ -11,21 +9,8 @@ import {
   CustomerQuoteVersionHistory,
   type CustomerQuoteVersionRow,
 } from './CustomerQuoteVersionHistory';
-import { CustomerQuoteResponseForm } from './CustomerQuoteResponseForm';
+import { CustomerQuoteDecisionPanel } from './CustomerQuoteDecisionPanel';
 import styles from './quotes.module.scss';
-
-function statusPillTone(status: QuoteStatus, canRespond: boolean) {
-  if (status === 'accepted') return 'success' as const;
-  if (status === 'expired') return 'warning' as const;
-  if (status === 'declined') return 'neutral' as const;
-  if (status === 'sent' && canRespond) return 'info' as const;
-  return 'neutral' as const;
-}
-
-function statusPillLabel(status: QuoteStatus, canRespond: boolean) {
-  if (status === 'sent' && canRespond) return 'Awaiting your response';
-  return QUOTE_STATUS_LABEL[status];
-}
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -43,35 +28,24 @@ function primaryCadenceLabel(lines: CustomerQuoteLineView[]): string | null {
   return QUOTE_LINE_FREQUENCY_LABEL[frequency].toLowerCase();
 }
 
-function QuoteStatusBanner({
+function FullWidthStatusBanner({
   status,
   canRespond,
   validUntil,
   acceptedAt,
-  supersededByQuoteId,
 }: {
   status: QuoteStatus;
   canRespond: boolean;
   validUntil: string | null;
   acceptedAt: string | null;
-  supersededByQuoteId: string | null;
 }) {
-  if (supersededByQuoteId) {
-    return (
-      <p className={styles.bannerWarning} role="status">
-        A newer version of this quote is available. Your provider may have updated pricing or
-        scope — open the latest version from your quotes list.
-      </p>
-    );
-  }
-
   if (status === 'sent' && canRespond) {
     const until = formatDate(validUntil);
     return (
-      <p className={styles.bannerInfo} role="status">
+      <p className={`${styles.bannerInfo} ${styles.reviewBanner}`} role="status">
         {until
-          ? `Valid through ${until}. Review the services below, then accept or decline.`
-          : 'Review the services below, then accept or decline.'}
+          ? `Valid through ${until}. Review the services, then accept or decline.`
+          : 'Review the services, then accept or decline.'}
       </p>
     );
   }
@@ -79,7 +53,7 @@ function QuoteStatusBanner({
   if (status === 'accepted') {
     const when = formatDate(acceptedAt);
     return (
-      <p className={styles.bannerOk} role="status">
+      <p className={`${styles.bannerOk} ${styles.reviewBanner}`} role="status">
         {when
           ? `You accepted this quote on ${when}. This is your agreed record.`
           : 'You accepted this quote. This is your agreed record.'}
@@ -89,7 +63,7 @@ function QuoteStatusBanner({
 
   if (status === 'declined') {
     return (
-      <p className={styles.bannerNeutral} role="status">
+      <p className={`${styles.bannerNeutral} ${styles.reviewBanner}`} role="status">
         You declined this quote. Contact your provider if you would like a revised proposal.
       </p>
     );
@@ -98,7 +72,7 @@ function QuoteStatusBanner({
   if (status === 'expired') {
     const until = formatDate(validUntil);
     return (
-      <p className={styles.bannerWarning} role="status">
+      <p className={`${styles.bannerWarning} ${styles.reviewBanner}`} role="status">
         {until
           ? `This quote expired on ${until}. Ask your provider for an updated quote if you are still interested.`
           : 'This quote has expired. Ask your provider for an updated quote if you are still interested.'}
@@ -111,7 +85,6 @@ function QuoteStatusBanner({
 
 export function CustomerQuoteReview({
   quoteId,
-  title,
   tenantName,
   status,
   currency,
@@ -134,7 +107,6 @@ export function CustomerQuoteReview({
   userEmail,
 }: {
   quoteId: string;
-  title: string;
   tenantName: string;
   status: QuoteStatus;
   currency: string;
@@ -157,112 +129,143 @@ export function CustomerQuoteReview({
   userEmail: string | null;
 }) {
   const cadence = primaryCadenceLabel(lines);
+  const totalLabel = formatQuoteMoney(amountCents, currency);
   const showScopeSection =
     scopeInclusions.length > 0 ||
     Boolean(scopeExclusions?.trim()) ||
     Boolean(accessNotes?.trim());
+  const scopeListClass =
+    scopeInclusions.length >= 4
+      ? `${styles.scopeList} ${styles.scopeListTwoCol}`
+      : styles.scopeList;
+  const lineListClass =
+    lines.length >= 3 ? `${styles.lineCardList} ${styles.lineCardListTwoCol}` : styles.lineCardList;
+
+  const supersededBanner = supersededByQuoteId ? (
+    <p className={styles.bannerWarning} role="status">
+      A newer version of this quote is available. Your provider may have updated pricing or scope
+      — open the latest version from your quotes list.
+    </p>
+  ) : null;
+
+  const mobileStatusBanner = !supersededByQuoteId ? (
+    <FullWidthStatusBanner
+      status={status}
+      canRespond={canRespond}
+      validUntil={validUntil}
+      acceptedAt={acceptedAt}
+    />
+  ) : null;
 
   return (
-    <Stack gap={6}>
-      <section className={styles.reviewHero} aria-label="Quote summary">
-        <div className={styles.reviewHeroTop}>
-          <div>
-            <p className={styles.reviewProvider}>{tenantName}</p>
-            <h2 className={styles.reviewTitle}>{title}</h2>
-            {propertyAddress ? (
-              <p className={styles.reviewAddress}>{propertyAddress}</p>
-            ) : null}
-          </div>
-          <StatusPill tone={statusPillTone(status, canRespond)}>
-            {statusPillLabel(status, canRespond)}
+    <div className={styles.reviewPage}>
+      <header className={styles.reviewHeader}>
+        <div className={styles.reviewHeaderMain}>
+          <p className={styles.reviewProvider}>{tenantName}</p>
+          {propertyAddress ? <p className={styles.reviewAddress}>{propertyAddress}</p> : null}
+        </div>
+        <div className={styles.reviewHeaderStatus}>
+          <StatusPill
+            tone={
+              status === 'accepted'
+                ? 'success'
+                : status === 'expired'
+                  ? 'warning'
+                  : status === 'sent' && canRespond
+                    ? 'info'
+                    : 'neutral'
+            }
+          >
+            {status === 'sent' && canRespond ? 'Awaiting your response' : QUOTE_STATUS_LABEL[status]}
           </StatusPill>
         </div>
+      </header>
 
-        <QuoteStatusBanner
-          status={status}
-          canRespond={canRespond}
-          validUntil={validUntil}
-          acceptedAt={acceptedAt}
-          supersededByQuoteId={supersededByQuoteId}
-        />
-
-        <div className={styles.reviewTotalBlock}>
-          <p className={styles.reviewTotalLabel}>Total</p>
-          <p className={styles.reviewTotalAmount}>{formatQuoteMoney(amountCents, currency)}</p>
-          {cadence ? <p className={styles.reviewTotalCadence}>per visit · {cadence}</p> : null}
-        </div>
-      </section>
-
-      {lines.length > 0 ? (
-        <section aria-labelledby="quote-services-heading">
-          <h3 id="quote-services-heading" className={styles.sectionHeading}>
-            {isAgreementFrozen ? 'Agreed services' : 'Services'}
-          </h3>
-          <CustomerQuoteLineCards lines={lines} currency={currency} />
-        </section>
+      {supersededBanner}
+      {mobileStatusBanner ? (
+        <div className={styles.reviewBannerMobileOnly}>{mobileStatusBanner}</div>
       ) : null}
 
-      {showScopeSection ? (
-        <section aria-labelledby="quote-scope-heading">
-          <h3 id="quote-scope-heading" className={styles.sectionHeading}>
-            Scope
-          </h3>
-          {scopeInclusions.length > 0 ? (
-            <ul className={styles.scopeList}>
-              {scopeInclusions.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
+      <div className={styles.reviewGrid}>
+        <div className={styles.reviewMain}>
+          <div className={styles.mobileHero} aria-hidden="false">
+            <p className={styles.reviewTotalLabel}>Total</p>
+            <p className={styles.reviewTotalAmount}>{totalLabel}</p>
+            {cadence ? <p className={styles.reviewTotalCadence}>per visit · {cadence}</p> : null}
+          </div>
+
+          {lines.length > 0 ? (
+            <section aria-labelledby="quote-services-heading">
+              <h2 id="quote-services-heading" className={styles.sectionHeading}>
+                {isAgreementFrozen ? 'Agreed services' : 'Services'}
+              </h2>
+              <CustomerQuoteLineCards lines={lines} currency={currency} listClassName={lineListClass} />
+            </section>
           ) : null}
-          {scopeExclusions?.trim() ? (
-            <p className={styles.scopeExclusions}>
-              <span className={styles.scopeExclusionsLabel}>Not included: </span>
-              {scopeExclusions.trim()}
+
+          {showScopeSection ? (
+            <section aria-labelledby="quote-scope-heading">
+              <h2 id="quote-scope-heading" className={styles.sectionHeading}>
+                Scope
+              </h2>
+              {scopeInclusions.length > 0 ? (
+                <ul className={scopeListClass}>
+                  {scopeInclusions.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ) : null}
+              {scopeExclusions?.trim() ? (
+                <p className={styles.scopeExclusions}>
+                  <span className={styles.scopeExclusionsLabel}>Not included: </span>
+                  {scopeExclusions.trim()}
+                </p>
+              ) : null}
+              {accessNotes?.trim() ? (
+                <p className={styles.scopeAccessNotes}>{accessNotes.trim()}</p>
+              ) : null}
+            </section>
+          ) : null}
+
+          <CustomerQuoteTotalsBreakdown
+            input={totalsInput}
+            currency={currency}
+            amountCents={amountCents}
+          />
+
+          {providerNotes ? (
+            <section aria-labelledby="quote-notes-heading">
+              <h2 id="quote-notes-heading" className={styles.sectionHeading}>
+                Notes from your provider
+              </h2>
+              <p className={styles.providerNotes}>{providerNotes}</p>
+            </section>
+          ) : null}
+
+          {versionNumber > 1 && versionReason?.trim() && status === 'sent' ? (
+            <p className={styles.versionReason}>
+              <span className={styles.versionReasonLabel}>About this revision: </span>
+              {versionReason.trim()}
             </p>
           ) : null}
-          {accessNotes?.trim() ? (
-            <p className={styles.scopeAccessNotes}>{accessNotes.trim()}</p>
-          ) : null}
-        </section>
-      ) : null}
 
-      <CustomerQuoteTotalsBreakdown
-        input={totalsInput}
-        currency={currency}
-        amountCents={amountCents}
-      />
+          <CustomerQuoteVersionHistory versions={versions} currentQuoteId={quoteId} />
+        </div>
 
-      {providerNotes ? (
-        <section aria-labelledby="quote-notes-heading">
-          <h3 id="quote-notes-heading" className={styles.sectionHeading}>
-            Notes from your provider
-          </h3>
-          <p className={styles.providerNotes}>{providerNotes}</p>
-        </section>
-      ) : null}
-
-      {versionNumber > 1 && versionReason?.trim() && status === 'sent' ? (
-        <p className={styles.versionReason}>
-          <span className={styles.versionReasonLabel}>About this revision: </span>
-          {versionReason.trim()}
-        </p>
-      ) : null}
-
-      <CustomerQuoteVersionHistory versions={versions} currentQuoteId={quoteId} />
-
-      {canRespond ? (
-        <section className={styles.decisionSection} aria-labelledby="quote-decision-heading">
-          <h3 id="quote-decision-heading" className={styles.sectionHeading}>
-            Your decision
-          </h3>
-          <CustomerQuoteResponseForm
-            quoteId={quoteId}
-            tenantName={tenantName}
-            totalLabel={formatQuoteMoney(amountCents, currency)}
-            userEmail={userEmail}
-          />
-        </section>
-      ) : null}
-    </Stack>
+        <CustomerQuoteDecisionPanel
+          quoteId={quoteId}
+          tenantName={tenantName}
+          status={status}
+          currency={currency}
+          amountCents={amountCents}
+          validUntil={validUntil}
+          canRespond={canRespond}
+          acceptedAt={acceptedAt}
+          cadence={cadence}
+          totalLabel={totalLabel}
+          userEmail={userEmail}
+        />
+      </div>
+    </div>
   );
 }

@@ -285,7 +285,7 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
   return (
     <>
       <PageHeader
-        title="Quote"
+        title={row.title}
         backHref="/quotes"
         backLabel="All quotes"
         description={tenantName}
@@ -293,7 +293,6 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
 
       <CustomerQuoteReview
         quoteId={id}
-        title={row.title}
         tenantName={tenantName}
         status={status}
         currency={currency}

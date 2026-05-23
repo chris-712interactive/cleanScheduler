@@ -15,11 +15,13 @@ export function CustomerQuoteResponseForm({
   tenantName,
   totalLabel,
   userEmail,
+  layout = 'default',
 }: {
   quoteId: string;
   tenantName: string;
   totalLabel: string;
   userEmail: string | null;
+  layout?: 'default' | 'panel';
 }) {
   const [state, action, pending] = useActionState(respondToCustomerQuote, initial);
   useRefreshOnServerActionSuccess(state.success);
@@ -121,6 +123,9 @@ export function CustomerQuoteResponseForm({
     }
   }, [quoteId]);
 
+  const isPanel = layout === 'panel';
+  const actionsClass = isPanel ? styles.panelActions : styles.responseActions;
+
   if (state.success) {
     return (
       <p className={styles.responseSuccess} role="status">
@@ -144,7 +149,7 @@ export function CustomerQuoteResponseForm({
               This tells {tenantName} you are passing on this quote. You can ask them for a revised
               proposal later.
             </p>
-            <div className={styles.responseActions}>
+            <div className={actionsClass}>
               <Button type="button" variant="ghost" onClick={() => setDeclineOpen(false)}>
                 Cancel
               </Button>
@@ -159,11 +164,11 @@ export function CustomerQuoteResponseForm({
           </div>
         ) : (
           <>
-            <div className={styles.responseActions}>
-              <Button type="button" variant="primary" onClick={() => setStep('sign')}>
+            <div className={actionsClass}>
+              <Button type="button" variant="primary" fullWidth={isPanel} onClick={() => setStep('sign')}>
                 Accept quote
               </Button>
-              <Button type="button" variant="ghost" onClick={() => setDeclineOpen(true)}>
+              <Button type="button" variant="ghost" fullWidth={isPanel} onClick={() => setDeclineOpen(true)}>
                 Not interested
               </Button>
             </div>
@@ -311,11 +316,11 @@ export function CustomerQuoteResponseForm({
           </p>
         </details>
 
-        <div className={styles.responseActions}>
-          <Button type="button" variant="ghost" onClick={() => setStep('decision')}>
+        <div className={actionsClass}>
+          <Button type="button" variant="ghost" fullWidth={isPanel} onClick={() => setStep('decision')}>
             Back
           </Button>
-          <Button type="submit" variant="primary" loading={pending} disabled={pending}>
+          <Button type="submit" variant="primary" fullWidth={isPanel} loading={pending} disabled={pending}>
             {pending ? 'Working…' : 'Accept and sign'}
           </Button>
         </div>
