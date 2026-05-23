@@ -19,6 +19,15 @@ export function fieldEmployeeHomePath(): string {
   return '/schedule?employee=me&view=today';
 }
 
+export function fieldEmployeeAccountPath(): string {
+  return '/settings/account';
+}
+
+/** Where field employees should land after sign-in (schedule when active, account when billing locked). */
+export function fieldEmployeeLandingPath(subscriptionLocked: boolean): string {
+  return subscriptionLocked ? fieldEmployeeAccountPath() : fieldEmployeeHomePath();
+}
+
 function normalizeBrowserPath(path: string): string {
   const base = path.split('?')[0]?.trim() || '/';
   if (base.length > 1 && base.endsWith('/')) {
@@ -59,17 +68,19 @@ export function fieldEmployeeCanAccessBrowserPath(pathname: string): boolean {
 export function enforceFieldEmployeeRouteAccess(
   role: TenantRole,
   browserPathname: string | null | undefined,
+  options?: { subscriptionLocked?: boolean },
 ): void {
   if (!isFieldEmployeeRole(role)) return;
 
   const path = browserPathname?.trim() || '/';
+  const subscriptionLocked = options?.subscriptionLocked === true;
 
   if (path === '/' || path === '') {
-    redirect(fieldEmployeeHomePath());
+    redirect(fieldEmployeeLandingPath(subscriptionLocked));
   }
 
   if (path === '/settings') {
-    redirect('/settings/account');
+    redirect(fieldEmployeeAccountPath());
   }
 
   if (!fieldEmployeeCanAccessBrowserPath(path)) {

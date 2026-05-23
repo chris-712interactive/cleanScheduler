@@ -5,9 +5,10 @@ import {
   isTenantBillingHubPath,
   isTenantPortalSuspended,
   isTenantSuspendedEscapePath,
+  needsSubscriptionPurchase,
   resolveTenantSubscriptionAccess,
 } from '@/lib/billing/tenantSubscriptionAccess';
-import { enforceFieldEmployeeRouteAccess } from '@/lib/tenant/fieldEmployeeAccess';
+import { enforceFieldEmployeeRouteAccess, isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { requirePortalAccess } from './portalAccess';
 import type { TenantRole } from './types';
 
@@ -82,8 +83,13 @@ async function lookupTenantBySlug(
 
 async function assertTenantWorkspaceUnlocked(
   tenantId: string,
-  options?: TenantPortalAccessOptions,
+  options?: TenantPortalAccessOptions & { memberRole?: TenantRole },
 ): Promise<void> {
+  // Field employees cannot manage billing — avoid redirect loops to /billing.
+  if (options?.memberRole === 'employee') {
+    return;
+  }
+
   const allowWhenSuspended =
     options?.allowBillingResume === true ||
     isTenantSuspendedEscapePath(options?.internalPathname, options?.browserPathname);
@@ -146,7 +152,31 @@ export async function requireTenantPortalAccess(
     auth.claims.appRole === 'super_admin' || auth.claims.appRole === 'admin';
 
   if (membership) {
-    await assertTenantWorkspaceUnlocked(membership.tenantId, mergedOptions);
+    await assertTenantWorkspaceUnlocked(membership.tenantId, {
+      ...mergedOptions,
+      memberRole: membership.role,
+    });
+
+    let subscriptionLocked = false;
+    if (isFieldEmployeeRole(membership.role)) {
+      const admin = createAdminClient();
+      const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
+        admin.from('tenants').select('is_active').eq('id', membership.tenantId).maybeSingle(),
+        admin
+          .from('tenant_billing_accounts')
+          .select('status, trial_ends_at, stripe_subscription_id')
+          .eq('tenant_id', membership.tenantId)
+          .maybeSingle(),
+      ]);
+      const access = resolveTenantSubscriptionAccess({
+        billingStatus: billingRow?.status,
+        trialEndsAt: billingRow?.trial_ends_at,
+        tenantIsActive: tenantRow?.is_active !== false,
+        stripeSubscriptionId: billingRow?.stripe_subscription_id,
+      });
+      subscriptionLocked = needsSubscriptionPurchase(access);
+    }
+
     if (
       accessOptions?.skipFieldEmployeeRouteEnforcement !== true &&
       !isPlatformAdmin
@@ -155,7 +185,9 @@ export async function requireTenantPortalAccess(
         mergedOptions.browserPathname ??
         (nextPath.startsWith('/tenant/') ? null : nextPath);
       if (pathForFieldCheck) {
-        enforceFieldEmployeeRouteAccess(membership.role, pathForFieldCheck);
+        enforceFieldEmployeeRouteAccess(membership.role, pathForFieldCheck, {
+          subscriptionLocked,
+        });
       }
     }
     return membership;

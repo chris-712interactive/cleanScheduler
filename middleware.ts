@@ -37,6 +37,12 @@ import {
   isTenantPortalSuspended,
   isTenantSuspendedEscapePath,
 } from '@/lib/billing/tenantSubscriptionAccess';
+import { resolveTenantMembershipForSlug } from '@/lib/auth/resolveTenantMembershipForSlug';
+import {
+  fieldEmployeeCanAccessBrowserPath,
+  fieldEmployeeLandingPath,
+  isFieldEmployeeRole,
+} from '@/lib/tenant/fieldEmployeeAccess';
 import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
 import { resolveActiveWhiteLabelCustomerPortal } from '@/lib/portal/resolveWhiteLabelCustomerPortal';
 
@@ -221,6 +227,34 @@ export async function middleware(request: NextRequest) {
 
   const { userId, cookiesToSet } = await resolveUser(request);
   const isProtectedPortal = kind !== 'marketing' && !isPublicCustomerInvite;
+
+  let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
+  let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> = null;
+
+  if (kind === 'tenant' && userId && tenantSlug) {
+    [tenantMembership, tenantSubscription] = await Promise.all([
+      resolveTenantMembershipForSlug(userId, tenantSlug),
+      resolveTenantSubscriptionAccessForSlug(tenantSlug),
+    ]);
+  }
+
+  const subscriptionLocked =
+    tenantSubscription != null && isTenantPortalSuspended(tenantSubscription.access);
+
+  // Hard redirect field employees away from `/` before RSC layout runs (avoids blank first paint after login).
+  if (
+    kind === 'tenant' &&
+    tenantMembership &&
+    isFieldEmployeeRole(tenantMembership.role) &&
+    (requestedPath === '/' || requestedPath === '')
+  ) {
+    const landing = fieldEmployeeLandingPath(subscriptionLocked);
+    const landingUrl = new URL(landing, request.url);
+    const redirect = NextResponse.redirect(landingUrl);
+    applyCookies(redirect, cookiesToSet);
+    return redirect;
+  }
+
   if (isProtectedPortal && !userId) {
     const nextPath = request.nextUrl.pathname + request.nextUrl.search;
     const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
@@ -230,14 +264,20 @@ export async function middleware(request: NextRequest) {
   }
 
   if (kind === 'tenant' && userId && tenantSlug && !isTenantSuspendedEscapePath(null, requestedPath)) {
-    const subscription = await resolveTenantSubscriptionAccessForSlug(tenantSlug);
-    if (subscription && isTenantPortalSuspended(subscription.access)) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/billing';
-      redirectUrl.searchParams.set('subscribe', 'required');
-      const redirect = NextResponse.redirect(redirectUrl);
-      applyCookies(redirect, cookiesToSet);
-      return redirect;
+    if (subscriptionLocked) {
+      const fieldEmployeeOnAllowedPath =
+        tenantMembership &&
+        isFieldEmployeeRole(tenantMembership.role) &&
+        fieldEmployeeCanAccessBrowserPath(requestedPath);
+
+      if (!fieldEmployeeOnAllowedPath) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = '/billing';
+        redirectUrl.searchParams.set('subscribe', 'required');
+        const redirect = NextResponse.redirect(redirectUrl);
+        applyCookies(redirect, cookiesToSet);
+        return redirect;
+      }
     }
   }
 

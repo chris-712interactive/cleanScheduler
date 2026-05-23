@@ -8,12 +8,21 @@ import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { TenantRole } from '@/lib/auth/types';
+import { fieldEmployeeHomePath, isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import {
   assertCanAssignTeamSeat,
   countTeamSeatUsage,
   teamSeatGateErrorMessage,
 } from '@/lib/billing/teamSeats';
+
+function tenantPortalLandingPath(tenantSlug: string, role: TenantRole): string {
+  const origin = getPublicOrigin(tenantSlug);
+  if (isFieldEmployeeRole(role)) {
+    return `${origin}${fieldEmployeeHomePath()}`;
+  }
+  return `${origin}/?welcome=1`;
+}
 
 const TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -106,6 +115,7 @@ export async function linkExistingEmployeeInviteAction(
   const tenantsEmbed = invite.tenants as { slug: string; name: string } | { slug: string; name: string }[] | null;
   const tenantInfo = Array.isArray(tenantsEmbed) ? tenantsEmbed[0] : tenantsEmbed;
   const tenantSlugEarly = tenantInfo?.slug ?? '';
+  const invitedRole = invite.invited_role as TenantRole;
 
   const { data: existingRow } = await admin
     .from('tenant_memberships')
@@ -115,7 +125,7 @@ export async function linkExistingEmployeeInviteAction(
     .maybeSingle();
   if (existingRow) {
     await admin.from('employee_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
-    redirect(`${getPublicOrigin(tenantSlugEarly)}/?invite=already_member`);
+    redirect(tenantPortalLandingPath(tenantSlugEarly, invitedRole));
   }
 
   const { data: other } = await admin
@@ -131,7 +141,6 @@ export async function linkExistingEmployeeInviteAction(
     };
   }
 
-  const invitedRole = invite.invited_role as TenantRole;
   const nextAppRole = appRoleForTenantRole(invitedRole);
 
   try {
@@ -193,7 +202,7 @@ export async function linkExistingEmployeeInviteAction(
 
   await admin.from('employee_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
 
-  redirect(`${getPublicOrigin(tenantSlugEarly)}/?welcome=1`);
+  redirect(tenantPortalLandingPath(tenantSlugEarly, invitedRole));
 }
 
 export async function acceptEmployeeInviteAction(
@@ -318,5 +327,5 @@ export async function acceptEmployeeInviteAction(
   const tenantsRaw = invite.tenants as { slug: string; name: string } | { slug: string; name: string }[] | null;
   const tenantRow = Array.isArray(tenantsRaw) ? tenantsRaw[0] : tenantsRaw;
   const tenantSlug = tenantRow?.slug ?? '';
-  redirect(`${getPublicOrigin(tenantSlug)}/?welcome=1`);
+  redirect(tenantPortalLandingPath(tenantSlug, invitedRole));
 }
