@@ -5,9 +5,9 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createAdminClient } from '@/lib/supabase/server';
 import {
-  getEntitlementsForTier,
+  getEntitlementsForPlan,
   isFeatureEnabled,
-  resolveTenantPlanTier,
+  resolveTenantEntitlementPlan,
 } from '@/lib/billing/entitlements';
 import {
   canUsePaidSubscriptionFeatures,
@@ -33,14 +33,14 @@ export default async function TenantIntegrationsSettingsPage() {
       .select('status')
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
-    resolveTenantPlanTier(admin, membership.tenantId),
+    resolveTenantEntitlementPlan(admin, membership.tenantId),
   ]);
 
   const apiTierEnabled = isFeatureEnabled(tier, 'fullApiWebhooks');
   const billingStatus = (billing?.status ?? 'trialing') as TenantBillingStatus;
   const apiPaid = canUsePaidSubscriptionFeatures(billingStatus);
   const integrationsAllowed = apiTierEnabled && apiPaid;
-  const integrationLimit = getEntitlementsForTier(tier).limits.includedIntegrations;
+  const integrationLimit = getEntitlementsForPlan(tier).limits.includedIntegrations;
   const integrationUsed = integrationsAllowed
     ? await countActiveIntegrations(admin, membership.tenantId)
     : 0;

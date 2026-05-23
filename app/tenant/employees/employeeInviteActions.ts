@@ -155,7 +155,7 @@ export async function sendEmployeeInviteAction(
     const tier = await resolveTenantPlanTier(admin, membership.tenantId);
     const usage = await countTeamSeatUsage(admin, membership.tenantId);
     assertCanAssignTeamSeat({
-      tier,
+      plan: tier,
       role: invitedRole,
       usage,
       replaceRole: existingPendingInvite

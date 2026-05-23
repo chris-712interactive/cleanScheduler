@@ -243,16 +243,20 @@ Next checks to add:
 - ~~integration connection actions -> `includedIntegrations`~~ (shipped — API keys + webhooks count toward cap)
 - SMS review-request campaigns (email `review_ask` template parity)
 
+## Free trial (DB-only)
+
+Workspaces on a **DB-only free trial** (`status=trialing`, `platform_plan IS NULL`, no Stripe subscription) use `TRIAL_ENTITLEMENTS` in `lib/billing/entitlements.ts` — not Starter/Business/Pro limits. All `status=trialing` rows use the trial profile until conversion.
+
+See `docs/billing/free-trial-spec.md` for signup, conversion (tier + monthly/yearly on `/billing`), and cron behavior.
+
 ## Stripe mapping and fulfillment
 
-- Keep using tier-specific env variables:
-  - `STRIPE_PLATFORM_PRICE_STARTER`
-  - `STRIPE_PLATFORM_PRICE_BUSINESS`
-  - `STRIPE_PLATFORM_PRICE_PRO`
+- Stripe Price IDs per tier **and interval** (monthly/yearly):
+  - `STRIPE_PLATFORM_PRICE_*_MONTHLY` / `STRIPE_PLATFORM_PRICE_*_YEARLY`
+  - Legacy fallbacks: `STRIPE_PLATFORM_PRICE_*`, `STRIPE_PLATFORM_PRICE_*_SUBSCRIBE`
 - At checkout + webhook sync, map Stripe subscription metadata to
-  `tenant_billing_accounts.platform_plan`.
-- Entitlement resolution reads `tenant_billing_accounts.platform_plan`; fallback
-  defaults to `starter` if missing.
+  `tenant_billing_accounts.platform_plan` and `billing_interval`.
+- Entitlement resolution: trialing → `TRIAL_ENTITLEMENTS`; active → tier from `platform_plan`.
 
 ### Platform Stripe webhook idempotency
 

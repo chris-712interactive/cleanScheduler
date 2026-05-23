@@ -147,7 +147,7 @@ export async function linkExistingEmployeeInviteAction(
     const tier = await resolveTenantPlanTier(admin, invite.tenant_id);
     const usage = await countTeamSeatUsage(admin, invite.tenant_id);
     assertCanAssignTeamSeat({
-      tier,
+      plan: tier,
       role: invitedRole,
       usage,
       replaceRole: invitedRole,
@@ -275,7 +275,7 @@ export async function acceptEmployeeInviteAction(
     const tier = await resolveTenantPlanTier(admin, invite.tenant_id);
     const usage = await countTeamSeatUsage(admin, invite.tenant_id);
     assertCanAssignTeamSeat({
-      tier,
+      plan: tier,
       role: invitedRole,
       usage,
       replaceRole: invitedRole,

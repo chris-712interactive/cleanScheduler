@@ -3,8 +3,10 @@ import {
   assertFeatureEnabled,
   assertLimitNotExceeded,
   EntitlementGateError,
-  getEntitlementsForTier,
-  resolveTenantPlanTier,
+  getEntitlementsForPlan,
+  resolveTenantEntitlementPlan,
+  resolveTenantSubscriptionTier,
+  type EntitlementPlanKey,
 } from '@/lib/billing/entitlements';
 import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
@@ -33,8 +35,8 @@ export async function countSmsSegmentsUsedThisMonth(
   return (data ?? []).reduce((sum, row) => sum + (row.segment_count ?? 0), 0);
 }
 
-export function assertSmsFeatureEnabled(tier: PlatformPlanTier): void {
-  assertFeatureEnabled(tier, 'smsCommunication');
+export function assertSmsFeatureEnabled(plan: EntitlementPlanKey): void {
+  assertFeatureEnabled(plan, 'smsCommunication');
 }
 
 export async function assertCanSendSmsSegments(params: {
@@ -46,16 +48,17 @@ export async function assertCanSendSmsSegments(params: {
     throw new EntitlementGateError('SMS body is empty.', 'limit_exceeded');
   }
 
-  const [{ data: billing }, tier] = await Promise.all([
+  const [{ data: billing }, plan, subscriptionTier] = await Promise.all([
     params.admin
       .from('tenant_billing_accounts')
       .select('status')
       .eq('tenant_id', params.tenantId)
       .maybeSingle(),
-    resolveTenantPlanTier(params.admin, params.tenantId),
+    resolveTenantEntitlementPlan(params.admin, params.tenantId),
+    resolveTenantSubscriptionTier(params.admin, params.tenantId),
   ]);
 
-  assertSmsFeatureEnabled(tier);
+  assertSmsFeatureEnabled(plan);
 
   if (!canUseSmsCommunication(billing?.status)) {
     throw new EntitlementGateError(
@@ -64,6 +67,7 @@ export async function assertCanSendSmsSegments(params: {
     );
   }
 
+  const tier = subscriptionTier ?? 'pro';
   const used = await countSmsSegmentsUsedThisMonth(params.admin, params.tenantId);
   assertLimitNotExceeded(tier, 'includedSmsCreditsMonthly', used + params.segmentCount - 1);
 
@@ -74,13 +78,13 @@ export async function resolveTenantSmsCommunicationAllowed(
   admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<boolean> {
-  const [{ data: billing }, tier] = await Promise.all([
+  const [{ data: billing }, plan] = await Promise.all([
     admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
-    resolveTenantPlanTier(admin, tenantId),
+    resolveTenantEntitlementPlan(admin, tenantId),
   ]);
 
   try {
-    assertSmsFeatureEnabled(tier);
+    assertSmsFeatureEnabled(plan);
   } catch {
     return false;
   }
@@ -89,7 +93,7 @@ export async function resolveTenantSmsCommunicationAllowed(
 }
 
 export function formatSmsUsageSummary(used: number, tier: PlatformPlanTier): string {
-  const limit = getEntitlementsForTier(tier).limits.includedSmsCreditsMonthly;
+  const limit = getEntitlementsForPlan(tier).limits.includedSmsCreditsMonthly;
   return `${used.toLocaleString()}/${limit.toLocaleString()} SMS segments this month`;
 }
 

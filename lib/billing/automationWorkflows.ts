@@ -2,10 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   assertLimitNotExceeded,
   EntitlementGateError,
-  getEntitlementsForTier,
-  resolveTenantPlanTier,
+  getEntitlementsForPlan,
+  resolveTenantEntitlementPlan,
+  type EntitlementPlanKey,
 } from '@/lib/billing/entitlements';
-import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import type { Database } from '@/lib/supabase/database.types';
 
 /** Active recurring visit rules count toward maxAutomationWorkflows. */
@@ -27,10 +27,10 @@ export async function countActiveAutomationWorkflows(
 }
 
 export function assertCanCreateAutomationWorkflow(params: {
-  tier: PlatformPlanTier;
+  plan: EntitlementPlanKey;
   activeCount: number;
 }): void {
-  assertLimitNotExceeded(params.tier, 'maxAutomationWorkflows', params.activeCount);
+  assertLimitNotExceeded(params.plan, 'maxAutomationWorkflows', params.activeCount);
 }
 
 export function automationWorkflowGateErrorMessage(error: unknown): string | null {
@@ -52,12 +52,12 @@ export async function assertTenantCanCreateAutomationWorkflow(
   admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<void> {
-  const tier = await resolveTenantPlanTier(admin, tenantId);
+  const plan = await resolveTenantEntitlementPlan(admin, tenantId);
   const activeCount = await countActiveAutomationWorkflows(admin, tenantId);
-  assertCanCreateAutomationWorkflow({ tier, activeCount });
+  assertCanCreateAutomationWorkflow({ plan, activeCount });
 }
 
-export function formatAutomationWorkflowUsage(activeCount: number, tier: PlatformPlanTier): string {
-  const limit = getEntitlementsForTier(tier).limits.maxAutomationWorkflows;
+export function formatAutomationWorkflowUsage(activeCount: number, plan: EntitlementPlanKey): string {
+  const limit = getEntitlementsForPlan(plan).limits.maxAutomationWorkflows;
   return `${activeCount}/${limit} recurring rules`;
 }

@@ -151,7 +151,7 @@ export async function updateTenantMemberRoleAction(
     }
     const usage = await countTeamSeatUsage(admin, membership.tenantId);
     assertCanAssignTeamSeat({
-      tier,
+      plan: tier,
       role: nextRole,
       usage,
       replaceRole: targetCurrentRole,
@@ -246,7 +246,7 @@ export async function setTenantMemberActiveAction(
       const tier = await resolveTenantPlanTier(admin, membership.tenantId);
       const usage = await countTeamSeatUsage(admin, membership.tenantId);
       assertCanAssignTeamSeat({
-        tier,
+        plan: tier,
         role: targetRow.role as TenantRole,
         usage,
       });

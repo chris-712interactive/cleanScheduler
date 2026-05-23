@@ -1,4 +1,4 @@
-import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
+import type { EntitlementPlanKey } from '@/lib/billing/entitlements';
 import { isFeatureEnabled } from '@/lib/billing/entitlements';
 import type { ReportGate, ReportSection, ReportSlug } from '@/lib/reports/types';
 import type { LucideIcon } from 'lucide-react';
@@ -284,10 +284,10 @@ export function isReportSlug(value: string): value is ReportSlug {
   return value in REPORT_CATALOG_BY_SLUG;
 }
 
-export function isReportEnabled(tier: PlatformPlanTier, slug: ReportSlug): boolean {
+export function isReportEnabled(plan: EntitlementPlanKey, slug: ReportSlug): boolean {
   const entry = REPORT_CATALOG_BY_SLUG[slug];
   if (entry.gate.kind === 'none') return true;
-  return isFeatureEnabled(tier, entry.gate.feature);
+  return isFeatureEnabled(plan, entry.gate.feature);
 }
 
 export function reportsBySection(): { section: ReportSection; label: string; items: ReportCatalogEntry[] }[] {

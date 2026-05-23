@@ -104,7 +104,14 @@ const serverEnvSchema = z.object({
   STRIPE_PLATFORM_PRICE_STARTER: z.string().optional(),
   STRIPE_PLATFORM_PRICE_PRO: z.string().optional(),
   STRIPE_PLATFORM_PRICE_BUSINESS: z.string().optional(),
-  /** Paid checkout (no trial) — optional; use when trial signup Price has a default trial in Stripe. */
+  /** Monthly/yearly paid checkout — preferred over legacy *_SUBSCRIBE / tier defaults. */
+  STRIPE_PLATFORM_PRICE_STARTER_MONTHLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_STARTER_YEARLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS_MONTHLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS_YEARLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO_MONTHLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO_YEARLY: z.string().optional(),
+  /** Paid checkout (no trial) — optional legacy; use *_MONTHLY when set. */
   STRIPE_PLATFORM_PRICE_STARTER_SUBSCRIBE: z.string().optional(),
   STRIPE_PLATFORM_PRICE_PRO_SUBSCRIBE: z.string().optional(),
   STRIPE_PLATFORM_PRICE_BUSINESS_SUBSCRIBE: z.string().optional(),

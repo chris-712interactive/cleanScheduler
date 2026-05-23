@@ -2,7 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe/server';
 import { parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
-import { resolvePlatformTierFromStripePriceId } from '@/lib/billing/platformPlans';
+import {
+  parsePlatformBillingInterval,
+  resolvePlatformIntervalFromStripePriceId,
+  resolvePlatformTierFromStripePriceId,
+} from '@/lib/billing/platformPlans';
 import type { Database } from '@/lib/supabase/database.types';
 
 type Admin = SupabaseClient<Database>;
@@ -38,11 +42,16 @@ function mapStripeSubscriptionStatus(
   }
 }
 
-function subscriptionPrimaryPriceId(subscription: Stripe.Subscription): string | null {
+function subscriptionPrimaryPrice(subscription: Stripe.Subscription): Stripe.Price | null {
   const item = subscription.items?.data?.[0];
   const price = item?.price;
   if (!price) return null;
-  return typeof price === 'string' ? price : price.id;
+  return typeof price === 'string' ? null : price;
+}
+
+function subscriptionPrimaryPriceId(subscription: Stripe.Subscription): string | null {
+  const price = subscriptionPrimaryPrice(subscription);
+  return price?.id ?? null;
 }
 
 async function resolveTenantIdForSubscription(
@@ -114,14 +123,33 @@ export async function syncTenantFromStripeSubscription(
 
   let platformPlan: PlatformPlanTier | undefined =
     parsePlatformPlanTier(String(subscription.metadata?.platform_plan ?? '')) ?? undefined;
+  const priceId = subscriptionPrimaryPriceId(subscription);
+  const priceObject = subscriptionPrimaryPrice(subscription);
   if (!platformPlan) {
-    const priceId = subscriptionPrimaryPriceId(subscription);
     platformPlan = resolvePlatformTierFromStripePriceId(priceId) ?? undefined;
+  }
+
+  let billingInterval =
+    parsePlatformBillingInterval(String(subscription.metadata?.billing_interval ?? '')) ?? undefined;
+  if (!billingInterval) {
+    billingInterval =
+      resolvePlatformIntervalFromStripePriceId(priceId) ??
+      (priceObject?.recurring?.interval === 'year'
+        ? 'year'
+        : priceObject?.recurring?.interval === 'month'
+          ? 'month'
+          : undefined);
   }
 
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
   const isCanceled = mappedStatus === 'canceled';
   const nowIso = new Date().toISOString();
+
+  const { data: existingBilling } = await admin
+    .from('tenant_billing_accounts')
+    .select('activated_at')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
 
   const updatePayload: Database['public']['Tables']['tenant_billing_accounts']['Update'] = {
     stripe_subscription_id: isCanceled ? null : subscription.id,
@@ -134,7 +162,10 @@ export async function syncTenantFromStripeSubscription(
   if (platformPlan) {
     updatePayload.platform_plan = platformPlan;
   }
-  if (mappedStatus === 'active' && !isCanceled) {
+  if (billingInterval) {
+    updatePayload.billing_interval = billingInterval;
+  }
+  if (mappedStatus === 'active' && !isCanceled && !existingBilling?.activated_at) {
     updatePayload.activated_at = nowIso;
   }
 

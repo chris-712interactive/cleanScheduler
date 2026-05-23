@@ -930,6 +930,8 @@ export type Database = {
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
           platform_plan: 'starter' | 'pro' | 'business' | null;
+          billing_interval: 'month' | 'year' | null;
+          trial_ending_reminder_sent_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -944,6 +946,8 @@ export type Database = {
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           platform_plan?: 'starter' | 'pro' | 'business' | null;
+          billing_interval?: 'month' | 'year' | null;
+          trial_ending_reminder_sent_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -958,6 +962,8 @@ export type Database = {
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           platform_plan?: 'starter' | 'pro' | 'business' | null;
+          billing_interval?: 'month' | 'year' | null;
+          trial_ending_reminder_sent_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -3100,6 +3106,7 @@ export type Database = {
       tenant_role: 'owner' | 'admin' | 'employee' | 'viewer';
       tenant_billing_status: 'trialing' | 'active' | 'past_due' | 'canceled';
       platform_plan_tier: 'starter' | 'pro' | 'business';
+      platform_billing_interval: 'month' | 'year';
       quote_status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
       quote_line_frequency: 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
       quote_tax_mode: 'none' | 'exclusive';

@@ -2,6 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import type { Database } from '@/lib/supabase/database.types';
 
+/** Paid tier or the fixed DB-only free-trial profile. */
+export type EntitlementPlanKey = PlatformPlanTier | 'trial';
+
 export type EntitlementFeature =
   | 'rolePermissions'
   | 'jobCosting'
@@ -37,7 +40,7 @@ export type EntitlementLimitKey =
 export type NumericEntitlementLimitKey = Exclude<EntitlementLimitKey, 'includedFieldSeats'>;
 
 export interface PlanEntitlements {
-  plan: PlatformPlanTier;
+  plan: EntitlementPlanKey;
   displayName: string;
   monthlyPriceUsd: number;
   annualEffectiveMonthlyUsd: number;
@@ -166,16 +169,68 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
   },
 };
 
+/**
+ * Fixed entitlement profile for DB-only free trials (no tier chosen yet).
+ * See docs/billing/free-trial-spec.md.
+ */
+export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
+  plan: 'trial',
+  displayName: 'Free trial',
+  monthlyPriceUsd: 0,
+  annualEffectiveMonthlyUsd: 0,
+  features: {
+    rolePermissions: true,
+    jobCosting: true,
+    customerPortal: true,
+    campaigns: false,
+    advancedAnalytics: false,
+    salesTaxSummary: true,
+    payrollExports: true,
+    forecasting: false,
+    fullApiWebhooks: false,
+    multiLocationControls: false,
+    dedicatedOnboarding: false,
+    plaidReconciliation: false,
+    smsCommunication: false,
+    whiteLabelCustomerPortal: false,
+    proofOfServicePhotos: true,
+    proofOfServicePortalShare: false,
+  },
+  limits: {
+    includedOfficeSeats: 2,
+    includedFieldSeats: 8,
+    maxActiveCustomers: 2000,
+    maxAutomationWorkflows: 10,
+    includedSmsCreditsMonthly: 0,
+    includedEmailCreditsMonthly: 0,
+    includedIntegrations: 2,
+    maxCampaignSendsMonthly: 0,
+    maxConcurrentActiveCampaigns: 0,
+    maxCampaignAudienceSize: 0,
+    maxCampaignDrafts: 0,
+  },
+};
+
+export function getEntitlementsForPlan(plan: EntitlementPlanKey): PlanEntitlements {
+  if (plan === 'trial') return TRIAL_ENTITLEMENTS;
+  return PLATFORM_TIER_ENTITLEMENTS[plan];
+}
+
 export function getEntitlementsForTier(tier: PlatformPlanTier): PlanEntitlements {
   return PLATFORM_TIER_ENTITLEMENTS[tier];
 }
 
-export function isFeatureEnabled(tier: PlatformPlanTier, feature: EntitlementFeature): boolean {
-  return PLATFORM_TIER_ENTITLEMENTS[tier].features[feature];
+export function isFeatureEnabled(plan: EntitlementPlanKey, feature: EntitlementFeature): boolean {
+  return getEntitlementsForPlan(plan).features[feature];
 }
 
+export function getPlanLimit(plan: EntitlementPlanKey, limit: NumericEntitlementLimitKey): number {
+  return getEntitlementsForPlan(plan).limits[limit];
+}
+
+/** @deprecated Use {@link getPlanLimit} */
 export function getTierLimit(tier: PlatformPlanTier, limit: NumericEntitlementLimitKey): number {
-  return PLATFORM_TIER_ENTITLEMENTS[tier].limits[limit];
+  return getPlanLimit(tier, limit);
 }
 
 export class EntitlementGateError extends Error {
@@ -188,9 +243,9 @@ export class EntitlementGateError extends Error {
   }
 }
 
-export function assertFeatureEnabled(tier: PlatformPlanTier, feature: EntitlementFeature): void {
-  if (isFeatureEnabled(tier, feature)) return;
-  const planName = PLATFORM_TIER_ENTITLEMENTS[tier].displayName;
+export function assertFeatureEnabled(plan: EntitlementPlanKey, feature: EntitlementFeature): void {
+  if (isFeatureEnabled(plan, feature)) return;
+  const planName = getEntitlementsForPlan(plan).displayName;
   throw new EntitlementGateError(
     `${planName} does not include this capability. Upgrade your subscription to continue.`,
     'feature_blocked',
@@ -198,37 +253,68 @@ export function assertFeatureEnabled(tier: PlatformPlanTier, feature: Entitlemen
 }
 
 export function assertLimitNotExceeded(
-  tier: PlatformPlanTier,
+  plan: EntitlementPlanKey,
   limit: NumericEntitlementLimitKey,
   currentValue: number,
 ): void {
-  const allowed = getTierLimit(tier, limit);
+  const allowed = getPlanLimit(plan, limit);
   if (currentValue < allowed) return;
 
-  const planName = PLATFORM_TIER_ENTITLEMENTS[tier].displayName;
+  const planName = getEntitlementsForPlan(plan).displayName;
   throw new EntitlementGateError(
     `${planName} allows up to ${allowed} for ${limit}. Upgrade or purchase an add-on to continue.`,
     'limit_exceeded',
   );
 }
 
-export async function resolveTenantPlanTier(
+/**
+ * Entitlement profile for feature gates and soft limits.
+ * All `status=trialing` workspaces use the trial profile regardless of legacy `platform_plan`.
+ */
+export async function resolveTenantEntitlementPlan(
   admin: SupabaseClient<Database>,
   tenantId: string,
-): Promise<PlatformPlanTier> {
+): Promise<EntitlementPlanKey> {
+  const { data } = await admin
+    .from('tenant_billing_accounts')
+    .select('platform_plan, status')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  const status = data?.status ?? 'trialing';
+  if (status === 'trialing') {
+    return 'trial';
+  }
+
+  return parsePlatformPlanTier(String(data?.platform_plan ?? '')) ?? 'starter';
+}
+
+/** Paid subscription tier from billing row (`null` during DB-only trial). */
+export async function resolveTenantSubscriptionTier(
+  admin: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<PlatformPlanTier | null> {
   const { data } = await admin
     .from('tenant_billing_accounts')
     .select('platform_plan')
     .eq('tenant_id', tenantId)
     .maybeSingle();
 
-  return parsePlatformPlanTier(String(data?.platform_plan ?? '')) ?? 'starter';
+  return parsePlatformPlanTier(String(data?.platform_plan ?? ''));
+}
+
+/** @deprecated Use {@link resolveTenantEntitlementPlan} for gates or {@link resolveTenantSubscriptionTier} for billing display. */
+export async function resolveTenantPlanTier(
+  admin: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<EntitlementPlanKey> {
+  return resolveTenantEntitlementPlan(admin, tenantId);
 }
 
 export async function resolveTenantEntitlements(
   admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<PlanEntitlements> {
-  const tier = await resolveTenantPlanTier(admin, tenantId);
-  return getEntitlementsForTier(tier);
+  const plan = await resolveTenantEntitlementPlan(admin, tenantId);
+  return getEntitlementsForPlan(plan);
 }

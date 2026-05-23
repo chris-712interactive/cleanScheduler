@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { serverEnv } from '@/lib/env';
 import { expireStaleDbOnlyTrials } from '@/lib/billing/expireStaleTrials';
+import { notifyDbOnlyTrialsEndingSoon } from '@/lib/billing/dbOnlyTrialReminders';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,12 @@ export async function GET(request: Request) {
 
   try {
     const admin = createAdminClient();
+    const reminderResult = await notifyDbOnlyTrialsEndingSoon(admin);
     const result = await expireStaleDbOnlyTrials(admin);
     return NextResponse.json({
       ok: true,
+      reminderCount: reminderResult.notifiedTenantIds.length,
+      reminderTenantIds: reminderResult.notifiedTenantIds,
       expiredCount: result.expiredTenantIds.length,
       expiredTenantIds: result.expiredTenantIds,
     });

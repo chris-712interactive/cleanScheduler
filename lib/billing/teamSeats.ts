@@ -2,10 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { TenantRole } from '@/lib/auth/types';
 import {
   EntitlementGateError,
-  getEntitlementsForTier,
+  getEntitlementsForPlan,
   type PlanEntitlements,
 } from '@/lib/billing/entitlements';
-import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
+import type { EntitlementPlanKey } from '@/lib/billing/entitlements';
 import type { Database } from '@/lib/supabase/database.types';
 
 /** Owner, admin, and viewer logins count against office seats. */
@@ -103,7 +103,7 @@ function projectedUsageAfterRoleChange(
 }
 
 function assertSeatCapacity(
-  tier: PlatformPlanTier,
+  plan: EntitlementPlanKey,
   seatType: 'office' | 'field',
   used: number,
   allowed: number | null,
@@ -111,7 +111,7 @@ function assertSeatCapacity(
   if (allowed === null) return;
   if (used <= allowed) return;
 
-  const planName = getEntitlementsForTier(tier).displayName;
+  const planName = getEntitlementsForPlan(plan).displayName;
   const seatLabel = seatType === 'office' ? 'office seat' : 'field seat';
   const plural = allowed === 1 ? seatLabel : `${seatLabel}s`;
   throw new EntitlementGateError(
@@ -121,16 +121,16 @@ function assertSeatCapacity(
 }
 
 export function assertCanAssignTeamSeat(params: {
-  tier: PlatformPlanTier;
+  plan: EntitlementPlanKey;
   role: TenantRole;
   usage: TeamSeatUsage;
   replaceRole?: TenantRole;
 }): void {
-  const limits = getEntitlementsForTier(params.tier).limits;
+  const limits = getEntitlementsForPlan(params.plan).limits;
   const projected = projectedUsageAfterRoleChange(params.usage, params.role, params.replaceRole);
 
-  assertSeatCapacity(params.tier, 'office', projected.officeUsed, limits.includedOfficeSeats);
-  assertSeatCapacity(params.tier, 'field', projected.fieldUsed, limits.includedFieldSeats);
+  assertSeatCapacity(params.plan, 'office', projected.officeUsed, limits.includedOfficeSeats);
+  assertSeatCapacity(params.plan, 'field', projected.fieldUsed, limits.includedFieldSeats);
 }
 
 export function teamSeatGateErrorMessage(error: unknown): string | null {
@@ -152,9 +152,9 @@ export function formatTeamSeatUsageSummary(
 export async function assertTenantCanInviteRole(
   admin: SupabaseClient<Database>,
   tenantId: string,
-  tier: PlatformPlanTier,
+  plan: EntitlementPlanKey,
   invitedRole: TenantRole,
 ): Promise<void> {
   const usage = await countTeamSeatUsage(admin, tenantId);
-  assertCanAssignTeamSeat({ tier, role: invitedRole, usage });
+  assertCanAssignTeamSeat({ plan, role: invitedRole, usage });
 }

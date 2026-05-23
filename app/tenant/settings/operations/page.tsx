@@ -7,7 +7,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { normalizePaymentMethodsFromDb } from '@/lib/tenant/operationalSettings';
-import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { isFeatureEnabled, resolveTenantEntitlementPlan, resolveTenantSubscriptionTier } from '@/lib/billing/entitlements';
 import {
   countSmsSegmentsUsedThisMonth,
   formatSmsUsageSummary,
@@ -25,20 +25,21 @@ export default async function TenantOperationsSettingsPage() {
   const membership = await requireTenantPortalAccess(tenantSlug, '/settings/operations');
   const canEdit = canManageTeamInvitesAndRoles(membership.role);
   const admin = createAdminClient();
-  const [{ data: billing }, tier, smsAllowed] = await Promise.all([
+  const [{ data: billing }, plan, subscriptionTier, smsAllowed] = await Promise.all([
     admin
       .from('tenant_billing_accounts')
       .select('status')
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
-    resolveTenantPlanTier(admin, membership.tenantId),
+    resolveTenantEntitlementPlan(admin, membership.tenantId),
+    resolveTenantSubscriptionTier(admin, membership.tenantId),
     resolveTenantSmsCommunicationAllowed(admin, membership.tenantId),
   ]);
-  const smsTierEnabled = isFeatureEnabled(tier, 'smsCommunication');
+  const smsTierEnabled = isFeatureEnabled(plan, 'smsCommunication');
   const smsTrialLocked = smsTierEnabled && !canUseSmsCommunication(billing?.status);
   const twilioConfigured = isTwilioConfigured();
   const smsUsed = smsAllowed ? await countSmsSegmentsUsedThisMonth(admin, membership.tenantId) : 0;
-  const invoiceReminderEmailEditable = tier === 'business' || tier === 'pro';
+  const invoiceReminderEmailEditable = isFeatureEnabled(plan, 'salesTaxSummary');
   const invoiceReminderSmsEditable = smsAllowed;
 
   const supabase = createTenantPortalDbClient();
@@ -99,7 +100,7 @@ export default async function TenantOperationsSettingsPage() {
 
       {smsAllowed ? (
         <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }}>
-          SMS usage: {formatSmsUsageSummary(smsUsed, tier)}.{' '}
+          SMS usage: {formatSmsUsageSummary(smsUsed, subscriptionTier ?? 'pro')}.{' '}
           <Link href="/billing">Upgrade plan</Link>
         </p>
       ) : smsTrialLocked ? (

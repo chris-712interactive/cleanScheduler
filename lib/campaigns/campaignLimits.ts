@@ -2,9 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   assertFeatureEnabled,
   assertLimitNotExceeded,
-  resolveTenantPlanTier,
+  resolveTenantEntitlementPlan,
+  type EntitlementPlanKey,
 } from '@/lib/billing/entitlements';
-import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import type { Database } from '@/lib/supabase/database.types';
 
 function monthStartIso(): string {
@@ -12,11 +12,19 @@ function monthStartIso(): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
+export async function resolveTenantCampaignPlan(
+  admin: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<EntitlementPlanKey> {
+  return resolveTenantEntitlementPlan(admin, tenantId);
+}
+
+/** @deprecated Use {@link resolveTenantCampaignPlan} */
 export async function resolveTenantCampaignTier(
   admin: SupabaseClient<Database>,
   tenantId: string,
-): Promise<PlatformPlanTier> {
-  return resolveTenantPlanTier(admin, tenantId);
+): Promise<EntitlementPlanKey> {
+  return resolveTenantCampaignPlan(admin, tenantId);
 }
 
 export async function countCampaignDrafts(
@@ -57,45 +65,45 @@ export async function countMarketingSendsThisMonth(
   return (data ?? []).reduce((sum, row) => sum + (row.sent_count ?? 0), 0);
 }
 
-export function assertCampaignFeatureEnabled(tier: PlatformPlanTier): void {
-  assertFeatureEnabled(tier, 'campaigns');
+export function assertCampaignFeatureEnabled(plan: EntitlementPlanKey): void {
+  assertFeatureEnabled(plan, 'campaigns');
 }
 
 export async function assertCanSendCampaign(params: {
   admin: SupabaseClient<Database>;
   tenantId: string;
   recipientCount: number;
-}): Promise<PlatformPlanTier> {
-  const tier = await resolveTenantCampaignTier(params.admin, params.tenantId);
-  assertCampaignFeatureEnabled(tier);
+}): Promise<EntitlementPlanKey> {
+  const plan = await resolveTenantCampaignPlan(params.admin, params.tenantId);
+  assertCampaignFeatureEnabled(plan);
 
   const [sendsThisMonth, activeCampaigns] = await Promise.all([
     countMarketingSendsThisMonth(params.admin, params.tenantId),
     countActiveCampaigns(params.admin, params.tenantId),
   ]);
 
-  assertLimitNotExceeded(tier, 'maxConcurrentActiveCampaigns', activeCampaigns);
-  assertLimitNotExceeded(tier, 'maxCampaignAudienceSize', params.recipientCount);
+  assertLimitNotExceeded(plan, 'maxConcurrentActiveCampaigns', activeCampaigns);
+  assertLimitNotExceeded(plan, 'maxCampaignAudienceSize', params.recipientCount);
   assertLimitNotExceeded(
-    tier,
+    plan,
     'maxCampaignSendsMonthly',
     sendsThisMonth + params.recipientCount,
   );
   assertLimitNotExceeded(
-    tier,
+    plan,
     'includedEmailCreditsMonthly',
     sendsThisMonth + params.recipientCount,
   );
 
-  return tier;
+  return plan;
 }
 
 export async function assertCanCreateCampaignDraft(
   admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<void> {
-  const tier = await resolveTenantCampaignTier(admin, tenantId);
-  assertCampaignFeatureEnabled(tier);
+  const plan = await resolveTenantCampaignPlan(admin, tenantId);
+  assertCampaignFeatureEnabled(plan);
   const draftCount = await countCampaignDrafts(admin, tenantId);
-  assertLimitNotExceeded(tier, 'maxCampaignDrafts', draftCount);
+  assertLimitNotExceeded(plan, 'maxCampaignDrafts', draftCount);
 }

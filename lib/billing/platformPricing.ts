@@ -49,7 +49,8 @@ async function fetchStripeMonthlyPriceUsd(priceId: string): Promise<number | nul
 async function resolveTierPricing(tier: PlatformPlanTier): Promise<PlatformPricingTier> {
   const entitlements = PLATFORM_TIER_ENTITLEMENTS[tier];
   const priceId =
-    resolvePlatformPriceId(tier, 'subscribe') ?? resolvePlatformPriceId(tier, 'trial_signup');
+    resolvePlatformPriceId(tier, { interval: 'month' }) ??
+    resolvePlatformPriceId(tier, { interval: 'year' });
 
   let monthlyPriceUsd = entitlements.monthlyPriceUsd;
   let priceSource: PlatformPricingTier['priceSource'] = 'entitlements';

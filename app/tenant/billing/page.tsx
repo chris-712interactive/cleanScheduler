@@ -37,7 +37,8 @@ import { formatAutoPurgeDate, getTenantPurgeStatus } from '@/lib/billing/tenantP
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { CUSTOMER_AR_NAV_LINKS } from '@/lib/tenant/customerBillingNav';
 import type { Tables } from '@/lib/supabase/database.types';
-import { openPlatformBillingPortal, resumePlatformSubscriptionCheckout } from './actions';
+import { openPlatformBillingPortal } from './actions';
+import { SubscribePlanPicker } from '@/components/billing/SubscribePlanPicker';
 import styles from './billing.module.scss';
 
 type TenantBillingRow = Tables<'tenant_billing_accounts'>;
@@ -87,9 +88,20 @@ function formatNextPayment(
   });
 }
 
-function formatPlanAmount(monthlyPriceUsd: number | null): string {
-  if (monthlyPriceUsd == null) return '—';
-  return `${formatPlanPriceUsd(monthlyPriceUsd, { showCents: true })} USD`;
+function formatBillingCycle(interval: TenantBillingRow['billing_interval']): string {
+  if (interval === 'year') return 'Yearly';
+  if (interval === 'month') return 'Monthly';
+  return '—';
+}
+
+function formatPlanAmountForInterval(
+  pricing: { monthlyPriceUsd: number; annualEffectiveMonthlyUsd: number } | null,
+  interval: TenantBillingRow['billing_interval'],
+): string {
+  if (!pricing) return '—';
+  const amount =
+    interval === 'year' ? pricing.annualEffectiveMonthlyUsd : pricing.monthlyPriceUsd;
+  return `${formatPlanPriceUsd(amount, { showCents: true })} USD`;
 }
 
 interface PageProps {
@@ -151,6 +163,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const planStatus = formatPlanStatus(subscriptionAccess, billing?.status);
   const marketingPlansUrl = `${getPublicOrigin(null)}/pricing`;
 
+  const onTrial = subscriptionAccess === 'trialing';
+  const showSubscribePicker =
+    canManageSubscription && (mustSubscribe || onTrial) && subscriptionAccess !== 'active';
   const canManagePlan =
     Boolean(billing?.stripe_customer_id) &&
     subscriptionAccess === 'active' &&
@@ -214,30 +229,22 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           </p>
         ) : null}
 
-        {mustSubscribe || subscribeLead ? (
+        {showSubscribePicker ? (
           <section className={styles.subscribeCard} aria-labelledby="subscribe-heading">
             <h2 id="subscribe-heading" className={styles.subscribeCardTitle}>
               {mustSubscribe
                 ? canManageSubscription
                   ? 'Subscribe to continue'
                   : 'Workspace paused'
-                : 'Subscribe early'}
+                : 'Choose your plan'}
             </h2>
             {subscribeLead ? <p className={styles.subscribeCardLead}>{subscribeLead}</p> : null}
             {canManageSubscription ? (
-              <div className={styles.subscribeCardActions}>
-                <form action={resumePlatformSubscriptionCheckout}>
-                  <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                  <Button type="submit" variant="primary">
-                    {mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
-                  </Button>
-                </form>
-                {planLabel && currentPlanPricing ? (
-                  <span className={styles.muted}>
-                    {planLabel} · {formatPlanAmount(currentPlanPricing.monthlyPriceUsd)}/mo
-                  </span>
-                ) : null}
-              </div>
+              <SubscribePlanPicker
+                tenantSlug={membership.tenantSlug}
+                pricingTiers={pricingTiers}
+                submitLabel={mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
+              />
             ) : null}
           </section>
         ) : null}
@@ -284,8 +291,17 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                   <Briefcase size={28} strokeWidth={1.75} />
                 </div>
                 <div className={styles.planSummaryCopy}>
-                  <h3 className={styles.planName}>{planLabel ?? 'No plan selected'}</h3>
-                  {planTagline ? <p className={styles.planTagline}>{planTagline}</p> : null}
+                  <h3 className={styles.planName}>
+                    {planLabel ?? (onTrial ? 'Free trial' : 'No plan selected')}
+                  </h3>
+                  {planTagline ? (
+                    <p className={styles.planTagline}>{planTagline}</p>
+                  ) : onTrial ? (
+                    <p className={styles.planTagline}>
+                      Explore scheduling, quotes, customers, and invoicing. Choose a plan above when
+                      you are ready to subscribe.
+                    </p>
+                  ) : null}
                   {planFeatureBullets.length > 0 ? (
                     <ul className={styles.planFeatureList}>
                       {planFeatureBullets.map((bullet) => (
@@ -316,7 +332,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                   </div>
                   <div className={styles.planFact}>
                     <dt className={styles.planFactLabel}>Billing cycle</dt>
-                    <dd className={styles.planFactValue}>Monthly</dd>
+                    <dd className={styles.planFactValue}>
+                      {onTrial ? '—' : formatBillingCycle(billing.billing_interval)}
+                    </dd>
                   </div>
                   <div className={styles.planFact}>
                     <dt className={styles.planFactLabel}>Next payment</dt>
@@ -327,31 +345,19 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                   <div className={styles.planFact}>
                     <dt className={styles.planFactLabel}>Amount</dt>
                     <dd className={styles.planFactValue}>
-                      {formatPlanAmount(currentPlanPricing?.monthlyPriceUsd ?? null)}
+                      {onTrial
+                        ? '—'
+                        : formatPlanAmountForInterval(currentPlanPricing, billing.billing_interval)}
                     </dd>
                   </div>
                 </dl>
 
                 <div className={styles.planManageForm}>
-                  {mustSubscribe && canManageSubscription ? (
-                    <form action={resumePlatformSubscriptionCheckout}>
-                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                      <Button type="submit" variant="secondary" className={styles.planManageButton}>
-                        Subscribe now
-                      </Button>
-                    </form>
-                  ) : canManagePlan ? (
+                  {canManagePlan ? (
                     <form action={openPlatformBillingPortal}>
                       <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
                       <Button type="submit" variant="secondary" className={styles.planManageButton}>
                         Manage plan
-                      </Button>
-                    </form>
-                  ) : subscriptionAccess === 'trialing' && canManageSubscription ? (
-                    <form action={resumePlatformSubscriptionCheckout}>
-                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                      <Button type="submit" variant="secondary" className={styles.planManageButton}>
-                        Subscribe with Stripe
                       </Button>
                     </form>
                   ) : null}

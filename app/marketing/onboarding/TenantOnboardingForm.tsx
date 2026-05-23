@@ -6,14 +6,6 @@ import { useActionState } from 'react';
 import zxcvbn from 'zxcvbn';
 import { createTenantAndOwner, type TenantOnboardingState } from './actions';
 import {
-  PLATFORM_PLAN_DESCRIPTIONS,
-  PLATFORM_PLAN_LABELS,
-  parsePlatformPlanTier,
-  type PlatformPlanTier,
-} from '@/lib/billing/platformPlanTier';
-import type { PlatformPricingTier } from '@/lib/billing/platformPricing';
-import { formatPlanPriceUsd } from '@/lib/billing/platformPricing';
-import {
   formatPasswordFeedback,
   passwordStrengthLabel,
   passwordStrengthTone,
@@ -22,15 +14,7 @@ import styles from './onboarding.module.scss';
 
 const initialState: TenantOnboardingState = {};
 
-export function TenantOnboardingForm({
-  domainSuffix,
-  planOptions,
-  defaultTier = 'business',
-}: {
-  domainSuffix: string;
-  planOptions: PlatformPricingTier[];
-  defaultTier?: PlatformPlanTier;
-}) {
+export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string }) {
   const [state, formAction, pending] = useActionState(createTenantAndOwner, initialState);
   const [step, setStep] = useState(0);
   const [slug, setSlug] = useState('');
@@ -42,22 +26,11 @@ export function TenantOnboardingForm({
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [step1Error, setStep1Error] = useState<string | null>(null);
-  const [platformPlan, setPlatformPlan] = useState<PlatformPlanTier>(defaultTier);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [slugStatus, setSlugStatus] = useState<{
     tone: 'idle' | 'ok' | 'warn' | 'error';
     message: string;
   }>({ tone: 'idle', message: 'Choose a unique slug for your workspace URL.' });
-
-  const planOptionsByTier = useMemo(
-    () => new Map(planOptions.map((option) => [option.tier, option])),
-    [planOptions],
-  );
-
-  useEffect(() => {
-    const parsed = parsePlatformPlanTier(defaultTier);
-    if (parsed) setPlatformPlan(parsed);
-  }, [defaultTier]);
 
   useEffect(() => {
     if (!slug.trim()) {
@@ -112,21 +85,7 @@ export function TenantOnboardingForm({
       if (!businessName.trim() || !slug.trim()) return;
       if (slugStatus.tone === 'warn' || slugStatus.tone === 'error') return;
     }
-    if (step === 1) {
-      if (!displayName.trim() || !email.trim()) {
-        setStep1Error('Your name and email are required.');
-        return;
-      }
-      if (password.length < 8) {
-        setStep1Error('Password must be at least 8 characters.');
-        return;
-      }
-      if (password !== passwordConfirm) {
-        setStep1Error('Passwords must match.');
-        return;
-      }
-    }
-    if (step < 2) setStep((prev) => prev + 1);
+    if (step < 1) setStep((prev) => prev + 1);
   }
 
   function goBack() {
@@ -144,7 +103,6 @@ export function TenantOnboardingForm({
       <div className={styles.steps} aria-label="Trial setup progress">
         <span data-active={step === 0 || undefined}>1. Workspace</span>
         <span data-active={step === 1 || undefined}>2. Your account</span>
-        <span data-active={step === 2 || undefined}>3. Plan & launch</span>
       </div>
 
       <section
@@ -202,6 +160,14 @@ export function TenantOnboardingForm({
           step === 1 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`
         }
       >
+        <p className={styles.stepHint}>
+          Your 7-day free trial includes scheduling, quotes, customers, and invoicing. Choose a
+          paid plan when you are ready — no credit card required today.{' '}
+          <Link href="/pricing" target="_blank" rel="noopener noreferrer">
+            Compare plans
+          </Link>
+        </p>
+
         <label className={styles.label} htmlFor="display_name">
           Your full name
         </label>
@@ -320,59 +286,6 @@ export function TenantOnboardingForm({
           aria-invalid={passwordConfirm.length > 0 && password !== passwordConfirm}
         />
 
-        {step1Error ? (
-          <p className={styles.stepFieldError} role="alert">
-            {step1Error}
-          </p>
-        ) : null}
-      </section>
-
-      <section
-        hidden={step !== 2}
-        inert={step !== 2}
-        aria-hidden={step !== 2}
-        className={
-          step === 2 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`
-        }
-      >
-        <fieldset className={styles.tierFieldset}>
-          <legend className={styles.label}>Subscription plan</legend>
-          <p className={styles.tierLead}>
-            All plans include a 7-day free trial with no credit card required. Pick the tier that
-            fits your team.
-          </p>
-          {(['starter', 'business', 'pro'] as const).map((tier) => {
-            const pricing = planOptionsByTier.get(tier);
-            return (
-              <label
-                key={tier}
-                className={styles.tierOption}
-                data-selected={platformPlan === tier || undefined}
-              >
-                <input
-                  type="radio"
-                  name="platform_plan"
-                  value={tier}
-                  checked={platformPlan === tier}
-                  onChange={() => setPlatformPlan(tier)}
-                  required
-                />
-                <span className={styles.tierCopy}>
-                  <span className={styles.tierNameRow}>
-                    <span className={styles.tierName}>{PLATFORM_PLAN_LABELS[tier]}</span>
-                    {pricing ? (
-                      <span className={styles.tierPrice}>
-                        {formatPlanPriceUsd(pricing.monthlyPriceUsd)}/mo
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className={styles.tierDesc}>{PLATFORM_PLAN_DESCRIPTIONS[tier]}</span>
-                </span>
-              </label>
-            );
-          })}
-        </fieldset>
-
         <label className={styles.label} htmlFor="business_type">
           Business type
         </label>
@@ -397,7 +310,7 @@ export function TenantOnboardingForm({
             required
           />
           <span>
-            I agree to start a 7-day trial and accept the{' '}
+            I agree to start a 7-day free trial and accept the{' '}
             <Link href="/terms" target="_blank" rel="noopener noreferrer">
               Terms of Service
             </Link>{' '}
@@ -408,6 +321,12 @@ export function TenantOnboardingForm({
             .
           </span>
         </label>
+
+        {step1Error ? (
+          <p className={styles.stepFieldError} role="alert">
+            {step1Error}
+          </p>
+        ) : null}
       </section>
 
       <div className={styles.actions}>
@@ -418,12 +337,31 @@ export function TenantOnboardingForm({
         ) : (
           <span />
         )}
-        {step < 2 ? (
+        {step < 1 ? (
           <button type="button" className={styles.submit} onClick={goNext}>
             Continue
           </button>
         ) : (
-          <button type="submit" className={styles.submit} disabled={pending}>
+          <button
+            type="submit"
+            className={styles.submit}
+            disabled={pending}
+            onClick={() => {
+              if (!displayName.trim() || !email.trim()) {
+                setStep1Error('Your name and email are required.');
+                return;
+              }
+              if (password.length < 8) {
+                setStep1Error('Password must be at least 8 characters.');
+                return;
+              }
+              if (password !== passwordConfirm) {
+                setStep1Error('Passwords must match.');
+                return;
+              }
+              setStep1Error(null);
+            }}
+          >
             {pending ? 'Creating workspace...' : 'Start free trial'}
           </button>
         )}

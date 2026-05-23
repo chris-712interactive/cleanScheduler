@@ -8,7 +8,10 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { createPlatformSubscriptionCheckoutUrl } from '@/lib/billing/platformCheckout';
 import { parsePlatformPlanTier } from '@/lib/billing/platformPlanTier';
-import { resolvePlatformPriceId } from '@/lib/billing/platformPlans';
+import {
+  parsePlatformBillingInterval,
+  resolvePlatformPriceId,
+} from '@/lib/billing/platformPlans';
 import { getStripe } from '@/lib/stripe/server';
 import type { Tables } from '@/lib/supabase/database.types';
 
@@ -52,6 +55,19 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
     redirect(`/sign-in?next=${encodeURIComponent(`${tenantOrigin}/billing`)}`);
   }
 
+  const tier = parsePlatformPlanTier(String(formData.get('platform_plan') ?? ''));
+  const billingInterval = parsePlatformBillingInterval(String(formData.get('billing_interval') ?? ''));
+  if (!tier) {
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent('Choose Starter, Business, or Pro to continue.')}`,
+    );
+  }
+  if (!billingInterval) {
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent('Choose monthly or yearly billing.')}`,
+    );
+  }
+
   const supabase = createTenantPortalDbClient();
   const billingRes = await supabase
     .from('tenant_billing_accounts')
@@ -67,18 +83,11 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
     );
   }
 
-  const tier = parsePlatformPlanTier(String(billing.platform_plan ?? ''));
-  if (!tier) {
-    redirect(
-      `${billingPath}?resume=error&message=${encodeURIComponent('Choose a plan in onboarding first.')}`,
-    );
-  }
-
   const stripe = getStripe();
-  const priceId = resolvePlatformPriceId(tier, 'subscribe');
+  const priceId = resolvePlatformPriceId(tier, { interval: billingInterval });
   if (!stripe || !priceId) {
     redirect(
-      `${billingPath}?resume=error&message=${encodeURIComponent('Stripe checkout is not configured.')}`,
+      `${billingPath}?resume=error&message=${encodeURIComponent('Stripe checkout is not configured for the selected plan.')}`,
     );
   }
 
@@ -87,9 +96,9 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
     tenantSlug: membership.tenantSlug,
     customerEmail: email,
     platformPlan: tier,
+    billingInterval,
     successUrl: billingPath,
     cancelUrl: billingPath,
-    kind: 'subscribe',
     stripeCustomerId: billing.stripe_customer_id,
   });
 

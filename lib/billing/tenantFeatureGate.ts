@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { EntitlementPlanKey } from '@/lib/billing/entitlements';
 import {
   assertFeatureEnabled,
   EntitlementGateError,
+  getEntitlementsForPlan,
   getEntitlementsForTier,
   isFeatureEnabled,
-  resolveTenantPlanTier,
+  resolveTenantEntitlementPlan,
   type EntitlementFeature,
 } from '@/lib/billing/entitlements';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
@@ -42,12 +44,17 @@ export async function resolveTenantFeatureEnabled(
   tenantId: string,
   feature: EntitlementFeature,
 ): Promise<boolean> {
-  const tier = await resolveTenantPlanTier(admin, tenantId);
-  return isFeatureEnabled(tier, feature);
+  const plan = await resolveTenantEntitlementPlan(admin, tenantId);
+  return isFeatureEnabled(plan, feature);
 }
 
-export function assertFeatureEnabledForTier(tier: PlatformPlanTier, feature: EntitlementFeature): void {
-  assertFeatureEnabled(tier, feature);
+export function assertFeatureEnabledForPlan(plan: EntitlementPlanKey, feature: EntitlementFeature): void {
+  assertFeatureEnabled(plan, feature);
+}
+
+/** @deprecated Use {@link assertFeatureEnabledForPlan} */
+export function assertFeatureEnabledForTier(plan: EntitlementPlanKey, feature: EntitlementFeature): void {
+  assertFeatureEnabled(plan, feature);
 }
 
 export async function assertTenantFeatureEnabled(
@@ -55,8 +62,8 @@ export async function assertTenantFeatureEnabled(
   tenantId: string,
   feature: EntitlementFeature,
 ): Promise<void> {
-  const tier = await resolveTenantPlanTier(admin, tenantId);
-  assertFeatureEnabled(tier, feature);
+  const plan = await resolveTenantEntitlementPlan(admin, tenantId);
+  assertFeatureEnabled(plan, feature);
 }
 
 export function featureGateErrorMessage(error: unknown): string | null {
