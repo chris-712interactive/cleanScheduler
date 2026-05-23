@@ -87,9 +87,13 @@ export function QuoteCreateWizard({
   }, [step]);
 
   const [customerSource, setCustomerSource] = useState<'existing' | 'new'>('existing');
+  const [propertySource, setPropertySource] = useState<'existing' | 'new'>('existing');
   const [customerId, setCustomerId] = useState('');
   const [title, setTitle] = useState('');
   const [propertyId, setPropertyId] = useState('');
+  const saveIntentRef = useRef<'draft' | 'send'>('draft');
+  const saveIntentInputRef = useRef<HTMLInputElement>(null);
+  const [pendingIntent, setPendingIntent] = useState<'draft' | 'send' | null>(null);
 
   const [inlineFirstName, setInlineFirstName] = useState('');
   const [inlineEmail, setInlineEmail] = useState('');
@@ -129,7 +133,29 @@ export function QuoteCreateWizard({
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
   }, [customerPropertyGroups, customerId]);
 
+  useEffect(() => {
+    if (customerSource !== 'existing' || !customerId) return;
+    if (propertyOptions.length === 0) {
+      setPropertySource('new');
+      setPropertyId('');
+    }
+  }, [customerId, customerSource, propertyOptions.length]);
+
+  useEffect(() => {
+    if (!pending) {
+      setPendingIntent(null);
+    }
+  }, [pending]);
+
   const effectiveCustomerId = customerSource === 'existing' ? customerId : '';
+  const hasServiceAddress =
+    customerSource === 'new'
+      ? Boolean(inlineAddress.trim())
+      : propertySource === 'new'
+        ? Boolean(inlineAddress.trim())
+        : propertyOptions.length === 0
+          ? Boolean(inlineAddress.trim())
+          : Boolean(propertyId);
 
   const applyScopeTemplate = useCallback((id: QuoteScopeTemplateId) => {
     const template = QUOTE_SCOPE_TEMPLATES.find((t) => t.id === id);
@@ -167,8 +193,8 @@ export function QuoteCreateWizard({
         label: 'Customer & service address',
         done:
           customerSource === 'existing'
-            ? Boolean(customerId)
-            : Boolean(inlineFirstName.trim() && inlineEmail.trim()),
+            ? Boolean(customerId) && hasServiceAddress
+            : Boolean(inlineFirstName.trim() && inlineEmail.trim() && inlineAddress.trim()),
       },
       {
         id: 'lines',
@@ -195,6 +221,8 @@ export function QuoteCreateWizard({
       accessNotes,
       customerId,
       customerSource,
+      hasServiceAddress,
+      inlineAddress,
       inlineEmail,
       inlineFirstName,
       pricedLineCount,
@@ -211,9 +239,21 @@ export function QuoteCreateWizard({
       if (customerSource === 'existing' && !customerId) {
         return 'Select a customer or switch to new customer.';
       }
+      if (customerSource === 'existing') {
+        if (propertySource === 'existing' && propertyOptions.length > 0 && !propertyId) {
+          return 'Select a saved service location or choose to add a new one.';
+        }
+        if (
+          (propertySource === 'new' || propertyOptions.length === 0) &&
+          !inlineAddress.trim()
+        ) {
+          return 'Enter the street address for the service location.';
+        }
+      }
       if (customerSource === 'new') {
         if (!inlineFirstName.trim()) return 'First name is required for a new customer.';
         if (!inlineEmail.trim()) return 'Email is required so we can send quote notifications.';
+        if (!inlineAddress.trim()) return 'Service address is required for a new customer.';
       }
     }
     return null;
@@ -223,6 +263,18 @@ export function QuoteCreateWizard({
     for (const s of STEPS) {
       const err = validateStep(s.id);
       if (err) return err;
+    }
+    return null;
+  };
+
+  const validateBeforeSend = (): string | null => {
+    const base = validateBeforeSave();
+    if (base) return base;
+    if (pricedLineCount === 0) {
+      return 'Add at least one priced service line before sending to the customer.';
+    }
+    if (!validUntil.trim()) {
+      return 'Set a valid-until date before sending to the customer.';
     }
     return null;
   };
@@ -252,14 +304,19 @@ export function QuoteCreateWizard({
     }
   };
 
-  const saveDraft = () => {
+  const submitQuote = (intent: 'draft' | 'send') => {
     if (blockSubmitRef.current || !termsActionsReady) return;
-    const err = validateBeforeSave();
+    const err = intent === 'send' ? validateBeforeSend() : validateBeforeSave();
     if (err) {
       setStepError(err);
       return;
     }
     setStepError(null);
+    saveIntentRef.current = intent;
+    setPendingIntent(intent);
+    if (saveIntentInputRef.current) {
+      saveIntentInputRef.current.value = intent;
+    }
     formRef.current?.requestSubmit();
   };
 
@@ -283,6 +340,76 @@ export function QuoteCreateWizard({
     }
   };
 
+  const renderInlinePropertyFields = (idPrefix: string) => (
+    <>
+      <label className={styles.label} htmlFor={`${idPrefix}_inline_property_address_line1`}>
+        Service address
+      </label>
+      <input
+        id={`${idPrefix}_inline_property_address_line1`}
+        name="inline_property_address_line1"
+        className={styles.input}
+        value={inlineAddress}
+        onChange={(e) => setInlineAddress(e.target.value)}
+        placeholder="Street address"
+      />
+      <div className={styles.wizardGridThree}>
+        <div>
+          <label className={styles.label} htmlFor={`${idPrefix}_inline_property_city`}>
+            City
+          </label>
+          <input
+            id={`${idPrefix}_inline_property_city`}
+            name="inline_property_city"
+            className={styles.input}
+            value={inlineCity}
+            onChange={(e) => setInlineCity(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={styles.label} htmlFor={`${idPrefix}_inline_property_state`}>
+            State
+          </label>
+          <input
+            id={`${idPrefix}_inline_property_state`}
+            name="inline_property_state"
+            className={styles.input}
+            value={inlineState}
+            onChange={(e) => setInlineState(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={styles.label} htmlFor={`${idPrefix}_inline_property_postal_code`}>
+            ZIP
+          </label>
+          <input
+            id={`${idPrefix}_inline_property_postal_code`}
+            name="inline_property_postal_code"
+            className={styles.input}
+            value={inlinePostal}
+            onChange={(e) => setInlinePostal(e.target.value)}
+          />
+        </div>
+      </div>
+      <label className={styles.label} htmlFor={`${idPrefix}_inline_property_kind`}>
+        Property type
+      </label>
+      <select
+        id={`${idPrefix}_inline_property_kind`}
+        name="inline_property_kind"
+        className={styles.select}
+        value={inlinePropertyKind}
+        onChange={(e) => setInlinePropertyKind(e.target.value)}
+      >
+        {PROPERTY_KIND_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+
   return (
     <form
       ref={formRef}
@@ -293,6 +420,8 @@ export function QuoteCreateWizard({
     >
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_source" value={customerSource} />
+      <input type="hidden" name="property_source" value={propertySource} />
+      <input ref={saveIntentInputRef} type="hidden" name="save_intent" defaultValue="draft" />
       <input type="hidden" name="scope_inclusions" value={JSON.stringify(scopeInclusions)} />
       <input type="hidden" name="scope_template_id" value={scopeTemplateId} />
       <input type="hidden" name="quote_property_kind" value={quotePropertyType} />
@@ -369,6 +498,7 @@ export function QuoteCreateWizard({
                       setCustomerSource('new');
                       setCustomerId('');
                       setPropertyId('');
+                      setPropertySource('new');
                       setStepError(null);
                     }}
                   />
@@ -399,34 +529,72 @@ export function QuoteCreateWizard({
                     onValueChange={(v) => {
                       setCustomerId(v);
                       setPropertyId('');
+                      setPropertySource('existing');
                     }}
                     placeholder="Search by name, email, phone…"
                     emptyText="No customers match"
                   />
-                  <label className={styles.label} htmlFor="quote_property">
-                    Service location
-                  </label>
-                  <select
-                    key={`prop_${effectiveCustomerId || 'none'}`}
-                    id="quote_property"
-                    name="property_id"
-                    className={styles.select}
-                    value={propertyId}
-                    onChange={(e) => setPropertyId(e.target.value)}
-                    disabled={!effectiveCustomerId || propertyOptions.length === 0}
-                  >
-                    <option value="">— Select location —</option>
-                    {propertyOptions.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                  {effectiveCustomerId && propertyOptions.length === 0 ? (
-                    <p className={styles.hint}>
-                      No service locations yet — add one on the customer profile, or continue and set
-                      property details in the next step.
-                    </p>
+                  {effectiveCustomerId ? (
+                    <>
+                      <fieldset className={styles.propertySourceFieldset}>
+                        <legend className={styles.label}>Service location</legend>
+                        <div className={styles.customerSourceRow}>
+                          <label className={styles.customerSourceOption}>
+                            <input
+                              type="radio"
+                              name="property_source_radio"
+                              checked={propertySource === 'existing'}
+                              disabled={propertyOptions.length === 0}
+                              onChange={() => {
+                                setPropertySource('existing');
+                                setStepError(null);
+                              }}
+                            />
+                            <span>Use saved location</span>
+                          </label>
+                          <label className={styles.customerSourceOption}>
+                            <input
+                              type="radio"
+                              name="property_source_radio"
+                              checked={propertySource === 'new'}
+                              onChange={() => {
+                                setPropertySource('new');
+                                setPropertyId('');
+                                setStepError(null);
+                              }}
+                            />
+                            <span>Add new location</span>
+                          </label>
+                        </div>
+                      </fieldset>
+                      {propertySource === 'existing' && propertyOptions.length > 0 ? (
+                        <>
+                          <label className={styles.label} htmlFor="quote_property">
+                            Saved locations
+                          </label>
+                          <select
+                            key={`prop_${effectiveCustomerId}`}
+                            id="quote_property"
+                            name="property_id"
+                            className={styles.select}
+                            value={propertyId}
+                            onChange={(e) => setPropertyId(e.target.value)}
+                          >
+                            <option value="">— Select location —</option>
+                            {propertyOptions.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      ) : (
+                        <>
+                          <input type="hidden" name="property_id" value="" />
+                          {renderInlinePropertyFields('existing')}
+                        </>
+                      )}
+                    </>
                   ) : null}
                 </>
               ) : (
@@ -490,71 +658,7 @@ export function QuoteCreateWizard({
                       />
                     </div>
                   </div>
-                  <label className={styles.label} htmlFor="inline_property_address_line1">
-                    Service address
-                  </label>
-                  <input
-                    id="inline_property_address_line1"
-                    name="inline_property_address_line1"
-                    className={styles.input}
-                    value={inlineAddress}
-                    onChange={(e) => setInlineAddress(e.target.value)}
-                    placeholder="Street address"
-                  />
-                  <div className={styles.wizardGridThree}>
-                    <div>
-                      <label className={styles.label} htmlFor="inline_property_city">
-                        City
-                      </label>
-                      <input
-                        id="inline_property_city"
-                        name="inline_property_city"
-                        className={styles.input}
-                        value={inlineCity}
-                        onChange={(e) => setInlineCity(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className={styles.label} htmlFor="inline_property_state">
-                        State
-                      </label>
-                      <input
-                        id="inline_property_state"
-                        name="inline_property_state"
-                        className={styles.input}
-                        value={inlineState}
-                        onChange={(e) => setInlineState(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className={styles.label} htmlFor="inline_property_postal_code">
-                        ZIP
-                      </label>
-                      <input
-                        id="inline_property_postal_code"
-                        name="inline_property_postal_code"
-                        className={styles.input}
-                        value={inlinePostal}
-                        onChange={(e) => setInlinePostal(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <label className={styles.label} htmlFor="inline_property_kind">
-                    Property type
-                  </label>
-                  <select
-                    id="inline_property_kind"
-                    name="inline_property_kind"
-                    className={styles.select}
-                    value={inlinePropertyKind}
-                    onChange={(e) => setInlinePropertyKind(e.target.value)}
-                  >
-                    {PROPERTY_KIND_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                  {renderInlinePropertyFields('new')}
                 </>
               )}
             </section>
@@ -776,9 +880,10 @@ export function QuoteCreateWizard({
             className={step === 'terms' ? styles.wizardStep : styles.wizardStepHidden}
             aria-hidden={step !== 'terms'}
           >
-              <h2 className={styles.wizardStepTitle}>Terms &amp; save</h2>
+              <h2 className={styles.wizardStepTitle}>Terms &amp; send</h2>
               <p className={styles.hint}>
-                Set validity and office-only notes. Review the checklist before saving your draft.
+                Set validity and office-only notes. Save as a draft to finish later, or send now to
+                email the customer a link to review and accept.
               </p>
               <div className={styles.wizardGridTwo}>
                 <div>
@@ -807,7 +912,7 @@ export function QuoteCreateWizard({
                 onChange={(e) => setOfficeNotes(e.target.value)}
                 placeholder="Walkthrough notes, margin targets, follow-up reminders…"
               />
-              <h3 className={styles.wizardSubheading}>Ready to save?</h3>
+              <h3 className={styles.wizardSubheading}>Ready to save or send?</h3>
               <ul className={styles.completenessList}>
                 {completeness.map((item) => (
                   <li
@@ -824,20 +929,39 @@ export function QuoteCreateWizard({
             <Button type="button" variant="ghost" disabled={step === 'who'} onClick={goBack}>
               Back
             </Button>
-            {step !== 'terms' || !termsActionsReady ? (
-              <Button
-                type="button"
-                variant="primary"
-                disabled={step === 'terms'}
-                onClick={goNext}
-              >
-                Continue
-              </Button>
-            ) : (
-              <Button type="button" variant="primary" loading={pending} onClick={saveDraft}>
-                {pending ? 'Saving…' : 'Save draft quote'}
-              </Button>
-            )}
+            <div className={styles.wizardActionsEnd}>
+              {step !== 'terms' || !termsActionsReady ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={step === 'terms'}
+                  onClick={goNext}
+                >
+                  Continue
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={pending && pendingIntent === 'draft'}
+                    disabled={pending}
+                    onClick={() => submitQuote('draft')}
+                  >
+                    {pending && pendingIntent === 'draft' ? 'Saving…' : 'Save as draft'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    loading={pending && pendingIntent === 'send'}
+                    disabled={pending}
+                    onClick={() => submitQuote('send')}
+                  >
+                    {pending && pendingIntent === 'send' ? 'Sending…' : 'Send to customer'}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 

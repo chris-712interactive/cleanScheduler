@@ -13,7 +13,10 @@ import {
   parseQuoteDiscountKind,
   parseQuoteTaxMode,
 } from '@/lib/tenant/quoteHeaderPricingForm';
-import { createTenantCustomerInlineForQuote } from '@/lib/tenant/createTenantCustomerInline';
+import {
+  createTenantCustomerInlineForQuote,
+  createTenantPropertyInlineForQuote,
+} from '@/lib/tenant/createTenantCustomerInline';
 import type { ParsedQuoteLineItem } from '@/lib/tenant/quoteLineItemsForm';
 import {
   parseCustomerPropertyKind,
@@ -283,6 +286,10 @@ export async function createTenantQuote(
     .toLowerCase();
   const title = String(formData.get('title') ?? '').trim();
   const customerSource = String(formData.get('customer_source') ?? 'existing').trim();
+  const propertySource = String(formData.get('property_source') ?? 'existing').trim();
+  const saveIntent = String(formData.get('save_intent') ?? 'draft').trim();
+  const initialStatus: Database['public']['Enums']['quote_status'] =
+    saveIntent === 'send' ? 'sent' : 'draft';
   const customerRaw = String(formData.get('customer_id') ?? '').trim();
   const propertyRaw = String(formData.get('property_id') ?? '').trim();
   const amountRaw = String(formData.get('amount_dollars') ?? '');
@@ -346,10 +353,36 @@ export async function createTenantQuote(
     const ok = await assertCustomerInTenant(admin, membership.tenantId, customerRaw);
     if (!ok) return { error: 'Customer not found in this workspace.' };
     customerId = customerRaw;
+
+    if (propertySource === 'new') {
+      const createdProperty = await createTenantPropertyInlineForQuote({
+        admin,
+        tenantId: membership.tenantId,
+        customerId,
+        property: {
+          address_line1: inlinePropertyAddress || undefined,
+          city: inlinePropertyCity || undefined,
+          state: inlinePropertyState || undefined,
+          postal_code: inlinePropertyPostal || undefined,
+          property_kind: inlinePropertyKind,
+          site_notes: structured.propertySnapshot.access_notes ?? undefined,
+          bedrooms: structured.propertySnapshot.bedrooms ?? undefined,
+          bathrooms: structured.propertySnapshot.bathrooms ?? undefined,
+          sqft: structured.propertySnapshot.sqft ?? undefined,
+          stories: structured.propertySnapshot.stories ?? undefined,
+        },
+      });
+      if (!createdProperty.ok) {
+        return { error: createdProperty.error };
+      }
+      defaultPropertyId = createdProperty.propertyId;
+      revalidatePath('/tenant/customers', 'page');
+      revalidatePath(`/tenant/customers/${customerId}`, 'page');
+    }
   }
 
   let propertyId: string | null = null;
-  if (propertyRaw) {
+  if (customerSource === 'existing' && propertySource === 'existing' && propertyRaw) {
     const ok = await assertPropertyForCustomer(admin, membership.tenantId, customerId, propertyRaw);
     if (!ok) return { error: 'Service location does not belong to this customer.' };
     propertyId = propertyRaw;
@@ -360,6 +393,15 @@ export async function createTenantQuote(
   const parsedLines = parseQuoteLineItemsFromForm(formData);
   if (!parsedLines.ok) {
     return { error: parsedLines.error };
+  }
+
+  if (initialStatus === 'sent') {
+    if (parsedLines.lines.length === 0) {
+      return { error: 'Add at least one priced service line before sending to the customer.' };
+    }
+    if (!validUntilRaw.trim()) {
+      return { error: 'Set a valid-until date before sending to the customer.' };
+    }
   }
 
   const pricing = parseQuoteHeaderPricingFromForm(formData);
@@ -403,7 +445,7 @@ export async function createTenantQuote(
     p_customer_id: customerId,
     p_property_id: propertyId,
     p_title: title,
-    p_status: 'draft',
+    p_status: initialStatus,
     p_amount_cents: amountCents,
     p_notes: structured.customerNotes || notes || null,
     p_valid_until: validUntil,
@@ -444,6 +486,28 @@ export async function createTenantQuote(
         verify.error?.message ??
         'Quote saved but could not be opened. Check the quotes list and try again.',
     };
+  }
+
+  if (initialStatus === 'sent') {
+    await sendQuoteNotificationEmail(admin, 'quote_sent', {
+      tenantId: membership.tenantId,
+      quoteId: newId,
+      quoteTitle: title,
+      customerId,
+    });
+    await sendQuoteNotificationSms(admin, 'quote_sent', {
+      tenantId: membership.tenantId,
+      quoteId: newId,
+      quoteTitle: title,
+      customerId,
+    });
+    await emitQuoteWebhookEvent(admin, 'quote.sent', {
+      tenantId: membership.tenantId,
+      quoteId: newId,
+      quoteTitle: title,
+      customerId,
+      status: 'sent',
+    });
   }
 
   revalidatePath('/tenant', 'layout');

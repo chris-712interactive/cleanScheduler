@@ -98,7 +98,7 @@ export default async function TenantQuoteNewPage() {
     <>
       <PageHeader
         title="New quote"
-        description="Step through customer, property, scope, and pricing — then save a draft to send."
+        description="Step through customer, property, scope, and pricing — then save a draft or send to the customer."
         breadcrumbs={[{ label: 'Quotes', href: '/quotes' }, { label: 'New quote' }]}
         actions={
           <Link href="/quotes" className={styles.backLink}>

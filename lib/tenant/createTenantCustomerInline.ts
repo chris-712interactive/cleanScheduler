@@ -169,3 +169,71 @@ export async function createTenantCustomerInlineForQuote(options: {
 
   return { ok: true, customerId, propertyId };
 }
+
+/** Adds a service location for an existing customer during quote create. */
+export async function createTenantPropertyInlineForQuote(options: {
+  admin: AdminClient;
+  tenantId: string;
+  customerId: string;
+  property: InlineQuotePropertyInput;
+  label?: string;
+}): Promise<{ ok: true; propertyId: string } | { ok: false; error: string }> {
+  const line1 = options.property.address_line1?.trim() ?? '';
+  if (!line1) {
+    return { ok: false, error: 'Street address is required for a new service location.' };
+  }
+
+  const { data: cust, error: custErr } = await options.admin
+    .from('customers')
+    .select('id')
+    .eq('id', options.customerId)
+    .eq('tenant_id', options.tenantId)
+    .maybeSingle();
+
+  if (custErr || !cust) {
+    return { ok: false, error: 'Customer not found in this workspace.' };
+  }
+
+  const { count } = await options.admin
+    .from('tenant_customer_properties')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', options.customerId)
+    .eq('tenant_id', options.tenantId);
+
+  const isFirst = (count ?? 0) === 0;
+  const label =
+    options.label?.trim() ||
+    line1 ||
+    (isFirst ? 'Primary service location' : 'Service location');
+
+  const propertyInsert = await options.admin
+    .from('tenant_customer_properties')
+    .insert({
+      tenant_id: options.tenantId,
+      customer_id: options.customerId,
+      label,
+      property_kind: options.property.property_kind ?? 'residential',
+      address_line1: line1,
+      address_line2: options.property.address_line2?.trim() || null,
+      city: options.property.city?.trim() || null,
+      state: options.property.state?.trim() || null,
+      postal_code: options.property.postal_code?.trim() || null,
+      site_notes: options.property.site_notes?.trim() || null,
+      bedrooms: options.property.bedrooms ?? null,
+      bathrooms: options.property.bathrooms ?? null,
+      sqft: options.property.sqft ?? null,
+      stories: options.property.stories ?? null,
+      is_primary: isFirst,
+    })
+    .select('id')
+    .single();
+
+  if (propertyInsert.error || !propertyInsert.data) {
+    return {
+      ok: false,
+      error: propertyInsert.error?.message ?? 'Could not create service location.',
+    };
+  }
+
+  return { ok: true, propertyId: propertyInsert.data.id as string };
+}
