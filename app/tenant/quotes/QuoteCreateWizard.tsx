@@ -1,9 +1,9 @@
 'use client';
 
-import { useActionState, useCallback, useMemo, useState } from 'react';
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/Button';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import {
   QUOTE_ADDON_LIBRARY,
@@ -57,11 +57,34 @@ export function QuoteCreateWizard({
   customerOptions: QuoteCustomerOption[];
   customerPropertyGroups: CustomerPropertyGroup[];
 }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  const navigatedToQuoteRef = useRef(false);
+
+  useEffect(() => {
+    if (!state.quoteId || navigatedToQuoteRef.current) return;
+    navigatedToQuoteRef.current = true;
+    router.replace(`/quotes/${state.quoteId}`);
+  }, [state.quoteId, router]);
 
   const [step, setStep] = useState<StepId>('who');
   const [stepError, setStepError] = useState<string | null>(null);
+  /** Prevents the Pricing → Terms Continue click from landing on Save draft. */
+  const [termsActionsReady, setTermsActionsReady] = useState(false);
+  const blockSubmitRef = useRef(false);
+
+  useEffect(() => {
+    if (step !== 'terms') {
+      setTermsActionsReady(false);
+      return;
+    }
+    blockSubmitRef.current = true;
+    const timer = window.setTimeout(() => {
+      blockSubmitRef.current = false;
+      setTermsActionsReady(true);
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [step]);
 
   const [customerSource, setCustomerSource] = useState<'existing' | 'new'>('existing');
   const [customerId, setCustomerId] = useState('');
@@ -100,6 +123,7 @@ export function QuoteCreateWizard({
 
   const [validUntil, setValidUntil] = useState(defaultValidUntil);
   const [officeNotes, setOfficeNotes] = useState('');
+  const formRef = useRef<HTMLFormElement>(null);
 
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
@@ -195,6 +219,14 @@ export function QuoteCreateWizard({
     return null;
   };
 
+  const validateBeforeSave = (): string | null => {
+    for (const s of STEPS) {
+      const err = validateStep(s.id);
+      if (err) return err;
+    }
+    return null;
+  };
+
   const goNext = () => {
     const err = validateStep(step);
     if (err) {
@@ -204,7 +236,11 @@ export function QuoteCreateWizard({
     setStepError(null);
     const idx = stepIndexFor(step);
     if (idx < STEPS.length - 1) {
-      setStep(STEPS[idx + 1]!.id);
+      // Defer step change so the Continue click cannot fall through onto a
+      // submit button rendered in the same spot on the final step.
+      window.setTimeout(() => {
+        setStep(STEPS[idx + 1]!.id);
+      }, 0);
     }
   };
 
@@ -216,8 +252,45 @@ export function QuoteCreateWizard({
     }
   };
 
+  const saveDraft = () => {
+    if (blockSubmitRef.current || !termsActionsReady) return;
+    const err = validateBeforeSave();
+    if (err) {
+      setStepError(err);
+      return;
+    }
+    setStepError(null);
+    formRef.current?.requestSubmit();
+  };
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (blockSubmitRef.current || step !== 'terms') {
+      event.preventDefault();
+      return;
+    }
+    const err = validateBeforeSave();
+    if (err) {
+      event.preventDefault();
+      setStepError(err);
+    }
+  };
+
+  const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter') return;
+    if (event.target instanceof HTMLTextAreaElement) return;
+    if (step !== 'terms' || !termsActionsReady) {
+      event.preventDefault();
+    }
+  };
+
   return (
-    <form action={formAction} className={styles.wizardForm}>
+    <form
+      ref={formRef}
+      action={formAction}
+      className={styles.wizardForm}
+      onSubmit={handleFormSubmit}
+      onKeyDown={handleFormKeyDown}
+    >
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_source" value={customerSource} />
       <input type="hidden" name="scope_inclusions" value={JSON.stringify(scopeInclusions)} />
@@ -310,7 +383,6 @@ export function QuoteCreateWizard({
                 id="quote_title"
                 name="title"
                 className={styles.input}
-                required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Bi-weekly maintenance — Chen residence"
@@ -369,7 +441,6 @@ export function QuoteCreateWizard({
                         id="inline_customer_first_name"
                         name="inline_customer_first_name"
                         className={styles.input}
-                        required
                         value={inlineFirstName}
                         onChange={(e) => setInlineFirstName(e.target.value)}
                         autoComplete="given-name"
@@ -399,7 +470,6 @@ export function QuoteCreateWizard({
                         name="inline_customer_email"
                         type="email"
                         className={styles.input}
-                        required
                         value={inlineEmail}
                         onChange={(e) => setInlineEmail(e.target.value)}
                         autoComplete="email"
@@ -754,12 +824,17 @@ export function QuoteCreateWizard({
             <Button type="button" variant="ghost" disabled={step === 'who'} onClick={goBack}>
               Back
             </Button>
-            {step !== 'terms' ? (
-              <Button type="button" variant="primary" onClick={goNext}>
+            {step !== 'terms' || !termsActionsReady ? (
+              <Button
+                type="button"
+                variant="primary"
+                disabled={step === 'terms'}
+                onClick={goNext}
+              >
                 Continue
               </Button>
             ) : (
-              <Button type="submit" variant="primary" loading={pending}>
+              <Button type="button" variant="primary" loading={pending} onClick={saveDraft}>
                 {pending ? 'Saving…' : 'Save draft quote'}
               </Button>
             )}

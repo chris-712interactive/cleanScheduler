@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createTenantQuoteAmendment, type AmendmentFormState } from './actions';
 import styles from './quotes.module.scss';
 
@@ -13,7 +14,15 @@ export function QuoteAmendmentForm({
   tenantSlug: string;
   priorQuoteId: string;
 }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuoteAmendment, initial);
+  const navigatedToQuoteRef = useRef(false);
+
+  useEffect(() => {
+    if (!state.quoteId || navigatedToQuoteRef.current) return;
+    navigatedToQuoteRef.current = true;
+    router.replace(`/quotes/${state.quoteId}`);
+  }, [state.quoteId, router]);
 
   return (
     <form action={formAction} className={styles.form}>

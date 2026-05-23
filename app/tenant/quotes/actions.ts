@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
@@ -29,6 +28,8 @@ import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 export interface QuoteFormState {
   error?: string;
   success?: boolean;
+  /** Set after create — client navigates when present (avoids redirect prefetch race). */
+  quoteId?: string;
 }
 
 const QUOTE_STATUSES = new Set<Database['public']['Enums']['quote_status']>([
@@ -421,13 +422,34 @@ export async function createTenantQuote(
     return { error: rpc.error.message };
   }
 
-  const newId = rpc.data as string;
+  const newId = typeof rpc.data === 'string' ? rpc.data.trim() : '';
+  if (!newId || !/^[0-9a-f-]{36}$/i.test(newId)) {
+    return {
+      error:
+        'We could not save this quote. If you recently updated the app, apply pending database migrations and try again.',
+    };
+  }
+
+  const verify = await admin
+    .from('tenant_quotes')
+    .select('id')
+    .eq('id', newId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (verify.error || !verify.data) {
+    revalidatePath('/tenant/quotes', 'page');
+    return {
+      error:
+        verify.error?.message ??
+        'Quote saved but could not be opened. Check the quotes list and try again.',
+    };
+  }
 
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath('/tenant/quotes/new', 'page');
-  revalidatePath(`/tenant/quotes/${newId}`, 'page');
-  redirect(`/quotes/${newId}`);
+  return { success: true, quoteId: newId };
 }
 
 export async function updateTenantQuote(
@@ -611,6 +633,7 @@ export async function updateTenantQuote(
 
 export interface AmendmentFormState {
   error?: string;
+  quoteId?: string;
 }
 
 export async function createTenantQuoteAmendment(
@@ -745,6 +768,5 @@ export async function createTenantQuoteAmendment(
   revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${priorQuoteId}`, 'page');
-  revalidatePath(`/tenant/quotes/${newId}`, 'page');
-  redirect(`/quotes/${newId}`);
+  return { quoteId: newId };
 }
