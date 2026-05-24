@@ -3,7 +3,7 @@
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { PlatformPricingTier } from '@/lib/billing/platformPricing';
-import { formatPlanPriceUsd } from '@/lib/billing/platformPricing';
+import { computeAnnualSavingsPercent, formatPlanPriceUsd } from '@/lib/billing/platformPricing';
 import styles from './PricingTierCard.module.scss';
 
 export interface PricingTierCardProps {
@@ -24,6 +24,10 @@ export function PricingTierCard({
   const displayPrice =
     billingInterval === 'annual' ? tier.annualEffectiveMonthlyUsd : tier.monthlyPriceUsd;
   const priceLabel = formatPlanPriceUsd(displayPrice);
+  const annualSavings = computeAnnualSavingsPercent(
+    tier.monthlyPriceUsd,
+    tier.annualEffectiveMonthlyUsd,
+  );
 
   return (
     <article
@@ -48,7 +52,10 @@ export function PricingTierCard({
           <span className={styles.priceInterval}>/mo</span>
         </p>
         {billingInterval === 'annual' ? (
-          <p className={styles.priceNote}>Billed annually · save ~20%</p>
+          <p className={styles.priceNote}>
+            Billed {formatPlanPriceUsd(tier.annualPriceUsd, { showCents: true })}/yr
+            {annualSavings > 0 ? ` · save ${annualSavings}%` : null}
+          </p>
         ) : (
           <p className={styles.priceNote}>Billed monthly · 7-day free trial</p>
         )}

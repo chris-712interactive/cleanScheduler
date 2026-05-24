@@ -16,7 +16,11 @@ export type PlatformPricingTier = {
   tier: PlatformPlanTier;
   displayName: string;
   description: string;
+  /** Monthly recurring amount from Stripe monthly Price (or entitlements fallback). */
   monthlyPriceUsd: number;
+  /** Total yearly charge from Stripe yearly Price (or entitlements fallback). */
+  annualPriceUsd: number;
+  /** Monthly equivalent when billed yearly (`annualPriceUsd / 12`). */
   annualEffectiveMonthlyUsd: number;
   featureBullets: string[];
   isMostPopular: boolean;
@@ -25,10 +29,18 @@ export type PlatformPricingTier = {
     includedFieldSeats: number | null;
     maxActiveCustomers: number;
   };
+  monthlyPriceSource: 'stripe' | 'entitlements';
+  annualPriceSource: 'stripe' | 'entitlements';
+  /** True when either interval price came from Stripe. */
   priceSource: 'stripe' | 'entitlements';
 };
 
-async function fetchStripeMonthlyPriceUsd(priceId: string): Promise<number | null> {
+type StripePriceQuote = {
+  amountUsd: number;
+  interval: 'month' | 'year';
+};
+
+async function fetchStripePriceQuote(priceId: string): Promise<StripePriceQuote | null> {
   const stripe = getStripe();
   if (!stripe) return null;
 
@@ -36,30 +48,49 @@ async function fetchStripeMonthlyPriceUsd(priceId: string): Promise<number | nul
     const price = await stripe.prices.retrieve(priceId);
     if (price.unit_amount == null) return null;
 
-    if (price.recurring?.interval === 'year') {
-      return price.unit_amount / 100 / 12;
-    }
-
-    return price.unit_amount / 100;
+    const interval = price.recurring?.interval === 'year' ? 'year' : 'month';
+    return {
+      amountUsd: price.unit_amount / 100,
+      interval,
+    };
   } catch {
     return null;
   }
 }
 
+export function computeAnnualSavingsPercent(
+  monthlyPriceUsd: number,
+  annualEffectiveMonthlyUsd: number,
+): number {
+  if (monthlyPriceUsd <= 0 || annualEffectiveMonthlyUsd >= monthlyPriceUsd) return 0;
+  return Math.round(((monthlyPriceUsd - annualEffectiveMonthlyUsd) / monthlyPriceUsd) * 100);
+}
+
 async function resolveTierPricing(tier: PlatformPlanTier): Promise<PlatformPricingTier> {
   const entitlements = PLATFORM_TIER_ENTITLEMENTS[tier];
-  const priceId =
-    resolvePlatformPriceId(tier, { interval: 'month' }) ??
-    resolvePlatformPriceId(tier, { interval: 'year' });
+  const monthlyPriceId = resolvePlatformPriceId(tier, { interval: 'month' });
+  const yearlyPriceId = resolvePlatformPriceId(tier, { interval: 'year' });
 
   let monthlyPriceUsd = entitlements.monthlyPriceUsd;
-  let priceSource: PlatformPricingTier['priceSource'] = 'entitlements';
+  let annualPriceUsd = entitlements.annualEffectiveMonthlyUsd * 12;
+  let annualEffectiveMonthlyUsd = entitlements.annualEffectiveMonthlyUsd;
+  let monthlyPriceSource: PlatformPricingTier['monthlyPriceSource'] = 'entitlements';
+  let annualPriceSource: PlatformPricingTier['annualPriceSource'] = 'entitlements';
 
-  if (priceId) {
-    const stripePrice = await fetchStripeMonthlyPriceUsd(priceId);
-    if (stripePrice != null) {
-      monthlyPriceUsd = stripePrice;
-      priceSource = 'stripe';
+  if (monthlyPriceId) {
+    const quote = await fetchStripePriceQuote(monthlyPriceId);
+    if (quote?.interval === 'month') {
+      monthlyPriceUsd = quote.amountUsd;
+      monthlyPriceSource = 'stripe';
+    }
+  }
+
+  if (yearlyPriceId) {
+    const quote = await fetchStripePriceQuote(yearlyPriceId);
+    if (quote?.interval === 'year') {
+      annualPriceUsd = quote.amountUsd;
+      annualEffectiveMonthlyUsd = quote.amountUsd / 12;
+      annualPriceSource = 'stripe';
     }
   }
 
@@ -68,7 +99,8 @@ async function resolveTierPricing(tier: PlatformPlanTier): Promise<PlatformPrici
     displayName: entitlements.displayName,
     description: PLATFORM_PLAN_DESCRIPTIONS[tier],
     monthlyPriceUsd,
-    annualEffectiveMonthlyUsd: entitlements.annualEffectiveMonthlyUsd,
+    annualPriceUsd,
+    annualEffectiveMonthlyUsd,
     featureBullets: getMarketingFeatureBullets(tier),
     isMostPopular: tier === MARKETING_MOST_POPULAR_TIER,
     limits: {
@@ -76,7 +108,12 @@ async function resolveTierPricing(tier: PlatformPlanTier): Promise<PlatformPrici
       includedFieldSeats: entitlements.limits.includedFieldSeats,
       maxActiveCustomers: entitlements.limits.maxActiveCustomers,
     },
-    priceSource,
+    monthlyPriceSource,
+    annualPriceSource,
+    priceSource:
+      monthlyPriceSource === 'stripe' || annualPriceSource === 'stripe'
+        ? 'stripe'
+        : 'entitlements',
   };
 }
 
@@ -86,7 +123,7 @@ async function fetchPlatformPricing(): Promise<PlatformPricingTier[]> {
 
 const getCachedPlatformPricing = unstable_cache(
   fetchPlatformPricing,
-  ['platform-pricing-display'],
+  ['platform-pricing-display-v2'],
   { revalidate: 3600 },
 );
 

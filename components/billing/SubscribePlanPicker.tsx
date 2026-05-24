@@ -8,16 +8,11 @@ import {
   type PlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
 import type { PlatformPricingTier } from '@/lib/billing/platformPricing';
-import { formatPlanPriceUsd } from '@/lib/billing/platformPricing';
+import { computeAnnualSavingsPercent, formatPlanPriceUsd } from '@/lib/billing/platformPricing';
 import { resumePlatformSubscriptionCheckout } from '@/app/tenant/billing/actions';
 import styles from './SubscribePlanPicker.module.scss';
 
 export type BillingIntervalChoice = 'month' | 'year';
-
-function annualSavingsPercent(monthly: number, annualEffectiveMonthly: number): number {
-  if (monthly <= 0 || annualEffectiveMonthly >= monthly) return 0;
-  return Math.round(((monthly - annualEffectiveMonthly) / monthly) * 100);
-}
 
 export function SubscribePlanPicker({
   tenantSlug,
@@ -43,7 +38,7 @@ export function SubscribePlanPicker({
       : (selectedPricing?.monthlyPriceUsd ?? 0);
   const savingsExample = tiersByKey.get('business');
   const yearlySavings = savingsExample
-    ? annualSavingsPercent(
+    ? computeAnnualSavingsPercent(
         savingsExample.monthlyPriceUsd,
         savingsExample.annualEffectiveMonthlyUsd,
       )
@@ -109,7 +104,7 @@ export function SubscribePlanPicker({
                   </span>
                   {interval === 'year' ? (
                     <span className={styles.tierBilledAs}>
-                      Billed {formatPlanPriceUsd(amount * 12, { showCents: true })}/yr
+                      Billed {formatPlanPriceUsd(tier.annualPriceUsd, { showCents: true })}/yr
                     </span>
                   ) : (
                     <span className={styles.tierBilledAs}>Billed monthly</span>

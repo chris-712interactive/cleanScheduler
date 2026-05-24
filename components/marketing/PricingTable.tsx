@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import type { PlatformPricingTier } from '@/lib/billing/platformPricing';
+import { computeAnnualSavingsPercent } from '@/lib/billing/platformPricing';
 import { PricingTierCard } from '@/components/marketing/PricingTierCard';
 import styles from './PricingTable.module.scss';
 
@@ -24,6 +25,13 @@ export function PricingTable({
   id,
 }: PricingTableProps) {
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
+  const savingsExample = tiers.find((tier) => tier.isMostPopular) ?? tiers[0];
+  const annualSavings = savingsExample
+    ? computeAnnualSavingsPercent(
+        savingsExample.monthlyPriceUsd,
+        savingsExample.annualEffectiveMonthlyUsd,
+      )
+    : 0;
 
   return (
     <section className={styles.section} id={id}>
@@ -45,7 +53,9 @@ export function PricingTable({
               onClick={() => setBillingInterval('annual')}
             >
               Annual
-              <span className={styles.saveBadge}>Save 20%</span>
+              {annualSavings > 0 ? (
+                <span className={styles.saveBadge}>Save {annualSavings}%</span>
+              ) : null}
             </button>
           </div>
         </div>

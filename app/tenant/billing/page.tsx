@@ -95,13 +95,18 @@ function formatBillingCycle(interval: TenantBillingRow['billing_interval']): str
 }
 
 function formatPlanAmountForInterval(
-  pricing: { monthlyPriceUsd: number; annualEffectiveMonthlyUsd: number } | null,
+  pricing: {
+    monthlyPriceUsd: number;
+    annualEffectiveMonthlyUsd: number;
+    annualPriceUsd: number;
+  } | null,
   interval: TenantBillingRow['billing_interval'],
 ): string {
   if (!pricing) return '—';
-  const amount =
-    interval === 'year' ? pricing.annualEffectiveMonthlyUsd : pricing.monthlyPriceUsd;
-  return `${formatPlanPriceUsd(amount, { showCents: true })} USD`;
+  if (interval === 'year') {
+    return `${formatPlanPriceUsd(pricing.annualPriceUsd, { showCents: true })} USD/yr (${formatPlanPriceUsd(pricing.annualEffectiveMonthlyUsd, { showCents: true })}/mo)`;
+  }
+  return `${formatPlanPriceUsd(pricing.monthlyPriceUsd, { showCents: true })} USD/mo`;
 }
 
 interface PageProps {
