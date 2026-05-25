@@ -5,6 +5,8 @@ import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/se
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageBankReconciliation } from '@/lib/auth/tenantRoleAccess';
+import { getMfaStatus } from '@/lib/auth/mfa';
+import Link from 'next/link';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
@@ -50,11 +52,20 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
   const skipped = Number(firstParam(sp.skipped) ?? '0');
   const plaidReady = isPlaidConfigured();
   const canManageBank = canManageBankReconciliation(membership.role);
+  const mfaStatus = canManageBank ? await getMfaStatus() : null;
+  const mfaBlocksPlaid =
+    canManageBank && mfaStatus != null && (!mfaStatus.enrolled || !mfaStatus.verifiedThisSession);
 
   const db = createTenantPortalDbClient();
   const [{ data: link }, { data: transactions }, { data: suggestions }, { data: openInvoices }] =
     await Promise.all([
-    db.from('bank_links').select('*').eq('tenant_id', membership.tenantId).maybeSingle(),
+    db
+      .from('bank_links')
+      .select(
+        'id, tenant_id, status, institution_name, account_mask, plaid_item_id, last_synced_at, last_sync_error, created_at, updated_at',
+      )
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
     db
       .from('bank_transactions')
       .select('id, posted_date, name, merchant_name, amount_cents, pending, matched_payment_id')
@@ -160,6 +171,18 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
           {err}
         </p>
       ) : null}
+      {mfaBlocksPlaid ? (
+        <p className={styles.bannerError} role="alert">
+          Two-factor authentication is required before connecting a bank account.{' '}
+          <Link href="/settings/account">Enable MFA in Account settings</Link>
+          {!mfaStatus?.enrolled ? null : (
+            <>
+              {' '}
+              or <Link href="/sign-in/mfa?next=/billing/bank-connection">verify your session</Link>.
+            </>
+          )}
+        </p>
+      ) : null}
       {connected ? (
         <p className={styles.bannerOk} role="status">
           Bank account connected. Initial transaction sync started.
@@ -233,7 +256,7 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
               marginTop: 'var(--space-4)',
             }}
           >
-            {plaidReady && canManageBank ? (
+            {plaidReady && canManageBank && !mfaBlocksPlaid ? (
               <>
                 <PlaidLinkButton
                   tenantSlug={membership.tenantSlug}

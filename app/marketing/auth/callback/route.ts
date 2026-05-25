@@ -43,9 +43,18 @@ export async function GET(request: NextRequest) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-  const redirectUrl = error
-    ? new URL('/sign-in?error=auth', request.url)
-    : postAuthRedirectUrl(request, nextPath);
+  let redirectUrl: URL;
+  if (error) {
+    redirectUrl = new URL('/sign-in?error=auth', request.url);
+  } else {
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const needsMfa =
+      aalData?.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2';
+    redirectUrl = needsMfa
+      ? new URL(`/sign-in/mfa?next=${encodeURIComponent(nextPath)}`, request.url)
+      : postAuthRedirectUrl(request, nextPath);
+  }
+
   const response = NextResponse.redirect(redirectUrl);
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options);

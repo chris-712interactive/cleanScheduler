@@ -118,17 +118,18 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
       'Backups may contain deleted data until backup rotation completes; we do not restore deleted tenant data except for disaster recovery.',
   },
   {
-    category: 'Planned: bank reconciliation (Plaid)',
-    examples: 'bank_links, imported transactions (when feature is enabled)',
+    category: 'Bank reconciliation (Plaid)',
+    examples: 'bank_links, bank_transactions, Plaid access tokens',
     retentionPeriod: 'While connection is active, plus 90 days after disconnect',
     disposition: 'delete',
-    notes: 'Not yet active in production application code; schedule applies when enabled.',
+    notes:
+      'Plaid access tokens are stored server-side only. Transaction metadata retained for reconciliation while workspace is active.',
   },
   {
-    category: 'Planned: SMS (Twilio)',
+    category: 'SMS (Twilio)',
     examples: 'Outbound SMS logs and delivery metadata (when feature is enabled)',
     retentionPeriod: 'While workspace is active; message bodies per Twilio retention (typically up to 400 days)',
     disposition: 'provider-controlled',
-    notes: 'Not yet active in production application code.',
+    notes: 'Active on Pro plan when Twilio is configured.',
   },
 ];

@@ -17,6 +17,8 @@ import {
   teamSeatGateErrorMessage,
 } from '@/lib/billing/teamSeats';
 import { assertFeatureEnabledForTier, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import { recordPlatformAuditEvent } from '@/lib/audit/recordPlatformAuditEvent';
+import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
   AVATAR_MAX_UPLOAD_BYTES,
@@ -183,20 +185,32 @@ export async function updateTenantMemberRoleAction(
   if (upErr) return { error: upErr.message };
 
   const nextAppRole = nextRole === 'admin' ? 'admin' : 'employee';
-  const { error: metaErr } = await admin.auth.admin.updateUserById(targetUserId, {
-    app_metadata: {
-      tenant_role: nextRole,
-      app_role: nextAppRole,
-      current_tenant_id: membership.tenantId,
-    },
-  });
-  if (metaErr) return { error: metaErr.message };
+  try {
+    await syncUserAuthClaims(admin, targetUserId, {
+      appRole: nextAppRole,
+      tenantRole: nextRole,
+      currentTenantId: membership.tenantId,
+    });
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Could not update auth claims.' };
+  }
 
   const { error: profErr } = await admin
     .from('user_profiles')
     .update({ app_role: nextAppRole, updated_at: new Date().toISOString() })
     .eq('user_id', targetUserId);
   if (profErr) return { error: profErr.message };
+
+  await recordPlatformAuditEvent(admin, {
+    actorUserId: auth.user.id,
+    action: 'member.role_changed',
+    targetTenantId: membership.tenantId,
+    payload: {
+      target_user_id: targetUserId,
+      previous_role: targetCurrentRole,
+      next_role: nextRole,
+    },
+  });
 
   revalidateMemberPaths(targetUserId);
   return { success: 'Role updated.' };
@@ -276,6 +290,28 @@ export async function setTenantMemberActiveAction(
     .eq('tenant_id', membership.tenantId)
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
+
+  if (!isActive) {
+    await admin.auth.admin.signOut(targetUserId, 'global');
+    try {
+      await syncUserAuthClaims(admin, targetUserId, {
+        tenantRole: null,
+        currentTenantId: null,
+      });
+    } catch {
+      // Membership is already inactive; claim cleanup is best-effort.
+    }
+  }
+
+  await recordPlatformAuditEvent(admin, {
+    actorUserId: auth.user.id,
+    action: isActive ? 'member.reactivated' : 'member.deactivated',
+    targetTenantId: membership.tenantId,
+    payload: {
+      target_user_id: targetUserId,
+      target_role: targetRow.role,
+    },
+  });
 
   revalidateMemberPaths(targetUserId);
   return { success: isActive ? 'Member reactivated.' : 'Member deactivated.' };

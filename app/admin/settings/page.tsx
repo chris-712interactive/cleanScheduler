@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { SignOutButton } from '@/components/auth/SignOutButton';
+import { MfaSettingsPanel } from '@/components/auth/MfaSettingsPanel';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import styles from './settings.module.scss';
@@ -32,6 +33,10 @@ export default async function AdminSettingsPage() {
         <Card title="Account" description="Signed-in platform administrator.">
           <p className={styles.muted}>{email}</p>
           <SignOutButton variant="settings" />
+        </Card>
+
+        <Card title="Two-factor authentication" description="Required for platform administrator access.">
+          <MfaSettingsPanel />
         </Card>
       </Stack>
     </>

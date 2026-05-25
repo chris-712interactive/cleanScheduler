@@ -22,6 +22,7 @@ single Next.js deployment, switched by subdomain:
 - **Lucide** icons
 - **Zod** for env / schema validation
 - **Vercel** for hosting (wildcard domains; cron triggers Edge Functions)
+- **Node.js 22 LTS** (see `.nvmrc`; enforced via `engine-strict` and CI)
 
 See [`.cursor/docs/plan/implementation-plan.md`](.cursor/docs/plan/implementation-plan.md)
 for the full plan, and [`docs/design/portal-mockups/`](docs/design/portal-mockups)
@@ -88,6 +89,8 @@ Visit each portal:
 - Tenant (any slug): <http://acme.lvh.me:3000>
 
 ### Useful scripts
+
+Runtime and dependency lifecycle policy: [`docs/ops/runtime-eol-policy.md`](docs/ops/runtime-eol-policy.md).
 
 ```bash
 pnpm typecheck         # tsc --noEmit

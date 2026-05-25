@@ -49,12 +49,14 @@ export function getPlaidClient(): PlaidApi {
 
 export async function createPlaidLinkToken(tenantId: string): Promise<string> {
   const client = getPlaidClient();
+  const webhook = process.env.PLAID_WEBHOOK_URL?.trim() || undefined;
   const response = await client.linkTokenCreate({
     user: { client_user_id: tenantId },
     client_name: 'cleanScheduler',
     products: [Products.Transactions],
     country_codes: [CountryCode.Us],
     language: 'en',
+    ...(webhook ? { webhook } : {}),
   });
   const token = response.data.link_token;
   if (!token) throw new Error('Plaid did not return a link token.');
@@ -73,6 +75,9 @@ export async function createPlaidUpdateLinkToken(
     country_codes: [CountryCode.Us],
     language: 'en',
     access_token: accessToken,
+    ...(process.env.PLAID_WEBHOOK_URL?.trim()
+      ? { webhook: process.env.PLAID_WEBHOOK_URL.trim() }
+      : {}),
   });
   const token = response.data.link_token;
   if (!token) throw new Error('Plaid did not return an update link token.');

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isPlaidConfigured } from '@/lib/plaid/server';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
+import { verifyPlaidWebhook } from '@/lib/plaid/verifyPlaidWebhook';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,11 +17,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Plaid is not configured' }, { status: 501 });
   }
 
+  const verification = request.headers.get('plaid-verification');
+  const rawBody = await request.text();
+
   let body: PlaidWebhookBody;
   try {
-    body = (await request.json()) as PlaidWebhookBody;
+    const parsed = await verifyPlaidWebhook<Record<string, unknown>>(rawBody, verification);
+    body = parsed as PlaidWebhookBody;
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
   const itemId = body.item_id?.trim();

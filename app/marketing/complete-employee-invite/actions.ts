@@ -119,11 +119,21 @@ export async function linkExistingEmployeeInviteAction(
 
   const { data: existingRow } = await admin
     .from('tenant_memberships')
-    .select('id')
+    .select('id, is_active')
     .eq('tenant_id', invite.tenant_id)
     .eq('user_id', auth.user.id)
     .maybeSingle();
   if (existingRow) {
+    if (!existingRow.is_active) {
+      await admin
+        .from('tenant_memberships')
+        .update({
+          is_active: true,
+          role: invitedRole,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingRow.id);
+    }
     await admin.from('employee_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
     redirect(tenantPortalLandingPath(tenantSlugEarly, invitedRole));
   }

@@ -10,6 +10,7 @@ import {
   type PlaidLinkInstitutionMetadata,
 } from '@/lib/plaid/exchangePublicToken';
 import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
+import { assertMfaForBankAdmin } from '@/lib/auth/requireMfa';
 import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { confirmPaymentMatchSuggestion, matchBankDepositToInvoice } from '@/lib/plaid/confirmPaymentMatch';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
@@ -29,6 +30,14 @@ function requireBankAdmin(membership: { role: import('@/lib/auth/types').TenantR
   return tenantRoleError(membership.role, 'admin');
 }
 
+async function requireBankAdminWithMfa(membership: {
+  role: import('@/lib/auth/types').TenantRole;
+}): Promise<string | null> {
+  const roleErr = requireBankAdmin(membership);
+  if (roleErr) return roleErr;
+  return assertMfaForBankAdmin(membership.role);
+}
+
 async function bankReconciliationGateError(
   admin: ReturnType<typeof createAdminClient>,
   tenantId: string,
@@ -46,7 +55,7 @@ export async function fetchPlaidLinkTokenAction(
 ): Promise<{ link_token: string } | { error: string }> {
   await requirePortalAccess('tenant', '/billing/bank-connection');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
-  const roleErr = requireBankAdmin(membership);
+  const roleErr = await requireBankAdminWithMfa(membership);
   if (roleErr) return { error: roleErr };
 
   const admin = createAdminClient();
@@ -87,7 +96,7 @@ export async function connectBankFromPlaidAction(
 
   await requirePortalAccess('tenant', '/billing/bank-connection');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
-  const roleErr = requireBankAdmin(membership);
+  const roleErr = await requireBankAdminWithMfa(membership);
   if (roleErr) return { error: roleErr };
 
   const admin = createAdminClient();
@@ -130,7 +139,7 @@ export async function syncBankTransactionsAction(
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   await requirePortalAccess('tenant', '/billing/bank-connection');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
-  const roleErr = requireBankAdmin(membership);
+  const roleErr = await requireBankAdminWithMfa(membership);
   if (roleErr) return { error: roleErr };
 
   const admin = createAdminClient();
@@ -224,7 +233,7 @@ export async function disconnectBankLinkAction(
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   await requirePortalAccess('tenant', '/billing/bank-connection');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
-  const roleErr = requireBankAdmin(membership);
+  const roleErr = await requireBankAdminWithMfa(membership);
   if (roleErr) return { error: roleErr };
 
   const admin = createAdminClient();

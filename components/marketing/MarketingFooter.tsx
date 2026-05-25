@@ -23,6 +23,12 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/security">
               Security
             </Link>
+            <Link className={styles.link} href="/security/information-security-policy">
+              Security Policy
+            </Link>
+            <Link className={styles.link} href="/security/access-control-policy">
+              Access Control
+            </Link>
             <Link className={styles.link} href="/sign-in">
               Sign in
             </Link>

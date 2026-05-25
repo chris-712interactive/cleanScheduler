@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { assertMfaForBankAdmin } from '@/lib/auth/requireMfa';
+import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
 import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import {
   createPlaidLinkToken,
@@ -20,6 +22,15 @@ export async function GET() {
   }
 
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
+  const roleErr = tenantRoleError(membership.role, 'admin');
+  if (roleErr) {
+    return NextResponse.json({ error: roleErr }, { status: 403 });
+  }
+  const mfaErr = await assertMfaForBankAdmin(membership.role);
+  if (mfaErr) {
+    return NextResponse.json({ error: mfaErr }, { status: 403 });
+  }
+
   const admin = createAdminClient();
 
   try {

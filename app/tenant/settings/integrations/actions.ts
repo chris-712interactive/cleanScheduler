@@ -16,6 +16,7 @@ import {
 } from '@/lib/integrations/integrationSecrets';
 import { parseWebhookEventTypesFromForm } from '@/lib/integrations/tenantWebhookEvents';
 import { emitTenantWebhook } from '@/lib/integrations/emitTenantWebhook';
+import { recordPlatformAuditEvent } from '@/lib/audit/recordPlatformAuditEvent';
 
 export interface IntegrationActionState {
   error?: string;
@@ -75,6 +76,13 @@ export async function createTenantApiKeyAction(
 
   if (error) return { error: error.message };
 
+  await recordPlatformAuditEvent(admin, {
+    actorUserId: auth.user.id,
+    action: 'integration.api_key_created',
+    targetTenantId: membership.tenantId,
+    payload: { name, key_prefix: material.keyPrefix },
+  });
+
   revalidatePath('/tenant/settings/integrations', 'page');
   return { success: true, createdApiKey: material.fullKey };
 }
@@ -110,6 +118,13 @@ export async function revokeTenantApiKeyAction(
     .is('revoked_at', null);
 
   if (error) return { error: error.message };
+
+  await recordPlatformAuditEvent(admin, {
+    actorUserId: auth.user.id,
+    action: 'integration.api_key_revoked',
+    targetTenantId: membership.tenantId,
+    payload: { key_id: keyId },
+  });
 
   revalidatePath('/tenant/settings/integrations', 'page');
   return { success: true };

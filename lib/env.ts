@@ -225,6 +225,10 @@ function getServerEnv(): z.infer<typeof serverEnvSchema> {
     );
   }
 
+  if (appEnv === 'prod' && !parsed.data.CRON_SECRET?.trim()) {
+    throw new Error('CRON_SECRET must be set when NEXT_PUBLIC_APP_ENV=prod.');
+  }
+
   _serverEnvCache = parsed.data;
   return _serverEnvCache;
 }

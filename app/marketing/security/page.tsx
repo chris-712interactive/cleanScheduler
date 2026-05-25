@@ -33,8 +33,10 @@ export default function SecurityPage() {
             <p>
               {PRODUCT_NAME} is built for cleaning businesses that trust us with schedules,
               customer records, invoices, and payment activity. This page summarizes our security
-              practices. For legal terms, see our{' '}
-              <Link href="/privacy">Privacy Policy</Link> and{' '}
+              practices. Formal policies:{' '}
+              <Link href="/security/information-security-policy">Information Security Policy</Link>,{' '}
+              <Link href="/security/access-control-policy">Access Control Policy</Link>. For legal
+              terms, see our <Link href="/privacy">Privacy Policy</Link> and{' '}
               <Link href="/terms">Terms of Service</Link>.
             </p>
 
@@ -81,15 +83,20 @@ export default function SecurityPage() {
             <ul>
               <li>
                 <strong>Authentication:</strong> Email/password and optional Google OAuth via
-                Supabase Auth.
+                Supabase Auth. TOTP multi-factor authentication (MFA) is required for workspace
+                owners and admins before connecting bank accounts through Plaid.
               </li>
               <li>
                 <strong>Rate limiting:</strong> Sensitive endpoints such as trial signup and report
                 exports are rate-limited to reduce abuse.
               </li>
               <li>
-                <strong>Audit logging:</strong> Platform administrative actions and masquerade
-                sessions are logged.
+                <strong>Audit logging:</strong> Platform administrative actions, masquerade
+                sessions, and privileged member changes are logged.
+              </li>
+              <li>
+                <strong>Vulnerability scanning:</strong> Automated dependency audits and Dependabot
+                updates run on every change.
               </li>
               <li>
                 <strong>Backups:</strong> Database backups are managed by our infrastructure

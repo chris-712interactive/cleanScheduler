@@ -3,6 +3,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
+import { needsMfaChallenge } from '@/lib/auth/mfa';
 import { parseAllowedAuthRedirectOrigin } from '@/lib/auth/whiteLabelRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -58,6 +59,10 @@ export async function signInWithPassword(
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (await needsMfaChallenge()) {
+    redirect(`/sign-in/mfa?next=${encodeURIComponent(nextPath)}`);
   }
 
   redirect(nextPath);

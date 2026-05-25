@@ -15,6 +15,8 @@ import { teamRoleLabel } from '@/lib/tenant/teamMemberDisplay';
 import type { TenantRole } from '@/lib/auth/types';
 import { ProfileSettingsForm } from '../ProfileSettingsForm';
 import { DeleteWorkspacePanel } from '../DeleteWorkspacePanel';
+import { MfaSettingsPanel } from '@/components/auth/MfaSettingsPanel';
+import { hasMinimumTenantRole } from '@/lib/auth/tenantRoleAccess';
 import styles from '../settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -43,6 +45,7 @@ export default async function TenantAccountSettingsPage() {
   const avatarUrl = myProfile?.avatar_url ?? null;
   const isOwner = membership.role === 'owner';
   const isFieldEmployee = isFieldEmployeeRole(membership.role);
+  const requiresMfaForPlaid = hasMinimumTenantRole(membership.role, 'admin');
 
   const admin = createAdminClient();
   const { data: billing } = await admin
@@ -76,6 +79,15 @@ export default async function TenantAccountSettingsPage() {
             avatarUrl={avatarUrl}
           />
         </Card>
+
+        {requiresMfaForPlaid ? (
+          <Card
+            title="Two-factor authentication"
+            description="Required for owners and admins before connecting bank accounts."
+          >
+            <MfaSettingsPanel requiredForPlaid />
+          </Card>
+        ) : null}
 
         <Card title="Workspace" description="Read-only snapshot from your tenant record.">
           <KeyValueList

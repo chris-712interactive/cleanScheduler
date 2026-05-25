@@ -28,6 +28,7 @@ import {
 } from '@/lib/tenant/fieldEmployeeAccess';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { loadOwnerOnboardingNavContext } from '@/lib/tenant/loadOwnerOnboardingNavContext';
+import { expireStaleMasqueradeIfNeeded } from '@/lib/admin/expireStaleMasquerade';
 import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 
@@ -49,6 +50,9 @@ export default async function TenantLayout({ children }: { children: React.React
 
   const nonProdBanner = getNonProdPortalBanner();
   const auth = await getAuthContext();
+  if (auth) {
+    await expireStaleMasqueradeIfNeeded(auth);
+  }
   const masquerading =
     Boolean(auth?.claims.masqueradeTargetTenantId) &&
     (auth?.claims.appRole === 'super_admin' || auth?.claims.appRole === 'admin');

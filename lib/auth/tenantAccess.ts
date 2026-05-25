@@ -50,6 +50,7 @@ async function lookupMembership(
     )
     .eq('user_id', userId)
     .eq('tenants.slug', tenantSlug)
+    .eq('is_active', true)
     .maybeSingle();
 
   if (error || !data || !data.tenants) {
@@ -209,5 +210,21 @@ export async function requireTenantPortalAccess(
     redirect('/access-denied?reason=unknown_tenant');
   }
 
+  if (await hasInactiveMembership(auth.user.id, slug)) {
+    redirect('/access-denied?reason=membership_inactive');
+  }
+
   redirect('/access-denied?reason=membership');
+}
+
+async function hasInactiveMembership(userId: string, tenantSlug: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('tenant_memberships')
+    .select('is_active, tenants:tenants!inner(slug)')
+    .eq('user_id', userId)
+    .eq('tenants.slug', tenantSlug)
+    .maybeSingle();
+
+  return Boolean(data && data.is_active === false);
 }

@@ -21,6 +21,11 @@ const COPY: Record<string, { title: string; description: string }> = {
     description:
       'You are signed in, but this account is not a member of this organization on cleanScheduler. Ask an owner to invite you, or sign out and use a different account.',
   },
+  membership_inactive: {
+    title: 'Workspace access deactivated',
+    description:
+      'Your membership in this organization was deactivated by an administrator. Contact the workspace owner if you believe this is an error.',
+  },
   unknown_tenant: {
     title: 'Organization not found',
     description:

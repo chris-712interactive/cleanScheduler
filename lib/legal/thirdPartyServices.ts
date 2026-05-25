@@ -70,6 +70,15 @@ export const ACTIVE_THIRD_PARTY_SERVICES: ThirdPartyService[] = [
     dataShared: 'Phone numbers and message content for outbound SMS.',
     privacyPolicyUrl: 'https://www.twilio.com/en-us/legal/privacy',
   },
+  {
+    name: 'Plaid',
+    status: 'active',
+    purpose:
+      'Bank account linking and transaction import for Business+ bank reconciliation (Plaid Link on tenant billing).',
+    dataShared:
+      'Bank connection tokens, institution metadata, account masks, and transaction data when a tenant admin connects a business checking account.',
+    privacyPolicyUrl: 'https://plaid.com/legal/#end-user-privacy-policy',
+  },
 ];
 
 /**
@@ -84,14 +93,6 @@ export const PLANNED_THIRD_PARTY_SERVICES: ThirdPartyService[] = [
     dataShared:
       'Error stack traces, request context, and performance spans (configured to minimize personal data).',
     privacyPolicyUrl: 'https://sentry.io/privacy/',
-  },
-  {
-    name: 'Plaid',
-    status: 'planned',
-    purpose: 'Bank account linking and transaction import for reconciliation features.',
-    dataShared:
-      'Bank connection tokens, account and transaction metadata (when a tenant or user connects a bank).',
-    privacyPolicyUrl: 'https://plaid.com/legal/#end-user-privacy-policy',
   },
 ];
 
