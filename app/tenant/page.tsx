@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
@@ -15,7 +15,10 @@ import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingIn
 import { formatUsdFromCents } from '@/lib/format/money';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 import { getDashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
+import { resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { getOwnerOnboardingChecklist } from '@/lib/tenant/ownerOnboardingChecklist';
+import { shouldShowCompletionCelebration } from '@/lib/tenant/ownerOnboardingState';
+import { OwnerOnboardingCompletionCelebration } from './OwnerOnboardingCompletionCelebration';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { fieldEmployeeHomePath, isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import type { TenantRole } from '@/lib/auth/types';
@@ -89,19 +92,25 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
       showOnboarding
         ? supabase
             .from('tenant_onboarding_profiles')
-            .select('service_area, team_size, referral_source')
+            .select('service_area, team_size, referral_source, survey_dismissed_at')
             .eq('tenant_id', membership.tenantId)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
     ]);
 
-  const onboardingChecklist = showOnboarding
-    ? await getOwnerOnboardingChecklist(
-        supabase,
-        membership.tenantId,
-        tenantRowRes.data?.stripe_connect_status,
-      )
+  const admin = createAdminClient();
+  const entitlementPlan = showOnboarding
+    ? await resolveTenantEntitlementPlan(admin, membership.tenantId)
     : null;
+
+  const onboardingChecklist =
+    showOnboarding && entitlementPlan
+      ? await getOwnerOnboardingChecklist(supabase, admin, {
+          tenantId: membership.tenantId,
+          connectStatus: tenantRowRes.data?.stripe_connect_status,
+          entitlementPlan,
+        })
+      : null;
 
   const onboardingProfile = onboardingProfileRes.data;
   const showOnboardingSurvey =
@@ -170,6 +179,11 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
           </Card>
         ) : null}
 
+        {onboardingChecklist &&
+        shouldShowCompletionCelebration(onboardingChecklist.profileState) ? (
+          <OwnerOnboardingCompletionCelebration tenantSlug={membership.tenantSlug} />
+        ) : null}
+
         {showOnboardingSurvey ? (
           <OwnerOnboardingSurveyPanel
             tenantId={membership.tenantId}
@@ -178,7 +192,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
         ) : null}
 
         {onboardingChecklist ? (
-          <OwnerOnboardingPanel tenantId={membership.tenantId} checklist={onboardingChecklist} />
+          <OwnerOnboardingPanel tenantSlug={membership.tenantSlug} checklist={onboardingChecklist} />
         ) : null}
 
         <TodayQueuePanel queue={todayQueue} />

@@ -1,32 +1,22 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { saveOwnerOnboardingSurvey, type OnboardingSurveyState } from './onboardingSurveyActions';
+import { dismissOwnerSurveyAction } from './ownerOnboardingActions';
 import styles from './ownerOnboardingSurveyPanel.module.scss';
 
 const initialState: OnboardingSurveyState = {};
 
 export function OwnerOnboardingSurveyPanel({
-  tenantId,
   tenantSlug,
 }: {
   tenantId: string;
   tenantSlug: string;
 }) {
-  const storageKey = `owner-onboarding-survey-dismissed:${tenantId}`;
-  const [dismissed, setDismissed] = useState(false);
   const [state, formAction, pending] = useActionState(saveOwnerOnboardingSurvey, initialState);
 
-  useEffect(() => {
-    try {
-      setDismissed(window.localStorage.getItem(storageKey) === '1');
-    } catch {
-      setDismissed(false);
-    }
-  }, [storageKey]);
-
-  if (dismissed || state.success) {
+  if (state.success) {
     return null;
   }
 
@@ -83,21 +73,13 @@ export function OwnerOnboardingSurveyPanel({
           <button type="submit" className={styles.submit} disabled={pending}>
             {pending ? 'Saving...' : 'Save and continue'}
           </button>
-          <button
-            type="button"
-            className={styles.dismiss}
-            onClick={() => {
-              try {
-                window.localStorage.setItem(storageKey, '1');
-              } catch {
-                // ignore
-              }
-              setDismissed(true);
-            }}
-          >
-            Skip for now
-          </button>
         </div>
+      </form>
+      <form action={dismissOwnerSurveyAction} className={styles.dismissForm}>
+        <input type="hidden" name="tenant_slug" value={tenantSlug} />
+        <button type="submit" className={styles.dismiss}>
+          Skip for now
+        </button>
       </form>
     </Card>
   );

@@ -1265,6 +1265,12 @@ export type Database = {
           owner_name: string | null;
           owner_email: string | null;
           owner_phone: string | null;
+          checklist_dismissed_at: string | null;
+          checklist_snoozed_until: string | null;
+          checklist_completed_at: string | null;
+          checklist_optional_skips: string[];
+          checklist_completion_acknowledged_at: string | null;
+          survey_dismissed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1281,6 +1287,12 @@ export type Database = {
           owner_name?: string | null;
           owner_email?: string | null;
           owner_phone?: string | null;
+          checklist_dismissed_at?: string | null;
+          checklist_snoozed_until?: string | null;
+          checklist_completed_at?: string | null;
+          checklist_optional_skips?: string[];
+          checklist_completion_acknowledged_at?: string | null;
+          survey_dismissed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1297,6 +1309,12 @@ export type Database = {
           owner_name?: string | null;
           owner_email?: string | null;
           owner_phone?: string | null;
+          checklist_dismissed_at?: string | null;
+          checklist_snoozed_until?: string | null;
+          checklist_completed_at?: string | null;
+          checklist_optional_skips?: string[];
+          checklist_completion_acknowledged_at?: string | null;
+          survey_dismissed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

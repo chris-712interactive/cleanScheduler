@@ -26,7 +26,8 @@ import {
   identitySubtitleForRole,
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
-import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import { loadOwnerOnboardingNavContext } from '@/lib/tenant/loadOwnerOnboardingNavContext';
 import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 
@@ -107,10 +108,21 @@ export default async function TenantLayout({ children }: { children: React.React
   );
 
   const admin = createAdminClient();
-  const planTier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const planTier = await resolveTenantEntitlementPlan(admin, membership.tenantId);
   const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
 
   const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
+  const { gettingStartedNavItem } = subscriptionLocked
+    ? { gettingStartedNavItem: null }
+    : await loadOwnerOnboardingNavContext({
+        db: supabase,
+        admin,
+        tenantId: membership.tenantId,
+        tenantSlug: slug,
+        role: membership.role,
+        connectStatus,
+      });
+
   const billingNavItem = buildTenantBillingNavItem(connectStatus);
   const settingsNavItem = buildTenantSettingsNavItem();
 
@@ -121,6 +133,7 @@ export default async function TenantLayout({ children }: { children: React.React
     settingsNavItem,
     campaignsNavEnabled,
     pendingRescheduleCount,
+    gettingStartedNavItem,
   });
 
   const bottomNavItems = buildTenantBottomNavItems({

@@ -31,6 +31,7 @@ export function buildTenantNavItems(params: {
   settingsNavItem: NavItem;
   campaignsNavEnabled: boolean;
   pendingRescheduleCount: number;
+  gettingStartedNavItem?: NavItem | null;
 }): NavItem[] {
   const {
     role,
@@ -39,6 +40,7 @@ export function buildTenantNavItems(params: {
     settingsNavItem,
     campaignsNavEnabled,
     pendingRescheduleCount,
+    gettingStartedNavItem,
   } = params;
 
   if (isFieldEmployeeRole(role)) {
@@ -51,7 +53,9 @@ export function buildTenantNavItems(params: {
   const navItems: NavItem[] = subscriptionLocked
     ? [billingNavItem]
     : [
-        ...NAV_ITEMS_BASE.slice(0, 6),
+        ...NAV_ITEMS_BASE.slice(0, 1),
+        ...(gettingStartedNavItem ? [gettingStartedNavItem] : []),
+        ...NAV_ITEMS_BASE.slice(1, 6),
         billingNavItem,
         ...NAV_ITEMS_BASE.slice(6).filter(
           (item) => item.href !== '/campaigns' || campaignsNavEnabled,
