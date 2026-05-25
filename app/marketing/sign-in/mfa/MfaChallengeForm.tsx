@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/browser';
-import styles from '../sign-in/sign-in.module.scss';
+import styles from '../sign-in.module.scss';
 
 export function MfaChallengeForm({ nextPath }: { nextPath: string }) {
   const router = useRouter();
