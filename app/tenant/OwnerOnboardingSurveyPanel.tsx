@@ -73,13 +73,15 @@ export function OwnerOnboardingSurveyPanel({
           <button type="submit" className={styles.submit} disabled={pending}>
             {pending ? 'Saving...' : 'Save and continue'}
           </button>
+          <button
+            type="submit"
+            formAction={dismissOwnerSurveyAction}
+            className={styles.dismiss}
+            disabled={pending}
+          >
+            Skip for now
+          </button>
         </div>
-      </form>
-      <form action={dismissOwnerSurveyAction} className={styles.dismissForm}>
-        <input type="hidden" name="tenant_slug" value={tenantSlug} />
-        <button type="submit" className={styles.dismiss}>
-          Skip for now
-        </button>
       </form>
     </Card>
   );
