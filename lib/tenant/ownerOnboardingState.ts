@@ -174,6 +174,15 @@ export function shouldShowDashboardChecklistCard(uiState: ChecklistUiState): boo
   return uiState === 'visible';
 }
 
+export function isDashboardOnboardingFocusMode(
+  checklist: { uiState: ChecklistUiState; incompleteRequiredCount: number } | null,
+): boolean {
+  if (!checklist) return false;
+  return (
+    shouldShowDashboardChecklistCard(checklist.uiState) && checklist.incompleteRequiredCount > 0
+  );
+}
+
 export function shouldShowGettingStartedNav(
   uiState: ChecklistUiState,
   incompleteRequiredCount: number,

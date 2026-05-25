@@ -112,8 +112,8 @@ export default async function TenantLayout({ children }: { children: React.React
   const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
 
   const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
-  const { gettingStartedNavItem } = subscriptionLocked
-    ? { gettingStartedNavItem: null }
+  const { gettingStartedNavItem, coreSetupComplete } = subscriptionLocked
+    ? { gettingStartedNavItem: null, coreSetupComplete: true }
     : await loadOwnerOnboardingNavContext({
         db: supabase,
         admin,
@@ -146,7 +146,7 @@ export default async function TenantLayout({ children }: { children: React.React
 
   const sessionNotices: ReactNode[] = [];
   if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
-  if (shouldShowTrialPurchaseBanner(subscriptionAccess)) {
+  if (shouldShowTrialPurchaseBanner(subscriptionAccess) && !subscriptionLocked) {
     sessionNotices.push(
       <TrialSubscriptionBanner
         key="trial"
@@ -165,7 +165,12 @@ export default async function TenantLayout({ children }: { children: React.React
       />,
     );
   }
-  if (!subscriptionLocked && connectStatus !== 'complete' && !isFieldEmployeeRole(membership.role)) {
+  if (
+    !subscriptionLocked &&
+    coreSetupComplete &&
+    connectStatus !== 'complete' &&
+    !isFieldEmployeeRole(membership.role)
+  ) {
     sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
   }
   const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;

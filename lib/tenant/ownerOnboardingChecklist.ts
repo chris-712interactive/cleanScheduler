@@ -32,6 +32,21 @@ export interface OwnerOnboardingChecklist {
   profileState: OwnerOnboardingProfileChecklistState;
 }
 
+const CORE_ONBOARDING_STEP_IDS = ['business', 'quote', 'customer', 'visit'] as const;
+
+export function getNextIncompleteRequiredSteps(
+  checklist: OwnerOnboardingChecklist,
+  limit = 2,
+): OwnerOnboardingStep[] {
+  return checklist.steps.filter((step) => !step.optional && !step.complete).slice(0, limit);
+}
+
+export function hasCompletedCoreOnboardingSteps(checklist: OwnerOnboardingChecklist): boolean {
+  return CORE_ONBOARDING_STEP_IDS.every(
+    (id) => checklist.steps.find((step) => step.id === id)?.complete ?? false,
+  );
+}
+
 export interface OwnerOnboardingChecklistInput {
   tenantId: string;
   connectStatus: string | null | undefined;

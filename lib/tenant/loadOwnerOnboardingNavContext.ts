@@ -2,13 +2,18 @@ import type { NavItem } from '@/components/portal/types';
 import type { TenantRole } from '@/lib/auth/types';
 import { resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
-import { getOwnerOnboardingChecklist } from '@/lib/tenant/ownerOnboardingChecklist';
+import {
+  getOwnerOnboardingChecklist,
+  hasCompletedCoreOnboardingSteps,
+} from '@/lib/tenant/ownerOnboardingChecklist';
 import { shouldShowGettingStartedNav } from '@/lib/tenant/ownerOnboardingState';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 
 export interface OwnerOnboardingNavContext {
   gettingStartedNavItem: NavItem | null;
+  /** Business profile, quote, customer, and visit steps complete — show Connect banner after this. */
+  coreSetupComplete: boolean;
 }
 
 export async function loadOwnerOnboardingNavContext(params: {
@@ -20,7 +25,7 @@ export async function loadOwnerOnboardingNavContext(params: {
   connectStatus: string | null | undefined;
 }): Promise<OwnerOnboardingNavContext> {
   if (!canManageTeamInvitesAndRoles(params.role)) {
-    return { gettingStartedNavItem: null };
+    return { gettingStartedNavItem: null, coreSetupComplete: true };
   }
 
   const entitlementPlan = await resolveTenantEntitlementPlan(params.admin, params.tenantId);
@@ -30,10 +35,10 @@ export async function loadOwnerOnboardingNavContext(params: {
     entitlementPlan,
   });
 
-  if (
-    !shouldShowGettingStartedNav(checklist.uiState, checklist.incompleteRequiredCount)
-  ) {
-    return { gettingStartedNavItem: null };
+  const coreSetupComplete = hasCompletedCoreOnboardingSteps(checklist);
+
+  if (!shouldShowGettingStartedNav(checklist.uiState, checklist.incompleteRequiredCount)) {
+    return { gettingStartedNavItem: null, coreSetupComplete };
   }
 
   const badge =
@@ -46,5 +51,6 @@ export async function loadOwnerOnboardingNavContext(params: {
       icon: 'gettingStarted',
       badge,
     },
+    coreSetupComplete,
   };
 }

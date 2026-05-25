@@ -12,19 +12,6 @@ export function TrialSubscriptionBanner({ access, daysRemaining }: TrialSubscrip
 
   if (access === 'suspended') return null;
 
-  if (access === 'trial_expired') {
-    return (
-      <p className={styles.banner} data-urgency="high" role="status">
-        <span>
-          Your free trial has ended. Subscribe to keep using this workspace.
-        </span>
-        <Link href="/billing" className={styles.link}>
-          Subscribe now →
-        </Link>
-      </p>
-    );
-  }
-
   if (access === 'past_due') {
     return (
       <p className={styles.banner} data-urgency="high" role="status">
@@ -36,19 +23,37 @@ export function TrialSubscriptionBanner({ access, daysRemaining }: TrialSubscrip
     );
   }
 
-  const urgent = daysRemaining != null && daysRemaining <= 2;
-  const countdown =
-    daysRemaining == null
-      ? 'Your free trial is active.'
-      : daysRemaining === 0
-        ? 'Your free trial ends today.'
-        : `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} left in your free trial.`;
+  const urgent = daysRemaining != null && daysRemaining <= 3;
+  const informational = daysRemaining == null || daysRemaining >= 4;
+
+  let body: string;
+  let cta: string;
+
+  if (daysRemaining === 0) {
+    body = 'Your free trial ends today. Subscribe to keep access.';
+    cta = 'Subscribe now →';
+  } else if (urgent) {
+    body =
+      daysRemaining === 1
+        ? '1 day left — subscribe before your trial ends to keep this workspace.'
+        : `${daysRemaining} days left — subscribe before your trial ends to keep this workspace.`;
+    cta = 'Subscribe now →';
+  } else if (informational) {
+    body =
+      daysRemaining == null
+        ? 'Your free trial is active — quotes, scheduling, and invoicing are included.'
+        : `${daysRemaining} days left in your free trial — quotes, scheduling, and invoicing are included.`;
+    cta = 'Choose a plan →';
+  } else {
+    body = 'Your free trial is active.';
+    cta = 'View billing →';
+  }
 
   return (
-    <p className={styles.banner} data-urgency={urgent ? 'high' : undefined} role="status">
-      <span>{countdown} Add a subscription before it ends.</span>
+    <p className={styles.banner} data-urgency={urgent || daysRemaining === 0 ? 'high' : undefined} role="status">
+      <span>{body}</span>
       <Link href="/billing" className={styles.link}>
-        View billing →
+        {cta}
       </Link>
     </p>
   );

@@ -3,8 +3,23 @@ import { Card } from '@/components/ui/Card';
 import type { DashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
 import styles from './dashboard.module.scss';
 
-export function TodayQueuePanel({ queue }: { queue: DashboardTodayQueue }) {
+export function TodayQueuePanel({
+  queue,
+  compactEmpty = false,
+}: {
+  queue: DashboardTodayQueue;
+  compactEmpty?: boolean;
+}) {
   if (queue.items.length === 0) {
+    if (compactEmpty) {
+      return (
+        <p className={styles.todayEmptyInline}>
+          Nothing urgent today — keep working through setup, or{' '}
+          <Link href="/schedule">open the schedule</Link>.
+        </p>
+      );
+    }
+
     return (
       <Card title="Today" titleHint="Your action queue for the day.">
         <p className={styles.queueEmpty}>

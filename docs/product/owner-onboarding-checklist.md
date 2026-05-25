@@ -49,12 +49,16 @@ Related code today:
 
 ### Primary surface — dashboard card
 
-Keep **`OwnerOnboardingPanel`** on `/` (dashboard) for owners/admins when:
+During active setup, the dashboard uses a **compact two-column layout** (at `lg+` viewports):
 
-- Required checklist incomplete **and**
-- UI state is `visible` (not dismissed/snoozed)
+- **Main column:** “Next up” hero with the next 1–2 incomplete required steps and a primary CTA; today’s queue (inline empty state when quiet).
+- **Side column:** Setup progress card (visible progress bar, snooze/dismiss, link to full checklist) and compact “At a glance” stat rows (counts only — no duplicate CTAs).
 
-**Actions on the card:**
+The full checklist remains on **`/getting-started`**. The dashboard card is hidden when the owner snoozes or dismisses it (`uiState` not `visible`); nav badge and dedicated page stay available.
+
+Previously the dashboard showed the full checklist card plus a duplicate “Free trial” card — both removed in favor of layout trial banner + compact dashboard surfaces.
+
+**Actions on the progress card:**
 
 | Action | Behavior |
 | ------ | -------- |
