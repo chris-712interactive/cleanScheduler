@@ -13,7 +13,28 @@ import styles from './quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TenantQuotesPage() {
+type QuotesView = 'active' | 'archived';
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseView(raw: string | undefined): QuotesView {
+  return raw === 'archived' ? 'archived' : 'active';
+}
+
+function quoteStatusLabel(status: QuoteListEmbedRow['status']): string {
+  return status.replace('_', ' ');
+}
+
+export default async function TenantQuotesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const view = parseView(firstParam(sp.view));
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/quotes');
 
@@ -57,12 +78,35 @@ export default async function TenantQuotesPage() {
     .overrideTypes<QuoteListEmbedRow[], { merge: false }>();
 
   const quotes = quotesRes.data ?? [];
+  const quoteIds = quotes.map((q) => q.id);
+  const { data: visitsWithQuote } =
+    quoteIds.length === 0
+      ? { data: [] as { quote_id: string | null }[] }
+      : await supabase
+          .from('tenant_scheduled_visits')
+          .select('quote_id')
+          .eq('tenant_id', membership.tenantId)
+          .in('quote_id', quoteIds);
+  const scheduledQuoteIds = new Set(
+    (visitsWithQuote ?? []).map((row) => row.quote_id).filter((id): id is string => Boolean(id)),
+  );
+  const archivedQuotes = quotes.filter(
+    (q) => q.status === 'accepted' && scheduledQuoteIds.has(q.id),
+  );
+  const archivedQuoteIdSet = new Set(archivedQuotes.map((q) => q.id));
+  const activeQuotes = quotes.filter((q) => !archivedQuoteIdSet.has(q.id));
+  const activeTabHref = '/quotes';
+  const archivedTabHref = '/quotes?view=archived';
 
   return (
     <>
       <PageHeader
         title="Quotes"
-        titleHint="Drag cards between columns on desktop, or use Move to on smaller screens."
+        titleHint={
+          view === 'archived'
+            ? 'Accepted quotes move here after they are attached to scheduled work.'
+            : 'Drag cards between columns on desktop, or use Move to on smaller screens.'
+        }
         actions={
           <Button variant="primary" as="a" href="/quotes/new" iconLeft={<Plus size={16} />}>
             Add quote
@@ -71,6 +115,22 @@ export default async function TenantQuotesPage() {
       />
 
       <Stack gap={6}>
+          <nav className={styles.viewTabs} aria-label="Quote views">
+            <Link
+              href={activeTabHref}
+              className={styles.viewTab}
+              data-active={view === 'active' || undefined}
+            >
+              Active pipeline ({activeQuotes.length})
+            </Link>
+            <Link
+              href={archivedTabHref}
+              className={styles.viewTab}
+              data-active={view === 'archived' || undefined}
+            >
+              Archived history ({archivedQuotes.length})
+            </Link>
+          </nav>
 
           {quotesRes.error ? (
             <Card>
@@ -78,7 +138,7 @@ export default async function TenantQuotesPage() {
                 Could not load quotes ({quotesRes.error.message}).
               </p>
             </Card>
-          ) : quotes.length === 0 ? (
+          ) : view === 'active' && activeQuotes.length === 0 ? (
             <Card>
               <p className={styles.empty}>
                 Nothing here yet.{' '}
@@ -87,8 +147,37 @@ export default async function TenantQuotesPage() {
                 </Link>
               </p>
             </Card>
+          ) : view === 'archived' && archivedQuotes.length === 0 ? (
+            <Card>
+              <p className={styles.empty}>
+                No archived quotes yet. Accepted quotes appear here after they are tied to a
+                scheduled visit.
+              </p>
+            </Card>
+          ) : view === 'archived' ? (
+            <Card
+              title="Archived quote history"
+              description="Accepted quotes retained for records and customer history."
+            >
+              <ul className={styles.list}>
+                {archivedQuotes.map((quote) => (
+                  <li key={quote.id} className={styles.row}>
+                    <div>
+                      <Link href={`/quotes/${quote.id}`} className={styles.titleLink}>
+                        {quote.title}
+                      </Link>
+                      <p className={styles.sub}>
+                        Created {new Date(quote.created_at).toLocaleDateString()} · v
+                        {quote.version_number}
+                      </p>
+                    </div>
+                    <span className={styles.status}>{quoteStatusLabel(quote.status)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           ) : (
-            <QuotesBoard tenantSlug={membership.tenantSlug} quotes={quotes} />
+            <QuotesBoard tenantSlug={membership.tenantSlug} quotes={activeQuotes} />
           )}
       </Stack>
     </>
