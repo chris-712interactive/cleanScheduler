@@ -1,7 +1,9 @@
 import { PortalShell } from '@/components/portal/PortalShell';
 import { GlobalSearch } from '@/components/portal/GlobalSearch';
 import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
+import { UsageUtilizationBanner } from '@/components/billing/UsageUtilizationBanner';
 import { ConnectStatusBanner } from '@/components/billing/ConnectStatusBanner';
+import { loadTenantUsageUtilizationAlert } from '@/lib/billing/loadTenantUsageUtilization';
 import { TrialSubscriptionBanner } from '@/components/billing/TrialSubscriptionBanner';
 import { WorkspacePausedBanner } from '@/components/billing/WorkspacePausedBanner';
 import {
@@ -112,10 +114,14 @@ export default async function TenantLayout({ children }: { children: React.React
   );
 
   const admin = createAdminClient();
+  const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
   const planTier = await resolveTenantEntitlementPlan(admin, membership.tenantId);
   const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
+  const usageUtilizationAlert =
+    !subscriptionLocked && !isFieldEmployeeRole(membership.role)
+      ? await loadTenantUsageUtilizationAlert(admin, membership.tenantId)
+      : null;
 
-  const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
   const { gettingStartedNavItem, coreSetupComplete } = subscriptionLocked
     ? { gettingStartedNavItem: null, coreSetupComplete: true }
     : await loadOwnerOnboardingNavContext({
@@ -176,6 +182,11 @@ export default async function TenantLayout({ children }: { children: React.React
     !isFieldEmployeeRole(membership.role)
   ) {
     sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
+  }
+  if (usageUtilizationAlert) {
+    sessionNotices.push(
+      <UsageUtilizationBanner key="usage" alert={usageUtilizationAlert} />,
+    );
   }
   const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { UpgradeOrAddOnModal } from '@/components/billing/UpgradeOrAddOnModal';
 import { sendEmployeeInviteAction, type EmployeeInviteFormState } from './employeeInviteActions';
 import type { TenantRole } from '@/lib/auth/types';
 import styles from './employees.module.scss';
@@ -25,6 +26,13 @@ export function EmployeeInviteForm({
   emailReady: boolean;
 }) {
   const [state, action, pending] = useActionState(sendEmployeeInviteAction, initial);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  useEffect(() => {
+    if (state.limitExceeded) {
+      setUpgradeOpen(true);
+    }
+  }, [state.limitExceeded]);
 
   if (allowedRoles.length === 0) {
     return <p className={styles.muted}>Only workspace owners and admins can send invites.</p>;
@@ -32,7 +40,16 @@ export function EmployeeInviteForm({
 
   return (
     <div className={styles.inviteBlock}>
-      {state.error ? (
+      <UpgradeOrAddOnModal
+        open={upgradeOpen}
+        title="Team seat limit reached"
+        message={
+          state.error ??
+          'Your workspace has reached its team seat limit. Upgrade your plan to invite more members.'
+        }
+        onClose={() => setUpgradeOpen(false)}
+      />
+      {state.error && !state.limitExceeded ? (
         <p className={styles.error} role="alert">
           {state.error}
         </p>

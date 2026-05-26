@@ -7,6 +7,8 @@ export type TenantPaymentEventAction =
   | 'payment.recorded'
   | 'payment.received'
   | 'payment.deposited'
+  | 'payment.cleared'
+  | 'payment.bounced'
   | 'bank.matched'
   | 'bank.imported';
 

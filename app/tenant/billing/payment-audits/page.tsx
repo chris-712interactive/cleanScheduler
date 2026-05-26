@@ -25,7 +25,7 @@ import styles from './paymentAudits.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-type FilterKey = 'all' | 'awaiting_receipt' | 'awaiting_deposit' | 'complete';
+type FilterKey = 'all' | 'awaiting_receipt' | 'awaiting_deposit' | 'awaiting_clearance' | 'bounced' | 'complete';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   if (!value) return undefined;
@@ -36,6 +36,8 @@ function parseFilter(raw: string | undefined): FilterKey {
   if (
     raw === 'awaiting_receipt' ||
     raw === 'awaiting_deposit' ||
+    raw === 'awaiting_clearance' ||
+    raw === 'bounced' ||
     raw === 'complete' ||
     raw === 'all'
   ) {
@@ -57,6 +59,8 @@ type RawRow = {
   notes: string | null;
   received_at: string | null;
   deposited_at: string | null;
+  cleared_at: string | null;
+  bounced_at: string | null;
   received_by_user_id: string | null;
   deposited_by_user_id: string | null;
   tenant_invoices: {
@@ -98,6 +102,8 @@ function toAuditRow(row: RawRow, bankMatch?: BankMatchRow): PaymentAuditRow {
     notes: row.notes,
     received_at: row.received_at,
     deposited_at: row.deposited_at,
+    cleared_at: row.cleared_at,
+    bounced_at: row.bounced_at,
     received_by_user_id: row.received_by_user_id,
     deposited_by_user_id: row.deposited_by_user_id,
     tenant_invoices: inv
@@ -147,6 +153,8 @@ export default async function TenantPaymentAuditsPage({
       notes,
       received_at,
       deposited_at,
+      cleared_at,
+      bounced_at,
       received_by_user_id,
       deposited_by_user_id,
       tenant_invoices (
@@ -221,6 +229,8 @@ export default async function TenantPaymentAuditsPage({
     { key: 'all', label: 'All' },
     { key: 'awaiting_receipt', label: 'Awaiting receipt' },
     { key: 'awaiting_deposit', label: 'Awaiting deposit' },
+    { key: 'awaiting_clearance', label: 'Awaiting clearance' },
+    { key: 'bounced', label: 'Bounced' },
     { key: 'complete', label: 'Complete' },
   ];
 

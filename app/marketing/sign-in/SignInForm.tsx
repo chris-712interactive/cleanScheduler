@@ -70,6 +70,9 @@ export function SignInForm({
         <button type="submit" className={styles.submit} disabled={passwordPending}>
           {passwordPending ? 'Signing in...' : 'Sign in'}
         </button>
+        <p className={styles.helpText}>
+          <Link href="/forgot-password">Forgot password?</Link>
+        </p>
       </form>
 
       <p className={styles.trialPrompt}>

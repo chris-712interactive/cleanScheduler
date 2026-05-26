@@ -23,6 +23,9 @@ type InvoiceDetailRow = {
   created_at: string;
   tenant_id: string;
   customer_id: string;
+  hosted_invoice_url: string | null;
+  invoice_pdf_url: string | null;
+  source: string | null;
   tenants: { name: string; stripe_connect_status: string } | null;
 };
 
@@ -67,6 +70,9 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
       created_at,
       tenant_id,
       customer_id,
+      hosted_invoice_url,
+      invoice_pdf_url,
+      source,
       tenants:tenants!inner ( name, stripe_connect_status )
     `,
     )
@@ -81,6 +87,7 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
   const connectComplete = tenants?.stripe_connect_status === 'complete';
   const remaining = row.amount_cents - row.amount_paid_cents;
   const canPayOnline = connectComplete && remaining > 0 && row.status !== 'void';
+  const stripeHostedPay = Boolean(row.hosted_invoice_url?.trim());
 
   const checkoutErr = firstParam(sp.error);
   const checkoutOk = firstParam(sp.checkout) === 'success';
@@ -128,7 +135,18 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
         {row.due_date ? (
           <p className={styles.meta}>Due {new Date(String(row.due_date)).toLocaleDateString()}</p>
         ) : null}
-        {canPayOnline ? (
+        {stripeHostedPay ? (
+          <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+            <a href={row.hosted_invoice_url!} className={styles.meta} target="_blank" rel="noopener noreferrer">
+              View & pay on Stripe →
+            </a>
+            {row.invoice_pdf_url ? (
+              <a href={row.invoice_pdf_url} className={styles.meta} target="_blank" rel="noopener noreferrer">
+                Download PDF →
+              </a>
+            ) : null}
+          </div>
+        ) : canPayOnline ? (
           <form
             action={createCustomerInvoicePayCheckoutSessionAction}
             style={{ marginTop: 'var(--space-3)' }}
@@ -144,6 +162,9 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
             You can pay them using the methods they accept outside the app.
           </p>
         ) : null}
+        <p className={styles.meta} style={{ marginTop: 'var(--space-3)' }}>
+          <a href={`/api/customer/invoices/${row.id}/pdf`}>Download invoice PDF</a>
+        </p>
       </Card>
 
       {row.notes?.trim() ? (

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
+import { notifyTenantRescheduleSubmitted } from '@/lib/email/rescheduleNotifications';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -136,6 +137,14 @@ export async function submitCustomerVisitRescheduleRequest(
     }
     return { error: insErr.message ?? 'Could not submit request.' };
   }
+
+  await notifyTenantRescheduleSubmitted(admin, {
+    tenantId: visit.tenant_id,
+    visitId,
+    customerNote,
+    preferredStartsAt,
+    preferredEndsAt,
+  });
 
   revalidatePath('/visits');
   revalidatePath('/');

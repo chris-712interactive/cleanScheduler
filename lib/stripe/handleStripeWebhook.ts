@@ -23,6 +23,12 @@ import {
   upsertConnectRefund,
 } from '@/lib/stripe/connectChargeMirrorHandlers';
 import {
+  handleConnectInvoicePaid,
+  handleConnectInvoicePaymentFailed,
+  handleConnectInvoiceUpsert,
+  handleConnectInvoiceVoided,
+} from '@/lib/stripe/connectInvoiceWebhookHandlers';
+import {
   constructStripeWebhookEvent,
   listStripeWebhookSecrets,
 } from '@/lib/stripe/constructWebhookEvent';
@@ -120,6 +126,32 @@ async function dispatchStripeWebhookEvent(
           // Backfill is best-effort; payout mirror row is already stored.
         }
       }
+      break;
+    }
+    case 'invoice.created':
+    case 'invoice.finalized':
+    case 'invoice.updated': {
+      if (!connectAccountId) break;
+      const invoice = event.data.object as Stripe.Invoice;
+      await handleConnectInvoiceUpsert(admin, invoice, connectAccountId);
+      break;
+    }
+    case 'invoice.paid': {
+      if (!connectAccountId) break;
+      const invoice = event.data.object as Stripe.Invoice;
+      await handleConnectInvoicePaid(admin, invoice, connectAccountId, { stripe });
+      break;
+    }
+    case 'invoice.payment_failed': {
+      if (!connectAccountId) break;
+      const invoice = event.data.object as Stripe.Invoice;
+      await handleConnectInvoicePaymentFailed(admin, invoice, connectAccountId);
+      break;
+    }
+    case 'invoice.voided': {
+      if (!connectAccountId) break;
+      const invoice = event.data.object as Stripe.Invoice;
+      await handleConnectInvoiceVoided(admin, invoice, connectAccountId);
       break;
     }
     default:

@@ -46,7 +46,7 @@ export default async function TenantOperationsSettingsPage() {
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue',
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days, check_hold_through_deposit',
     )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -67,6 +67,8 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_visit_reminder: opsRow.sms_notify_visit_reminder,
         email_notify_invoice_overdue: opsRow.email_notify_invoice_overdue,
         sms_notify_invoice_overdue: opsRow.sms_notify_invoice_overdue,
+        check_reminder_hold_days: opsRow.check_reminder_hold_days,
+        check_hold_through_deposit: opsRow.check_hold_through_deposit,
       }
     : {
         accepted_quote_schedule_mode: 'prompt_staff' as const,
@@ -81,6 +83,8 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_visit_reminder: false,
         email_notify_invoice_overdue: true,
         sms_notify_invoice_overdue: false,
+        check_reminder_hold_days: 7,
+        check_hold_through_deposit: false,
       };
 
   return (

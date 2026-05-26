@@ -17,23 +17,29 @@ function isBusinessOrPro(tier: PlatformPlanTier): boolean {
 async function invoiceBlockedByCheckHold(
   admin: Admin,
   invoiceId: string,
-  holdDays: number,
+  opts: { holdDays: number; holdThroughDeposit: boolean },
 ): Promise<boolean> {
   const { data: checkPay } = await admin
     .from('tenant_invoice_payments')
-    .select('received_at, recorded_at, method')
+    .select('received_at, deposited_at, recorded_at, method')
     .eq('invoice_id', invoiceId)
     .eq('method', 'check')
     .order('recorded_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (!checkPay || checkPay.received_at) return false;
+  if (!checkPay) return false;
+
+  if (opts.holdThroughDeposit && checkPay.received_at && !checkPay.deposited_at) {
+    return true;
+  }
+
+  if (checkPay.received_at) return false;
 
   const recordedMs = new Date(checkPay.recorded_at).getTime();
   if (Number.isNaN(recordedMs)) return false;
 
-  const holdUntil = recordedMs + holdDays * 24 * 60 * 60 * 1000;
+  const holdUntil = recordedMs + opts.holdDays * 24 * 60 * 60 * 1000;
   return Date.now() < holdUntil;
 }
 
@@ -114,7 +120,7 @@ export async function sendOverdueInvoiceReminders(
   const { data: opsRows, error: opsErr } = await admin
     .from('tenant_operational_settings')
     .select(
-      'tenant_id, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days',
+      'tenant_id, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days, check_hold_through_deposit',
     )
     .or('email_notify_invoice_overdue.eq.true,sms_notify_invoice_overdue.eq.true');
 
@@ -167,7 +173,12 @@ export async function sendOverdueInvoiceReminders(
         continue;
       }
 
-      if (await invoiceBlockedByCheckHold(admin, inv.id, ops.check_reminder_hold_days ?? 7)) {
+      if (
+        await invoiceBlockedByCheckHold(admin, inv.id, {
+          holdDays: ops.check_reminder_hold_days ?? 7,
+          holdThroughDeposit: ops.check_hold_through_deposit ?? false,
+        })
+      ) {
         skipped += 1;
         continue;
       }

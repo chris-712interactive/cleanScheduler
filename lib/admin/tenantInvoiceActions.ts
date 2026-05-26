@@ -87,6 +87,8 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
   const amountCents = parseCentsFromDollars(String(formData.get('amount_dollars') ?? ''));
   const method = String(formData.get('method') ?? 'other').trim() as PaymentMethod;
   const notes = String(formData.get('notes') ?? '').trim() || null;
+  const checkNumber = String(formData.get('check_number') ?? '').trim() || null;
+  const zelleConfirmation = String(formData.get('zelle_confirmation') ?? '').trim() || null;
 
   if (method === 'card') {
     redirect(
@@ -130,6 +132,8 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
       amount_cents: payAmount,
       method: safeMethod,
       notes,
+      check_number: safeMethod === 'check' ? checkNumber : null,
+      zelle_confirmation: safeMethod === 'zelle' ? zelleConfirmation : null,
     })
     .select('id')
     .single();

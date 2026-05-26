@@ -17,6 +17,10 @@ export function paymentAuditStageLabel(stage: ManualPaymentAuditStage): string {
       return 'Awaiting receipt';
     case 'awaiting_deposit':
       return 'Awaiting deposit';
+    case 'awaiting_clearance':
+      return 'Awaiting clearance';
+    case 'bounced':
+      return 'Bounced';
     case 'complete':
       return 'Complete';
   }
@@ -28,6 +32,10 @@ export function paymentAuditStageTone(stage: ManualPaymentAuditStage): StatusTon
       return 'warning';
     case 'awaiting_deposit':
       return 'info';
+    case 'awaiting_clearance':
+      return 'info';
+    case 'bounced':
+      return 'danger';
     case 'complete':
       return 'success';
   }

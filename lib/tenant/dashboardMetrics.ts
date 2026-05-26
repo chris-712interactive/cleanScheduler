@@ -41,3 +41,21 @@ export async function getTenantCustomersAddedThisMonthCount(
   if (error) return 0;
   return count ?? 0;
 }
+
+export async function getTenantPaidInvoicesLast30DaysCents(
+  db: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<number> {
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 30);
+
+  const { data, error } = await db
+    .from('tenant_invoices')
+    .select('amount_paid_cents, updated_at, status')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'paid')
+    .gte('updated_at', since.toISOString());
+
+  if (error || !data) return 0;
+  return data.reduce((sum, row) => sum + (row.amount_paid_cents ?? 0), 0);
+}

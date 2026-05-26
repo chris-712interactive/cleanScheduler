@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { assertMeteredLimit, isLimitExceededError } from '@/lib/billing/checkLimit';
+import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import type { Tables } from '@/lib/supabase/database.types';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 import { parseCustomerPreferredPaymentMethod } from '@/lib/tenant/customerBillingPreference';
@@ -15,6 +16,7 @@ import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 export interface CustomerFormState {
   error?: string;
   success?: boolean;
+  limitExceeded?: boolean;
 }
 
 function normalizeContactMethod(
@@ -63,20 +65,12 @@ export async function createTenantCustomer(
   const admin = createAdminClient();
 
   const planTier = await resolveTenantPlanTier(admin, membership.tenantId);
-  const customerCountResult = await admin
-    .from('customers')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', membership.tenantId);
-
-  if (customerCountResult.error) {
-    return { error: customerCountResult.error.message };
-  }
 
   try {
-    assertLimitNotExceeded(planTier, 'maxActiveCustomers', Number(customerCountResult.count ?? 0));
+    await assertMeteredLimit(admin, membership.tenantId, 'maxActiveCustomers', 1);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Plan limit reached.';
-    return { error: message };
+    return { error: message, limitExceeded: isLimitExceededError(error) };
   }
 
   const identityInsert = await admin

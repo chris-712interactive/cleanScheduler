@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { isLimitExceededError } from '@/lib/billing/checkLimit';
 import {
   assertCanAssignTeamSeat,
   countTeamSeatUsage,
@@ -36,6 +37,7 @@ function roleLabel(r: TenantRole): string {
 export interface EmployeeInviteFormState {
   error?: string;
   success?: string;
+  limitExceeded?: boolean;
 }
 
 export async function sendEmployeeInviteAction(
@@ -164,7 +166,9 @@ export async function sendEmployeeInviteAction(
     });
   } catch (error) {
     const message = teamSeatGateErrorMessage(error);
-    if (message) return { error: message };
+    if (message) {
+      return { error: message, limitExceeded: isLimitExceededError(error) };
+    }
     throw error;
   }
 

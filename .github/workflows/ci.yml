@@ -21,10 +21,14 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
       - name: Typecheck
         run: npm run typecheck
+      - name: Unit tests
+        run: npm run test
       - name: Prettier
         run: npm run format:check
       - name: Migration prefix sanity
         run: npm run check:migrations
+      - name: Migration order drift
+        run: npm run check:migration-drift
       - name: ESLint
         run: npm run lint
       - name: Stylelint

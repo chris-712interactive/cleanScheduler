@@ -39,6 +39,8 @@ export function OperationalSettingsForm({
     sms_notify_visit_reminder: boolean;
     email_notify_invoice_overdue: boolean;
     sms_notify_invoice_overdue: boolean;
+    check_reminder_hold_days: number;
+    check_hold_through_deposit: boolean;
   };
   readOnly?: boolean;
   smsEditable?: boolean;
@@ -228,6 +230,29 @@ export function OperationalSettingsForm({
               disabled={readOnly || !invoiceReminderSmsEditable || !twilioConfigured}
             />
             <span>SMS customer when an invoice is overdue (Pro)</span>
+          </label>
+        </div>
+        <div className={styles.opsCheckboxGrid}>
+          <label className={styles.opsField}>
+            <span className={styles.opsLabel}>Check reminder hold (days)</span>
+            <input
+              type="number"
+              name="check_reminder_hold_days"
+              min={0}
+              max={120}
+              defaultValue={snapshot.check_reminder_hold_days}
+              disabled={readOnly}
+              className={styles.opsInput}
+            />
+          </label>
+          <label className={styles.opsCheckbox}>
+            <input
+              type="checkbox"
+              name="check_hold_through_deposit"
+              defaultChecked={snapshot.check_hold_through_deposit}
+              disabled={readOnly}
+            />
+            <span>Hold reminders until check is deposited (not just received)</span>
           </label>
         </div>
       </fieldset>

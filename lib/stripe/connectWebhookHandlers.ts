@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
+import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
 
 type Admin = SupabaseClient<Database>;
 
@@ -60,6 +61,13 @@ export async function handleTenantInvoiceCheckoutCompleted(
 
   if (invErr || !inv || inv.status === 'void') return;
 
+  await admin
+    .from('tenant_invoices')
+    .update({ source: 'checkout' })
+    .eq('id', invoiceId)
+    .eq('tenant_id', tenantId)
+    .eq('source', 'manual');
+
   const remaining = inv.amount_cents - inv.amount_paid_cents;
   if (remaining <= 0) return;
 
@@ -89,6 +97,11 @@ export async function handleTenantInvoiceCheckoutCompleted(
   }
 
   await afterInvoicePaymentRecorded(admin, { tenantId, invoiceId });
+  await sendInvoiceReceiptEmail(admin, {
+    tenantId,
+    invoiceId,
+    paymentAmountCents: applied,
+  });
 
   const paymentRowId = inserted?.id;
   if (!paymentRowId || !options?.stripe || !options?.connectAccountId || !pi) {

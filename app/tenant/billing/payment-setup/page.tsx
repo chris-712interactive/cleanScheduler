@@ -131,7 +131,9 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
             <code>STRIPE_CONNECT_WEBHOOK_SECRET</code>. Events:{' '}
             <code>account.updated</code>, <code>checkout.session.completed</code>,{' '}
             <code>customer.subscription.*</code>, <code>refund.*</code>,{' '}
-            <code>charge.dispute.*</code>, <code>payout.paid</code>, <code>payout.updated</code>.
+            <code>charge.dispute.*</code>, <code>payout.paid</code>, <code>payout.updated</code>,{' '}
+            <code>invoice.created</code>, <code>invoice.finalized</code>, <code>invoice.updated</code>,{' '}
+            <code>invoice.paid</code>, <code>invoice.payment_failed</code>, <code>invoice.voided</code>.
           </p>
         </Card>
       </Stack>

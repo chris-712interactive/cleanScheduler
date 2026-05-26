@@ -1,7 +1,10 @@
 {
   "crons": [
     {
-      "path": "/api/cron/materialize-recurring-visits",
+      "path": "/api/cron/usage-rollup",
+      "schedule": "0 5 * * *"
+    },
+    {
       "schedule": "0 6 * * *"
     },
     {

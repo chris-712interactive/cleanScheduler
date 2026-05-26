@@ -7,10 +7,10 @@ import { KeyValueList } from '@/components/ui/KeyValueList';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import { recordInvoicePaymentAction } from '@/lib/admin/tenantInvoiceActions';
 import { createInvoicePayCheckoutSessionAction } from '@/app/tenant/billing/invoiceCheckoutActions';
 import { sendTenantInvoiceEmailAction } from '@/app/tenant/billing/invoiceEmailActions';
 import { refundStripeInvoicePaymentAction } from '@/app/tenant/billing/invoiceRefundActions';
+import { RecordInvoicePaymentForm } from './RecordInvoicePaymentForm';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { isResendConfigured } from '@/lib/email/resend';
 import { getInvoiceRelatedRecords } from '@/lib/tenant/relatedRecords';
@@ -129,8 +129,50 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
                 value: inv.due_date ? new Date(String(inv.due_date)).toLocaleDateString() : '—',
               },
               { key: 'Notes', value: inv.notes?.trim() || '—' },
+              ...(inv.source === 'stripe_billing'
+                ? [{ key: 'Source', value: 'Stripe Billing subscription' }]
+                : []),
+              ...(inv.last_payment_error
+                ? [{ key: 'Last payment error', value: inv.last_payment_error }]
+                : []),
             ]}
           />
+          {inv.hosted_invoice_url || inv.invoice_pdf_url ? (
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 'var(--space-3)',
+                marginTop: 'var(--space-4)',
+              }}
+            >
+              {inv.hosted_invoice_url ? (
+                <a
+                  href={inv.hosted_invoice_url}
+                  className={styles.planDetailsLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View on Stripe
+                </a>
+              ) : null}
+              {inv.invoice_pdf_url ? (
+                <a
+                  href={inv.invoice_pdf_url}
+                  className={styles.planDetailsLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Download PDF
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+          <p style={{ marginTop: 'var(--space-3)' }}>
+            <a href={`/api/tenant/billing/invoices/${inv.id}/pdf`} className={styles.planDetailsLink}>
+              Download PDF
+            </a>
+          </p>
         </Card>
 
         {inv.status !== 'void' && isResendConfigured() ? (
@@ -186,37 +228,11 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
             title="Record payment"
             description="Manual cash, check, Zelle, ACH, or other (card uses Pay online above)."
           >
-            <form action={recordInvoicePaymentAction} className={styles.resumeForm}>
-              <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-              <input type="hidden" name="invoice_id" value={inv.id} />
-              <label className={styles.field}>
-                <span>Amount (USD)</span>
-                <input
-                  name="amount_dollars"
-                  type="text"
-                  className={styles.input}
-                  placeholder={(remaining / 100).toFixed(2)}
-                  required
-                />
-              </label>
-              <label className={styles.field}>
-                <span>Method</span>
-                <select name="method" className={styles.select} defaultValue="cash">
-                  <option value="cash">Cash</option>
-                  <option value="check">Check</option>
-                  <option value="zelle">Zelle</option>
-                  <option value="ach">ACH</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
-              <label className={styles.field}>
-                <span>Notes (optional)</span>
-                <input name="notes" type="text" className={styles.input} />
-              </label>
-              <Button type="submit" variant="primary">
-                Apply payment
-              </Button>
-            </form>
+            <RecordInvoicePaymentForm
+              tenantSlug={membership.tenantSlug}
+              invoiceId={inv.id}
+              remainingCents={remaining}
+            />
           </Card>
         ) : null}
 

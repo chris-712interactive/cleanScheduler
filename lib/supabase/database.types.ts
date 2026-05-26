@@ -760,6 +760,12 @@ export type Database = {
           received_by_user_id: string | null;
           deposited_at: string | null;
           deposited_by_user_id: string | null;
+          check_number: string | null;
+          cleared_at: string | null;
+          cleared_by_user_id: string | null;
+          bounced_at: string | null;
+          bounce_reason: string | null;
+          zelle_confirmation: string | null;
           stripe_payout_id: string | null;
         };
         Insert: {
@@ -784,6 +790,12 @@ export type Database = {
           received_by_user_id?: string | null;
           deposited_at?: string | null;
           deposited_by_user_id?: string | null;
+          check_number?: string | null;
+          cleared_at?: string | null;
+          cleared_by_user_id?: string | null;
+          bounced_at?: string | null;
+          bounce_reason?: string | null;
+          zelle_confirmation?: string | null;
           stripe_payout_id?: string | null;
         };
         Update: {
@@ -808,6 +820,12 @@ export type Database = {
           received_by_user_id?: string | null;
           deposited_at?: string | null;
           deposited_by_user_id?: string | null;
+          check_number?: string | null;
+          cleared_at?: string | null;
+          cleared_by_user_id?: string | null;
+          bounced_at?: string | null;
+          bounce_reason?: string | null;
+          zelle_confirmation?: string | null;
           stripe_payout_id?: string | null;
         };
         Relationships: [
@@ -843,6 +861,15 @@ export type Database = {
           notes: string | null;
           created_at: string;
           updated_at: string;
+          source: Database['public']['Enums']['tenant_invoice_source'];
+          stripe_invoice_id: string | null;
+          stripe_subscription_id: string | null;
+          stripe_customer_id: string | null;
+          hosted_invoice_url: string | null;
+          invoice_pdf_url: string | null;
+          billing_period_start: string | null;
+          billing_period_end: string | null;
+          last_payment_error: string | null;
         };
         Insert: {
           id?: string;
@@ -858,6 +885,15 @@ export type Database = {
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
+          source?: Database['public']['Enums']['tenant_invoice_source'];
+          stripe_invoice_id?: string | null;
+          stripe_subscription_id?: string | null;
+          stripe_customer_id?: string | null;
+          hosted_invoice_url?: string | null;
+          invoice_pdf_url?: string | null;
+          billing_period_start?: string | null;
+          billing_period_end?: string | null;
+          last_payment_error?: string | null;
         };
         Update: {
           id?: string;
@@ -873,6 +909,15 @@ export type Database = {
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
+          source?: Database['public']['Enums']['tenant_invoice_source'];
+          stripe_invoice_id?: string | null;
+          stripe_subscription_id?: string | null;
+          stripe_customer_id?: string | null;
+          hosted_invoice_url?: string | null;
+          invoice_pdf_url?: string | null;
+          billing_period_start?: string | null;
+          billing_period_end?: string | null;
+          last_payment_error?: string | null;
         };
         Relationships: [
           {
@@ -1031,6 +1076,7 @@ export type Database = {
           email_notify_invoice_overdue: boolean;
           sms_notify_invoice_overdue: boolean;
           check_reminder_hold_days: number;
+          check_hold_through_deposit: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1049,6 +1095,7 @@ export type Database = {
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
+          check_hold_through_deposit?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1067,6 +1114,7 @@ export type Database = {
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
+          check_hold_through_deposit?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -3135,6 +3183,7 @@ export type Database = {
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';
+      tenant_invoice_source: 'manual' | 'checkout' | 'stripe_billing';
       tenant_payment_method: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
       marketing_inquiry_status: 'new' | 'contacted' | 'closed';
       quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';

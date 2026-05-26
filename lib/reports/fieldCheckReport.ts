@@ -6,6 +6,7 @@ import type { ReportSummaryLine } from '@/lib/reports/types';
 import { formatUsdFromCents } from '@/lib/format/money';
 import {
   manualPaymentAuditStage,
+  parseCheckNumberFromNotes,
   type ManualPaymentAuditStage,
 } from '@/lib/billing/manualPaymentAudit';
 
@@ -31,6 +32,8 @@ export interface FieldCheckResult {
 const STAGE_LABEL: Record<ManualPaymentAuditStage, string> = {
   awaiting_receipt: 'Awaiting receipt',
   awaiting_deposit: 'Awaiting deposit',
+  awaiting_clearance: 'Awaiting clearance',
+  bounced: 'Bounced',
   complete: 'Complete',
 };
 
@@ -49,8 +52,11 @@ export async function runFieldCheckReport(
       method,
       recorded_at,
       notes,
+      check_number,
       received_at,
       deposited_at,
+      cleared_at,
+      bounced_at,
       tenant_invoices (
         id,
         title,
@@ -104,13 +110,18 @@ export async function runFieldCheckReport(
       invoiceId,
       invoiceTitle: row.tenant_invoices?.title ?? '—',
       amountCents: row.amount_cents,
-      checkReference: row.notes?.trim() || '—',
+      checkReference:
+        row.check_number?.trim() ||
+        parseCheckNumberFromNotes(row.notes) ||
+        row.notes?.trim() ||
+        '—',
       stage,
       chainOfCustody:
         eventSummaries.get(row.id) ??
         ([
           row.received_at ? `Received ${new Date(row.received_at).toLocaleDateString()}` : null,
           row.deposited_at ? `Deposited ${new Date(row.deposited_at).toLocaleDateString()}` : null,
+          row.cleared_at ? `Cleared ${new Date(row.cleared_at).toLocaleDateString()}` : null,
         ]
           .filter(Boolean)
           .join('; ') ||
@@ -125,7 +136,7 @@ export async function runFieldCheckReport(
     summary: [
       { label: 'Check payments', value: String(rows.length) },
       { label: 'Total amount', value: formatUsdFromCents(totalCents) },
-      { label: 'Not fully deposited', value: String(openCount) },
+      { label: 'Not fully cleared', value: String(openCount) },
     ],
   };
 }

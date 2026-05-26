@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
+import { UpgradeOrAddOnModal } from '@/components/billing/UpgradeOrAddOnModal';
 import { CUSTOMER_PREFERRED_BILLING_OPTIONS } from '@/lib/tenant/customerBillingPreference';
 import { createTenantCustomer, type CustomerFormState } from './actions';
 import styles from './customers.module.scss';
@@ -9,15 +10,32 @@ const initial: CustomerFormState = {};
 
 export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
   const [state, formAction, pending] = useActionState(createTenantCustomer, initial);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  useEffect(() => {
+    if (state.limitExceeded) {
+      setUpgradeOpen(true);
+    }
+  }, [state.limitExceeded]);
 
   return (
-    <form action={formAction} className={styles.form}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
+    <>
+      <UpgradeOrAddOnModal
+        open={upgradeOpen}
+        title="Customer limit reached"
+        message={
+          state.error ??
+          'Your workspace has reached its customer limit. Upgrade your plan to add more customers.'
+        }
+        onClose={() => setUpgradeOpen(false)}
+      />
+      <form action={formAction} className={styles.form}>
+        <input type="hidden" name="tenant_slug" value={tenantSlug} />
+        {state.error && !state.limitExceeded ? (
+          <p className={styles.error} role="alert">
+            {state.error}
+          </p>
+        ) : null}
       <section className={styles.sectionCard}>
         <header className={styles.sectionHeader}>
           <h4 className={styles.sectionTitle}>Basic customer information</h4>
@@ -196,5 +214,6 @@ export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
         {pending ? 'Saving…' : 'Add customer'}
       </button>
     </form>
+    </>
   );
 }

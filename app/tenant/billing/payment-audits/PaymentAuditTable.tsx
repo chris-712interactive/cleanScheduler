@@ -23,6 +23,8 @@ export type PaymentAuditRow = {
   notes: string | null;
   received_at: string | null;
   deposited_at: string | null;
+  cleared_at: string | null;
+  bounced_at: string | null;
   received_by_user_id: string | null;
   deposited_by_user_id: string | null;
   tenant_invoices: {
@@ -143,6 +145,7 @@ export function PaymentAuditTable({
                     tenantSlug={tenantSlug}
                     paymentId={p.id}
                     stage={stage}
+                    method={p.method}
                     invoiceHref={invoiceHref}
                   />
                 </td>

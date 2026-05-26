@@ -16,6 +16,7 @@ import {
 } from '@/lib/schedule/visitAssigneeConflicts';
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
+import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
 
 export interface ScheduleFormState {
   error?: string;
@@ -376,6 +377,7 @@ export async function resolveVisitRescheduleRequest(
       `
       id,
       visit_id,
+      customer_id,
       preferred_starts_at,
       preferred_ends_at,
       original_starts_at,
@@ -474,6 +476,15 @@ export async function resolveVisitRescheduleRequest(
   if (!updated?.length) {
     return { error: 'Request was already handled or could not be found.' };
   }
+
+  await notifyCustomerRescheduleResolved(admin, {
+    tenantId: membership.tenantId,
+    customerId: request.customer_id,
+    visitId: request.visit_id,
+    resolution,
+    tenantNote: note || null,
+    appliedStartsAt: appliedStartsAt,
+  });
 
   revalidatePath('/schedule/reschedule-requests');
   revalidatePath('/schedule');

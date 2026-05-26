@@ -157,6 +157,7 @@ export async function completeVisitWithPaymentAction(
     expectedAmountCents: loaded.visit.expected_amount_cents,
     visitTitle: loaded.visit.title,
     actorRole,
+    actorUserId: auth.user.id,
     billing: {
       paymentCollected,
       collectedMethod,

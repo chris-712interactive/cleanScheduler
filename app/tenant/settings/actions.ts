@@ -53,6 +53,11 @@ export async function updateTenantOperationalSettings(
     String(formData.get('invoice_expectation') ?? ''),
   );
 
+  const holdDaysRaw = Number.parseInt(String(formData.get('check_reminder_hold_days') ?? ''), 10);
+  const checkReminderHoldDays =
+    Number.isFinite(holdDaysRaw) && holdDaysRaw >= 0 && holdDaysRaw <= 120 ? holdDaysRaw : 7;
+  const checkHoldThroughDeposit = formData.get('check_hold_through_deposit') === 'on';
+
   const row: Database['public']['Tables']['tenant_operational_settings']['Insert'] = {
     tenant_id: membership.tenantId,
     accepted_quote_schedule_mode: scheduleMode,
@@ -67,6 +72,8 @@ export async function updateTenantOperationalSettings(
     sms_notify_visit_reminder: smsAllowed ? notify.sms_notify_visit_reminder : false,
     email_notify_invoice_overdue: invoiceEmailAllowed ? notify.email_notify_invoice_overdue : false,
     sms_notify_invoice_overdue: smsAllowed ? notify.sms_notify_invoice_overdue : false,
+    check_reminder_hold_days: checkReminderHoldDays,
+    check_hold_through_deposit: checkHoldThroughDeposit,
   };
 
   const res = await admin

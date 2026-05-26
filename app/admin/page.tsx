@@ -5,7 +5,7 @@ import { Grid } from '@/components/layout/Grid';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { getPlatformDashboardStats } from '@/lib/admin/platformStats';
+import { getPlatformDashboardStats, formatPlatformMrrLabel } from '@/lib/admin/platformStats';
 import styles from './admin-dashboard.module.scss';
 
 export default async function AdminDashboardPage() {
@@ -43,10 +43,14 @@ export default async function AdminDashboardPage() {
               </StatusPill>
             </div>
           </Card>
-          <Card title="MRR" description="Subscription revenue">
+          <Card title="MRR" description="Estimated from active platform subscriptions">
             <div className={styles.metric}>
-              <span className={styles.metricValue}>$0</span>
-              <StatusPill tone="neutral">No data yet</StatusPill>
+              <span className={styles.metricValue}>{formatPlatformMrrLabel(stats.estimatedMrrCents)}</span>
+              <StatusPill tone={stats.estimatedMrrCents > 0 ? 'success' : 'neutral'}>
+                {stats.activePaidSubscriptions > 0
+                  ? `${stats.activePaidSubscriptions} paying`
+                  : 'No paid subscriptions yet'}
+              </StatusPill>
             </div>
           </Card>
           <Card title="Customer accounts" description="Customer records across all tenants">
@@ -60,11 +64,25 @@ export default async function AdminDashboardPage() {
               </StatusPill>
             </div>
           </Card>
-          <Card title="Stripe Connect health" description="Connected tenants on track">
+          <Card title="Stripe Connect health" description="Active tenants with live card payments">
             <div className={styles.metric}>
-              <span className={styles.metricValue}>--</span>
-              <StatusPill tone="warning" icon={<CreditCard size={14} />}>
-                Not configured
+              <span className={styles.metricValue}>
+                {stats.connectTrackedTenants > 0
+                  ? `${stats.connectCompleteTenants}/${stats.connectTrackedTenants}`
+                  : '—'}
+              </span>
+              <StatusPill
+                tone={
+                  stats.connectTrackedTenants > 0 &&
+                  stats.connectCompleteTenants === stats.connectTrackedTenants
+                    ? 'success'
+                    : stats.connectCompleteTenants > 0
+                      ? 'warning'
+                      : 'neutral'
+                }
+                icon={<CreditCard size={14} />}
+              >
+                {stats.connectCompleteTenants > 0 ? 'Connect live' : 'None complete yet'}
               </StatusPill>
             </div>
           </Card>

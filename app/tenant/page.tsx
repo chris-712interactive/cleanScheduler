@@ -31,6 +31,7 @@ import { CheckoutCancelledNotice } from './CheckoutCancelledNotice';
 import { needsOnboardingSurvey } from '@/lib/tenant/onboardingSurvey';
 import {
   getTenantCustomersAddedThisMonthCount,
+  getTenantPaidInvoicesLast30DaysCents,
   getTenantSentQuotesCount,
 } from '@/lib/tenant/dashboardMetrics';
 import { DashboardStatCard } from './DashboardStatCard';
@@ -95,6 +96,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
     quotesCountRes,
     sentQuotesCount,
     customersAddedThisMonth,
+    paidLast30DaysCents,
     outstandingInvoices,
     todaysJobs,
     todayQueue,
@@ -113,6 +115,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
       .is('superseded_by_quote_id', null),
     getTenantSentQuotesCount(supabase, membership.tenantId),
     getTenantCustomersAddedThisMonthCount(supabase, membership.tenantId),
+    getTenantPaidInvoicesLast30DaysCents(supabase, membership.tenantId),
     getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
     getTenantTodaysJobsSummary(supabase, membership.tenantId),
     getDashboardTodayQueue(supabase, membership.tenantId),
@@ -190,6 +193,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
         : 'In your directory';
 
   const outstandingFormatted = formatUsdFromCents(outstandingCents);
+  const revenue30Formatted = formatUsdFromCents(paidLast30DaysCents);
   const showGetStartedEmptyState =
     activeCustomerCount === 0 &&
     !onboardingFocusMode &&
@@ -225,6 +229,15 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
         }
         actionLabel="View invoices"
         actionHref="/billing/invoices"
+      />
+      <DashboardStatCard
+        icon={<CreditCard size={20} strokeWidth={2} />}
+        label="Revenue (30 days)"
+        value={revenue30Formatted}
+        badge={paidLast30DaysCents > 0 ? 'Paid invoices' : 'No paid invoices yet'}
+        badgeTone={paidLast30DaysCents > 0 ? 'brand' : 'muted'}
+        actionLabel="View billing"
+        actionHref="/billing"
       />
       <DashboardStatCard
         icon={<UsersRound size={20} strokeWidth={2} />}

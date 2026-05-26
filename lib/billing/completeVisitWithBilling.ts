@@ -9,6 +9,7 @@ import {
 } from '@/lib/billing/resolveVisitExpectedAmount';
 import { sendTenantInvoiceEmailForInvoice } from '@/lib/billing/sendTenantInvoiceEmail';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
+import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 
 type AdminClient = SupabaseClient<Database>;
@@ -81,6 +82,7 @@ export async function applyVisitCompletionBilling(
     expectedAmountCents: number | null;
     visitTitle: string;
     actorRole: TenantRole;
+    actorUserId?: string | null;
     billing: CompleteVisitBillingInput;
   },
 ): Promise<{ invoiceId: string; emailed: boolean; amountCents: number } | { error: string }> {
@@ -131,22 +133,36 @@ export async function applyVisitCompletionBilling(
     });
     if ('error' in created) return created;
 
+    const checkNumber = params.billing.checkNumber?.trim() ?? '';
     const notes =
       method === 'check'
-        ? `Check #${params.billing.checkNumber?.trim()} (collected at job completion)`
+        ? `Check #${checkNumber} (collected at job completion)`
         : 'Collected at job completion';
 
-    const { error: payErr } = await admin.from('tenant_invoice_payments').insert({
+    const now = new Date().toISOString();
+    const { data: paymentRow, error: payErr } = await admin.from('tenant_invoice_payments').insert({
       tenant_id: params.tenantId,
       invoice_id: created.invoiceId,
       amount_cents: amountCents,
       method: method as PaymentMethod,
       notes,
-    });
+      check_number: method === 'check' ? checkNumber : null,
+      received_at: now,
+      received_by_user_id: params.actorUserId ?? null,
+    }).select('id').single();
 
-    if (payErr) {
-      return { error: payErr.message };
+    if (payErr || !paymentRow) {
+      return { error: payErr?.message ?? 'Could not record payment.' };
     }
+
+    await recordTenantPaymentEvent(admin, {
+      tenantId: params.tenantId,
+      paymentId: paymentRow.id,
+      invoiceId: created.invoiceId,
+      actorUserId: params.actorUserId ?? null,
+      action: 'payment.received',
+      detail: `${method} collected in the field`,
+    });
 
     await afterInvoicePaymentRecorded(admin, {
       tenantId: params.tenantId,
