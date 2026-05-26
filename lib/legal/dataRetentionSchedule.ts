@@ -123,7 +123,7 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
     retentionPeriod: 'While connection is active, plus 90 days after disconnect',
     disposition: 'delete',
     notes:
-      'Plaid access tokens are stored server-side only. Transaction metadata retained for reconciliation while workspace is active.',
+      'Plaid access tokens are stored server-side only. Transaction metadata retained for reconciliation while workspace is active. We revoke Plaid connections when a subscription is canceled or the workspace is closed.',
   },
   {
     category: 'SMS (Twilio)',

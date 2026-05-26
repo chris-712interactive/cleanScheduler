@@ -73,9 +73,29 @@ export default function TermsOfServicePage() {
                 period has started.
               </li>
               <li>
-                You may cancel a platform subscription according to in-product billing controls;
+                You may cancel a platform subscription according to in-product billing controls
+                (including the Stripe billing portal linked from your workspace billing settings);
                 cancellation stops future charges but may not restore access to paid features for
                 the current period.
+              </li>
+              <li>
+                When a platform subscription ends or is canceled, we may suspend most workspace
+                access until you resubscribe. Authorized workspace owners typically retain access
+                to billing and account settings so they can resubscribe or delete the workspace.
+              </li>
+              <li>
+                If you connected a business bank account through Plaid for bank reconciliation, we
+                revoke that connection when your platform subscription is canceled or your workspace
+                is closed or purged, including by calling Plaid&apos;s item removal API so we no
+                longer receive new transaction data. Historical reconciliation records in your
+                workspace may be retained for a limited period as described in our{' '}
+                <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
+              </li>
+              <li>
+                Except where we must retain records for legal, tax, fraud, or security purposes,
+                workspace data is kept for a limited reactivation or wind-down period after
+                cancellation, then deleted or anonymized according to the same{' '}
+                <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
               </li>
             </ul>
 
@@ -139,11 +159,12 @@ export default function TermsOfServicePage() {
 
             <h2>9. Third-party services</h2>
             <p>
-              The Service integrates with third parties such as Supabase, Stripe, Resend, Google,
-              and Vercel as described in our <Link href="/privacy">Privacy Policy</Link>. Your use
-              of those features may also be subject to the third party&apos;s terms. We are not
-              responsible for third-party services we do not control. How long we and those
-              providers retain data is set out in our{' '}
+              The Service integrates with third parties such as Supabase, Stripe, Plaid (for
+              optional bank reconciliation), Resend, Google, and Vercel as described in our{' '}
+              <Link href="/privacy">Privacy Policy</Link>. Your use of those features may also be
+              subject to the third party&apos;s terms. We are not responsible for third-party
+              services we do not control. How long we and those providers retain data is set out in
+              our{' '}
               <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
             </p>
 
@@ -176,9 +197,12 @@ export default function TermsOfServicePage() {
             <h2>13. Suspension and termination</h2>
             <p>
               We may suspend or terminate access if you breach these Terms, fail to pay fees, or
-              pose a security risk. You may stop using the Service at any time. Sections that by
-              their nature should survive (including payment obligations, disclaimers, limitation
-              of liability, and indemnity) will survive termination.
+              pose a security risk. You may stop using the Service at any time. When access ends,
+              the effects described in Section 3 (including workspace suspension, integration
+              revocation such as Plaid bank links, and data retention) apply unless we agree
+              otherwise in writing. Sections that by their nature should survive (including payment
+              obligations, disclaimers, limitation of liability, and indemnity) will survive
+              termination.
             </p>
 
             <h2>14. Governing law and disputes</h2>

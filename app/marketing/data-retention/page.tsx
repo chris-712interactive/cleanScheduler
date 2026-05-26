@@ -86,8 +86,9 @@ export default function DataRetentionPolicyPage() {
             </p>
             <h3>Trial expiration or subscription lapse</h3>
             <p>
-              When a free trial ends without conversion, or a platform subscription lapses, we may
-              restrict access to paid features. Data generally remains stored for a reasonable
+              When a free trial ends without conversion, or a platform subscription lapses or is
+              canceled, we may restrict access to paid features and revoke optional integrations
+              (including Plaid bank connections). Data generally remains stored for a reasonable
               reactivation window (typically aligned with the 90-day post-closure period in Section
               3) unless the tenant requests earlier deletion.
             </p>
