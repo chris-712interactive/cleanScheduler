@@ -17,15 +17,17 @@ export function getQuoteBoardCardDisplay(quote: QuoteListEmbedRow): QuoteBoardCa
     ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : '';
   const prop = quote.tenant_customer_properties;
   const propertyLabel = prop?.label?.trim() || '';
+  const isGenericPrimaryLabel = /^primary\s+service\s+location$/i.test(propertyLabel);
+  const displayPropertyLabel = isGenericPrimaryLabel ? '' : propertyLabel;
   const site = prop ? formatPropertyAddressLine(prop) : '';
 
   const headline =
-    propertyLabel ||
     customerName ||
+    displayPropertyLabel ||
     (quote.customer_id ? 'Linked customer' : quote.title);
 
   const serviceLine =
-    propertyLabel && quote.title !== headline
+    displayPropertyLabel && quote.title !== headline
       ? quote.title
       : site || (customerName && quote.title !== customerName ? quote.title : '');
 
