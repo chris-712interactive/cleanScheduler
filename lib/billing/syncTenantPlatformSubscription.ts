@@ -8,6 +8,7 @@ import {
   resolvePlatformTierFromStripePriceId,
 } from '@/lib/billing/platformPlans';
 import type { Database } from '@/lib/supabase/database.types';
+import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 
 type Admin = SupabaseClient<Database>;
 
@@ -147,9 +148,11 @@ export async function syncTenantFromStripeSubscription(
 
   const { data: existingBilling } = await admin
     .from('tenant_billing_accounts')
-    .select('activated_at')
+    .select('activated_at, status')
     .eq('tenant_id', tenantId)
     .maybeSingle();
+
+  const wasAlreadyCanceled = existingBilling?.status === 'canceled';
 
   const updatePayload: Database['public']['Tables']['tenant_billing_accounts']['Update'] = {
     stripe_subscription_id: isCanceled ? null : subscription.id,
@@ -185,6 +188,14 @@ export async function syncTenantFromStripeSubscription(
 
   if (tenantError) {
     throw new Error(`tenants update failed: ${tenantError.message}`);
+  }
+
+  if (isCanceled && !wasAlreadyCanceled) {
+    try {
+      await revokePlaidBankLink(admin, tenantId, { reason: 'subscription_canceled' });
+    } catch (error) {
+      console.error('[syncTenantPlatformSubscription] Plaid revoke failed', tenantId, error);
+    }
   }
 
   return true;

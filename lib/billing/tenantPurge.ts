@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { getStripe } from '@/lib/stripe/server';
+import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 
 /** Days after free trial ends before an never-activated workspace is hard-deleted. */
 export const UNCONVERTED_TRIAL_PURGE_GRACE_DAYS = 30;
@@ -143,6 +144,15 @@ export async function purgeTenantWorkspace(
   }
 
   await cancelStripeSubscriptionIfPresent(billing?.stripe_subscription_id);
+
+  try {
+    await revokePlaidBankLink(admin, tenantId, {
+      reason: 'workspace_purged',
+      skipLocalUpdate: true,
+    });
+  } catch (error) {
+    console.error('[purgeTenantWorkspace] Plaid revoke failed', tenantId, error);
+  }
 
   await admin.from('audit_log_entries').insert({
     actor_user_id: options.actorUserId ?? null,

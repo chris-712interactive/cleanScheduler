@@ -14,10 +14,10 @@ import { assertMfaForBankAdmin } from '@/lib/auth/requireMfa';
 import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { confirmPaymentMatchSuggestion, matchBankDepositToInvoice } from '@/lib/plaid/confirmPaymentMatch';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
+import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 import {
   createPlaidLinkToken,
   createPlaidUpdateLinkToken,
-  getPlaidClient,
   isPlaidConfigured,
 } from '@/lib/plaid/server';
 import type { BankConnectionActionResult } from './finishBankConnectionAction';
@@ -240,35 +240,18 @@ export async function disconnectBankLinkAction(
   const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
   if (tierErr) return { error: tierErr };
 
-  const { data: link } = await admin
-    .from('bank_links')
-    .select('id, plaid_access_token')
-    .eq('tenant_id', membership.tenantId)
-    .maybeSingle();
-
-  if (!link) {
-    return { error: 'No bank connection on file.' };
-  }
-
-  if (isPlaidConfigured()) {
-    try {
-      const client = getPlaidClient();
-      await client.itemRemove({ access_token: link.plaid_access_token });
-    } catch {
-      // Still mark disconnected locally if Plaid item removal fails.
+  try {
+    const result = await revokePlaidBankLink(admin, membership.tenantId, {
+      reason: 'tenant_disconnected',
+    });
+    if (!result.found) {
+      return { error: 'No bank connection on file.' };
     }
-  }
-
-  const { error } = await admin
-    .from('bank_links')
-    .update({
-      status: 'disconnected',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', link.id);
-
-  if (error) {
-    return { error: error.message };
+    if (!result.revoked) {
+      return { error: 'Bank connection is already disconnected.' };
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Could not disconnect bank link.' };
   }
 
   revalidatePath(bankConnectionPath());

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 
 /**
  * Expire workspace trials that only exist in Postgres (no Stripe subscription).
@@ -45,6 +46,14 @@ export async function expireStaleDbOnlyTrials(
 
   if (tenantError) {
     throw new Error(tenantError.message);
+  }
+
+  for (const tenantId of tenantIds) {
+    try {
+      await revokePlaidBankLink(admin, tenantId, { reason: 'trial_expired' });
+    } catch (error) {
+      console.error('[expireStaleDbOnlyTrials] Plaid revoke failed', tenantId, error);
+    }
   }
 
   return { expiredTenantIds: tenantIds };
