@@ -215,13 +215,17 @@ export async function sendOverdueInvoiceReminders(
         if (await reminderAlreadySent(admin, { tenantId, invoiceId: inv.id, channel: 'sms', kind: 'overdue' })) {
           skipped += 1;
         } else {
-          const body = `${tenantName}: Reminder — invoice "${inv.title}" (${balanceLabel}) is overdue. Pay online: ${portalUrl}`;
           const sent = await sendTransactionalSms({
             admin,
             tenantId,
             toPhone: contact.phone,
-            body,
-            purpose: 'invoice_overdue',
+            payload: {
+              purpose: 'invoice_overdue',
+              tenantName,
+              invoiceTitle: inv.title,
+              balance: balanceLabel,
+              portalUrl,
+            },
           });
           if (sent.ok) {
             await logReminderSent(admin, { tenantId, invoiceId: inv.id, channel: 'sms', kind: 'overdue' });

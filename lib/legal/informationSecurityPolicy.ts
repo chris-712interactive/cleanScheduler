@@ -85,7 +85,7 @@ export const INFORMATION_SECURITY_POLICY_SECTIONS: PolicySection[] = [
     id: 'vendors',
     title: '8. Vendor and subprocessor management',
     paragraphs: [
-      'Third-party services that process data on our behalf are listed in the Privacy Policy and Security page. Material subprocessors include Supabase, Stripe, Vercel, Resend, Google (OAuth), Twilio, and Plaid (bank reconciliation).',
+      'Third-party services that process data on our behalf are listed in the Privacy Policy and Security page. Material subprocessors include Supabase, Stripe, Vercel, Resend, Google (OAuth), Sent (sent.dm), and Plaid (bank reconciliation).',
       'New subprocessors are evaluated for security posture before production use. Tenants are notified through Privacy Policy updates when subprocessors change materially.',
     ],
   },

@@ -5,7 +5,7 @@ import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
 import type { Database } from '@/lib/supabase/database.types';
 import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
-import { isTwilioConfigured } from '@/lib/sms/twilioServer';
+import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
 
 type Admin = SupabaseClient<Database>;
 
@@ -53,8 +53,8 @@ export async function sendVisitReminderSmsForAllTenants(): Promise<{
   skipped: number;
   errors: string[];
 }> {
-  if (!isTwilioConfigured()) {
-    return { tenantsChecked: 0, remindersSent: 0, skipped: 0, errors: ['Twilio not configured'] };
+  if (!isSentDmConfigured()) {
+    return { tenantsChecked: 0, remindersSent: 0, skipped: 0, errors: ['sent.dm not configured'] };
   }
 
   const admin = createAdminClient();
@@ -129,13 +129,16 @@ export async function sendVisitReminderSmsForAllTenants(): Promise<{
         minute: '2-digit',
       });
 
-      const body = `${tenantName}: Reminder — "${visit.title}" is scheduled for ${when}.`;
       const sent = await sendTransactionalSms({
         admin,
         tenantId,
         toPhone: phone,
-        body,
-        purpose: 'visit_reminder',
+        payload: {
+          purpose: 'visit_reminder',
+          tenantName,
+          visitTitle: visit.title,
+          when,
+        },
         relatedVisitId: visit.id,
       });
 

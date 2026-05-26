@@ -8,6 +8,7 @@ import {
   parseAcceptedQuoteScheduleMode,
   parseTenantInvoiceExpectation,
   parseTenantPaymentMethodsFromForm,
+  parseMessagingChannelsFromForm,
   parseQuoteNotifyFromForm,
 } from '@/lib/tenant/operationalSettings';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
@@ -74,6 +75,7 @@ export async function updateTenantOperationalSettings(
     sms_notify_invoice_overdue: smsAllowed ? notify.sms_notify_invoice_overdue : false,
     check_reminder_hold_days: checkReminderHoldDays,
     check_hold_through_deposit: checkHoldThroughDeposit,
+    messaging_channels: smsAllowed ? parseMessagingChannelsFromForm(formData) : ['sms'],
   };
 
   const res = await admin

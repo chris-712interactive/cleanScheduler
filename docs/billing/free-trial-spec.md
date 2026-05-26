@@ -113,7 +113,7 @@ These mirror “evaluate the business” without paid integrations or Pro-only s
 | `multiLocationControls` | **No** | Pro feature |
 | `dedicatedOnboarding` | **No** | Sales/concierge |
 | `plaidReconciliation` | **No** | Paid integration (explicit exclusion) |
-| `smsCommunication` | **No** | Paid + Twilio (also blocked by `canUsePaidSubscriptionFeatures`) |
+| `smsCommunication` | **No** | Paid + sent.dm (also blocked by `canUsePaidSubscriptionFeatures`) |
 | `whiteLabelCustomerPortal` | **No** | Paid Pro feature |
 
 #### Soft limits

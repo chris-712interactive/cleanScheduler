@@ -125,9 +125,15 @@ const serverEnvSchema = z.object({
   PLAID_SECRET: z.string().optional(),
   PLAID_ENV: z.enum(['sandbox', 'development', 'production']).optional(),
 
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_FROM_NUMBER: z.string().optional(),
+  /** sent.dm — https://app.sent.dm */
+  SENT_DM_API_KEY: z.string().optional(),
+  /** sent.dm webhook signing secret (whsec_…) */
+  SENT_WEBHOOK_SECRET: z.string().optional(),
+  SENT_DM_TEMPLATE_QUOTE_SENT: z.string().optional(),
+  SENT_DM_TEMPLATE_QUOTE_ACCEPTED: z.string().optional(),
+  SENT_DM_TEMPLATE_QUOTE_DECLINED: z.string().optional(),
+  SENT_DM_TEMPLATE_VISIT_REMINDER: z.string().optional(),
+  SENT_DM_TEMPLATE_INVOICE_OVERDUE: z.string().optional(),
 
   /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),

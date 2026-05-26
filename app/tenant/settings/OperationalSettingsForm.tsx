@@ -10,6 +10,8 @@ import {
   type AcceptedQuoteScheduleMode,
   type TenantInvoiceExpectation,
   type TenantPaymentMethod,
+  type MessagingChannel,
+  MESSAGING_CHANNEL_LABEL,
 } from '@/lib/tenant/operationalSettings';
 import { updateTenantOperationalSettings } from './actions';
 import { operationalSettingsFormInitial } from './operationalSettingsFormState';
@@ -21,7 +23,7 @@ export function OperationalSettingsForm({
   readOnly = false,
   smsEditable = false,
   smsTrialLocked = false,
-  twilioConfigured = false,
+  sentDmConfigured = false,
   invoiceReminderEmailEditable = false,
   invoiceReminderSmsEditable = false,
 }: {
@@ -41,15 +43,17 @@ export function OperationalSettingsForm({
     sms_notify_invoice_overdue: boolean;
     check_reminder_hold_days: number;
     check_hold_through_deposit: boolean;
+    messaging_channels: MessagingChannel[];
   };
   readOnly?: boolean;
   smsEditable?: boolean;
   smsTrialLocked?: boolean;
-  twilioConfigured?: boolean;
+  sentDmConfigured?: boolean;
   invoiceReminderEmailEditable?: boolean;
   invoiceReminderSmsEditable?: boolean;
 }) {
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
+  const messagingChannels = new Set(snapshot.messaging_channels);
 
   const [state, formAction, pending] = useActionState(
     updateTenantOperationalSettings,
@@ -158,9 +162,9 @@ export function OperationalSettingsForm({
         <legend className={styles.opsLegend}>SMS notifications (Pro)</legend>
         <p className={styles.opsIntro}>
           {smsEditable
-            ? twilioConfigured
-              ? 'Transactional SMS via Twilio. Counts against your monthly Pro SMS segment allowance. Customers with email-only preference are skipped.'
-              : 'Twilio is not configured on this server. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER to enable sends.'
+            ? sentDmConfigured
+              ? 'Transactional SMS via sent.dm. Counts against your monthly Pro SMS segment allowance (each enabled channel counts separately). Customers with email-only preference are skipped.'
+              : 'sent.dm is not configured on this server. Add SENT_DM_API_KEY and SENT_DM_TEMPLATE_* variables to enable sends.'
             : smsTrialLocked
               ? 'SMS is included with Pro after you subscribe. Add a payment method from Workspace billing to unlock these toggles during your trial.'
               : 'Upgrade to Pro to send quote and visit reminder texts to customers.'}
@@ -171,7 +175,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_quote_sent"
               defaultChecked={snapshot.sms_notify_quote_sent}
-              disabled={readOnly || !smsEditable || !twilioConfigured}
+              disabled={readOnly || !smsEditable || !sentDmConfigured}
             />
             <span>SMS customer when a quote is marked Sent</span>
           </label>
@@ -180,7 +184,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_quote_accepted"
               defaultChecked={snapshot.sms_notify_quote_accepted}
-              disabled={readOnly || !smsEditable || !twilioConfigured}
+              disabled={readOnly || !smsEditable || !sentDmConfigured}
             />
             <span>SMS your team when a customer accepts</span>
           </label>
@@ -189,7 +193,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_quote_declined"
               defaultChecked={snapshot.sms_notify_quote_declined}
-              disabled={readOnly || !smsEditable || !twilioConfigured}
+              disabled={readOnly || !smsEditable || !sentDmConfigured}
             />
             <span>SMS your team when a customer declines</span>
           </label>
@@ -198,11 +202,41 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_visit_reminder"
               defaultChecked={snapshot.sms_notify_visit_reminder}
-              disabled={readOnly || !smsEditable || !twilioConfigured}
+              disabled={readOnly || !smsEditable || !sentDmConfigured}
             />
             <span>SMS visit reminder ~24 hours before scheduled cleanings</span>
           </label>
         </div>
+        {smsEditable && sentDmConfigured ? (
+          <div className={styles.opsCheckboxGrid}>
+            <p className={styles.opsIntro}>
+              Delivery channels (SMS is always enabled). WhatsApp and RCS require setup on your
+              sent.dm account.
+            </p>
+            <label className={styles.opsCheckbox}>
+              <input type="checkbox" checked disabled readOnly />
+              <span>{MESSAGING_CHANNEL_LABEL.sms} (required)</span>
+            </label>
+            <label className={styles.opsCheckbox}>
+              <input
+                type="checkbox"
+                name="messaging_channel_whatsapp"
+                defaultChecked={messagingChannels.has('whatsapp')}
+                disabled={readOnly}
+              />
+              <span>{MESSAGING_CHANNEL_LABEL.whatsapp}</span>
+            </label>
+            <label className={styles.opsCheckbox}>
+              <input
+                type="checkbox"
+                name="messaging_channel_rcs"
+                defaultChecked={messagingChannels.has('rcs')}
+                disabled={readOnly}
+              />
+              <span>{MESSAGING_CHANNEL_LABEL.rcs}</span>
+            </label>
+          </div>
+        ) : null}
       </fieldset>
 
       <fieldset className={styles.opsFieldset}>
@@ -227,7 +261,7 @@ export function OperationalSettingsForm({
               type="checkbox"
               name="sms_notify_invoice_overdue"
               defaultChecked={snapshot.sms_notify_invoice_overdue}
-              disabled={readOnly || !invoiceReminderSmsEditable || !twilioConfigured}
+              disabled={readOnly || !invoiceReminderSmsEditable || !sentDmConfigured}
             />
             <span>SMS customer when an invoice is overdue (Pro)</span>
           </label>

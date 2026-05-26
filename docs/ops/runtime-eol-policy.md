@@ -13,7 +13,7 @@ This policy covers runtimes and dependencies used to build, deploy, and operate 
 - npm production and development dependencies
 - GitHub Actions runner images and action versions
 - Supabase Postgres version (managed cloud)
-- Third-party SDKs with security implications (Stripe, Plaid, Twilio, Supabase client)
+- Third-party SDKs with security implications (Stripe, Plaid, sent.dm, Supabase client)
 
 ## Supported versions
 

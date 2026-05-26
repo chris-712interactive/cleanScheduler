@@ -99,13 +99,16 @@ export async function sendQuoteNotificationSms(
     if (!phone || prefersEmailOnly) return;
 
     const link = await quoteUrlForCustomer(admin, params.tenantId, params.quoteId);
-    const body = `${tname}: New quote "${params.quoteTitle}". View & respond: ${link}`;
     const sent = await sendTransactionalSms({
       admin,
       tenantId: params.tenantId,
       toPhone: phone,
-      body,
-      purpose: 'quote_sent',
+      payload: {
+        purpose: 'quote_sent',
+        tenantName: tname,
+        quoteTitle: params.quoteTitle,
+        link,
+      },
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_sent SMS failed:', sent.error);
@@ -116,13 +119,15 @@ export async function sendQuoteNotificationSms(
   const staffPhone = await tenantStaffPhone(admin, params.tenantId);
 
   if (event === 'quote_accepted' && flags.sms_accepted && staffPhone) {
-    const body = `${tname}: A customer accepted quote "${params.quoteTitle}".`;
     const sent = await sendTransactionalSms({
       admin,
       tenantId: params.tenantId,
       toPhone: staffPhone,
-      body,
-      purpose: 'quote_accepted',
+      payload: {
+        purpose: 'quote_accepted',
+        tenantName: tname,
+        quoteTitle: params.quoteTitle,
+      },
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_accepted SMS failed:', sent.error);
@@ -131,13 +136,15 @@ export async function sendQuoteNotificationSms(
   }
 
   if (event === 'quote_declined' && flags.sms_declined && staffPhone) {
-    const body = `${tname}: A customer declined quote "${params.quoteTitle}".`;
     const sent = await sendTransactionalSms({
       admin,
       tenantId: params.tenantId,
       toPhone: staffPhone,
-      body,
-      purpose: 'quote_declined',
+      payload: {
+        purpose: 'quote_declined',
+        tenantName: tname,
+        quoteTitle: params.quoteTitle,
+      },
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_declined SMS failed:', sent.error);

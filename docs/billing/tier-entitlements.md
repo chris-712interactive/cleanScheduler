@@ -86,10 +86,10 @@ Inactive members do not consume seats. Pending invites reserve a seat until acce
 | Business | No | 0 |
 | Pro | Yes | 25,000 |
 
-Entitlement flag is defined and enforced at send time. Requires Twilio env vars on the server.
+Entitlement flag is defined and enforced at send time. Requires sent.dm env vars on the server.
 **Not available during the free trial** — tenant billing status must be `active` or `past_due` (see `canUseSmsCommunication` in `lib/billing/tenantSubscriptionAccess.ts`).
 
-**Implemented (Pro + Twilio configured):**
+**Implemented (Pro + sent.dm configured):**
 
 - Quote SMS (customer sent; team accept/decline) — `lib/sms/quoteNotificationSms.ts`
 - Visit reminder SMS (~24h before) — daily cron `/api/cron/visit-sms-reminders`
@@ -123,7 +123,7 @@ See `docs/product/tenant-api-webhooks.md`.
 | ---- | ------------- | ----------- |
 | Starter | No | No |
 | Business | Yes | No |
-| Pro | Yes | Yes (paid + Twilio) |
+| Pro | Yes | Yes (paid + sent.dm) |
 
 Daily cron `/api/cron/invoice-reminders` (11:00 UTC). Respects `check_reminder_hold_days` for unreceived check payments. Settings → Operations toggles.
 

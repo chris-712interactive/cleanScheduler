@@ -63,12 +63,12 @@ export const ACTIVE_THIRD_PARTY_SERVICES: ThirdPartyService[] = [
     privacyPolicyUrl: 'https://vercel.com/legal/privacy-policy',
   },
   {
-    name: 'Twilio',
+    name: 'Sent (sent.dm)',
     status: 'active',
     purpose:
-      'Pro plan transactional SMS — quote notifications, visit reminders, and team alerts via Twilio when configured.',
-    dataShared: 'Phone numbers and message content for outbound SMS.',
-    privacyPolicyUrl: 'https://www.twilio.com/en-us/legal/privacy',
+      'Pro plan transactional SMS — quote notifications, visit reminders, and invoice reminders via sent.dm when configured. Optional WhatsApp and RCS per tenant settings.',
+    dataShared: 'Phone numbers and message template parameters for outbound messages.',
+    privacyPolicyUrl: 'https://www.sent.dm/en/privacy',
   },
   {
     name: 'Plaid',

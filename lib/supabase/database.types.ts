@@ -1077,6 +1077,7 @@ export type Database = {
           sms_notify_invoice_overdue: boolean;
           check_reminder_hold_days: number;
           check_hold_through_deposit: boolean;
+          messaging_channels: string[];
           created_at: string;
           updated_at: string;
         };
@@ -1096,6 +1097,7 @@ export type Database = {
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
+          messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
         };
@@ -1115,6 +1117,7 @@ export type Database = {
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
+          messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
         };
@@ -2926,7 +2929,9 @@ export type Database = {
           segment_count: number;
           purpose: string;
           status: string;
-          twilio_sid: string | null;
+          provider_message_id: string | null;
+          delivery_status: string | null;
+          channel: string;
           error_message: string | null;
           related_visit_id: string | null;
           created_at: string;
@@ -2939,7 +2944,9 @@ export type Database = {
           segment_count?: number;
           purpose: string;
           status?: string;
-          twilio_sid?: string | null;
+          provider_message_id?: string | null;
+          delivery_status?: string | null;
+          channel?: string;
           error_message?: string | null;
           related_visit_id?: string | null;
           created_at?: string;
@@ -2952,7 +2959,9 @@ export type Database = {
           segment_count?: number;
           purpose?: string;
           status?: string;
-          twilio_sid?: string | null;
+          provider_message_id?: string | null;
+          delivery_status?: string | null;
+          channel?: string;
           error_message?: string | null;
           related_visit_id?: string | null;
           created_at?: string;

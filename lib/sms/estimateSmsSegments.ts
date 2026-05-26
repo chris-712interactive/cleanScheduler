@@ -1,4 +1,4 @@
-/** GSM-7 segment estimate for pre-send quota checks (Twilio may differ slightly). */
+/** GSM-7 segment estimate for pre-send quota checks (carrier billing may differ slightly). */
 export function estimateSmsSegmentCount(body: string): number {
   const len = body.trim().length;
   if (len === 0) return 0;

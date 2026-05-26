@@ -1,4 +1,17 @@
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  MESSAGING_CHANNEL_LABEL,
+  normalizeMessagingChannelsFromDb,
+  parseMessagingChannelsFromForm,
+  type MessagingChannel,
+} from '@/lib/sms/sentMessagingChannels';
+
+export type { MessagingChannel };
+export {
+  MESSAGING_CHANNEL_LABEL,
+  normalizeMessagingChannelsFromDb,
+  parseMessagingChannelsFromForm,
+};
 
 export type AcceptedQuoteScheduleMode = Database['public']['Enums']['accepted_quote_schedule_mode'];
 export type TenantInvoiceExpectation = Database['public']['Enums']['tenant_invoice_expectation'];

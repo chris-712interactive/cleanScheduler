@@ -126,10 +126,10 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
       'Plaid access tokens are stored server-side only. Transaction metadata retained for reconciliation while workspace is active. We revoke Plaid connections when a subscription is canceled or the workspace is closed.',
   },
   {
-    category: 'SMS (Twilio)',
+    category: 'SMS (sent.dm)',
     examples: 'Outbound SMS logs and delivery metadata (when feature is enabled)',
-    retentionPeriod: 'While workspace is active; message bodies per Twilio retention (typically up to 400 days)',
+    retentionPeriod: 'While workspace is active; message previews stored in tenant_sms_messages',
     disposition: 'provider-controlled',
-    notes: 'Active on Pro plan when Twilio is configured.',
+    notes: 'Active on Pro plan when sent.dm is configured.',
   },
 ];

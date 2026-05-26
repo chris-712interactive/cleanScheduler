@@ -1,6 +1,6 @@
 # sent.dm SMS migration (Twilio replacement)
 
-**Status:** Planned — not yet implemented in application code.  
+**Status:** Implemented in application code (migration `0054` + sent.dm transport). Configure Sent accounts and env vars before enabling sends in each environment.  
 **Last updated:** 2026-05-26  
 **Owner:** Engineering  
 
