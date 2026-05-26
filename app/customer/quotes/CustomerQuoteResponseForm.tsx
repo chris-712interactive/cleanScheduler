@@ -10,6 +10,15 @@ const initial: CustomerQuoteResponseState = {};
 
 type FlowStep = 'decision' | 'sign';
 
+function scrollQuoteResponseIntoView(quoteId: string) {
+  requestAnimationFrame(() => {
+    document.getElementById(`quote-response-${quoteId}`)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  });
+}
+
 export function CustomerQuoteResponseForm({
   quoteId,
   tenantName,
@@ -32,6 +41,7 @@ export function CustomerQuoteResponseForm({
   const [isDrawing, setIsDrawing] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const signFormId = `quote-sign-form-${quoteId}`;
 
   const initCanvas = useCallback((el: HTMLCanvasElement | null) => {
     canvasRef.current = el;
@@ -123,8 +133,13 @@ export function CustomerQuoteResponseForm({
     }
   }, [quoteId]);
 
+  const beginSignStep = useCallback(() => {
+    setStep('sign');
+    scrollQuoteResponseIntoView(quoteId);
+  }, [quoteId]);
+
   const isPanel = layout === 'panel';
-  const actionsClass = isPanel ? styles.panelActions : styles.responseActions;
+  const desktopActionsClass = isPanel ? styles.panelActions : styles.responseActions;
 
   if (state.success) {
     return (
@@ -136,7 +151,12 @@ export function CustomerQuoteResponseForm({
 
   if (step === 'decision') {
     return (
-      <div className={styles.responseForm}>
+      <div
+        id={`quote-response-${quoteId}`}
+        className={styles.responseForm}
+        data-flow-step="decision"
+        data-decline-open={declineOpen ? 'true' : 'false'}
+      >
         {state.error ? (
           <p className={styles.responseError} role="alert">
             {state.error}
@@ -149,7 +169,7 @@ export function CustomerQuoteResponseForm({
               This tells {tenantName} you are passing on this quote. You can ask them for a revised
               proposal later.
             </p>
-            <div className={actionsClass}>
+            <div className={desktopActionsClass}>
               <Button type="button" variant="ghost" onClick={() => setDeclineOpen(false)}>
                 Cancel
               </Button>
@@ -161,11 +181,23 @@ export function CustomerQuoteResponseForm({
                 </Button>
               </form>
             </div>
+            <div className={styles.stickyActionBar}>
+              <Button type="button" variant="ghost" fullWidth onClick={() => setDeclineOpen(false)}>
+                Cancel
+              </Button>
+              <form action={action} className={styles.stickyActionForm}>
+                <input type="hidden" name="quote_id" value={quoteId} />
+                <input type="hidden" name="decision" value="decline" />
+                <Button type="submit" variant="secondary" fullWidth loading={pending} disabled={pending}>
+                  Confirm decline
+                </Button>
+              </form>
+            </div>
           </div>
         ) : (
           <>
-            <div className={actionsClass}>
-              <Button type="button" variant="primary" fullWidth={isPanel} onClick={() => setStep('sign')}>
+            <div className={desktopActionsClass}>
+              <Button type="button" variant="primary" fullWidth={isPanel} onClick={beginSignStep}>
                 Accept quote
               </Button>
               <Button type="button" variant="ghost" fullWidth={isPanel} onClick={() => setDeclineOpen(true)}>
@@ -173,11 +205,11 @@ export function CustomerQuoteResponseForm({
               </Button>
             </div>
 
-            <div className={styles.stickyDecisionBar}>
+            <div className={styles.stickyActionBar}>
               <Button type="button" variant="ghost" fullWidth onClick={() => setDeclineOpen(true)}>
                 Decline
               </Button>
-              <Button type="button" variant="primary" fullWidth onClick={() => setStep('sign')}>
+              <Button type="button" variant="primary" fullWidth onClick={beginSignStep}>
                 Accept — {totalLabel}
               </Button>
             </div>
@@ -188,7 +220,11 @@ export function CustomerQuoteResponseForm({
   }
 
   return (
-    <div className={styles.responseForm}>
+    <div
+      id={`quote-response-${quoteId}`}
+      className={styles.responseForm}
+      data-flow-step="sign"
+    >
       {state.error ? (
         <p className={styles.responseError} role="alert">
           {state.error}
@@ -200,6 +236,7 @@ export function CustomerQuoteResponseForm({
       </p>
 
       <form
+        id={signFormId}
         action={action}
         className={styles.signatureForm}
         onSubmit={(e) => {
@@ -316,7 +353,7 @@ export function CustomerQuoteResponseForm({
           </p>
         </details>
 
-        <div className={actionsClass}>
+        <div className={desktopActionsClass}>
           <Button type="button" variant="ghost" fullWidth={isPanel} onClick={() => setStep('decision')}>
             Back
           </Button>
@@ -325,6 +362,22 @@ export function CustomerQuoteResponseForm({
           </Button>
         </div>
       </form>
+
+      <div className={styles.stickyActionBar}>
+        <Button type="button" variant="ghost" fullWidth onClick={() => setStep('decision')}>
+          Back
+        </Button>
+        <Button
+          type="submit"
+          form={signFormId}
+          variant="primary"
+          fullWidth
+          loading={pending}
+          disabled={pending}
+        >
+          {pending ? 'Working…' : 'Accept and sign'}
+        </Button>
+      </div>
     </div>
   );
 }

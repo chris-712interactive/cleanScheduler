@@ -656,8 +656,13 @@
   line-height: 1.45;
 }
 
-.stickyDecisionBar {
+.stickyActionBar {
   display: none;
+}
+
+.stickyActionForm {
+  flex: 2;
+  min-width: 0;
 }
 
 @media (max-width: 767px) {
@@ -679,7 +684,12 @@
     display: none;
   }
 
-  .stickyDecisionBar {
+  /* Signature step belongs after quote details on small screens. */
+  .reviewAside:has(.responseForm[data-flow-step='sign']) {
+    order: 3;
+  }
+
+  .stickyActionBar {
     display: flex;
     position: fixed;
     left: 0;
@@ -696,14 +706,15 @@
       flex: 1;
     }
 
-    button:last-child {
+    button:last-child,
+    .stickyActionForm {
       flex: 2;
     }
   }
 }
 
 @media (min-width: 768px) {
-  .stickyDecisionBar {
+  .stickyActionBar {
     display: none !important;
   }
 }
