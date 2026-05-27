@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:22.22.1-bookworm
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - name: Verify Node and install dependencies
