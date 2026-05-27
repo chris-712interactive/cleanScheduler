@@ -2,15 +2,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Container } from '@/components/layout/Container';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
+import { buildHelpPageMetadata } from '@/lib/help/metadata';
 import styles from './page.module.scss';
 
-export const metadata = {
-  title: `TCR Documentation · ${PRODUCT_NAME}`,
+export const metadata = buildHelpPageMetadata({
+  path: '/help/tcr',
+  title: 'TCR Documentation',
   description:
     'Public TCR compliance documentation covering SMS terms, privacy policy, and customer opt-in disclosures.',
-};
+});
 
 export default function TcrDocumentationPage() {
   return (
@@ -20,8 +21,13 @@ export default function TcrDocumentationPage() {
           <PageHeader
             title="TCR Documentation"
             description="Public documentation and screenshots used for The Campaign Registry (10DLC) review."
-            backHref="/"
-            backLabel="Home"
+            backHref="/help/compliance"
+            backLabel="Compliance"
+            breadcrumbs={[
+              { label: 'Help', href: '/help' },
+              { label: 'Compliance', href: '/help/compliance' },
+              { label: 'TCR' },
+            ]}
           />
 
           <article className={styles.doc}>
@@ -220,7 +226,6 @@ export default function TcrDocumentationPage() {
           </article>
         </Container>
       </main>
-      <MarketingFooter />
     </>
   );
 }

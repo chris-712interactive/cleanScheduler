@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { HELP_ARTICLES } from '@/lib/help/registry';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 
 const MARKETING_PATHS = [
@@ -21,8 +22,6 @@ const MARKETING_PATHS = [
   { path: '/sms-terms', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/terms', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/data-retention', priority: 0.4, changeFrequency: 'yearly' as const },
-  { path: '/help', priority: 0.3, changeFrequency: 'monthly' as const },
-  { path: '/help/tcr', priority: 0.3, changeFrequency: 'monthly' as const },
   { path: '/sign-in', priority: 0.3, changeFrequency: 'yearly' as const },
 ];
 
@@ -30,7 +29,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const origin = getPublicOrigin(null);
   const lastModified = new Date();
 
-  return MARKETING_PATHS.map(({ path, priority, changeFrequency }) => ({
+  const helpPaths = HELP_ARTICLES.map(({ path, priority, changeFrequency }) => ({
+    path,
+    priority: priority ?? 0.3,
+    changeFrequency: changeFrequency ?? ('monthly' as const),
+  }));
+
+  return [...MARKETING_PATHS, ...helpPaths].map(({ path, priority, changeFrequency }) => ({
     url: `${origin}${path}`,
     lastModified,
     changeFrequency,

@@ -3,8 +3,10 @@ import 'modern-normalize';
 import '@/styles/globals.scss';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { themeScript } from '@/components/theme/themeScript';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getPublicOrigin(null)),
   title: {
     default: 'cleanScheduler',
     template: '%s | cleanScheduler',

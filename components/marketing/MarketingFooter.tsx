@@ -20,6 +20,9 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/#faq">
               FAQ
             </Link>
+            <Link className={styles.link} href="/help">
+              Help Center
+            </Link>
             <Link className={styles.link} href="/security">
               Security
             </Link>
@@ -51,6 +54,9 @@ export function MarketingFooter() {
             </Link>
             <Link className={styles.link} href="/help/tcr">
               TCR Compliance
+            </Link>
+            <Link className={styles.link} href="/help/compliance">
+              Compliance
             </Link>
           </nav>
           <p className={styles.copy}>
