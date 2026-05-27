@@ -23,8 +23,17 @@
   text-decoration: none;
   transition: border-color 0.15s ease;
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     border-color: var(--color-brand-primary);
+    color: inherit;
+    text-decoration: none;
+
+    h3,
+    p,
+    span {
+      text-decoration: none;
+    }
   }
 }
 
