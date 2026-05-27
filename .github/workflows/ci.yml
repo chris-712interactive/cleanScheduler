@@ -23,6 +23,8 @@ jobs:
       - name: Verify Node and install dependencies
         run: |
           set -euxo pipefail
+          # checkout runs on the host; the container user must trust the workspace mount
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           node -v
           npm -v
           git log -1 --oneline
