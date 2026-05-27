@@ -4,29 +4,23 @@ on:
     branches: [main, staging]
   pull_request:
 
-# GitHub Actions runners default action runtimes to Node 20 until June 2026.
-# https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   quality:
+    # Pin Node via container image so npm ci always runs on >=22.22.1 (engine-strict).
+    # Avoids setup-node / Actions runtime mismatches that caused EBADENGINE on GitHub.
     runs-on: ubuntu-latest
+    container:
+      image: node:22.22.1-bookworm
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          # Pin explicitly — package.json engines.node is >=22.22.1 and .npmrc sets engine-strict.
-          node-version: '22.22.1'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Verify Node engine
+      - name: Verify Node and install dependencies
         run: |
+          set -euxo pipefail
           node -v
           npm -v
+          test -f package-lock.json
           npm run check:engines
-      - name: Install dependencies
-        run: npm ci
+          npm ci
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
       - name: Typecheck
