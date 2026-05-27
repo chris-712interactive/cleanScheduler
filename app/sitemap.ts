@@ -18,8 +18,11 @@ const MARKETING_PATHS = [
     changeFrequency: 'yearly' as const,
   },
   { path: '/privacy', priority: 0.4, changeFrequency: 'yearly' as const },
+  { path: '/sms-terms', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/terms', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/data-retention', priority: 0.4, changeFrequency: 'yearly' as const },
+  { path: '/help', priority: 0.3, changeFrequency: 'monthly' as const },
+  { path: '/help/tcr', priority: 0.3, changeFrequency: 'monthly' as const },
   { path: '/sign-in', priority: 0.3, changeFrequency: 'yearly' as const },
 ];
 

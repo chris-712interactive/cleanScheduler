@@ -173,12 +173,17 @@ export async function acceptCustomerPortalInviteAction(
 
   const password = String(formData.get('password') ?? '');
   const confirm = String(formData.get('confirm_password') ?? '');
+  const phone = String(formData.get('phone') ?? '').trim();
+  const smsOptIn = formData.get('sms_opt_in') === 'on';
 
   if (!password || password.length < 8) {
     return { error: 'Password must be at least 8 characters.' };
   }
   if (password !== confirm) {
     return { error: 'Passwords do not match.' };
+  }
+  if (smsOptIn && !phone) {
+    return { error: 'Enter a phone number to opt in to SMS.' };
   }
 
   if (!shouldAutoConfirmEmail()) {
@@ -252,6 +257,33 @@ export async function acceptCustomerPortalInviteAction(
   if (linkErr) {
     await admin.auth.admin.deleteUser(userId);
     return { error: linkErr.message };
+  }
+
+  if (phone) {
+    const { error: phoneErr } = await admin
+      .from('customer_identities')
+      .update({ phone })
+      .eq('id', identity.id);
+    if (phoneErr) {
+      await admin.from('customer_identities').update({ auth_user_id: null }).eq('id', identity.id);
+      await admin.auth.admin.deleteUser(userId);
+      return { error: phoneErr.message };
+    }
+  }
+
+  const { error: profileErr } = await admin.from('tenant_customer_profiles').upsert(
+    {
+      tenant_id: invite.tenant_id,
+      customer_id: invite.customer_id,
+      sms_transactional_opt_in: smsOptIn,
+      sms_transactional_opt_in_at: smsOptIn ? new Date().toISOString() : null,
+    },
+    { onConflict: 'customer_id' },
+  );
+  if (profileErr) {
+    await admin.from('customer_identities').update({ auth_user_id: null }).eq('id', identity.id);
+    await admin.auth.admin.deleteUser(userId);
+    return { error: profileErr.message };
   }
 
   const { error: profErr } = await admin.from('user_profiles').upsert(

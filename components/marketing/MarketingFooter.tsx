@@ -40,11 +40,17 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/privacy">
               Privacy Policy
             </Link>
+            <Link className={styles.link} href="/sms-terms">
+              SMS Terms
+            </Link>
             <Link className={styles.link} href="/terms">
               Terms of Service
             </Link>
             <Link className={styles.link} href="/data-retention">
               Data Retention
+            </Link>
+            <Link className={styles.link} href="/help/tcr">
+              TCR Compliance
             </Link>
           </nav>
           <p className={styles.copy}>

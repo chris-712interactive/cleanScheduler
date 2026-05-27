@@ -94,6 +94,29 @@ export function CompleteInviteForms({
             minLength={8}
           />
 
+          <label className={styles.label} htmlFor="phone">
+            Phone number (optional)
+          </label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            className={styles.input}
+            placeholder="(555) 123-4567"
+          />
+
+          <label className={styles.checkboxRow} htmlFor="sms_opt_in">
+            <input id="sms_opt_in" name="sms_opt_in" type="checkbox" value="on" />
+            <span>
+              I agree to receive text messages from cleanScheduler about my bookings and account.
+              Message frequency varies based on your bookings. Message and data rates may apply.
+              Reply STOP to unsubscribe. Reply HELP for help. View our{' '}
+              <Link href="/privacy">Privacy Policy</Link> and{' '}
+              <Link href="/sms-terms">Terms &amp; Conditions</Link>.
+            </span>
+          </label>
+
           <Button type="submit" variant="primary" disabled={pwPending}>
             {pwPending ? 'Creating…' : 'Create account & continue'}
           </Button>

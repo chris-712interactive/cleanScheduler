@@ -1141,6 +1141,8 @@ export type Database = {
           preferred_payment_method: Database['public']['Enums']['tenant_payment_method'];
           internal_notes: string | null;
           marketing_email_opt_in: boolean;
+          sms_transactional_opt_in: boolean;
+          sms_transactional_opt_in_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1153,6 +1155,8 @@ export type Database = {
           preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
           marketing_email_opt_in?: boolean;
+          sms_transactional_opt_in?: boolean;
+          sms_transactional_opt_in_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1165,6 +1169,8 @@ export type Database = {
           preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
           marketing_email_opt_in?: boolean;
+          sms_transactional_opt_in?: boolean;
+          sms_transactional_opt_in_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
