@@ -15,7 +15,10 @@ jobs:
       run:
         shell: bash
     steps:
+      # Use PR branch HEAD, not the merge commit with base — avoids lockfile/package.json drift.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       - name: Verify Node and install dependencies
         run: |
           set -euxo pipefail
