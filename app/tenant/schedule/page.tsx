@@ -22,8 +22,8 @@ import {
 } from '@/lib/tenant/scheduleDateRange';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { isVisitAssignee } from '@/lib/schedule/visitFieldWork';
-import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { visitHasBillableAmount } from '@/lib/billing/resolveVisitExpectedAmount';
+import type { TenantRole } from '@/lib/auth/types';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { TenantScheduleClient, type ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
@@ -78,7 +78,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule');
   const auth = await getAuthContext();
   const currentUserId = auth?.user.id ?? '';
-  const isFieldEmployee = isFieldEmployeeRole(membership.role as import('@/lib/auth/types').TenantRole);
+  const isFieldEmployee = isFieldEmployeeRole(membership.role as TenantRole);
   const dateKey = normalizeDateKey(sp.date);
   const view = normalizeView(sp.view, { defaultForFieldEmployee: isFieldEmployee });
   const employeeFilter = isFieldEmployee

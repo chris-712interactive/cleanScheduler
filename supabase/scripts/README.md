@@ -26,7 +26,7 @@ If you have a **new, empty** Supabase (or Postgres) database and want the same s
 **Important**
 
 - Run only on a database with **no existing cleanScheduler tables** (or drops first — not covered here).
-- The bundle is equivalent to running `0001` … `0021` in order; it does not include `supabase/seed/*.sql` (dev smoke data).
+- The bundle concatenates all `supabase/migrations/*.sql` in sorted order (currently `0001` … `0055`); it does not include `supabase/seed/*.sql` (dev smoke data).
 
 ## Ongoing workflow (DEV → PROD)
 

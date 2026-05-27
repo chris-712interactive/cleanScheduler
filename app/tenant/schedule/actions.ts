@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import type { TenantRole } from '@/lib/auth/types';
 import type { Database } from '@/lib/supabase/database.types';
 
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
@@ -508,7 +509,7 @@ export async function updateVisitJobPrice(
   }
 
   const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
-  const actorRole = membership.role as import('@/lib/auth/types').TenantRole;
+  const actorRole = membership.role as TenantRole;
   if (actorRole !== 'owner' && actorRole !== 'admin') {
     return { error: 'Only owners and admins can update job pricing.' };
   }

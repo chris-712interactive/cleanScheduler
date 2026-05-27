@@ -3,7 +3,6 @@ import type { EntitlementPlanKey } from '@/lib/billing/entitlements';
 import {
   assertFeatureEnabled,
   EntitlementGateError,
-  getEntitlementsForPlan,
   getEntitlementsForTier,
   isFeatureEnabled,
   resolveTenantEntitlementPlan,

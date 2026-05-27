@@ -16,7 +16,7 @@ import {
   countTeamSeatUsage,
   teamSeatGateErrorMessage,
 } from '@/lib/billing/teamSeats';
-import { assertFeatureEnabledForTier, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import { assertFeatureEnabledForTier } from '@/lib/billing/tenantFeatureGate';
 import { recordPlatformAuditEvent } from '@/lib/audit/recordPlatformAuditEvent';
 import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
 import {

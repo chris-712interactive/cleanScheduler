@@ -133,7 +133,7 @@ export default async function TenantLayout({ children }: { children: React.React
         connectStatus,
       });
 
-  const billingNavItem = buildTenantBillingNavItem(connectStatus);
+  const billingNavItem = buildTenantBillingNavItem();
   const settingsNavItem = buildTenantSettingsNavItem();
 
   const navItems = buildTenantNavItems({

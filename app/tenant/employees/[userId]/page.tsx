@@ -13,7 +13,6 @@ import {
   roleOptionsForMemberEditor,
 } from '@/lib/tenant/employeePermissions';
 import { EmployeeMemberEditForm } from '../EmployeeMemberEditForm';
-import styles from '../employeeEdit.module.scss';
 
 export const dynamic = 'force-dynamic';
 

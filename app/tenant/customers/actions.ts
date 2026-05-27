@@ -6,7 +6,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { assertMeteredLimit, isLimitExceededError } from '@/lib/billing/checkLimit';
-import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import type { Tables } from '@/lib/supabase/database.types';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 import { parseCustomerPreferredPaymentMethod } from '@/lib/tenant/customerBillingPreference';
@@ -63,8 +62,6 @@ export async function createTenantCustomer(
   const membership = await requireTenantPortalAccess(slug, '/customers/new');
 
   const admin = createAdminClient();
-
-  const planTier = await resolveTenantPlanTier(admin, membership.tenantId);
 
   try {
     await assertMeteredLimit(admin, membership.tenantId, 'maxActiveCustomers', 1);

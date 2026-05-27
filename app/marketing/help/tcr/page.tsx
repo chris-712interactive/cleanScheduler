@@ -71,7 +71,8 @@ export default function TcrDocumentationPage() {
             <ul>
               <li>
                 Opt-in is collected during customer account signup from invite completion (
-                <code>/complete-invite</code> on the customer portal) or through the customer's account settings.
+                <code>/complete-invite</code> on the customer portal) or through the customer&apos;s account
+                settings.
               </li>
               <li>
                 Consent uses an explicit unchecked checkbox with clear disclosure language, including
@@ -108,7 +109,8 @@ export default function TcrDocumentationPage() {
             <h2>TCR campaign description</h2>
             <blockquote className={styles.blockquote}>
               &quot;Clean Scheduler sends transactional SMS notifications to homeowners and cleaning
-              service providers who have opted in at account signup or through the user's account setttings. 
+              service providers who have opted in at account signup or through the user&apos;s account
+              settings. 
               Messages include cleaning quote delivery, booking confirmations, job decline notifications, 
               appointment reminders, and invoice payment reminders. No promotional content is included.&quot;
             </blockquote>

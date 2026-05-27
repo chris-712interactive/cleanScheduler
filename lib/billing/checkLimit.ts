@@ -12,7 +12,6 @@ import { countActiveAutomationWorkflows } from '@/lib/billing/automationWorkflow
 import { countSmsSegmentsUsedThisMonth } from '@/lib/billing/smsCredits';
 import { countTeamSeatUsage } from '@/lib/billing/teamSeats';
 import { countMarketingSendsThisMonth } from '@/lib/campaigns/campaignLimits';
-import { countActiveIntegrations } from '@/lib/integrations/integrationLimits';
 import type { Database } from '@/lib/supabase/database.types';
 
 type Admin = SupabaseClient<Database>;

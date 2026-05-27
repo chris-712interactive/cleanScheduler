@@ -20,18 +20,19 @@ import {
   createPlaidUpdateLinkToken,
   isPlaidConfigured,
 } from '@/lib/plaid/server';
+import type { TenantRole } from '@/lib/auth/types';
 import type { BankConnectionActionResult } from './finishBankConnectionAction';
 
 function bankConnectionPath(): string {
   return '/billing/bank-connection';
 }
 
-function requireBankAdmin(membership: { role: import('@/lib/auth/types').TenantRole }): string | null {
+function requireBankAdmin(membership: { role: TenantRole }): string | null {
   return tenantRoleError(membership.role, 'admin');
 }
 
 async function requireBankAdminWithMfa(membership: {
-  role: import('@/lib/auth/types').TenantRole;
+  role: TenantRole;
 }): Promise<string | null> {
   const roleErr = requireBankAdmin(membership);
   if (roleErr) return roleErr;

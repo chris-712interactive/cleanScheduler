@@ -228,7 +228,6 @@ export function QuoteCreateWizard({
       pricedLineCount,
       scopeExclusions,
       scopeInclusions.length,
-      step,
       validUntil,
     ],
   );

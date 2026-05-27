@@ -1,5 +1,3 @@
-import type { ReportSlug } from '@/lib/reports/types';
-
 export interface ReportRunParams {
   from: string;
   to: string;

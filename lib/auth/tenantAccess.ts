@@ -2,7 +2,6 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import {
-  isTenantBillingHubPath,
   isTenantPortalSuspended,
   isTenantSuspendedEscapePath,
   needsSubscriptionPurchase,
