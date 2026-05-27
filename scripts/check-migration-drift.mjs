@@ -10,7 +10,7 @@ const files = readdirSync(dir)
   .filter((f) => f.endsWith('.sql') && !f.startsWith('._'))
   .sort();
 
-const prefixes: number[] = [];
+const prefixes = [];
 
 for (const f of files) {
   const m = f.match(/^(\d+)_/);

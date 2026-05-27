@@ -71,7 +71,7 @@ export default function TcrDocumentationPage() {
             <ul>
               <li>
                 Opt-in is collected during customer account signup from invite completion (
-                <code>/complete-invite</code> on the customer portal).
+                <code>/complete-invite</code> on the customer portal) or through the customer's account settings.
               </li>
               <li>
                 Consent uses an explicit unchecked checkbox with clear disclosure language, including
@@ -79,8 +79,7 @@ export default function TcrDocumentationPage() {
                 <Link href="/privacy">Privacy Policy</Link> and <Link href="/sms-terms">SMS Terms</Link>.
               </li>
               <li>
-                Phone number is required when SMS opt-in is selected; submission is rejected without
-                a number.
+                SMS opt-in is entirely optional. If a customer elects to opt in, a phone number is required to complete that selection.
               </li>
               <li>
                 Consent is stored to profile fields for auditability:
@@ -109,9 +108,9 @@ export default function TcrDocumentationPage() {
             <h2>TCR campaign description</h2>
             <blockquote className={styles.blockquote}>
               &quot;Clean Scheduler sends transactional SMS notifications to homeowners and cleaning
-              service providers who have opted in at account signup. Messages include cleaning quote
-              delivery, booking confirmations, job decline notifications, appointment reminders, and
-              invoice payment reminders. No promotional content is included.&quot;
+              service providers who have opted in at account signup or through the user's account setttings. 
+              Messages include cleaning quote delivery, booking confirmations, job decline notifications, 
+              appointment reminders, and invoice payment reminders. No promotional content is included.&quot;
             </blockquote>
 
             <h2>Message templates</h2>
@@ -122,60 +121,35 @@ export default function TcrDocumentationPage() {
             <h3>Clean Scheduler Admin Level SMS</h3>
             <ol className={styles.templates}>
               <li>
-                <strong>Quote Sent (to Customer)</strong>
+                <strong>Quote Accepted (to Tenant)</strong>
                 <p>
-                  Clean Scheduler: Hi [FirstName], your cleaning quote for [ServiceDate] is ready.
-                  Est. $[Amount] for [ServiceType]. View details: cleanscheduler.com/quotes/[QuoteID]
-                  Reply STOP to opt out. (152 characters)
+                  Clean Scheduler: Hi [FirstName], a new quote has been accepted by [CustomerName]. 
+                  View details: [tenantSlug].cleanscheduler.com/quotes/[QuoteID]
+                  Reply STOP to opt out.
                 </p>
               </li>
               <li>
-                <strong>Quote Accepted (to Customer)</strong>
+                <strong>Quote Declined (to Tenant)</strong>
                 <p>
-                  Clean Scheduler: Great news, [FirstName]! Your cleaning on [ServiceDate] at [Time]
-                  is confirmed. Your cleaner will arrive at [Address]. Reply STOP to opt out. (148
-                  characters)
+                  Clean Scheduler: Hi [FirstName], the quote for [CustomerName] at [Address] was not
+                  accepted by the customer. Check your dashboard: [tenantSlug].cleanscheduler.com/quotes Reply
+                  STOP to opt out.
                 </p>
               </li>
               <li>
-                <strong>Quote Accepted (to Service Provider)</strong>
+                <strong>Subscription Past Due (to Tenant)</strong>
                 <p>
-                  Clean Scheduler: Hi [FirstName], a new job is confirmed. Customer: [CustomerName],
-                  [ServiceDate] at [Time], [Address]. View details: cleanscheduler.com/jobs/[JobID]
-                  Reply STOP to opt out. (155 characters)
+                  Clean Scheduler: Hi [FirstName], your subscription to Clean Scheduler is past due.
+                  Pay now: [tenantSlug].cleanscheduler.com/dashboard. Reply STOP to opt out.
                 </p>
               </li>
               <li>
-                <strong>Quote Declined (to Customer)</strong>
-                <p>
-                  Clean Scheduler: Hi [FirstName], your cleaning quote for [ServiceDate] has been
-                  declined. Request a new quote anytime: cleanscheduler.com/quotes Reply STOP to opt
-                  out. (150 characters)
-                </p>
-              </li>
-              <li>
-                <strong>Quote Declined (to Service Provider)</strong>
-                <p>
-                  Clean Scheduler: Hi [FirstName], the quote for [ServiceDate] at [Address] was not
-                  accepted by the customer. Check your dashboard: cleanscheduler.com/dashboard Reply
-                  STOP to opt out. (152 characters)
-                </p>
-              </li>
-              <li>
-                <strong>Cleaning Visit Reminder (to Customer)</strong>
-                <p>
-                  Clean Scheduler: Reminder, [FirstName] - your cleaning is tomorrow, [ServiceDate]
-                  at [Time]. Questions? Reply or visit cleanscheduler.com/bookings/[BookingID] Reply
-                  STOP to opt out. (155 characters)
-                </p>
-              </li>
-              <li>
-                <strong>Invoice Overdue (to Customer)</strong>
-                <p>
-                  Clean Scheduler: Hi [FirstName], invoice #[InvoiceID] for $[Amount] is past due.
-                  Pay now: cleanscheduler.com/pay/[InvoiceID] Reply STOP to opt out. (120
-                  characters)
-                </p>
+                  <strong>Reschedule Request (to Tenant)</strong>
+                  <p>
+                    Clean Scheduler: Hi [FirstName], a new reschedule request has been submitted by [CustomerName].
+                    Login to: [tenantSlug].cleanscheduler.com/schedule/reschedule-requests to review.
+                    Reply STOP to opt out.
+                  </p>
               </li>
             </ol>
             <h3>Tenant (Cleaning Business) Level SMS</h3>
@@ -184,23 +158,15 @@ export default function TcrDocumentationPage() {
                 <strong>Quote Sent (to Customer)</strong>
                 <p>
                   [BusinessName]: Hi [FirstName], your cleaning quote for [ServiceDate] is ready.
-                  Est. $[Amount] for [ServiceType]. View details: cleanscheduler.com/quotes/[QuoteID]
-                  Reply STOP to opt out. (152 characters)
+                  Est. $[Amount] for [ServiceType]. View details: my.cleanscheduler.com/quotes/[QuoteID]
+                  Reply STOP to opt out.
                 </p>
               </li>
               <li>
                 <strong>Quote Accepted (to Customer)</strong>
                 <p>
                   [BusinessName]: Great news, [FirstName]! We have received your approved quote & will
-                  work to schedule your first cleaning! Reply STOP to opt out. (163 characters)
-                </p>
-              </li>
-              <li>
-                <strong>Quote Accepted (to Service Provider)</strong>
-                <p>
-                  [BusinessName]: Hi [FirstName], a new job is confirmed. Customer: [CustomerName],
-                  [ServiceDate] at [Time], [Address]. View details: my.cleanscheduler.com/jobs/[JobID]
-                  Reply STOP to opt out. (155 characters)
+                  work to schedule your first cleaning! Reply STOP to opt out.
                 </p>
               </li>
               <li>
@@ -208,15 +174,7 @@ export default function TcrDocumentationPage() {
                 <p>
                   [BusinessName]: Hi [FirstName], your cleaning quote for [ServiceDate] has been
                   declined. Request a new quote anytime: my.cleanscheduler.com/quotes Reply STOP to opt
-                  out. (150 characters)
-                </p>
-              </li>
-              <li>
-                <strong>Quote Declined (to Service Provider)</strong>
-                <p>
-                  [BusinessName]: Hi [FirstName], the quote for [ServiceDate] at [Address] was not
-                  accepted by the customer. Check your dashboard: my.cleanscheduler.com/dashboard Reply
-                  STOP to opt out. (152 characters)
+                  out.
                 </p>
               </li>
               <li>
@@ -224,7 +182,7 @@ export default function TcrDocumentationPage() {
                 <p>
                   [BusinessName]: Reminder, [FirstName] - your cleaning is tomorrow, [ServiceDate]
                   at [Time]. Questions? Reply or visit my.cleanscheduler.com/bookings/[BookingID] Reply
-                  STOP to opt out. (155 characters)
+                  STOP to opt out.
                 </p>
               </li>
               <li>
@@ -234,6 +192,28 @@ export default function TcrDocumentationPage() {
                   Pay now: my.cleanscheduler.com/pay/[InvoiceID] Reply STOP to opt out. (120
                   characters)
                 </p>
+              </li>
+              <li>
+                  <strong>Reschedule Request Received (to Customer)</strong>
+                  <p>
+                    [BusinessName]: Hi [FirstName], a new rescheduler request has been received.  We will review this 
+                    and get back to you as soon as possible. Reply STOP to opt out.
+                  </p>
+              </li>
+              <li>
+                    <strong>Reschedule Request Approved (to Customer)</strong>
+                    <p>
+                      [BusinessName]: Hi [FirstName], your reschedule request has been approved.  
+                      Your new cleaning will be on [ServiceDate] at [Time]. Reply STOP to opt out.
+                    </p>
+              </li>
+              <li>
+                    <strong>Reschedule Request Declined (to Customer)</strong>
+                    <p>
+                      [BusinessName]: Hi [FirstName], your reschedule request has been declined.
+                      Please contact the office at [TenantOfficePhone] to discuss an alternative date & time.
+                      Reply STOP to opt out.
+                    </p>
               </li>
             </ol>
 
