@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, staging]
+    branches: [main, staging, dev]
   pull_request:
 
 jobs:
@@ -15,17 +15,21 @@ jobs:
       run:
         shell: bash
     steps:
-      # Use PR branch HEAD, not the merge commit with base — avoids lockfile/package.json drift.
+      # PR default checkout is a merge commit (main + dev) which breaks package-lock.json.
+      # Use the PR branch tip only. On push, github.event.pull_request.head.sha is empty → github.ref.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Verify Node and install dependencies
         run: |
           set -euxo pipefail
           node -v
           npm -v
+          git log -1 --oneline
           test -f package-lock.json
           npm run check:engines
+          npm install --package-lock-only --ignore-scripts
+          git diff --exit-code package-lock.json
           npm ci
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
