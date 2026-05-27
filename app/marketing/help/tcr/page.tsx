@@ -119,6 +119,7 @@ export default function TcrDocumentationPage() {
               Variables in brackets are populated dynamically at send time. Brand prefix and opt-out
               language remain fixed for review consistency.
             </p>
+            <h3>Clean Scheduler Admin Level SMS</h3>
             <ol className={styles.templates}>
               <li>
                 <strong>Quote Sent (to Customer)</strong>
@@ -173,6 +174,64 @@ export default function TcrDocumentationPage() {
                 <p>
                   Clean Scheduler: Hi [FirstName], invoice #[InvoiceID] for $[Amount] is past due.
                   Pay now: cleanscheduler.com/pay/[InvoiceID] Reply STOP to opt out. (120
+                  characters)
+                </p>
+              </li>
+            </ol>
+            <h3>Tenant (Cleaning Business) Level SMS</h3>
+            <ol className={styles.templates}>
+              <li>
+                <strong>Quote Sent (to Customer)</strong>
+                <p>
+                  [BusinessName]: Hi [FirstName], your cleaning quote for [ServiceDate] is ready.
+                  Est. $[Amount] for [ServiceType]. View details: cleanscheduler.com/quotes/[QuoteID]
+                  Reply STOP to opt out. (152 characters)
+                </p>
+              </li>
+              <li>
+                <strong>Quote Accepted (to Customer)</strong>
+                <p>
+                  [BusinessName]: Great news, [FirstName]! We have received your approved quote & will
+                  work to schedule your first cleaning! Reply STOP to opt out. (163 characters)
+                </p>
+              </li>
+              <li>
+                <strong>Quote Accepted (to Service Provider)</strong>
+                <p>
+                  [BusinessName]: Hi [FirstName], a new job is confirmed. Customer: [CustomerName],
+                  [ServiceDate] at [Time], [Address]. View details: my.cleanscheduler.com/jobs/[JobID]
+                  Reply STOP to opt out. (155 characters)
+                </p>
+              </li>
+              <li>
+                <strong>Quote Declined (to Customer)</strong>
+                <p>
+                  [BusinessName]: Hi [FirstName], your cleaning quote for [ServiceDate] has been
+                  declined. Request a new quote anytime: my.cleanscheduler.com/quotes Reply STOP to opt
+                  out. (150 characters)
+                </p>
+              </li>
+              <li>
+                <strong>Quote Declined (to Service Provider)</strong>
+                <p>
+                  [BusinessName]: Hi [FirstName], the quote for [ServiceDate] at [Address] was not
+                  accepted by the customer. Check your dashboard: my.cleanscheduler.com/dashboard Reply
+                  STOP to opt out. (152 characters)
+                </p>
+              </li>
+              <li>
+                <strong>Cleaning Visit Reminder (to Customer)</strong>
+                <p>
+                  [BusinessName]: Reminder, [FirstName] - your cleaning is tomorrow, [ServiceDate]
+                  at [Time]. Questions? Reply or visit my.cleanscheduler.com/bookings/[BookingID] Reply
+                  STOP to opt out. (155 characters)
+                </p>
+              </li>
+              <li>
+                <strong>Invoice Overdue (to Customer)</strong>
+                <p>
+                  [BusinessName]: Hi [FirstName], invoice #[InvoiceID] for $[Amount] is past due.
+                  Pay now: my.cleanscheduler.com/pay/[InvoiceID] Reply STOP to opt out. (120
                   characters)
                 </p>
               </li>
