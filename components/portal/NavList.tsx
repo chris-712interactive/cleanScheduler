@@ -15,6 +15,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isNavChildActive, isNavItemActive } from './navActive';
+import { markPortalNavPending } from './portalNavPending';
+import { useClearPortalNavPendingOnNavigate } from './useClearPortalNavPendingOnNavigate';
 import type { NavItem } from './types';
 import { navIcons } from './navIcons';
 import styles from './NavList.module.scss';
@@ -26,6 +28,7 @@ export interface NavListProps {
 
 export function NavList({ items, onNavigate }: NavListProps) {
   const pathname = usePathname();
+  useClearPortalNavPendingOnNavigate();
 
   return (
     <nav>
@@ -48,7 +51,12 @@ export function NavList({ items, onNavigate }: NavListProps) {
                 }
                 className={styles.item}
                 data-active={active || undefined}
-                onClick={onNavigate}
+                onClick={() => {
+                  if (!active || children.length > 0) {
+                    markPortalNavPending();
+                  }
+                  onNavigate?.();
+                }}
               >
                 {Icon ? <Icon size={18} aria-hidden="true" /> : null}
                 <span className={styles.label}>{item.label}</span>
@@ -69,7 +77,12 @@ export function NavList({ items, onNavigate }: NavListProps) {
                           aria-current={childActive ? 'page' : undefined}
                           className={styles.subItem}
                           data-active={childActive || undefined}
-                          onClick={onNavigate}
+                          onClick={() => {
+                            if (!childActive) {
+                              markPortalNavPending();
+                            }
+                            onNavigate?.();
+                          }}
                         >
                           {child.label}
                         </Link>

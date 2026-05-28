@@ -1,5 +1,146 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/a11y' as a11y;
+
 .wrap {
   padding-block: var(--space-6);
+
+  &[data-route-loading] {
+    > * {
+      animation: routeLoadingSectionEnter var(--duration-slow) var(--easing-decelerate) backwards;
+    }
+
+    > *:nth-child(1) {
+      animation-delay: 50ms;
+    }
+
+    > *:nth-child(2) {
+      animation-delay: 100ms;
+    }
+
+    > *:nth-child(3) {
+      animation-delay: 150ms;
+    }
+
+    > *:nth-child(n + 4) {
+      animation-delay: 200ms;
+    }
+  }
+
+  @include a11y.respect-reduced-motion;
+}
+
+@keyframes routeLoadingSectionEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.pageHeaderCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pageHeaderAction {
+  flex-shrink: 0;
+}
+
+// Dashboard -------------------------------------------------------------------
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+
+  @include mq.down(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mq.down(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.dashboardGrid {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    gap: var(--space-6);
+  }
+}
+
+.panel {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.panelHeader {
+  margin-bottom: var(--space-4);
+}
+
+.queueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.queueRowCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+// Quotes board ----------------------------------------------------------------
+
+.viewTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .boardRow {
@@ -9,14 +150,215 @@
   overflow-x: auto;
 }
 
-.boardCol {
-  display: grid;
-  gap: var(--space-3);
+.boardColumn {
+  display: flex;
+  flex-direction: column;
   min-width: 12rem;
+  max-height: min(75vh, 800px);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-muted);
+  box-shadow: var(--shadow-xs);
+}
+
+.boardColumnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+
+.boardColumnBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.boardCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 7.5rem;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-border));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+
+.boardCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-1);
+}
+
+// Schedule --------------------------------------------------------------------
+
+.scheduleShell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.scheduleControlBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.scheduleControlLeft,
+.scheduleControlCenter,
+.scheduleControlRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.scheduleControlCenter {
+  flex: 1;
+  justify-content: center;
+}
+
+.dayBoard {
+  display: grid;
+  grid-template-columns: 4.75rem 1fr;
+  gap: var(--space-2);
+  min-height: 28rem;
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.hourRail {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+.timelineTrack {
+  position: relative;
+  min-height: 28rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(100% / 6 - 1px),
+    var(--color-border) calc(100% / 6 - 1px),
+    var(--color-border) calc(100% / 6)
+  );
+}
+
+.visitCard {
+  position: absolute;
+  left: var(--space-2);
+  width: calc(50% - var(--space-2));
+  min-height: 4.75rem;
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-3) + 4px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    background: var(--color-bg-muted);
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+  }
+}
+
+.visitCardLines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+// Customers directory ---------------------------------------------------------
+
+.directoryTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.directoryPanel {
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.searchForm {
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tableHead,
+.tableRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 11rem;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+}
+
+.tableHead {
+  background: var(--color-bg-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tableRow {
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.tableRowCustomer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 @media (max-width: 767px) {
   .boardRow {
     grid-template-columns: 1fr;
+  }
+
+  .tableHead,
+  .tableRow {
+    grid-template-columns: minmax(0, 1fr) 11rem;
+  }
+
+  .tableHead > :nth-child(2),
+  .tableRow > :nth-child(2) {
+    display: none;
   }
 }

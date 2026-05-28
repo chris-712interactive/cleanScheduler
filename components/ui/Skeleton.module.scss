@@ -1,14 +1,18 @@
 .skeleton {
   display: inline-block;
 
+  --skeleton-shimmer-duration: 2.75s;
+
   background: linear-gradient(
     90deg,
     var(--color-bg-muted) 0%,
-    var(--color-bg-subtle) 50%,
+    var(--color-bg-muted) 40%,
+    color-mix(in srgb, var(--color-bg-subtle) 85%, var(--color-bg-muted)) 50%,
+    var(--color-bg-muted) 60%,
     var(--color-bg-muted) 100%
   );
-  background-size: 200% 100%;
-  animation: shimmer var(--duration-slower) ease-in-out infinite;
+  background-size: 250% 100%;
+  animation: shimmer var(--skeleton-shimmer-duration) ease-in-out infinite;
 
   &[data-radius='sm'] {
     border-radius: var(--radius-sm);
@@ -29,14 +33,19 @@
   &[data-radius='circle'] {
     border-radius: var(--radius-circle);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background: var(--color-bg-muted);
+  }
 }
 
 @keyframes shimmer {
   0% {
-    background-position: 200% 0;
+    background-position: 120% 0;
   }
 
   100% {
-    background-position: -200% 0;
+    background-position: -120% 0;
   }
 }

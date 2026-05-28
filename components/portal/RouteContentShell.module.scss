@@ -1,0 +1,55 @@
+@use 'mixins/a11y' as a11y;
+
+.wrap {
+  &:has([data-route-loading]) {
+    opacity: 1;
+    transform: none;
+    animation: routeLoadingEnter var(--duration-slower) var(--easing-decelerate) forwards;
+  }
+
+  &:not(:has([data-route-loading])) {
+    animation: routeContentEnter var(--duration-slow) var(--easing-decelerate) forwards;
+  }
+
+  @include a11y.respect-reduced-motion;
+}
+
+:global(html[data-portal-nav-pending]) .wrap:not(:has([data-route-loading])) {
+  opacity: 0.45;
+  transform: translateY(6px);
+  transition:
+    opacity var(--duration-base) var(--easing-standard),
+    transform var(--duration-base) var(--easing-standard);
+}
+
+@keyframes routeLoadingEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes routeContentEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(html[data-portal-nav-pending]) .wrap:not(:has([data-route-loading])) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
