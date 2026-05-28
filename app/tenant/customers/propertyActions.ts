@@ -24,7 +24,6 @@ function normalizeKind(raw: string): Database['public']['Enums']['customer_prope
 }
 
 async function revalidateCustomerPaths(customerId: string) {
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/customers', 'page');
   revalidatePath(`/tenant/customers/${customerId}`, 'page');
   revalidatePath('/tenant/quotes', 'page');

@@ -4,11 +4,12 @@ import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import { fetchCustomerQuoteList, pendingCustomerQuotes } from '@/lib/customer/customerQuoteList';
+import { countPendingCustomerQuotes } from '@/lib/customer/customerQuoteList';
 import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerPortalBranding';
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
+import { RouteContentShell } from '@/components/portal/RouteContentShell';
 import styles from './customer-layout.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -50,10 +51,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const portal = await getPortalContext();
   const ctx = await getCustomerPortalContext(auth.user.id);
   const admin = createAdminClient();
-  const { rows: quoteRows } = ctx
-    ? await fetchCustomerQuoteList(admin, ctx.customerIds)
-    : { rows: [] };
-  const pendingQuoteCount = pendingCustomerQuotes(quoteRows).length;
+  const pendingQuoteCount = ctx ? await countPendingCustomerQuotes(admin, ctx.customerIds) : 0;
 
   const navItems: NavItem[] = NAV_ITEMS.map((item) =>
     item.href === '/quotes' && pendingQuoteCount > 0 ? { ...item, badge: pendingQuoteCount } : item,
@@ -82,7 +80,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       }
       environmentBanner={nonProdBanner}
     >
-      {children}
+      <RouteContentShell>{children}</RouteContentShell>
     </PortalShell>
   );
 }

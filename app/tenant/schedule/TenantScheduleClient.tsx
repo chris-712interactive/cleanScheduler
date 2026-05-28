@@ -63,13 +63,8 @@ export function TenantScheduleClient({
   fieldEmployeeMode?: boolean;
 }) {
   const router = useRouter();
-  const [, setNowTick] = useState(0);
   const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNowTick((n) => n + 1), 60_000);
-    return () => window.clearInterval(id);
-  }, []);
+  const [nowLinePct, setNowLinePct] = useState<number | null>(null);
 
   useEffect(() => {
     setExpandedVisitId(null);
@@ -126,8 +121,17 @@ export function TenantScheduleClient({
   );
 
   const hours = useMemo(() => hourLabels(timelineWindow), [timelineWindow]);
-  const nowLinePct = currentTimeLinePct(dateKey, timelineWindow);
   const monthCells = useMemo(() => buildUtcMonthGrid(dateKey), [dateKey]);
+
+  useEffect(() => {
+    const updateNowLine = () => {
+      setNowLinePct(currentTimeLinePct(dateKey, timelineWindow));
+    };
+
+    updateNowLine();
+    const id = window.setInterval(updateNowLine, 60_000);
+    return () => window.clearInterval(id);
+  }, [dateKey, timelineWindow]);
 
   const goPrev = () => {
     if (view === 'month') push({ date: shiftDateKeyByMonths(dateKey, -1) });

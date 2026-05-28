@@ -195,10 +195,8 @@ export async function respondToCustomerQuote(
     });
   }
 
-  revalidatePath('/customer', 'layout');
   revalidatePath('/customer/quotes', 'page');
   revalidatePath(`/customer/quotes/${quoteId}`, 'page');
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
   revalidatePath('/tenant/billing/invoices', 'page');

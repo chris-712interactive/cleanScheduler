@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   DndContext,
   DragOverlay,
@@ -302,7 +301,11 @@ export function QuotesBoard({
   quotes: QuoteListEmbedRow[];
   needsSchedulingQuoteIds: Set<string>;
 }) {
-  const router = useRouter();
+  const [localQuotes, setLocalQuotes] = useState(quotes);
+  useEffect(() => {
+    setLocalQuotes(quotes);
+  }, [quotes]);
+
   const [isNarrow, setIsNarrow] = useState(false);
   const [narrowReady, setNarrowReady] = useState(false);
   const [boardError, setBoardError] = useState<string | null>(null);
@@ -325,8 +328,8 @@ export function QuotesBoard({
     return () => mq.removeEventListener('change', apply);
   }, []);
 
-  const grouped = useMemo(() => groupQuotesByStatus(quotes), [quotes]);
-  const quoteById = useMemo(() => new Map(quotes.map((q) => [q.id, q])), [quotes]);
+  const grouped = useMemo(() => groupQuotesByStatus(localQuotes), [localQuotes]);
+  const quoteById = useMemo(() => new Map(localQuotes.map((q) => [q.id, q])), [localQuotes]);
 
   const runMove = useCallback(
     (quoteId: string, nextStatus: QuoteStatus) => {
@@ -335,8 +338,15 @@ export function QuotesBoard({
 
       setBoardError(null);
       setPendingQuoteId(quoteId);
+      const previousQuotes = localQuotes;
+
+      setLocalQuotes((prev) =>
+        prev.map((q) => (q.id === quoteId ? { ...q, status: nextStatus } : q)),
+      );
+
       startTransition(async () => {
         if (nextStatus === 'accepted') {
+          setLocalQuotes(previousQuotes);
           setPendingQuoteId(null);
           setBoardError(
             'Accepted is only available when the customer signs in the customer portal.',
@@ -346,14 +356,14 @@ export function QuotesBoard({
         const res = await moveTenantQuoteStatus(tenantSlug, quoteId, nextStatus);
         setPendingQuoteId(null);
         if (!res.ok) {
+          setLocalQuotes(previousQuotes);
           setBoardError(res.error);
           return;
         }
         setBoardError(null);
-        router.refresh();
       });
     },
-    [quoteById, router, tenantSlug],
+    [localQuotes, quoteById, tenantSlug],
   );
 
   const onDragEndInternal = useCallback(

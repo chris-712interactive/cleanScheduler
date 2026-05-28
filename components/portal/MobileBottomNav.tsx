@@ -8,6 +8,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isNavItemActive } from './navActive';
+import { markPortalNavPending } from './portalNavPending';
+import { useClearPortalNavPendingOnNavigate } from './useClearPortalNavPendingOnNavigate';
 import type { NavItem } from './types';
 import { navIcons } from './navIcons';
 import styles from './MobileBottomNav.module.scss';
@@ -18,6 +20,7 @@ export interface MobileBottomNavProps {
 
 export function MobileBottomNav({ items }: MobileBottomNavProps) {
   const pathname = usePathname();
+  useClearPortalNavPendingOnNavigate();
 
   return (
     <nav aria-label="Quick navigation" className={styles.nav}>
@@ -31,6 +34,11 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
             aria-current={active ? 'page' : undefined}
             className={styles.item}
             data-active={active || undefined}
+            onClick={() => {
+              if (!active) {
+                markPortalNavPending();
+              }
+            }}
           >
             {Icon ? <Icon size={20} aria-hidden="true" /> : null}
             <span className={styles.label}>{item.label}</span>

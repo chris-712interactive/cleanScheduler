@@ -93,7 +93,7 @@ export async function createCompensationRuleAction(formData: FormData): Promise<
   }
 
   revalidatePath('/tenant/settings/compensation', 'page');
-  revalidatePath('/tenant/reports', 'layout');
+  revalidatePath('/tenant/reports', 'page');
   redirect(compensationSettingsPath(slug, { saved: '1' }));
 }
 
@@ -127,7 +127,7 @@ export async function setCompensationRuleActiveAction(formData: FormData): Promi
   }
 
   revalidatePath('/tenant/settings/compensation', 'page');
-  revalidatePath('/tenant/reports', 'layout');
+  revalidatePath('/tenant/reports', 'page');
   redirect(compensationSettingsPath(slug, { saved: '1' }));
 }
 
@@ -160,6 +160,6 @@ export async function deleteCompensationRuleAction(formData: FormData): Promise<
   }
 
   revalidatePath('/tenant/settings/compensation', 'page');
-  revalidatePath('/tenant/reports', 'layout');
+  revalidatePath('/tenant/reports', 'page');
   redirect(compensationSettingsPath(slug, { saved: '1' }));
 }
