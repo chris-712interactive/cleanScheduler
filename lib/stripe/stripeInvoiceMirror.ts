@@ -1,15 +1,16 @@
 import type Stripe from 'stripe';
+import {
+  stripeSubscriptionIdFromInvoice,
+  stripeSubscriptionMetadataFromInvoice,
+} from '@/lib/stripe/stripeBasilCompat';
 
 export type TenantInvoiceStatus = 'draft' | 'open' | 'paid' | 'void';
+
+export { stripeSubscriptionIdFromInvoice };
 
 export function stripeCustomerIdFromInvoice(invoice: Stripe.Invoice): string | null {
   const customer = invoice.customer;
   return typeof customer === 'string' ? customer : (customer?.id ?? null);
-}
-
-export function stripeSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
-  const subscription = invoice.subscription;
-  return typeof subscription === 'string' ? subscription : (subscription?.id ?? null);
 }
 
 export function mapStripeInvoiceStatus(status: Stripe.Invoice.Status | null): TenantInvoiceStatus {
@@ -31,11 +32,10 @@ export function invoiceTitleFromStripe(invoice: Stripe.Invoice): string {
   const line = invoice.lines?.data?.[0];
   const desc = line?.description?.trim();
   if (desc) return desc;
-  const sub =
-    typeof invoice.subscription === 'object' && invoice.subscription
-      ? invoice.subscription.metadata?.service_plan_id
-      : null;
-  if (sub) return 'Subscription invoice';
+
+  const subMeta = stripeSubscriptionMetadataFromInvoice(invoice);
+  if (subMeta?.service_plan_id) return 'Subscription invoice';
+
   return invoice.number ? `Invoice ${invoice.number}` : 'Stripe invoice';
 }
 
