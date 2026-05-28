@@ -19,6 +19,7 @@ import {
   parseQuoteScopeSnapshot,
 } from '@/lib/tenant/quoteStructuredFields';
 import { parseAcceptanceSnapshotLines } from '@/lib/customer/quoteAcceptanceSnapshot';
+import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import { CustomerQuoteReview } from '../CustomerQuoteReview';
 import type { CustomerQuoteLineView } from '../CustomerQuoteLineCards';
 import type { CustomerQuoteVersionRow } from '../CustomerQuoteVersionHistory';
@@ -281,6 +282,8 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
   const acceptedAt =
     (acceptanceSnapshot?.captured_at as string | undefined) ?? (row.accepted_at as string | null);
 
+  const ops = await loadTenantOperationalSettings(admin, row.tenant_id as string);
+
   return (
     <>
       <PageHeader
@@ -312,6 +315,7 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
         versionReason={row.version_reason}
         versionNumber={row.version_number}
         userEmail={portalAuth.user.email?.trim() || null}
+        allowedPaymentMethods={ops.allowedCustomerPaymentMethods}
       />
     </>
   );

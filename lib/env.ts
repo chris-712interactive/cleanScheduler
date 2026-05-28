@@ -141,6 +141,8 @@ const serverEnvSchema = z.object({
   RESEND_FROM_EMAIL: z.string().min(1).optional(),
   /** Resend — published template id/alias for customer portal invites (default create-customer-account). */
   RESEND_CUSTOMER_INVITE_TEMPLATE_ID: z.string().min(1).optional(),
+  /** Resend — Svix signing secret for `/api/webhooks/resend` (whsec_… from Resend dashboard). */
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
   // onboarding create-user behavior:
   // auto     -> dev/local auto-confirm, prod requires confirmation
   // required -> always require email confirmation before first sign-in

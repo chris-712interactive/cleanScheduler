@@ -2,6 +2,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
+import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 import type { ComputeQuoteTotalsInput } from '@/lib/tenant/quoteTotals';
 import { CustomerQuoteLineCards, type CustomerQuoteLineView } from './CustomerQuoteLineCards';
 import { CustomerQuoteTotalsBreakdown } from './CustomerQuoteTotalsBreakdown';
@@ -105,6 +106,7 @@ export function CustomerQuoteReview({
   versionReason,
   versionNumber,
   userEmail,
+  allowedPaymentMethods,
 }: {
   quoteId: string;
   tenantName: string;
@@ -127,6 +129,7 @@ export function CustomerQuoteReview({
   versionReason: string | null;
   versionNumber: number;
   userEmail: string | null;
+  allowedPaymentMethods: TenantPaymentMethod[];
 }) {
   const cadence = primaryCadenceLabel(lines);
   const totalLabel = formatQuoteMoney(amountCents, currency);
@@ -268,6 +271,7 @@ export function CustomerQuoteReview({
           cadence={cadence}
           totalLabel={totalLabel}
           userEmail={userEmail}
+          allowedPaymentMethods={allowedPaymentMethods}
         />
       </div>
     </div>

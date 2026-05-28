@@ -45,7 +45,20 @@ function groupQuotesByStatus(
   return map;
 }
 
-function QuoteCardStatusFootnote({ status }: { status: QuoteStatus }) {
+function QuoteCardStatusFootnote({
+  status,
+  needsScheduling,
+}: {
+  status: QuoteStatus;
+  needsScheduling?: boolean;
+}) {
+  if (status === 'accepted' && needsScheduling) {
+    return (
+      <span className={[styles.boardCardStatusBadge, styles.boardCardStatusSchedule].join(' ')}>
+        Schedule visit
+      </span>
+    );
+  }
   if (status === 'accepted') {
     return (
       <span className={[styles.boardCardStatusBadge, styles.boardCardStatusAccepted].join(' ')}>
@@ -74,9 +87,11 @@ function QuoteCardStatusFootnote({ status }: { status: QuoteStatus }) {
 function BoardQuoteCardFace({
   quote,
   variant,
+  needsScheduling,
 }: {
   quote: QuoteListEmbedRow;
   variant: 'list' | 'overlay';
+  needsScheduling?: boolean;
 }) {
   const { headline, serviceLine, dateLabel } = getQuoteBoardCardDisplay(quote);
 
@@ -102,7 +117,10 @@ function BoardQuoteCardFace({
           {dateLabel}
           {quote.version_number > 1 ? ` · v${quote.version_number}` : ''}
         </span>
-        <QuoteCardStatusFootnote status={quote.status as QuoteStatus} />
+        <QuoteCardStatusFootnote
+          status={quote.status as QuoteStatus}
+          needsScheduling={needsScheduling}
+        />
       </div>
     </div>
   );
@@ -119,7 +137,15 @@ function BoardColumnHeader({ status, count }: { status: QuoteStatus; count: numb
   );
 }
 
-function DraggableQuoteCard({ quote, pending }: { quote: QuoteListEmbedRow; pending: boolean }) {
+function DraggableQuoteCard({
+  quote,
+  pending,
+  needsScheduling,
+}: {
+  quote: QuoteListEmbedRow;
+  pending: boolean;
+  needsScheduling?: boolean;
+}) {
   const dragDisabled = quote.is_locked || quote.status === 'expired';
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: quote.id,
@@ -140,7 +166,7 @@ function DraggableQuoteCard({ quote, pending }: { quote: QuoteListEmbedRow; pend
       {...listeners}
       {...attributes}
     >
-      <BoardQuoteCardFace quote={quote} variant="list" />
+      <BoardQuoteCardFace quote={quote} variant="list" needsScheduling={needsScheduling} />
     </article>
   );
 }
@@ -149,10 +175,12 @@ function BoardColumn({
   status,
   quotes,
   pendingQuoteId,
+  needsSchedulingQuoteIds,
 }: {
   status: QuoteStatus;
   quotes: QuoteListEmbedRow[];
   pendingQuoteId: string | null;
+  needsSchedulingQuoteIds: Set<string>;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: columnDroppableId(status),
@@ -174,7 +202,12 @@ function BoardColumn({
           <p className={styles.boardColumnEmpty}>Drop quotes here</p>
         ) : (
           quotes.map((q) => (
-            <DraggableQuoteCard key={q.id} quote={q} pending={pendingQuoteId === q.id} />
+            <DraggableQuoteCard
+              key={q.id}
+              quote={q}
+              pending={pendingQuoteId === q.id}
+              needsScheduling={needsSchedulingQuoteIds.has(q.id)}
+            />
           ))
         )}
       </div>
@@ -187,11 +220,13 @@ function MobileColumn({
   quotes,
   onMobileMove,
   pendingQuoteId,
+  needsSchedulingQuoteIds,
 }: {
   status: QuoteStatus;
   quotes: QuoteListEmbedRow[];
   onMobileMove: (quoteId: string, next: QuoteStatus) => void;
   pendingQuoteId: string | null;
+  needsSchedulingQuoteIds: Set<string>;
 }) {
   return (
     <section className={styles.boardColumn} aria-label={`${QUOTE_STATUS_LABEL[status]} quotes`}>
@@ -206,6 +241,7 @@ function MobileColumn({
               quote={q}
               onMobileMove={onMobileMove}
               pending={pendingQuoteId === q.id}
+              needsScheduling={needsSchedulingQuoteIds.has(q.id)}
             />
           ))
         )}
@@ -218,10 +254,12 @@ function MobileQuoteCard({
   quote,
   onMobileMove,
   pending,
+  needsScheduling,
 }: {
   quote: QuoteListEmbedRow;
   onMobileMove: (quoteId: string, next: QuoteStatus) => void;
   pending: boolean;
+  needsScheduling?: boolean;
 }) {
   return (
     <article
@@ -229,7 +267,7 @@ function MobileQuoteCard({
         .filter(Boolean)
         .join(' ')}
     >
-      <BoardQuoteCardFace quote={quote} variant="list" />
+      <BoardQuoteCardFace quote={quote} variant="list" needsScheduling={needsScheduling} />
       <div className={styles.boardCardMove}>
         <label className={styles.boardCardMoveLabel} htmlFor={`move_${quote.id}`}>
           Move to
@@ -258,9 +296,11 @@ function MobileQuoteCard({
 export function QuotesBoard({
   tenantSlug,
   quotes,
+  needsSchedulingQuoteIds,
 }: {
   tenantSlug: string;
   quotes: QuoteListEmbedRow[];
+  needsSchedulingQuoteIds: Set<string>;
 }) {
   const router = useRouter();
   const [isNarrow, setIsNarrow] = useState(false);
@@ -358,6 +398,7 @@ export function QuotesBoard({
         quotes={grouped[status]}
         onMobileMove={runMove}
         pendingQuoteId={pendingQuoteId}
+        needsSchedulingQuoteIds={needsSchedulingQuoteIds}
       />
     ) : (
       <BoardColumn
@@ -365,6 +406,7 @@ export function QuotesBoard({
         status={status}
         quotes={grouped[status]}
         pendingQuoteId={pendingQuoteId}
+        needsSchedulingQuoteIds={needsSchedulingQuoteIds}
       />
     ),
   );
