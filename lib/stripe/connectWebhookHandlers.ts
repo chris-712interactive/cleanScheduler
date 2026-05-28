@@ -3,6 +3,10 @@ import type Stripe from 'stripe';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
+import {
+  retrieveConnectSubscription,
+  subscriptionPeriodIso,
+} from '@/lib/stripe/stripeBasilCompat';
 
 type Admin = SupabaseClient<Database>;
 
@@ -219,12 +223,7 @@ export async function upsertCustomerSubscriptionFromStripe(
   }
 
   const status = mapTenantCustomerSubscriptionStatus(subscription.status);
-  const periodStart = subscription.current_period_start
-    ? new Date(subscription.current_period_start * 1000).toISOString()
-    : null;
-  const periodEnd = subscription.current_period_end
-    ? new Date(subscription.current_period_end * 1000).toISOString()
-    : null;
+  const { start: periodStart, end: periodEnd } = subscriptionPeriodIso(subscription);
   const billingCycleAnchor =
     subscription.billing_cycle_anchor && subscription.billing_cycle_anchor > 0
       ? new Date(subscription.billing_cycle_anchor * 1000).toISOString()
@@ -290,9 +289,7 @@ export async function handleTenantCustomerSubscriptionCheckoutCompleted(
     typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
   if (!subId) return;
 
-  const subscription = await stripe.subscriptions.retrieve(subId, {
-    stripeAccount: connectAccountId,
-  });
+  const subscription = await retrieveConnectSubscription(stripe, subId, connectAccountId);
   await upsertCustomerSubscriptionFromStripe(admin, subscription, connectAccountId);
 
   const tenantId = session.metadata.tenant_id as string | undefined;
