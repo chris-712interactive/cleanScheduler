@@ -1,12 +1,12 @@
 /**
- * Server-side helper for reading portal classification set by middleware.
+ * Server-side helper for reading portal classification set by proxy.
  *
  * Server Components and Route Handlers should call `getPortalContext()` to
  * find out which portal (marketing / admin / customer / tenant) the current
  * request is hitting, plus the resolved tenant slug when applicable.
  */
 import { headers } from 'next/headers';
-import type { PortalKind } from '@/middleware';
+import type { PortalKind } from '@/proxy';
 
 const RESERVED_SUBDOMAINS = new Set([
   'admin',

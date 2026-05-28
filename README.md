@@ -54,7 +54,7 @@ styles/
   globals.scss          # Resets, base typography, .skip-link
   mixins/               # breakpoints, focus, a11y, typography
   tokens/               # colors, spacing, typography, radii, shadows, z, motion, breakpoints
-middleware.ts           # Subdomain resolver + portal URL rewriter
+proxy.ts                # Subdomain resolver + portal URL rewriter
 ```
 
 ## Running locally

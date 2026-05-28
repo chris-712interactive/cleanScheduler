@@ -10,7 +10,7 @@
  *   <tenant-slug>.<apex>     - that tenant's portal
  *
  * To keep distinct route trees per portal without route-collision pain, this
- * middleware *rewrites* the URL internally based on the resolved portal:
+ * proxy *rewrites* the URL internally based on the resolved portal:
  *
  *   admin.<apex>/<path>           ->  /admin/<path>
  *   my.<apex>/<path>              ->  /customer/<path>
@@ -172,7 +172,7 @@ async function resolveUser(request: NextRequest): Promise<{
   return { userId: data.user?.id ?? null, cookiesToSet };
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const apex = getApexHost();
   const hostWithoutPort = host.split(':')[0]!.toLowerCase();
@@ -212,7 +212,7 @@ export async function middleware(request: NextRequest) {
 
   // Build the rewritten URL. Avoid double-prefixing if the request is already
   // hitting an internal portal path (e.g. when Next.js itself recursively
-  // calls the middleware for an asset chunk that lives under the rewritten
+  // calls the proxy for an asset chunk that lives under the rewritten
   // path).
   const url = request.nextUrl.clone();
   const prefix = PORTAL_PATH_PREFIX[kind];
