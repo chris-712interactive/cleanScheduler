@@ -19,7 +19,6 @@ export interface BusinessSettingsActionState {
 function revalidateBusinessSettings() {
   revalidatePath('/tenant/settings/business', 'page');
   revalidatePath('/tenant/settings', 'page');
-  revalidatePath('/tenant', 'layout');
 }
 
 async function requireBusinessSettingsAccess(slug: string) {
