@@ -17,7 +17,7 @@ jobs:
     steps:
       # PR default checkout is a merge commit (main + dev) which breaks package-lock.json.
       # Use the PR branch tip only. On push, github.event.pull_request.head.sha is empty → github.ref.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Verify Node and install dependencies
