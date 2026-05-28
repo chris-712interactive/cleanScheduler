@@ -15,8 +15,6 @@ describe('countPendingCustomerQuotes', () => {
       }),
     };
 
-    await expect(
-      countPendingCustomerQuotes(admin as never, []),
-    ).resolves.toBe(0);
+    await expect(countPendingCustomerQuotes(admin as never, [])).resolves.toBe(0);
   });
 });

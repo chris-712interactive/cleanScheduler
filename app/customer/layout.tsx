@@ -50,9 +50,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const portal = await getPortalContext();
   const ctx = await getCustomerPortalContext(auth.user.id);
   const admin = createAdminClient();
-  const pendingQuoteCount = ctx
-    ? await countPendingCustomerQuotes(admin, ctx.customerIds)
-    : 0;
+  const pendingQuoteCount = ctx ? await countPendingCustomerQuotes(admin, ctx.customerIds) : 0;
 
   const navItems: NavItem[] = NAV_ITEMS.map((item) =>
     item.href === '/quotes' && pendingQuoteCount > 0 ? { ...item, badge: pendingQuoteCount } : item,

@@ -3,7 +3,11 @@ import { Stack } from '@/components/layout/Stack';
 import { Skeleton } from '@/components/ui/Skeleton';
 import styles from './PortalRouteLoading.module.scss';
 
-export function PortalRouteLoading({ variant = 'default' }: { variant?: 'default' | 'table' | 'board' }) {
+export function PortalRouteLoading({
+  variant = 'default',
+}: {
+  variant?: 'default' | 'table' | 'board';
+}) {
   if (variant === 'board') {
     return (
       <Container size="full" className={styles.wrap} aria-busy="true" aria-label="Loading">

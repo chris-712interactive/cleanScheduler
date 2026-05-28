@@ -23,12 +23,12 @@ The fastest path to noticeably snappier interactions is a **three-phase plan**: 
 
 ## Problem statement
 
-| Symptom | User impact |
-| ------- | ----------- |
-| Sidebar link click → long pause before new page | Navigation feels sluggish |
-| Form submit / button → spinner then freeze | Actions feel unresponsive |
-| Quotes Kanban drag → delay before card moves | Drag-and-drop feels broken |
-| Schedule day change → full page stall | Calendar navigation is heavy |
+| Symptom                                         | User impact                  |
+| ----------------------------------------------- | ---------------------------- |
+| Sidebar link click → long pause before new page | Navigation feels sluggish    |
+| Form submit / button → spinner then freeze      | Actions feel unresponsive    |
+| Quotes Kanban drag → delay before card moves    | Drag-and-drop feels broken   |
+| Schedule day change → full page stall           | Calendar navigation is heavy |
 
 **Goal:** Sub-200ms **perceived** feedback on every click (loading skeleton or optimistic UI), and **<1s** time-to-interactive for common navigations on a warm connection.
 
@@ -102,17 +102,17 @@ useRefreshOnServerActionSuccess → router.refresh()  ← full refetch again
 
 On **every** tenant navigation, the layout sequentially/parallel-fetches:
 
-| Step | Work |
-| ---- | ---- |
-| Access | `requireTenantPortalAccess()` → `getUser()` + membership lookup + subscription check |
-| Auth (again) | `getAuthContext()` → **second `getUser()`** |
-| Masquerade | `expireStaleMasqueradeIfNeeded()` (possible write) |
-| Billing | `tenants` + `tenant_billing_accounts` |
-| Profile | `user_profiles` for identity chip |
-| Nav badge | `countPendingRescheduleRequests()` |
-| Entitlements | `resolveTenantEntitlementPlan()` |
-| Usage banner | `loadTenantUsageUtilizationAlert()` (conditional) |
-| Onboarding | `loadOwnerOnboardingNavContext()` (multi-query) |
+| Step         | Work                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------ |
+| Access       | `requireTenantPortalAccess()` → `getUser()` + membership lookup + subscription check |
+| Auth (again) | `getAuthContext()` → **second `getUser()`**                                          |
+| Masquerade   | `expireStaleMasqueradeIfNeeded()` (possible write)                                   |
+| Billing      | `tenants` + `tenant_billing_accounts`                                                |
+| Profile      | `user_profiles` for identity chip                                                    |
+| Nav badge    | `countPendingRescheduleRequests()`                                                   |
+| Entitlements | `resolveTenantEntitlementPlan()`                                                     |
+| Usage banner | `loadTenantUsageUtilizationAlert()` (conditional)                                    |
+| Onboarding   | `loadOwnerOnboardingNavContext()` (multi-query)                                      |
 
 **Impact:** Layout alone can account for **300–800ms+ TTFB** before the page component runs. Middleware already resolves membership and subscription for tenant routes — **duplicate work**.
 
@@ -212,12 +212,12 @@ All server Supabase fetches use `cache: 'no-store'`. Correct for auth-bound data
 
 ### F8 — Heavy client islands without code splitting (Medium)
 
-| Component | File | Notes |
-| --------- | ---- | ----- |
-| Quotes Kanban | `app/tenant/quotes/QuotesBoard.tsx` | Full `'use client'` board + `@dnd-kit/core`; no optimistic updates |
-| Schedule timeline | `app/tenant/schedule/TenantScheduleClient.tsx` | Date/view changes use `router.push` → full page SSR |
-| Quote line editor | `app/tenant/quotes/QuoteLineItemsEditor.tsx` | ~490 lines client state |
-| Global search | `components/portal/GlobalSearch.tsx` | Loaded in tenant layout TopBar for all pages |
+| Component         | File                                           | Notes                                                              |
+| ----------------- | ---------------------------------------------- | ------------------------------------------------------------------ |
+| Quotes Kanban     | `app/tenant/quotes/QuotesBoard.tsx`            | Full `'use client'` board + `@dnd-kit/core`; no optimistic updates |
+| Schedule timeline | `app/tenant/schedule/TenantScheduleClient.tsx` | Date/view changes use `router.push` → full page SSR                |
+| Quote line editor | `app/tenant/quotes/QuoteLineItemsEditor.tsx`   | ~490 lines client state                                            |
+| Global search     | `components/portal/GlobalSearch.tsx`           | Loaded in tenant layout TopBar for all pages                       |
 
 **No `next/dynamic()` usage found** — heavy modules load with their route chunks unconditionally.
 
@@ -277,12 +277,12 @@ flowchart LR
 
 Establish baselines before changing behavior.
 
-| Task | Detail |
-| ---- | ------ |
-| Add Web Vitals reporting | `instrumentation.ts` or Vercel Speed Insights; track LCP, INP on tenant/customer |
-| Server timing logs | Optional `console.time` behind `DEBUG_PERF=1` in layout + middleware for dev |
-| Document targets | Nav click p95 < 1s TTFB; action feedback < 100ms perceived |
-| Pick 5 critical flows | Quotes board drag, customer create, visit complete, nav to schedule, customer quote accept |
+| Task                     | Detail                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| Add Web Vitals reporting | `instrumentation.ts` or Vercel Speed Insights; track LCP, INP on tenant/customer           |
+| Server timing logs       | Optional `console.time` behind `DEBUG_PERF=1` in layout + middleware for dev               |
+| Document targets         | Nav click p95 < 1s TTFB; action feedback < 100ms perceived                                 |
+| Pick 5 critical flows    | Quotes board drag, customer create, visit complete, nav to schedule, customer quote accept |
 
 **Exit criteria:** Baseline numbers recorded for the 5 flows in dev/staging.
 
@@ -294,11 +294,11 @@ Establish baselines before changing behavior.
 
 #### 1.1 Unify refresh strategy (High impact, Low effort)
 
-| Change | Files |
-| ------ | ----- |
+| Change                                                                                      | Files                                                           |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | Remove redundant `router.refresh()` where `revalidatePath` already targets the correct page | All 16 `useRefreshOnServerActionSuccess` consumers — audit each |
-| **Never** combine `revalidatePath(..., 'layout')` + `router.refresh()` for the same action | quotes, customers, schedule actions |
-| Kanban: remove `router.refresh()` on success; rely on page revalidation only | `QuotesBoard.tsx` |
+| **Never** combine `revalidatePath(..., 'layout')` + `router.refresh()` for the same action  | quotes, customers, schedule actions                             |
+| Kanban: remove `router.refresh()` on success; rely on page revalidation only                | `QuotesBoard.tsx`                                               |
 
 **Rule:** One invalidation mechanism per action — prefer **narrow `revalidatePath('/tenant/quotes', 'page')`** over layout.
 
@@ -379,12 +379,12 @@ Single import: `lib/portal/requestContext.ts`.
 
 Introduce cache tags:
 
-| Tag | Invalidated when |
-| --- | ---------------- |
-| `tenant-nav-badges` | Reschedule request created/resolved |
-| `tenant-onboarding` | Checklist step completed |
-| `tenant-usage` | Usage rollup cron / limit change |
-| `customer-quote-badge` | Quote sent/accepted/declined |
+| Tag                    | Invalidated when                    |
+| ---------------------- | ----------------------------------- |
+| `tenant-nav-badges`    | Reschedule request created/resolved |
+| `tenant-onboarding`    | Checklist step completed            |
+| `tenant-usage`         | Usage rollup cron / limit change    |
+| `customer-quote-badge` | Quote sent/accepted/declined        |
 
 Layout subcomponents fetch badge data with `unstable_cache` + tags; pages no longer need `'layout'` revalidation for badge updates.
 
@@ -441,43 +441,43 @@ Forms update local display from action result; revalidate only on cache miss.
 
 **Goal:** Static portal chrome + dynamic slots.
 
-| Approach | Detail |
-| -------- | ------ |
-| Split layout | Static `PortalShell` frame; dynamic `<NavBadges />`, `<SessionBanners />` as separate async server components wrapped in `Suspense` |
-| Reduce `force-dynamic` | Layout shell can be dynamic; badge/banner slots stream in |
-| PPR / streaming | When Next.js PPR is stable for auth-gated apps, evaluate for marketing + public pages first |
-| White-label cache | Edge cache for `host → tenant` mapping (short TTL) |
+| Approach               | Detail                                                                                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Split layout           | Static `PortalShell` frame; dynamic `<NavBadges />`, `<SessionBanners />` as separate async server components wrapped in `Suspense` |
+| Reduce `force-dynamic` | Layout shell can be dynamic; badge/banner slots stream in                                                                           |
+| PPR / streaming        | When Next.js PPR is stable for auth-gated apps, evaluate for marketing + public pages first                                         |
+| White-label cache      | Edge cache for `host → tenant` mapping (short TTL)                                                                                  |
 
 ---
 
 ## Priority matrix
 
-| # | Item | Impact | Effort | Phase |
-| - | ---- | ------ | ------ | ----- |
-| 1 | Add `loading.tsx` to tenant + customer portals | Perceived latency | Low | 1 |
-| 2 | Stop double refresh (revalidate + router.refresh) | Action latency | Low | 1 |
-| 3 | Narrow `revalidatePath` away from `'layout'` | Action + nav latency | Low | 1 |
-| 4 | Customer layout count-only quote badge | Customer nav | Low | 1 |
-| 5 | Dedupe `getUser()` in tenant layout | Nav latency | Low | 1 |
-| 6 | `React.cache()` request context | Nav latency | Medium | 2 |
-| 7 | `revalidateTag` for nav badges | Action latency | Medium | 2 |
-| 8 | Quotes Kanban optimistic updates | Drag latency | Medium | 3 |
-| 9 | Dynamic import heavy client routes | TTI | Low–Med | 2 |
-| 10 | Schedule client-side date fetch | Schedule nav | Medium | 3 |
-| 11 | Split layout + Suspense streaming | Nav latency | High | 4 |
-| 12 | Revisit global `force-dynamic` on layouts | Structural | High | 4 |
+| #   | Item                                              | Impact               | Effort  | Phase |
+| --- | ------------------------------------------------- | -------------------- | ------- | ----- |
+| 1   | Add `loading.tsx` to tenant + customer portals    | Perceived latency    | Low     | 1     |
+| 2   | Stop double refresh (revalidate + router.refresh) | Action latency       | Low     | 1     |
+| 3   | Narrow `revalidatePath` away from `'layout'`      | Action + nav latency | Low     | 1     |
+| 4   | Customer layout count-only quote badge            | Customer nav         | Low     | 1     |
+| 5   | Dedupe `getUser()` in tenant layout               | Nav latency          | Low     | 1     |
+| 6   | `React.cache()` request context                   | Nav latency          | Medium  | 2     |
+| 7   | `revalidateTag` for nav badges                    | Action latency       | Medium  | 2     |
+| 8   | Quotes Kanban optimistic updates                  | Drag latency         | Medium  | 3     |
+| 9   | Dynamic import heavy client routes                | TTI                  | Low–Med | 2     |
+| 10  | Schedule client-side date fetch                   | Schedule nav         | Medium  | 3     |
+| 11  | Split layout + Suspense streaming                 | Nav latency          | High    | 4     |
+| 12  | Revisit global `force-dynamic` on layouts         | Structural           | High    | 4     |
 
 ---
 
 ## Success metrics
 
-| Metric | Baseline (est.) | Target |
-| ------ | --------------- | ------ |
-| Perceived click feedback | 0ms (frozen UI) | < 100ms (skeleton/optimistic) |
-| Tenant nav TTFB (p95) | 800ms–2s | < 800ms |
-| Server action → UI update (p95) | 1–3s | < 1s |
-| Layout Supabase queries per nav | 8–15 | ≤ 4 (deduped) |
-| `revalidatePath(..., 'layout')` call sites | 19 | 0 (replaced by tags) |
+| Metric                                     | Baseline (est.) | Target                        |
+| ------------------------------------------ | --------------- | ----------------------------- |
+| Perceived click feedback                   | 0ms (frozen UI) | < 100ms (skeleton/optimistic) |
+| Tenant nav TTFB (p95)                      | 800ms–2s        | < 800ms                       |
+| Server action → UI update (p95)            | 1–3s            | < 1s                          |
+| Layout Supabase queries per nav            | 8–15            | ≤ 4 (deduped)                 |
+| `revalidatePath(..., 'layout')` call sites | 19              | 0 (replaced by tags)          |
 
 Validate with Web Vitals **INP** (Interaction to Next Paint) on staging before/after Phase 1.
 
@@ -485,24 +485,24 @@ Validate with Web Vitals **INP** (Interaction to Next Paint) on staging before/a
 
 ## Risks and tradeoffs
 
-| Risk | Mitigation |
-| ---- | ---------- |
-| Stale nav badges after narrowing revalidation | Introduce tags in Phase 2 before removing layout revalidation |
-| Middleware header snapshot drift | Integration tests for membership/subscription gating |
-| Optimistic Kanban rollback UX | Clear error toast + automatic revert |
-| Removing `router.refresh()` breaks rewrite cache sync | Test on `lvh.me` tenant subdomains; keep refresh only where proven necessary |
-| `force-dynamic` removal exposes cached cross-tenant data | Never cache tenant-scoped payloads; only chrome or public marketing |
+| Risk                                                     | Mitigation                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Stale nav badges after narrowing revalidation            | Introduce tags in Phase 2 before removing layout revalidation                |
+| Middleware header snapshot drift                         | Integration tests for membership/subscription gating                         |
+| Optimistic Kanban rollback UX                            | Clear error toast + automatic revert                                         |
+| Removing `router.refresh()` breaks rewrite cache sync    | Test on `lvh.me` tenant subdomains; keep refresh only where proven necessary |
+| `force-dynamic` removal exposes cached cross-tenant data | Never cache tenant-scoped payloads; only chrome or public marketing          |
 
 ---
 
 ## Recommended release packaging
 
-| Release | Contents |
-| ------- | -------- |
+| Release   | Contents                                                                          |
+| --------- | --------------------------------------------------------------------------------- |
 | **1.2.0** | Phase 0 + Phase 1 (loading shells, revalidation fix, customer count, auth dedupe) |
-| **1.3.0** | Phase 2 (React.cache, revalidateTag, dynamic imports) |
-| **1.4.0** | Phase 3 (Kanban optimistic, schedule client fetch) |
-| **2.x** | Phase 4 (layout streaming split) |
+| **1.3.0** | Phase 2 (React.cache, revalidateTag, dynamic imports)                             |
+| **1.4.0** | Phase 3 (Kanban optimistic, schedule client fetch)                                |
+| **2.x**   | Phase 4 (layout streaming split)                                                  |
 
 Aligns with post-1.1.0 hardening track; performance work can ship incrementally without blocking feature releases.
 
@@ -510,20 +510,20 @@ Aligns with post-1.1.0 hardening track; performance work can ship incrementally 
 
 ## Key files reference
 
-| Area | Path |
-| ---- | ---- |
-| Middleware | `middleware.ts` |
-| Tenant layout | `app/tenant/layout.tsx` |
-| Customer layout | `app/customer/layout.tsx` |
-| Refresh hook | `lib/hooks/useRefreshOnServerActionSuccess.ts` |
-| Supabase server | `lib/supabase/server.ts` |
-| Tenant access | `lib/auth/tenantAccess.ts` |
-| Quotes board | `app/tenant/quotes/QuotesBoard.tsx` |
-| Quotes actions | `app/tenant/quotes/actions.ts` |
-| Schedule client | `app/tenant/schedule/TenantScheduleClient.tsx` |
-| Customer quote list | `lib/customer/customerQuoteList.ts` |
-| Portal shell | `components/portal/PortalShell.tsx` |
-| Skeleton (unused for routes) | `components/ui/Skeleton.tsx` |
+| Area                         | Path                                           |
+| ---------------------------- | ---------------------------------------------- |
+| Middleware                   | `middleware.ts`                                |
+| Tenant layout                | `app/tenant/layout.tsx`                        |
+| Customer layout              | `app/customer/layout.tsx`                      |
+| Refresh hook                 | `lib/hooks/useRefreshOnServerActionSuccess.ts` |
+| Supabase server              | `lib/supabase/server.ts`                       |
+| Tenant access                | `lib/auth/tenantAccess.ts`                     |
+| Quotes board                 | `app/tenant/quotes/QuotesBoard.tsx`            |
+| Quotes actions               | `app/tenant/quotes/actions.ts`                 |
+| Schedule client              | `app/tenant/schedule/TenantScheduleClient.tsx` |
+| Customer quote list          | `lib/customer/customerQuoteList.ts`            |
+| Portal shell                 | `components/portal/PortalShell.tsx`            |
+| Skeleton (unused for routes) | `components/ui/Skeleton.tsx`                   |
 
 ---
 
