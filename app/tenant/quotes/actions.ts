@@ -142,7 +142,6 @@ export async function moveTenantQuoteStatus(
     }
   }
 
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
   return { ok: true };
@@ -524,7 +523,6 @@ export async function createTenantQuote(
     });
   }
 
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath('/tenant/quotes/new', 'page');
   return { success: true, quoteId: newId };
@@ -703,7 +701,6 @@ export async function updateTenantQuote(
     });
   }
 
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
   return { success: true };
@@ -843,7 +840,6 @@ export async function createTenantQuoteAmendment(
     return { error: sup.error.message };
   }
 
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${priorQuoteId}`, 'page');
   return { quoteId: newId };

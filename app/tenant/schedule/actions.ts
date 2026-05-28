@@ -342,7 +342,6 @@ export async function updateScheduledVisitTimes(
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${visitId}`);
   revalidatePath('/schedule/reschedule-requests');
-  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -490,7 +489,6 @@ export async function resolveVisitRescheduleRequest(
   revalidatePath('/schedule/reschedule-requests');
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${request.visit_id}`);
-  revalidatePath('/', 'layout');
   return { success: true };
 }
 

@@ -62,3 +62,21 @@ export function pendingCustomerQuotes(rows: CustomerQuoteListRow[]): CustomerQuo
 export function pastCustomerQuotes(rows: CustomerQuoteListRow[]): CustomerQuoteListRow[] {
   return rows.filter((row) => row.status !== 'sent');
 }
+
+/** Lightweight nav-badge query — avoids loading full quote rows in the customer layout. */
+export async function countPendingCustomerQuotes(
+  admin: AdminClient,
+  customerIds: string[],
+): Promise<number> {
+  if (customerIds.length === 0) return 0;
+
+  const { count, error } = await admin
+    .from('tenant_quotes')
+    .select('id', { count: 'exact', head: true })
+    .in('customer_id', customerIds)
+    .eq('status', 'sent')
+    .is('superseded_by_quote_id', null);
+
+  if (error) return 0;
+  return count ?? 0;
+}

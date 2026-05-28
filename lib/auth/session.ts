@@ -1,12 +1,9 @@
+import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { extractClaims, type AuthContext } from './types';
 
-/**
- * Returns the current authenticated user context, or null when no active
- * Supabase session exists.
- */
-export async function getAuthContext(): Promise<AuthContext | null> {
+async function loadAuthContext(): Promise<AuthContext | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 
@@ -17,6 +14,12 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     claims: extractClaims(data.user),
   };
 }
+
+/**
+ * Returns the current authenticated user context, or null when no active
+ * Supabase session exists. Cached per request so layout + page do not double-fetch.
+ */
+export const getAuthContext = cache(loadAuthContext);
 
 /**
  * Enforces authentication in server components / layouts. Redirects to

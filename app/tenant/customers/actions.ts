@@ -170,7 +170,6 @@ export async function createTenantCustomer(
     }
   }
 
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant', 'page');
   revalidatePath('/tenant/customers', 'page');
   revalidatePath('/tenant/customers/new', 'page');
@@ -264,7 +263,6 @@ export async function updateTenantCustomer(
     return { error: profileUpsert.error.message };
   }
 
-  revalidatePath('/tenant', 'layout');
   revalidatePath('/tenant/customers', 'page');
   revalidatePath(`/tenant/customers/${customerId}`, 'page');
   return { success: true };

@@ -49,7 +49,6 @@ async function assertTargetInTenant(
 function revalidateMemberPaths(targetUserId: string) {
   revalidatePath('/employees');
   revalidatePath(`/employees/${targetUserId}`);
-  revalidatePath('/', 'layout');
 }
 
 export async function updateTeamMemberDisplayNameAction(
