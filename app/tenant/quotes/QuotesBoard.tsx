@@ -166,11 +166,7 @@ function DraggableQuoteCard({
       {...listeners}
       {...attributes}
     >
-      <BoardQuoteCardFace
-        quote={quote}
-        variant="list"
-        needsScheduling={needsScheduling}
-      />
+      <BoardQuoteCardFace quote={quote} variant="list" needsScheduling={needsScheduling} />
     </article>
   );
 }

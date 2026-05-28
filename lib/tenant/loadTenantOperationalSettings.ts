@@ -26,9 +26,7 @@ export async function loadTenantOperationalSettings(
 ): Promise<TenantOperationalSettingsSnapshot> {
   const { data, error } = await admin
     .from('tenant_operational_settings')
-    .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods',
-    )
+    .select('accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods')
     .eq('tenant_id', tenantId)
     .maybeSingle();
 

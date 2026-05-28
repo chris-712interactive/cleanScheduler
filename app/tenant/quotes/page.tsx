@@ -195,7 +195,9 @@ export default async function TenantQuotesPage({
             {needsSchedulingQuoteIds.size > 0 ? (
               <p className={styles.schedulingQueueBanner} role="status">
                 {needsSchedulingQuoteIds.size}{' '}
-                {needsSchedulingQuoteIds.size === 1 ? 'accepted quote needs' : 'accepted quotes need'}{' '}
+                {needsSchedulingQuoteIds.size === 1
+                  ? 'accepted quote needs'
+                  : 'accepted quotes need'}{' '}
                 a first visit scheduled. Open the quote and use Schedule to book work.
               </p>
             ) : null}
