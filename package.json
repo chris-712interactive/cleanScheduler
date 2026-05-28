@@ -33,7 +33,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@radix-ui/react-visually-hidden": "^1.1.2",
     "@sentdm/sentdm": "^0.29.0",
-    "@supabase/ssr": "^0.5.2",
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.49.4",
     "@types/pdfkit": "^0.17.6",
     "jose": "^5.10.0",
