@@ -33,7 +33,11 @@ export async function backfillInvoicePaymentsForPayout(
 
   for (;;) {
     const page = await stripe.balanceTransactions.list(
-      { payout: payout.id, limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) },
+      {
+        payout: payout.id,
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      },
       { stripeAccount: connectAccountId },
     );
 

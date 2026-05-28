@@ -12,11 +12,7 @@ interface PlaidLinkButtonProps {
   variant?: 'primary' | 'secondary';
 }
 
-export function PlaidLinkButton({
-  tenantSlug,
-  label,
-  variant = 'primary',
-}: PlaidLinkButtonProps) {
+export function PlaidLinkButton({ tenantSlug, label, variant = 'primary' }: PlaidLinkButtonProps) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loadingToken, setLoadingToken] = useState(false);
   const [error, setError] = useState<string | null>(null);

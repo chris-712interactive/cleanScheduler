@@ -67,7 +67,10 @@ export default async function GettingStartedPage() {
         </Card>
 
         {shouldShowDashboardChecklistCard(checklist.uiState) ? (
-          <p className="getting-started-hint" style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>
+          <p
+            className="getting-started-hint"
+            style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}
+          >
             This checklist also appears on your dashboard until you dismiss or snooze it.
           </p>
         ) : null}

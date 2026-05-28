@@ -25,9 +25,9 @@ Review access for:
 
 ## Review log
 
-| Date | Reviewer | Findings | Actions taken |
-|------|----------|----------|---------------|
-| 2026-05-24 | Initial setup | First review pending post-implementation | — |
+| Date       | Reviewer      | Findings                                 | Actions taken |
+| ---------- | ------------- | ---------------------------------------- | ------------- |
+| 2026-05-24 | Initial setup | First review pending post-implementation | —             |
 
 ## Escalation
 

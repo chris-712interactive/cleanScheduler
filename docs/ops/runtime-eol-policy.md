@@ -17,12 +17,12 @@ This policy covers runtimes and dependencies used to build, deploy, and operate 
 
 ## Supported versions
 
-| Component | Supported version | Source of truth |
-|-----------|-------------------|-----------------|
-| Node.js | 22.x LTS (`>=22.22.1`) | `.nvmrc`, `package.json` engines, CI |
-| Next.js | 15.x (latest stable patch) | `package-lock.json` |
-| React | 19.x | `package-lock.json` |
-| TypeScript | 5.x | `package-lock.json` |
+| Component  | Supported version          | Source of truth                      |
+| ---------- | -------------------------- | ------------------------------------ |
+| Node.js    | 22.x LTS (`>=22.22.1`)     | `.nvmrc`, `package.json` engines, CI |
+| Next.js    | 15.x (latest stable patch) | `package-lock.json`                  |
+| React      | 19.x                       | `package-lock.json`                  |
+| TypeScript | 5.x                        | `package-lock.json`                  |
 
 Production deployments must not run on Node releases past their LTS maintenance end date.
 
@@ -35,12 +35,12 @@ Production deployments must not run on Node releases past their LTS maintenance 
 
 ## Upgrade SLAs
 
-| Severity / trigger | Target response |
-|--------------------|-----------------|
-| High or critical CVE in production dependency | Patch within 7 calendar days |
-| Node.js LTS enters maintenance-only or EOL | Upgrade within 30 calendar days |
-| Major framework release (Next.js) | Evaluate within 60 days; upgrade before next LTS cycle |
-| Quarterly EOL review | Complete review and document outcomes in this file |
+| Severity / trigger                            | Target response                                        |
+| --------------------------------------------- | ------------------------------------------------------ |
+| High or critical CVE in production dependency | Patch within 7 calendar days                           |
+| Node.js LTS enters maintenance-only or EOL    | Upgrade within 30 calendar days                        |
+| Major framework release (Next.js)             | Evaluate within 60 days; upgrade before next LTS cycle |
+| Quarterly EOL review                          | Complete review and document outcomes in this file     |
 
 ## Quarterly review procedure
 
@@ -52,8 +52,8 @@ Production deployments must not run on Node releases past their LTS maintenance 
 
 ## Review log
 
-| Date | Reviewer | Outcome |
-|------|----------|---------|
+| Date       | Reviewer       | Outcome                                            |
+| ---------- | -------------- | -------------------------------------------------- |
 | 2026-05-24 | Initial policy | Node 22 LTS adopted; Dependabot + CI audit enabled |
 
 ## Exceptions

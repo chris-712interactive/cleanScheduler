@@ -54,9 +54,7 @@ function hasVercelDomainTargetConfig(config: VercelDomainTargetConfig): boolean 
   return Boolean(config.gitBranch || config.customEnvironmentId);
 }
 
-function buildVercelDomainTargetPayload(
-  config: VercelDomainTargetConfig,
-): Record<string, string> {
+function buildVercelDomainTargetPayload(config: VercelDomainTargetConfig): Record<string, string> {
   const payload: Record<string, string> = {};
   if (config.gitBranch) payload.gitBranch = config.gitBranch;
   if (config.customEnvironmentId) payload.customEnvironmentId = config.customEnvironmentId;

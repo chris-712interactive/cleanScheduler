@@ -177,8 +177,9 @@ export async function middleware(request: NextRequest) {
   const apex = getApexHost();
   const hostWithoutPort = host.split(':')[0]!.toLowerCase();
   const isOurApexHost = isPlatformApexHost(host, apex);
-  const whiteLabelPortal =
-    !isOurApexHost ? await resolveActiveWhiteLabelCustomerPortal(hostWithoutPort) : null;
+  const whiteLabelPortal = !isOurApexHost
+    ? await resolveActiveWhiteLabelCustomerPortal(hostWithoutPort)
+    : null;
 
   const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
   const requestedPath = request.nextUrl.pathname;
@@ -264,7 +265,12 @@ export async function middleware(request: NextRequest) {
     return redirect;
   }
 
-  if (kind === 'tenant' && userId && tenantSlug && !isTenantSuspendedEscapePath(null, requestedPath)) {
+  if (
+    kind === 'tenant' &&
+    userId &&
+    tenantSlug &&
+    !isTenantSuspendedEscapePath(null, requestedPath)
+  ) {
     if (subscriptionLocked) {
       const fieldEmployeeOnAllowedPath =
         tenantMembership &&

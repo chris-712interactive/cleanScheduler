@@ -118,21 +118,20 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
           description="Stripe requires two event destinations (one scope each): your account and Connected accounts."
         >
           <p className={styles.muted} style={{ marginTop: 0 }}>
-            <strong>1. Your account</strong> — URL{' '}
-            <code>/api/webhooks/stripe</code> — signing secret →{' '}
-            <code>STRIPE_WEBHOOK_SECRET</code>. Events:{' '}
+            <strong>1. Your account</strong> — URL <code>/api/webhooks/stripe</code> — signing
+            secret → <code>STRIPE_WEBHOOK_SECRET</code>. Events:{' '}
             <code>checkout.session.completed</code>, <code>customer.subscription.*</code>,{' '}
             <code>customer.subscription.trial_will_end</code>.
           </p>
           <p className={styles.muted}>
-            <strong>2. Connected accounts</strong> — same URL{' '}
-            <code>/api/webhooks/stripe</code> — signing secret →{' '}
-            <code>STRIPE_CONNECT_WEBHOOK_SECRET</code>. Events:{' '}
+            <strong>2. Connected accounts</strong> — same URL <code>/api/webhooks/stripe</code> —
+            signing secret → <code>STRIPE_CONNECT_WEBHOOK_SECRET</code>. Events:{' '}
             <code>account.updated</code>, <code>checkout.session.completed</code>,{' '}
             <code>customer.subscription.*</code>, <code>refund.*</code>,{' '}
             <code>charge.dispute.*</code>, <code>payout.paid</code>, <code>payout.updated</code>,{' '}
-            <code>invoice.created</code>, <code>invoice.finalized</code>, <code>invoice.updated</code>,{' '}
-            <code>invoice.paid</code>, <code>invoice.payment_failed</code>, <code>invoice.voided</code>.
+            <code>invoice.created</code>, <code>invoice.finalized</code>,{' '}
+            <code>invoice.updated</code>, <code>invoice.paid</code>,{' '}
+            <code>invoice.payment_failed</code>, <code>invoice.voided</code>.
           </p>
         </Card>
       </Stack>

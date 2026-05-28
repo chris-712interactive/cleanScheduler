@@ -66,8 +66,7 @@ export async function submitCustomerVisitRescheduleRequest(
 
   if (visit.checked_in_at) {
     return {
-      error:
-        'This visit has already been checked in — contact your provider to change the time.',
+      error: 'This visit has already been checked in — contact your provider to change the time.',
     };
   }
 

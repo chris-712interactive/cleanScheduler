@@ -101,7 +101,10 @@ export function buildCustomerPortalDnsInstructions(options: {
   const instructions = buildDnsInstructionsFromVercel(portalHostname, vercelVerification);
 
   if (vercelDnsConfig) {
-    for (const record of buildRoutingInstructionsFromVercelConfig(portalHostname, vercelDnsConfig)) {
+    for (const record of buildRoutingInstructionsFromVercelConfig(
+      portalHostname,
+      vercelDnsConfig,
+    )) {
       const duplicate = instructions.some(
         (existing) =>
           existing.type === record.type &&
@@ -130,7 +133,9 @@ export function buildLocalDevTxtInstruction(
   };
 }
 
-export function buildFallbackDnsInstructions(portalHostname: string): CustomerPortalDnsInstruction[] {
+export function buildFallbackDnsInstructions(
+  portalHostname: string,
+): CustomerPortalDnsInstruction[] {
   return [
     {
       id: 'fallback-txt',
@@ -147,7 +152,8 @@ export function buildFallbackDnsInstructions(portalHostname: string): CustomerPo
       hostLabel: portalHostname.includes('.') ? portalHostname.split('.')[0]! : portalHostname,
       value: 'cname.vercel-dns.com',
       purpose: 'Connects your portal address to cleanScheduler',
-      detail: 'Enter only the first part of your address (for example portal, not the full domain).',
+      detail:
+        'Enter only the first part of your address (for example portal, not the full domain).',
     },
   ];
 }

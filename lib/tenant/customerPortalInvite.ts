@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
-import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import {
+  assertTenantFeatureEnabled,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
 import { sendCustomerPortalInviteEmail, isResendApiConfigured } from '@/lib/email/resend';
 import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { inviteTemplateCustomerFirstName } from '@/lib/tenant/customerIdentityName';
@@ -78,9 +81,9 @@ async function loadCustomerIdentity(
   }
 
   const rawIdentity = row.customer_identities as unknown;
-  const identity = (Array.isArray(rawIdentity) ? rawIdentity[0] : rawIdentity) as
-    | CustomerIdentityRow
-    | null;
+  const identity = (
+    Array.isArray(rawIdentity) ? rawIdentity[0] : rawIdentity
+  ) as CustomerIdentityRow | null;
 
   if (!identity) {
     return { ok: false, error: 'Customer identity is missing.' };

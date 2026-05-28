@@ -1,6 +1,15 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, Cable, Globe, MapPin, Percent, Shield, SlidersHorizontal, UserRound } from 'lucide-react';
+import {
+  Building2,
+  Cable,
+  Globe,
+  MapPin,
+  Percent,
+  Shield,
+  SlidersHorizontal,
+  UserRound,
+} from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -69,10 +78,7 @@ export default async function TenantSettingsHubPage() {
 
   return (
     <>
-      <PageHeader
-        title="Settings"
-        titleHint="Manage your business settings and preferences."
-      />
+      <PageHeader title="Settings" titleHint="Manage your business settings and preferences." />
 
       <nav className={styles.hubGrid} aria-label="Settings sections">
         {HUB_LINKS.map(({ href, label, description, icon: Icon }) => (

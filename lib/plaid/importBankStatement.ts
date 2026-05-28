@@ -38,7 +38,8 @@ async function ensureManualImportBankLink(
   }
 
   const { data, error } = await admin.from('bank_links').insert(row).select('id').single();
-  if (error || !data) return { bankLinkId: '', error: error?.message ?? 'Could not create import link.' };
+  if (error || !data)
+    return { bankLinkId: '', error: error?.message ?? 'Could not create import link.' };
   return { bankLinkId: data.id };
 }
 

@@ -98,7 +98,8 @@ export async function saveReportRunCache(
       report_slug: input.slug,
       params: toReportParamsJson(input.params),
       status: 'ready',
-      result_json: input.result as unknown as Database['public']['Tables']['report_runs']['Insert']['result_json'],
+      result_json:
+        input.result as unknown as Database['public']['Tables']['report_runs']['Insert']['result_json'],
       row_count: countReportRows(input.result),
       expires_at: expiresAt,
       created_by_user_id: input.createdByUserId,

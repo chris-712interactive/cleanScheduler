@@ -6,7 +6,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageBankReconciliation } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import {
+  assertTenantFeatureEnabled,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
 import { importBankStatementRows } from '@/lib/plaid/importBankStatement';
 import { parseBankStatementCsv } from '@/lib/plaid/parseBankStatementCsv';
 
@@ -22,7 +25,8 @@ export async function importBankStatementAction(formData: FormData): Promise<voi
   try {
     await assertTenantFeatureEnabled(admin, membership.tenantId, 'plaidReconciliation');
   } catch (error) {
-    const message = featureGateErrorMessage(error) ?? 'Upgrade your subscription to import bank statements.';
+    const message =
+      featureGateErrorMessage(error) ?? 'Upgrade your subscription to import bank statements.';
     redirect(`/billing/bank-connection?error=${encodeURIComponent(message)}`);
   }
 
@@ -55,7 +59,5 @@ export async function importBankStatementAction(formData: FormData): Promise<voi
 
   revalidatePath('/billing/bank-connection');
   revalidatePath('/reports/bank-reconciliation');
-  redirect(
-    `/billing/bank-connection?imported=${result.imported}&skipped=${result.skipped}`,
-  );
+  redirect(`/billing/bank-connection?imported=${result.imported}&skipped=${result.skipped}`);
 }

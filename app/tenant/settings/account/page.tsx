@@ -39,9 +39,7 @@ export default async function TenantAccountSettingsPage() {
           .maybeSingle()
       : { data: null };
   const displayName =
-    myProfile?.display_name?.trim() ||
-    auth?.user?.email?.split('@')[0] ||
-    'Team member';
+    myProfile?.display_name?.trim() || auth?.user?.email?.split('@')[0] || 'Team member';
   const avatarUrl = myProfile?.avatar_url ?? null;
   const isOwner = membership.role === 'owner';
   const isFieldEmployee = isFieldEmployeeRole(membership.role);
@@ -72,7 +70,10 @@ export default async function TenantAccountSettingsPage() {
           </div>
         </Card>
 
-        <Card title="Your profile" description="Name and photo shown to teammates in this workspace.">
+        <Card
+          title="Your profile"
+          description="Name and photo shown to teammates in this workspace."
+        >
           <ProfileSettingsForm
             tenantSlug={membership.tenantSlug}
             displayName={displayName}
@@ -109,9 +110,7 @@ export default async function TenantAccountSettingsPage() {
         </Card>
 
         <Card title="Sign out" description="End your session on this device.">
-          <p className={styles.muted}>
-            Signed in as {auth?.user.email?.trim() || 'your account'}.
-          </p>
+          <p className={styles.muted}>Signed in as {auth?.user.email?.trim() || 'your account'}.</p>
           <SignOutButton variant="settings" />
         </Card>
 

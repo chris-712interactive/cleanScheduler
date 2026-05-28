@@ -4,25 +4,25 @@ Plan-gated marketing broadcasts for **Business** and **Pro** tenants. Starter wo
 
 ## Entitlements
 
-| Control | Starter | Business | Pro |
-|---------|---------|----------|-----|
-| `campaigns` feature | No | Yes | Yes |
-| `includedEmailCreditsMonthly` (marketing) | — | 25,000 | 100,000 |
-| `maxCampaignSendsMonthly` | — | 10,000 | 40,000 |
-| `maxConcurrentActiveCampaigns` | — | 3 | 10 |
-| `maxCampaignAudienceSize` | — | 5,000 | 15,000 |
-| `maxCampaignDrafts` | — | 20 | 50 |
+| Control                                   | Starter | Business | Pro     |
+| ----------------------------------------- | ------- | -------- | ------- |
+| `campaigns` feature                       | No      | Yes      | Yes     |
+| `includedEmailCreditsMonthly` (marketing) | —       | 25,000   | 100,000 |
+| `maxCampaignSendsMonthly`                 | —       | 10,000   | 40,000  |
+| `maxConcurrentActiveCampaigns`            | —       | 3        | 10      |
+| `maxCampaignAudienceSize`                 | —       | 5,000    | 15,000  |
+| `maxCampaignDrafts`                       | —       | 20       | 50      |
 
 Canonical values live in `lib/billing/entitlements.ts`. Transactional Resend sends do **not** consume `includedEmailCreditsMonthly`.
 
 ## Roles
 
-| Role | View list & metrics | Create / edit / send |
-|------|---------------------|----------------------|
-| Owner | Yes | Yes |
-| Admin | Yes | Yes |
-| Employee | Yes | No |
-| Viewer | Yes | No |
+| Role     | View list & metrics | Create / edit / send |
+| -------- | ------------------- | -------------------- |
+| Owner    | Yes                 | Yes                  |
+| Admin    | Yes                 | Yes                  |
+| Employee | Yes                 | No                   |
+| Viewer   | Yes                 | No                   |
 
 ## Audience & compliance
 
@@ -39,21 +39,21 @@ Canonical values live in `lib/billing/entitlements.ts`. Transactional Resend sen
 
 ## Audience presets (MVP)
 
-| Preset | Description |
-|--------|-------------|
-| `all_marketable` | Active + email + opt-in + not suppressed |
+| Preset            | Description                              |
+| ----------------- | ---------------------------------------- |
+| `all_marketable`  | Active + email + opt-in + not suppressed |
 | `email_preferred` | Above + preferred contact email or unset |
-| `residential` | Above + primary property residential |
-| `portal_nudge` | Above + no customer portal login |
-| `open_balance` | Above + open invoice |
+| `residential`     | Above + primary property residential     |
+| `portal_nudge`    | Above + no customer portal login         |
+| `open_balance`    | Above + open invoice                     |
 
 ## Pages
 
-| Route | Purpose |
-|-------|---------|
-| `/campaigns` | KPI strip + status tabs + table + pagination |
-| `/campaigns/new` | Create draft / send |
-| `/campaigns/[id]` | Detail metrics + recipient activity |
+| Route             | Purpose                                      |
+| ----------------- | -------------------------------------------- |
+| `/campaigns`      | KPI strip + status tabs + table + pagination |
+| `/campaigns/new`  | Create draft / send                          |
+| `/campaigns/[id]` | Detail metrics + recipient activity          |
 
 Starter: upgrade card on `/campaigns` (billing hub pattern).
 
@@ -76,11 +76,11 @@ Starter: upgrade card on `/campaigns` (billing hub pattern).
 
 ## Phasing
 
-| Phase | Scope |
-|-------|--------|
+| Phase                     | Scope                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------- |
 | **MVP (shipped in repo)** | Feature gate, schema, list/create/detail, presets, send now, webhooks, opt-in |
-| **V1.1** | Scheduled sends, saved segments, credit warning banners, duplicate campaign |
-| **V2** | WYSIWYG builder, Resend Broadcasts, advanced segmentation, Pro branded domain |
+| **V1.1**                  | Scheduled sends, saved segments, credit warning banners, duplicate campaign   |
+| **V2**                    | WYSIWYG builder, Resend Broadcasts, advanced segmentation, Pro branded domain |
 
 ## Related docs
 

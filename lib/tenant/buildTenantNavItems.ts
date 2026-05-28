@@ -11,7 +11,11 @@ const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Customers', href: '/customers', icon: 'customers' },
   { label: 'Schedule', href: '/schedule', icon: 'schedule' },
-  { label: 'Reschedule requests', href: '/schedule/reschedule-requests', icon: 'rescheduleRequests' },
+  {
+    label: 'Reschedule requests',
+    href: '/schedule/reschedule-requests',
+    icon: 'rescheduleRequests',
+  },
   { label: 'Employees', href: '/employees', icon: 'work' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },
   { label: 'Reports', href: '/reports', icon: 'reports' },

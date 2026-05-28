@@ -48,7 +48,10 @@ export function VisitProofPhotos({
         </ul>
       </section>
 
-      <Dialog.Root open={activePhoto != null} onOpenChange={(open) => !open && setActivePhoto(null)}>
+      <Dialog.Root
+        open={activePhoto != null}
+        onOpenChange={(open) => !open && setActivePhoto(null)}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className={styles.lightboxOverlay} />
           <Dialog.Content className={styles.lightboxContent} aria-describedby={undefined}>

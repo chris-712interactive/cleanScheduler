@@ -127,10 +127,7 @@ export function ScheduleVisitBlock({
             <div className={styles.visitCardInfo}>
               <span className={styles.visitCustomer}>{visit.customerName}</span>
               <span
-                className={[
-                  styles.visitAddress,
-                  !visit.siteLine ? styles.visitAddressEmpty : '',
-                ]
+                className={[styles.visitAddress, !visit.siteLine ? styles.visitAddressEmpty : '']
                   .filter(Boolean)
                   .join(' ')}
               >
@@ -157,7 +154,9 @@ export function ScheduleVisitBlock({
           <div className={styles.visitExpandHead}>
             <div className={styles.visitExpandHeadText}>
               <span className={styles.visitCustomer}>{visit.customerName}</span>
-              {visit.siteLine ? <span className={styles.visitAddress}>{visit.siteLine}</span> : null}
+              {visit.siteLine ? (
+                <span className={styles.visitAddress}>{visit.siteLine}</span>
+              ) : null}
               <span className={styles.visitTime}>
                 {timeLabel}
                 <span className={styles.visitDuration}> · {durationLabel}</span>

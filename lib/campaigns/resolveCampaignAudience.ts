@@ -17,10 +17,12 @@ type CustomerRow = {
     marketing_email_opt_in: boolean;
     preferred_contact_method: 'email' | 'phone' | 'sms' | null;
   } | null;
-  tenant_customer_properties: {
-    property_kind: string;
-    is_primary: boolean;
-  }[] | null;
+  tenant_customer_properties:
+    | {
+        property_kind: string;
+        is_primary: boolean;
+      }[]
+    | null;
 };
 
 function normalizeEmail(email: string | null | undefined): string | null {

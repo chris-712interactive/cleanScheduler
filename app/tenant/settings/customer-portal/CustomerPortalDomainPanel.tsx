@@ -129,8 +129,7 @@ export function CustomerPortalDomainPanel({
 
       <p className={styles.opsIntro}>
         Use your own web address for the customer portal so clients see your brand in invite links
-        and bookmarks. Without a custom domain, clients use{' '}
-        <code>{sharedPortalHost}</code>.
+        and bookmarks. Without a custom domain, clients use <code>{sharedPortalHost}</code>.
       </p>
 
       {activeDomain ? (
@@ -172,8 +171,8 @@ export function CustomerPortalDomainPanel({
           <h3 className={styles.integrationsHeading}>Portal web address</h3>
           <p className={styles.opsIntro}>
             Enter the full address your customers will use, such as{' '}
-            <code>portal.yourcompany.com</code>. You will need access to your domain settings to
-            add a few DNS records in the next step.
+            <code>portal.yourcompany.com</code>. You will need access to your domain settings to add
+            a few DNS records in the next step.
           </p>
           <form action={continueAction} className={styles.opsForm}>
             <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -211,7 +210,9 @@ export function CustomerPortalDomainPanel({
             instructions={dnsInstructions}
           />
 
-          {vercelAutomationConfigured && pendingDomain.vercelVerification.length === 0 && !vercelDnsConfig?.recommendedCname ? (
+          {vercelAutomationConfigured &&
+          pendingDomain.vercelVerification.length === 0 &&
+          !vercelDnsConfig?.recommendedCname ? (
             <form action={refreshAction} className={styles.dnsInstructionActions}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <Button type="submit" variant="secondary" disabled={refreshPending}>

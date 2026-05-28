@@ -50,7 +50,10 @@ export async function loadOwnerOnboardingProfileState(
   };
 }
 
-export async function ensureOwnerOnboardingProfileRow(admin: Admin, tenantId: string): Promise<void> {
+export async function ensureOwnerOnboardingProfileRow(
+  admin: Admin,
+  tenantId: string,
+): Promise<void> {
   const { data } = await admin
     .from('tenant_onboarding_profiles')
     .select('id')
@@ -131,7 +134,10 @@ export async function skipOptionalChecklistStep(
     .eq('tenant_id', tenantId);
 }
 
-export async function acknowledgeChecklistCompletion(admin: Admin, tenantId: string): Promise<void> {
+export async function acknowledgeChecklistCompletion(
+  admin: Admin,
+  tenantId: string,
+): Promise<void> {
   await ensureOwnerOnboardingProfileRow(admin, tenantId);
   await admin
     .from('tenant_onboarding_profiles')

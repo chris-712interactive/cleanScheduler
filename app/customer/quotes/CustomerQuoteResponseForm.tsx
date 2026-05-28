@@ -188,7 +188,13 @@ export function CustomerQuoteResponseForm({
               <form action={action} className={styles.stickyActionForm}>
                 <input type="hidden" name="quote_id" value={quoteId} />
                 <input type="hidden" name="decision" value="decline" />
-                <Button type="submit" variant="secondary" fullWidth loading={pending} disabled={pending}>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  fullWidth
+                  loading={pending}
+                  disabled={pending}
+                >
                   Confirm decline
                 </Button>
               </form>
@@ -200,7 +206,12 @@ export function CustomerQuoteResponseForm({
               <Button type="button" variant="primary" fullWidth={isPanel} onClick={beginSignStep}>
                 Accept quote
               </Button>
-              <Button type="button" variant="ghost" fullWidth={isPanel} onClick={() => setDeclineOpen(true)}>
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth={isPanel}
+                onClick={() => setDeclineOpen(true)}
+              >
                 Not interested
               </Button>
             </div>
@@ -220,20 +231,14 @@ export function CustomerQuoteResponseForm({
   }
 
   return (
-    <div
-      id={`quote-response-${quoteId}`}
-      className={styles.responseForm}
-      data-flow-step="sign"
-    >
+    <div id={`quote-response-${quoteId}`} className={styles.responseForm} data-flow-step="sign">
       {state.error ? (
         <p className={styles.responseError} role="alert">
           {state.error}
         </p>
       ) : null}
 
-      <p className={styles.signatureStepIntro}>
-        Sign below to accept this quote for {totalLabel}.
-      </p>
+      <p className={styles.signatureStepIntro}>Sign below to accept this quote for {totalLabel}.</p>
 
       <form
         id={signFormId}
@@ -354,10 +359,21 @@ export function CustomerQuoteResponseForm({
         </details>
 
         <div className={desktopActionsClass}>
-          <Button type="button" variant="ghost" fullWidth={isPanel} onClick={() => setStep('decision')}>
+          <Button
+            type="button"
+            variant="ghost"
+            fullWidth={isPanel}
+            onClick={() => setStep('decision')}
+          >
             Back
           </Button>
-          <Button type="submit" variant="primary" fullWidth={isPanel} loading={pending} disabled={pending}>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth={isPanel}
+            loading={pending}
+            disabled={pending}
+          >
             {pending ? 'Working…' : 'Accept and sign'}
           </Button>
         </div>

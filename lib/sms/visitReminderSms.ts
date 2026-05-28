@@ -31,7 +31,10 @@ async function customerPhoneForVisit(
     .eq('id', customerId)
     .maybeSingle();
 
-  const identityRaw = data?.customer_identities as { phone: string | null } | { phone: string | null }[] | null;
+  const identityRaw = data?.customer_identities as
+    | { phone: string | null }
+    | { phone: string | null }[]
+    | null;
   const identity = Array.isArray(identityRaw) ? identityRaw[0] : identityRaw;
   const phone = (identity?.phone ?? '').trim() || null;
 
@@ -76,7 +79,11 @@ export async function sendVisitReminderSmsForAllTenants(): Promise<{
   for (const row of opsRows ?? []) {
     const tenantId = row.tenant_id;
     const [{ data: billing }, tier] = await Promise.all([
-      admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+      admin
+        .from('tenant_billing_accounts')
+        .select('status')
+        .eq('tenant_id', tenantId)
+        .maybeSingle(),
       resolveTenantPlanTier(admin, tenantId),
     ]);
     if (!isFeatureEnabled(tier, 'smsCommunication') || !canUseSmsCommunication(billing?.status)) {
@@ -84,7 +91,11 @@ export async function sendVisitReminderSmsForAllTenants(): Promise<{
       continue;
     }
 
-    const { data: tenant } = await admin.from('tenants').select('name').eq('id', tenantId).maybeSingle();
+    const { data: tenant } = await admin
+      .from('tenants')
+      .select('name')
+      .eq('id', tenantId)
+      .maybeSingle();
     const tenantName = (tenant?.name ?? '').trim() || 'Your cleaning provider';
 
     const { data: visits, error: visitErr } = await admin

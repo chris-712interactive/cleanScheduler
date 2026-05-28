@@ -37,7 +37,9 @@ export function LocationsPanel({
       ) : null}
 
       {locations.length === 0 ? (
-        <p className={styles.opsIntro}>No locations yet. Add a branch or territory to tag visits and invoices.</p>
+        <p className={styles.opsIntro}>
+          No locations yet. Add a branch or territory to tag visits and invoices.
+        </p>
       ) : (
         <ul className={styles.integrationsList}>
           {locations.map((loc) => (
@@ -78,7 +80,13 @@ export function LocationsPanel({
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <label className={styles.opsField}>
             <span className={styles.opsLabel}>Location name</span>
-            <input className={styles.opsInput} name="name" placeholder="North county crew" required disabled={pending} />
+            <input
+              className={styles.opsInput}
+              name="name"
+              placeholder="North county crew"
+              required
+              disabled={pending}
+            />
           </label>
           <label className={styles.opsField}>
             <span className={styles.opsLabel}>Short code (optional)</span>

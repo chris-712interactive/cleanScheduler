@@ -41,7 +41,8 @@ export async function exchangeAndSaveBankLink(
     tenant_id: tenantId,
     plaid_item_id: itemId,
     plaid_access_token: accessToken,
-    plaid_institution_id: institution?.institution_id ?? accountsRes.data.item.institution_id ?? null,
+    plaid_institution_id:
+      institution?.institution_id ?? accountsRes.data.item.institution_id ?? null,
     institution_name: institution?.name ?? null,
     plaid_account_id: account.id,
     account_name: account.name || plaidAccount.name || null,

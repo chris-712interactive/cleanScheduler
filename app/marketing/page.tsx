@@ -87,7 +87,9 @@ export default async function MarketingHome() {
         <section className={styles.personasIntro}>
           <Container>
             <Stack gap={2} align="center" as="div">
-              <h2 className={styles.sectionTitle}>Built for how cleaning businesses actually run</h2>
+              <h2 className={styles.sectionTitle}>
+                Built for how cleaning businesses actually run
+              </h2>
               <p className={styles.sectionLead}>
                 Whether you are the owner wearing every hat, running the office, or closing the
                 books — cleanScheduler meets you where you work.

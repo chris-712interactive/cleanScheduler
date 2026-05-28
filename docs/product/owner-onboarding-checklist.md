@@ -25,14 +25,14 @@ Related code today:
 
 ## Problems with today
 
-| Issue | Today |
-| ----- | ----- |
-| Dismiss persistence | `localStorage` key `owner-onboarding-dismissed:{tenantId}` — lost on new device, cleared storage, incognito |
-| Rediscovery | No nav entry; dismissed panel is gone with no way back |
-| Snooze | Not supported — only dismiss or complete-all |
-| Business profile step | “Complete” if `tenants.name` is set — always true after signup |
-| Trial mismatch | Optional “Connect bank” (Plaid) shown during trial when `plaidReconciliation` is blocked |
-| Survey vs checklist | Separate panels; survey also uses `localStorage` dismiss |
+| Issue                 | Today                                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Dismiss persistence   | `localStorage` key `owner-onboarding-dismissed:{tenantId}` — lost on new device, cleared storage, incognito |
+| Rediscovery           | No nav entry; dismissed panel is gone with no way back                                                      |
+| Snooze                | Not supported — only dismiss or complete-all                                                                |
+| Business profile step | “Complete” if `tenants.name` is set — always true after signup                                              |
+| Trial mismatch        | Optional “Connect bank” (Plaid) shown during trial when `plaidReconciliation` is blocked                    |
+| Survey vs checklist   | Separate panels; survey also uses `localStorage` dismiss                                                    |
 
 ---
 
@@ -60,11 +60,11 @@ Previously the dashboard showed the full checklist card plus a duplicate “Free
 
 **Actions on the progress card:**
 
-| Action | Behavior |
-| ------ | -------- |
-| **Continue** (implicit) | Tap any step link → go to target route |
-| **Snooze 7 days** | Set `checklist_snoozed_until` → hide card until date; nav badge remains |
-| **Dismiss** | Set `checklist_dismissed_at` → hide card; nav entry “Getting started” stays with badge |
+| Action                  | Behavior                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| **Continue** (implicit) | Tap any step link → go to target route                                                 |
+| **Snooze 7 days**       | Set `checklist_snoozed_until` → hide card until date; nav badge remains                |
+| **Dismiss**             | Set `checklist_dismissed_at` → hide card; nav entry “Getting started” stays with badge |
 
 When all **required** steps are auto-complete → set `checklist_completed_at`, hide card and nav badge, optional one-time “You’re set up” toast (nice-to-have).
 
@@ -106,25 +106,25 @@ Steps are defined in code (`OWNER_ONBOARDING_STEPS` constant). Completion is com
 
 ### Required (trial-friendly)
 
-| ID | Title | Complete when | Route |
-| -- | ----- | ------------- | ----- |
-| `business` | Complete business profile | `tenants.timezone` set **and** (`business_email` or `business_phone`) **and** address line 1 or city | `/settings/business` |
-| `quote` | Create your first quote | ≥1 non-superseded quote | `/quotes/new` |
-| `customer` | Add a customer | ≥1 active customer | `/customers/new` |
-| `visit` | Schedule a visit | ≥1 scheduled visit | `/schedule/new` |
-| `connect` | Set up online payments | `tenants.stripe_connect_status = complete` | `/billing/payment-setup` |
-| `invoice` | Send a customer invoice | ≥1 invoice (any status except void) | `/billing/invoices/new` |
-| `team` | Invite a teammate | >1 active membership **or** pending invite | `/employees/new` |
+| ID         | Title                     | Complete when                                                                                        | Route                    |
+| ---------- | ------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ |
+| `business` | Complete business profile | `tenants.timezone` set **and** (`business_email` or `business_phone`) **and** address line 1 or city | `/settings/business`     |
+| `quote`    | Create your first quote   | ≥1 non-superseded quote                                                                              | `/quotes/new`            |
+| `customer` | Add a customer            | ≥1 active customer                                                                                   | `/customers/new`         |
+| `visit`    | Schedule a visit          | ≥1 scheduled visit                                                                                   | `/schedule/new`          |
+| `connect`  | Set up online payments    | `tenants.stripe_connect_status = complete`                                                           | `/billing/payment-setup` |
+| `invoice`  | Send a customer invoice   | ≥1 invoice (any status except void)                                                                  | `/billing/invoices/new`  |
+| `team`     | Invite a teammate         | >1 active membership **or** pending invite                                                           | `/employees/new`         |
 
 **Removed from required vs today:** none — same seven concepts, stricter `business` detection.
 
 ### Optional
 
-| ID | Title | Complete when | Trial | Route |
-| -- | ----- | ------------- | ----- | ----- |
-| `portal_invite` | Invite a customer to the portal | ≥1 customer portal invite sent | Yes | `/customers` (with hint) |
-| `compensation` | Set compensation rules | ≥1 active compensation rule | Yes | `/settings/compensation` |
-| `bank` | Connect your bank (Plaid) | ≥1 active bank link | **No** — show locked until `plaidReconciliation` | `/billing/bank-connection` |
+| ID              | Title                           | Complete when                  | Trial                                            | Route                      |
+| --------------- | ------------------------------- | ------------------------------ | ------------------------------------------------ | -------------------------- |
+| `portal_invite` | Invite a customer to the portal | ≥1 customer portal invite sent | Yes                                              | `/customers` (with hint)   |
+| `compensation`  | Set compensation rules          | ≥1 active compensation rule    | Yes                                              | `/settings/compensation`   |
+| `bank`          | Connect your bank (Plaid)       | ≥1 active bank link            | **No** — show locked until `plaidReconciliation` | `/billing/bank-connection` |
 
 **Changes from today:**
 
@@ -136,8 +136,8 @@ Steps are defined in code (`OWNER_ONBOARDING_STEPS` constant). Completion is com
 
 When `subscriptionAccess === 'trialing'` and trial ends within **3 days** (or `trial_expired`):
 
-| ID | Title | Route |
-| -- | ----- | ----- |
+| ID          | Title                           | Route      |
+| ----------- | ------------------------------- | ---------- |
 | `subscribe` | Choose a plan before trial ends | `/billing` |
 
 Inserted at top of list; **required for checklist completion only while trial is active/expired without subscription** — does not block portal access (billing page handles that).
@@ -159,13 +159,13 @@ alter table public.tenant_onboarding_profiles
   add column survey_dismissed_at timestamptz;
 ```
 
-| Column | Meaning |
-| ------ | ------- |
-| `checklist_dismissed_at` | Owner dismissed dashboard card (can still open `/getting-started`) |
-| `checklist_snoozed_until` | Hide dashboard card until this timestamp |
-| `checklist_completed_at` | All required steps done; stop showing nav badge |
-| `checklist_optional_skips` | Step IDs user skipped (`compensation`, `portal_invite`, etc.) |
-| `survey_dismissed_at` | Post-signup survey dismissed without submitting |
+| Column                     | Meaning                                                            |
+| -------------------------- | ------------------------------------------------------------------ |
+| `checklist_dismissed_at`   | Owner dismissed dashboard card (can still open `/getting-started`) |
+| `checklist_snoozed_until`  | Hide dashboard card until this timestamp                           |
+| `checklist_completed_at`   | All required steps done; stop showing nav badge                    |
+| `checklist_optional_skips` | Step IDs user skipped (`compensation`, `portal_invite`, etc.)      |
+| `survey_dismissed_at`      | Post-signup survey dismissed without submitting                    |
 
 **UI visibility rule (dashboard card):**
 
@@ -197,13 +197,13 @@ Only if we need analytics (“time to first quote”). Defer unless product want
 
 ## API / server actions
 
-| Action | Who | Effect |
-| ------ | --- | ------ |
-| `snoozeOwnerChecklist({ days: 7 })` | owner, admin | `checklist_snoozed_until = now + days` |
-| `dismissOwnerChecklist()` | owner, admin | `checklist_dismissed_at = now()` |
+| Action                                  | Who          | Effect                                                |
+| --------------------------------------- | ------------ | ----------------------------------------------------- |
+| `snoozeOwnerChecklist({ days: 7 })`     | owner, admin | `checklist_snoozed_until = now + days`                |
+| `dismissOwnerChecklist()`               | owner, admin | `checklist_dismissed_at = now()`                      |
 | `skipOptionalChecklistStep({ stepId })` | owner, admin | append to `checklist_optional_skips` if step.optional |
-| `reopenOwnerChecklist()` | owner, admin | clear `checklist_dismissed_at`, clear snooze |
-| `dismissOwnerSurvey()` | owner, admin | `survey_dismissed_at = now()` |
+| `reopenOwnerChecklist()`                | owner, admin | clear `checklist_dismissed_at`, clear snooze          |
+| `dismissOwnerSurvey()`                  | owner, admin | `survey_dismissed_at = now()`                         |
 
 All actions: `requireTenantPortalAccess` + `canManageTeamInvitesAndRoles`.
 
@@ -228,17 +228,17 @@ Refactor `getOwnerOnboardingChecklist` to accept:
 getOwnerOnboardingChecklist(db, {
   tenantId,
   connectStatus,
-  billingAccess,      // trialing | active | ...
-  entitlementPlan,    // trial | starter | ...
-  profileState,       // dismiss/snooze/skips from DB
-})
+  billingAccess, // trialing | active | ...
+  entitlementPlan, // trial | starter | ...
+  profileState, // dismiss/snooze/skips from DB
+});
 ```
 
 Return:
 
 ```ts
 interface OwnerOnboardingChecklist {
-  steps: OwnerOnboardingStep[];  // add locked?: boolean; lockedReason?: string
+  steps: OwnerOnboardingStep[]; // add locked?: boolean; lockedReason?: string
   completedCount: number;
   totalRequired: number;
   allRequiredComplete: boolean;
@@ -251,12 +251,12 @@ interface OwnerOnboardingChecklist {
 
 ## Trial & entitlement integration
 
-| Step | Trialing | Subscribed |
-| ---- | -------- | ---------- |
-| Connect | Show, completable | Same |
-| Invoice / quotes / schedule | Show, completable | Same |
-| Bank (Plaid) | Locked — link to `/billing` | Show if Business+ |
-| Subscribe | Show when trial ending | Hidden when `active` |
+| Step                        | Trialing                    | Subscribed           |
+| --------------------------- | --------------------------- | -------------------- |
+| Connect                     | Show, completable           | Same                 |
+| Invoice / quotes / schedule | Show, completable           | Same                 |
+| Bank (Plaid)                | Locked — link to `/billing` | Show if Business+    |
+| Subscribe                   | Show when trial ending      | Hidden when `active` |
 
 Use `resolveTenantEntitlementPlan()` and `resolveTenantSubscriptionAccess()` — same patterns as billing gates.
 
@@ -266,11 +266,11 @@ Use `resolveTenantEntitlementPlan()` and `resolveTenantSubscriptionAccess()` —
 
 **Existing workspaces:**
 
-| Case | Behavior |
-| ---- | -------- |
-| Already completed all steps today | On first load after deploy, cron or lazy eval sets `checklist_completed_at` |
-| Dismissed in localStorage only | Treat as not dismissed server-side; optionally one-time banner “Getting started moved to the sidebar” |
-| Active mature tenants | If all required steps already true, backfill `checklist_completed_at` so they never see checklist |
+| Case                              | Behavior                                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Already completed all steps today | On first load after deploy, cron or lazy eval sets `checklist_completed_at`                           |
+| Dismissed in localStorage only    | Treat as not dismissed server-side; optionally one-time banner “Getting started moved to the sidebar” |
+| Active mature tenants             | If all required steps already true, backfill `checklist_completed_at` so they never see checklist     |
 
 Backfill script (one-time):
 
@@ -283,14 +283,14 @@ Backfill script (one-time):
 
 ## Implementation phases
 
-| Phase | Scope |
-| ----- | ----- |
-| **1** | Migration + `ownerOnboardingState` read/write + server actions |
-| **2** | Refactor checklist eval (business profile, trial locks, subscribe step) |
+| Phase | Scope                                                                        |
+| ----- | ---------------------------------------------------------------------------- |
+| **1** | Migration + `ownerOnboardingState` read/write + server actions               |
+| **2** | Refactor checklist eval (business profile, trial locks, subscribe step)      |
 | **3** | Update `OwnerOnboardingPanel` (snooze/dismiss → server); remove localStorage |
-| **4** | `/getting-started` page + sidebar nav + badge |
-| **5** | Persist survey dismiss; polish copy |
-| **6** | Backfill `checklist_completed_at` for mature tenants |
+| **4** | `/getting-started` page + sidebar nav + badge                                |
+| **5** | Persist survey dismiss; polish copy                                          |
+| **6** | Backfill `checklist_completed_at` for mature tenants                         |
 
 ---
 

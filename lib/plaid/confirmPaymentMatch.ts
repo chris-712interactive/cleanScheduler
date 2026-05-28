@@ -12,9 +12,14 @@ function inferPaymentMethod(transaction: {
   name: string | null;
   merchant_name: string | null;
 }): PaymentMethod {
-  const text = `${transaction.payment_channel ?? ''} ${transaction.name ?? ''} ${transaction.merchant_name ?? ''}`.toLowerCase();
+  const text =
+    `${transaction.payment_channel ?? ''} ${transaction.name ?? ''} ${transaction.merchant_name ?? ''}`.toLowerCase();
   if (text.includes('zelle')) return 'zelle';
-  if (text.includes('ach') || text.includes('direct dep') || transaction.payment_channel === 'online') {
+  if (
+    text.includes('ach') ||
+    text.includes('direct dep') ||
+    transaction.payment_channel === 'online'
+  ) {
     return 'ach';
   }
   return 'other';
@@ -26,22 +31,24 @@ export async function matchBankDepositToInvoice(
   bankTransactionId: string,
   invoiceId: string,
 ): Promise<{ paymentId: string }> {
-  const [{ data: transaction, error: txErr }, { data: invoice, error: invErr }] = await Promise.all([
-    admin
-      .from('bank_transactions')
-      .select(
-        'id, amount_cents, payment_channel, name, merchant_name, matched_payment_id, pending, posted_date',
-      )
-      .eq('id', bankTransactionId)
-      .eq('tenant_id', tenantId)
-      .maybeSingle(),
-    admin
-      .from('tenant_invoices')
-      .select('id, amount_cents, amount_paid_cents, status, title')
-      .eq('id', invoiceId)
-      .eq('tenant_id', tenantId)
-      .maybeSingle(),
-  ]);
+  const [{ data: transaction, error: txErr }, { data: invoice, error: invErr }] = await Promise.all(
+    [
+      admin
+        .from('bank_transactions')
+        .select(
+          'id, amount_cents, payment_channel, name, merchant_name, matched_payment_id, pending, posted_date',
+        )
+        .eq('id', bankTransactionId)
+        .eq('tenant_id', tenantId)
+        .maybeSingle(),
+      admin
+        .from('tenant_invoices')
+        .select('id, amount_cents, amount_paid_cents, status, title')
+        .eq('id', invoiceId)
+        .eq('tenant_id', tenantId)
+        .maybeSingle(),
+    ],
+  );
 
   if (txErr || !transaction) throw new Error('Bank transaction not found.');
   if (transaction.matched_payment_id) throw new Error('This bank deposit is already matched.');

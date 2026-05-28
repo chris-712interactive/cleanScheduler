@@ -34,7 +34,9 @@ export async function updateBusinessProfileAction(
   _prev: BusinessSettingsActionState,
   formData: FormData,
 ): Promise<BusinessSettingsActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   try {
@@ -72,7 +74,9 @@ export async function updateWorkWeekAction(
   _prev: BusinessSettingsActionState,
   formData: FormData,
 ): Promise<BusinessSettingsActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   try {
@@ -114,7 +118,9 @@ export async function updateBrandingAction(
   _prev: BusinessSettingsActionState,
   formData: FormData,
 ): Promise<BusinessSettingsActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   try {
@@ -145,7 +151,9 @@ export async function uploadTenantLogoAction(
   _prev: BusinessSettingsActionState,
   formData: FormData,
 ): Promise<BusinessSettingsActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   try {
@@ -203,7 +211,9 @@ export async function updateBusinessAddressAction(
   _prev: BusinessSettingsActionState,
   formData: FormData,
 ): Promise<BusinessSettingsActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   try {

@@ -69,7 +69,11 @@ export default async function TenantCustomerInvoicesPage({
   const db = createTenantPortalDbClient();
   const canExport = canExportReports(membership.role);
 
-  const { data: invoices, error, count } = await db
+  const {
+    data: invoices,
+    error,
+    count,
+  } = await db
     .from('tenant_invoices')
     .select(
       `

@@ -77,9 +77,7 @@ async function resolveTenantIdForSubscription(
   const customerId =
     hints?.stripeCustomerId?.trim() ||
     resolveStripeResourceId(
-      typeof subscription.customer === 'string'
-        ? subscription.customer
-        : subscription.customer?.id,
+      typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id,
     );
   if (!customerId) return null;
 
@@ -110,9 +108,7 @@ export async function syncTenantFromStripeSubscription(
   }
 
   const customerId = resolveStripeResourceId(
-    typeof subscription.customer === 'string'
-      ? subscription.customer
-      : subscription.customer?.id,
+    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id,
   );
 
   const trialStart = subscription.trial_start
@@ -131,7 +127,8 @@ export async function syncTenantFromStripeSubscription(
   }
 
   let billingInterval =
-    parsePlatformBillingInterval(String(subscription.metadata?.billing_interval ?? '')) ?? undefined;
+    parsePlatformBillingInterval(String(subscription.metadata?.billing_interval ?? '')) ??
+    undefined;
   if (!billingInterval) {
     billingInterval =
       resolvePlatformIntervalFromStripePriceId(priceId) ??
@@ -252,7 +249,10 @@ export async function syncTenantPlatformBillingFromStripe(
   if (existingSubId) {
     try {
       const subscription = await stripe.subscriptions.retrieve(existingSubId);
-      await syncTenantFromStripeSubscription(admin, subscription, { tenantId, stripeCustomerId: customerId });
+      await syncTenantFromStripeSubscription(admin, subscription, {
+        tenantId,
+        stripeCustomerId: customerId,
+      });
       return { synced: true };
     } catch {
       // Fall through to list by customer.
@@ -272,7 +272,10 @@ export async function syncTenantPlatformBillingFromStripe(
     return { synced: false, reason: 'No Stripe subscription found for this customer.' };
   }
 
-  await syncTenantFromStripeSubscription(admin, preferred, { tenantId, stripeCustomerId: customerId });
+  await syncTenantFromStripeSubscription(admin, preferred, {
+    tenantId,
+    stripeCustomerId: customerId,
+  });
   return { synced: true };
 }
 

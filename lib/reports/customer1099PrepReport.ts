@@ -47,7 +47,8 @@ export async function runCustomer1099PrepReport(
       { label: 'Total customers', value: String(rows.length) },
       {
         label: 'Note',
-        value: 'Flags gross collected per customer — confirm with your accountant which forms apply.',
+        value:
+          'Flags gross collected per customer — confirm with your accountant which forms apply.',
       },
     ],
   };

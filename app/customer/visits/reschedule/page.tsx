@@ -40,8 +40,8 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
         />
         <Card title="Choose a visit">
           <p style={{ margin: 0 }}>
-            Missing or invalid appointment link. Open{' '}
-            <Link href="/visits">Schedule</Link> and use Reschedule next to your visit.
+            Missing or invalid appointment link. Open <Link href="/visits">Schedule</Link> and use
+            Reschedule next to your visit.
           </p>
         </Card>
       </>
@@ -69,7 +69,10 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
   if (error || !visit || !ctx.customerIds.includes(visit.customer_id)) {
     return (
       <>
-        <PageHeader title="Visit not found" description="That appointment is not on your account." />
+        <PageHeader
+          title="Visit not found"
+          description="That appointment is not on your account."
+        />
         <Card title="What is next">
           <p style={{ margin: 0 }}>
             Try <Link href="/visits">your schedule</Link> or contact your provider if something
@@ -91,16 +94,15 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
     .eq('status', 'pending')
     .maybeSingle();
 
-  const blockingReason =
-    existingPending
-      ? 'pending_request'
-      : visit.status !== 'scheduled'
-        ? 'This visit is not eligible for reschedule (already completed or cancelled).'
-        : visit.checked_in_at
-          ? 'This visit already started check-in — contact your provider to change plans.'
-          : new Date(visit.starts_at).getTime() < Date.now()
-            ? 'This appointment is in the past.'
-            : null;
+  const blockingReason = existingPending
+    ? 'pending_request'
+    : visit.status !== 'scheduled'
+      ? 'This visit is not eligible for reschedule (already completed or cancelled).'
+      : visit.checked_in_at
+        ? 'This visit already started check-in — contact your provider to change plans.'
+        : new Date(visit.starts_at).getTime() < Date.now()
+          ? 'This appointment is in the past.'
+          : null;
 
   return (
     <>
@@ -127,8 +129,7 @@ export default async function CustomerVisitReschedulePage({ searchParams }: Page
           </div>
         ) : blockingReason ? (
           <p style={{ marginBottom: 0 }} role="status">
-            {blockingReason}{' '}
-            <Link href="/messages">Message your provider</Link> if you need help.
+            {blockingReason} <Link href="/messages">Message your provider</Link> if you need help.
           </p>
         ) : (
           <CustomerRescheduleForm

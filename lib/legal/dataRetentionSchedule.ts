@@ -58,7 +58,8 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
     examples: 'report_runs rows and PDF objects in report_exports storage',
     retentionPeriod: '1 hour from generation (cache TTL)',
     disposition: 'delete',
-    notes: 'Automatic expiry via expires_at; PDFs in storage may persist until overwritten or manual cleanup.',
+    notes:
+      'Automatic expiry via expires_at; PDFs in storage may persist until overwritten or manual cleanup.',
   },
   {
     category: 'Webhook idempotency logs',
@@ -82,7 +83,8 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
     examples: 'Quote, invoice, trial-ending, dispute, and invite emails sent via Resend',
     retentionPeriod: 'Not stored in full in our database after send',
     disposition: 'provider-controlled',
-    notes: 'We retain recipient metadata and status in app tables where applicable; message bodies live with Resend for a limited provider retention window.',
+    notes:
+      'We retain recipient metadata and status in app tables where applicable; message bodies live with Resend for a limited provider retention window.',
   },
   {
     category: 'Portal and employee invites',

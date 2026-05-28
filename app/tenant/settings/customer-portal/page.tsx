@@ -24,9 +24,7 @@ import {
 import { publicEnv } from '@/lib/env';
 import { SettingsSectionCard } from '../SettingsSectionCard';
 import { CustomerPortalDomainPanel } from './CustomerPortalDomainPanel';
-import {
-  reconcileCustomerPortalDomainWithVercel,
-} from '@/lib/portal/customerPortalDomainSync';
+import { reconcileCustomerPortalDomainWithVercel } from '@/lib/portal/customerPortalDomainSync';
 import styles from '../settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -75,11 +73,7 @@ export default async function TenantCustomerPortalSettingsPage() {
       : domainRowRaw;
 
   let vercelDnsConfig: VercelDomainDnsConfig | null = null;
-  if (
-    domainRow?.status === 'pending' &&
-    vercelAutomationConfigured &&
-    domainRow.hostname
-  ) {
+  if (domainRow?.status === 'pending' && vercelAutomationConfigured && domainRow.hostname) {
     try {
       vercelDnsConfig = await getVercelDomainDnsConfig(domainRow.hostname);
     } catch {
@@ -128,8 +122,8 @@ export default async function TenantCustomerPortalSettingsPage() {
         />
       ) : !paid ? (
         <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }} role="status">
-          A custom portal address is included with Pro after you subscribe. Add a payment method from
-          Workspace billing to set one up during your trial.
+          A custom portal address is included with Pro after you subscribe. Add a payment method
+          from Workspace billing to set one up during your trial.
         </p>
       ) : null}
 

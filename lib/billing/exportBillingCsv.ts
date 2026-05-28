@@ -53,8 +53,11 @@ export async function exportInvoicesCsv(
     .limit(5000);
 
   const rows: InvoiceExportRow[] = (data ?? []).map((row) => {
-    const ident = (row.customers as { customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null } | null)
-      ?.customer_identities;
+    const ident = (
+      row.customers as {
+        customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null;
+      } | null
+    )?.customer_identities;
     const customer =
       ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : '—';
     return {
@@ -110,7 +113,9 @@ export async function exportTransactionsCsv(
     const inv = row.tenant_invoices as {
       id: string;
       title: string;
-      customers: { customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null } | null;
+      customers: {
+        customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null;
+      } | null;
     } | null;
     const ident = inv?.customers?.customer_identities;
     const customer =

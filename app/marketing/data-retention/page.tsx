@@ -38,7 +38,9 @@ export default function DataRetentionPolicyPage() {
             <h2>1. Purpose and scope</h2>
             <p>This policy applies to:</p>
             <ul>
-              <li>Data we store in our production systems (primarily Supabase Postgres and Storage);</li>
+              <li>
+                Data we store in our production systems (primarily Supabase Postgres and Storage);
+              </li>
               <li>Data processed on our behalf by subprocessors listed in our Privacy Policy;</li>
               <li>
                 Tenant workspace data (customer records, schedules, quotes, invoices, campaigns, and
@@ -53,9 +55,9 @@ export default function DataRetentionPolicyPage() {
             <h2>2. Principles</h2>
             <ul>
               <li>
-                <strong>Purpose limitation:</strong> we retain data only as long as needed to operate
-                the Service, meet contractual commitments, resolve disputes, or satisfy legal
-                obligations.
+                <strong>Purpose limitation:</strong> we retain data only as long as needed to
+                operate the Service, meet contractual commitments, resolve disputes, or satisfy
+                legal obligations.
               </li>
               <li>
                 <strong>Data minimization:</strong> we avoid storing full payment card numbers,
@@ -127,9 +129,9 @@ export default function DataRetentionPolicyPage() {
             <p>
               End customers of a cleaning business should direct access, correction, and deletion
               requests to their service provider first. We will assist the provider on verified
-              instructions. Customer identity records may link a person to multiple tenant workspaces;
-              deletion in one workspace does not automatically remove historical records another
-              provider holds.
+              instructions. Customer identity records may link a person to multiple tenant
+              workspaces; deletion in one workspace does not automatically remove historical records
+              another provider holds.
             </p>
 
             <h2>6. Disposal methods</h2>
@@ -200,9 +202,9 @@ export default function DataRetentionPolicyPage() {
 
             <h2>9. Legal hold and exceptions</h2>
             <p>
-              We may suspend routine deletion when we believe preservation is required to comply with
-              law, respond to lawful process, investigate abuse, or defend legal claims. When a hold
-              ends, normal disposal resumes for data no longer required.
+              We may suspend routine deletion when we believe preservation is required to comply
+              with law, respond to lawful process, investigate abuse, or defend legal claims. When a
+              hold ends, normal disposal resumes for data no longer required.
             </p>
 
             <h2>10. Security of retained data</h2>
@@ -215,10 +217,10 @@ export default function DataRetentionPolicyPage() {
 
             <h2>11. Changes to this policy</h2>
             <p>
-              We may update retention periods or disposal practices as the product or law evolves. We
-              will post changes on this page and update the &quot;Last updated&quot; date. Material
-              reductions in retention (favorable to users) may apply prospectively; extensions will
-              be communicated where appropriate.
+              We may update retention periods or disposal practices as the product or law evolves.
+              We will post changes on this page and update the &quot;Last updated&quot; date.
+              Material reductions in retention (favorable to users) may apply prospectively;
+              extensions will be communicated where appropriate.
             </p>
 
             <h2>12. Contact</h2>

@@ -1,8 +1,5 @@
 import { formatUsdFromCents } from '@/lib/format/money';
-import {
-  escapeEmailAttr,
-  wrapTransactionalEmailHtml,
-} from '@/lib/email/transactionalEmailLayout';
+import { escapeEmailAttr, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 
 export function buildTenantInvoiceEmailContent(params: {
   tenantName: string;

@@ -22,10 +22,7 @@ export default function ComplianceHelpPage() {
           description={category.description}
           backHref="/help"
           backLabel="Help Center"
-          breadcrumbs={[
-            { label: 'Help', href: '/help' },
-            { label: 'Compliance' },
-          ]}
+          breadcrumbs={[{ label: 'Help', href: '/help' }, { label: 'Compliance' }]}
         />
         <HelpCardGrid sectionTitle={category.sectionTitle} cards={category.cards} />
       </Container>

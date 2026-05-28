@@ -2,7 +2,7 @@
 
 **Status:** Implemented in application code (migration `0054` + sent.dm transport). Configure Sent accounts and env vars before enabling sends in each environment.  
 **Last updated:** 2026-05-26  
-**Owner:** Engineering  
+**Owner:** Engineering
 
 This document is the source of truth for replacing Twilio with [sent.dm](https://www.sent.dm/) for Pro transactional messaging. Use it to resume work across sessions or PRs.
 
@@ -26,12 +26,12 @@ This document is the source of truth for replacing Twilio with [sent.dm](https:/
 
 ## Decisions (locked)
 
-| # | Topic | Decision |
-|---|--------|----------|
-| 1 | Templates | **Five purpose-specific** templates — one per `SmsPurpose` in `lib/sms/sendTransactionalSms.ts`. |
-| 2 | Channels | **Default `['sms']`**. Tenants may opt into additional channels via **tenant operational settings** (see schema below). |
-| 3 | Delivery status | **Webhook + DB column in Phase 1** (`delivery_status` on `tenant_sms_messages`). **No tenant UI** for delivery status in Phase 1; optional admin/ops view in Phase 2. |
-| 4 | DEV sends | **`sandbox: true` whenever `NEXT_PUBLIC_APP_ENV` is `local` or `dev`** (`isLocal()` / `isDev()` from `lib/env.ts`). PROD never uses sandbox unless an explicit break-glass env override is added later (not planned). |
+| #   | Topic           | Decision                                                                                                                                                                                                              |
+| --- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Templates       | **Five purpose-specific** templates — one per `SmsPurpose` in `lib/sms/sendTransactionalSms.ts`.                                                                                                                      |
+| 2   | Channels        | **Default `['sms']`**. Tenants may opt into additional channels via **tenant operational settings** (see schema below).                                                                                               |
+| 3   | Delivery status | **Webhook + DB column in Phase 1** (`delivery_status` on `tenant_sms_messages`). **No tenant UI** for delivery status in Phase 1; optional admin/ops view in Phase 2.                                                 |
+| 4   | DEV sends       | **`sandbox: true` whenever `NEXT_PUBLIC_APP_ENV` is `local` or `dev`** (`isLocal()` / `isDev()` from `lib/env.ts`). PROD never uses sandbox unless an explicit break-glass env override is added later (not planned). |
 
 ---
 
@@ -46,16 +46,16 @@ invoiceReminders ──────┘         │                           │
 
 **Key files today:**
 
-| Path | Role |
-|------|------|
-| `lib/sms/sendTransactionalSms.ts` | Gate, send, log |
-| `lib/sms/twilioServer.ts` | Client + `isTwilioConfigured()` |
-| `lib/sms/quoteNotificationSms.ts` | Quote sent / accept / decline |
-| `lib/sms/visitReminderSms.ts` | ~24h visit reminders (cron) |
-| `lib/billing/invoiceReminders.ts` | Overdue invoice SMS |
-| `lib/billing/smsCredits.ts` | Pro feature + monthly segment limits |
-| `supabase/migrations/0039_tenant_sms_messages.sql` | Audit + metering table |
-| `app/api/cron/visit-sms-reminders/route.ts` | Vercel cron entry |
+| Path                                               | Role                                 |
+| -------------------------------------------------- | ------------------------------------ |
+| `lib/sms/sendTransactionalSms.ts`                  | Gate, send, log                      |
+| `lib/sms/twilioServer.ts`                          | Client + `isTwilioConfigured()`      |
+| `lib/sms/quoteNotificationSms.ts`                  | Quote sent / accept / decline        |
+| `lib/sms/visitReminderSms.ts`                      | ~24h visit reminders (cron)          |
+| `lib/billing/invoiceReminders.ts`                  | Overdue invoice SMS                  |
+| `lib/billing/smsCredits.ts`                        | Pro feature + monthly segment limits |
+| `supabase/migrations/0039_tenant_sms_messages.sql` | Audit + metering table               |
+| `app/api/cron/visit-sms-reminders/route.ts`        | Vercel cron entry                    |
 
 **Env (remove after migration):** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
 
@@ -93,12 +93,12 @@ References:
 
 Create and approve these in the sent.dm dashboard (DEV + PROD workspaces). Store template UUIDs in environment variables.
 
-| `SmsPurpose` | Env var | Suggested template body | Parameters |
-|--------------|---------|-------------------------|------------|
-| `quote_sent` | `SENT_DM_TEMPLATE_QUOTE_SENT` | `{tenant_name}: New quote "{quote_title}". View & respond: {link}` | `tenant_name`, `quote_title`, `link` |
-| `quote_accepted` | `SENT_DM_TEMPLATE_QUOTE_ACCEPTED` | `{tenant_name}: A customer accepted quote "{quote_title}".` | `tenant_name`, `quote_title` |
-| `quote_declined` | `SENT_DM_TEMPLATE_QUOTE_DECLINED` | `{tenant_name}: A customer declined quote "{quote_title}".` | `tenant_name`, `quote_title` |
-| `visit_reminder` | `SENT_DM_TEMPLATE_VISIT_REMINDER` | `{tenant_name}: Reminder — "{visit_title}" is scheduled for {when}.` | `tenant_name`, `visit_title`, `when` |
+| `SmsPurpose`      | Env var                            | Suggested template body                                                              | Parameters                                              |
+| ----------------- | ---------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| `quote_sent`      | `SENT_DM_TEMPLATE_QUOTE_SENT`      | `{tenant_name}: New quote "{quote_title}". View & respond: {link}`                   | `tenant_name`, `quote_title`, `link`                    |
+| `quote_accepted`  | `SENT_DM_TEMPLATE_QUOTE_ACCEPTED`  | `{tenant_name}: A customer accepted quote "{quote_title}".`                          | `tenant_name`, `quote_title`                            |
+| `quote_declined`  | `SENT_DM_TEMPLATE_QUOTE_DECLINED`  | `{tenant_name}: A customer declined quote "{quote_title}".`                          | `tenant_name`, `quote_title`                            |
+| `visit_reminder`  | `SENT_DM_TEMPLATE_VISIT_REMINDER`  | `{tenant_name}: Reminder — "{visit_title}" is scheduled for {when}.`                 | `tenant_name`, `visit_title`, `when`                    |
 | `invoice_overdue` | `SENT_DM_TEMPLATE_INVOICE_OVERDUE` | `{tenant_name}: Invoice "{invoice_title}" ({balance}) is overdue. Pay: {portal_url}` | `tenant_name`, `invoice_title`, `balance`, `portal_url` |
 
 **Implementation note:** Refactor callers to pass **structured fields** into `sendTransactionalSms` (or an internal `SendTransactionalSmsInput` type). Keep storing a rendered preview string in `body_preview` for audit.
@@ -233,37 +233,37 @@ After applying: `npm run db:types`.
 
 ### New files
 
-| File | Purpose |
-|------|---------|
-| `lib/sms/sentDmServer.ts` | `isSentDmConfigured()`, lazy `SentDm` client |
-| `lib/sms/sentTemplateConfig.ts` | `SmsPurpose` → template id + parameters builder |
+| File                                  | Purpose                                             |
+| ------------------------------------- | --------------------------------------------------- |
+| `lib/sms/sentDmServer.ts`             | `isSentDmConfigured()`, lazy `SentDm` client        |
+| `lib/sms/sentTemplateConfig.ts`       | `SmsPurpose` → template id + parameters builder     |
 | `lib/sms/resolveMessagingChannels.ts` | Read `messaging_channels` from operational settings |
-| `app/api/webhooks/sent/route.ts` | Signature verify + update `delivery_status` |
+| `app/api/webhooks/sent/route.ts`      | Signature verify + update `delivery_status`         |
 
 ### Edit
 
-| File | Change |
-|------|--------|
-| `lib/sms/sendTransactionalSms.ts` | sent.dm send; sandbox flag; log `provider_message_id` |
-| `lib/sms/quoteNotificationSms.ts` | Structured template params |
-| `lib/sms/visitReminderSms.ts` | Structured params; `isSentDmConfigured` |
-| `lib/billing/invoiceReminders.ts` | Structured params |
-| `lib/env.ts` | `SENT_DM_*` schema; remove `TWILIO_*` |
-| `.env.example` | Document new vars |
-| `package.json` | Add `@sentdm/sentdm`, remove `twilio` |
-| `app/tenant/settings/OperationalSettingsForm.tsx` | sent.dm copy; channel checkboxes |
-| `app/tenant/settings/operations/page.tsx` | `sentDmConfigured` |
-| `app/tenant/settings/operations/actions.ts` | Persist `messaging_channels` |
-| `lib/legal/thirdPartyServices.ts` | Twilio → Sent |
-| `lib/legal/dataRetentionSchedule.ts` | SMS provider name |
-| `lib/legal/informationSecurityPolicy.ts` | Subprocessor list |
-| `docs/billing/tier-entitlements.md` | Provider references |
-| `docs/ops/runtime-eol-policy.md` | Dependency list |
+| File                                              | Change                                                |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| `lib/sms/sendTransactionalSms.ts`                 | sent.dm send; sandbox flag; log `provider_message_id` |
+| `lib/sms/quoteNotificationSms.ts`                 | Structured template params                            |
+| `lib/sms/visitReminderSms.ts`                     | Structured params; `isSentDmConfigured`               |
+| `lib/billing/invoiceReminders.ts`                 | Structured params                                     |
+| `lib/env.ts`                                      | `SENT_DM_*` schema; remove `TWILIO_*`                 |
+| `.env.example`                                    | Document new vars                                     |
+| `package.json`                                    | Add `@sentdm/sentdm`, remove `twilio`                 |
+| `app/tenant/settings/OperationalSettingsForm.tsx` | sent.dm copy; channel checkboxes                      |
+| `app/tenant/settings/operations/page.tsx`         | `sentDmConfigured`                                    |
+| `app/tenant/settings/operations/actions.ts`       | Persist `messaging_channels`                          |
+| `lib/legal/thirdPartyServices.ts`                 | Twilio → Sent                                         |
+| `lib/legal/dataRetentionSchedule.ts`              | SMS provider name                                     |
+| `lib/legal/informationSecurityPolicy.ts`          | Subprocessor list                                     |
+| `docs/billing/tier-entitlements.md`               | Provider references                                   |
+| `docs/ops/runtime-eol-policy.md`                  | Dependency list                                       |
 
 ### Delete
 
-| File |
-|------|
+| File                      |
+| ------------------------- |
 | `lib/sms/twilioServer.ts` |
 
 ### Unchanged (by design)
@@ -292,24 +292,24 @@ Inbound (`message.received`): log only in Phase 1; wire to Messages product in a
 
 ## Phased delivery (PRs)
 
-| PR | Scope | Exit criteria |
-|----|--------|----------------|
-| **A — Ops** | Sent accounts, KYC (prod), create/approve 5 templates, register webhooks, fill env in Vercel | Sandbox send per template from dashboard or curl |
-| **B — Core** | `sentDmServer`, `sentTemplateConfig`, `sendTransactionalSms`, migration `0054`, remove Twilio | Staging sends (sandbox in dev); types + tests green |
-| **C — Webhook** | `app/api/webhooks/sent/route.ts`, `delivery_status` updates | Test event updates row in DB |
-| **D — Product** | Operations UI (sent.dm copy + channel checkboxes), legal/docs, structured params in callers | Tenant can enable WhatsApp/RCS; docs accurate |
+| PR              | Scope                                                                                         | Exit criteria                                       |
+| --------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| **A — Ops**     | Sent accounts, KYC (prod), create/approve 5 templates, register webhooks, fill env in Vercel  | Sandbox send per template from dashboard or curl    |
+| **B — Core**    | `sentDmServer`, `sentTemplateConfig`, `sendTransactionalSms`, migration `0054`, remove Twilio | Staging sends (sandbox in dev); types + tests green |
+| **C — Webhook** | `app/api/webhooks/sent/route.ts`, `delivery_status` updates                                   | Test event updates row in DB                        |
+| **D — Product** | Operations UI (sent.dm copy + channel checkboxes), legal/docs, structured params in callers   | Tenant can enable WhatsApp/RCS; docs accurate       |
 
 ---
 
 ## Testing
 
-| Layer | What to verify |
-|-------|----------------|
-| Unit | Template param mapping per purpose; channel resolver defaults to `['sms']`; sandbox forced when `isDev()` / `isLocal()` |
-| Integration | Mock Sent client; failed send writes `status = 'failed'` |
-| Manual (dev) | Quote sent SMS → row in `tenant_sms_messages`, sandbox header, no real phone delivery |
-| Manual (prod smoke) | One quote_sent + one visit_reminder after go-live |
-| Webhook | Sent dashboard test delivery → `delivery_status` updated |
+| Layer               | What to verify                                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Unit                | Template param mapping per purpose; channel resolver defaults to `['sms']`; sandbox forced when `isDev()` / `isLocal()` |
+| Integration         | Mock Sent client; failed send writes `status = 'failed'`                                                                |
+| Manual (dev)        | Quote sent SMS → row in `tenant_sms_messages`, sandbox header, no real phone delivery                                   |
+| Manual (prod smoke) | One quote_sent + one visit_reminder after go-live                                                                       |
+| Webhook             | Sent dashboard test delivery → `delivery_status` updated                                                                |
 
 Commands: `npm run typecheck`, `npm run test`, `npm run build`.
 
@@ -339,13 +339,13 @@ Commands: `npm run typecheck`, `npm run test`, `npm run build`.
 
 ## Risks
 
-| Risk | Mitigation |
-|------|------------|
-| Template approval 24–48h | Start PR A early; dev uses sandbox without approval for OTP-style templates if needed |
-| Multi-channel doubles send volume / segments | UI copy + meter per log row; default SMS-only |
-| WhatsApp/RCS not provisioned on Sent account | Graceful failure + ops alert |
-| Segment estimate vs carrier billing | Document variance; optional reconciliation via `messages.retrieveActivities` later |
-| STOP/HELP compliance | Subscribe to `message.received`; block sends to opted-out contacts (future hardening) |
+| Risk                                         | Mitigation                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Template approval 24–48h                     | Start PR A early; dev uses sandbox without approval for OTP-style templates if needed |
+| Multi-channel doubles send volume / segments | UI copy + meter per log row; default SMS-only                                         |
+| WhatsApp/RCS not provisioned on Sent account | Graceful failure + ops alert                                                          |
+| Segment estimate vs carrier billing          | Document variance; optional reconciliation via `messages.retrieveActivities` later    |
+| STOP/HELP compliance                         | Subscribe to `message.received`; block sends to opted-out contacts (future hardening) |
 
 ---
 

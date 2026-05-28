@@ -34,7 +34,9 @@ async function resolveCustomerId(
   const subId = stripeSubscriptionIdFromInvoice(invoice);
   if (subId) {
     const subObj =
-      typeof invoice.subscription === 'object' && invoice.subscription ? invoice.subscription : null;
+      typeof invoice.subscription === 'object' && invoice.subscription
+        ? invoice.subscription
+        : null;
     const metaCustomer = subObj?.metadata?.customer_id as string | undefined;
     if (metaCustomer) return metaCustomer;
 
@@ -57,9 +59,7 @@ function buildMirrorRow(
   invoice: Stripe.Invoice,
 ): Database['public']['Tables']['tenant_invoices']['Insert'] {
   const dueDate =
-    invoice.due_date != null
-      ? new Date(invoice.due_date * 1000).toISOString().slice(0, 10)
-      : null;
+    invoice.due_date != null ? new Date(invoice.due_date * 1000).toISOString().slice(0, 10) : null;
 
   return {
     tenant_id: tenantId,
@@ -77,9 +77,7 @@ function buildMirrorRow(
     hosted_invoice_url: invoice.hosted_invoice_url ?? null,
     invoice_pdf_url: invoice.invoice_pdf ?? null,
     billing_period_start:
-      invoice.period_start != null
-        ? new Date(invoice.period_start * 1000).toISOString()
-        : null,
+      invoice.period_start != null ? new Date(invoice.period_start * 1000).toISOString() : null,
     billing_period_end:
       invoice.period_end != null ? new Date(invoice.period_end * 1000).toISOString() : null,
     last_payment_error: null,
@@ -192,8 +190,7 @@ async function recordInvoicePaidPayment(
   },
 ): Promise<void> {
   const piRaw = params.invoice.payment_intent;
-  const paymentIntentId =
-    typeof piRaw === 'string' ? piRaw : (piRaw?.id ?? null);
+  const paymentIntentId = typeof piRaw === 'string' ? piRaw : (piRaw?.id ?? null);
 
   if (paymentIntentId) {
     const { data: existingPay } = await admin

@@ -62,11 +62,11 @@ interface PlanEntitlements {
 
 Office seats count **owner**, **admin**, and **viewer** logins. Field seats count **employee** logins only.
 
-| Tier | Office seats | Field seats |
-| ---- | ------------ | ----------- |
-| Starter | 1 | 3 |
-| Business | 2 | 10 |
-| Pro | 10 | Unlimited |
+| Tier     | Office seats | Field seats |
+| -------- | ------------ | ----------- |
+| Starter  | 1            | 3           |
+| Business | 2            | 10          |
+| Pro      | 10           | Unlimited   |
 
 Implementation: `lib/billing/teamSeats.ts` (`countTeamSeatUsage`, `assertCanAssignTeamSeat`).
 
@@ -80,11 +80,11 @@ Inactive members do not consume seats. Pending invites reserve a seat until acce
 
 ## SMS (Pro — planned send pipeline)
 
-| Tier | `smsCommunication` | `includedSmsCreditsMonthly` |
-| ---- | -------------------- | --------------------------- |
-| Starter | No | 0 |
-| Business | No | 0 |
-| Pro | Yes | 25,000 |
+| Tier     | `smsCommunication` | `includedSmsCreditsMonthly` |
+| -------- | ------------------ | --------------------------- |
+| Starter  | No                 | 0                           |
+| Business | No                 | 0                           |
+| Pro      | Yes                | 25,000                      |
 
 Entitlement flag is defined and enforced at send time. Requires sent.dm env vars on the server.
 **Not available during the free trial** — tenant billing status must be `active` or `past_due` (see `canUseSmsCommunication` in `lib/billing/tenantSubscriptionAccess.ts`).
@@ -100,11 +100,11 @@ Entitlement flag is defined and enforced at send time. Requires sent.dm env vars
 
 ## API & webhooks (Pro)
 
-| Tier | `fullApiWebhooks` | `includedIntegrations` |
-| ---- | ----------------- | ---------------------- |
-| Starter | No | 1 |
-| Business | No | 5 |
-| Pro | Yes | 20 |
+| Tier     | `fullApiWebhooks` | `includedIntegrations` |
+| -------- | ----------------- | ---------------------- |
+| Starter  | No                | 1                      |
+| Business | No                | 5                      |
+| Pro      | Yes               | 20                     |
 
 **Not available during the free trial** — requires paid subscription (`canUsePaidSubscriptionFeatures`).
 
@@ -119,11 +119,11 @@ See `docs/product/tenant-api-webhooks.md`.
 
 ## Invoice reminders (Business email / Pro SMS)
 
-| Tier | Overdue email | Overdue SMS |
-| ---- | ------------- | ----------- |
-| Starter | No | No |
-| Business | Yes | No |
-| Pro | Yes | Yes (paid + sent.dm) |
+| Tier     | Overdue email | Overdue SMS          |
+| -------- | ------------- | -------------------- |
+| Starter  | No            | No                   |
+| Business | Yes           | No                   |
+| Pro      | Yes           | Yes (paid + sent.dm) |
 
 Daily cron `/api/cron/invoice-reminders` (11:00 UTC). Respects `check_reminder_hold_days` for unreceived check payments. Settings → Operations toggles.
 
@@ -137,11 +137,11 @@ Migration `0041_invoice_reminders_locations.sql`.
 
 `whiteLabelCustomerPortal` — Settings → Customer portal; one custom hostname per workspace.
 
-| Tier | Shared `my.*` portal | Custom domain + branded shell |
-| ---- | -------------------- | ------------------------------ |
-| Starter | No | No |
-| Business | Yes (`customerPortal`) | No |
-| Pro | Yes | Yes (paid subscription required) |
+| Tier     | Shared `my.*` portal   | Custom domain + branded shell    |
+| -------- | ---------------------- | -------------------------------- |
+| Starter  | No                     | No                               |
+| Business | Yes (`customerPortal`) | No                               |
+| Pro      | Yes                    | Yes (paid subscription required) |
 
 Flow: tenant saves hostname → cleanScheduler registers it on the Vercel project via API → tenant adds the DNS records Vercel returns → cron `/api/cron/verify-customer-portal-domains` (every 5 min) or **Verify DNS** activates the domain → status `active`. Middleware routes the hostname to `/customer/*` scoped to that tenant. Invite links use the custom origin when active.
 
@@ -151,11 +151,11 @@ Migrations `0042_tenant_customer_portal_domains.sql`, `0043_tenant_customer_port
 
 ## Proof-of-service photos (Business upload / Pro portal share)
 
-| Tier | `proofOfServicePhotos` (crew upload + tenant visit detail) | `proofOfServicePortalShare` (customer portal) |
-| ---- | ------------------------------------------------------------ | --------------------------------------------- |
-| Starter | No | No |
-| Business | Yes | No |
-| Pro | Yes | Yes |
+| Tier     | `proofOfServicePhotos` (crew upload + tenant visit detail) | `proofOfServicePortalShare` (customer portal) |
+| -------- | ---------------------------------------------------------- | --------------------------------------------- |
+| Starter  | No                                                         | No                                            |
+| Business | Yes                                                        | No                                            |
+| Pro      | Yes                                                        | Yes                                           |
 
 Crew attach up to 5 photos when completing a visit (`CompleteVisitPaymentModal` → `visitFieldActions.ts`). Tenant staff see photos on visit detail. Pro customers see recent completed visits with photos under Customer portal → Visits.
 
@@ -184,16 +184,16 @@ Recommended first checks to implement:
 
 ### Tenant Reports (implemented — see `docs/product/tenant-reports.md`)
 
-| Reports capability | Starter | Business | Pro |
-|--------------------|---------|----------|-----|
-| Hub + Phase 1 core (AR aging, invoice audit, field checks read-only, collections, quote pipeline) | Yes | Yes | Yes |
-| CSV/PDF export (all implemented report slugs) | Yes | Yes | Yes |
-| Phase 1.5 analytics (reconciliation, revenue by customer/service, MRR, employee performance) | No | No | Yes (`advancedAnalytics`) |
-| Sales tax summary | No | Yes (`salesTaxSummary`) | Yes |
-| Payroll export report (generic + ADP/Gusto/QBO CSV) | No | Yes (`payrollExports`) | Yes |
-| Tips & commissions (rules directory) | No | Yes (`jobCosting`) | Yes |
-| Crew utilization + on-time arrival | No | No | Yes (`advancedAnalytics`) |
-| Cohort / LTV (Phase 3) | No | No | Yes (`forecasting`) |
+| Reports capability                                                                                | Starter | Business                | Pro                       |
+| ------------------------------------------------------------------------------------------------- | ------- | ----------------------- | ------------------------- |
+| Hub + Phase 1 core (AR aging, invoice audit, field checks read-only, collections, quote pipeline) | Yes     | Yes                     | Yes                       |
+| CSV/PDF export (all implemented report slugs)                                                     | Yes     | Yes                     | Yes                       |
+| Phase 1.5 analytics (reconciliation, revenue by customer/service, MRR, employee performance)      | No      | No                      | Yes (`advancedAnalytics`) |
+| Sales tax summary                                                                                 | No      | Yes (`salesTaxSummary`) | Yes                       |
+| Payroll export report (generic + ADP/Gusto/QBO CSV)                                               | No      | Yes (`payrollExports`)  | Yes                       |
+| Tips & commissions (rules directory)                                                              | No      | Yes (`jobCosting`)      | Yes                       |
+| Crew utilization + on-time arrival                                                                | No      | No                      | Yes (`advancedAnalytics`) |
+| Cohort / LTV (Phase 3)                                                                            | No      | No                      | Yes (`forecasting`)       |
 
 Enforcement:
 
@@ -240,6 +240,7 @@ Current implementation:
   - enforces `maxAutomationWorkflows` when creating recurring visit rules
 
 Next checks to add:
+
 - ~~integration connection actions -> `includedIntegrations`~~ (shipped — API keys + webhooks count toward cap)
 - SMS review-request campaigns (email `review_ask` template parity)
 
@@ -276,12 +277,12 @@ subscription when the trial ends without a payment method. Webhook handler
 
 **Triggers (use all three layers):**
 
-| Layer | When it runs | What it does |
-| ----- | ------------- | ------------- |
+| Layer           | When it runs                                              | What it does                                                                                                           |
+| --------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Stripe webhooks | Trial ends on a platform subscription; ~3 days before end | `customer.subscription.updated/deleted` syncs status; `customer.subscription.trial_will_end` emails the owner (Resend) |
-| In-app | Every tenant portal request | `TrialSubscriptionBanner` + `lib/billing/tenantSubscriptionAccess.ts` countdown / “subscribe” CTA |
-| Cron safety net | Daily (`/api/cron/expire-stale-trials`) | Expires DB-only trials (`status=trialing`, `trial_ends_at` past, no `stripe_subscription_id`) |
-| Auto-purge | Daily (`/api/cron/purge-unconverted-trials`) | Hard-deletes never-activated workspaces 30 days after trial end |
+| In-app          | Every tenant portal request                               | `TrialSubscriptionBanner` + `lib/billing/tenantSubscriptionAccess.ts` countdown / “subscribe” CTA                      |
+| Cron safety net | Daily (`/api/cron/expire-stale-trials`)                   | Expires DB-only trials (`status=trialing`, `trial_ends_at` past, no `stripe_subscription_id`)                          |
+| Auto-purge      | Daily (`/api/cron/purge-unconverted-trials`)              | Hard-deletes never-activated workspaces 30 days after trial end                                                        |
 
 Tenant portal access (`lib/auth/tenantAccess.ts`) blocks normal members when the
 workspace is inactive, billing is `canceled`, or the trial end date has passed without
@@ -297,11 +298,11 @@ Workspaces that **never activated** a paid subscription (`tenant_billing_account
 is null) are hard-deleted **30 days after `trial_ends_at`**. This applies to trial-only
 workspaces that never completed Checkout or whose Stripe subscription was canceled at trial end.
 
-| Layer | When it runs | What it does |
-| ----- | ------------- | ------------- |
+| Layer      | When it runs                                                                  | What it does                                                                                                                                          |
+| ---------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Daily cron | `/api/cron/purge-unconverted-trials` (07:30 UTC, after `expire-stale-trials`) | Finds `activated_at IS NULL` rows with `trial_ends_at` at least 30 days ago; hard-deletes tenant (DB cascade); best-effort Stripe subscription cancel |
-| In-app UX | Billing page + paused banner + Account settings | Countdown to auto-purge date; owner can delete immediately via slug confirmation |
-| Audit | Before delete | `audit_log_entries` row `tenant.workspace_purged` with reason (`auto_unconverted_trial` or `owner_requested`) |
+| In-app UX  | Billing page + paused banner + Account settings                               | Countdown to auto-purge date; owner can delete immediately via slug confirmation                                                                      |
+| Audit      | Before delete                                                                 | `audit_log_entries` row `tenant.workspace_purged` with reason (`auto_unconverted_trial` or `owner_requested`)                                         |
 
 Owner self-delete: **Account → Delete workspace** (`app/tenant/settings/deleteWorkspaceActions.ts`).
 Only the workspace **owner** may delete; slug must be typed to confirm. Auth users are not

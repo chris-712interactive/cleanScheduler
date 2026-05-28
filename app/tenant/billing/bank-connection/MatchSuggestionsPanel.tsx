@@ -76,7 +76,9 @@ export function MatchSuggestionsPanel({
               <td>{Math.round(row.confidenceScore * 100)}%</td>
               {canManage ? (
                 <td align="right">
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                  <div
+                    style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}
+                  >
                     <Button
                       type="button"
                       variant="primary"

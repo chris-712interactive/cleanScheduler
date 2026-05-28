@@ -11,13 +11,7 @@ import styles from './employees.module.scss';
 
 const initial: EmployeeInviteFormState = {};
 
-export function PendingInviteActions({
-  tenantSlug,
-  token,
-}: {
-  tenantSlug: string;
-  token: string;
-}) {
+export function PendingInviteActions({ tenantSlug, token }: { tenantSlug: string; token: string }) {
   const [resendState, resendAction, resendPending] = useActionState(
     resendEmployeeInviteAction,
     initial,
@@ -27,7 +21,8 @@ export function PendingInviteActions({
     initial,
   );
 
-  const feedback = resendState.error || revokeState.error || resendState.success || revokeState.success;
+  const feedback =
+    resendState.error || revokeState.error || resendState.success || revokeState.success;
 
   return (
     <div className={styles.inviteActions}>

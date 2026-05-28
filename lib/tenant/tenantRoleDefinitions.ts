@@ -11,7 +11,8 @@ export const TENANT_ROLE_DEFINITIONS: TenantRoleDefinition[] = [
   {
     role: 'owner',
     label: 'Owner',
-    summary: 'Full workspace control including billing, team management, and all business settings.',
+    summary:
+      'Full workspace control including billing, team management, and all business settings.',
     permissions: [
       'Manage business profile, branding, and address',
       'Configure operations and customer payment defaults',

@@ -26,7 +26,11 @@ export default function HelpIndexPage() {
           <h2>Browse by audience</h2>
           <div className={styles.grid}>
             {HELP_HUB_CATEGORIES.map((category) => (
-              <Link key={category.slug} href={category.path} className={[styles.card, styles.cardLink].join(' ')}>
+              <Link
+                key={category.slug}
+                href={category.path}
+                className={[styles.card, styles.cardLink].join(' ')}
+              >
                 <h3>{category.title}</h3>
                 <p>{category.description}</p>
                 <div className={styles.badgeRow}>
@@ -48,7 +52,11 @@ export default function HelpIndexPage() {
           <h2>General</h2>
           <div className={styles.grid}>
             {HELP_HUB_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} className={[styles.card, styles.cardLink].join(' ')}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={[styles.card, styles.cardLink].join(' ')}
+              >
                 <h3>{link.title}</h3>
                 <p>{link.description}</p>
                 <div className={styles.badgeRow}>

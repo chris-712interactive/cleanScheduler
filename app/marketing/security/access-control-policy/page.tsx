@@ -43,8 +43,8 @@ export default function AccessControlPolicyPage() {
             </p>
 
             <p>
-              This Access Control Policy defines authentication and authorization for {PRODUCT_NAME}.
-              See also the{' '}
+              This Access Control Policy defines authentication and authorization for {PRODUCT_NAME}
+              . See also the{' '}
               <Link href="/security/information-security-policy">Information Security Policy</Link>.
             </p>
 

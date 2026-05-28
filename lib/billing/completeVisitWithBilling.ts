@@ -140,16 +140,20 @@ export async function applyVisitCompletionBilling(
         : 'Collected at job completion';
 
     const now = new Date().toISOString();
-    const { data: paymentRow, error: payErr } = await admin.from('tenant_invoice_payments').insert({
-      tenant_id: params.tenantId,
-      invoice_id: created.invoiceId,
-      amount_cents: amountCents,
-      method: method as PaymentMethod,
-      notes,
-      check_number: method === 'check' ? checkNumber : null,
-      received_at: now,
-      received_by_user_id: params.actorUserId ?? null,
-    }).select('id').single();
+    const { data: paymentRow, error: payErr } = await admin
+      .from('tenant_invoice_payments')
+      .insert({
+        tenant_id: params.tenantId,
+        invoice_id: created.invoiceId,
+        amount_cents: amountCents,
+        method: method as PaymentMethod,
+        notes,
+        check_number: method === 'check' ? checkNumber : null,
+        received_at: now,
+        received_by_user_id: params.actorUserId ?? null,
+      })
+      .select('id')
+      .single();
 
     if (payErr || !paymentRow) {
       return { error: payErr?.message ?? 'Could not record payment.' };

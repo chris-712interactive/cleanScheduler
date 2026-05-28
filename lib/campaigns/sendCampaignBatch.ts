@@ -55,7 +55,10 @@ export async function sendEmailCampaignNow(params: {
   }
 
   if (audience.length === 0) {
-    return { ok: false, error: 'No recipients match this audience. Check marketing opt-in settings.' };
+    return {
+      ok: false,
+      error: 'No recipients match this audience. Check marketing opt-in settings.',
+    };
   }
 
   const { data: tenant } = await params.admin

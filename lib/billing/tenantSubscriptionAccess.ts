@@ -49,7 +49,8 @@ export function resolveTenantSubscriptionAccess(
 
   if (status === 'trialing') {
     const trialEndMs = input.trialEndsAt ? new Date(input.trialEndsAt).getTime() : null;
-    const trialEnded = trialEndMs != null && !Number.isNaN(trialEndMs) && trialEndMs <= now.getTime();
+    const trialEnded =
+      trialEndMs != null && !Number.isNaN(trialEndMs) && trialEndMs <= now.getTime();
 
     if (trialEnded) {
       return 'trial_expired';
@@ -119,18 +120,14 @@ export function isTenantWorkspaceDeletePath(
   const paths = [internalPath, browserPath]
     .map((path) => path?.split('?')[0]?.replace(/\/$/, '') || '')
     .filter(Boolean);
-  return paths.some(
-    (path) => path === '/settings/account' || path === '/tenant/settings/account',
-  );
+  return paths.some((path) => path === '/settings/account' || path === '/tenant/settings/account');
 }
 
 export function isTenantBillingHubPath(
   internalPath: string | null | undefined,
   browserPath?: string | null | undefined,
 ): boolean {
-  return (
-    isTenantBillingHubBrowserPath(browserPath) || isTenantBillingHubInternalPath(internalPath)
-  );
+  return isTenantBillingHubBrowserPath(browserPath) || isTenantBillingHubInternalPath(internalPath);
 }
 
 export function isTenantSuspendedEscapePath(

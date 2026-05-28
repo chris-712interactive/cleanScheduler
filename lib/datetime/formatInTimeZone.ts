@@ -57,10 +57,7 @@ export function formatUpcomingVisitDate(
 }
 
 /** e.g. 9:00 AM */
-export function formatVisitTime(
-  startsAt: string,
-  timeZone: string | null | undefined,
-): string {
+export function formatVisitTime(startsAt: string, timeZone: string | null | undefined): string {
   return formatDateTimeInTimeZone(startsAt, timeZone, {
     hour: 'numeric',
     minute: '2-digit',

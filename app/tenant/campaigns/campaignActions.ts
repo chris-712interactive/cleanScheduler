@@ -62,7 +62,9 @@ export async function createAndSendCampaignAction(
   _prev: CampaignActionState,
   formData: FormData,
 ): Promise<CampaignActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const name = String(formData.get('name') ?? '').trim();
   const subject = String(formData.get('subject') ?? '').trim();
   const bodyText = String(formData.get('body_text') ?? '').trim();
@@ -71,7 +73,8 @@ export async function createAndSendCampaignAction(
 
   if (!slug) return { error: 'Workspace is required.' };
   if (!name || name.length > 120) return { error: 'Enter a campaign name (max 120 characters).' };
-  if (!subject || subject.length > 200) return { error: 'Enter a subject line (max 200 characters).' };
+  if (!subject || subject.length > 200)
+    return { error: 'Enter a subject line (max 200 characters).' };
   if (!templateKey) return { error: 'Choose a template.' };
   if (!audiencePreset) return { error: 'Choose an audience.' };
 
@@ -127,7 +130,9 @@ export async function saveCampaignDraftAction(
   _prev: CampaignActionState,
   formData: FormData,
 ): Promise<CampaignActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const name = String(formData.get('name') ?? '').trim();
   const subject = String(formData.get('subject') ?? '').trim();
   const bodyText = String(formData.get('body_text') ?? '').trim();
@@ -136,7 +141,8 @@ export async function saveCampaignDraftAction(
 
   if (!slug) return { error: 'Workspace is required.' };
   if (!name || name.length > 120) return { error: 'Enter a campaign name (max 120 characters).' };
-  if (!subject || subject.length > 200) return { error: 'Enter a subject line (max 200 characters).' };
+  if (!subject || subject.length > 200)
+    return { error: 'Enter a subject line (max 200 characters).' };
   if (!templateKey) return { error: 'Choose a template.' };
   if (!audiencePreset) return { error: 'Choose an audience.' };
 
@@ -179,7 +185,9 @@ export async function sendExistingCampaignAction(
   _prev: CampaignActionState,
   formData: FormData,
 ): Promise<CampaignActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const campaignId = String(formData.get('campaign_id') ?? '').trim();
   if (!slug || !campaignId) return { error: 'Missing campaign.' };
 

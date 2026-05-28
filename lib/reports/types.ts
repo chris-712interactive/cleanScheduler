@@ -24,9 +24,7 @@ export type ReportSlug =
 
 export type ReportSection = 'financial' | 'operations' | 'payroll';
 
-export type ReportGate =
-  | { kind: 'none' }
-  | { kind: 'feature'; feature: EntitlementFeature };
+export type ReportGate = { kind: 'none' } | { kind: 'feature'; feature: EntitlementFeature };
 
 export type AgingBucket = 'current' | 'days_31_60' | 'days_61_90' | 'days_90_plus' | 'no_due_date';
 

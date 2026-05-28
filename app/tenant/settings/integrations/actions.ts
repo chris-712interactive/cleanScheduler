@@ -45,7 +45,9 @@ export async function createTenantApiKeyAction(
   _prev: IntegrationActionState,
   formData: FormData,
 ): Promise<IntegrationActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const name = String(formData.get('name') ?? '').trim();
   if (!slug) return { error: 'Workspace is required.' };
   if (!name) return { error: 'Key name is required.' };
@@ -91,7 +93,9 @@ export async function revokeTenantApiKeyAction(
   _prev: IntegrationActionState,
   formData: FormData,
 ): Promise<IntegrationActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const keyId = String(formData.get('key_id') ?? '').trim();
   if (!slug || !keyId) return { error: 'Missing workspace or key.' };
 
@@ -134,7 +138,9 @@ export async function createTenantWebhookEndpointAction(
   _prev: IntegrationActionState,
   formData: FormData,
 ): Promise<IntegrationActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const description = String(formData.get('description') ?? '').trim();
   const urlRaw = String(formData.get('url') ?? '').trim();
   const eventTypes = parseWebhookEventTypesFromForm(formData);
@@ -180,7 +186,9 @@ export async function deleteTenantWebhookEndpointAction(
   _prev: IntegrationActionState,
   formData: FormData,
 ): Promise<IntegrationActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const endpointId = String(formData.get('endpoint_id') ?? '').trim();
   if (!slug || !endpointId) return { error: 'Missing workspace or endpoint.' };
 
@@ -212,7 +220,9 @@ export async function toggleTenantWebhookEndpointAction(
   _prev: IntegrationActionState,
   formData: FormData,
 ): Promise<IntegrationActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const endpointId = String(formData.get('endpoint_id') ?? '').trim();
   const enabled = String(formData.get('enabled') ?? '') === 'true';
   if (!slug || !endpointId) return { error: 'Missing workspace or endpoint.' };
@@ -245,7 +255,9 @@ export async function sendTenantWebhookTestAction(
   _prev: IntegrationActionState,
   formData: FormData,
 ): Promise<IntegrationActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const endpointId = String(formData.get('endpoint_id') ?? '').trim();
   if (!slug || !endpointId) return { error: 'Missing workspace or endpoint.' };
 

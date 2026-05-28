@@ -45,15 +45,12 @@ type VisitListRow = {
       full_name: string | null;
       phone: string | null;
     } | null;
-    tenant_customer_properties: Pick<
-      Tables<'tenant_customer_properties'>,
-      | 'is_primary'
-      | 'address_line1'
-      | 'address_line2'
-      | 'city'
-      | 'state'
-      | 'postal_code'
-    >[] | null;
+    tenant_customer_properties:
+      | Pick<
+          Tables<'tenant_customer_properties'>,
+          'is_primary' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+        >[]
+      | null;
   } | null;
   tenant_customer_properties: Pick<
     Tables<'tenant_customer_properties'>,
@@ -291,9 +288,15 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         <form method="get" className={styles.scheduleLocationFilter}>
           <input type="hidden" name="date" value={dateKey} />
           <input type="hidden" name="view" value={view} />
-          {employeeFilter !== 'all' ? <input type="hidden" name="employee" value={employeeFilter} /> : null}
+          {employeeFilter !== 'all' ? (
+            <input type="hidden" name="employee" value={employeeFilter} />
+          ) : null}
           <label htmlFor="schedule-location-filter">Location</label>
-          <select id="schedule-location-filter" name="location" defaultValue={locationFilter || 'all'}>
+          <select
+            id="schedule-location-filter"
+            name="location"
+            defaultValue={locationFilter || 'all'}
+          >
             <option value="all">All locations</option>
             {(locationRows ?? []).map((loc) => (
               <option key={loc.id} value={loc.id}>
@@ -310,9 +313,9 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
 
       {!isFieldEmployee && unpricedUpcomingCount > 0 ? (
         <p className={styles.scheduleWarning} role="status">
-          {unpricedUpcomingCount} upcoming visit{unpricedUpcomingCount === 1 ? '' : 's'} in the next 7
-          days {unpricedUpcomingCount === 1 ? 'has' : 'have'} no job price — field crews cannot complete
-          them until you add a quote or job price when scheduling.
+          {unpricedUpcomingCount} upcoming visit{unpricedUpcomingCount === 1 ? '' : 's'} in the next
+          7 days {unpricedUpcomingCount === 1 ? 'has' : 'have'} no job price — field crews cannot
+          complete them until you add a quote or job price when scheduling.
         </p>
       ) : null}
 

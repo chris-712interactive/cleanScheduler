@@ -20,37 +20,43 @@ function collectPdfRows(result: ReportRunResult): { headers: string[]; rows: str
     case 'outstanding-balances':
       return {
         headers: ['Customer', 'Invoice', 'Aging', 'Due', 'Balance'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.customerName,
-          r.invoiceTitle,
-          AGING_BUCKET_LABEL[r.agingBucket],
-          r.dueDate ? formatDate(r.dueDate) : '—',
-          formatUsdFromCents(r.remainingCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.customerName,
+            r.invoiceTitle,
+            AGING_BUCKET_LABEL[r.agingBucket],
+            r.dueDate ? formatDate(r.dueDate) : '—',
+            formatUsdFromCents(r.remainingCents),
+          ]),
       };
     case 'invoice-audit':
       return {
         headers: ['Customer', 'Invoice', 'Status', 'Created', 'Total', 'Balance'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.customerName,
-          r.title,
-          r.status,
-          formatDate(r.createdAt),
-          formatUsdFromCents(r.amountCents),
-          formatUsdFromCents(r.remainingCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.customerName,
+            r.title,
+            r.status,
+            formatDate(r.createdAt),
+            formatUsdFromCents(r.amountCents),
+            formatUsdFromCents(r.remainingCents),
+          ]),
       };
     case 'field-check-tracking':
       return {
         headers: ['Recorded', 'Customer', 'Invoice', 'Check ref', 'Amount', 'Stage'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          formatDate(r.recordedAt),
-          r.customerName,
-          r.invoiceTitle,
-          r.checkReference,
-          formatUsdFromCents(r.amountCents),
-          fieldCheckStageLabel(r.stage),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            formatDate(r.recordedAt),
+            r.customerName,
+            r.invoiceTitle,
+            r.checkReference,
+            formatUsdFromCents(r.amountCents),
+            fieldCheckStageLabel(r.stage),
+          ]),
       };
     case 'collections-summary':
       return {
@@ -103,143 +109,159 @@ function collectPdfRows(result: ReportRunResult): { headers: string[]; rows: str
     case 'revenue-by-customer':
       return {
         headers: ['Customer', 'Payments', 'Net revenue'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.customerName,
-          String(r.paymentCount),
-          formatUsdFromCents(r.netCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [r.customerName, String(r.paymentCount), formatUsdFromCents(r.netCents)]),
       };
     case 'revenue-by-service':
       return {
         headers: ['Service', 'Line items', 'Accepted value'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.serviceLabel,
-          String(r.lineCount),
-          formatUsdFromCents(r.totalCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [r.serviceLabel, String(r.lineCount), formatUsdFromCents(r.totalCents)]),
       };
     case 'recurring-revenue':
       return {
         headers: ['Customer', 'Plan', 'Status', 'MRR', 'Interval'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.customerName,
-          r.planName,
-          r.status,
-          formatUsdFromCents(r.monthlyCents),
-          r.billingInterval,
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.customerName,
+            r.planName,
+            r.status,
+            formatUsdFromCents(r.monthlyCents),
+            r.billingInterval,
+          ]),
       };
     case 'employee-performance':
       return {
         headers: ['Team member', 'Jobs completed', 'Scheduled hours'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.displayName,
-          String(r.jobsCompleted),
-          r.scheduledHours.toFixed(1),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [r.displayName, String(r.jobsCompleted), r.scheduledHours.toFixed(1)]),
       };
     case 'sales-tax-summary':
       return {
         headers: ['Jurisdiction', 'Quotes', 'Taxable', 'Tax (est.)'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.jurisdictionKey,
-          String(r.quoteCount),
-          formatUsdFromCents(r.taxableCents),
-          formatUsdFromCents(r.taxCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.jurisdictionKey,
+            String(r.quoteCount),
+            formatUsdFromCents(r.taxableCents),
+            formatUsdFromCents(r.taxCents),
+          ]),
       };
     case 'payroll-export':
       return {
         headers: ['Employee', 'Jobs', 'Regular hrs', 'OT hrs', 'Variable (est.)'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.employeeName,
-          String(r.jobsCompleted),
-          String(r.regularHours),
-          String(r.overtimeHours),
-          formatUsdFromCents(r.estimatedVariablePayCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.employeeName,
+            String(r.jobsCompleted),
+            String(r.regularHours),
+            String(r.overtimeHours),
+            formatUsdFromCents(r.estimatedVariablePayCents),
+          ]),
       };
     case 'crew-utilization':
       return {
         headers: ['Team member', 'Scheduled', 'Capacity', 'Util %'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.displayName,
-          String(r.scheduledHours),
-          String(r.capacityHours),
-          `${r.utilizationPercent}%`,
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.displayName,
+            String(r.scheduledHours),
+            String(r.capacityHours),
+            `${r.utilizationPercent}%`,
+          ]),
       };
     case 'on-time-arrival':
       return {
         headers: ['Job', 'Start', 'Check-in', 'Late min', 'On time'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.title,
-          formatDate(r.scheduledStart),
-          r.checkedInAt ? formatDate(r.checkedInAt) : '—',
-          r.minutesLate != null ? String(r.minutesLate) : '—',
-          r.onTime ? 'Yes' : 'No',
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.title,
+            formatDate(r.scheduledStart),
+            r.checkedInAt ? formatDate(r.checkedInAt) : '—',
+            r.minutesLate != null ? String(r.minutesLate) : '—',
+            r.onTime ? 'Yes' : 'No',
+          ]),
       };
     case 'tips-commissions':
       return {
         headers: ['Team member', 'Jobs', 'Commission', 'Flat', 'Total (est.)'],
-        rows: result.data.payoutRows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.employeeName,
-          String(r.jobsCompleted),
-          formatUsdFromCents(r.commissionCents),
-          formatUsdFromCents(r.flatCents),
-          formatUsdFromCents(r.estimatedPayCents),
-        ]),
+        rows: result.data.payoutRows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.employeeName,
+            String(r.jobsCompleted),
+            formatUsdFromCents(r.commissionCents),
+            formatUsdFromCents(r.flatCents),
+            formatUsdFromCents(r.estimatedPayCents),
+          ]),
       };
     case 'processing-fees-deductible':
       return {
         headers: ['Month', 'Method', 'Payments', 'Fees'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.periodMonth,
-          r.method,
-          String(r.paymentCount),
-          formatUsdFromCents(r.feeCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.periodMonth,
+            r.method,
+            String(r.paymentCount),
+            formatUsdFromCents(r.feeCents),
+          ]),
       };
     case 'year-end-revenue':
       return {
         headers: ['Customer', 'Gross', 'Fees', 'Net'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.customerName,
-          formatUsdFromCents(r.grossCents),
-          formatUsdFromCents(r.feeCents),
-          formatUsdFromCents(r.netCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.customerName,
+            formatUsdFromCents(r.grossCents),
+            formatUsdFromCents(r.feeCents),
+            formatUsdFromCents(r.netCents),
+          ]),
       };
     case 'customer-1099-prep':
       return {
         headers: ['Customer', 'Gross', 'Threshold'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.customerName,
-          formatUsdFromCents(r.grossCents),
-          r.meetsThreshold ? 'Yes' : 'No',
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.customerName,
+            formatUsdFromCents(r.grossCents),
+            r.meetsThreshold ? 'Yes' : 'No',
+          ]),
       };
     case 'cohort-ltv-churn':
       return {
         headers: ['Cohort', 'Offset', 'Retention %', 'Revenue'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          r.cohortMonth,
-          String(r.monthsSinceFirst),
-          `${r.retentionPercent}%`,
-          formatUsdFromCents(r.revenueCents),
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            r.cohortMonth,
+            String(r.monthsSinceFirst),
+            `${r.retentionPercent}%`,
+            formatUsdFromCents(r.revenueCents),
+          ]),
       };
     case 'bank-reconciliation':
       return {
         headers: ['Posted', 'Description', 'Amount', 'Status', 'Invoice'],
-        rows: result.data.rows.slice(0, PDF_MAX_ROWS).map((r) => [
-          formatDate(r.postedDate),
-          r.name,
-          formatUsdFromCents(r.amountCents),
-          bankDepositMatchStatusLabel(r.matchStatus),
-          r.invoiceTitle ?? '—',
-        ]),
+        rows: result.data.rows
+          .slice(0, PDF_MAX_ROWS)
+          .map((r) => [
+            formatDate(r.postedDate),
+            r.name,
+            formatUsdFromCents(r.amountCents),
+            bankDepositMatchStatusLabel(r.matchStatus),
+            r.invoiceTitle ?? '—',
+          ]),
       };
     default:
       return null;

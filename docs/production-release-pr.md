@@ -8,13 +8,13 @@ First production release of **cleanScheduler**: a multi-tenant scheduling, quoti
 
 Single Next.js 15 deployment with subdomain-based portal routing (`middleware.ts`):
 
-| Host | Portal |
-|------|--------|
-| `cleanscheduler.com` / `www` | Marketing + auth |
-| `admin.cleanscheduler.com` | Founder / platform admin |
-| `my.cleanscheduler.com` | Unified customer portal |
-| `{tenant}.cleanscheduler.com` | Tenant operations |
-| Custom domains (Pro) | White-label customer portal |
+| Host                          | Portal                      |
+| ----------------------------- | --------------------------- |
+| `cleanscheduler.com` / `www`  | Marketing + auth            |
+| `admin.cleanscheduler.com`    | Founder / platform admin    |
+| `my.cleanscheduler.com`       | Unified customer portal     |
+| `{tenant}.cleanscheduler.com` | Tenant operations           |
+| Custom domains (Pro)          | White-label customer portal |
 
 ### Major feature areas
 
@@ -157,13 +157,13 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/scripts/generated/prod_basel
 
 ## Risks & follow-ups
 
-| Area | Notes |
-|------|--------|
-| **Migration history** | SQL Editor / `psql` baseline does not populate `supabase_migrations.schema_migrations`; use CLI for ongoing deploys or backfill history manually |
-| **Help / developer docs** | `/help/developers` cards are largely placeholders; internal `docs/` is source of truth until public API docs ship |
-| **Resend webhook** | `/api/webhooks/resend` accepts payloads without signature verification — consider hardening post-launch |
-| **RLS coverage** | Some service-role-only tables lack RLS enablement; validate tenant isolation under realistic roles before scaling |
-| **Secrets** | Ensure `.env.production` stays local/gitignored; rotate any keys that were ever committed or shared |
+| Area                      | Notes                                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Migration history**     | SQL Editor / `psql` baseline does not populate `supabase_migrations.schema_migrations`; use CLI for ongoing deploys or backfill history manually |
+| **Help / developer docs** | `/help/developers` cards are largely placeholders; internal `docs/` is source of truth until public API docs ship                                |
+| **Resend webhook**        | `/api/webhooks/resend` accepts payloads without signature verification — consider hardening post-launch                                          |
+| **RLS coverage**          | Some service-role-only tables lack RLS enablement; validate tenant isolation under realistic roles before scaling                                |
+| **Secrets**               | Ensure `.env.production` stays local/gitignored; rotate any keys that were ever committed or shared                                              |
 
 ---
 

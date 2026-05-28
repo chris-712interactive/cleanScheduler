@@ -1,8 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  assertFeatureEnabled,
-  resolveTenantPlanTier,
-} from '@/lib/billing/entitlements';
+import { assertFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import type { Database } from '@/lib/supabase/database.types';
 import { hashIntegrationSecret } from '@/lib/integrations/integrationSecrets';

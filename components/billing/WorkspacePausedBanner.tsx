@@ -21,10 +21,7 @@ export function WorkspacePausedBanner({
 
   const canSubscribe = canManageTeamInvitesAndRoles(role);
   const isOwner = role === 'owner';
-  const showAutoPurge =
-    isOwner &&
-    purgeStatus?.neverActivated &&
-    purgeStatus.autoPurgeAt != null;
+  const showAutoPurge = isOwner && purgeStatus?.neverActivated && purgeStatus.autoPurgeAt != null;
   const title =
     access === 'trial_expired' ? 'Your free trial has ended' : 'This workspace is paused';
 

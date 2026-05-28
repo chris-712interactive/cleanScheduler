@@ -148,10 +148,7 @@ const EXPAND_PANEL_MIN_PCT = 32;
  * Pick whether an expanded visit card should grow down (from start time)
  * or up (anchored to end of the scheduled slot).
  */
-export function resolveVisitExpandDirection(
-  topPct: number,
-  heightPct: number,
-): 'up' | 'down' {
+export function resolveVisitExpandDirection(topPct: number, heightPct: number): 'up' | 'down' {
   const spaceAbove = topPct;
   const spaceBelowFromEnd = 100 - topPct - heightPct;
   const spaceBelowFromStart = 100 - topPct;

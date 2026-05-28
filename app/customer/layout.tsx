@@ -4,10 +4,7 @@ import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import {
-  fetchCustomerQuoteList,
-  pendingCustomerQuotes,
-} from '@/lib/customer/customerQuoteList';
+import { fetchCustomerQuoteList, pendingCustomerQuotes } from '@/lib/customer/customerQuoteList';
 import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerPortalBranding';
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -59,9 +56,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const pendingQuoteCount = pendingCustomerQuotes(quoteRows).length;
 
   const navItems: NavItem[] = NAV_ITEMS.map((item) =>
-    item.href === '/quotes' && pendingQuoteCount > 0
-      ? { ...item, badge: pendingQuoteCount }
-      : item,
+    item.href === '/quotes' && pendingQuoteCount > 0 ? { ...item, badge: pendingQuoteCount } : item,
   );
 
   const branding =

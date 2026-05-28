@@ -80,7 +80,8 @@ async function tenantEligibleForWhiteLabel(
   } catch (error) {
     return {
       ok: false,
-      reason: whiteLabelPortalGateErrorMessage(error) ?? 'Workspace not eligible for white-label portal.',
+      reason:
+        whiteLabelPortalGateErrorMessage(error) ?? 'Workspace not eligible for white-label portal.',
     };
   }
 }
@@ -174,7 +175,8 @@ async function syncViaVercel(
   try {
     dnsConfig = await getVercelDomainDnsConfig(hostname);
   } catch (error) {
-    const message = vercelDomainErrorMessage(error) ?? 'Could not load DNS routing requirements from Vercel.';
+    const message =
+      vercelDomainErrorMessage(error) ?? 'Could not load DNS routing requirements from Vercel.';
     return { status: 'error', hostname, message };
   }
 
@@ -383,7 +385,8 @@ export async function reconcileCustomerPortalDomainWithVercel(
   try {
     vercelDomain = await getVercelProjectDomain(row.hostname);
   } catch (error) {
-    const message = vercelDomainErrorMessage(error) ?? 'Could not load DNS instructions from Vercel.';
+    const message =
+      vercelDomainErrorMessage(error) ?? 'Could not load DNS instructions from Vercel.';
     if (row.vercel_last_error === message) {
       return row;
     }

@@ -1,19 +1,11 @@
-import {
-  Configuration,
-  CountryCode,
-  PlaidApi,
-  PlaidEnvironments,
-  Products,
-} from 'plaid';
+import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 import { serverEnv } from '@/lib/env';
 
 let plaidClient: PlaidApi | null = null;
 
 export function isPlaidConfigured(): boolean {
   return Boolean(
-    serverEnv.PLAID_CLIENT_ID?.trim() &&
-      serverEnv.PLAID_SECRET?.trim() &&
-      serverEnv.PLAID_ENV,
+    serverEnv.PLAID_CLIENT_ID?.trim() && serverEnv.PLAID_SECRET?.trim() && serverEnv.PLAID_ENV,
   );
 }
 

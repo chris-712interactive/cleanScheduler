@@ -93,11 +93,7 @@ export async function CustomerActivityPanel({ tenantId, customerId }: Props) {
             ) : null}
           </ActivitySection>
 
-          <ActivitySection
-            title="Scheduled visits"
-            empty="No visits yet."
-            viewAllHref="/schedule"
-          >
+          <ActivitySection title="Scheduled visits" empty="No visits yet." viewAllHref="/schedule">
             {activity.visits.length > 0 ? (
               <ul className={styles.activityList}>
                 {activity.visits.map((visit) => (
@@ -123,10 +119,7 @@ export async function CustomerActivityPanel({ tenantId, customerId }: Props) {
               <ul className={styles.activityList}>
                 {activity.invoices.map((invoice) => (
                   <li key={invoice.id}>
-                    <Link
-                      href={`/billing/invoices/${invoice.id}`}
-                      className={styles.activityRow}
-                    >
+                    <Link href={`/billing/invoices/${invoice.id}`} className={styles.activityRow}>
                       <span className={styles.activityPrimary}>
                         {formatInvoiceListHeading(invoice.id, invoice.title)}
                       </span>

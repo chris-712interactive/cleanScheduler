@@ -42,7 +42,10 @@ export function buildPaymentAuditSearchParams(params: {
 
 export const PAYMENT_AUDIT_PAGE_SIZE = 10;
 
-export function formatPaymentAuditDateRangeLabel(fromInput: string, toInput: string): string | null {
+export function formatPaymentAuditDateRangeLabel(
+  fromInput: string,
+  toInput: string,
+): string | null {
   if (!fromInput && !toInput) return null;
   if (fromInput && toInput) {
     return `${formatDisplayDate(fromInput)} – ${formatDisplayDate(toInput)}`;

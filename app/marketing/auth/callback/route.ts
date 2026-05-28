@@ -48,8 +48,7 @@ export async function GET(request: NextRequest) {
     redirectUrl = new URL('/sign-in?error=auth', request.url);
   } else {
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    const needsMfa =
-      aalData?.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2';
+    const needsMfa = aalData?.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2';
     redirectUrl = needsMfa
       ? new URL(`/sign-in/mfa?next=${encodeURIComponent(nextPath)}`, request.url)
       : postAuthRedirectUrl(request, nextPath);

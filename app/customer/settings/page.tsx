@@ -59,9 +59,7 @@ export default async function CustomerSettingsPage() {
         </Card>
 
         <Card title="Account" description="End your session on this device.">
-          <p className={styles.muted}>
-            Signed in as {auth.user.email?.trim() || 'your account'}.
-          </p>
+          <p className={styles.muted}>Signed in as {auth.user.email?.trim() || 'your account'}.</p>
           <SignOutButton variant="settings" />
         </Card>
       </Stack>

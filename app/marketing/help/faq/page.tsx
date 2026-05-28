@@ -23,10 +23,7 @@ export default function HelpFaqPage() {
           description="Straight answers for cleaning business owners evaluating cleanScheduler."
           backHref="/help"
           backLabel="Help Center"
-          breadcrumbs={[
-            { label: 'Help', href: '/help' },
-            { label: 'FAQ' },
-          ]}
+          breadcrumbs={[{ label: 'Help', href: '/help' }, { label: 'FAQ' }]}
         />
 
         <div className={styles.faqList}>

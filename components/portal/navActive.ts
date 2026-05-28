@@ -39,11 +39,7 @@ export function isNavItemActive(pathname: string, item: NavItem, allItems: NavIt
 }
 
 /** Active state for a nested link under a parent nav group. */
-export function isNavChildActive(
-  pathname: string,
-  child: NavItem,
-  siblings: NavItem[],
-): boolean {
+export function isNavChildActive(pathname: string, child: NavItem, siblings: NavItem[]): boolean {
   if (!itemMatchesPath(pathname, child)) return false;
 
   return !siblings.some((other) => {

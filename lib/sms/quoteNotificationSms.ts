@@ -58,7 +58,10 @@ async function customerPhoneAndContactPref(
     .eq('id', customerId)
     .maybeSingle();
 
-  const identityRaw = data?.customer_identities as { phone: string | null } | { phone: string | null }[] | null;
+  const identityRaw = data?.customer_identities as
+    | { phone: string | null }
+    | { phone: string | null }[]
+    | null;
   const identity = Array.isArray(identityRaw) ? identityRaw[0] : identityRaw;
   const phone = (identity?.phone ?? '').trim() || null;
 
@@ -80,7 +83,11 @@ async function tenantName(admin: Admin, tenantId: string): Promise<string> {
   return (data?.name ?? '').trim() || 'Your provider';
 }
 
-async function quoteUrlForCustomer(admin: Admin, tenantId: string, quoteId: string): Promise<string> {
+async function quoteUrlForCustomer(
+  admin: Admin,
+  tenantId: string,
+  quoteId: string,
+): Promise<string> {
   return customerPortalUrlForTenant(admin, tenantId, `/quotes/${quoteId}`);
 }
 

@@ -90,122 +90,127 @@ export default async function TenantCompensationSettingsPage({ searchParams }: P
         />
       ) : (
         <>
-      {!canEdit ? (
-        <p className={styles.readOnlyNotice} role="status">
-          You can view compensation rules here. Only owners and admins can make changes.
-        </p>
-      ) : null}
+          {!canEdit ? (
+            <p className={styles.readOnlyNotice} role="status">
+              You can view compensation rules here. Only owners and admins can make changes.
+            </p>
+          ) : null}
 
-      {canEdit ? (
-        <Card
-          title="Add rule"
-          description="Rules feed the Payroll export and Tips & commissions reports."
-        >
-          <form action={createCompensationRuleAction} className={styles.compForm}>
-            <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-            <label className={styles.compField}>
-              Name
-              <input
-                className={styles.compInput}
-                name="name"
-                required
-                maxLength={120}
-                placeholder="Lead cleaner commission"
-              />
-            </label>
-            <label className={styles.compField}>
-              Type
-              <select className={styles.compSelect} name="rule_type" required defaultValue="commission_percent_bps">
-                {COMPENSATION_RULE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {COMPENSATION_RULE_TYPE_LABEL[t]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.compField}>
-              Percent (for commission / tip split)
-              <input
-                className={styles.compInput}
-                name="percent"
-                inputMode="decimal"
-                placeholder="10"
-              />
-            </label>
-            <label className={styles.compField}>
-              Flat per job (USD, for flat type)
-              <input
-                className={styles.compInput}
-                name="flat_dollars"
-                inputMode="decimal"
-                placeholder="25.00"
-              />
-            </label>
-            <label className={styles.compField}>
-              Applies to role (optional)
-              <input
-                className={styles.compInput}
-                name="applies_to_role"
-                maxLength={80}
-                placeholder="employee"
-              />
-            </label>
-            <Button type="submit" variant="primary">
-              Add rule
-            </Button>
-          </form>
-        </Card>
-      ) : null}
+          {canEdit ? (
+            <Card
+              title="Add rule"
+              description="Rules feed the Payroll export and Tips & commissions reports."
+            >
+              <form action={createCompensationRuleAction} className={styles.compForm}>
+                <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                <label className={styles.compField}>
+                  Name
+                  <input
+                    className={styles.compInput}
+                    name="name"
+                    required
+                    maxLength={120}
+                    placeholder="Lead cleaner commission"
+                  />
+                </label>
+                <label className={styles.compField}>
+                  Type
+                  <select
+                    className={styles.compSelect}
+                    name="rule_type"
+                    required
+                    defaultValue="commission_percent_bps"
+                  >
+                    {COMPENSATION_RULE_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {COMPENSATION_RULE_TYPE_LABEL[t]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={styles.compField}>
+                  Percent (for commission / tip split)
+                  <input
+                    className={styles.compInput}
+                    name="percent"
+                    inputMode="decimal"
+                    placeholder="10"
+                  />
+                </label>
+                <label className={styles.compField}>
+                  Flat per job (USD, for flat type)
+                  <input
+                    className={styles.compInput}
+                    name="flat_dollars"
+                    inputMode="decimal"
+                    placeholder="25.00"
+                  />
+                </label>
+                <label className={styles.compField}>
+                  Applies to role (optional)
+                  <input
+                    className={styles.compInput}
+                    name="applies_to_role"
+                    maxLength={80}
+                    placeholder="employee"
+                  />
+                </label>
+                <Button type="submit" variant="primary">
+                  Add rule
+                </Button>
+              </form>
+            </Card>
+          ) : null}
 
-      <Card title="Rules" description={`${rules?.length ?? 0} configured`}>
-        {!rules?.length ? (
-          <p className={styles.muted}>No compensation rules yet.</p>
-        ) : (
-          <ul className={styles.compList}>
-            {rules.map((rule) => (
-              <li key={rule.id} className={styles.compListItem}>
-                <div className={styles.compListMain}>
-                  <span className={styles.compListTitle}>
-                    {rule.name}
-                    {!rule.is_active ? (
-                      <span className={styles.compInactive}> (inactive)</span>
+          <Card title="Rules" description={`${rules?.length ?? 0} configured`}>
+            {!rules?.length ? (
+              <p className={styles.muted}>No compensation rules yet.</p>
+            ) : (
+              <ul className={styles.compList}>
+                {rules.map((rule) => (
+                  <li key={rule.id} className={styles.compListItem}>
+                    <div className={styles.compListMain}>
+                      <span className={styles.compListTitle}>
+                        {rule.name}
+                        {!rule.is_active ? (
+                          <span className={styles.compInactive}> (inactive)</span>
+                        ) : null}
+                      </span>
+                      <span className={styles.compListMeta}>
+                        {COMPENSATION_RULE_TYPE_LABEL[rule.rule_type as CompensationRuleType] ??
+                          rule.rule_type}{' '}
+                        · {formatRuleRate(rule.rule_type, rule.percent_bps, rule.flat_cents)}
+                        {rule.applies_to_role ? ` · ${rule.applies_to_role}` : ''}
+                      </span>
+                    </div>
+                    {canEdit ? (
+                      <div className={styles.compListActions}>
+                        <form action={setCompensationRuleActiveAction}>
+                          <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                          <input type="hidden" name="rule_id" value={rule.id} />
+                          <input
+                            type="hidden"
+                            name="is_active"
+                            value={rule.is_active ? '0' : '1'}
+                          />
+                          <Button type="submit" variant="secondary" size="sm">
+                            {rule.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                        </form>
+                        <form action={deleteCompensationRuleAction}>
+                          <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                          <input type="hidden" name="rule_id" value={rule.id} />
+                          <Button type="submit" variant="ghost" size="sm">
+                            Delete
+                          </Button>
+                        </form>
+                      </div>
                     ) : null}
-                  </span>
-                  <span className={styles.compListMeta}>
-                    {COMPENSATION_RULE_TYPE_LABEL[rule.rule_type as CompensationRuleType] ??
-                      rule.rule_type}{' '}
-                    · {formatRuleRate(rule.rule_type, rule.percent_bps, rule.flat_cents)}
-                    {rule.applies_to_role ? ` · ${rule.applies_to_role}` : ''}
-                  </span>
-                </div>
-                {canEdit ? (
-                  <div className={styles.compListActions}>
-                    <form action={setCompensationRuleActiveAction}>
-                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                      <input type="hidden" name="rule_id" value={rule.id} />
-                      <input
-                        type="hidden"
-                        name="is_active"
-                        value={rule.is_active ? '0' : '1'}
-                      />
-                      <Button type="submit" variant="secondary" size="sm">
-                        {rule.is_active ? 'Deactivate' : 'Activate'}
-                      </Button>
-                    </form>
-                    <form action={deleteCompensationRuleAction}>
-                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                      <input type="hidden" name="rule_id" value={rule.id} />
-                      <Button type="submit" variant="ghost" size="sm">
-                        Delete
-                      </Button>
-                    </form>
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
         </>
       )}
     </>

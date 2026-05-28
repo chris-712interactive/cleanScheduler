@@ -20,13 +20,13 @@ export default async function TenantLocationsSettingsPage() {
   const locationsEnabled = isFeatureEnabled(tier, 'multiLocationControls');
 
   const locations = locationsEnabled
-    ? (
+    ? ((
         await admin
           .from('tenant_locations')
           .select('id, name, code, is_active')
           .eq('tenant_id', membership.tenantId)
           .order('name')
-      ).data ?? []
+      ).data ?? [])
     : [];
 
   return (
@@ -56,7 +56,11 @@ export default async function TenantLocationsSettingsPage() {
         description="Optional location tags for schedule filtering and future per-location reporting."
       >
         {locationsEnabled ? (
-          <LocationsPanel tenantSlug={membership.tenantSlug} canEdit={canEdit} locations={locations} />
+          <LocationsPanel
+            tenantSlug={membership.tenantSlug}
+            canEdit={canEdit}
+            locations={locations}
+          />
         ) : (
           <p className={styles.opsIntro}>
             Schedule, invoices, and reports stay workspace-wide on Starter and Business.

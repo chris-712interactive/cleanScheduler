@@ -29,7 +29,9 @@ export async function generatePaymentMatchSuggestions(
 
   const { data: invoices } = await admin
     .from('tenant_invoices')
-    .select('id, title, amount_cents, amount_paid_cents, due_date, customers ( customer_identities ( full_name, first_name, last_name ) )')
+    .select(
+      'id, title, amount_cents, amount_paid_cents, due_date, customers ( customer_identities ( full_name, first_name, last_name ) )',
+    )
     .eq('tenant_id', tenantId)
     .eq('status', 'open');
 

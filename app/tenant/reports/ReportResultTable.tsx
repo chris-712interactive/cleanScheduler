@@ -122,7 +122,12 @@ export function ReportResultTable({
             </Link>
             .
           </p>
-          <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+          <TableShell
+            total={rows.length}
+            start={slice.start}
+            end={slice.end}
+            showFooter={showFooter}
+          >
             <table className={styles.directoryTable}>
               <thead>
                 <tr>
@@ -288,7 +293,12 @@ export function ReportResultTable({
           ) : null}
 
           <h3 className={styles.sectionHeading}>All methods</h3>
-          <TableShell total={byMethod.length} start={1} end={byMethod.length} showFooter={showFooter}>
+          <TableShell
+            total={byMethod.length}
+            start={1}
+            end={byMethod.length}
+            showFooter={showFooter}
+          >
             <table className={styles.directoryTable}>
               <thead>
                 <tr>
@@ -440,7 +450,12 @@ export function ReportResultTable({
               situs may be incomplete.
             </p>
           ) : null}
-          <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+          <TableShell
+            total={rows.length}
+            start={slice.start}
+            end={slice.end}
+            showFooter={showFooter}
+          >
             <table className={styles.directoryTable}>
               <thead>
                 <tr>
@@ -477,30 +492,35 @@ export function ReportResultTable({
             </Link>
             .
           </p>
-          <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
-          <table className={styles.directoryTable}>
-            <thead>
-              <tr>
-                <th scope="col">Employee</th>
-                <th scope="col">Jobs</th>
-                <th scope="col">Regular hours</th>
-                <th scope="col">Overtime hours</th>
-                <th scope="col">Variable pay (est.)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {slice.items.map((row) => (
-                <tr key={row.userId}>
-                  <td>{row.employeeName}</td>
-                  <td>{row.jobsCompleted}</td>
-                  <td>{row.regularHours.toFixed(1)}</td>
-                  <td>{row.overtimeHours.toFixed(1)}</td>
-                  <td>{formatUsdFromCents(row.estimatedVariablePayCents)}</td>
+          <TableShell
+            total={rows.length}
+            start={slice.start}
+            end={slice.end}
+            showFooter={showFooter}
+          >
+            <table className={styles.directoryTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Employee</th>
+                  <th scope="col">Jobs</th>
+                  <th scope="col">Regular hours</th>
+                  <th scope="col">Overtime hours</th>
+                  <th scope="col">Variable pay (est.)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableShell>
+              </thead>
+              <tbody>
+                {slice.items.map((row) => (
+                  <tr key={row.userId}>
+                    <td>{row.employeeName}</td>
+                    <td>{row.jobsCompleted}</td>
+                    <td>{row.regularHours.toFixed(1)}</td>
+                    <td>{row.overtimeHours.toFixed(1)}</td>
+                    <td>{formatUsdFromCents(row.estimatedVariablePayCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
         </>
       );
     }
@@ -771,7 +791,12 @@ export function ReportResultTable({
               to populate this report.
             </p>
           ) : null}
-          <TableShell total={rows.length} start={slice.start} end={slice.end} showFooter={showFooter}>
+          <TableShell
+            total={rows.length}
+            start={slice.start}
+            end={slice.end}
+            showFooter={showFooter}
+          >
             <table className={styles.directoryTable}>
               <thead>
                 <tr>

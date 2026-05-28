@@ -56,7 +56,9 @@ export async function updateTeamMemberDisplayNameAction(
   _prev: MemberActionState,
   formData: FormData,
 ): Promise<MemberActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const targetUserId = String(formData.get('target_user_id') ?? '').trim();
   const name = String(formData.get('display_name') ?? '').trim();
   if (!slug || !targetUserId) return { error: 'Missing fields.' };
@@ -106,7 +108,9 @@ export async function updateTenantMemberRoleAction(
   _prev: MemberActionState,
   formData: FormData,
 ): Promise<MemberActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const targetUserId = String(formData.get('target_user_id') ?? '').trim();
   const raw = String(formData.get('next_role') ?? '').trim();
   const nextRole: MemberRoleUpdate | null =
@@ -173,7 +177,10 @@ export async function updateTenantMemberRoleAction(
       .eq('is_active', true);
     if (cErr) return { error: cErr.message };
     if ((count ?? 0) < 2) {
-      return { error: 'There must be at least one active owner. Add another owner before changing this role.' };
+      return {
+        error:
+          'There must be at least one active owner. Add another owner before changing this role.',
+      };
     }
   }
 
@@ -220,7 +227,9 @@ export async function setTenantMemberActiveAction(
   _prev: MemberActionState,
   formData: FormData,
 ): Promise<MemberActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const targetUserId = String(formData.get('target_user_id') ?? '').trim();
   const activeRaw = String(formData.get('is_active') ?? '').trim();
   const isActive = activeRaw === 'true';
@@ -321,7 +330,9 @@ export async function uploadTeamMemberAvatarAction(
   _prev: MemberActionState,
   formData: FormData,
 ): Promise<MemberActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const targetUserId = String(formData.get('target_user_id') ?? '').trim();
   if (!slug || !targetUserId) {
     return { error: 'Missing fields.' };
@@ -359,10 +370,12 @@ export async function uploadTeamMemberAvatarAction(
 
   const path = `${membership.tenantId}/${targetUserId}.${prepared.fileExtension}`;
 
-  const { error: upStorage } = await admin.storage.from('employee_avatars').upload(path, prepared.buffer, {
-    contentType: prepared.contentType,
-    upsert: true,
-  });
+  const { error: upStorage } = await admin.storage
+    .from('employee_avatars')
+    .upload(path, prepared.buffer, {
+      contentType: prepared.contentType,
+      upsert: true,
+    });
   if (upStorage) {
     return { error: upStorage.message };
   }

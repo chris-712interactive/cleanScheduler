@@ -1,10 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import {
-  submitCustomerVisitRescheduleRequest,
-  type CustomerRescheduleFormState,
-} from './actions';
+import { submitCustomerVisitRescheduleRequest, type CustomerRescheduleFormState } from './actions';
 import styles from './reschedule.module.scss';
 
 const initial: CustomerRescheduleFormState = {};
@@ -56,8 +53,8 @@ export function CustomerRescheduleForm({
             defaultValue=""
           />
           <span className={styles.hint}>
-            Leave blank if you’re only requesting a callback. If set, end time defaults to match your
-            current visit length (~
+            Leave blank if you’re only requesting a callback. If set, end time defaults to match
+            your current visit length (~
             {formatDurationApprox(currentStartsAt, currentEndsAt)}).
           </span>
         </div>

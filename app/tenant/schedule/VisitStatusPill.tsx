@@ -1,5 +1,9 @@
 import { StatusPill } from '@/components/ui/StatusPill';
-import { VISIT_STATUS_LABEL, VISIT_STATUS_TONE, type VisitStatus } from '@/lib/schedule/visitStatus';
+import {
+  VISIT_STATUS_LABEL,
+  VISIT_STATUS_TONE,
+  type VisitStatus,
+} from '@/lib/schedule/visitStatus';
 import styles from './schedule.module.scss';
 
 export function VisitStatusPill({

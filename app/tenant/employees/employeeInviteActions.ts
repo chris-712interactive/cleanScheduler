@@ -47,7 +47,9 @@ export async function sendEmployeeInviteAction(
   const slug = String(formData.get('tenant_slug') ?? '')
     .trim()
     .toLowerCase();
-  const emailRaw = String(formData.get('email') ?? '').trim().toLowerCase();
+  const emailRaw = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const roleRaw = String(formData.get('invited_role') ?? '').trim();
 
   if (!slug || !emailRaw) {
@@ -103,7 +105,9 @@ export async function sendEmployeeInviteAction(
     };
   }
 
-  const existing = existingUsers.users.find((u) => (u.email ?? '').trim().toLowerCase() === emailRaw);
+  const existing = existingUsers.users.find(
+    (u) => (u.email ?? '').trim().toLowerCase() === emailRaw,
+  );
   if (existing) {
     const { data: already } = await admin
       .from('tenant_memberships')

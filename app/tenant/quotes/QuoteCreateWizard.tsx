@@ -110,9 +110,8 @@ export function QuoteCreateWizard({
   const [quotePropertyStories, setQuotePropertyStories] = useState('');
   const [accessNotes, setAccessNotes] = useState('');
 
-  const [scopeTemplateId, setScopeTemplateId] = useState<QuoteScopeTemplateId>(
-    'residential_standard',
-  );
+  const [scopeTemplateId, setScopeTemplateId] =
+    useState<QuoteScopeTemplateId>('residential_standard');
   const [scopeInclusions, setScopeInclusions] = useState<string[]>(
     () => QUOTE_SCOPE_TEMPLATES[0]?.inclusions ?? [],
   );
@@ -120,7 +119,9 @@ export function QuoteCreateWizard({
     () => QUOTE_SCOPE_TEMPLATES[0]?.defaultExclusions ?? '',
   );
 
-  const [lineRows, setLineRows] = useState<QuoteLineItemDraft[]>(() => [createEmptyQuoteLineDraft()]);
+  const [lineRows, setLineRows] = useState<QuoteLineItemDraft[]>(() => [
+    createEmptyQuoteLineDraft(),
+  ]);
   const [pricing, setPricing] = useState<QuoteHeaderPricingValues>(() =>
     defaultQuoteHeaderPricingValues(),
   );
@@ -242,10 +243,7 @@ export function QuoteCreateWizard({
         if (propertySource === 'existing' && propertyOptions.length > 0 && !propertyId) {
           return 'Select a saved service location or choose to add a new one.';
         }
-        if (
-          (propertySource === 'new' || propertyOptions.length === 0) &&
-          !inlineAddress.trim()
-        ) {
+        if ((propertySource === 'new' || propertyOptions.length === 0) && !inlineAddress.trim()) {
           return 'Enter the street address for the service location.';
         }
       }
@@ -469,460 +467,460 @@ export function QuoteCreateWizard({
             className={step === 'who' ? styles.wizardStep : styles.wizardStepHidden}
             aria-hidden={step !== 'who'}
           >
-              <h2 className={styles.wizardStepTitle}>Who is this quote for?</h2>
-              <p className={styles.hint}>
-                Customer is required before sending. Search your CRM or create a profile with service
-                address in one pass.
-              </p>
+            <h2 className={styles.wizardStepTitle}>Who is this quote for?</h2>
+            <p className={styles.hint}>
+              Customer is required before sending. Search your CRM or create a profile with service
+              address in one pass.
+            </p>
 
-              <div className={styles.customerSourceRow}>
-                <label className={styles.customerSourceOption}>
-                  <input
-                    type="radio"
-                    name="customer_source_radio"
-                    checked={customerSource === 'existing'}
-                    onChange={() => {
-                      setCustomerSource('existing');
-                      setStepError(null);
-                    }}
-                  />
-                  <span>Existing customer</span>
-                </label>
-                <label className={styles.customerSourceOption}>
-                  <input
-                    type="radio"
-                    name="customer_source_radio"
-                    checked={customerSource === 'new'}
-                    onChange={() => {
-                      setCustomerSource('new');
-                      setCustomerId('');
-                      setPropertyId('');
-                      setPropertySource('new');
-                      setStepError(null);
-                    }}
-                  />
-                  <span>New customer</span>
-                </label>
-              </div>
-
-              <label className={styles.label} htmlFor="quote_title">
-                Quote title
+            <div className={styles.customerSourceRow}>
+              <label className={styles.customerSourceOption}>
+                <input
+                  type="radio"
+                  name="customer_source_radio"
+                  checked={customerSource === 'existing'}
+                  onChange={() => {
+                    setCustomerSource('existing');
+                    setStepError(null);
+                  }}
+                />
+                <span>Existing customer</span>
               </label>
-              <input
-                id="quote_title"
-                name="title"
-                className={styles.input}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Bi-weekly maintenance — Chen residence"
-              />
+              <label className={styles.customerSourceOption}>
+                <input
+                  type="radio"
+                  name="customer_source_radio"
+                  checked={customerSource === 'new'}
+                  onChange={() => {
+                    setCustomerSource('new');
+                    setCustomerId('');
+                    setPropertyId('');
+                    setPropertySource('new');
+                    setStepError(null);
+                  }}
+                />
+                <span>New customer</span>
+              </label>
+            </div>
 
-              {customerSource === 'existing' ? (
-                <>
-                  <SearchableSelect
-                    id="quote_customer_search"
-                    name="customer_id"
-                    label="Customer"
-                    options={customerOptions.map((c) => ({ value: c.id, label: c.label }))}
-                    value={customerId}
-                    onValueChange={(v) => {
-                      setCustomerId(v);
-                      setPropertyId('');
-                      setPropertySource('existing');
-                    }}
-                    placeholder="Search by name, email, phone…"
-                    emptyText="No customers match"
-                  />
-                  {effectiveCustomerId ? (
-                    <>
-                      <fieldset className={styles.propertySourceFieldset}>
-                        <legend className={styles.label}>Service location</legend>
-                        <div className={styles.customerSourceRow}>
-                          <label className={styles.customerSourceOption}>
-                            <input
-                              type="radio"
-                              name="property_source_radio"
-                              checked={propertySource === 'existing'}
-                              disabled={propertyOptions.length === 0}
-                              onChange={() => {
-                                setPropertySource('existing');
-                                setStepError(null);
-                              }}
-                            />
-                            <span>Use saved location</span>
-                          </label>
-                          <label className={styles.customerSourceOption}>
-                            <input
-                              type="radio"
-                              name="property_source_radio"
-                              checked={propertySource === 'new'}
-                              onChange={() => {
-                                setPropertySource('new');
-                                setPropertyId('');
-                                setStepError(null);
-                              }}
-                            />
-                            <span>Add new location</span>
-                          </label>
-                        </div>
-                      </fieldset>
-                      {propertySource === 'existing' && propertyOptions.length > 0 ? (
-                        <>
-                          <label className={styles.label} htmlFor="quote_property">
-                            Saved locations
-                          </label>
-                          <select
-                            key={`prop_${effectiveCustomerId}`}
-                            id="quote_property"
-                            name="property_id"
-                            className={styles.select}
-                            value={propertyId}
-                            onChange={(e) => setPropertyId(e.target.value)}
-                          >
-                            <option value="">— Select location —</option>
-                            {propertyOptions.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.label}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      ) : (
-                        <>
-                          <input type="hidden" name="property_id" value="" />
-                          {renderInlinePropertyFields('existing')}
-                        </>
-                      )}
-                    </>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <input type="hidden" name="customer_id" value="" />
-                  <div className={styles.wizardGridTwo}>
-                    <div>
-                      <label className={styles.label} htmlFor="inline_customer_first_name">
-                        First name
-                      </label>
-                      <input
-                        id="inline_customer_first_name"
-                        name="inline_customer_first_name"
-                        className={styles.input}
-                        value={inlineFirstName}
-                        onChange={(e) => setInlineFirstName(e.target.value)}
-                        autoComplete="given-name"
-                        placeholder="Jane"
-                      />
-                    </div>
-                    <div>
-                      <label className={styles.label} htmlFor="inline_customer_last_name">
-                        Last name (optional)
-                      </label>
-                      <input
-                        id="inline_customer_last_name"
-                        name="inline_customer_last_name"
-                        className={styles.input}
-                        autoComplete="family-name"
-                        placeholder="Customer"
-                      />
-                    </div>
+            <label className={styles.label} htmlFor="quote_title">
+              Quote title
+            </label>
+            <input
+              id="quote_title"
+              name="title"
+              className={styles.input}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Bi-weekly maintenance — Chen residence"
+            />
+
+            {customerSource === 'existing' ? (
+              <>
+                <SearchableSelect
+                  id="quote_customer_search"
+                  name="customer_id"
+                  label="Customer"
+                  options={customerOptions.map((c) => ({ value: c.id, label: c.label }))}
+                  value={customerId}
+                  onValueChange={(v) => {
+                    setCustomerId(v);
+                    setPropertyId('');
+                    setPropertySource('existing');
+                  }}
+                  placeholder="Search by name, email, phone…"
+                  emptyText="No customers match"
+                />
+                {effectiveCustomerId ? (
+                  <>
+                    <fieldset className={styles.propertySourceFieldset}>
+                      <legend className={styles.label}>Service location</legend>
+                      <div className={styles.customerSourceRow}>
+                        <label className={styles.customerSourceOption}>
+                          <input
+                            type="radio"
+                            name="property_source_radio"
+                            checked={propertySource === 'existing'}
+                            disabled={propertyOptions.length === 0}
+                            onChange={() => {
+                              setPropertySource('existing');
+                              setStepError(null);
+                            }}
+                          />
+                          <span>Use saved location</span>
+                        </label>
+                        <label className={styles.customerSourceOption}>
+                          <input
+                            type="radio"
+                            name="property_source_radio"
+                            checked={propertySource === 'new'}
+                            onChange={() => {
+                              setPropertySource('new');
+                              setPropertyId('');
+                              setStepError(null);
+                            }}
+                          />
+                          <span>Add new location</span>
+                        </label>
+                      </div>
+                    </fieldset>
+                    {propertySource === 'existing' && propertyOptions.length > 0 ? (
+                      <>
+                        <label className={styles.label} htmlFor="quote_property">
+                          Saved locations
+                        </label>
+                        <select
+                          key={`prop_${effectiveCustomerId}`}
+                          id="quote_property"
+                          name="property_id"
+                          className={styles.select}
+                          value={propertyId}
+                          onChange={(e) => setPropertyId(e.target.value)}
+                        >
+                          <option value="">— Select location —</option>
+                          {propertyOptions.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    ) : (
+                      <>
+                        <input type="hidden" name="property_id" value="" />
+                        {renderInlinePropertyFields('existing')}
+                      </>
+                    )}
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <input type="hidden" name="customer_id" value="" />
+                <div className={styles.wizardGridTwo}>
+                  <div>
+                    <label className={styles.label} htmlFor="inline_customer_first_name">
+                      First name
+                    </label>
+                    <input
+                      id="inline_customer_first_name"
+                      name="inline_customer_first_name"
+                      className={styles.input}
+                      value={inlineFirstName}
+                      onChange={(e) => setInlineFirstName(e.target.value)}
+                      autoComplete="given-name"
+                      placeholder="Jane"
+                    />
                   </div>
-                  <div className={styles.wizardGridTwo}>
-                    <div>
-                      <label className={styles.label} htmlFor="inline_customer_email">
-                        Email
-                      </label>
-                      <input
-                        id="inline_customer_email"
-                        name="inline_customer_email"
-                        type="email"
-                        className={styles.input}
-                        value={inlineEmail}
-                        onChange={(e) => setInlineEmail(e.target.value)}
-                        autoComplete="email"
-                        placeholder="jane@email.com"
-                      />
-                    </div>
-                    <div>
-                      <label className={styles.label} htmlFor="inline_customer_phone">
-                        Phone (optional)
-                      </label>
-                      <input
-                        id="inline_customer_phone"
-                        name="inline_customer_phone"
-                        type="tel"
-                        className={styles.input}
-                        autoComplete="tel"
-                        placeholder="555-0100"
-                      />
-                    </div>
+                  <div>
+                    <label className={styles.label} htmlFor="inline_customer_last_name">
+                      Last name (optional)
+                    </label>
+                    <input
+                      id="inline_customer_last_name"
+                      name="inline_customer_last_name"
+                      className={styles.input}
+                      autoComplete="family-name"
+                      placeholder="Customer"
+                    />
                   </div>
-                  {renderInlinePropertyFields('new')}
-                </>
-              )}
-            </section>
+                </div>
+                <div className={styles.wizardGridTwo}>
+                  <div>
+                    <label className={styles.label} htmlFor="inline_customer_email">
+                      Email
+                    </label>
+                    <input
+                      id="inline_customer_email"
+                      name="inline_customer_email"
+                      type="email"
+                      className={styles.input}
+                      value={inlineEmail}
+                      onChange={(e) => setInlineEmail(e.target.value)}
+                      autoComplete="email"
+                      placeholder="jane@email.com"
+                    />
+                  </div>
+                  <div>
+                    <label className={styles.label} htmlFor="inline_customer_phone">
+                      Phone (optional)
+                    </label>
+                    <input
+                      id="inline_customer_phone"
+                      name="inline_customer_phone"
+                      type="tel"
+                      className={styles.input}
+                      autoComplete="tel"
+                      placeholder="555-0100"
+                    />
+                  </div>
+                </div>
+                {renderInlinePropertyFields('new')}
+              </>
+            )}
+          </section>
 
           <section
             className={step === 'property' ? styles.wizardStep : styles.wizardStepHidden}
             aria-hidden={step !== 'property'}
           >
-              <h2 className={styles.wizardStepTitle}>Property details</h2>
-              <p className={styles.hint}>
-                Pricing inputs for this quote. Stored on the quote notes until dedicated property
-                snapshot fields ship.
-              </p>
-              <div className={styles.wizardGridFour}>
-                <div>
-                  <label className={styles.label} htmlFor="quote_property_type_select">
-                    Property type
-                  </label>
-                  <select
-                    id="quote_property_type_select"
-                    className={styles.select}
-                    value={quotePropertyType}
-                    onChange={(e) => setQuotePropertyType(e.target.value)}
-                  >
-                    {PROPERTY_KIND_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={styles.label} htmlFor="quote_property_sqft">
-                    Sq ft (cleanable)
-                  </label>
-                  <input
-                    id="quote_property_sqft"
-                    name="quote_property_sqft"
-                    className={styles.input}
-                    inputMode="numeric"
-                    value={quotePropertySqft}
-                    onChange={(e) => setQuotePropertySqft(e.target.value)}
-                    placeholder="2400"
-                  />
-                </div>
-                <div>
-                  <label className={styles.label} htmlFor="quote_property_bedrooms">
-                    Bedrooms
-                  </label>
-                  <input
-                    id="quote_property_bedrooms"
-                    name="quote_property_bedrooms"
-                    className={styles.input}
-                    inputMode="numeric"
-                    value={quotePropertyBedrooms}
-                    onChange={(e) => setQuotePropertyBedrooms(e.target.value)}
-                    placeholder="3"
-                  />
-                </div>
-                <div>
-                  <label className={styles.label} htmlFor="quote_property_bathrooms">
-                    Bathrooms
-                  </label>
-                  <input
-                    id="quote_property_bathrooms"
-                    name="quote_property_bathrooms"
-                    className={styles.input}
-                    inputMode="decimal"
-                    value={quotePropertyBathrooms}
-                    onChange={(e) => setQuotePropertyBathrooms(e.target.value)}
-                    placeholder="2.5"
-                  />
-                </div>
-                <div>
-                  <label className={styles.label} htmlFor="quote_property_stories">
-                    Stories
-                  </label>
-                  <input
-                    id="quote_property_stories"
-                    name="quote_property_stories"
-                    className={styles.input}
-                    inputMode="numeric"
-                    value={quotePropertyStories}
-                    onChange={(e) => setQuotePropertyStories(e.target.value)}
-                    placeholder="2"
-                  />
-                </div>
+            <h2 className={styles.wizardStepTitle}>Property details</h2>
+            <p className={styles.hint}>
+              Pricing inputs for this quote. Stored on the quote notes until dedicated property
+              snapshot fields ship.
+            </p>
+            <div className={styles.wizardGridFour}>
+              <div>
+                <label className={styles.label} htmlFor="quote_property_type_select">
+                  Property type
+                </label>
+                <select
+                  id="quote_property_type_select"
+                  className={styles.select}
+                  value={quotePropertyType}
+                  onChange={(e) => setQuotePropertyType(e.target.value)}
+                >
+                  {PROPERTY_KIND_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <label className={styles.label} htmlFor="access_notes">
-                Access, parking, pets, alarm, supplies
-              </label>
-              <textarea
-                id="access_notes"
-                name="access_notes"
-                className={styles.textarea}
-                rows={4}
-                value={accessNotes}
-                onChange={(e) => setAccessNotes(e.target.value)}
-                placeholder="Keypad entry, friendly dogs in laundry room, supplies under sink…"
-              />
-            </section>
+              <div>
+                <label className={styles.label} htmlFor="quote_property_sqft">
+                  Sq ft (cleanable)
+                </label>
+                <input
+                  id="quote_property_sqft"
+                  name="quote_property_sqft"
+                  className={styles.input}
+                  inputMode="numeric"
+                  value={quotePropertySqft}
+                  onChange={(e) => setQuotePropertySqft(e.target.value)}
+                  placeholder="2400"
+                />
+              </div>
+              <div>
+                <label className={styles.label} htmlFor="quote_property_bedrooms">
+                  Bedrooms
+                </label>
+                <input
+                  id="quote_property_bedrooms"
+                  name="quote_property_bedrooms"
+                  className={styles.input}
+                  inputMode="numeric"
+                  value={quotePropertyBedrooms}
+                  onChange={(e) => setQuotePropertyBedrooms(e.target.value)}
+                  placeholder="3"
+                />
+              </div>
+              <div>
+                <label className={styles.label} htmlFor="quote_property_bathrooms">
+                  Bathrooms
+                </label>
+                <input
+                  id="quote_property_bathrooms"
+                  name="quote_property_bathrooms"
+                  className={styles.input}
+                  inputMode="decimal"
+                  value={quotePropertyBathrooms}
+                  onChange={(e) => setQuotePropertyBathrooms(e.target.value)}
+                  placeholder="2.5"
+                />
+              </div>
+              <div>
+                <label className={styles.label} htmlFor="quote_property_stories">
+                  Stories
+                </label>
+                <input
+                  id="quote_property_stories"
+                  name="quote_property_stories"
+                  className={styles.input}
+                  inputMode="numeric"
+                  value={quotePropertyStories}
+                  onChange={(e) => setQuotePropertyStories(e.target.value)}
+                  placeholder="2"
+                />
+              </div>
+            </div>
+            <label className={styles.label} htmlFor="access_notes">
+              Access, parking, pets, alarm, supplies
+            </label>
+            <textarea
+              id="access_notes"
+              name="access_notes"
+              className={styles.textarea}
+              rows={4}
+              value={accessNotes}
+              onChange={(e) => setAccessNotes(e.target.value)}
+              placeholder="Keypad entry, friendly dogs in laundry room, supplies under sink…"
+            />
+          </section>
 
           <section
             className={step === 'scope' ? styles.wizardStep : styles.wizardStepHidden}
             aria-hidden={step !== 'scope'}
           >
-              <h2 className={styles.wizardStepTitle}>Scope of work</h2>
-              <p className={styles.hint}>
-                Start from a template, then adjust inclusions and exclusions. Saved on the quote for
-                the customer to review.
-              </p>
-              <div className={styles.scopeTemplateRow}>
-                {QUOTE_SCOPE_TEMPLATES.map((template) => (
-                  <button
-                    key={template.id}
-                    type="button"
-                    className={[
-                      styles.scopeTemplatePill,
-                      scopeTemplateId === template.id ? styles.scopeTemplatePillActive : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={() => applyScopeTemplate(template.id)}
-                  >
-                    {template.label}
-                  </button>
-                ))}
-              </div>
-              <div className={styles.wizardGridTwo}>
-                <div>
-                  <h3 className={styles.wizardSubheading}>Inclusions</h3>
-                  {scopeTemplateId === 'custom' ? (
-                    <textarea
-                      className={styles.textarea}
-                      rows={8}
-                      value={scopeInclusions.join('\n')}
-                      onChange={(e) =>
-                        setScopeInclusions(
-                          e.target.value
-                            .split('\n')
-                            .map((line) => line.trim())
-                            .filter(Boolean),
-                        )
-                      }
-                      placeholder="One inclusion per line"
-                    />
-                  ) : (
-                    <ul className={styles.scopeChecklist}>
-                      {QUOTE_SCOPE_TEMPLATES.find((t) => t.id === scopeTemplateId)?.inclusions.map(
-                        (item) => (
-                          <li key={item}>
-                            <label className={styles.scopeCheckItem}>
-                              <input
-                                type="checkbox"
-                                checked={scopeInclusions.includes(item)}
-                                onChange={() => toggleInclusion(item)}
-                              />
-                              <span>{item}</span>
-                            </label>
-                          </li>
-                        ),
-                      )}
-                    </ul>
-                  )}
-                </div>
-                <div>
-                  <h3 className={styles.wizardSubheading}>Exclusions (customer-visible)</h3>
+            <h2 className={styles.wizardStepTitle}>Scope of work</h2>
+            <p className={styles.hint}>
+              Start from a template, then adjust inclusions and exclusions. Saved on the quote for
+              the customer to review.
+            </p>
+            <div className={styles.scopeTemplateRow}>
+              {QUOTE_SCOPE_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  className={[
+                    styles.scopeTemplatePill,
+                    scopeTemplateId === template.id ? styles.scopeTemplatePillActive : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => applyScopeTemplate(template.id)}
+                >
+                  {template.label}
+                </button>
+              ))}
+            </div>
+            <div className={styles.wizardGridTwo}>
+              <div>
+                <h3 className={styles.wizardSubheading}>Inclusions</h3>
+                {scopeTemplateId === 'custom' ? (
                   <textarea
-                    name="scope_exclusions"
                     className={styles.textarea}
                     rows={8}
-                    value={scopeExclusions}
-                    onChange={(e) => setScopeExclusions(e.target.value)}
+                    value={scopeInclusions.join('\n')}
+                    onChange={(e) =>
+                      setScopeInclusions(
+                        e.target.value
+                          .split('\n')
+                          .map((line) => line.trim())
+                          .filter(Boolean),
+                      )
+                    }
+                    placeholder="One inclusion per line"
                   />
-                </div>
+                ) : (
+                  <ul className={styles.scopeChecklist}>
+                    {QUOTE_SCOPE_TEMPLATES.find((t) => t.id === scopeTemplateId)?.inclusions.map(
+                      (item) => (
+                        <li key={item}>
+                          <label className={styles.scopeCheckItem}>
+                            <input
+                              type="checkbox"
+                              checked={scopeInclusions.includes(item)}
+                              onChange={() => toggleInclusion(item)}
+                            />
+                            <span>{item}</span>
+                          </label>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                )}
               </div>
-            </section>
+              <div>
+                <h3 className={styles.wizardSubheading}>Exclusions (customer-visible)</h3>
+                <textarea
+                  name="scope_exclusions"
+                  className={styles.textarea}
+                  rows={8}
+                  value={scopeExclusions}
+                  onChange={(e) => setScopeExclusions(e.target.value)}
+                />
+              </div>
+            </div>
+          </section>
 
           <section
             className={step === 'pricing' ? styles.wizardStep : styles.wizardStepHidden}
             aria-hidden={step !== 'pricing'}
           >
-              <h2 className={styles.wizardStepTitle}>Services &amp; pricing</h2>
-              <p className={styles.hint}>
-                Add priced service lines. Field employees receive amounts from scheduled visits — set
-                prices here, not in the field.
-              </p>
-              <QuoteLineItemsEditor
-                layout="cards"
-                rows={lineRows}
-                onRowsChange={setLineRows}
-                hideLegend
+            <h2 className={styles.wizardStepTitle}>Services &amp; pricing</h2>
+            <p className={styles.hint}>
+              Add priced service lines. Field employees receive amounts from scheduled visits — set
+              prices here, not in the field.
+            </p>
+            <QuoteLineItemsEditor
+              layout="cards"
+              rows={lineRows}
+              onRowsChange={setLineRows}
+              hideLegend
+            />
+            <h3 className={styles.wizardSubheading}>Add from library</h3>
+            <div className={styles.addonLibraryRow}>
+              {QUOTE_ADDON_LIBRARY.map((addon) => (
+                <Button
+                  key={addon.service_label}
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => addAddonLine(addon)}
+                >
+                  + {addon.service_label} (${addon.amount_dollars.replace('.00', '')})
+                </Button>
+              ))}
+            </div>
+            <details className={styles.wizardDetails}>
+              <summary>Tax &amp; quote-level discount</summary>
+              <QuoteHeaderPricingFields
+                compact
+                values={pricing}
+                onValuesChange={(patch) => setPricing((prev) => ({ ...prev, ...patch }))}
               />
-              <h3 className={styles.wizardSubheading}>Add from library</h3>
-              <div className={styles.addonLibraryRow}>
-                {QUOTE_ADDON_LIBRARY.map((addon) => (
-                  <Button
-                    key={addon.service_label}
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => addAddonLine(addon)}
-                  >
-                    + {addon.service_label} (${addon.amount_dollars.replace('.00', '')})
-                  </Button>
-                ))}
-              </div>
-              <details className={styles.wizardDetails}>
-                <summary>Tax &amp; quote-level discount</summary>
-                <QuoteHeaderPricingFields
-                  compact
-                  values={pricing}
-                  onValuesChange={(patch) => setPricing((prev) => ({ ...prev, ...patch }))}
-                />
-              </details>
-            </section>
+            </details>
+          </section>
 
           <section
             className={step === 'terms' ? styles.wizardStep : styles.wizardStepHidden}
             aria-hidden={step !== 'terms'}
           >
-              <h2 className={styles.wizardStepTitle}>Terms &amp; send</h2>
-              <p className={styles.hint}>
-                Set validity and office-only notes. Save as a draft to finish later, or send now to
-                email the customer a link to review and accept.
-              </p>
-              <div className={styles.wizardGridTwo}>
-                <div>
-                  <label className={styles.label} htmlFor="quote_valid">
-                    Valid until
-                  </label>
-                  <input
-                    id="quote_valid"
-                    name="valid_until"
-                    className={styles.input}
-                    type="date"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                  />
-                </div>
+            <h2 className={styles.wizardStepTitle}>Terms &amp; send</h2>
+            <p className={styles.hint}>
+              Set validity and office-only notes. Save as a draft to finish later, or send now to
+              email the customer a link to review and accept.
+            </p>
+            <div className={styles.wizardGridTwo}>
+              <div>
+                <label className={styles.label} htmlFor="quote_valid">
+                  Valid until
+                </label>
+                <input
+                  id="quote_valid"
+                  name="valid_until"
+                  className={styles.input}
+                  type="date"
+                  value={validUntil}
+                  onChange={(e) => setValidUntil(e.target.value)}
+                />
               </div>
-              <label className={styles.label} htmlFor="office_notes">
-                Internal notes (office only)
-              </label>
-              <textarea
-                id="office_notes"
-                name="office_notes"
-                className={styles.textarea}
-                rows={4}
-                value={officeNotes}
-                onChange={(e) => setOfficeNotes(e.target.value)}
-                placeholder="Walkthrough notes, margin targets, follow-up reminders…"
-              />
-              <h3 className={styles.wizardSubheading}>Ready to save or send?</h3>
-              <ul className={styles.completenessList}>
-                {completeness.map((item) => (
-                  <li
-                    key={item.id}
-                    className={item.done ? styles.completenessDone : styles.completenessPending}
-                  >
-                    {item.done ? '✓' : '○'} {item.label}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            </div>
+            <label className={styles.label} htmlFor="office_notes">
+              Internal notes (office only)
+            </label>
+            <textarea
+              id="office_notes"
+              name="office_notes"
+              className={styles.textarea}
+              rows={4}
+              value={officeNotes}
+              onChange={(e) => setOfficeNotes(e.target.value)}
+              placeholder="Walkthrough notes, margin targets, follow-up reminders…"
+            />
+            <h3 className={styles.wizardSubheading}>Ready to save or send?</h3>
+            <ul className={styles.completenessList}>
+              {completeness.map((item) => (
+                <li
+                  key={item.id}
+                  className={item.done ? styles.completenessDone : styles.completenessPending}
+                >
+                  {item.done ? '✓' : '○'} {item.label}
+                </li>
+              ))}
+            </ul>
+          </section>
 
           <div className={styles.wizardActions}>
             <Button type="button" variant="ghost" disabled={step === 'who'} onClick={goBack}>

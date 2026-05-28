@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { handleResendWebhookEvent, type ResendWebhookPayload } from '@/lib/campaigns/handleResendWebhook';
+import {
+  handleResendWebhookEvent,
+  type ResendWebhookPayload,
+} from '@/lib/campaigns/handleResendWebhook';
 import type { Json } from '@/lib/supabase/database.types';
 
 export async function POST(request: Request) {

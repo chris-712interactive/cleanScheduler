@@ -39,7 +39,9 @@ export function CustomerQuoteListCard({
   return (
     <Link
       href={`/quotes/${row.id}`}
-      className={[styles.listCard, emphasis ? styles.listCardEmphasis : ''].filter(Boolean).join(' ')}
+      className={[styles.listCard, emphasis ? styles.listCardEmphasis : '']
+        .filter(Boolean)
+        .join(' ')}
     >
       <div className={styles.listCardTop}>
         <p className={styles.listCardProvider}>{provider}</p>
@@ -49,10 +51,14 @@ export function CustomerQuoteListCard({
       <div className={styles.listCardFooter}>
         <p className={styles.listCardAmount}>{formatQuoteMoney(row.amount_cents, row.currency)}</p>
         <p className={styles.listCardMeta}>
-          {validUntil ? `Valid through ${validUntil}` : `Updated ${new Date(row.updated_at).toLocaleDateString()}`}
+          {validUntil
+            ? `Valid through ${validUntil}`
+            : `Updated ${new Date(row.updated_at).toLocaleDateString()}`}
         </p>
       </div>
-      <p className={styles.listCardAction}>{isActionable ? 'Review & respond →' : 'View quote →'}</p>
+      <p className={styles.listCardAction}>
+        {isActionable ? 'Review & respond →' : 'View quote →'}
+      </p>
     </Link>
   );
 }

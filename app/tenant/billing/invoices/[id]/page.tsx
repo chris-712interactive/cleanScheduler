@@ -169,7 +169,10 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
             </div>
           ) : null}
           <p style={{ marginTop: 'var(--space-3)' }}>
-            <a href={`/api/tenant/billing/invoices/${inv.id}/pdf`} className={styles.planDetailsLink}>
+            <a
+              href={`/api/tenant/billing/invoices/${inv.id}/pdf`}
+              className={styles.planDetailsLink}
+            >
               Download PDF
             </a>
           </p>

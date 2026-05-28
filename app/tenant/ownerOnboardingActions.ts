@@ -33,7 +33,9 @@ async function requireChecklistManager(tenantSlug: string) {
 }
 
 export async function snoozeOwnerChecklistAction(formData: FormData): Promise<void> {
-  const tenantSlug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const tenantSlug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await snoozeOwnerChecklist(admin, membership.tenantId);
@@ -41,7 +43,9 @@ export async function snoozeOwnerChecklistAction(formData: FormData): Promise<vo
 }
 
 export async function dismissOwnerChecklistAction(formData: FormData): Promise<void> {
-  const tenantSlug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const tenantSlug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await dismissOwnerChecklist(admin, membership.tenantId);
@@ -49,7 +53,9 @@ export async function dismissOwnerChecklistAction(formData: FormData): Promise<v
 }
 
 export async function reopenOwnerChecklistAction(formData: FormData): Promise<void> {
-  const tenantSlug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const tenantSlug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await reopenOwnerChecklist(admin, membership.tenantId);
@@ -57,7 +63,9 @@ export async function reopenOwnerChecklistAction(formData: FormData): Promise<vo
 }
 
 export async function skipOptionalChecklistStepAction(formData: FormData): Promise<void> {
-  const tenantSlug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const tenantSlug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const stepId = String(formData.get('step_id') ?? '').trim();
   if (!OWNER_ONBOARDING_OPTIONAL_STEP_IDS.has(stepId)) {
     throw new Error('That step cannot be skipped.');
@@ -75,7 +83,9 @@ export async function skipOptionalChecklistStepAction(formData: FormData): Promi
 }
 
 export async function acknowledgeChecklistCompletionAction(formData: FormData): Promise<void> {
-  const tenantSlug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const tenantSlug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await acknowledgeChecklistCompletion(admin, membership.tenantId);
@@ -83,7 +93,9 @@ export async function acknowledgeChecklistCompletionAction(formData: FormData): 
 }
 
 export async function dismissOwnerSurveyAction(formData: FormData): Promise<void> {
-  const tenantSlug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const tenantSlug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await dismissOwnerSurvey(admin, membership.tenantId);

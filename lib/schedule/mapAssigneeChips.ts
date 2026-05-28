@@ -1,7 +1,4 @@
-import {
-  firstNameFromDisplayName,
-  initialsFromDisplayName,
-} from '@/lib/profile/displayName';
+import { firstNameFromDisplayName, initialsFromDisplayName } from '@/lib/profile/displayName';
 import type { ScheduleAssigneeChip } from './assigneeDisplay';
 
 export type RawScheduleAssigneeRow = {

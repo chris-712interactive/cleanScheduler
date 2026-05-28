@@ -4,13 +4,13 @@
 
 ## Identity types
 
-| Type | Store | Used for |
-|------|-------|----------|
-| Platform user | Supabase Auth + `user_profiles.app_role` | Founder admin, cross-portal access |
-| Tenant member | `tenant_memberships` + JWT `tenant_role` | Workspace operations portal |
-| Customer user | Supabase Auth + `customer_identities` | Branded customer portal |
-| Machine (API) | `tenant_api_keys` (hashed) | Tenant REST API (Pro plan) |
-| Machine (cron) | `CRON_SECRET` env | Scheduled maintenance routes |
+| Type           | Store                                    | Used for                           |
+| -------------- | ---------------------------------------- | ---------------------------------- |
+| Platform user  | Supabase Auth + `user_profiles.app_role` | Founder admin, cross-portal access |
+| Tenant member  | `tenant_memberships` + JWT `tenant_role` | Workspace operations portal        |
+| Customer user  | Supabase Auth + `customer_identities`    | Branded customer portal            |
+| Machine (API)  | `tenant_api_keys` (hashed)               | Tenant REST API (Pro plan)         |
+| Machine (cron) | `CRON_SECRET` env                        | Scheduled maintenance routes       |
 
 ## Authentication flow
 

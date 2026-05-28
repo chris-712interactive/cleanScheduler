@@ -80,9 +80,7 @@ export function draftsFromQuoteLineRows(
       line_discount_input: discountInputFromRow(l.line_discount_kind, l.line_discount_value),
       pricing_method: l.pricing_method ?? 'flat',
       estimated_hours:
-        l.estimated_hours != null && Number(l.estimated_hours) > 0
-          ? String(l.estimated_hours)
-          : '',
+        l.estimated_hours != null && Number(l.estimated_hours) > 0 ? String(l.estimated_hours) : '',
     }));
 }
 
@@ -158,7 +156,7 @@ function LineItemFields({
               id={`line_detail_${row.key}`}
               name="line_frequency_detail"
               className={styles.input}
-              placeholder='e.g. Every other Thursday'
+              placeholder="e.g. Every other Thursday"
               value={row.frequency_detail}
               onChange={(e) => updateRow(row.key, { frequency_detail: e.target.value })}
             />
@@ -187,8 +185,7 @@ function LineItemFields({
                 const line_discount_kind = e.target.value as QuoteLineDiscountKind;
                 updateRow(row.key, {
                   line_discount_kind,
-                  line_discount_input:
-                    line_discount_kind === 'none' ? '' : row.line_discount_input,
+                  line_discount_input: line_discount_kind === 'none' ? '' : row.line_discount_input,
                 });
               }}
             >

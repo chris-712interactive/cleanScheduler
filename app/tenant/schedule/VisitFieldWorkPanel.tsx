@@ -4,7 +4,10 @@ import { useActionState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { Button } from '@/components/ui/Button';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
-import { FIELD_EMPLOYEE_NO_PRICE_MESSAGE, OFFICE_NO_PRICE_MESSAGE } from '@/lib/billing/resolveVisitExpectedAmount';
+import {
+  FIELD_EMPLOYEE_NO_PRICE_MESSAGE,
+  OFFICE_NO_PRICE_MESSAGE,
+} from '@/lib/billing/resolveVisitExpectedAmount';
 import { checkInToVisitAction, type VisitFieldActionState } from './visitFieldActions';
 import { CompleteVisitPaymentModal } from './CompleteVisitPaymentModal';
 import styles from './visitDetail.module.scss';
@@ -38,25 +41,34 @@ export function VisitFieldWorkPanel({
   isFieldEmployee?: boolean;
   hasBillableAmount?: boolean;
 }) {
-  const [checkInState, checkInAction, checkInPending] = useActionState(checkInToVisitAction, initial);
+  const [checkInState, checkInAction, checkInPending] = useActionState(
+    checkInToVisitAction,
+    initial,
+  );
   useRefreshOnServerActionSuccess(checkInState.success);
 
   if (!canCheckIn && !canComplete) return null;
 
   const blockedFromComplete = canComplete && !hasBillableAmount;
-  const noPriceMessage = isFieldEmployee ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE : OFFICE_NO_PRICE_MESSAGE;
+  const noPriceMessage = isFieldEmployee
+    ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE
+    : OFFICE_NO_PRICE_MESSAGE;
 
   return (
     <section className={styles.fieldWork}>
       <h2 className={styles.sectionTitle}>Field actions</h2>
       {checkedInAt ? (
         <p className={styles.fieldHint}>
-          Checked in {new Date(checkedInAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+          Checked in{' '}
+          {new Date(checkedInAt).toLocaleString(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          })}
         </p>
       ) : (
         <p className={styles.fieldHint}>
-          Check in when you arrive. When the job is done, tap Complete job to record payment and add proof
-          photos.
+          Check in when you arrive. When the job is done, tap Complete job to record payment and add
+          proof photos.
         </p>
       )}
 

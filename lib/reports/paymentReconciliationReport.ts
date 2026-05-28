@@ -73,14 +73,8 @@ export async function runPaymentReconciliationReport(
     return emptyResult(connectComplete);
   }
 
-  const methodMap = new Map<
-    string,
-    { count: number; gross: number; fee: number; net: number }
-  >();
-  const payoutMap = new Map<
-    string,
-    { count: number; gross: number; fee: number; net: number }
-  >();
+  const methodMap = new Map<string, { count: number; gross: number; fee: number; net: number }>();
+  const payoutMap = new Map<string, { count: number; gross: number; fee: number; net: number }>();
   let pendingCardNet = 0;
   let pendingCardCount = 0;
   const details: PaymentReconciliationDetailRow[] = [];
@@ -89,10 +83,7 @@ export async function runPaymentReconciliationReport(
     if (row.amount_cents <= 0) continue;
 
     const fee = row.stripe_fee_cents ?? 0;
-    const net =
-      row.net_amount_cents ??
-      row.gross_amount_cents ??
-      row.amount_cents - fee;
+    const net = row.net_amount_cents ?? row.gross_amount_cents ?? row.amount_cents - fee;
     const gross = row.gross_amount_cents ?? row.amount_cents;
 
     const key = row.method;

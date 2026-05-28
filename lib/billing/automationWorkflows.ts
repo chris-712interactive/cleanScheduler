@@ -57,7 +57,10 @@ export async function assertTenantCanCreateAutomationWorkflow(
   assertCanCreateAutomationWorkflow({ plan, activeCount });
 }
 
-export function formatAutomationWorkflowUsage(activeCount: number, plan: EntitlementPlanKey): string {
+export function formatAutomationWorkflowUsage(
+  activeCount: number,
+  plan: EntitlementPlanKey,
+): string {
   const limit = getEntitlementsForPlan(plan).limits.maxAutomationWorkflows;
   return `${activeCount}/${limit} recurring rules`;
 }

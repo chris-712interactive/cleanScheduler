@@ -42,14 +42,16 @@ type CustomerListRow = {
     full_name: string | null;
     phone: string | null;
   } | null;
-  tenant_customer_properties: {
-    address_line1: string | null;
-    address_line2: string | null;
-    city: string | null;
-    state: string | null;
-    postal_code: string | null;
-    is_primary: boolean;
-  }[] | null;
+  tenant_customer_properties:
+    | {
+        address_line1: string | null;
+        address_line2: string | null;
+        city: string | null;
+        state: string | null;
+        postal_code: string | null;
+        is_primary: boolean;
+      }[]
+    | null;
 };
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -103,8 +105,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
         : Promise.resolve({ data: null, error: null }),
     ]);
 
-    const searchError =
-      identResult.error ?? propertyResult.error ?? statusResult.error ?? null;
+    const searchError = identResult.error ?? propertyResult.error ?? statusResult.error ?? null;
 
     if (searchError) {
       return (
@@ -182,7 +183,10 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       custQuery = custQuery.or(searchOrFilter);
     }
 
-    const { data: rows, error } = await custQuery.overrideTypes<CustomerListRow[], { merge: false }>();
+    const { data: rows, error } = await custQuery.overrideTypes<
+      CustomerListRow[],
+      { merge: false }
+    >();
     listError = error ? { message: error.message } : null;
     customers = rows ?? [];
   }

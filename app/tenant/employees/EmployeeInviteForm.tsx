@@ -80,8 +80,8 @@ export function EmployeeInviteForm({
       </form>
       {!emailReady ? (
         <p className={styles.muted}>
-          Set <strong>RESEND_API_KEY</strong> and <strong>RESEND_FROM_EMAIL</strong> on the server. Invites use the
-          same sender as quote mail.
+          Set <strong>RESEND_API_KEY</strong> and <strong>RESEND_FROM_EMAIL</strong> on the server.
+          Invites use the same sender as quote mail.
         </p>
       ) : (
         <p className={styles.muted}>

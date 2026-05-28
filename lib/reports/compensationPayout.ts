@@ -118,9 +118,7 @@ export async function computeEmployeeCompensationTotals(
 
     let basis =
       visit.completion_collected_amount_cents ??
-      (visit.completion_invoice_id
-        ? invoiceById.get(visit.completion_invoice_id)
-        : undefined) ??
+      (visit.completion_invoice_id ? invoiceById.get(visit.completion_invoice_id) : undefined) ??
       invoiceByVisitId.get(visit.id) ??
       0;
     if (basis < 0) basis = 0;

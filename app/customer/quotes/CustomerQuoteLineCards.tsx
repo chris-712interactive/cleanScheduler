@@ -38,9 +38,7 @@ export function CustomerQuoteLineCards({
   listClassName?: string;
 }) {
   if (lines.length === 0) {
-    return (
-      <p className={styles.muted}>No service lines on this quote yet.</p>
-    );
+    return <p className={styles.muted}>No service lines on this quote yet.</p>;
   }
 
   const anyDiscount = lines.some(lineHasDiscount);

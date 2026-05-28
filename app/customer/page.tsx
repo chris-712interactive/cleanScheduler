@@ -42,19 +42,23 @@ type VisitRow = {
     postal_code: string | null;
   } | null;
   customers: {
-    tenant_customer_properties: {
-      is_primary: boolean;
-      address_line1: string | null;
-      address_line2: string | null;
-      city: string | null;
-      state: string | null;
-      postal_code: string | null;
-    }[] | null;
+    tenant_customer_properties:
+      | {
+          is_primary: boolean;
+          address_line1: string | null;
+          address_line2: string | null;
+          city: string | null;
+          state: string | null;
+          postal_code: string | null;
+        }[]
+      | null;
   } | null;
-  tenant_scheduled_visit_assignees: {
-    user_id: string;
-    user_profiles: { display_name: string | null; avatar_url: string | null } | null;
-  }[] | null;
+  tenant_scheduled_visit_assignees:
+    | {
+        user_id: string;
+        user_profiles: { display_name: string | null; avatar_url: string | null } | null;
+      }[]
+    | null;
 };
 
 type InvoiceRow = {
@@ -167,9 +171,7 @@ export default async function CustomerHomePage() {
 
     if (nextVisit) {
       nextVisitCrew = normalizeAssigneeRows(
-        nextVisit.tenant_scheduled_visit_assignees as Parameters<
-          typeof normalizeAssigneeRows
-        >[0],
+        nextVisit.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
       );
     }
   }
@@ -180,9 +182,7 @@ export default async function CustomerHomePage() {
   if (ctx.customerIds.length > 0) {
     const { data: invoices } = await supabase
       .from('tenant_invoices')
-      .select(
-        'id, title, status, amount_cents, amount_paid_cents, due_date, created_at',
-      )
+      .select('id, title, status, amount_cents, amount_paid_cents, due_date, created_at')
       .in('customer_id', ctx.customerIds)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -196,10 +196,7 @@ export default async function CustomerHomePage() {
           row,
           balance: Math.max(0, row.amount_cents - row.amount_paid_cents),
         }))
-        .filter(
-          ({ row, balance }) =>
-            balance > 0 && row.status !== 'void' && row.status !== 'paid',
-        )
+        .filter(({ row, balance }) => balance > 0 && row.status !== 'void' && row.status !== 'paid')
         .sort((a, b) => {
           const ad = a.row.due_date ? new Date(a.row.due_date).getTime() : Infinity;
           const bd = b.row.due_date ? new Date(b.row.due_date).getTime() : Infinity;
@@ -219,9 +216,7 @@ export default async function CustomerHomePage() {
         nextVisit.customers?.tenant_customer_properties,
       )
     : '';
-  const nextDuration = nextVisit
-    ? formatVisitDuration(nextVisit.starts_at, nextVisit.ends_at)
-    : '';
+  const nextDuration = nextVisit ? formatVisitDuration(nextVisit.starts_at, nextVisit.ends_at) : '';
   const nextServiceLine = nextVisit
     ? [nextVisit.title || 'Cleaning visit', nextDuration].filter(Boolean).join(' · ')
     : '';
@@ -307,10 +302,13 @@ export default async function CustomerHomePage() {
                     <p className={styles.nextMeta}>
                       Invoice {formatInvoiceRef(openInvoice.id, openInvoice.title)}
                       {openInvoice.due_date
-                        ? ` · Due ${new Date(String(openInvoice.due_date)).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                          })}`
+                        ? ` · Due ${new Date(String(openInvoice.due_date)).toLocaleDateString(
+                            undefined,
+                            {
+                              month: 'short',
+                              day: 'numeric',
+                            },
+                          )}`
                         : ''}
                     </p>
                   </div>
@@ -325,7 +323,9 @@ export default async function CustomerHomePage() {
           {pendingQuote ? (
             <section className={`${styles.card} ${styles.quoteAwaitingCard}`}>
               <div className={styles.cardBody}>
-                <p className={`${styles.eyebrow} ${styles.quoteAwaitingEyebrow}`}>Quote awaiting review</p>
+                <p className={`${styles.eyebrow} ${styles.quoteAwaitingEyebrow}`}>
+                  Quote awaiting review
+                </p>
                 <div className={styles.quoteAwaitingInner}>
                   <div>
                     <p className={styles.quoteAwaitingAmount}>
@@ -335,7 +335,9 @@ export default async function CustomerHomePage() {
                     <p className={styles.nextMeta}>
                       From {pendingQuote.tenants?.name ?? 'your provider'}
                       {pendingQuote.valid_until
-                        ? ` · Valid through ${new Date(String(pendingQuote.valid_until)).toLocaleDateString(undefined, {
+                        ? ` · Valid through ${new Date(
+                            String(pendingQuote.valid_until),
+                          ).toLocaleDateString(undefined, {
                             month: 'short',
                             day: 'numeric',
                           })}`
@@ -423,7 +425,10 @@ export default async function CustomerHomePage() {
                           )}
                         </p>
                         {pendingRescheduleVisitIds.has(visit.id) ? (
-                          <StatusPill tone="warning" className={styles.reschedulePendingPillCompact}>
+                          <StatusPill
+                            tone="warning"
+                            className={styles.reschedulePendingPillCompact}
+                          >
                             Reschedule pending
                           </StatusPill>
                         ) : null}

@@ -300,7 +300,12 @@ export function OperationalSettingsForm({
         <div className={styles.opsCheckboxGrid}>
           {CUSTOMER_PAYMENT_METHOD_VALUES.map((m) => (
             <label key={m} className={styles.opsCheckbox}>
-              <input type="checkbox" name={`method_${m}`} defaultChecked={allowed.has(m)} disabled={readOnly} />
+              <input
+                type="checkbox"
+                name={`method_${m}`}
+                defaultChecked={allowed.has(m)}
+                disabled={readOnly}
+              />
               <span>{CUSTOMER_PAYMENT_METHOD_LABEL[m]}</span>
             </label>
           ))}

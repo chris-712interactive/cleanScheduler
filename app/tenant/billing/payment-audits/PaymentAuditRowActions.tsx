@@ -48,11 +48,7 @@ export function PaymentAuditRowActions({
       )}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            className={styles.menuTrigger}
-            aria-label="Payment actions"
-          >
+          <button type="button" className={styles.menuTrigger} aria-label="Payment actions">
             <MoreVertical size={18} aria-hidden />
           </button>
         </DropdownMenu.Trigger>

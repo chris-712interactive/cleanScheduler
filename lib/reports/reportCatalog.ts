@@ -290,7 +290,11 @@ export function isReportEnabled(plan: EntitlementPlanKey, slug: ReportSlug): boo
   return isFeatureEnabled(plan, entry.gate.feature);
 }
 
-export function reportsBySection(): { section: ReportSection; label: string; items: ReportCatalogEntry[] }[] {
+export function reportsBySection(): {
+  section: ReportSection;
+  label: string;
+  items: ReportCatalogEntry[];
+}[] {
   const order: ReportSection[] = ['financial', 'operations', 'payroll'];
   const labels: Record<ReportSection, string> = {
     financial: 'Financial close',

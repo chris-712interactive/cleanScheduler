@@ -161,8 +161,8 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         }
       >
         <p className={styles.stepHint}>
-          Your 7-day free trial includes scheduling, quotes, customers, and invoicing. Choose a
-          paid plan when you are ready — no credit card required today.{' '}
+          Your 7-day free trial includes scheduling, quotes, customers, and invoicing. Choose a paid
+          plan when you are ready — no credit card required today.{' '}
           <Link href="/pricing" target="_blank" rel="noopener noreferrer">
             Compare plans
           </Link>

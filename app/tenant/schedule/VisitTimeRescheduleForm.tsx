@@ -4,10 +4,7 @@ import { useActionState, useEffect, useState } from 'react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
 import { isoToLocalDatetimeLocalValue } from '@/lib/datetime/isoToLocalDatetimeLocalValue';
-import {
-  updateScheduledVisitTimes,
-  type ScheduleFormState,
-} from '@/app/tenant/schedule/actions';
+import { updateScheduledVisitTimes, type ScheduleFormState } from '@/app/tenant/schedule/actions';
 import styles from './schedule.module.scss';
 
 const initial: ScheduleFormState = {};

@@ -5,7 +5,11 @@ import { useActionState } from 'react';
 import { Upload } from 'lucide-react';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import type { TenantBusinessSnapshot } from '@/lib/tenant/tenantBusinessSettings';
-import { updateBrandingAction, uploadTenantLogoAction, type BusinessSettingsActionState } from './businessActions';
+import {
+  updateBrandingAction,
+  uploadTenantLogoAction,
+  type BusinessSettingsActionState,
+} from './businessActions';
 import styles from '../settings.module.scss';
 
 const brandingInitial: BusinessSettingsActionState = {};
@@ -20,7 +24,10 @@ export function BrandingForm({
   snapshot: TenantBusinessSnapshot;
   readOnly?: boolean;
 }) {
-  const [brandState, brandAction, brandPending] = useActionState(updateBrandingAction, brandingInitial);
+  const [brandState, brandAction, brandPending] = useActionState(
+    updateBrandingAction,
+    brandingInitial,
+  );
   const [logoState, logoAction, logoPending] = useActionState(uploadTenantLogoAction, logoInitial);
   useRefreshOnServerActionSuccess(brandState.success ?? logoState.success);
 

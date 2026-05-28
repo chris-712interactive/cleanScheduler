@@ -82,39 +82,40 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
   const err = firstParam(sp.error);
   const created = firstParam(sp.created) === '1';
 
-  const [{ data: customers }, { data: properties }, { data: quotes }, { data: rules }] = await Promise.all([
-    db
-      .from('customers')
-      .select(
-        `
+  const [{ data: customers }, { data: properties }, { data: quotes }, { data: rules }] =
+    await Promise.all([
+      db
+        .from('customers')
+        .select(
+          `
       id,
       customer_identities ( first_name, last_name, full_name )
     `,
-      )
-      .eq('tenant_id', membership.tenantId)
-      .order('created_at', { ascending: false })
-      .limit(200),
-    db
-      .from('tenant_customer_properties')
-      .select(
-        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
-      )
-      .eq('tenant_id', membership.tenantId)
-      .order('is_primary', { ascending: false }),
-    db
-      .from('tenant_quotes')
-      .select('id, title, amount_cents')
-      .eq('tenant_id', membership.tenantId)
-      .order('created_at', { ascending: false })
-      .limit(40),
-    db
-      .from('recurring_appointment_rules')
-      .select(
-        'id, title, rrule_definition, anchor_starts_at, is_active, horizon_days, customer_id, expected_amount_cents',
-      )
-      .eq('tenant_id', membership.tenantId)
-      .order('created_at', { ascending: false }),
-  ]);
+        )
+        .eq('tenant_id', membership.tenantId)
+        .order('created_at', { ascending: false })
+        .limit(200),
+      db
+        .from('tenant_customer_properties')
+        .select(
+          'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+        )
+        .eq('tenant_id', membership.tenantId)
+        .order('is_primary', { ascending: false }),
+      db
+        .from('tenant_quotes')
+        .select('id, title, amount_cents')
+        .eq('tenant_id', membership.tenantId)
+        .order('created_at', { ascending: false })
+        .limit(40),
+      db
+        .from('recurring_appointment_rules')
+        .select(
+          'id, title, rrule_definition, anchor_starts_at, is_active, horizon_days, customer_id, expected_amount_cents',
+        )
+        .eq('tenant_id', membership.tenantId)
+        .order('created_at', { ascending: false }),
+    ]);
 
   const custList = (customers ?? []) as CustomerPickRow[];
   const customerOptions = custList.map((customer) => ({

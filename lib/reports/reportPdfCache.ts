@@ -23,8 +23,7 @@ export async function getCachedOrRenderReportPdf(
     }
   }
 
-  const summary =
-    input.result.kind === 'pro-placeholder' ? [] : input.result.data.summary;
+  const summary = input.result.kind === 'pro-placeholder' ? [] : input.result.data.summary;
 
   const pdf = await renderReportPdf({
     title: input.title,

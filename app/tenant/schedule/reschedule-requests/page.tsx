@@ -120,9 +120,13 @@ async function buildPendingPreviews(
         return;
       }
 
-      const applyWhenLabel = `${fmtWhen(window.startsAt)} – ${formatDateTimeInTimeZone(window.endsAt, tenantTimezone, {
-        timeStyle: 'short',
-      })}`;
+      const applyWhenLabel = `${fmtWhen(window.startsAt)} – ${formatDateTimeInTimeZone(
+        window.endsAt,
+        tenantTimezone,
+        {
+          timeStyle: 'short',
+        },
+      )}`;
 
       const { data: assigneeRows } = await admin
         .from('tenant_scheduled_visit_assignees')

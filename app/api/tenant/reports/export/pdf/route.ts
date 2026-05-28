@@ -4,7 +4,10 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { assertReportExportRateLimit } from '@/lib/reports/assertReportExportRateLimit';
-import { parseReportDateRange, formatReportDateRangeLabel } from '@/lib/reports/parseReportDateRange';
+import {
+  parseReportDateRange,
+  formatReportDateRangeLabel,
+} from '@/lib/reports/parseReportDateRange';
 import { isReportEnabled, isReportSlug, REPORT_CATALOG_BY_SLUG } from '@/lib/reports/reportCatalog';
 import { getOrRunTenantReport } from '@/lib/reports/reportRunCache';
 import { getCachedOrRenderReportPdf } from '@/lib/reports/reportPdfCache';

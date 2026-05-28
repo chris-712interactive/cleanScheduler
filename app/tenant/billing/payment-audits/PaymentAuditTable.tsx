@@ -115,7 +115,7 @@ export function PaymentAuditTable({
                       {inv.customerLabel}
                     </Link>
                   ) : (
-                    inv?.customerLabel ?? '—'
+                    (inv?.customerLabel ?? '—')
                   )}
                 </td>
                 <td>

@@ -52,7 +52,9 @@ async function main() {
   const { error: tableErr } = await admin.from('tenant_api_keys').select('id').limit(1);
   if (tableErr) {
     console.error('❌ tenant_api_keys table missing or inaccessible.');
-    console.error('   Apply supabase/migrations/0040_tenant_api_webhooks.sql in Supabase SQL editor first.');
+    console.error(
+      '   Apply supabase/migrations/0040_tenant_api_webhooks.sql in Supabase SQL editor first.',
+    );
     console.error('   Error:', tableErr.message);
     process.exit(1);
   }
@@ -84,7 +86,9 @@ async function main() {
     billingRows?.[0];
 
   if (!target) {
-    console.error('\n❌ No tenant_billing_accounts rows found. Create a workspace via /start-trial first.');
+    console.error(
+      '\n❌ No tenant_billing_accounts rows found. Create a workspace via /start-trial first.',
+    );
     process.exit(1);
   }
 
@@ -144,10 +148,7 @@ async function main() {
   console.log(`\n✓ Created test API key for ${slug}`);
   console.log(`  Key (save for manual calls): ${fullKey}`);
 
-  const endpoints = [
-    `${apiBase}/quotes?limit=3`,
-    `${apiBase}/customers?limit=3`,
-  ];
+  const endpoints = [`${apiBase}/quotes?limit=3`, `${apiBase}/customers?limit=3`];
 
   console.log('\n--- REST API ---');
   for (const endpoint of endpoints) {
@@ -189,7 +190,9 @@ async function main() {
     }
   } else {
     console.log('\n--- Webhooks ---');
-    console.log('   Skip (set WEBHOOK_TEST_URL in .env.local to test delivery, e.g. webhook.site URL)');
+    console.log(
+      '   Skip (set WEBHOOK_TEST_URL in .env.local to test delivery, e.g. webhook.site URL)',
+    );
   }
 
   const testPayload = {

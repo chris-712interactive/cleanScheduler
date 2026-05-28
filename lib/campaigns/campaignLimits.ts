@@ -84,11 +84,7 @@ export async function assertCanSendCampaign(params: {
 
   assertLimitNotExceeded(plan, 'maxConcurrentActiveCampaigns', activeCampaigns);
   assertLimitNotExceeded(plan, 'maxCampaignAudienceSize', params.recipientCount);
-  assertLimitNotExceeded(
-    plan,
-    'maxCampaignSendsMonthly',
-    sendsThisMonth + params.recipientCount,
-  );
+  assertLimitNotExceeded(plan, 'maxCampaignSendsMonthly', sendsThisMonth + params.recipientCount);
   assertLimitNotExceeded(
     plan,
     'includedEmailCreditsMonthly',

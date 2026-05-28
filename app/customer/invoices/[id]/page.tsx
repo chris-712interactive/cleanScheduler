@@ -136,12 +136,29 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
           <p className={styles.meta}>Due {new Date(String(row.due_date)).toLocaleDateString()}</p>
         ) : null}
         {stripeHostedPay ? (
-          <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-            <a href={row.hosted_invoice_url!} className={styles.meta} target="_blank" rel="noopener noreferrer">
+          <div
+            style={{
+              marginTop: 'var(--space-3)',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 'var(--space-3)',
+            }}
+          >
+            <a
+              href={row.hosted_invoice_url!}
+              className={styles.meta}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               View & pay on Stripe →
             </a>
             {row.invoice_pdf_url ? (
-              <a href={row.invoice_pdf_url} className={styles.meta} target="_blank" rel="noopener noreferrer">
+              <a
+                href={row.invoice_pdf_url}
+                className={styles.meta}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Download PDF →
               </a>
             ) : null}

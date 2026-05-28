@@ -22,9 +22,7 @@ export function getQuoteBoardCardDisplay(quote: QuoteListEmbedRow): QuoteBoardCa
   const site = prop ? formatPropertyAddressLine(prop) : '';
 
   const headline =
-    customerName ||
-    displayPropertyLabel ||
-    (quote.customer_id ? 'Linked customer' : quote.title);
+    customerName || displayPropertyLabel || (quote.customer_id ? 'Linked customer' : quote.title);
 
   const serviceLine =
     displayPropertyLabel && quote.title !== headline

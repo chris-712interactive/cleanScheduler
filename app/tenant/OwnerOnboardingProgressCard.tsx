@@ -39,9 +39,7 @@ export function OwnerOnboardingProgressCard({
           required steps complete
         </p>
         {checklist.incompleteRequiredCount > 0 ? (
-          <p className={styles.progressRemaining}>
-            {checklist.incompleteRequiredCount} remaining
-          </p>
+          <p className={styles.progressRemaining}>{checklist.incompleteRequiredCount} remaining</p>
         ) : null}
         <Link href="/getting-started" className={styles.progressLink}>
           See all steps →

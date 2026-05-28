@@ -34,7 +34,9 @@ export function BillingListPagination({
   if (totalCount === 0) return null;
 
   const prevHref =
-    currentPage > 1 ? `${basePath}${buildBillingListSearchParams({ page: currentPage - 1 })}` : null;
+    currentPage > 1
+      ? `${basePath}${buildBillingListSearchParams({ page: currentPage - 1 })}`
+      : null;
   const nextHref =
     currentPage < totalPages
       ? `${basePath}${buildBillingListSearchParams({ page: currentPage + 1 })}`

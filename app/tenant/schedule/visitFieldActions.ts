@@ -13,7 +13,11 @@ import {
 } from '@/lib/schedule/visitFieldWork';
 import { applyVisitCompletionBilling } from '@/lib/billing/completeVisitWithBilling';
 import { emitVisitWebhookEvent } from '@/lib/integrations/emitVisitWebhook';
-import { assertFeatureEnabled, isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import {
+  assertFeatureEnabled,
+  isFeatureEnabled,
+  resolveTenantPlanTier,
+} from '@/lib/billing/entitlements';
 import { featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { saveVisitProofPhotosFromForm } from '@/lib/visits/visitProofPhotos';
 
@@ -35,7 +39,8 @@ async function loadVisitForActor(
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
-  if (error || !visit) return { error: 'Visit not found.' as const, visit: null, assigneeIds: [] as string[] };
+  if (error || !visit)
+    return { error: 'Visit not found.' as const, visit: null, assigneeIds: [] as string[] };
 
   const { data: assignees } = await admin
     .from('tenant_scheduled_visit_assignees')
@@ -59,7 +64,9 @@ export async function checkInToVisitAction(
   _prev: VisitFieldActionState,
   formData: FormData,
 ): Promise<VisitFieldActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const visitId = String(formData.get('visit_id') ?? '').trim();
   if (!slug || !visitId) return { error: 'Missing visit.' };
 
@@ -104,7 +111,9 @@ export async function completeVisitWithPaymentAction(
   _prev: VisitFieldActionState,
   formData: FormData,
 ): Promise<VisitFieldActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const visitId = String(formData.get('visit_id') ?? '').trim();
   const paymentCollectedRaw = String(formData.get('payment_collected') ?? '').trim();
   const collectedMethodRaw = String(formData.get('collected_method') ?? '').trim();
@@ -118,7 +127,9 @@ export async function completeVisitWithPaymentAction(
 
   const paymentCollected = paymentCollectedRaw === 'yes';
   const collectedMethod =
-    collectedMethodRaw === 'cash' || collectedMethodRaw === 'check' ? collectedMethodRaw : undefined;
+    collectedMethodRaw === 'cash' || collectedMethodRaw === 'check'
+      ? collectedMethodRaw
+      : undefined;
 
   const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
   const auth = await getAuthContext();
@@ -177,7 +188,7 @@ export async function completeVisitWithPaymentAction(
     completed_by_user_id: auth.user.id,
     updated_at: now,
     completion_payment_collected: paymentCollected,
-    completion_collected_method: paymentCollected ? collectedMethod ?? null : null,
+    completion_collected_method: paymentCollected ? (collectedMethod ?? null) : null,
     completion_check_number:
       paymentCollected && collectedMethod === 'check' ? checkNumber || null : null,
     completion_collected_amount_cents: paymentCollected ? billing.amountCents : null,

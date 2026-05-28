@@ -235,9 +235,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     ...(scopeSnapshot.inclusions.length > 0
       ? [{ key: 'Scope items', value: String(scopeSnapshot.inclusions.length) }]
       : []),
-    ...(row.internal_notes
-      ? [{ key: 'Office notes', value: row.internal_notes }]
-      : []),
+    ...(row.internal_notes ? [{ key: 'Office notes', value: row.internal_notes }] : []),
   ];
 
   const canCreateAmendment =
@@ -268,7 +266,11 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           <div className={styles.quoteHeaderActions}>
             {showWorkflowActions ? (
               <>
-                <Button as="a" href={`/schedule/new?${schedulePrefill.toString()}`} iconLeft={<Calendar size={16} />}>
+                <Button
+                  as="a"
+                  href={`/schedule/new?${schedulePrefill.toString()}`}
+                  iconLeft={<Calendar size={16} />}
+                >
                   Schedule visit
                 </Button>
                 <Button

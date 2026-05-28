@@ -47,8 +47,7 @@ export async function runOnTimeArrivalReport(
   const rows: OnTimeArrivalRow[] = visits.map((visit) => {
     const startMs = new Date(visit.starts_at).getTime();
     const checkMs = visit.checked_in_at ? new Date(visit.checked_in_at).getTime() : null;
-    const onTime =
-      checkMs != null && checkMs <= startMs + ON_TIME_GRACE_MS;
+    const onTime = checkMs != null && checkMs <= startMs + ON_TIME_GRACE_MS;
     const minutesLate =
       checkMs != null && checkMs > startMs + ON_TIME_GRACE_MS
         ? Math.round((checkMs - startMs) / 60_000)
@@ -68,8 +67,7 @@ export async function runOnTimeArrivalReport(
 
   const withCheckIn = rows.filter((r) => r.checkedInAt != null);
   const onTimeCount = withCheckIn.filter((r) => r.onTime).length;
-  const rate =
-    withCheckIn.length > 0 ? Math.round((onTimeCount / withCheckIn.length) * 100) : 0;
+  const rate = withCheckIn.length > 0 ? Math.round((onTimeCount / withCheckIn.length) * 100) : 0;
 
   rows.sort((a, b) => {
     const aLate = a.minutesLate ?? -1;

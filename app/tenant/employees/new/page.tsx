@@ -41,7 +41,10 @@ export default async function TenantEmployeeInvitePage() {
       />
 
       <Stack gap={6}>
-        <Card title="Invite details" description="Work email and permission level for this teammate.">
+        <Card
+          title="Invite details"
+          description="Work email and permission level for this teammate."
+        >
           <EmployeeInviteForm
             tenantSlug={membership.tenantSlug}
             allowedRoles={allowedRoles}

@@ -130,9 +130,7 @@ export async function notifyCustomerRescheduleResolved(
 
   const text = [
     `${provider} ${approved ? 'approved' : 'declined'} your reschedule request for ${visitLabel}.`,
-    approved && params.appliedStartsAt
-      ? `New time: ${formatWhen(params.appliedStartsAt)}`
-      : null,
+    approved && params.appliedStartsAt ? `New time: ${formatWhen(params.appliedStartsAt)}` : null,
     params.tenantNote ? `Message from provider: ${params.tenantNote}` : null,
   ]
     .filter(Boolean)

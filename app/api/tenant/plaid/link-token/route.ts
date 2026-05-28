@@ -4,7 +4,10 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { assertMfaForBankAdmin } from '@/lib/auth/requireMfa';
 import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
-import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import {
+  assertTenantFeatureEnabled,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
 import {
   createPlaidLinkToken,
   createPlaidUpdateLinkToken,
@@ -36,7 +39,8 @@ export async function GET() {
   try {
     await assertTenantFeatureEnabled(admin, membership.tenantId, 'plaidReconciliation');
   } catch (error) {
-    const message = featureGateErrorMessage(error) ?? 'Upgrade your subscription to connect a bank account.';
+    const message =
+      featureGateErrorMessage(error) ?? 'Upgrade your subscription to connect a bank account.';
     return NextResponse.json({ error: message }, { status: 403 });
   }
 

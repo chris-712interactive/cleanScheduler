@@ -188,7 +188,12 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
                   </StatusPill>
                   <StatusPill tone="neutral">{row.status}</StatusPill>
                   {canCustomerRequestReschedule(row) && !reschedulePending ? (
-                    <Button variant="secondary" size="sm" as="a" href={`/visits/reschedule?visit=${row.id}`}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      as="a"
+                      href={`/visits/reschedule?visit=${row.id}`}
+                    >
                       Request reschedule
                     </Button>
                   ) : null}

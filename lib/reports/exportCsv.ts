@@ -23,7 +23,11 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         { key: 'due', header: 'Due date', format: (r) => (r.dueDate ? formatDate(r.dueDate) : '') },
         { key: 'aging', header: 'Aging bucket', format: (r) => AGING_BUCKET_LABEL[r.agingBucket] },
         { key: 'days', header: 'Days outstanding', format: (r) => String(r.daysOutstanding ?? '') },
-        { key: 'amount', header: 'Balance due', format: (r) => formatUsdFromCents(r.remainingCents) },
+        {
+          key: 'amount',
+          header: 'Balance due',
+          format: (r) => formatUsdFromCents(r.remainingCents),
+        },
       ];
       return rowsToCsv(cols, result.data.rows);
     }
@@ -36,7 +40,11 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         { key: 'due', header: 'Due', format: (r) => (r.dueDate ? formatDate(r.dueDate) : '') },
         { key: 'total', header: 'Total', format: (r) => formatUsdFromCents(r.amountCents) },
         { key: 'paid', header: 'Paid', format: (r) => formatUsdFromCents(r.paidCents) },
-        { key: 'remaining', header: 'Balance', format: (r) => formatUsdFromCents(r.remainingCents) },
+        {
+          key: 'remaining',
+          header: 'Balance',
+          format: (r) => formatUsdFromCents(r.remainingCents),
+        },
         { key: 'methods', header: 'Payment methods', format: (r) => r.paymentMethods },
         { key: 'invoiceLink', header: 'Invoice link', format: (r) => r.invoiceHref },
         { key: 'auditLink', header: 'Payment audits link', format: (r) => r.paymentAuditHref },
@@ -140,7 +148,11 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         { key: 'jurisdiction', header: 'Jurisdiction', format: (r) => r.jurisdictionKey },
         { key: 'state', header: 'State', format: (r) => r.state },
         { key: 'quotes', header: 'Quotes', format: (r) => String(r.quoteCount) },
-        { key: 'taxable', header: 'Taxable amount', format: (r) => formatUsdFromCents(r.taxableCents) },
+        {
+          key: 'taxable',
+          header: 'Taxable amount',
+          format: (r) => formatUsdFromCents(r.taxableCents),
+        },
         { key: 'tax', header: 'Tax (est.)', format: (r) => formatUsdFromCents(r.taxCents) },
       ];
       return rowsToCsv(cols, result.data.rows);
@@ -179,8 +191,16 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
       const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [
         { key: 'job', header: 'Job', format: (r) => r.title },
         { key: 'start', header: 'Scheduled start', format: (r) => formatDate(r.scheduledStart) },
-        { key: 'checkin', header: 'Checked in', format: (r) => (r.checkedInAt ? formatDate(r.checkedInAt) : '') },
-        { key: 'late', header: 'Minutes late', format: (r) => (r.minutesLate != null ? String(r.minutesLate) : '') },
+        {
+          key: 'checkin',
+          header: 'Checked in',
+          format: (r) => (r.checkedInAt ? formatDate(r.checkedInAt) : ''),
+        },
+        {
+          key: 'late',
+          header: 'Minutes late',
+          format: (r) => (r.minutesLate != null ? String(r.minutesLate) : ''),
+        },
         { key: 'ontime', header: 'On time', format: (r) => (r.onTime ? 'Yes' : 'No') },
       ];
       return rowsToCsv(cols, result.data.rows);
@@ -232,9 +252,17 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
     case 'customer-1099-prep': {
       const cols: CsvColumn<(typeof result.data.rows)[0]>[] = [
         { key: 'customer', header: 'Customer', format: (r) => r.customerName },
-        { key: 'gross', header: 'Gross collected', format: (r) => formatUsdFromCents(r.grossCents) },
+        {
+          key: 'gross',
+          header: 'Gross collected',
+          format: (r) => formatUsdFromCents(r.grossCents),
+        },
         { key: 'payments', header: 'Payments', format: (r) => String(r.paymentCount) },
-        { key: 'flag', header: 'Meets $600 threshold', format: (r) => (r.meetsThreshold ? 'Yes' : 'No') },
+        {
+          key: 'flag',
+          header: 'Meets $600 threshold',
+          format: (r) => (r.meetsThreshold ? 'Yes' : 'No'),
+        },
       ];
       return rowsToCsv(cols, result.data.rows);
     }
@@ -261,7 +289,11 @@ export function reportResultToCsv(result: ReportRunResult): string | null {
         },
         { key: 'invoice', header: 'Matched invoice', format: (r) => r.invoiceTitle ?? '' },
         { key: 'customer', header: 'Customer', format: (r) => r.customerName ?? '' },
-        { key: 'suggestions', header: 'Open suggestions', format: (r) => String(r.openSuggestions) },
+        {
+          key: 'suggestions',
+          header: 'Open suggestions',
+          format: (r) => String(r.openSuggestions),
+        },
         { key: 'bankLink', header: 'Bank connection link', format: (r) => r.bankConnectionHref },
         { key: 'invoiceLink', header: 'Invoice link', format: (r) => r.invoiceHref ?? '' },
       ];

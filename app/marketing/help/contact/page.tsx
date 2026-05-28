@@ -20,17 +20,13 @@ export default function HelpContactPage() {
           description="Choose the right channel based on what you need help with."
           backHref="/help"
           backLabel="Help Center"
-          breadcrumbs={[
-            { label: 'Help', href: '/help' },
-            { label: 'Contact' },
-          ]}
+          breadcrumbs={[{ label: 'Help', href: '/help' }, { label: 'Contact' }]}
         />
 
         <ul className={styles.contactList}>
           <li>
-            <strong>Sales and demos:</strong> Use our{' '}
-            <Link href="/contact">contact form</Link> for pricing questions, product demos, and
-            partnership inquiries.
+            <strong>Sales and demos:</strong> Use our <Link href="/contact">contact form</Link> for
+            pricing questions, product demos, and partnership inquiries.
           </li>
           <li>
             <strong>Product support:</strong> Email{' '}
@@ -44,7 +40,8 @@ export default function HelpContactPage() {
           </li>
           <li>
             <strong>SMS program help:</strong> Reply <strong>HELP</strong> to any message, or review
-            our <Link href="/sms-terms">SMS terms</Link> and <Link href="/help/tcr">TCR documentation</Link>.
+            our <Link href="/sms-terms">SMS terms</Link> and{' '}
+            <Link href="/help/tcr">TCR documentation</Link>.
           </li>
           <li>
             <strong>End-customer service issues:</strong> Contact your cleaning service provider

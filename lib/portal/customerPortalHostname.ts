@@ -1,5 +1,4 @@
-const HOSTNAME_RE =
-  /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+const HOSTNAME_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 
 export function normalizeCustomerPortalHostname(raw: string): string | null {
   const trimmed = raw.trim().toLowerCase();
@@ -27,9 +26,7 @@ export function customerPortalVerificationRecordName(hostname: string): string {
 export function isPlatformApexHost(host: string, apex: string): boolean {
   const apexWithoutPort = apex.split(':')[0]!.toLowerCase();
   const hostWithoutPort = host.split(':')[0]!.toLowerCase();
-  return (
-    hostWithoutPort === apexWithoutPort || hostWithoutPort.endsWith(`.${apexWithoutPort}`)
-  );
+  return hostWithoutPort === apexWithoutPort || hostWithoutPort.endsWith(`.${apexWithoutPort}`);
 }
 
 export function customerPortalCnameTarget(apexDomain: string): string {

@@ -65,7 +65,9 @@ export function resolveRescheduleTargetWindow(
     new Date(visitEndsAt).getTime() - new Date(visitStartsAt).getTime(),
   );
   if (durationMs <= 0) {
-    return { error: 'Could not infer visit length. Ask the customer for an end time or edit the visit.' };
+    return {
+      error: 'Could not infer visit length. Ask the customer for an end time or edit the visit.',
+    };
   }
 
   return {
@@ -103,8 +105,7 @@ export async function findAssigneeScheduleConflicts(
     tenantTimezone: string;
   },
 ): Promise<AssigneeConflictInfo[]> {
-  const { tenantId, excludeVisitId, startsAt, endsAt, assigneeUserIds, tenantTimezone } =
-    params;
+  const { tenantId, excludeVisitId, startsAt, endsAt, assigneeUserIds, tenantTimezone } = params;
 
   if (assigneeUserIds.length === 0) return [];
 
@@ -146,9 +147,7 @@ export async function findAssigneeScheduleConflicts(
     const overlappingAssignees = assignees.filter((a) => assigneeSet.has(a.user_id));
     if (overlappingAssignees.length === 0) continue;
 
-    if (
-      !visitTimeRangesOverlap(startsAt, endsAt, row.starts_at, row.ends_at)
-    ) {
+    if (!visitTimeRangesOverlap(startsAt, endsAt, row.starts_at, row.ends_at)) {
       continue;
     }
 

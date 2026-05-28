@@ -523,7 +523,8 @@
   @container reschedule-card (min-width: 42rem) {
     .cardInner {
       display: grid;
-      grid-template-columns: minmax(calc(14rem - 50px), calc(20rem - 50px)) minmax(0, 1fr)
+      grid-template-columns:
+        minmax(calc(14rem - 50px), calc(20rem - 50px)) minmax(0, 1fr)
         minmax(11rem, max-content);
       grid-template-areas: 'customer schedule actions';
       align-items: center;
@@ -582,7 +583,8 @@
 @media (min-width: 1024px) and (max-width: 1250px) {
   @container reschedule-card (min-width: 42rem) {
     .cardInner {
-      grid-template-columns: minmax(calc(14rem - 100px), calc(20rem - 100px)) minmax(0, 1fr)
+      grid-template-columns:
+        minmax(calc(14rem - 100px), calc(20rem - 100px)) minmax(0, 1fr)
         minmax(11rem, max-content);
     }
   }
@@ -658,7 +660,8 @@
   @include mq.up(lg) {
     .cardInner {
       display: grid;
-      grid-template-columns: minmax(calc(14rem - 50px), calc(20rem - 50px)) minmax(0, 1fr)
+      grid-template-columns:
+        minmax(calc(14rem - 50px), calc(20rem - 50px)) minmax(0, 1fr)
         minmax(11rem, max-content);
       grid-template-areas: 'customer schedule actions';
       align-items: center;
@@ -702,7 +705,8 @@
 
   @media (min-width: 1024px) and (max-width: 1250px) {
     .cardInner {
-      grid-template-columns: minmax(calc(14rem - 100px), calc(20rem - 100px)) minmax(0, 1fr)
+      grid-template-columns:
+        minmax(calc(14rem - 100px), calc(20rem - 100px)) minmax(0, 1fr)
         minmax(11rem, max-content);
     }
   }

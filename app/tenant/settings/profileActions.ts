@@ -19,7 +19,9 @@ export async function updateOwnDisplayNameAction(
   _prev: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const name = String(formData.get('display_name') ?? '').trim();
   if (!slug) return { error: 'Missing workspace.' };
   if (!name || name.length > 120) {
@@ -51,7 +53,9 @@ export async function uploadOwnAvatarAction(
   _prev: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Missing workspace.' };
 
   const membership = await requireTenantPortalAccess(slug, '/settings');
@@ -78,10 +82,12 @@ export async function uploadOwnAvatarAction(
 
   const path = `${membership.tenantId}/${auth.user.id}.${prepared.fileExtension}`;
 
-  const { error: upStorage } = await admin.storage.from('employee_avatars').upload(path, prepared.buffer, {
-    contentType: prepared.contentType,
-    upsert: true,
-  });
+  const { error: upStorage } = await admin.storage
+    .from('employee_avatars')
+    .upload(path, prepared.buffer, {
+      contentType: prepared.contentType,
+      upsert: true,
+    });
   if (upStorage) return { error: upStorage.message };
 
   const { data: pub } = admin.storage.from('employee_avatars').getPublicUrl(path);

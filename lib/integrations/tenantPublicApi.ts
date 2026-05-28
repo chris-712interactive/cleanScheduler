@@ -19,7 +19,10 @@ export function parseApiListParams(url: URL): { limit: number; offset: number } 
 
 export async function withTenantApiAuth(
   request: Request,
-  handler: (ctx: { tenantId: string; admin: ReturnType<typeof createAdminClient> }) => Promise<Response>,
+  handler: (ctx: {
+    tenantId: string;
+    admin: ReturnType<typeof createAdminClient>;
+  }) => Promise<Response>,
 ): Promise<Response> {
   const admin = createAdminClient();
   const auth = await authenticateTenantApiRequest(admin, request);

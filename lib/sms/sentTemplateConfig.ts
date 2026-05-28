@@ -46,9 +46,7 @@ export function templateIdForPurpose(purpose: SmsPurpose): string {
   return id;
 }
 
-export function templateParametersForPayload(
-  payload: SmsTemplatePayload,
-): Record<string, string> {
+export function templateParametersForPayload(payload: SmsTemplatePayload): Record<string, string> {
   switch (payload.purpose) {
     case 'quote_sent':
       return {

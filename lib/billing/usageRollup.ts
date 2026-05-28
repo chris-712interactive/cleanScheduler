@@ -58,10 +58,7 @@ export async function rollupAllTenantUsageSnapshots(
   admin: Admin,
 ): Promise<{ tenantCount: number; snapshotDate: string }> {
   const snapshotDate = snapshotDateUtc();
-  const { data: tenants, error } = await admin
-    .from('tenants')
-    .select('id')
-    .eq('is_active', true);
+  const { data: tenants, error } = await admin.from('tenants').select('id').eq('is_active', true);
 
   if (error) {
     throw new Error(error.message);

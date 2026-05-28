@@ -8,10 +8,7 @@ import { DashboardStatCard } from '@/app/tenant/DashboardStatCard';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import {
-  isFeatureEnabled,
-  resolveTenantPlanTier,
-} from '@/lib/billing/entitlements';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canManageEmailCampaigns } from '@/lib/tenant/campaignPermissions';
 import {
   CAMPAIGN_AUDIENCE_PRESET_LABEL,
@@ -60,10 +57,7 @@ export default async function TenantCampaignsPage({ searchParams }: PageProps) {
   if (!campaignsEnabled) {
     return (
       <>
-        <PageHeader
-          title="Campaigns"
-          titleHint="Email campaigns to your customers."
-        />
+        <PageHeader title="Campaigns" titleHint="Email campaigns to your customers." />
         <div className={styles.upgradePanel}>
           <h2 className={styles.upgradeTitle}>Upgrade to unlock email campaigns</h2>
           <p className={styles.upgradeCopy}>
@@ -114,8 +108,13 @@ export default async function TenantCampaignsPage({ searchParams }: PageProps) {
   const emailsSent30d = monthCampaigns.reduce((sum, row) => sum + (row.sent_count ?? 0), 0);
   const opens30d = monthCampaigns.reduce((sum, row) => sum + (row.opened_count ?? 0), 0);
   const clicks30d = monthCampaigns.reduce((sum, row) => sum + (row.clicked_count ?? 0), 0);
-  const delivered30d = monthCampaigns.reduce((sum, row) => sum + (row.delivered_count || row.sent_count || 0), 0);
-  const activeCount = rows.filter((row) => row.status === 'sending' || row.status === 'draft').length;
+  const delivered30d = monthCampaigns.reduce(
+    (sum, row) => sum + (row.delivered_count || row.sent_count || 0),
+    0,
+  );
+  const activeCount = rows.filter(
+    (row) => row.status === 'sending' || row.status === 'draft',
+  ).length;
 
   const tabLinks = [
     { key: 'all' as const, label: 'All' },
@@ -236,15 +235,23 @@ export default async function TenantCampaignsPage({ searchParams }: PageProps) {
                       <p className={styles.campaignSubject}>{row.subject}</p>
                     </td>
                     <td>
-                      {CAMPAIGN_AUDIENCE_PRESET_LABEL[row.audience_preset as CampaignAudiencePreset]}
+                      {
+                        CAMPAIGN_AUDIENCE_PRESET_LABEL[
+                          row.audience_preset as CampaignAudiencePreset
+                        ]
+                      }
                     </td>
                     <td>
                       <StatusPill tone={campaignStatusTone(row.status as CampaignStatus)}>
                         {CAMPAIGN_STATUS_LABEL[row.status as CampaignStatus]}
                       </StatusPill>
                     </td>
-                    <td>{formatCampaignRate(row.opened_count, row.delivered_count || row.sent_count)}</td>
-                    <td>{formatCampaignRate(row.clicked_count, row.delivered_count || row.sent_count)}</td>
+                    <td>
+                      {formatCampaignRate(row.opened_count, row.delivered_count || row.sent_count)}
+                    </td>
+                    <td>
+                      {formatCampaignRate(row.clicked_count, row.delivered_count || row.sent_count)}
+                    </td>
                     <td>
                       {row.sent_at
                         ? new Date(row.sent_at).toLocaleDateString('en-US', {

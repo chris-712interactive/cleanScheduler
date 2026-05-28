@@ -151,18 +151,16 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
   const header = getDashboardHeader(onboardingFocusMode, trial?.daysRemaining);
 
   const onboardingProfile = onboardingProfileRes.data;
-  const showOnboardingSurvey =
-    showOnboarding && needsOnboardingSurvey(onboardingProfile ?? null);
+  const showOnboardingSurvey = showOnboarding && needsOnboardingSurvey(onboardingProfile ?? null);
 
   const activeCustomerCount = customersCountRes.error ? 0 : (customersCountRes.count ?? 0);
   const quoteCount = quotesCountRes.error ? 0 : (quotesCountRes.count ?? 0);
-  const { totalCents: outstandingCents, invoiceCount: outstandingCount, pastDueCount } =
-    outstandingInvoices;
   const {
-    count: todaysJobCount,
-    scheduledCount: todaysScheduledCount,
-    todayKey,
-  } = todaysJobs;
+    totalCents: outstandingCents,
+    invoiceCount: outstandingCount,
+    pastDueCount,
+  } = outstandingInvoices;
+  const { count: todaysJobCount, scheduledCount: todaysScheduledCount, todayKey } = todaysJobs;
 
   const quotesBadge =
     quoteCount === 0
@@ -224,9 +222,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
         label="Outstanding invoices"
         value={outstandingFormatted}
         badge={invoicesBadge}
-        badgeTone={
-          outstandingCount === 0 ? 'muted' : pastDueCount > 0 ? 'warn' : 'brand'
-        }
+        badgeTone={outstandingCount === 0 ? 'muted' : pastDueCount > 0 ? 'warn' : 'brand'}
         actionLabel="View invoices"
         actionHref="/billing/invoices"
       />

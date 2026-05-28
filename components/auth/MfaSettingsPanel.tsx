@@ -10,11 +10,7 @@ type EnrollState =
   | { phase: 'enrolling'; factorId: string; qrCode: string; secret: string }
   | { phase: 'enrolled' };
 
-export function MfaSettingsPanel({
-  requiredForPlaid = false,
-}: {
-  requiredForPlaid?: boolean;
-}) {
+export function MfaSettingsPanel({ requiredForPlaid = false }: { requiredForPlaid?: boolean }) {
   const [enrollState, setEnrollState] = useState<EnrollState>({ phase: 'idle' });
   const [verifiedFactorId, setVerifiedFactorId] = useState<string | null>(null);
   const [verifyCode, setVerifyCode] = useState('');
@@ -144,10 +140,15 @@ export function MfaSettingsPanel({
       {enrollState.phase === 'enrolled' || verifiedFactorId ? (
         <>
           <p className={styles.muted}>
-            Status: <strong>Enabled</strong> — your account uses an authenticator app for
-            two-factor authentication.
+            Status: <strong>Enabled</strong> — your account uses an authenticator app for two-factor
+            authentication.
           </p>
-          <Button type="button" variant="secondary" disabled={submitting} onClick={() => void unenroll()}>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={submitting}
+            onClick={() => void unenroll()}
+          >
             Remove authenticator
           </Button>
         </>
@@ -176,15 +177,19 @@ export function MfaSettingsPanel({
             onChange={(e) => setVerifyCode(e.target.value)}
             className={styles.input}
           />
-          <Button type="button" disabled={submitting || verifyCode.length < 6} onClick={() => void confirmEnroll()}>
+          <Button
+            type="button"
+            disabled={submitting || verifyCode.length < 6}
+            onClick={() => void confirmEnroll()}
+          >
             {submitting ? 'Verifying…' : 'Confirm and enable'}
           </Button>
         </>
       ) : (
         <>
           <p className={styles.muted}>
-            Add an extra layer of security with a time-based one-time password from an
-            authenticator app.
+            Add an extra layer of security with a time-based one-time password from an authenticator
+            app.
           </p>
           <Button type="button" disabled={submitting} onClick={() => void startEnroll()}>
             {submitting ? 'Starting…' : 'Enable authenticator app'}

@@ -49,9 +49,7 @@ export async function runTenantGlobalSearch(
     identityIds.length > 0
       ? db
           .from('customers')
-          .select(
-            'id, status, customer_identities ( first_name, last_name, full_name, email )',
-          )
+          .select('id, status, customer_identities ( first_name, last_name, full_name, email )')
           .eq('tenant_id', tenantId)
           .in('customer_identity_id', identityIds)
           .limit(LIMIT)
@@ -73,7 +71,9 @@ export async function runTenantGlobalSearch(
       .limit(LIMIT),
     db
       .from('tenant_scheduled_visits')
-      .select('id, title, starts_at, status, customers(customer_identities(first_name, last_name, full_name))')
+      .select(
+        'id, title, starts_at, status, customers(customer_identities(first_name, last_name, full_name))',
+      )
       .eq('tenant_id', tenantId)
       .or(textOr)
       .order('starts_at', { ascending: false })
@@ -92,8 +92,11 @@ export async function runTenantGlobalSearch(
   });
 
   const invoices = (invoicesRes.data ?? []).map((row) => {
-    const ident = (row.customers as { customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null } | null)
-      ?.customer_identities;
+    const ident = (
+      row.customers as {
+        customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null;
+      } | null
+    )?.customer_identities;
     const customerName =
       ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : null;
     return {
@@ -105,8 +108,11 @@ export async function runTenantGlobalSearch(
   });
 
   const quotes = (quotesRes.data ?? []).map((row) => {
-    const ident = (row.customers as { customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null } | null)
-      ?.customer_identities;
+    const ident = (
+      row.customers as {
+        customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null;
+      } | null
+    )?.customer_identities;
     const customerName =
       ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : null;
     return {
@@ -118,8 +124,11 @@ export async function runTenantGlobalSearch(
   });
 
   const visits = (visitsRes.data ?? []).map((row) => {
-    const ident = (row.customers as { customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null } | null)
-      ?.customer_identities;
+    const ident = (
+      row.customers as {
+        customer_identities: Parameters<typeof formatCustomerDisplayName>[0] | null;
+      } | null
+    )?.customer_identities;
     const customerName =
       ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : null;
     const when = new Date(row.starts_at).toLocaleDateString('en-US', {

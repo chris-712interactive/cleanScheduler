@@ -128,10 +128,7 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
 
   return (
     <Container size="sm">
-      <Card
-        title={`Join ${tenantName}`}
-        description="Finish setup for your customer portal."
-      >
+      <Card title={`Join ${tenantName}`} description="Finish setup for your customer portal.">
         <p className={styles.lead}>
           Use this email for your account — it must match what your provider entered:
         </p>

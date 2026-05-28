@@ -6,11 +6,7 @@ import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/se
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
-import {
-  isReportEnabled,
-  isReportSlug,
-  REPORT_CATALOG_BY_SLUG,
-} from '@/lib/reports/reportCatalog';
+import { isReportEnabled, isReportSlug, REPORT_CATALOG_BY_SLUG } from '@/lib/reports/reportCatalog';
 import {
   defaultReportRange,
   parseReportDateRange,
@@ -101,9 +97,7 @@ export default async function TenantReportRunPage({ params, searchParams }: Page
   const totalPages = paginated ? Math.max(1, Math.ceil(totalRows / REPORT_PAGE_SIZE)) : 1;
   const safePage = Math.min(page, totalPages);
   const fromIndex = totalRows === 0 ? 0 : (safePage - 1) * REPORT_PAGE_SIZE + 1;
-  const toIndex = paginated
-    ? Math.min(safePage * REPORT_PAGE_SIZE, totalRows)
-    : totalRows;
+  const toIndex = paginated ? Math.min(safePage * REPORT_PAGE_SIZE, totalRows) : totalRows;
 
   return (
     <>

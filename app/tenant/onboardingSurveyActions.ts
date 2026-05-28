@@ -15,7 +15,9 @@ export async function saveOwnerOnboardingSurvey(
   _prevState: OnboardingSurveyState,
   formData: FormData,
 ): Promise<OnboardingSurveyState> {
-  const tenantSlug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const tenantSlug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const serviceArea = String(formData.get('service_area') ?? '').trim();
   const teamSize = String(formData.get('team_size') ?? '').trim();
   const referralSource = String(formData.get('referral_source') ?? '').trim();

@@ -104,9 +104,7 @@ async function logReminderSent(
   });
 }
 
-export async function sendOverdueInvoiceReminders(
-  admin: Admin,
-): Promise<{
+export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
   tenantsChecked: number;
   emailsSent: number;
   smsSent: number;
@@ -135,7 +133,11 @@ export async function sendOverdueInvoiceReminders(
     const tenantId = ops.tenant_id;
 
     const [{ data: billing }, { data: tenant }] = await Promise.all([
-      admin.from('tenant_billing_accounts').select('status, platform_plan').eq('tenant_id', tenantId).maybeSingle(),
+      admin
+        .from('tenant_billing_accounts')
+        .select('status, platform_plan')
+        .eq('tenant_id', tenantId)
+        .maybeSingle(),
       admin.from('tenants').select('name, slug').eq('id', tenantId).maybeSingle(),
     ]);
 
@@ -191,7 +193,14 @@ export async function sendOverdueInvoiceReminders(
       const balanceLabel = formatUsdFromCents(balance);
 
       if (emailAllowed && contact.email) {
-        if (await reminderAlreadySent(admin, { tenantId, invoiceId: inv.id, channel: 'email', kind: 'overdue' })) {
+        if (
+          await reminderAlreadySent(admin, {
+            tenantId,
+            invoiceId: inv.id,
+            channel: 'email',
+            kind: 'overdue',
+          })
+        ) {
           skipped += 1;
         } else if (isResendConfigured()) {
           const subject = `Reminder: invoice from ${tenantName}`;
@@ -203,7 +212,12 @@ export async function sendOverdueInvoiceReminders(
             html: `<p>${text.replace(/\n/g, '<br/>')}</p>`,
           });
           if (sent.ok) {
-            await logReminderSent(admin, { tenantId, invoiceId: inv.id, channel: 'email', kind: 'overdue' });
+            await logReminderSent(admin, {
+              tenantId,
+              invoiceId: inv.id,
+              channel: 'email',
+              kind: 'overdue',
+            });
             emailsSent += 1;
           } else {
             errors.push(`invoice ${inv.id} email: ${sent.error}`);
@@ -212,7 +226,14 @@ export async function sendOverdueInvoiceReminders(
       }
 
       if (smsAllowed && contact.phone && !contact.prefersEmailOnly) {
-        if (await reminderAlreadySent(admin, { tenantId, invoiceId: inv.id, channel: 'sms', kind: 'overdue' })) {
+        if (
+          await reminderAlreadySent(admin, {
+            tenantId,
+            invoiceId: inv.id,
+            channel: 'sms',
+            kind: 'overdue',
+          })
+        ) {
           skipped += 1;
         } else {
           const sent = await sendTransactionalSms({
@@ -228,7 +249,12 @@ export async function sendOverdueInvoiceReminders(
             },
           });
           if (sent.ok) {
-            await logReminderSent(admin, { tenantId, invoiceId: inv.id, channel: 'sms', kind: 'overdue' });
+            await logReminderSent(admin, {
+              tenantId,
+              invoiceId: inv.id,
+              channel: 'sms',
+              kind: 'overdue',
+            });
             smsSent += 1;
           } else if (!/duplicate key|unique constraint/i.test(sent.error)) {
             errors.push(`invoice ${inv.id} sms: ${sent.error}`);

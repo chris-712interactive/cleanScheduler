@@ -12,9 +12,7 @@ export function finishBankConnectionAction(
   successParam: BankConnectionSuccessParam,
 ): void {
   if ('error' in result) {
-    window.location.assign(
-      `/billing/bank-connection?error=${encodeURIComponent(result.error)}`,
-    );
+    window.location.assign(`/billing/bank-connection?error=${encodeURIComponent(result.error)}`);
     return;
   }
 

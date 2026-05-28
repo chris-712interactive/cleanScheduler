@@ -85,7 +85,9 @@ async function assertCanManageCustomerPortalDomain(slug: string) {
   try {
     await assertWhiteLabelCustomerPortalAllowed(admin, membership.tenantId);
   } catch (error) {
-    throw new Error(whiteLabelPortalGateErrorMessage(error) ?? 'Cannot manage customer portal domain.');
+    throw new Error(
+      whiteLabelPortalGateErrorMessage(error) ?? 'Cannot manage customer portal domain.',
+    );
   }
   return { membership, admin };
 }
@@ -142,7 +144,9 @@ export async function continueCustomerPortalDomainAction(
   _prev: CustomerPortalDomainActionState,
   formData: FormData,
 ): Promise<CustomerPortalDomainActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   const hostnameResult = parseHostnameFromForm(formData);
@@ -213,7 +217,9 @@ export async function refreshCustomerPortalDomainDnsAction(
   _prev: CustomerPortalDomainActionState,
   formData: FormData,
 ): Promise<CustomerPortalDomainActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   let membership;
@@ -266,7 +272,9 @@ export async function verifyCustomerPortalDomainAction(
   _prev: CustomerPortalDomainActionState,
   formData: FormData,
 ): Promise<CustomerPortalDomainActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   let membership;
@@ -300,7 +308,9 @@ export async function removeCustomerPortalDomainAction(
   _prev: CustomerPortalDomainActionState,
   formData: FormData,
 ): Promise<CustomerPortalDomainActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   if (!slug) return { error: 'Workspace is required.' };
 
   const membership = await requireTenantPortalAccess(slug, '/settings/customer-portal');

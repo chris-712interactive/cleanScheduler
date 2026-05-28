@@ -80,10 +80,7 @@ export function CompleteVisitPaymentModal({
   const electronicHint = isElectronicPreferredBilling(preferredPaymentMethod);
   const inPersonHint = isInPersonPreferredBilling(preferredPaymentMethod);
 
-  const steps = useMemo(
-    () => stepSequence(collected, onSiteMethod),
-    [collected, onSiteMethod],
-  );
+  const steps = useMemo(() => stepSequence(collected, onSiteMethod), [collected, onSiteMethod]);
   const currentStep = steps[stepIndex] ?? 'collected';
   const isLastStep = stepIndex === steps.length - 1;
   const totalSteps = steps.length;
@@ -221,7 +218,9 @@ export function CompleteVisitPaymentModal({
           <form action={formAction} className={styles.form} onSubmit={handleSubmit}>
             {currentStep === 'collected' ? (
               <fieldset className={styles.fieldset}>
-                <legend className={styles.legend}>Did you collect payment from the customer?</legend>
+                <legend className={styles.legend}>
+                  Did you collect payment from the customer?
+                </legend>
                 <div className={styles.choiceRow}>
                   <button
                     type="button"
@@ -284,8 +283,8 @@ export function CompleteVisitPaymentModal({
             {currentStep === 'check-details' ? (
               <div className={styles.stepFields}>
                 <p className={styles.fieldHint}>
-                  Job amount: <strong>${defaultAmountDollars}</strong> — confirm the amount on the check
-                  matches.
+                  Job amount: <strong>${defaultAmountDollars}</strong> — confirm the amount on the
+                  check matches.
                 </p>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="check_number_input">
@@ -358,7 +357,12 @@ export function CompleteVisitPaymentModal({
                 </Dialog.Close>
               )}
               {isLastStep ? (
-                <Button type="submit" variant="primary" disabled={pending} onClick={() => setStepError(null)}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={pending}
+                  onClick={() => setStepError(null)}
+                >
                   {pending
                     ? proofPhotos.length > 0
                       ? 'Uploading photos…'

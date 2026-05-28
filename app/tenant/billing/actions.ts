@@ -8,10 +8,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { createPlatformSubscriptionCheckoutUrl } from '@/lib/billing/platformCheckout';
 import { parsePlatformPlanTier } from '@/lib/billing/platformPlanTier';
-import {
-  parsePlatformBillingInterval,
-  resolvePlatformPriceId,
-} from '@/lib/billing/platformPlans';
+import { parsePlatformBillingInterval, resolvePlatformPriceId } from '@/lib/billing/platformPlans';
 import { getStripe } from '@/lib/stripe/server';
 import type { Tables } from '@/lib/supabase/database.types';
 
@@ -56,7 +53,9 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
   }
 
   const tier = parsePlatformPlanTier(String(formData.get('platform_plan') ?? ''));
-  const billingInterval = parsePlatformBillingInterval(String(formData.get('billing_interval') ?? ''));
+  const billingInterval = parsePlatformBillingInterval(
+    String(formData.get('billing_interval') ?? ''),
+  );
   if (!tier) {
     redirect(
       `${billingPath}?resume=error&message=${encodeURIComponent('Choose Starter, Business, or Pro to continue.')}`,

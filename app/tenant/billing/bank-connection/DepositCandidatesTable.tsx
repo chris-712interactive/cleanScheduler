@@ -66,11 +66,7 @@ export function DepositCandidatesTable({
         </thead>
         <tbody>
           {deposits.map((tx) => {
-            const status = tx.pending
-              ? 'Pending'
-              : tx.matchedPaymentId
-                ? 'Matched'
-                : 'Unmatched';
+            const status = tx.pending ? 'Pending' : tx.matchedPaymentId ? 'Matched' : 'Unmatched';
             const showMatch = canManage && !tx.pending && !tx.matchedPaymentId;
 
             return (
@@ -79,11 +75,7 @@ export function DepositCandidatesTable({
                 <td>{tx.name}</td>
                 <td align="right">{formatUsd(tx.amountCents)}</td>
                 <td>
-                  {tx.matchedPaymentId ? (
-                    <Link href="/billing/transactions">Matched</Link>
-                  ) : (
-                    status
-                  )}
+                  {tx.matchedPaymentId ? <Link href="/billing/transactions">Matched</Link> : status}
                 </td>
                 {canManage ? (
                   <td align="right">

@@ -3,15 +3,14 @@ import { Card } from '@/components/ui/Card';
 import type { RelatedRecordsSnapshot } from '@/lib/tenant/relatedRecordsTypes';
 import styles from './relatedRecordsPanel.module.scss';
 
-export function RelatedRecordsPanel({
-  snapshot,
-}: {
-  snapshot: RelatedRecordsSnapshot;
-}) {
+export function RelatedRecordsPanel({ snapshot }: { snapshot: RelatedRecordsSnapshot }) {
   if (snapshot.links.length === 0) return null;
 
   return (
-    <Card title="Related" description="Jump to linked customer, quote, visit, or billing workflows.">
+    <Card
+      title="Related"
+      description="Jump to linked customer, quote, visit, or billing workflows."
+    >
       <ul className={styles.list}>
         {snapshot.links.map((link) => (
           <li key={`${link.href}-${link.label}`}>

@@ -46,24 +46,24 @@ export default async function TenantIntegrationsSettingsPage() {
     : 0;
 
   const apiKeys = integrationsAllowed
-    ? (
+    ? ((
         await admin
           .from('tenant_api_keys')
           .select('id, name, key_prefix, last_used_at, created_at')
           .eq('tenant_id', membership.tenantId)
           .is('revoked_at', null)
           .order('created_at', { ascending: false })
-      ).data ?? []
+      ).data ?? [])
     : [];
 
   const webhookEndpoints = integrationsAllowed
-    ? (
+    ? ((
         await admin
           .from('tenant_webhook_endpoints')
           .select('id, url, description, signing_secret_prefix, event_types, enabled, created_at')
           .eq('tenant_id', membership.tenantId)
           .order('created_at', { ascending: false })
-      ).data ?? []
+      ).data ?? [])
     : [];
 
   const apiBaseUrl = `${getPublicOrigin(null)}/api/v1`;
@@ -112,8 +112,7 @@ export default async function TenantIntegrationsSettingsPage() {
         ) : (
           <p className={styles.opsIntro}>
             Available endpoints when unlocked: <code>/api/v1/customers</code>,{' '}
-            <code>/api/v1/quotes</code>, <code>/api/v1/visits</code>,{' '}
-            <code>/api/v1/invoices</code>.
+            <code>/api/v1/quotes</code>, <code>/api/v1/visits</code>, <code>/api/v1/invoices</code>.
           </p>
         )}
       </Card>

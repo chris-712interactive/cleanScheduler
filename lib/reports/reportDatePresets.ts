@@ -22,7 +22,9 @@ export function reportDatePresets(now = new Date()): ReportDatePreset[] {
   const ytdStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
 
   const lastMonthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0));
-  const lastMonthStart = new Date(Date.UTC(lastMonthEnd.getUTCFullYear(), lastMonthEnd.getUTCMonth(), 1));
+  const lastMonthStart = new Date(
+    Date.UTC(lastMonthEnd.getUTCFullYear(), lastMonthEnd.getUTCMonth(), 1),
+  );
 
   const quarterMonth = Math.floor(now.getUTCMonth() / 3) * 3;
   const lastQuarterEnd = new Date(Date.UTC(now.getUTCFullYear(), quarterMonth, 0));
@@ -33,7 +35,12 @@ export function reportDatePresets(now = new Date()): ReportDatePreset[] {
   return [
     { id: '7d', label: 'Last 7 days', from: formatDateInput(last7), to },
     { id: 'mtd', label: 'MTD', from: formatDateInput(mtdStart), to },
-    { id: 'last-month', label: 'Last month', from: formatDateInput(lastMonthStart), to: formatDateInput(lastMonthEnd) },
+    {
+      id: 'last-month',
+      label: 'Last month',
+      from: formatDateInput(lastMonthStart),
+      to: formatDateInput(lastMonthEnd),
+    },
     {
       id: 'last-quarter',
       label: 'Last quarter',

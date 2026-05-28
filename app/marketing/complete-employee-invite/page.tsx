@@ -56,7 +56,9 @@ export default async function CompleteEmployeeInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Invite not found">
-          <p className={styles.lead}>This link is invalid or was removed. Ask your manager for a new invite.</p>
+          <p className={styles.lead}>
+            This link is invalid or was removed. Ask your manager for a new invite.
+          </p>
         </Card>
       </Container>
     );
@@ -66,7 +68,9 @@ export default async function CompleteEmployeeInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Already used">
-          <p className={styles.lead}>This invite was already completed. Sign in at your workspace URL.</p>
+          <p className={styles.lead}>
+            This invite was already completed. Sign in at your workspace URL.
+          </p>
         </Card>
       </Container>
     );
@@ -76,13 +80,18 @@ export default async function CompleteEmployeeInvitePage({ searchParams }: PageP
     return (
       <Container size="sm">
         <Card title="Invite expired">
-          <p className={styles.lead}>Ask your manager to send a fresh invite from cleanScheduler.</p>
+          <p className={styles.lead}>
+            Ask your manager to send a fresh invite from cleanScheduler.
+          </p>
         </Card>
       </Container>
     );
   }
 
-  const tenantsRaw = invite.tenants as { name: string; slug: string } | { name: string; slug: string }[] | null;
+  const tenantsRaw = invite.tenants as
+    | { name: string; slug: string }
+    | { name: string; slug: string }[]
+    | null;
   const tenantRow = Array.isArray(tenantsRaw) ? tenantsRaw[0] : tenantsRaw;
   const tenantName = tenantRow?.name ?? 'Your team';
   const inviteEmail = invite.email_normalized;

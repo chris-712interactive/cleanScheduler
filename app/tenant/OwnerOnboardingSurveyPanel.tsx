@@ -48,7 +48,13 @@ export function OwnerOnboardingSurveyPanel({
         <label className={styles.label} htmlFor="survey_team_size">
           Team size
         </label>
-        <select id="survey_team_size" name="team_size" className={styles.input} required defaultValue="">
+        <select
+          id="survey_team_size"
+          name="team_size"
+          className={styles.input}
+          required
+          defaultValue=""
+        >
           <option value="" disabled>
             Select team size
           </option>

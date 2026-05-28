@@ -115,70 +115,70 @@ export default async function TenantQuotesPage({
       />
 
       <Stack gap={6}>
-          <nav className={styles.viewTabs} aria-label="Quote views">
-            <Link
-              href={activeTabHref}
-              className={styles.viewTab}
-              data-active={view === 'active' || undefined}
-            >
-              Active pipeline ({activeQuotes.length})
-            </Link>
-            <Link
-              href={archivedTabHref}
-              className={styles.viewTab}
-              data-active={view === 'archived' || undefined}
-            >
-              Archived history ({archivedQuotes.length})
-            </Link>
-          </nav>
+        <nav className={styles.viewTabs} aria-label="Quote views">
+          <Link
+            href={activeTabHref}
+            className={styles.viewTab}
+            data-active={view === 'active' || undefined}
+          >
+            Active pipeline ({activeQuotes.length})
+          </Link>
+          <Link
+            href={archivedTabHref}
+            className={styles.viewTab}
+            data-active={view === 'archived' || undefined}
+          >
+            Archived history ({archivedQuotes.length})
+          </Link>
+        </nav>
 
-          {quotesRes.error ? (
-            <Card>
-              <p className={styles.empty} role="alert">
-                Could not load quotes ({quotesRes.error.message}).
-              </p>
-            </Card>
-          ) : view === 'active' && activeQuotes.length === 0 ? (
-            <Card>
-              <p className={styles.empty}>
-                Nothing here yet.{' '}
-                <Link href="/quotes/new" className={styles.inlineLink}>
-                  Add your first quote
-                </Link>
-              </p>
-            </Card>
-          ) : view === 'archived' && archivedQuotes.length === 0 ? (
-            <Card>
-              <p className={styles.empty}>
-                No archived quotes yet. Accepted quotes appear here after they are tied to a
-                scheduled visit.
-              </p>
-            </Card>
-          ) : view === 'archived' ? (
-            <Card
-              title="Archived quote history"
-              description="Accepted quotes retained for records and customer history."
-            >
-              <ul className={styles.list}>
-                {archivedQuotes.map((quote) => (
-                  <li key={quote.id} className={styles.row}>
-                    <div>
-                      <Link href={`/quotes/${quote.id}`} className={styles.titleLink}>
-                        {quote.title}
-                      </Link>
-                      <p className={styles.sub}>
-                        Created {new Date(quote.created_at).toLocaleDateString()} · v
-                        {quote.version_number}
-                      </p>
-                    </div>
-                    <span className={styles.status}>{quoteStatusLabel(quote.status)}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : (
-            <QuotesBoard tenantSlug={membership.tenantSlug} quotes={activeQuotes} />
-          )}
+        {quotesRes.error ? (
+          <Card>
+            <p className={styles.empty} role="alert">
+              Could not load quotes ({quotesRes.error.message}).
+            </p>
+          </Card>
+        ) : view === 'active' && activeQuotes.length === 0 ? (
+          <Card>
+            <p className={styles.empty}>
+              Nothing here yet.{' '}
+              <Link href="/quotes/new" className={styles.inlineLink}>
+                Add your first quote
+              </Link>
+            </p>
+          </Card>
+        ) : view === 'archived' && archivedQuotes.length === 0 ? (
+          <Card>
+            <p className={styles.empty}>
+              No archived quotes yet. Accepted quotes appear here after they are tied to a scheduled
+              visit.
+            </p>
+          </Card>
+        ) : view === 'archived' ? (
+          <Card
+            title="Archived quote history"
+            description="Accepted quotes retained for records and customer history."
+          >
+            <ul className={styles.list}>
+              {archivedQuotes.map((quote) => (
+                <li key={quote.id} className={styles.row}>
+                  <div>
+                    <Link href={`/quotes/${quote.id}`} className={styles.titleLink}>
+                      {quote.title}
+                    </Link>
+                    <p className={styles.sub}>
+                      Created {new Date(quote.created_at).toLocaleDateString()} · v
+                      {quote.version_number}
+                    </p>
+                  </div>
+                  <span className={styles.status}>{quoteStatusLabel(quote.status)}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : (
+          <QuotesBoard tenantSlug={membership.tenantSlug} quotes={activeQuotes} />
+        )}
       </Stack>
     </>
   );

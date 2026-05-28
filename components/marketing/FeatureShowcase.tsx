@@ -10,7 +10,11 @@ export interface FeatureShowcaseProps {
   surface?: boolean;
 }
 
-export function FeatureShowcase({ feature, reverse = false, surface = false }: FeatureShowcaseProps) {
+export function FeatureShowcase({
+  feature,
+  reverse = false,
+  surface = false,
+}: FeatureShowcaseProps) {
   return (
     <section
       className={styles.section}

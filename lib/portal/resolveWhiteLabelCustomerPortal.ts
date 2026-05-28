@@ -1,8 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import {
-  isFeatureEnabled,
-  resolveTenantPlanTier,
-} from '@/lib/billing/entitlements';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHostname';
 

@@ -29,8 +29,7 @@ export type MarketingFaqItem = {
 export const MARKETING_HERO = {
   eyebrow: 'Built for residential & commercial cleaning',
   title: 'Run your cleaning business from one console',
-  lead:
-    'Schedule crews, send quotes, invoice clients, and close the books — with a branded customer portal your clients actually use.',
+  lead: 'Schedule crews, send quotes, invoice clients, and close the books — with a branded customer portal your clients actually use.',
   note: '7-day free trial · No credit card required · Cancel anytime',
 };
 

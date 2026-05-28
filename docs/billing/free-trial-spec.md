@@ -18,15 +18,15 @@ This document defines the target free-trial flow: **DB-only trial at signup**, a
 
 ## Current vs target
 
-| Step | Today | Target |
-| ---- | ----- | ------ |
-| Signup form | Step 3: pick Starter/Business/Pro | No tier picker (optional “compare plans” link to marketing `/pricing`) |
-| `tenant_billing_accounts.platform_plan` | Set at signup | **`NULL` while `status=trialing`** |
-| Stripe at signup | Redirect to Checkout (`trial_signup`, 7-day Stripe trial on tier price) | **None** — land in tenant portal immediately |
-| Trial entitlements | From chosen tier (`resolveTenantPlanTier`) | From **`TRIAL_ENTITLEMENTS`** when trialing + no plan |
-| Subscribe CTA | Uses stored `platform_plan` | **Tier + interval picker** on `/billing` → Checkout `kind=subscribe` |
-| Billing cycle | Hardcoded “Monthly” on billing page | Monthly or yearly from picker + Stripe sync |
-| Trial reminder email | Stripe `customer.subscription.trial_will_end` | **App cron** for DB-only trials (3 days before end) |
+| Step                                    | Today                                                                   | Target                                                                 |
+| --------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Signup form                             | Step 3: pick Starter/Business/Pro                                       | No tier picker (optional “compare plans” link to marketing `/pricing`) |
+| `tenant_billing_accounts.platform_plan` | Set at signup                                                           | **`NULL` while `status=trialing`**                                     |
+| Stripe at signup                        | Redirect to Checkout (`trial_signup`, 7-day Stripe trial on tier price) | **None** — land in tenant portal immediately                           |
+| Trial entitlements                      | From chosen tier (`resolveTenantPlanTier`)                              | From **`TRIAL_ENTITLEMENTS`** when trialing + no plan                  |
+| Subscribe CTA                           | Uses stored `platform_plan`                                             | **Tier + interval picker** on `/billing` → Checkout `kind=subscribe`   |
+| Billing cycle                           | Hardcoded “Monthly” on billing page                                     | Monthly or yearly from picker + Stripe sync                            |
+| Trial reminder email                    | Stripe `customer.subscription.trial_will_end`                           | **App cron** for DB-only trials (3 days before end)                    |
 
 ---
 
@@ -97,40 +97,40 @@ These mirror “evaluate the business” without paid integrations or Pro-only s
 
 #### Feature flags
 
-| Feature | Trial | Rationale |
-| ------- | ----- | --------- |
-| `rolePermissions` | **Yes** | Invite admin/viewer; test team workflows |
-| `jobCosting` | **Yes** | Tips/commissions are core ops |
-| `customerPortal` | **Yes** | Strong eval hook — customers accept quotes, pay invoices |
-| `proofOfServicePhotos` | **Yes** | Field crew workflow |
-| `proofOfServicePortalShare` | **No** | Pro-only customer portal share |
-| `campaigns` | **No** | Marketing email excluded (see limits) |
-| `salesTaxSummary` | **Yes** | Basic financial close |
-| `payrollExports` | **Yes** | Payroll CSV is operational |
-| `advancedAnalytics` | **No** | Pro reports tier |
-| `forecasting` | **No** | Pro reports tier |
-| `fullApiWebhooks` | **No** | Paid + integration cost |
-| `multiLocationControls` | **No** | Pro feature |
-| `dedicatedOnboarding` | **No** | Sales/concierge |
-| `plaidReconciliation` | **No** | Paid integration (explicit exclusion) |
-| `smsCommunication` | **No** | Paid + sent.dm (also blocked by `canUsePaidSubscriptionFeatures`) |
-| `whiteLabelCustomerPortal` | **No** | Paid Pro feature |
+| Feature                     | Trial   | Rationale                                                         |
+| --------------------------- | ------- | ----------------------------------------------------------------- |
+| `rolePermissions`           | **Yes** | Invite admin/viewer; test team workflows                          |
+| `jobCosting`                | **Yes** | Tips/commissions are core ops                                     |
+| `customerPortal`            | **Yes** | Strong eval hook — customers accept quotes, pay invoices          |
+| `proofOfServicePhotos`      | **Yes** | Field crew workflow                                               |
+| `proofOfServicePortalShare` | **No**  | Pro-only customer portal share                                    |
+| `campaigns`                 | **No**  | Marketing email excluded (see limits)                             |
+| `salesTaxSummary`           | **Yes** | Basic financial close                                             |
+| `payrollExports`            | **Yes** | Payroll CSV is operational                                        |
+| `advancedAnalytics`         | **No**  | Pro reports tier                                                  |
+| `forecasting`               | **No**  | Pro reports tier                                                  |
+| `fullApiWebhooks`           | **No**  | Paid + integration cost                                           |
+| `multiLocationControls`     | **No**  | Pro feature                                                       |
+| `dedicatedOnboarding`       | **No**  | Sales/concierge                                                   |
+| `plaidReconciliation`       | **No**  | Paid integration (explicit exclusion)                             |
+| `smsCommunication`          | **No**  | Paid + sent.dm (also blocked by `canUsePaidSubscriptionFeatures`) |
+| `whiteLabelCustomerPortal`  | **No**  | Paid Pro feature                                                  |
 
 #### Soft limits
 
-| Limit | Trial (proposed) | Compare |
-| ----- | ---------------- | ------- |
-| `includedOfficeSeats` | **2** | Starter 1, Business 2 |
-| `includedFieldSeats` | **8** | Starter 3, Business 10 |
-| `maxActiveCustomers` | **2,000** | Starter 500, Business 5,000 |
-| `maxAutomationWorkflows` | **10** | Starter 3, Business 20 |
-| `includedIntegrations` | **2** | Starter 1, Business 5 (API keys count; API calls still blocked) |
-| `includedSmsCreditsMonthly` | **0** | — |
-| `includedEmailCreditsMonthly` | **0** | Campaign metering only; transactional un metered |
-| `maxCampaignSendsMonthly` | **0** | Campaigns off |
-| `maxConcurrentActiveCampaigns` | **0** | — |
-| `maxCampaignAudienceSize` | **0** | — |
-| `maxCampaignDrafts` | **0** | — |
+| Limit                          | Trial (proposed) | Compare                                                         |
+| ------------------------------ | ---------------- | --------------------------------------------------------------- |
+| `includedOfficeSeats`          | **2**            | Starter 1, Business 2                                           |
+| `includedFieldSeats`           | **8**            | Starter 3, Business 10                                          |
+| `maxActiveCustomers`           | **2,000**        | Starter 500, Business 5,000                                     |
+| `maxAutomationWorkflows`       | **10**           | Starter 3, Business 20                                          |
+| `includedIntegrations`         | **2**            | Starter 1, Business 5 (API keys count; API calls still blocked) |
+| `includedSmsCreditsMonthly`    | **0**            | —                                                               |
+| `includedEmailCreditsMonthly`  | **0**            | Campaign metering only; transactional un metered                |
+| `maxCampaignSendsMonthly`      | **0**            | Campaigns off                                                   |
+| `maxConcurrentActiveCampaigns` | **0**            | —                                                               |
+| `maxCampaignAudienceSize`      | **0**            | —                                                               |
+| `maxCampaignDrafts`            | **0**            | —                                                               |
 
 #### Reports during trial
 
@@ -151,11 +151,11 @@ Rationale: invoicing and “Pay online” via Connect are core to evaluating the
 
 ## Email policy during trial
 
-| Channel | Trial behavior |
-| ------- | ---------------- |
-| **Transactional** (quotes, invites, invoice reminders, employee invites) | **Unlimited** — not metered today; keep as-is |
-| **Marketing campaigns** (`/campaigns`) | **Off** — `campaigns: false` + zero campaign limits |
-| **Invoice reminder SMS** | **Off** — requires paid subscription + Pro for SMS |
+| Channel                                                                  | Trial behavior                                      |
+| ------------------------------------------------------------------------ | --------------------------------------------------- |
+| **Transactional** (quotes, invites, invoice reminders, employee invites) | **Unlimited** — not metered today; keep as-is       |
+| **Marketing campaigns** (`/campaigns`)                                   | **Off** — `campaigns: false` + zero campaign limits |
+| **Invoice reminder SMS**                                                 | **Off** — requires paid subscription + Pro for SMS  |
 
 Optional future: soft cap on transactional sends for abuse prevention (out of scope unless requested).
 
@@ -197,10 +197,10 @@ Set from Checkout metadata and/or Stripe subscription item `price.recurring.inte
 
 ### Checkout kinds
 
-| Kind | Signup | Conversion |
-| ---- | ------ | ---------- |
-| `trial_signup` | **Remove** (or keep unused for legacy) | — |
-| `subscribe` | — | **Only** path for first payment |
+| Kind           | Signup                                 | Conversion                      |
+| -------------- | -------------------------------------- | ------------------------------- |
+| `trial_signup` | **Remove** (or keep unused for legacy) | —                               |
+| `subscribe`    | —                                      | **Only** path for first payment |
 
 ### Price IDs (6 required for full monthly/yearly)
 
@@ -251,11 +251,11 @@ Replace single “Subscribe with Stripe” button with:
 
 States:
 
-| Access | UI |
-| ------ | -- |
-| `trialing` | “Free trial · X days left” + early subscribe picker |
-| `trial_expired` | Block portal except `/billing`; prominent subscribe picker |
-| `active` | Show current tier, interval, next payment; “Manage plan” → Stripe Portal |
+| Access          | UI                                                                       |
+| --------------- | ------------------------------------------------------------------------ |
+| `trialing`      | “Free trial · X days left” + early subscribe picker                      |
+| `trial_expired` | Block portal except `/billing`; prominent subscribe picker               |
+| `active`        | Show current tier, interval, next payment; “Manage plan” → Stripe Portal |
 
 Display when `platform_plan` is null: **“Free trial — choose a plan to subscribe”** (not “No plan selected” as error).
 
@@ -283,17 +283,17 @@ Optional: email on `trial_expired` when cron sets `canceled` (nice-to-have).
 
 ## Access control summary
 
-| Capability | Trial | After subscribe |
-| ---------- | ----- | ---------------- |
-| Scheduling, quotes, customers | Yes (trial limits) | Tier limits |
-| Customer portal (shared `my.*`) | Yes | Tier |
-| Customer invoicing + Connect | Yes | Yes |
-| Plaid reconciliation | **No** | Business+ |
-| SMS | **No** | Pro + paid |
-| API / webhooks | **No** | Pro + paid |
-| Email campaigns | **No** | Business+ |
-| White-label portal domain | **No** | Pro + paid |
-| Portal suspended at trial end | Yes → `/billing` only | — |
+| Capability                      | Trial                 | After subscribe |
+| ------------------------------- | --------------------- | --------------- |
+| Scheduling, quotes, customers   | Yes (trial limits)    | Tier limits     |
+| Customer portal (shared `my.*`) | Yes                   | Tier            |
+| Customer invoicing + Connect    | Yes                   | Yes             |
+| Plaid reconciliation            | **No**                | Business+       |
+| SMS                             | **No**                | Pro + paid      |
+| API / webhooks                  | **No**                | Pro + paid      |
+| Email campaigns                 | **No**                | Business+       |
+| White-label portal domain       | **No**                | Pro + paid      |
+| Portal suspended at trial end   | Yes → `/billing` only | —               |
 
 ---
 
@@ -301,12 +301,12 @@ Optional: email on `trial_expired` when cron sets `canceled` (nice-to-have).
 
 ### Existing workspaces
 
-| State | Handling |
-| ----- | -------- |
-| `trialing` + `platform_plan` set + Stripe sub | Leave as-is until sub ends; webhook-driven |
-| `trialing` + `platform_plan` set + no Stripe | Treat as **legacy intent**; at subscribe use picker (ignore stored plan) OR pre-select stored plan in UI |
-| `trialing` + null plan | Target state |
-| `active` | No change |
+| State                                         | Handling                                                                                                 |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `trialing` + `platform_plan` set + Stripe sub | Leave as-is until sub ends; webhook-driven                                                               |
+| `trialing` + `platform_plan` set + no Stripe  | Treat as **legacy intent**; at subscribe use picker (ignore stored plan) OR pre-select stored plan in UI |
+| `trialing` + null plan                        | Target state                                                                                             |
+| `active`                                      | No change                                                                                                |
 
 **Recommendation:** During implementation, **`resolveTenantEntitlements` uses `TRIAL_ENTITLEMENTS` for all `status=trialing` workspaces**, regardless of legacy `platform_plan`, so behavior is consistent. Clear `platform_plan` on new signups only; optionally backfill null for trialing rows in a one-time migration.
 
@@ -320,14 +320,14 @@ Optional: email on `trial_expired` when cron sets `canceled` (nice-to-have).
 
 ## Implementation phases
 
-| Phase | Scope | Files (indicative) |
-| ----- | ----- | ------------------ |
+| Phase | Scope                                                            | Files (indicative)                                                                  |
+| ----- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | **1** | `TRIAL_ENTITLEMENTS`, `resolveTenantEntitlements`, report gating | `lib/billing/entitlements.ts`, `tenantFeatureGate.ts`, `reportCatalog.ts` consumers |
-| **2** | Onboarding: null plan, no Stripe | `onboarding/actions.ts`, `TenantOnboardingForm.tsx` |
-| **3** | Billing subscribe UI + action params | `billing/page.tsx`, `billing/actions.ts`, new client picker component |
-| **4** | Stripe 6-price resolver + interval column + webhook | `platformPlans.ts`, migration, `syncTenantPlatformSubscription.ts`, `.env.example` |
-| **5** | DB trial reminder cron + docs | new cron route, `trialEndingNotifications.ts` refactor |
-| **6** | Tests + tier-entitlements doc update | entitlement tests, onboarding test |
+| **2** | Onboarding: null plan, no Stripe                                 | `onboarding/actions.ts`, `TenantOnboardingForm.tsx`                                 |
+| **3** | Billing subscribe UI + action params                             | `billing/page.tsx`, `billing/actions.ts`, new client picker component               |
+| **4** | Stripe 6-price resolver + interval column + webhook              | `platformPlans.ts`, migration, `syncTenantPlatformSubscription.ts`, `.env.example`  |
+| **5** | DB trial reminder cron + docs                                    | new cron route, `trialEndingNotifications.ts` refactor                              |
+| **6** | Tests + tier-entitlements doc update                             | entitlement tests, onboarding test                                                  |
 
 ---
 
@@ -339,7 +339,7 @@ Reply with choices (or edits) before implementation.
 
 - **A.** 7 days (current default) — **recommended**
 - **B.** 14 days
-- **C.** Other: ___
+- **C.** Other: \_\_\_
 
 ### Trial limits — seats & customers
 

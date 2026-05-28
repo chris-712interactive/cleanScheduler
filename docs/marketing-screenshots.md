@@ -38,17 +38,17 @@ npm run marketing:screenshots
 
 Outputs to `public/marketing/`:
 
-| File | Source route |
-|------|----------------|
-| `hero-dashboard.png` | `/` |
-| `feature-schedule.png` | `/schedule/reschedule-requests` |
-| `feature-quotes.png` | `/quotes` |
-| `feature-billing.png` | `/billing/invoices` |
-| `feature-customers.png` | `/customers` |
-| `feature-reports.png` | `/billing/payment-audits` |
-| `feature-portals.png` | `/billing` |
-| `feature-schedule-mobile.png` | `/schedule` (mobile viewport) |
-| `og-home.png` | Copy of hero dashboard |
+| File                          | Source route                    |
+| ----------------------------- | ------------------------------- |
+| `hero-dashboard.png`          | `/`                             |
+| `feature-schedule.png`        | `/schedule/reschedule-requests` |
+| `feature-quotes.png`          | `/quotes`                       |
+| `feature-billing.png`         | `/billing/invoices`             |
+| `feature-customers.png`       | `/customers`                    |
+| `feature-reports.png`         | `/billing/payment-audits`       |
+| `feature-portals.png`         | `/billing`                      |
+| `feature-schedule-mobile.png` | `/schedule` (mobile viewport)   |
+| `og-home.png`                 | Copy of hero dashboard          |
 
 Images are optimized with `sharp` after capture.
 

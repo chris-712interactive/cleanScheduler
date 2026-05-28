@@ -41,8 +41,7 @@ export async function loadOwnerOnboardingNavContext(params: {
     return { gettingStartedNavItem: null, coreSetupComplete };
   }
 
-  const badge =
-    checklist.incompleteRequiredCount > 99 ? '99+' : checklist.incompleteRequiredCount;
+  const badge = checklist.incompleteRequiredCount > 99 ? '99+' : checklist.incompleteRequiredCount;
 
   return {
     gettingStartedNavItem: {

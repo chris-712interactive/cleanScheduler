@@ -4,10 +4,7 @@ import { useCallback, useId, useRef, useState } from 'react';
 import { Camera, ImagePlus, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { compressImageFileForUpload } from '@/lib/images/clientImageCompress';
-import {
-  PROOF_PHOTO_ACCEPT,
-  PROOF_PHOTO_MAX_COUNT,
-} from '@/lib/visits/proofPhotoLimits';
+import { PROOF_PHOTO_ACCEPT, PROOF_PHOTO_MAX_COUNT } from '@/lib/visits/proofPhotoLimits';
 import styles from './ProofPhotoCapture.module.scss';
 
 export interface ProofPhotoCaptureItem {
@@ -104,7 +101,9 @@ export function ProofPhotoCapture({
           variant="primary"
           size="lg"
           fullWidth
-          iconLeft={processing ? <Loader2 size={18} className={styles.spinner} /> : <Camera size={18} />}
+          iconLeft={
+            processing ? <Loader2 size={18} className={styles.spinner} /> : <Camera size={18} />
+          }
           disabled={disabled || processing || atLimit}
           onClick={() => cameraRef.current?.click()}
         >
@@ -153,7 +152,11 @@ export function ProofPhotoCapture({
           {photos.map((photo, index) => (
             <li key={photo.id} className={styles.previewItem}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.previewUrl} alt={`Proof photo ${index + 1}`} className={styles.previewImage} />
+              <img
+                src={photo.previewUrl}
+                alt={`Proof photo ${index + 1}`}
+                className={styles.previewImage}
+              />
               <button
                 type="button"
                 className={styles.removeBtn}

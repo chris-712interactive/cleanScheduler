@@ -3,7 +3,11 @@
 import { useActionState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
-import { uploadOwnAvatarAction, updateOwnDisplayNameAction, type ProfileActionState } from './profileActions';
+import {
+  uploadOwnAvatarAction,
+  updateOwnDisplayNameAction,
+  type ProfileActionState,
+} from './profileActions';
 import styles from './settings.module.scss';
 
 const initial: ProfileActionState = {};
@@ -24,7 +28,13 @@ export function ProfileSettingsForm({
     <div className={styles.profileGrid}>
       <div className={styles.profileAvatarCol}>
         {avatarUrl ? (
-          <Image src={avatarUrl} alt="" width={72} height={72} className={styles.profileAvatarImg} />
+          <Image
+            src={avatarUrl}
+            alt=""
+            width={72}
+            height={72}
+            className={styles.profileAvatarImg}
+          />
         ) : (
           <div className={styles.profileAvatarPlaceholder} aria-hidden>
             {(displayName.trim().slice(0, 2) || 'Me').toUpperCase()}

@@ -4,11 +4,11 @@ Pro workspaces get a read-only REST API and outbound webhooks for automation (Za
 
 ## Entitlements
 
-| Capability | Gate |
-| ---------- | ---- |
-| REST API | `fullApiWebhooks` + paid subscription (`active` or `past_due`) |
-| Outbound webhooks | Same |
-| Connection limit | `includedIntegrations` (Starter 1, Business 5, Pro 20) — counts active API keys + enabled webhook endpoints |
+| Capability        | Gate                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| REST API          | `fullApiWebhooks` + paid subscription (`active` or `past_due`)                                              |
+| Outbound webhooks | Same                                                                                                        |
+| Connection limit  | `includedIntegrations` (Starter 1, Business 5, Pro 20) — counts active API keys + enabled webhook endpoints |
 
 **Not available during free trial**, same as SMS.
 
@@ -32,12 +32,12 @@ Auth header:
 Authorization: Bearer cs_live_…
 ```
 
-| Method | Path | Query params |
-| ------ | ---- | ------------ |
-| GET | `/customers` | `limit`, `offset`, `status` |
-| GET | `/quotes` | `limit`, `offset`, `status` |
-| GET | `/visits` | `limit`, `offset`, `status`, `from`, `to` |
-| GET | `/invoices` | `limit`, `offset`, `status` |
+| Method | Path         | Query params                              |
+| ------ | ------------ | ----------------------------------------- |
+| GET    | `/customers` | `limit`, `offset`, `status`               |
+| GET    | `/quotes`    | `limit`, `offset`, `status`               |
+| GET    | `/visits`    | `limit`, `offset`, `status`, `from`, `to` |
+| GET    | `/invoices`  | `limit`, `offset`, `status`               |
 
 Responses: `{ data: [...], pagination: { limit, offset, total } }`
 
@@ -60,14 +60,14 @@ HMAC is computed over `{timestamp}.{raw_json_body}` using the endpoint signing s
 
 ### Event types
 
-| Type | Emitted today |
-| ---- | ------------- |
-| `quote.sent` | Yes — tenant marks quote sent |
-| `quote.accepted` | Yes — customer accepts |
-| `quote.declined` | Yes — customer declines |
-| `invoice.paid` | Yes — payment records + Stripe Checkout |
-| `visit.scheduled` | Yes — manual visit create |
-| `visit.completed` | Yes — field visit completion |
+| Type              | Emitted today                           |
+| ----------------- | --------------------------------------- |
+| `quote.sent`      | Yes — tenant marks quote sent           |
+| `quote.accepted`  | Yes — customer accepts                  |
+| `quote.declined`  | Yes — customer declines                 |
+| `invoice.paid`    | Yes — payment records + Stripe Checkout |
+| `visit.scheduled` | Yes — manual visit create               |
+| `visit.completed` | Yes — field visit completion            |
 
 Delivery: immediate attempt + cron retry (`/api/cron/deliver-tenant-webhooks`, every 5 min, max 5 attempts with exponential backoff).
 
@@ -81,11 +81,11 @@ Migration `0040_tenant_api_webhooks.sql`:
 
 ## Library map
 
-| Module | Role |
-| ------ | ---- |
-| `lib/integrations/integrationSecrets.ts` | Key/secret generation, HMAC signing |
-| `lib/integrations/authenticateTenantApiRequest.ts` | Bearer API key auth |
-| `lib/integrations/integrationLimits.ts` | Pro + paid + connection cap |
-| `lib/integrations/emitTenantWebhook.ts` | Enqueue + deliver + cron processor |
-| `lib/integrations/emitQuoteWebhook.ts` | Quote lifecycle hooks |
-| `lib/integrations/tenantPublicApi.ts` | Shared list-route helpers |
+| Module                                             | Role                                |
+| -------------------------------------------------- | ----------------------------------- |
+| `lib/integrations/integrationSecrets.ts`           | Key/secret generation, HMAC signing |
+| `lib/integrations/authenticateTenantApiRequest.ts` | Bearer API key auth                 |
+| `lib/integrations/integrationLimits.ts`            | Pro + paid + connection cap         |
+| `lib/integrations/emitTenantWebhook.ts`            | Enqueue + deliver + cron processor  |
+| `lib/integrations/emitQuoteWebhook.ts`             | Quote lifecycle hooks               |
+| `lib/integrations/tenantPublicApi.ts`              | Shared list-route helpers           |

@@ -19,10 +19,7 @@ export interface RevokePlaidBankLinkResult {
   plaidItemRemoved: boolean;
 }
 
-function isManualImportLink(link: {
-  plaid_access_token: string;
-  plaid_item_id: string;
-}): boolean {
+function isManualImportLink(link: { plaid_access_token: string; plaid_item_id: string }): boolean {
   return (
     link.plaid_access_token === MANUAL_IMPORT_ACCESS_TOKEN ||
     link.plaid_item_id.startsWith('manual-import:')

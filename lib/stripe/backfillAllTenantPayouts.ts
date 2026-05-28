@@ -49,9 +49,7 @@ export async function backfillStripePayoutLinksForAllTenants(
   admin: Admin,
   stripe: Stripe,
 ): Promise<{ tenants: number; payoutsProcessed: number; errors: number }> {
-  const { data: accounts } = await admin
-    .from('tenant_stripe_connect_accounts')
-    .select('tenant_id');
+  const { data: accounts } = await admin.from('tenant_stripe_connect_accounts').select('tenant_id');
 
   let payoutsProcessed = 0;
   let errors = 0;

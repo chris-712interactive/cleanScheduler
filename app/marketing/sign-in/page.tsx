@@ -38,20 +38,20 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
   return (
     <>
-    <main className={styles.page}>
-      <Container size="sm">
-        <Card
-          title="Sign in to cleanScheduler"
-      description="Sign in to your existing workspace. New businesses should start a free trial first."
-        >
-          <SignInForm nextPath={nextPath} urlError={signInUrlError} defaultEmail={defaultEmail} />
-          <p className={styles.helpText}>
-            Need the public site instead? <Link href="/">Return to homepage</Link>.
-          </p>
-        </Card>
-      </Container>
-    </main>
-    <MarketingFooter />
+      <main className={styles.page}>
+        <Container size="sm">
+          <Card
+            title="Sign in to cleanScheduler"
+            description="Sign in to your existing workspace. New businesses should start a free trial first."
+          >
+            <SignInForm nextPath={nextPath} urlError={signInUrlError} defaultEmail={defaultEmail} />
+            <p className={styles.helpText}>
+              Need the public site instead? <Link href="/">Return to homepage</Link>.
+            </p>
+          </Card>
+        </Container>
+      </main>
+      <MarketingFooter />
     </>
   );
 }

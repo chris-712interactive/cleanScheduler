@@ -7,11 +7,7 @@ export function UsageUtilizationBanner({ alert }: { alert: UtilizationAlert }) {
   const urgent = alert.level === 'critical' || alert.level === 'exceeded';
 
   return (
-    <p
-      className={styles.banner}
-      data-urgency={urgent ? 'high' : undefined}
-      role="status"
-    >
+    <p className={styles.banner} data-urgency={urgent ? 'high' : undefined} role="status">
       <span>{utilizationBannerMessage(alert)}</span>
       <Link href="/billing" className={styles.link}>
         View billing →

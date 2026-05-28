@@ -34,7 +34,8 @@ export async function requestPasswordReset(
   const clientOrigin = await parseAllowedAuthRedirectOrigin(
     String(formData.get('return_origin') ?? ''),
   );
-  const origin = clientOrigin ?? (await parseAllowedAuthRedirectOrigin(headerOrigin)) ?? headerOrigin;
+  const origin =
+    clientOrigin ?? (await parseAllowedAuthRedirectOrigin(headerOrigin)) ?? headerOrigin;
   const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent('/reset-password')}`;
 
   const supabase = await createClient();

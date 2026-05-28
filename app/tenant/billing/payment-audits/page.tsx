@@ -25,7 +25,13 @@ import styles from './paymentAudits.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-type FilterKey = 'all' | 'awaiting_receipt' | 'awaiting_deposit' | 'awaiting_clearance' | 'bounced' | 'complete';
+type FilterKey =
+  | 'all'
+  | 'awaiting_receipt'
+  | 'awaiting_deposit'
+  | 'awaiting_clearance'
+  | 'bounced'
+  | 'complete';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   if (!value) return undefined;
@@ -133,10 +139,7 @@ export default async function TenantPaymentAuditsPage({
   const filter = parseFilter(firstParam(sp.filter));
   const page = parsePage(firstParam(sp.page));
   const dateRange = parsePaymentAuditDateRange(firstParam(sp.from), firstParam(sp.to));
-  const rangeLabel = formatPaymentAuditDateRangeLabel(
-    dateRange.fromInput,
-    dateRange.toInput,
-  );
+  const rangeLabel = formatPaymentAuditDateRangeLabel(dateRange.fromInput, dateRange.toInput);
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/payment-audits');
@@ -189,9 +192,7 @@ export default async function TenantPaymentAuditsPage({
   const rawRows = (payments ?? []) as RawRow[];
   const filteredRows = rawRows
     .filter((r) => filter === 'all' || manualPaymentAuditStage(r) === filter)
-    .sort(
-      (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime(),
-    );
+    .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
 
   const totalCount = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAYMENT_AUDIT_PAGE_SIZE));
@@ -215,9 +216,7 @@ export default async function TenantPaymentAuditsPage({
     }
   }
 
-  const pageRows = pageRawRows.map((row) =>
-    toAuditRow(row, bankMatchByPaymentId.get(row.id)),
-  );
+  const pageRows = pageRawRows.map((row) => toAuditRow(row, bankMatchByPaymentId.get(row.id)));
 
   const queryBase = {
     from: dateRange.fromInput || undefined,

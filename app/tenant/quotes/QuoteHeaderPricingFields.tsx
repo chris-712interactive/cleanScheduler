@@ -104,7 +104,9 @@ export function QuoteHeaderPricingFields({
           placeholder="0"
           value={controlled ? taxRatePercent : undefined}
           defaultValue={controlled ? undefined : taxRatePercent}
-          onChange={controlled ? (e) => onValuesChange({ taxRatePercent: e.target.value }) : undefined}
+          onChange={
+            controlled ? (e) => onValuesChange({ taxRatePercent: e.target.value }) : undefined
+          }
         />
       </fieldset>
 
@@ -138,7 +140,9 @@ export function QuoteHeaderPricingFields({
           Discount (%)
         </label>
         {!compact ? (
-          <p className={styles.hint}>Used when discount type is percent (for example 10 for 10%).</p>
+          <p className={styles.hint}>
+            Used when discount type is percent (for example 10 for 10%).
+          </p>
         ) : null}
         <input
           id="quote_discount_percent"

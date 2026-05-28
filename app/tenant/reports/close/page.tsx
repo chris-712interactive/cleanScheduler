@@ -55,12 +55,16 @@ export default async function TenantMonthEndClosePage() {
             ) : null}
           </div>
           <p className={styles.hint}>
-            Individual reports also offer <strong>Last month</strong> and <strong>Last quarter</strong>{' '}
-            presets on their date toolbar. Export CSV/PDF from each report when your review is complete.
+            Individual reports also offer <strong>Last month</strong> and{' '}
+            <strong>Last quarter</strong> presets on their date toolbar. Export CSV/PDF from each
+            report when your review is complete.
           </p>
         </Card>
 
-        <Card title="Close checklist" description="Follow in order — each step opens the right workspace area.">
+        <Card
+          title="Close checklist"
+          description="Follow in order — each step opens the right workspace area."
+        >
           <ol className={styles.closeChecklist}>
             {MONTH_END_CLOSE_STEPS.map((step, index) => (
               <li key={step.id} className={styles.closeChecklistItem}>
@@ -68,9 +72,7 @@ export default async function TenantMonthEndClosePage() {
                   <Circle size={18} />
                 </span>
                 <div className={styles.closeChecklistCopy}>
-                  <span className={styles.closeChecklistStep}>
-                    Step {index + 1}
-                  </span>
+                  <span className={styles.closeChecklistStep}>Step {index + 1}</span>
                   <Link href={stepHref(step)} className={styles.closeChecklistTitle}>
                     {step.title}
                   </Link>

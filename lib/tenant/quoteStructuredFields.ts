@@ -162,7 +162,9 @@ export function parseQuoteWizardStructuredFromForm(formData: FormData): {
   };
 
   const propertySnapshot: QuotePropertySnapshot = {
-    property_kind: parseCustomerPropertyKind(String(formData.get('quote_property_kind') ?? 'residential')),
+    property_kind: parseCustomerPropertyKind(
+      String(formData.get('quote_property_kind') ?? 'residential'),
+    ),
     sqft: parseOptionalSmallInt(String(formData.get('quote_property_sqft') ?? '')),
     bedrooms: parseOptionalSmallInt(String(formData.get('quote_property_bedrooms') ?? '')),
     bathrooms: parseOptionalDecimal(String(formData.get('quote_property_bathrooms') ?? '')),
@@ -172,7 +174,10 @@ export function parseQuoteWizardStructuredFromForm(formData: FormData): {
 
   const internalNotes = String(formData.get('office_notes') ?? '').trim() || null;
   const jobType = propertySnapshot.property_kind ?? null;
-  const customerNotes = composeCustomerQuoteNotes({ scope: scopeSnapshot, property: propertySnapshot });
+  const customerNotes = composeCustomerQuoteNotes({
+    scope: scopeSnapshot,
+    property: propertySnapshot,
+  });
 
   return { scopeSnapshot, propertySnapshot, internalNotes, jobType, customerNotes };
 }

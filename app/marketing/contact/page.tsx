@@ -27,69 +27,69 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
 
   return (
     <>
-    <main className={styles.page}>
-      <Container size="sm">
-        <PageHeader
-          title="Talk to us"
-          description="Questions, demos, or partnership ideas for residential and commercial cleaning teams."
-        />
+      <main className={styles.page}>
+        <Container size="sm">
+          <PageHeader
+            title="Talk to us"
+            description="Questions, demos, or partnership ideas for residential and commercial cleaning teams."
+          />
 
-        {sent ? (
-          <p className={styles.bannerOk} role="status">
-            Thanks — we received your message and will follow up by email.
-          </p>
-        ) : null}
-        {err ? (
-          <p className={styles.bannerErr} role="alert">
-            Please fill in name, email, and a short message, then try again.
-          </p>
-        ) : null}
+          {sent ? (
+            <p className={styles.bannerOk} role="status">
+              Thanks — we received your message and will follow up by email.
+            </p>
+          ) : null}
+          {err ? (
+            <p className={styles.bannerErr} role="alert">
+              Please fill in name, email, and a short message, then try again.
+            </p>
+          ) : null}
 
-        <Card title="Send a message">
-          <form action={submitMarketingInquiryAction} className={styles.form}>
-            <Stack gap={4} as="div">
-              <label className={styles.field}>
-                <span>Name</span>
-                <input
-                  name="name"
-                  type="text"
-                  required
-                  className={styles.input}
-                  autoComplete="name"
-                />
-              </label>
-              <label className={styles.field}>
-                <span>Email</span>
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className={styles.input}
-                  autoComplete="email"
-                />
-              </label>
-              <label className={styles.field}>
-                <span>Company (optional)</span>
-                <input
-                  name="company"
-                  type="text"
-                  className={styles.input}
-                  autoComplete="organization"
-                />
-              </label>
-              <label className={styles.field}>
-                <span>Message</span>
-                <textarea name="message" required className={styles.textarea} rows={5} />
-              </label>
-              <Button type="submit" variant="primary">
-                Submit
-              </Button>
-            </Stack>
-          </form>
-        </Card>
-      </Container>
-    </main>
-    <MarketingFooter />
+          <Card title="Send a message">
+            <form action={submitMarketingInquiryAction} className={styles.form}>
+              <Stack gap={4} as="div">
+                <label className={styles.field}>
+                  <span>Name</span>
+                  <input
+                    name="name"
+                    type="text"
+                    required
+                    className={styles.input}
+                    autoComplete="name"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Email</span>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    className={styles.input}
+                    autoComplete="email"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Company (optional)</span>
+                  <input
+                    name="company"
+                    type="text"
+                    className={styles.input}
+                    autoComplete="organization"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Message</span>
+                  <textarea name="message" required className={styles.textarea} rows={5} />
+                </label>
+                <Button type="submit" variant="primary">
+                  Submit
+                </Button>
+              </Stack>
+            </form>
+          </Card>
+        </Container>
+      </main>
+      <MarketingFooter />
     </>
   );
 }

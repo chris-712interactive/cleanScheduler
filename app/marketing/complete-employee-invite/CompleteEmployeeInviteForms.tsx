@@ -28,7 +28,10 @@ export function CompleteEmployeeInviteForms({
   marketingSignInUrl: string;
 }) {
   const [pwState, pwAction, pwPending] = useActionState(acceptEmployeeInviteAction, initial);
-  const [linkState, linkAction, linkPending] = useActionState(linkExistingEmployeeInviteAction, initial);
+  const [linkState, linkAction, linkPending] = useActionState(
+    linkExistingEmployeeInviteAction,
+    initial,
+  );
 
   return (
     <Stack gap={6} as="div">
@@ -45,8 +48,9 @@ export function CompleteEmployeeInviteForms({
           ) : null}
           {pwState.duplicateAccount ? (
             <p className={styles.hint}>
-              Use <strong>Link my account</strong> below if you already have this password on cleanScheduler, or open{' '}
-              <Link href={marketingSignInUrl}>sign in</Link> and return here.
+              Use <strong>Link my account</strong> below if you already have this password on
+              cleanScheduler, or open <Link href={marketingSignInUrl}>sign in</Link> and return
+              here.
             </p>
           ) : null}
           <label className={styles.label} htmlFor="emp-password">
@@ -99,8 +103,8 @@ export function CompleteEmployeeInviteForms({
           </form>
         ) : (
           <p className={styles.hint}>
-            Open <Link href={marketingSignInUrl}>sign in</Link>, complete login, then come back here and use Link my
-            account.
+            Open <Link href={marketingSignInUrl}>sign in</Link>, complete login, then come back here
+            and use Link my account.
           </p>
         )}
       </Card>

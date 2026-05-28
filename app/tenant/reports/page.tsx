@@ -7,10 +7,7 @@ import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/se
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
-import {
-  isReportEnabled,
-  reportsBySection,
-} from '@/lib/reports/reportCatalog';
+import { isReportEnabled, reportsBySection } from '@/lib/reports/reportCatalog';
 import { getReportsHubMetrics } from '@/lib/reports/hubMetrics';
 import styles from './reports.module.scss';
 
@@ -77,7 +74,11 @@ export default async function TenantReportsHubPage() {
       </div>
 
       {sections.map(({ section, label, items }) => (
-        <section key={section} className={styles.sectionBlock} aria-labelledby={`reports-${section}`}>
+        <section
+          key={section}
+          className={styles.sectionBlock}
+          aria-labelledby={`reports-${section}`}
+        >
           <h2 id={`reports-${section}`} className={styles.sectionHeading}>
             {label}
           </h2>

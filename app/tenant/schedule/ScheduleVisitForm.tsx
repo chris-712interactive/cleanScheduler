@@ -106,7 +106,12 @@ export function ScheduleVisitForm({
           <label className={styles.label} htmlFor="visit_quote">
             Related quote (optional)
           </label>
-          <select id="visit_quote" name="quote_id" className={styles.select} defaultValue={defaults?.quoteId ?? ''}>
+          <select
+            id="visit_quote"
+            name="quote_id"
+            className={styles.select}
+            defaultValue={defaults?.quoteId ?? ''}
+          >
             <option value="">— None —</option>
             {quoteOptions.map((q) => (
               <option key={q.id} value={q.id}>

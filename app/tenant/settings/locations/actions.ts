@@ -3,7 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import {
+  assertTenantFeatureEnabled,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 
 export interface LocationActionState {
@@ -15,7 +18,9 @@ export async function createTenantLocationAction(
   _prev: LocationActionState,
   formData: FormData,
 ): Promise<LocationActionState> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const name = String(formData.get('name') ?? '').trim();
   const code = String(formData.get('code') ?? '').trim();
 
@@ -47,7 +52,9 @@ export async function createTenantLocationAction(
 }
 
 export async function toggleTenantLocationAction(formData: FormData): Promise<void> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const locationId = String(formData.get('location_id') ?? '').trim();
   const enabled = String(formData.get('enabled') ?? '') === 'true';
   if (!slug || !locationId) return;
@@ -67,7 +74,9 @@ export async function toggleTenantLocationAction(formData: FormData): Promise<vo
 }
 
 export async function deleteTenantLocationAction(formData: FormData): Promise<void> {
-  const slug = String(formData.get('tenant_slug') ?? '').trim().toLowerCase();
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
   const locationId = String(formData.get('location_id') ?? '').trim();
   if (!slug || !locationId) return;
 

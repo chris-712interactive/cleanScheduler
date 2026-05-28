@@ -20,11 +20,7 @@ export function OwnerOnboardingPanel({
       titleHint={`${checklist.completedCount} of ${checklist.totalRequired} required steps complete`}
       description="Finish these basics so quotes, scheduling, and billing flow smoothly."
     >
-      <OwnerOnboardingChecklistView
-        tenantSlug={tenantSlug}
-        checklist={checklist}
-        variant="card"
-      />
+      <OwnerOnboardingChecklistView tenantSlug={tenantSlug} checklist={checklist} variant="card" />
     </Card>
   );
 }

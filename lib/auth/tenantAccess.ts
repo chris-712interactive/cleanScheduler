@@ -7,7 +7,10 @@ import {
   needsSubscriptionPurchase,
   resolveTenantSubscriptionAccess,
 } from '@/lib/billing/tenantSubscriptionAccess';
-import { enforceFieldEmployeeRouteAccess, isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
+import {
+  enforceFieldEmployeeRouteAccess,
+  isFieldEmployeeRole,
+} from '@/lib/tenant/fieldEmployeeAccess';
 import { requirePortalAccess } from './portalAccess';
 import type { TenantRole } from './types';
 
@@ -148,8 +151,7 @@ export async function requireTenantPortalAccess(
   };
 
   const membership = await lookupMembership(auth.user.id, slug);
-  const isPlatformAdmin =
-    auth.claims.appRole === 'super_admin' || auth.claims.appRole === 'admin';
+  const isPlatformAdmin = auth.claims.appRole === 'super_admin' || auth.claims.appRole === 'admin';
 
   if (membership) {
     await assertTenantWorkspaceUnlocked(membership.tenantId, {
@@ -177,13 +179,9 @@ export async function requireTenantPortalAccess(
       subscriptionLocked = needsSubscriptionPurchase(access);
     }
 
-    if (
-      accessOptions?.skipFieldEmployeeRouteEnforcement !== true &&
-      !isPlatformAdmin
-    ) {
+    if (accessOptions?.skipFieldEmployeeRouteEnforcement !== true && !isPlatformAdmin) {
       const pathForFieldCheck =
-        mergedOptions.browserPathname ??
-        (nextPath.startsWith('/tenant/') ? null : nextPath);
+        mergedOptions.browserPathname ?? (nextPath.startsWith('/tenant/') ? null : nextPath);
       if (pathForFieldCheck) {
         enforceFieldEmployeeRouteAccess(membership.role, pathForFieldCheck, {
           subscriptionLocked,

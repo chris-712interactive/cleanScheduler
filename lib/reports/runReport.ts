@@ -41,7 +41,10 @@ export type ReportRunResult =
   | { kind: 'crew-utilization'; data: Awaited<ReturnType<typeof runCrewUtilizationReport>> }
   | { kind: 'on-time-arrival'; data: Awaited<ReturnType<typeof runOnTimeArrivalReport>> }
   | { kind: 'tips-commissions'; data: Awaited<ReturnType<typeof runTipsCommissionsReport>> }
-  | { kind: 'processing-fees-deductible'; data: Awaited<ReturnType<typeof runProcessingFeesReport>> }
+  | {
+      kind: 'processing-fees-deductible';
+      data: Awaited<ReturnType<typeof runProcessingFeesReport>>;
+    }
   | { kind: 'year-end-revenue'; data: Awaited<ReturnType<typeof runYearEndRevenueReport>> }
   | { kind: 'customer-1099-prep'; data: Awaited<ReturnType<typeof runCustomer1099PrepReport>> }
   | { kind: 'cohort-ltv-churn'; data: Awaited<ReturnType<typeof runCohortLtvReport>> }

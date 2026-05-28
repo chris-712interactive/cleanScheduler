@@ -19,9 +19,7 @@ export function ScheduleOverlapConfirm({
   return (
     <div className={styles.box} role="alert">
       <p className={styles.title}>Scheduling conflict</p>
-      <p className={styles.intro}>
-        Assigned crew already has another visit during this window:
-      </p>
+      <p className={styles.intro}>Assigned crew already has another visit during this window:</p>
       <ul className={styles.list}>
         {conflicts.map((c) => (
           <li key={`${c.assigneeUserId}-${c.otherVisitId}`}>

@@ -5,11 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { acknowledgeChecklistCompletionAction } from '@/app/tenant/ownerOnboardingActions';
 import styles from './ownerOnboardingCompletionCelebration.module.scss';
 
-export function OwnerOnboardingCompletionCelebration({
-  tenantSlug,
-}: {
-  tenantSlug: string;
-}) {
+export function OwnerOnboardingCompletionCelebration({ tenantSlug }: { tenantSlug: string }) {
   return (
     <Card
       title="You're set up!"

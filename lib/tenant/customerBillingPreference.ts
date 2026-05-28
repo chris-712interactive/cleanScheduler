@@ -50,10 +50,14 @@ export function formatCustomerPreferredBilling(
   return CUSTOMER_PAYMENT_METHOD_LABEL[method] ?? method;
 }
 
-export function isElectronicPreferredBilling(method: TenantPaymentMethod | null | undefined): boolean {
+export function isElectronicPreferredBilling(
+  method: TenantPaymentMethod | null | undefined,
+): boolean {
   return method === 'card' || method === 'ach';
 }
 
-export function isInPersonPreferredBilling(method: TenantPaymentMethod | null | undefined): boolean {
+export function isInPersonPreferredBilling(
+  method: TenantPaymentMethod | null | undefined,
+): boolean {
   return method === 'cash' || method === 'check';
 }

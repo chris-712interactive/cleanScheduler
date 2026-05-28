@@ -23,11 +23,11 @@ Reports are **read-only analytics**. Mutations (mark check deposited, record pay
 
 ## Audiences & cadence
 
-| Audience | Typical cadence | Needs |
-|----------|-----------------|--------|
-| **Office manager** | Daily / weekly | Schedule completions, field cash/checks in limbo, overdue AR calls |
-| **Owner** | Weekly / monthly | Revenue mix, crew utilization, quote pipeline, MRR |
-| **Accountant** | Monthly / quarterly / year-end | Invoice audit, reconciliation by method, aging, sales tax, fee totals |
+| Audience           | Typical cadence                | Needs                                                                 |
+| ------------------ | ------------------------------ | --------------------------------------------------------------------- |
+| **Office manager** | Daily / weekly                 | Schedule completions, field cash/checks in limbo, overdue AR calls    |
+| **Owner**          | Weekly / monthly               | Revenue mix, crew utilization, quote pipeline, MRR                    |
+| **Accountant**     | Monthly / quarterly / year-end | Invoice audit, reconciliation by method, aging, sales tax, fee totals |
 
 Each report page ships with **suggested default ranges** (Today, Last 7 days, MTD, Last month, YTD, Custom) via URL `from` / `to` params — same pattern as `/billing/payment-audits`.
 
@@ -37,13 +37,13 @@ Each report page ships with **suggested default ranges** (Today, Last 7 days, MT
 
 ### Phase 1 — Core (MVP)
 
-| Slug | Title | Default range | Primary data | Tier gate |
-|------|-------|---------------|--------------|-----------|
-| `outstanding-balances` | Outstanding balances (AR aging) | As of today | `tenant_invoices` | **All tiers** |
-| `invoice-audit` | Invoice audit | Last month | `tenant_invoices`, `tenant_invoice_payments` | **All tiers** |
-| `field-check-tracking` | Field check tracking | Last 30 days | `tenant_invoice_payments` (check + manual audit cols) | **All tiers** |
-| `collections-summary` | Collections summary | Last 7 days | Payments + invoices | **All tiers** |
-| `quote-pipeline` | Quote pipeline | Last 30 days | `tenant_quotes`, line items | **All tiers** |
+| Slug                   | Title                           | Default range | Primary data                                          | Tier gate     |
+| ---------------------- | ------------------------------- | ------------- | ----------------------------------------------------- | ------------- |
+| `outstanding-balances` | Outstanding balances (AR aging) | As of today   | `tenant_invoices`                                     | **All tiers** |
+| `invoice-audit`        | Invoice audit                   | Last month    | `tenant_invoices`, `tenant_invoice_payments`          | **All tiers** |
+| `field-check-tracking` | Field check tracking            | Last 30 days  | `tenant_invoice_payments` (check + manual audit cols) | **All tiers** |
+| `collections-summary`  | Collections summary             | Last 7 days   | Payments + invoices                                   | **All tiers** |
+| `quote-pipeline`       | Quote pipeline                  | Last 30 days  | `tenant_quotes`, line items                           | **All tiers** |
 
 **Outstanding balances** — open invoices grouped by customer with buckets **0–30 / 31–60 / 61–90 / 90+** days (extends `lib/billing/outstandingInvoices.ts`).
 
@@ -59,35 +59,35 @@ Each report page ships with **suggested default ranges** (Today, Last 7 days, MT
 
 Requires `advancedAnalytics` (`lib/billing/entitlements.ts` — **Pro only** today).
 
-| Slug | Title | Primary data | Notes |
-|------|-------|--------------|-------|
-| `payment-reconciliation` | Payment reconciliation | `tenant_invoice_payments`, `tenant_stripe_payouts` | Group by method; card section groups by payout when `stripe_payout_id` backfill exists |
-| `revenue-by-customer` | Revenue by customer | Paid invoices / payments in range | Top customers, concentration |
-| `revenue-by-service` | Revenue by service | `tenant_quote_line_items` + accepted quotes | Free-text `service_label` normalization; cash attribution limited until invoice line items |
-| `recurring-revenue` | Recurring revenue (MRR) | `customer_subscriptions` ⋈ `service_plans` | Accrual MRR; normalize week/year → monthly |
-| `employee-performance` | Employee performance | Visits ⋈ assignees | Jobs completed, scheduled hours, completion rate |
+| Slug                     | Title                   | Primary data                                       | Notes                                                                                      |
+| ------------------------ | ----------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `payment-reconciliation` | Payment reconciliation  | `tenant_invoice_payments`, `tenant_stripe_payouts` | Group by method; card section groups by payout when `stripe_payout_id` backfill exists     |
+| `revenue-by-customer`    | Revenue by customer     | Paid invoices / payments in range                  | Top customers, concentration                                                               |
+| `revenue-by-service`     | Revenue by service      | `tenant_quote_line_items` + accepted quotes        | Free-text `service_label` normalization; cash attribution limited until invoice line items |
+| `recurring-revenue`      | Recurring revenue (MRR) | `customer_subscriptions` ⋈ `service_plans`         | Accrual MRR; normalize week/year → monthly                                                 |
+| `employee-performance`   | Employee performance    | Visits ⋈ assignees                                 | Jobs completed, scheduled hours, completion rate                                           |
 
 **Employee performance (basic):** hours from `ends_at - starts_at` on assigned completed visits; jobs completed count; optional **labor cost** when `labor_cost_per_hour` exists on team profile (see Schema prerequisites).
 
 ### Phase 2 — Payroll, tax, ops (baseline shipped)
 
-| Slug | Title | Gate | Notes |
-|------|-------|------|-------|
-| `sales-tax-summary` | Sales tax by jurisdiction | `salesTaxSummary` (**Business+**) | Accepted quotes + property state/ZIP; tax from `computeQuoteTotals` / quote `tax_mode` |
-| `payroll-export` | Payroll export | `payrollExports` (**Business+**) | Hours per employee; CSV export with generic, ADP, Gusto, or QuickBooks column layouts |
-| `tips-commissions` | Tips & commissions | `jobCosting` (**Business+**) | Lists `compensation_rules` (manage at Settings → Compensation); payout math deferred |
-| `crew-utilization` | Crew utilization | `advancedAnalytics` (**Pro**) | Scheduled hours vs 40h/week × weeks in range |
-| `on-time-arrival` | On-time arrival | `advancedAnalytics` (**Pro**) | `checked_in_at` vs `starts_at` with 15-minute grace |
-| `bank-reconciliation` | Bank deposit reconciliation | `plaidReconciliation` (**Business+**) | `bank_transactions`, match suggestions, CSV import fallback |
+| Slug                  | Title                       | Gate                                  | Notes                                                                                  |
+| --------------------- | --------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------- |
+| `sales-tax-summary`   | Sales tax by jurisdiction   | `salesTaxSummary` (**Business+**)     | Accepted quotes + property state/ZIP; tax from `computeQuoteTotals` / quote `tax_mode` |
+| `payroll-export`      | Payroll export              | `payrollExports` (**Business+**)      | Hours per employee; CSV export with generic, ADP, Gusto, or QuickBooks column layouts  |
+| `tips-commissions`    | Tips & commissions          | `jobCosting` (**Business+**)          | Lists `compensation_rules` (manage at Settings → Compensation); payout math deferred   |
+| `crew-utilization`    | Crew utilization            | `advancedAnalytics` (**Pro**)         | Scheduled hours vs 40h/week × weeks in range                                           |
+| `on-time-arrival`     | On-time arrival             | `advancedAnalytics` (**Pro**)         | `checked_in_at` vs `starts_at` with 15-minute grace                                    |
+| `bank-reconciliation` | Bank deposit reconciliation | `plaidReconciliation` (**Business+**) | `bank_transactions`, match suggestions, CSV import fallback                            |
 
 ### Phase 3 — Year-end & strategic
 
-| Slug | Title | Gate | Notes |
-|------|-------|------|-------|
-| `year-end-revenue` | Year-end revenue & fees | `advancedAnalytics` | Sum gross, Stripe fees, net; per customer 1099 inputs |
-| `customer-1099-prep` | 1099 prep by customer | `advancedAnalytics` | Threshold flagging |
-| `processing-fees-deductible` | Processing fees (deductible) | All tiers (basic) or Pro (detail) | `stripe_fee_cents` rollup |
-| `cohort-ltv-churn` | Cohort / LTV / churn | `forecasting` | Pro only |
+| Slug                         | Title                        | Gate                              | Notes                                                 |
+| ---------------------------- | ---------------------------- | --------------------------------- | ----------------------------------------------------- |
+| `year-end-revenue`           | Year-end revenue & fees      | `advancedAnalytics`               | Sum gross, Stripe fees, net; per customer 1099 inputs |
+| `customer-1099-prep`         | 1099 prep by customer        | `advancedAnalytics`               | Threshold flagging                                    |
+| `processing-fees-deductible` | Processing fees (deductible) | All tiers (basic) or Pro (detail) | `stripe_fee_cents` rollup                             |
+| `cohort-ltv-churn`           | Cohort / LTV / churn         | `forecasting`                     | Pro only                                              |
 
 ---
 
@@ -95,18 +95,18 @@ Requires `advancedAnalytics` (`lib/billing/entitlements.ts` — **Pro only** tod
 
 Align with `lib/billing/entitlements.ts`. **Starter gets real reports**, not an empty hub — basic bookkeeping is table-stakes for a cleaning business.
 
-| Capability | Starter | Business | Pro |
-|------------|---------|----------|-----|
-| Reports hub + Phase 1 core (5 reports) | Yes | Yes | Yes |
-| CSV export (all implemented reports) | Yes | Yes | Yes |
-| PDF export (all implemented reports) | Yes | Yes | Yes |
-| Phase 1.5 analytics bundle | No | No | Yes (`advancedAnalytics`) |
-| Sales tax summary | No | Yes (`salesTaxSummary`) | Yes |
-| Payroll export report | No | Yes (`payrollExports`) | Yes |
-| Tips & commissions (rules directory) | No | Yes (`jobCosting`) | Yes |
-| Crew utilization + on-time arrival | No | No | Yes (`advancedAnalytics`) |
-| Plaid bank match reports | No | Yes (`plaidReconciliation`) | Yes (`plaidReconciliation`) |
-| Cohort / forecasting (Phase 3) | No | No | Yes (`forecasting`) |
+| Capability                             | Starter | Business                    | Pro                         |
+| -------------------------------------- | ------- | --------------------------- | --------------------------- |
+| Reports hub + Phase 1 core (5 reports) | Yes     | Yes                         | Yes                         |
+| CSV export (all implemented reports)   | Yes     | Yes                         | Yes                         |
+| PDF export (all implemented reports)   | Yes     | Yes                         | Yes                         |
+| Phase 1.5 analytics bundle             | No      | No                          | Yes (`advancedAnalytics`)   |
+| Sales tax summary                      | No      | Yes (`salesTaxSummary`)     | Yes                         |
+| Payroll export report                  | No      | Yes (`payrollExports`)      | Yes                         |
+| Tips & commissions (rules directory)   | No      | Yes (`jobCosting`)          | Yes                         |
+| Crew utilization + on-time arrival     | No      | No                          | Yes (`advancedAnalytics`)   |
+| Plaid bank match reports               | No      | Yes (`plaidReconciliation`) | Yes (`plaidReconciliation`) |
+| Cohort / forecasting (Phase 3)         | No      | No                          | Yes (`forecasting`)         |
 
 **Enforcement pattern** (mirror email campaigns):
 
@@ -130,12 +130,12 @@ Align with `lib/billing/entitlements.ts`. **Starter gets real reports**, not an 
 
 ## Roles
 
-| Role | View reports | Run / refresh | Export CSV/PDF |
-|------|--------------|---------------|----------------|
-| Owner | Yes | Yes | Yes |
-| Admin | Yes | Yes | Yes |
-| Employee | Yes | No | No |
-| Viewer | Yes | No | No |
+| Role     | View reports | Run / refresh | Export CSV/PDF |
+| -------- | ------------ | ------------- | -------------- |
+| Owner    | Yes          | Yes           | Yes            |
+| Admin    | Yes          | Yes           | Yes            |
+| Employee | Yes          | No            | No             |
+| Viewer   | Yes          | No            | No             |
 
 Optional later: hide payroll exports from `employee` role even when view is allowed.
 
@@ -193,12 +193,12 @@ Optional later: hide payroll exports from `employee` role even when view is allo
 
 ### Navigation
 
-| Item | Location |
-|------|----------|
-| Reports hub | `/reports` (sidebar, always on for subscribed tenants) |
-| Report detail | `/reports/[slug]` |
-| Payment workflow | `/billing/payment-audits` (unchanged; linked from Field check tracking) |
-| Billing hub | No duplicate report list — single link “View all reports →” optional on billing page |
+| Item             | Location                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| Reports hub      | `/reports` (sidebar, always on for subscribed tenants)                               |
+| Report detail    | `/reports/[slug]`                                                                    |
+| Payment workflow | `/billing/payment-audits` (unchanged; linked from Field check tracking)              |
+| Billing hub      | No duplicate report list — single link “View all reports →” optional on billing page |
 
 **Design asset:** add mockup `docs/design/portal-mockups/15-tenant-reports.png` during implementation (reference: `08-tenant-payment-audits.png` for table/filter chrome).
 
@@ -208,31 +208,31 @@ Optional later: hide payroll exports from `employee` role even when view is allo
 
 ### Sources (today)
 
-| Domain | Tables / libs |
-|--------|----------------|
-| Invoices & AR | `tenant_invoices`, `lib/billing/outstandingInvoices.ts` |
-| Payments | `tenant_invoice_payments` (methods, Stripe fee cols, manual audit cols) |
-| Stripe mirrors | `tenant_stripe_payouts`, `tenant_stripe_refunds`, `tenant_stripe_disputes` |
-| Visits / crew | `tenant_scheduled_visits`, `tenant_scheduled_visit_assignees` |
-| Quotes / services | `tenant_quotes`, `tenant_quote_line_items`, `lib/tenant/quoteTotals.ts` |
-| Recurring revenue | `customer_subscriptions`, `service_plans` |
-| Locations / tax situs | `tenant_customer_properties` (city, state, postal_code) |
-| Team | `tenant_memberships`, `user_profiles` |
+| Domain                | Tables / libs                                                              |
+| --------------------- | -------------------------------------------------------------------------- |
+| Invoices & AR         | `tenant_invoices`, `lib/billing/outstandingInvoices.ts`                    |
+| Payments              | `tenant_invoice_payments` (methods, Stripe fee cols, manual audit cols)    |
+| Stripe mirrors        | `tenant_stripe_payouts`, `tenant_stripe_refunds`, `tenant_stripe_disputes` |
+| Visits / crew         | `tenant_scheduled_visits`, `tenant_scheduled_visit_assignees`              |
+| Quotes / services     | `tenant_quotes`, `tenant_quote_line_items`, `lib/tenant/quoteTotals.ts`    |
+| Recurring revenue     | `customer_subscriptions`, `service_plans`                                  |
+| Locations / tax situs | `tenant_customer_properties` (city, state, postal_code)                    |
+| Team                  | `tenant_memberships`, `user_profiles`                                      |
 
 ### Schema prerequisites (by phase)
 
-| Change | Phase | Purpose |
-|--------|-------|---------|
-| `report_runs` table + RLS | 1 | Cache heavy queries; export metadata |
-| `report_exports` Storage bucket | 1 | PDF cache |
-| Index `(tenant_id, recorded_at)` on payments | 1 | Date-range report performance |
-| `stripe_payout_id` on `tenant_invoice_payments` + webhook backfill | 1.5 | Payout-grouped reconciliation |
-| `labor_cost_per_hour` on `user_profiles` or team extension | 1.5 | Employee labor cost column |
-| `tax_cents` + `property_id` on invoices (or payment snapshot) | 2 | Credible sales tax report |
-| `compensation_rules` | 2 | Tips / commissions |
-| Extend `audit_log_entries` for invoice/payment lifecycle | 2 | Chain-of-custody links on exports |
-| `bank_links`, `bank_transactions`, `payment_match_suggestions` | 2 | Plaid reconciliation |
-| Invoice line items ↔ quote lines | 2+ | Cash revenue by service |
+| Change                                                             | Phase | Purpose                              |
+| ------------------------------------------------------------------ | ----- | ------------------------------------ |
+| `report_runs` table + RLS                                          | 1     | Cache heavy queries; export metadata |
+| `report_exports` Storage bucket                                    | 1     | PDF cache                            |
+| Index `(tenant_id, recorded_at)` on payments                       | 1     | Date-range report performance        |
+| `stripe_payout_id` on `tenant_invoice_payments` + webhook backfill | 1.5   | Payout-grouped reconciliation        |
+| `labor_cost_per_hour` on `user_profiles` or team extension         | 1.5   | Employee labor cost column           |
+| `tax_cents` + `property_id` on invoices (or payment snapshot)      | 2     | Credible sales tax report            |
+| `compensation_rules`                                               | 2     | Tips / commissions                   |
+| Extend `audit_log_entries` for invoice/payment lifecycle           | 2     | Chain-of-custody links on exports    |
+| `bank_links`, `bank_transactions`, `payment_match_suggestions`     | 2     | Plaid reconciliation                 |
+| Invoice line items ↔ quote lines                                   | 2+    | Cash revenue by service              |
 
 ### `report_runs` (proposed migration `0034_report_runs.sql`)
 
@@ -260,10 +260,10 @@ RLS: tenant members read; writes via service role or secured server actions. TTL
 
 ## Export architecture
 
-| Format | Phase 1 approach | Phase 2+ |
-|--------|------------------|----------|
-| **CSV** | `GET /api/tenant/reports/[runId]/export.csv` — generate from `result_json` or re-query; `Content-Disposition: attachment` | Same |
-| **PDF** | Queue `report_runs.status = pending`; render with **pdfkit** (serverless-safe); upload to Storage; poll/download | Email link via Resend optional |
+| Format  | Phase 1 approach                                                                                                          | Phase 2+                       |
+| ------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **CSV** | `GET /api/tenant/reports/[runId]/export.csv` — generate from `result_json` or re-query; `Content-Disposition: attachment` | Same                           |
+| **PDF** | Queue `report_runs.status = pending`; render with **pdfkit** (serverless-safe); upload to Storage; poll/download          | Email link via Resend optional |
 
 Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each report query so UI table and export match.
 
@@ -273,13 +273,13 @@ Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each repor
 
 ## Relationship to existing surfaces
 
-| Surface | Role |
-|---------|------|
-| **Dashboard** (`/`) | Point-in-time KPIs only — no date picker, no export. Do not duplicate full reports. |
-| **Payment audits** (`/billing/payment-audits`) | Operational queue — mark received/deposited. Stays in Billing. |
-| **Field check tracking report** | Read-only + export; deep-links to Payment audits for actions. |
-| **Transactions** (`/billing/transactions`) | Raw ledger list — reports aggregate and explain. |
-| **Campaigns metrics** | Stays on Campaigns — not under Reports. |
+| Surface                                        | Role                                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Dashboard** (`/`)                            | Point-in-time KPIs only — no date picker, no export. Do not duplicate full reports. |
+| **Payment audits** (`/billing/payment-audits`) | Operational queue — mark received/deposited. Stays in Billing.                      |
+| **Field check tracking report**                | Read-only + export; deep-links to Payment audits for actions.                       |
+| **Transactions** (`/billing/transactions`)     | Raw ledger list — reports aggregate and explain.                                    |
+| **Campaigns metrics**                          | Stays on Campaigns — not under Reports.                                             |
 
 ---
 
@@ -287,19 +287,19 @@ Shared helper: `lib/reports/toCsv.ts` — column defs co-located with each repor
 
 ### Shipped
 
-| Area | Details |
-|------|---------|
-| **Phase 1** | Hub (`app/tenant/reports/page.tsx`), 5 core reports, hub KPIs (`hubMetrics.ts`) |
-| **Phase 1 polish** | `report_runs` cache (`reportRunCache.ts`), date presets (7d/MTD/YTD), pagination (`ReportPagination.tsx`), CSV + PDF export |
-| **Phase 1.5** | Payment reconciliation, revenue by customer/service, MRR, employee performance |
-| **Phase 2 baseline** | Sales tax, payroll export (generic + ADP/Gusto/QBO CSV), tips/commissions, crew utilization, on-time arrival |
-| **Phase 2 polish** | `stripe_payout_id` + payout backfill; compensation rules UI + payout math on payroll/tips |
-| **Phase 3 baseline** | Processing fees (all tiers), year-end revenue, 1099 prep (Pro), cohort/LTV (Pro `forecasting`) |
-| **Bank reconciliation** | `bank-reconciliation` report, `plaidReconciliation` entitlement, CSV import fallback on bank connection |
-| **Chain-of-custody exports** | `tenant_payment_events` log; field check + invoice audit CSV/PDF link columns |
-| **PDF cache** | `report_exports` Storage keyed by `report_runs.id` on PDF export |
-| **Payout backfill cron** | Weekly `/api/cron/backfill-stripe-payout-links` for historical batches |
-| **RBAC** | `lib/tenant/reportPermissions.ts` — owners/admins export; employees/viewers read unlocked reports |
+| Area                         | Details                                                                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1**                  | Hub (`app/tenant/reports/page.tsx`), 5 core reports, hub KPIs (`hubMetrics.ts`)                                             |
+| **Phase 1 polish**           | `report_runs` cache (`reportRunCache.ts`), date presets (7d/MTD/YTD), pagination (`ReportPagination.tsx`), CSV + PDF export |
+| **Phase 1.5**                | Payment reconciliation, revenue by customer/service, MRR, employee performance                                              |
+| **Phase 2 baseline**         | Sales tax, payroll export (generic + ADP/Gusto/QBO CSV), tips/commissions, crew utilization, on-time arrival                |
+| **Phase 2 polish**           | `stripe_payout_id` + payout backfill; compensation rules UI + payout math on payroll/tips                                   |
+| **Phase 3 baseline**         | Processing fees (all tiers), year-end revenue, 1099 prep (Pro), cohort/LTV (Pro `forecasting`)                              |
+| **Bank reconciliation**      | `bank-reconciliation` report, `plaidReconciliation` entitlement, CSV import fallback on bank connection                     |
+| **Chain-of-custody exports** | `tenant_payment_events` log; field check + invoice audit CSV/PDF link columns                                               |
+| **PDF cache**                | `report_exports` Storage keyed by `report_runs.id` on PDF export                                                            |
+| **Payout backfill cron**     | Weekly `/api/cron/backfill-stripe-payout-links` for historical batches                                                      |
+| **RBAC**                     | `lib/tenant/reportPermissions.ts` — owners/admins export; employees/viewers read unlocked reports                           |
 
 ### Remaining
 

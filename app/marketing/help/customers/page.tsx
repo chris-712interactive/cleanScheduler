@@ -22,10 +22,7 @@ export default function CustomerHelpPage() {
           description={category.description}
           backHref="/help"
           backLabel="Help Center"
-          breadcrumbs={[
-            { label: 'Help', href: '/help' },
-            { label: 'Customers' },
-          ]}
+          breadcrumbs={[{ label: 'Help', href: '/help' }, { label: 'Customers' }]}
         />
         <HelpCardGrid sectionTitle={category.sectionTitle} cards={category.cards} />
       </Container>

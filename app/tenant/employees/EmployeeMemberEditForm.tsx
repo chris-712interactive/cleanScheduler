@@ -45,10 +45,22 @@ export function EmployeeMemberEditForm({
   canChangeRole: boolean;
   canToggleActive: boolean;
 }) {
-  const [nameState, nameAction, namePending] = useActionState(updateTeamMemberDisplayNameAction, initial);
-  const [roleState, roleAction, rolePending] = useActionState(updateTenantMemberRoleAction, initial);
-  const [activeState, activeAction, activePending] = useActionState(setTenantMemberActiveAction, initial);
-  const [avatarState, avatarAction, avatarPending] = useActionState(uploadTeamMemberAvatarAction, initial);
+  const [nameState, nameAction, namePending] = useActionState(
+    updateTeamMemberDisplayNameAction,
+    initial,
+  );
+  const [roleState, roleAction, rolePending] = useActionState(
+    updateTenantMemberRoleAction,
+    initial,
+  );
+  const [activeState, activeAction, activePending] = useActionState(
+    setTenantMemberActiveAction,
+    initial,
+  );
+  const [avatarState, avatarAction, avatarPending] = useActionState(
+    uploadTeamMemberAvatarAction,
+    initial,
+  );
 
   const label = displayName.trim() || 'Team member';
   const initials =
@@ -109,7 +121,9 @@ export function EmployeeMemberEditForm({
             Upload image
             <input name="avatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
           </label>
-          <p className={styles.hint}>JPEG, PNG, WebP, or GIF. Large files are resized automatically.</p>
+          <p className={styles.hint}>
+            JPEG, PNG, WebP, or GIF. Large files are resized automatically.
+          </p>
           <Button type="submit" variant="secondary" disabled={avatarPending}>
             {avatarPending ? 'Uploading…' : 'Update photo'}
           </Button>
@@ -161,7 +175,11 @@ export function EmployeeMemberEditForm({
                   ? 'Deactivate to block sign-in to this workspace. Their history stays intact.'
                   : 'Reactivate to allow this person to sign in again.'}
               </p>
-              <Button type="submit" variant={isActive ? 'danger' : 'secondary'} disabled={activePending}>
+              <Button
+                type="submit"
+                variant={isActive ? 'danger' : 'secondary'}
+                disabled={activePending}
+              >
                 {activePending ? '…' : isActive ? 'Deactivate member' : 'Reactivate member'}
               </Button>
             </form>

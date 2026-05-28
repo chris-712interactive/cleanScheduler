@@ -99,7 +99,9 @@ export default function PrivacyPolicyPage() {
               <li>Provide, maintain, and secure the Service;</li>
               <li>Authenticate users and enforce role-based access within each workspace;</li>
               <li>Process platform subscriptions and, when enabled, tenant payment flows;</li>
-              <li>Send transactional email and, when configured by a tenant, marketing campaigns;</li>
+              <li>
+                Send transactional email and, when configured by a tenant, marketing campaigns;
+              </li>
               <li>Generate reports, exports, and operational notifications;</li>
               <li>Respond to support requests and improve the product;</li>
               <li>Comply with law and protect against fraud or abuse.</li>
@@ -110,8 +112,8 @@ export default function PrivacyPolicyPage() {
               If you are in a jurisdiction that requires a legal basis for processing (such as the
               EEA or UK), we rely on: performance of a contract (providing the Service you signed up
               for); legitimate interests (security, product improvement, and B2B communications);
-              and consent where required (for example, optional marketing email to addresses a tenant
-              supplies).
+              and consent where required (for example, optional marketing email to addresses a
+              tenant supplies).
             </p>
 
             <h2>5. Third-party service providers</h2>
@@ -174,9 +176,8 @@ export default function PrivacyPolicyPage() {
               Tenant Users can update profile and business settings in the workspace. Customer Users
               should contact their cleaning service provider for portal-specific requests; we will
               assist the provider when they ask us to act on a verified request. To reach us
-              directly, email{' '}
-              <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a> or use our{' '}
-              <Link href="/contact">contact form</Link>.
+              directly, email <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a> or
+              use our <Link href="/contact">contact form</Link>.
             </p>
 
             <h2>10. Cookies and similar technologies</h2>
@@ -189,8 +190,8 @@ export default function PrivacyPolicyPage() {
 
             <h2>11. Children</h2>
             <p>
-              The Service is intended for businesses and is not directed to children under 16. We
-              do not knowingly collect personal information from children.
+              The Service is intended for businesses and is not directed to children under 16. We do
+              not knowingly collect personal information from children.
             </p>
 
             <h2>12. International transfers</h2>

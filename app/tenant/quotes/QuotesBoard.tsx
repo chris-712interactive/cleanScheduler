@@ -108,13 +108,7 @@ function BoardQuoteCardFace({
   );
 }
 
-function BoardColumnHeader({
-  status,
-  count,
-}: {
-  status: QuoteStatus;
-  count: number;
-}) {
+function BoardColumnHeader({ status, count }: { status: QuoteStatus; count: number }) {
   return (
     <header className={styles.boardColumnHeader}>
       <div className={styles.boardColumnTitleRow}>
@@ -237,25 +231,25 @@ function MobileQuoteCard({
     >
       <BoardQuoteCardFace quote={quote} variant="list" />
       <div className={styles.boardCardMove}>
-          <label className={styles.boardCardMoveLabel} htmlFor={`move_${quote.id}`}>
-            Move to
-          </label>
-          <select
-            id={`move_${quote.id}`}
-            className={styles.boardCardMoveSelect}
-            value={quote.status}
-            disabled={pending}
-            onChange={(e) => {
-              const v = e.target.value as QuoteStatus;
-              if (v !== quote.status) onMobileMove(quote.id, v);
-            }}
-          >
-            {QUOTE_BOARD_COLUMN_ORDER.map((s) => (
-              <option key={s} value={s} disabled={s === 'accepted'}>
-                {QUOTE_STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
+        <label className={styles.boardCardMoveLabel} htmlFor={`move_${quote.id}`}>
+          Move to
+        </label>
+        <select
+          id={`move_${quote.id}`}
+          className={styles.boardCardMoveSelect}
+          value={quote.status}
+          disabled={pending}
+          onChange={(e) => {
+            const v = e.target.value as QuoteStatus;
+            if (v !== quote.status) onMobileMove(quote.id, v);
+          }}
+        >
+          {QUOTE_BOARD_COLUMN_ORDER.map((s) => (
+            <option key={s} value={s} disabled={s === 'accepted'}>
+              {QUOTE_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
       </div>
     </article>
   );

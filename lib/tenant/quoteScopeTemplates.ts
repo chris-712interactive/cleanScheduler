@@ -48,8 +48,7 @@ export const QUOTE_SCOPE_TEMPLATES: QuoteScopeTemplate[] = [
       'Bathrooms — full detail',
       'All floors — vacuum and mop',
     ],
-    defaultExclusions:
-      'Carpet steam extraction, exterior windows, paint touch-up, junk removal.',
+    defaultExclusions: 'Carpet steam extraction, exterior windows, paint touch-up, junk removal.',
   },
   {
     id: 'custom',

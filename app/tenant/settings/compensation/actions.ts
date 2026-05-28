@@ -5,7 +5,10 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
-import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
+import {
+  assertTenantFeatureEnabled,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
 import {
   parseCompensationRuleType,
   parseFlatDollarsToCents,
@@ -40,20 +43,27 @@ export async function createCompensationRuleAction(formData: FormData): Promise<
   const slug = String(formData.get('tenant_slug') ?? '').trim();
   const membership = await requireTenantPortalAccess(slug, '/settings/compensation');
   if (!canManageTeamInvitesAndRoles(membership.role)) {
-    redirect(compensationSettingsPath(slug, { error: 'Only owners and admins can edit compensation rules.' }));
+    redirect(
+      compensationSettingsPath(slug, {
+        error: 'Only owners and admins can edit compensation rules.',
+      }),
+    );
   }
 
   const admin = createAdminClient();
   try {
     await assertTenantFeatureEnabled(admin, membership.tenantId, 'jobCosting');
   } catch (error) {
-    const message = featureGateErrorMessage(error) ?? 'Upgrade your subscription to manage compensation rules.';
+    const message =
+      featureGateErrorMessage(error) ?? 'Upgrade your subscription to manage compensation rules.';
     redirect(compensationSettingsPath(slug, { error: message }));
   }
 
   const name = String(formData.get('name') ?? '').trim();
   if (!name || name.length > 120) {
-    redirect(compensationSettingsPath(slug, { error: 'Rule name is required (max 120 characters).' }));
+    redirect(
+      compensationSettingsPath(slug, { error: 'Rule name is required (max 120 characters).' }),
+    );
   }
 
   const ruleType = parseCompensationRuleType(String(formData.get('rule_type') ?? ''));
@@ -101,7 +111,8 @@ export async function setCompensationRuleActiveAction(formData: FormData): Promi
   try {
     await assertTenantFeatureEnabled(admin, membership.tenantId, 'jobCosting');
   } catch (error) {
-    const message = featureGateErrorMessage(error) ?? 'Upgrade your subscription to manage compensation rules.';
+    const message =
+      featureGateErrorMessage(error) ?? 'Upgrade your subscription to manage compensation rules.';
     redirect(compensationSettingsPath(slug, { error: message }));
   }
 
@@ -133,7 +144,8 @@ export async function deleteCompensationRuleAction(formData: FormData): Promise<
   try {
     await assertTenantFeatureEnabled(admin, membership.tenantId, 'jobCosting');
   } catch (error) {
-    const message = featureGateErrorMessage(error) ?? 'Upgrade your subscription to manage compensation rules.';
+    const message =
+      featureGateErrorMessage(error) ?? 'Upgrade your subscription to manage compensation rules.';
     redirect(compensationSettingsPath(slug, { error: message }));
   }
 

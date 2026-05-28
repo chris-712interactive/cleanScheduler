@@ -17,10 +17,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Settings"
-        description="Founder admin preferences and session controls."
-      />
+      <PageHeader title="Settings" description="Founder admin preferences and session controls." />
 
       <Stack gap={6}>
         <Card title="Appearance" description="Light, dark, or match your system.">
@@ -35,7 +32,10 @@ export default async function AdminSettingsPage() {
           <SignOutButton variant="settings" />
         </Card>
 
-        <Card title="Two-factor authentication" description="Required for platform administrator access.">
+        <Card
+          title="Two-factor authentication"
+          description="Required for platform administrator access."
+        >
           <MfaSettingsPanel />
         </Card>
       </Stack>

@@ -88,16 +88,32 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
         .is('used_at', null)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
-    : { data: [] as { token: string; email_normalized: string; invited_role: TenantRole; expires_at: string; created_at: string }[] };
+    : {
+        data: [] as {
+          token: string;
+          email_normalized: string;
+          invited_role: TenantRole;
+          expires_at: string;
+          created_at: string;
+        }[],
+      };
 
   const userIds = [...new Set((rows ?? []).map((r) => r.user_id))];
   const { data: profiles } =
     userIds.length > 0
-      ? await admin.from('user_profiles').select('user_id, display_name, avatar_url').in('user_id', userIds)
-      : { data: [] as { user_id: string; display_name: string | null; avatar_url: string | null }[] };
+      ? await admin
+          .from('user_profiles')
+          .select('user_id, display_name, avatar_url')
+          .in('user_id', userIds)
+      : {
+          data: [] as { user_id: string; display_name: string | null; avatar_url: string | null }[],
+        };
 
   const profileByUser = new Map(
-    (profiles ?? []).map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }]),
+    (profiles ?? []).map((p) => [
+      p.user_id,
+      { display_name: p.display_name, avatar_url: p.avatar_url },
+    ]),
   );
 
   const emailsByUser = await fetchEmailsByUserId(admin, userIds);
@@ -222,100 +238,107 @@ export default async function TenantEmployeesPage({ searchParams }: PageProps) {
           ) : null}
 
           <div className={styles.tablePanel}>
-          <div className={styles.tableWrap}>
-            <table className={styles.teamTable}>
-              <colgroup>
-                <col className={styles.colName} />
-                <col className={styles.colRole} />
-                <col className={styles.colStatus} />
-                <col className={styles.colManage} />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Role</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">
-                    <span className={styles.manageHeader}>Manage</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageMembers.map((member) => (
-                  <tr
-                    key={member.id}
-                    className={member.canEdit ? styles.clickableRow : undefined}
-                  >
-                    <td>
-                      <div className={styles.nameCell}>
-                        <div className={styles.avatar}>
-                          {member.avatarUrl ? (
-                            <Image
-                              src={member.avatarUrl}
-                              alt=""
-                              width={40}
-                              height={40}
-                              className={styles.avatarImg}
-                            />
-                          ) : (
-                            <span className={styles.avatarFallback} aria-hidden>
-                              {initialsFrom(member.displayName, member.userId)}
-                            </span>
-                          )}
-                        </div>
-                        <div className={styles.nameCopy}>
-                          {member.canEdit ? (
-                            <Link href={`/employees/${member.userId}`} className={styles.memberNameLink}>
+            <div className={styles.tableWrap}>
+              <table className={styles.teamTable}>
+                <colgroup>
+                  <col className={styles.colName} />
+                  <col className={styles.colRole} />
+                  <col className={styles.colStatus} />
+                  <col className={styles.colManage} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">
+                      <span className={styles.manageHeader}>Manage</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageMembers.map((member) => (
+                    <tr
+                      key={member.id}
+                      className={member.canEdit ? styles.clickableRow : undefined}
+                    >
+                      <td>
+                        <div className={styles.nameCell}>
+                          <div className={styles.avatar}>
+                            {member.avatarUrl ? (
+                              <Image
+                                src={member.avatarUrl}
+                                alt=""
+                                width={40}
+                                height={40}
+                                className={styles.avatarImg}
+                              />
+                            ) : (
+                              <span className={styles.avatarFallback} aria-hidden>
+                                {initialsFrom(member.displayName, member.userId)}
+                              </span>
+                            )}
+                          </div>
+                          <div className={styles.nameCopy}>
+                            {member.canEdit ? (
+                              <Link
+                                href={`/employees/${member.userId}`}
+                                className={styles.memberNameLink}
+                              >
+                                <p className={styles.memberName}>
+                                  {member.displayName}
+                                  {member.isSelf ? (
+                                    <span className={styles.youBadge}>You</span>
+                                  ) : null}
+                                </p>
+                              </Link>
+                            ) : (
                               <p className={styles.memberName}>
                                 {member.displayName}
-                                {member.isSelf ? <span className={styles.youBadge}>You</span> : null}
+                                {member.isSelf ? (
+                                  <span className={styles.youBadge}>You</span>
+                                ) : null}
                               </p>
-                            </Link>
-                          ) : (
-                            <p className={styles.memberName}>
-                              {member.displayName}
-                              {member.isSelf ? <span className={styles.youBadge}>You</span> : null}
-                            </p>
-                          )}
-                          {member.email ? (
-                            <p className={styles.memberEmail}>{member.email}</p>
-                          ) : (
-                            <p className={styles.memberEmailMuted}>No email on file</p>
-                          )}
+                            )}
+                            {member.email ? (
+                              <p className={styles.memberEmail}>{member.email}</p>
+                            ) : (
+                              <p className={styles.memberEmailMuted}>No email on file</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={styles.roleText}>{teamRoleLabel(member.role)}</span>
-                    </td>
-                    <td>
-                      <StatusPill
-                        tone={member.isActive ? 'success' : 'warning'}
-                        icon={<span className={styles.statusDot} aria-hidden />}
-                      >
-                        {teamMemberStatusLabel(member.isActive)}
-                      </StatusPill>
-                    </td>
-                    <td className={styles.manageCell}>
-                      <TeamMemberManageMenu
-                        memberUserId={member.userId}
-                        canEdit={member.canEdit}
-                        isSelf={member.isSelf}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td>
+                        <span className={styles.roleText}>{teamRoleLabel(member.role)}</span>
+                      </td>
+                      <td>
+                        <StatusPill
+                          tone={member.isActive ? 'success' : 'warning'}
+                          icon={<span className={styles.statusDot} aria-hidden />}
+                        >
+                          {teamMemberStatusLabel(member.isActive)}
+                        </StatusPill>
+                      </td>
+                      <td className={styles.manageCell}>
+                        <TeamMemberManageMenu
+                          memberUserId={member.userId}
+                          canEdit={member.canEdit}
+                          isSelf={member.isSelf}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <TeamPagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              fromIndex={start + 1}
+              toIndex={start + pageMembers.length}
+            />
           </div>
-          <TeamPagination
-            currentPage={safePage}
-            totalPages={totalPages}
-            totalCount={totalCount}
-            fromIndex={start + 1}
-            toIndex={start + pageMembers.length}
-          />
-        </div>
         </>
       )}
     </>

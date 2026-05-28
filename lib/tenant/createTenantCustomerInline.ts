@@ -32,9 +32,7 @@ export async function createTenantCustomerInlineForQuote(options: {
   email: string;
   phone?: string;
   property?: InlineQuotePropertyInput;
-}): Promise<
-  { ok: true; customerId: string; propertyId: string } | { ok: false; error: string }
-> {
+}): Promise<{ ok: true; customerId: string; propertyId: string } | { ok: false; error: string }> {
   const firstName = options.firstName.trim();
   const lastName = (options.lastName ?? '').trim();
   const email = options.email.trim().toLowerCase();
@@ -162,7 +160,10 @@ export async function createTenantCustomerInlineForQuote(options: {
     await options.admin.from('customer_tenant_links').delete().eq('customer_id', customerId);
     await options.admin.from('customers').delete().eq('id', customerId);
     await options.admin.from('customer_identities').delete().eq('id', identityId);
-    return { ok: false, error: propertyInsert.error?.message ?? 'Could not create service location.' };
+    return {
+      ok: false,
+      error: propertyInsert.error?.message ?? 'Could not create service location.',
+    };
   }
 
   const propertyId = propertyInsert.data.id as string;
@@ -202,9 +203,7 @@ export async function createTenantPropertyInlineForQuote(options: {
 
   const isFirst = (count ?? 0) === 0;
   const label =
-    options.label?.trim() ||
-    line1 ||
-    (isFirst ? 'Primary service location' : 'Service location');
+    options.label?.trim() || line1 || (isFirst ? 'Primary service location' : 'Service location');
 
   const propertyInsert = await options.admin
     .from('tenant_customer_properties')

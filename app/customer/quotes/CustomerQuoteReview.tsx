@@ -131,9 +131,7 @@ export function CustomerQuoteReview({
   const cadence = primaryCadenceLabel(lines);
   const totalLabel = formatQuoteMoney(amountCents, currency);
   const showScopeSection =
-    scopeInclusions.length > 0 ||
-    Boolean(scopeExclusions?.trim()) ||
-    Boolean(accessNotes?.trim());
+    scopeInclusions.length > 0 || Boolean(scopeExclusions?.trim()) || Boolean(accessNotes?.trim());
   const scopeListClass =
     scopeInclusions.length >= 4
       ? `${styles.scopeList} ${styles.scopeListTwoCol}`
@@ -143,8 +141,8 @@ export function CustomerQuoteReview({
 
   const supersededBanner = supersededByQuoteId ? (
     <p className={styles.bannerWarning} role="status">
-      A newer version of this quote is available. Your provider may have updated pricing or scope
-      — open the latest version from your quotes list.
+      A newer version of this quote is available. Your provider may have updated pricing or scope —
+      open the latest version from your quotes list.
     </p>
   ) : null;
 
@@ -176,7 +174,9 @@ export function CustomerQuoteReview({
                     : 'neutral'
             }
           >
-            {status === 'sent' && canRespond ? 'Awaiting your response' : QUOTE_STATUS_LABEL[status]}
+            {status === 'sent' && canRespond
+              ? 'Awaiting your response'
+              : QUOTE_STATUS_LABEL[status]}
           </StatusPill>
         </div>
       </header>
@@ -199,7 +199,11 @@ export function CustomerQuoteReview({
               <h2 id="quote-services-heading" className={styles.sectionHeading}>
                 {isAgreementFrozen ? 'Agreed services' : 'Services'}
               </h2>
-              <CustomerQuoteLineCards lines={lines} currency={currency} listClassName={lineListClass} />
+              <CustomerQuoteLineCards
+                lines={lines}
+                currency={currency}
+                listClassName={lineListClass}
+              />
             </section>
           ) : null}
 

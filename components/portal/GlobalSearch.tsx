@@ -127,10 +127,26 @@ export function GlobalSearch() {
                 <p className={styles.hint}>No matches for &ldquo;{query.trim()}&rdquo;.</p>
               ) : (
                 <>
-                  <SearchGroup title="Customers" items={results.customers} onNavigate={() => setOpen(false)} />
-                  <SearchGroup title="Invoices" items={results.invoices} onNavigate={() => setOpen(false)} />
-                  <SearchGroup title="Quotes" items={results.quotes} onNavigate={() => setOpen(false)} />
-                  <SearchGroup title="Visits" items={results.visits} onNavigate={() => setOpen(false)} />
+                  <SearchGroup
+                    title="Customers"
+                    items={results.customers}
+                    onNavigate={() => setOpen(false)}
+                  />
+                  <SearchGroup
+                    title="Invoices"
+                    items={results.invoices}
+                    onNavigate={() => setOpen(false)}
+                  />
+                  <SearchGroup
+                    title="Quotes"
+                    items={results.quotes}
+                    onNavigate={() => setOpen(false)}
+                  />
+                  <SearchGroup
+                    title="Visits"
+                    items={results.visits}
+                    onNavigate={() => setOpen(false)}
+                  />
                 </>
               )}
             </div>

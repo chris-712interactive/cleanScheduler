@@ -184,9 +184,7 @@ export default async function TenantLayout({ children }: { children: React.React
     sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
   }
   if (usageUtilizationAlert) {
-    sessionNotices.push(
-      <UsageUtilizationBanner key="usage" alert={usageUtilizationAlert} />,
-    );
+    sessionNotices.push(<UsageUtilizationBanner key="usage" alert={usageUtilizationAlert} />);
   }
   const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;
 

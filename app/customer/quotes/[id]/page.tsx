@@ -279,8 +279,7 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
   const canRespond = status === 'sent' && !isLocked && !isExpired && !row.superseded_by_quote_id;
 
   const acceptedAt =
-    (acceptanceSnapshot?.captured_at as string | undefined) ??
-    (row.accepted_at as string | null);
+    (acceptanceSnapshot?.captured_at as string | undefined) ?? (row.accepted_at as string | null);
 
   return (
     <>

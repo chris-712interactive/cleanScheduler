@@ -7,7 +7,11 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { normalizePaymentMethodsFromDb } from '@/lib/tenant/operationalSettings';
-import { isFeatureEnabled, resolveTenantEntitlementPlan, resolveTenantSubscriptionTier } from '@/lib/billing/entitlements';
+import {
+  isFeatureEnabled,
+  resolveTenantEntitlementPlan,
+  resolveTenantSubscriptionTier,
+} from '@/lib/billing/entitlements';
 import {
   countSmsSegmentsUsedThisMonth,
   formatSmsUsageSummary,
@@ -113,7 +117,8 @@ export default async function TenantOperationsSettingsPage() {
       ) : smsTrialLocked ? (
         <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }} role="status">
           SMS is included with Pro after you subscribe.{' '}
-          <Link href="/billing">Add a payment method</Link> to unlock quote and visit reminder texts.
+          <Link href="/billing">Add a payment method</Link> to unlock quote and visit reminder
+          texts.
         </p>
       ) : (
         <FeatureUpgradePanel

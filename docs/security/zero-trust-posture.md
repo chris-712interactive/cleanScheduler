@@ -6,13 +6,13 @@ cleanScheduler applies **zero trust principles** to its cloud-native SaaS archit
 
 ## Principles applied
 
-| Principle | Implementation |
-|-----------|----------------|
-| Never trust, always verify | Middleware + portal guards on all protected routes; webhook signature verification (Stripe, Plaid); cron Bearer auth |
-| Least privilege | Tenant RBAC; Plaid admin-only; API keys scoped to tenant; service role only in server actions after auth checks |
-| Assume breach | MFA for privileged users; session invalidation on deactivation; audit logging for masquerade and member changes |
-| Explicit verification | No network-based trust; all access over HTTPS; production secrets in Vercel env only |
-| Micro-segmentation (logical) | Portal isolation by subdomain; RLS workspace boundaries; customer portal scoped to linked tenants |
+| Principle                    | Implementation                                                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Never trust, always verify   | Middleware + portal guards on all protected routes; webhook signature verification (Stripe, Plaid); cron Bearer auth |
+| Least privilege              | Tenant RBAC; Plaid admin-only; API keys scoped to tenant; service role only in server actions after auth checks      |
+| Assume breach                | MFA for privileged users; session invalidation on deactivation; audit logging for masquerade and member changes      |
+| Explicit verification        | No network-based trust; all access over HTTPS; production secrets in Vercel env only                                 |
+| Micro-segmentation (logical) | Portal isolation by subdomain; RLS workspace boundaries; customer portal scoped to linked tenants                    |
 
 ## Control mapping
 

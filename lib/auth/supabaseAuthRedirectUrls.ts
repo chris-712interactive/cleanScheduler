@@ -60,7 +60,14 @@ export function authCallbackUrlForHostname(hostname: string): string {
 
 export function parseSupabaseUriAllowList(raw: string | null | undefined): string[] {
   if (!raw) return [];
-  return [...new Set(raw.split(/[,\n]/).map((entry) => entry.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      raw
+        .split(/[,\n]/)
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 export function serializeSupabaseUriAllowList(urls: string[]): string {
@@ -91,7 +98,9 @@ async function managementRequest(path: string, init?: RequestInit): Promise<Resp
 
 async function fetchAuthUriAllowList(): Promise<string[]> {
   const { projectRef } = requireManagementConfig();
-  const response = await managementRequest(`/v1/projects/${encodeURIComponent(projectRef)}/config/auth`);
+  const response = await managementRequest(
+    `/v1/projects/${encodeURIComponent(projectRef)}/config/auth`,
+  );
 
   if (!response.ok) {
     throw new SupabaseAuthRedirectError(await parseManagementError(response), response.status);
@@ -103,19 +112,24 @@ async function fetchAuthUriAllowList(): Promise<string[]> {
 
 async function patchAuthUriAllowList(urls: string[]): Promise<void> {
   const { projectRef } = requireManagementConfig();
-  const response = await managementRequest(`/v1/projects/${encodeURIComponent(projectRef)}/config/auth`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      uri_allow_list: serializeSupabaseUriAllowList(urls),
-    }),
-  });
+  const response = await managementRequest(
+    `/v1/projects/${encodeURIComponent(projectRef)}/config/auth`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        uri_allow_list: serializeSupabaseUriAllowList(urls),
+      }),
+    },
+  );
 
   if (!response.ok) {
     throw new SupabaseAuthRedirectError(await parseManagementError(response), response.status);
   }
 }
 
-export async function addSupabaseAuthRedirectUrl(hostname: string): Promise<{ callbackUrl: string }> {
+export async function addSupabaseAuthRedirectUrl(
+  hostname: string,
+): Promise<{ callbackUrl: string }> {
   const callbackUrl = authCallbackUrlForHostname(hostname);
   const current = await fetchAuthUriAllowList();
 

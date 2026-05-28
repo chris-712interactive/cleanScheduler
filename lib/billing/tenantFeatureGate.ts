@@ -47,12 +47,18 @@ export async function resolveTenantFeatureEnabled(
   return isFeatureEnabled(plan, feature);
 }
 
-export function assertFeatureEnabledForPlan(plan: EntitlementPlanKey, feature: EntitlementFeature): void {
+export function assertFeatureEnabledForPlan(
+  plan: EntitlementPlanKey,
+  feature: EntitlementFeature,
+): void {
   assertFeatureEnabled(plan, feature);
 }
 
 /** @deprecated Use {@link assertFeatureEnabledForPlan} */
-export function assertFeatureEnabledForTier(plan: EntitlementPlanKey, feature: EntitlementFeature): void {
+export function assertFeatureEnabledForTier(
+  plan: EntitlementPlanKey,
+  feature: EntitlementFeature,
+): void {
   assertFeatureEnabled(plan, feature);
 }
 

@@ -7,14 +7,14 @@ Procedures for granting, modifying, and revoking access for **cleanScheduler com
 
 ## Systems inventory
 
-| System | Access type | MFA required |
-|--------|-------------|--------------|
-| GitHub (source repo) | Individual account, branch protection on main | Yes |
-| Vercel (hosting) | Team member, env var access | Yes |
-| Supabase (prod DB/auth) | Dashboard + service role key in Vercel | Yes |
-| Stripe (platform + Connect) | Dashboard | Yes |
-| Plaid | Dashboard + API keys in Vercel | Yes |
-| Google Workspace (email) | Company email / IdP | Yes |
+| System                      | Access type                                   | MFA required |
+| --------------------------- | --------------------------------------------- | ------------ |
+| GitHub (source repo)        | Individual account, branch protection on main | Yes          |
+| Vercel (hosting)            | Team member, env var access                   | Yes          |
+| Supabase (prod DB/auth)     | Dashboard + service role key in Vercel        | Yes          |
+| Stripe (platform + Connect) | Dashboard                                     | Yes          |
+| Plaid                       | Dashboard + API keys in Vercel                | Yes          |
+| Google Workspace (email)    | Company email / IdP                           | Yes          |
 
 ## Onboarding checklist
 

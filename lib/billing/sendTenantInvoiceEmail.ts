@@ -51,7 +51,11 @@ export async function sendTenantInvoiceEmailForInvoice(
   const tenantName = tenant?.name?.trim() || params.tenantSlug;
   const balance = Math.max(0, inv.amount_cents - inv.amount_paid_cents);
   const dueLabel = inv.due_date ? new Date(String(inv.due_date)).toLocaleDateString() : null;
-  const portalUrl = await customerPortalUrlForTenant(admin, params.tenantId, `/invoices/${params.invoiceId}`);
+  const portalUrl = await customerPortalUrlForTenant(
+    admin,
+    params.tenantId,
+    `/invoices/${params.invoiceId}`,
+  );
 
   const body = buildTenantInvoiceEmailContent({
     tenantName,

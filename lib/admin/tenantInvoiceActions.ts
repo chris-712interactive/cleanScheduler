@@ -4,9 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import {
-  tenantRoleError,
-} from '@/lib/auth/tenantRoleAccess';
+import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';

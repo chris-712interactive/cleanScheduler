@@ -29,8 +29,7 @@ export default function TermsOfServicePage() {
               These Terms of Service (&quot;Terms&quot;) govern your access to and use of{' '}
               {PRODUCT_NAME} websites, applications, and related services (the &quot;Service&quot;)
               operated by {PRODUCT_NAME}. By creating an account, starting a trial, or using the
-              Service, you agree to these Terms and our{' '}
-              <Link href="/privacy">Privacy Policy</Link>.
+              Service, you agree to these Terms and our <Link href="/privacy">Privacy Policy</Link>.
             </p>
 
             <h2>1. The Service</h2>
@@ -52,9 +51,7 @@ export default function TermsOfServicePage() {
                 Workspace owners control who is invited as staff and what customer data is stored in
                 the workspace.
               </li>
-              <li>
-                You must provide accurate registration information and keep it up to date.
-              </li>
+              <li>You must provide accurate registration information and keep it up to date.</li>
             </ul>
 
             <h2>3. Free trial and subscriptions</h2>
@@ -80,8 +77,8 @@ export default function TermsOfServicePage() {
               </li>
               <li>
                 When a platform subscription ends or is canceled, we may suspend most workspace
-                access until you resubscribe. Authorized workspace owners typically retain access
-                to billing and account settings so they can resubscribe or delete the workspace.
+                access until you resubscribe. Authorized workspace owners typically retain access to
+                billing and account settings so they can resubscribe or delete the workspace.
               </li>
               <li>
                 If you connected a business bank account through Plaid for bank reconciliation, we
@@ -115,9 +112,9 @@ export default function TermsOfServicePage() {
                 communications sent to your customers;
               </li>
               <li>
-                Optional Stripe Connect onboarding is your agreement with Stripe; you are responsible
-                for compliance with card-network and money-transmission rules applicable to your
-                business.
+                Optional Stripe Connect onboarding is your agreement with Stripe; you are
+                responsible for compliance with card-network and money-transmission rules applicable
+                to your business.
               </li>
             </ul>
 
@@ -125,21 +122,25 @@ export default function TermsOfServicePage() {
             <p>
               Customer Users access the Service through a workspace operated by their service
               provider. Their relationship is primarily with that provider. {PRODUCT_NAME} provides
-              the technical platform only and is not a party to cleaning contracts between
-              providers and their customers.
+              the technical platform only and is not a party to cleaning contracts between providers
+              and their customers.
             </p>
 
             <h2>6. Acceptable use</h2>
             <p>You may not:</p>
             <ul>
               <li>Violate law or third-party rights;</li>
-              <li>Upload malware, attempt unauthorized access, or probe systems without permission;</li>
+              <li>
+                Upload malware, attempt unauthorized access, or probe systems without permission;
+              </li>
               <li>Send spam or deceptive messages through the Service;</li>
               <li>Reverse engineer the Service except where permitted by law;</li>
               <li>Resell or sublicense the Service without our written consent;</li>
-              <li>Use the Service to store or transmit highly sensitive data categories we do not
+              <li>
+                Use the Service to store or transmit highly sensitive data categories we do not
                 support (such as full payment card numbers outside Stripe, or protected health
-                information) unless we agree in writing.</li>
+                information) unless we agree in writing.
+              </li>
             </ul>
 
             <h2>7. Your content and license</h2>
@@ -164,8 +165,7 @@ export default function TermsOfServicePage() {
               <Link href="/privacy">Privacy Policy</Link>. Your use of those features may also be
               subject to the third party&apos;s terms. We are not responsible for third-party
               services we do not control. How long we and those providers retain data is set out in
-              our{' '}
-              <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
+              our <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
             </p>
 
             <h2>10. Disclaimers</h2>
@@ -190,8 +190,8 @@ export default function TermsOfServicePage() {
             <h2>12. Indemnification</h2>
             <p>
               You will defend and indemnify {PRODUCT_NAME} against claims arising from your content,
-              your use of the Service, or your violation of these Terms or applicable law, except
-              to the extent caused by our gross negligence or willful misconduct.
+              your use of the Service, or your violation of these Terms or applicable law, except to
+              the extent caused by our gross negligence or willful misconduct.
             </p>
 
             <h2>13. Suspension and termination</h2>

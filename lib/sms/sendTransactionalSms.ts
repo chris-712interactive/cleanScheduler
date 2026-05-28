@@ -1,14 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import SentDm from '@sentdm/sentdm';
-import {
-  assertCanSendSmsSegments,
-  smsGateErrorMessage,
-} from '@/lib/billing/smsCredits';
+import { assertCanSendSmsSegments, smsGateErrorMessage } from '@/lib/billing/smsCredits';
 import type { Database } from '@/lib/supabase/database.types';
 import { estimateSmsSegmentCount, truncateSmsBodyPreview } from '@/lib/sms/estimateSmsSegments';
 import { normalizePhoneToE164 } from '@/lib/sms/normalizePhoneNumber';
 import { resolveMessagingChannels, type MessagingChannel } from '@/lib/sms/sentMessagingChannels';
-import { getSentDmClient, isSentDmConfigured, shouldUseSentDmSandbox } from '@/lib/sms/sentDmServer';
+import {
+  getSentDmClient,
+  isSentDmConfigured,
+  shouldUseSentDmSandbox,
+} from '@/lib/sms/sentDmServer';
 import {
   buildSentTemplateRequest,
   renderSmsBodyFromPayload,
@@ -70,8 +71,7 @@ export async function sendTransactionalSms(params: {
     });
 
     if (!response.success) {
-      const errMsg =
-        response.error?.message ?? response.error?.code ?? 'sent.dm send failed.';
+      const errMsg = response.error?.message ?? response.error?.code ?? 'sent.dm send failed.';
       await logFailedSend(params, {
         to,
         bodyPreview,
@@ -102,8 +102,7 @@ export async function sendTransactionalSms(params: {
       if (!messageId) continue;
 
       const renderedBody = recipient.body?.trim() || bodyPreview;
-      const segments =
-        estimateSmsSegmentCount(renderedBody) || segmentPerChannel;
+      const segments = estimateSmsSegmentCount(renderedBody) || segmentPerChannel;
 
       const { error: logErr } = await params.admin.from('tenant_sms_messages').insert({
         tenant_id: params.tenantId,

@@ -11,8 +11,14 @@ import {
 } from '@/lib/plaid/exchangePublicToken';
 import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
 import { assertMfaForBankAdmin } from '@/lib/auth/requireMfa';
-import { assertTenantFeatureEnabled, featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
-import { confirmPaymentMatchSuggestion, matchBankDepositToInvoice } from '@/lib/plaid/confirmPaymentMatch';
+import {
+  assertTenantFeatureEnabled,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
+import {
+  confirmPaymentMatchSuggestion,
+  matchBankDepositToInvoice,
+} from '@/lib/plaid/confirmPaymentMatch';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
 import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 import {
@@ -31,9 +37,7 @@ function requireBankAdmin(membership: { role: TenantRole }): string | null {
   return tenantRoleError(membership.role, 'admin');
 }
 
-async function requireBankAdminWithMfa(membership: {
-  role: TenantRole;
-}): Promise<string | null> {
+async function requireBankAdminWithMfa(membership: { role: TenantRole }): Promise<string | null> {
   const roleErr = requireBankAdmin(membership);
   if (roleErr) return roleErr;
   return assertMfaForBankAdmin(membership.role);

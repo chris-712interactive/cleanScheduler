@@ -45,7 +45,9 @@ export default async function AdminDashboardPage() {
           </Card>
           <Card title="MRR" description="Estimated from active platform subscriptions">
             <div className={styles.metric}>
-              <span className={styles.metricValue}>{formatPlatformMrrLabel(stats.estimatedMrrCents)}</span>
+              <span className={styles.metricValue}>
+                {formatPlatformMrrLabel(stats.estimatedMrrCents)}
+              </span>
               <StatusPill tone={stats.estimatedMrrCents > 0 ? 'success' : 'neutral'}>
                 {stats.activePaidSubscriptions > 0
                   ? `${stats.activePaidSubscriptions} paying`

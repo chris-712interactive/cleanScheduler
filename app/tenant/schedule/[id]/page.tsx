@@ -217,10 +217,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
       <PageHeader
         title={customerName}
         description={row.title || 'Cleaning visit'}
-        breadcrumbs={[
-          { label: 'Schedule', href: '/schedule' },
-          { label: customerName },
-        ]}
+        breadcrumbs={[{ label: 'Schedule', href: '/schedule' }, { label: customerName }]}
       />
 
       <Stack gap={4}>
@@ -271,7 +268,9 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               {hasBillableAmount && !(canManage && row.status === 'scheduled') ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Job price</span>
-                  <p className={styles.detailValue}>${formatCentsAsDollars(defaultAmountCents ?? 0)}</p>
+                  <p className={styles.detailValue}>
+                    ${formatCentsAsDollars(defaultAmountCents ?? 0)}
+                  </p>
                 </div>
               ) : null}
               {row.tenant_quotes?.title ? (
@@ -295,13 +294,17 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
               {formatTimestamp(row.checked_in_at, tenantTimezone) ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Checked in</span>
-                  <p className={styles.detailValue}>{formatTimestamp(row.checked_in_at, tenantTimezone)}</p>
+                  <p className={styles.detailValue}>
+                    {formatTimestamp(row.checked_in_at, tenantTimezone)}
+                  </p>
                 </div>
               ) : null}
               {formatTimestamp(row.completed_at, tenantTimezone) ? (
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Completed</span>
-                  <p className={styles.detailValue}>{formatTimestamp(row.completed_at, tenantTimezone)}</p>
+                  <p className={styles.detailValue}>
+                    {formatTimestamp(row.completed_at, tenantTimezone)}
+                  </p>
                 </div>
               ) : null}
               {row.completion_payment_collected != null ? (

@@ -79,7 +79,9 @@ export function canEditTeamMember(params: {
   return true;
 }
 
-export function roleOptionsForMemberEditor(actor: TenantRole): { value: Exclude<TenantRole, 'owner'>; label: string }[] {
+export function roleOptionsForMemberEditor(
+  actor: TenantRole,
+): { value: Exclude<TenantRole, 'owner'>; label: string }[] {
   if (actor === 'owner') {
     return [
       { value: 'admin', label: 'Admin' },

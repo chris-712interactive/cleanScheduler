@@ -61,7 +61,11 @@ export default async function CustomerQuotesPage({
         }
       />
       <nav className={styles.viewTabs} aria-label="Quote views">
-        <Link href={activeTabHref} className={styles.viewTab} data-active={view === 'active' || undefined}>
+        <Link
+          href={activeTabHref}
+          className={styles.viewTab}
+          data-active={view === 'active' || undefined}
+        >
           Active ({activeRows.length})
         </Link>
         <Link

@@ -1,12 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  loadMeteredLimitSnapshots,
-  type MeteredLimitKey,
-} from '@/lib/billing/checkLimit';
-import {
-  pickHighestUtilizationAlert,
-  type UtilizationAlert,
-} from '@/lib/billing/usageUtilization';
+import { loadMeteredLimitSnapshots, type MeteredLimitKey } from '@/lib/billing/checkLimit';
+import { pickHighestUtilizationAlert, type UtilizationAlert } from '@/lib/billing/usageUtilization';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import type { Database } from '@/lib/supabase/database.types';
 

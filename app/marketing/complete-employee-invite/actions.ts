@@ -112,7 +112,10 @@ export async function linkExistingEmployeeInviteAction(
     };
   }
 
-  const tenantsEmbed = invite.tenants as { slug: string; name: string } | { slug: string; name: string }[] | null;
+  const tenantsEmbed = invite.tenants as
+    | { slug: string; name: string }
+    | { slug: string; name: string }[]
+    | null;
   const tenantInfo = Array.isArray(tenantsEmbed) ? tenantsEmbed[0] : tenantsEmbed;
   const tenantSlugEarly = tenantInfo?.slug ?? '';
   const invitedRole = invite.invited_role as TenantRole;
@@ -134,7 +137,10 @@ export async function linkExistingEmployeeInviteAction(
         })
         .eq('id', existingRow.id);
     }
-    await admin.from('employee_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
+    await admin
+      .from('employee_invites')
+      .update({ used_at: new Date().toISOString() })
+      .eq('token', token);
     redirect(tenantPortalLandingPath(tenantSlugEarly, invitedRole));
   }
 
@@ -147,7 +153,8 @@ export async function linkExistingEmployeeInviteAction(
     .maybeSingle();
   if (other) {
     return {
-      error: 'Your account is already linked to another workspace. Use a different email for this team.',
+      error:
+        'Your account is already linked to another workspace. Use a different email for this team.',
     };
   }
 
@@ -193,7 +200,11 @@ export async function linkExistingEmployeeInviteAction(
     { onConflict: 'user_id' },
   );
   if (profErr) {
-    await admin.from('tenant_memberships').delete().eq('tenant_id', invite.tenant_id).eq('user_id', auth.user.id);
+    await admin
+      .from('tenant_memberships')
+      .delete()
+      .eq('tenant_id', invite.tenant_id)
+      .eq('user_id', auth.user.id);
     return { error: profErr.message };
   }
 
@@ -206,11 +217,18 @@ export async function linkExistingEmployeeInviteAction(
     app_metadata: meta,
   });
   if (metaErr) {
-    await admin.from('tenant_memberships').delete().eq('tenant_id', invite.tenant_id).eq('user_id', auth.user.id);
+    await admin
+      .from('tenant_memberships')
+      .delete()
+      .eq('tenant_id', invite.tenant_id)
+      .eq('user_id', auth.user.id);
     return { error: metaErr.message };
   }
 
-  await admin.from('employee_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
+  await admin
+    .from('employee_invites')
+    .update({ used_at: new Date().toISOString() })
+    .eq('token', token);
 
   redirect(tenantPortalLandingPath(tenantSlugEarly, invitedRole));
 }
@@ -316,7 +334,11 @@ export async function acceptEmployeeInviteAction(
     { onConflict: 'user_id' },
   );
   if (profErr) {
-    await admin.from('tenant_memberships').delete().eq('tenant_id', invite.tenant_id).eq('user_id', userId);
+    await admin
+      .from('tenant_memberships')
+      .delete()
+      .eq('tenant_id', invite.tenant_id)
+      .eq('user_id', userId);
     await admin.auth.admin.deleteUser(userId);
     return { error: profErr.message };
   }
@@ -324,7 +346,11 @@ export async function acceptEmployeeInviteAction(
   const session = await createClient();
   const { error: signErr } = await session.auth.signInWithPassword({ email, password });
   if (signErr) {
-    await admin.from('tenant_memberships').delete().eq('tenant_id', invite.tenant_id).eq('user_id', userId);
+    await admin
+      .from('tenant_memberships')
+      .delete()
+      .eq('tenant_id', invite.tenant_id)
+      .eq('user_id', userId);
     await admin.from('user_profiles').delete().eq('user_id', userId);
     await admin.auth.admin.deleteUser(userId);
     return {
@@ -332,9 +358,15 @@ export async function acceptEmployeeInviteAction(
     };
   }
 
-  await admin.from('employee_invites').update({ used_at: new Date().toISOString() }).eq('token', token);
+  await admin
+    .from('employee_invites')
+    .update({ used_at: new Date().toISOString() })
+    .eq('token', token);
 
-  const tenantsRaw = invite.tenants as { slug: string; name: string } | { slug: string; name: string }[] | null;
+  const tenantsRaw = invite.tenants as
+    | { slug: string; name: string }
+    | { slug: string; name: string }[]
+    | null;
   const tenantRow = Array.isArray(tenantsRaw) ? tenantsRaw[0] : tenantsRaw;
   const tenantSlug = tenantRow?.slug ?? '';
   redirect(tenantPortalLandingPath(tenantSlug, invitedRole));

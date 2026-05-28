@@ -5,10 +5,7 @@ import {
   MARKETING_MOST_POPULAR_TIER,
   MARKETING_PLAN_ORDER,
 } from '@/lib/billing/marketingPlanCatalog';
-import {
-  PLATFORM_PLAN_DESCRIPTIONS,
-  type PlatformPlanTier,
-} from '@/lib/billing/platformPlanTier';
+import { PLATFORM_PLAN_DESCRIPTIONS, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import { resolvePlatformPriceId } from '@/lib/billing/platformPlans';
 import { getStripe } from '@/lib/stripe/server';
 
@@ -111,9 +108,7 @@ async function resolveTierPricing(tier: PlatformPlanTier): Promise<PlatformPrici
     monthlyPriceSource,
     annualPriceSource,
     priceSource:
-      monthlyPriceSource === 'stripe' || annualPriceSource === 'stripe'
-        ? 'stripe'
-        : 'entitlements',
+      monthlyPriceSource === 'stripe' || annualPriceSource === 'stripe' ? 'stripe' : 'entitlements',
   };
 }
 

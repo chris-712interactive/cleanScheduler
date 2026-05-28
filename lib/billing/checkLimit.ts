@@ -156,8 +156,7 @@ export async function checkTeamSeatLimit(
   tenantId: string,
   seatType: 'office' | 'field',
 ): Promise<LimitCheckResult> {
-  const key: MeteredLimitKey =
-    seatType === 'office' ? 'includedOfficeSeats' : 'includedFieldSeats';
+  const key: MeteredLimitKey = seatType === 'office' ? 'includedOfficeSeats' : 'includedFieldSeats';
   return checkLimit(admin, tenantId, key, 1);
 }
 

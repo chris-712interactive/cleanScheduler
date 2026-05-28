@@ -31,9 +31,9 @@ export default function SecurityPage() {
             <p className={styles.meta}>Last updated: {LEGAL_LAST_UPDATED}</p>
 
             <p>
-              {PRODUCT_NAME} is built for cleaning businesses that trust us with schedules,
-              customer records, invoices, and payment activity. This page summarizes our security
-              practices. Formal policies:{' '}
+              {PRODUCT_NAME} is built for cleaning businesses that trust us with schedules, customer
+              records, invoices, and payment activity. This page summarizes our security practices.
+              Formal policies:{' '}
               <Link href="/security/information-security-policy">Information Security Policy</Link>,{' '}
               <Link href="/security/access-control-policy">Access Control Policy</Link>. For legal
               terms, see our <Link href="/privacy">Privacy Policy</Link> and{' '}
@@ -128,9 +128,7 @@ export default function SecurityPage() {
               <li>
                 Obtain appropriate consent before emailing customers through campaigns (CAN-SPAM).
               </li>
-              <li>
-                Configure Stripe Connect and bank connections only on accounts you control.
-              </li>
+              <li>Configure Stripe Connect and bank connections only on accounts you control.</li>
               <li>
                 Report suspected unauthorized access to{' '}
                 <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a> promptly.

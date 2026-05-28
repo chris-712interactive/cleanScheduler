@@ -1,7 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import {
-  PLATFORM_TIER_ENTITLEMENTS,
-} from '@/lib/billing/entitlements';
+import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
 import { parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 
 export interface PlatformDashboardStats {
@@ -49,7 +47,10 @@ export async function getPlatformDashboardStats(): Promise<PlatformDashboardStat
         .from('tenant_billing_accounts')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'trialing'),
-      db.from('tenants').select('*', { count: 'exact', head: true }).gte('created_at', daysAgoIso(7)),
+      db
+        .from('tenants')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', daysAgoIso(7)),
       db.from('customers').select('*', { count: 'exact', head: true }),
       db
         .from('tenant_billing_accounts')

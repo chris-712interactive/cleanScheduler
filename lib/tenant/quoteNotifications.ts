@@ -66,7 +66,11 @@ async function tenantName(admin: Admin, tenantId: string): Promise<string> {
   return (data?.name ?? '').trim() || 'Your provider';
 }
 
-async function quoteUrlForCustomer(admin: Admin, tenantId: string, quoteId: string): Promise<string> {
+async function quoteUrlForCustomer(
+  admin: Admin,
+  tenantId: string,
+  quoteId: string,
+): Promise<string> {
   return customerPortalUrlForTenant(admin, tenantId, `/quotes/${quoteId}`);
 }
 

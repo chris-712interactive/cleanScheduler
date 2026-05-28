@@ -120,7 +120,10 @@ export function parseBankStatementCsv(text: string): {
 
     const name =
       (nameIdx >= 0 ? cells[nameIdx]?.trim() : '') ||
-      cells.filter((_, idx) => idx !== dateIdx && idx !== amountIdx).join(' ').trim() ||
+      cells
+        .filter((_, idx) => idx !== dateIdx && idx !== amountIdx)
+        .join(' ')
+        .trim() ||
       'Imported deposit';
 
     rows.push({

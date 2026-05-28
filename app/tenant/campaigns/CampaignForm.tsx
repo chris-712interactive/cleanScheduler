@@ -45,17 +45,35 @@ export function CampaignForm({
         <label className={styles.label} htmlFor="campaign_name">
           Campaign name
         </label>
-        <input id="campaign_name" name="name" className={styles.input} required disabled={readOnly} />
+        <input
+          id="campaign_name"
+          name="name"
+          className={styles.input}
+          required
+          disabled={readOnly}
+        />
 
         <label className={styles.label} htmlFor="campaign_subject">
           Subject line
         </label>
-        <input id="campaign_subject" name="subject" className={styles.input} required disabled={readOnly} />
+        <input
+          id="campaign_subject"
+          name="subject"
+          className={styles.input}
+          required
+          disabled={readOnly}
+        />
 
         <label className={styles.label} htmlFor="campaign_template">
           Template
         </label>
-        <select id="campaign_template" name="template_key" className={styles.select} defaultValue="promo" disabled={readOnly}>
+        <select
+          id="campaign_template"
+          name="template_key"
+          className={styles.select}
+          defaultValue="promo"
+          disabled={readOnly}
+        >
           {TEMPLATE_KEYS.map((key) => (
             <option key={key} value={key}>
               {CAMPAIGN_TEMPLATE_LABEL[key]}
@@ -80,7 +98,12 @@ export function CampaignForm({
           <legend className={styles.srOnly}>Audience preset</legend>
           {AUDIENCE_PRESETS.map((preset) => (
             <label key={preset} className={styles.audienceOption}>
-              <input type="radio" name="audience_preset" value={preset} defaultChecked={preset === 'all_marketable'} />
+              <input
+                type="radio"
+                name="audience_preset"
+                value={preset}
+                defaultChecked={preset === 'all_marketable'}
+              />
               <span>
                 {CAMPAIGN_AUDIENCE_PRESET_LABEL[preset]}
                 <span className={styles.audienceCount}>{audienceCounts[preset]} recipients</span>

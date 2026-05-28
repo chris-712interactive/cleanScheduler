@@ -93,11 +93,15 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
         </div>
         <div className={styles.metricCard}>
           <p className={styles.metricLabel}>Open rate</p>
-          <p className={styles.metricValue}>{formatCampaignRate(campaign.opened_count, delivered)}</p>
+          <p className={styles.metricValue}>
+            {formatCampaignRate(campaign.opened_count, delivered)}
+          </p>
         </div>
         <div className={styles.metricCard}>
           <p className={styles.metricLabel}>Click rate</p>
-          <p className={styles.metricValue}>{formatCampaignRate(campaign.clicked_count, delivered)}</p>
+          <p className={styles.metricValue}>
+            {formatCampaignRate(campaign.clicked_count, delivered)}
+          </p>
         </div>
       </div>
 
@@ -115,7 +119,11 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
           <div className={styles.detailRow}>
             <dt className={styles.detailKey}>Template</dt>
             <dd className={styles.detailValue}>
-              {CAMPAIGN_TEMPLATE_LABEL[campaign.template_key as keyof typeof CAMPAIGN_TEMPLATE_LABEL]}
+              {
+                CAMPAIGN_TEMPLATE_LABEL[
+                  campaign.template_key as keyof typeof CAMPAIGN_TEMPLATE_LABEL
+                ]
+              }
             </dd>
           </div>
           <div className={styles.detailRow}>

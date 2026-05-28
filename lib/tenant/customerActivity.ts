@@ -101,8 +101,7 @@ export async function getCustomerActivitySnapshot(
       method: row.method,
       recordedAt: row.recorded_at,
       invoiceId: row.invoice_id,
-      invoiceTitle:
-        (row.tenant_invoices as { title: string } | null)?.title?.trim() || 'Invoice',
+      invoiceTitle: (row.tenant_invoices as { title: string } | null)?.title?.trim() || 'Invoice',
     }));
   }
 

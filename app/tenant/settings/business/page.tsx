@@ -82,7 +82,11 @@ export default async function TenantBusinessSettingsPage() {
           title="Business profile"
           description="Update your business information and timezone."
         >
-          <BusinessProfileForm tenantSlug={membership.tenantSlug} snapshot={snapshot} readOnly={!canEdit} />
+          <BusinessProfileForm
+            tenantSlug={membership.tenantSlug}
+            snapshot={snapshot}
+            readOnly={!canEdit}
+          />
         </SettingsSectionCard>
 
         <SettingsSectionCard
@@ -90,7 +94,11 @@ export default async function TenantBusinessSettingsPage() {
           title="Branding"
           description="Customize how your brand appears in cleanScheduler."
         >
-          <BrandingForm tenantSlug={membership.tenantSlug} snapshot={snapshot} readOnly={!canEdit} />
+          <BrandingForm
+            tenantSlug={membership.tenantSlug}
+            snapshot={snapshot}
+            readOnly={!canEdit}
+          />
         </SettingsSectionCard>
 
         <SettingsSectionCard
@@ -98,7 +106,11 @@ export default async function TenantBusinessSettingsPage() {
           title="Work week"
           description="Configure your default business days and hours."
         >
-          <WorkWeekForm tenantSlug={membership.tenantSlug} snapshot={snapshot} readOnly={!canEdit} />
+          <WorkWeekForm
+            tenantSlug={membership.tenantSlug}
+            snapshot={snapshot}
+            readOnly={!canEdit}
+          />
         </SettingsSectionCard>
 
         <SettingsSectionCard
@@ -106,7 +118,11 @@ export default async function TenantBusinessSettingsPage() {
           title="Business address"
           description="Set your main business address."
         >
-          <BusinessAddressForm tenantSlug={membership.tenantSlug} snapshot={snapshot} readOnly={!canEdit} />
+          <BusinessAddressForm
+            tenantSlug={membership.tenantSlug}
+            snapshot={snapshot}
+            readOnly={!canEdit}
+          />
         </SettingsSectionCard>
       </div>
     </>

@@ -199,7 +199,9 @@ export async function markManualPaymentBounced(formData: FormData): Promise<void
     paymentId,
     actorUserId: auth?.user?.id ?? null,
     action: 'payment.bounced',
-    detail: bounceReason ? `Check bounced: ${bounceReason}` : 'Check marked bounced in payment audits',
+    detail: bounceReason
+      ? `Check bounced: ${bounceReason}`
+      : 'Check marked bounced in payment audits',
   });
 
   revalidatePaymentAuditPaths();

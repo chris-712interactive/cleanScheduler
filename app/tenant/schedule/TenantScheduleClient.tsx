@@ -143,8 +143,7 @@ export function TenantScheduleClient({
 
   const prevLabel =
     view === 'month' ? 'Previous month' : view === 'week' ? 'Previous week' : 'Previous day';
-  const nextLabel =
-    view === 'month' ? 'Next month' : view === 'week' ? 'Next week' : 'Next day';
+  const nextLabel = view === 'month' ? 'Next month' : view === 'week' ? 'Next week' : 'Next day';
 
   return (
     <div className={styles.scheduleShell}>
@@ -170,7 +169,12 @@ export function TenantScheduleClient({
               </button>
             ) : null}
           </div>
-          <button type="button" className={styles.iconNavBtn} aria-label={nextLabel} onClick={goNext}>
+          <button
+            type="button"
+            className={styles.iconNavBtn}
+            aria-label={nextLabel}
+            onClick={goNext}
+          >
             <ChevronRight size={20} aria-hidden="true" />
           </button>
         </div>
@@ -210,7 +214,11 @@ export function TenantScheduleClient({
 
       {showingFieldCalendar ? (
         <div className={styles.fieldBrowseBar}>
-          <button type="button" className={styles.fieldBrowseBack} onClick={() => push({ view: 'today' })}>
+          <button
+            type="button"
+            className={styles.fieldBrowseBack}
+            onClick={() => push({ view: 'today' })}
+          >
             ← Back to job list
           </button>
           <div className={styles.fieldBrowseViews} role="group" aria-label="Calendar range">
@@ -254,7 +262,9 @@ export function TenantScheduleClient({
         </div>
       ) : null}
 
-      {showingFieldJobs ? <FieldEmployeeDayJobs visits={dayVisits} isLocalToday={isLocalToday} /> : null}
+      {showingFieldJobs ? (
+        <FieldEmployeeDayJobs visits={dayVisits} isLocalToday={isLocalToday} />
+      ) : null}
 
       {view === 'day' && !showingFieldJobs ? (
         <div
@@ -271,10 +281,7 @@ export function TenantScheduleClient({
             ))}
           </div>
           <div
-            className={[
-              styles.timelineTrack,
-              expandedVisitId ? styles.timelineTrackExpanded : '',
-            ]
+            className={[styles.timelineTrack, expandedVisitId ? styles.timelineTrackExpanded : '']
               .filter(Boolean)
               .join(' ')}
           >
@@ -287,7 +294,11 @@ export function TenantScheduleClient({
               </div>
             ) : null}
             {dayVisits.map((v) => {
-              const { topPct, heightPct, visible } = layoutVisitOnLocalDay(v, dateKey, timelineWindow);
+              const { topPct, heightPct, visible } = layoutVisitOnLocalDay(
+                v,
+                dateKey,
+                timelineWindow,
+              );
               if (!visible) return null;
               return (
                 <ScheduleVisitBlock
@@ -296,9 +307,7 @@ export function TenantScheduleClient({
                   topPct={topPct}
                   heightPct={heightPct}
                   expanded={expandedVisitId === v.id}
-                  onToggle={() =>
-                    setExpandedVisitId((current) => (current === v.id ? null : v.id))
-                  }
+                  onToggle={() => setExpandedVisitId((current) => (current === v.id ? null : v.id))}
                 />
               );
             })}
@@ -395,7 +404,9 @@ export function TenantScheduleClient({
           </div>
           <div className={styles.monthGrid}>
             {monthCells.map((cell) => {
-              const n = filteredVisits.filter((v) => visitOverlapsUtcCalendarDay(v, cell.key)).length;
+              const n = filteredVisits.filter((v) =>
+                visitOverlapsUtcCalendarDay(v, cell.key),
+              ).length;
               const inView = cell.key === dateKey;
               return (
                 <button

@@ -131,7 +131,11 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
 
   const supabase = createTenantPortalDbClient();
   const [billingRes, tenantRes] = await Promise.all([
-    supabase.from('tenant_billing_accounts').select('*').eq('tenant_id', membership.tenantId).maybeSingle(),
+    supabase
+      .from('tenant_billing_accounts')
+      .select('*')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
     supabase.from('tenants').select('is_active').eq('id', membership.tenantId).maybeSingle(),
   ]);
   const billing = billingRes.data as unknown as TenantBillingRow | null;

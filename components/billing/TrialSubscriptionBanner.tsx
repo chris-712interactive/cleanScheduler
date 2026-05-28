@@ -50,7 +50,11 @@ export function TrialSubscriptionBanner({ access, daysRemaining }: TrialSubscrip
   }
 
   return (
-    <p className={styles.banner} data-urgency={urgent || daysRemaining === 0 ? 'high' : undefined} role="status">
+    <p
+      className={styles.banner}
+      data-urgency={urgent || daysRemaining === 0 ? 'high' : undefined}
+      role="status"
+    >
       <span>{body}</span>
       <Link href="/billing" className={styles.link}>
         {cta}
