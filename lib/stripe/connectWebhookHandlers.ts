@@ -3,10 +3,7 @@ import type Stripe from 'stripe';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
-import {
-  retrieveConnectSubscription,
-  subscriptionPeriodIso,
-} from '@/lib/stripe/stripeBasilCompat';
+import { retrieveConnectSubscription, subscriptionPeriodIso } from '@/lib/stripe/stripeBasilCompat';
 
 type Admin = SupabaseClient<Database>;
 
