@@ -1,6 +1,6 @@
 {
   "name": "cleanscheduler",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Multi-tenant scheduling, quoting, billing, and customer-service platform for residential and commercial cleaning businesses.",
   "scripts": {
@@ -14,6 +14,7 @@
     "format:check": "prettier --check .",
     "check:migrations": "node scripts/check-migration-prefixes.mjs",
     "check:migration-drift": "node scripts/check-migration-drift.mjs",
+    "check:rls-smoke": "node scripts/check-rls-smoke.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test -c playwright.smoke.config.ts",
     "check:engines": "node scripts/check-engines.mjs",
