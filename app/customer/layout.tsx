@@ -9,6 +9,7 @@ import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerP
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
+import { RouteContentShell } from '@/components/portal/RouteContentShell';
 import styles from './customer-layout.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -79,7 +80,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       }
       environmentBanner={nonProdBanner}
     >
-      {children}
+      <RouteContentShell>{children}</RouteContentShell>
     </PortalShell>
   );
 }

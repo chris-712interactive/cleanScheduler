@@ -1,7 +1,7 @@
 /**
  * Skeleton - shimmering placeholder for content that is loading. Honours
- * `prefers-reduced-motion` automatically (the shimmer animation duration is
- * collapsed by the reduced-motion override in styles/_theme.scss).
+ * `prefers-reduced-motion` automatically (animation is disabled in
+ * Skeleton.module.scss).
  */
 import type { CSSProperties } from 'react';
 import styles from './Skeleton.module.scss';

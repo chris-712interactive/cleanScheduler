@@ -31,6 +31,7 @@ import {
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { loadOwnerOnboardingNavContext } from '@/lib/tenant/loadOwnerOnboardingNavContext';
 import { expireStaleMasqueradeIfNeeded } from '@/lib/admin/expireStaleMasquerade';
+import { RouteContentShell } from '@/components/portal/RouteContentShell';
 import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 
@@ -200,7 +201,7 @@ export default async function TenantLayout({ children }: { children: React.React
       searchSlot={showGlobalSearch ? <GlobalSearch /> : undefined}
       bottomNavItems={bottomNavItems}
     >
-      {children}
+      <RouteContentShell>{children}</RouteContentShell>
     </PortalShell>
   );
 }
