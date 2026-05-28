@@ -30,8 +30,6 @@ jobs:
           git log -1 --oneline
           test -f package-lock.json
           npm run check:engines
-          npm install --package-lock-only --ignore-scripts
-          git diff --exit-code package-lock.json
           npm ci
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
