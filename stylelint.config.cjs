@@ -13,10 +13,7 @@ module.exports = {
   rules: {
     // Allow CSS Modules selectors.
     'selector-class-pattern': null,
-    'selector-pseudo-class-no-unknown': [
-      true,
-      { ignorePseudoClasses: ['global', 'local'] },
-    ],
+    'selector-pseudo-class-no-unknown': [true, { ignorePseudoClasses: ['global', 'local'] }],
 
     // Hard-coded colors are forbidden outside the token files. All color
     // values in component code must reference --color-* custom properties.
@@ -40,6 +37,9 @@ module.exports = {
     'property-no-vendor-prefix': null,
     'media-feature-range-notation': null,
     'keyframes-name-pattern': null,
+    // Stylelint 16 + postcss-selector-parser can throw `findLastIndex is not a function`
+    // when walking some @keyframes blocks (e.g. TopBar.module.scss). Re-enable when upstream fixes land.
+    'keyframe-block-no-duplicate-selectors': null,
     'selector-not-notation': null,
     'declaration-block-no-redundant-longhand-properties': null,
     'scss/comment-no-empty': null,
@@ -52,14 +52,18 @@ module.exports = {
     {
       // The token files own the hex literals; everywhere else must reference
       // them via custom properties.
-      files: [
-        'styles/tokens/_colors.scss',
-        'styles/_theme.scss',
-      ],
+      files: ['styles/tokens/_colors.scss', 'styles/_theme.scss'],
       rules: {
         'color-no-hex': null,
       },
     },
   ],
-  ignoreFiles: ['node_modules/**', '.next/**', 'out/**', '**/._*'],
+  ignoreFiles: [
+    'node_modules/**',
+    '.next/**',
+    'out/**',
+    '**/._*',
+    // Static HTML/CSS prototypes — not part of the app theme system
+    'docs/design/**',
+  ],
 };

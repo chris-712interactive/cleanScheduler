@@ -3,7 +3,10 @@
  * that opens every page. Required across all portals so the chrome reads
  * consistently regardless of which feature you're inside.
  */
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { TitleWithHint } from '@/components/ui/HeadingHint';
 import styles from './PageHeader.module.scss';
 
 export interface BreadcrumbItem {
@@ -13,6 +16,12 @@ export interface BreadcrumbItem {
 
 export interface PageHeaderProps {
   title: ReactNode;
+  /** Shown in an info tooltip beside the title instead of below it. */
+  titleHint?: string;
+  /** When set, a back chevron appears before the title linking here. */
+  backHref?: string;
+  /** Accessible name for the back control (e.g. "Workspace billing"). */
+  backLabel?: string;
   description?: ReactNode;
   actions?: ReactNode;
   breadcrumbs?: BreadcrumbItem[];
@@ -21,6 +30,9 @@ export interface PageHeaderProps {
 
 export function PageHeader({
   title,
+  titleHint,
+  backHref,
+  backLabel = 'Back',
   description,
   actions,
   breadcrumbs,
@@ -48,7 +60,14 @@ export function PageHeader({
       ) : null}
       <div className={styles.row}>
         <div className={styles.copy}>
-          <h1 className={styles.title}>{title}</h1>
+          <h1 className={styles.title}>
+            {backHref ? (
+              <Link href={backHref} className={styles.backLink} aria-label={backLabel}>
+                <ChevronLeft size={22} strokeWidth={2} aria-hidden />
+              </Link>
+            ) : null}
+            <TitleWithHint hint={titleHint}>{title}</TitleWithHint>
+          </h1>
           {description ? <p className={styles.description}>{description}</p> : null}
         </div>
         {actions ? <div className={styles.actions}>{actions}</div> : null}

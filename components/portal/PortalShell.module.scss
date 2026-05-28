@@ -7,6 +7,30 @@
   background-color: var(--color-bg);
 }
 
+.environmentBanner {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-text-on-danger);
+  background-color: var(--color-danger);
+}
+
+.sessionNotice {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  background-color: var(--color-info-bg);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
 .body {
   display: flex;
   flex: 1 1 auto;
@@ -16,9 +40,18 @@
 .main {
   flex: 1 1 auto;
   min-width: 0;
+  background-color: var(--color-bg);
   padding: var(--space-5) var(--space-4) var(--space-9);
 
   @include mq.up(md) {
     padding: var(--space-6) var(--space-7) var(--space-10);
+  }
+}
+
+.shell[data-bottom-nav] .main {
+  padding-bottom: calc(var(--space-9) + 4.5rem + env(safe-area-inset-bottom, 0px));
+
+  @include mq.up(md) {
+    padding-bottom: var(--space-10);
   }
 }

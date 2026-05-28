@@ -1,0 +1,44 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/usage-rollup",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/materialize-recurring-visits",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/expire-stale-trials",
+      "schedule": "15 7 * * *"
+    },
+    {
+      "path": "/api/cron/purge-unconverted-trials",
+      "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/backfill-stripe-payout-links",
+      "schedule": "30 8 * * 0"
+    },
+    {
+      "path": "/api/cron/plaid-sync",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/visit-sms-reminders",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/deliver-tenant-webhooks",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/invoice-reminders",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/verify-customer-portal-domains",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

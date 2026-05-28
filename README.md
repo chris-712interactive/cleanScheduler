@@ -4,12 +4,12 @@ Multi-tenant scheduling, quoting, billing, and customer-service platform for
 residential and commercial cleaning businesses. Three portals served from a
 single Next.js deployment, switched by subdomain:
 
-| Subdomain                        | Portal              |
-|----------------------------------|---------------------|
-| `admin.<apex>`                   | Founder admin       |
-| `my.<apex>`                      | Unified customer    |
-| `<tenant-slug>.<apex>`           | Tenant operations   |
-| `<apex>` / `www.<apex>`          | Marketing site      |
+| Subdomain               | Portal            |
+| ----------------------- | ----------------- |
+| `admin.<apex>`          | Founder admin     |
+| `my.<apex>`             | Unified customer  |
+| `<tenant-slug>.<apex>`  | Tenant operations |
+| `<apex>` / `www.<apex>` | Marketing site    |
 
 ## Tech stack
 
@@ -22,6 +22,7 @@ single Next.js deployment, switched by subdomain:
 - **Lucide** icons
 - **Zod** for env / schema validation
 - **Vercel** for hosting (wildcard domains; cron triggers Edge Functions)
+- **Node.js 22 LTS** (see `.nvmrc`; enforced via `engine-strict` and CI)
 
 See [`.cursor/docs/plan/implementation-plan.md`](.cursor/docs/plan/implementation-plan.md)
 for the full plan, and [`docs/design/portal-mockups/`](docs/design/portal-mockups)
@@ -89,6 +90,8 @@ Visit each portal:
 
 ### Useful scripts
 
+Runtime and dependency lifecycle policy: [`docs/ops/runtime-eol-policy.md`](docs/ops/runtime-eol-policy.md).
+
 ```bash
 pnpm typecheck         # tsc --noEmit
 pnpm lint              # next lint
@@ -104,7 +107,7 @@ pnpm build             # next build
 - Theme layer (`styles/_theme.scss`) maps tokens to semantic CSS custom
   properties (`--color-bg`, `--color-text`, `--color-brand-primary`, ...).
 - Pre-hydration script (`components/theme/themeScript.ts`) sets
-  `data-theme="light|dark"` on `<html>` *before* React hydrates, so users
+  `data-theme="light|dark"` on `<html>` _before_ React hydrates, so users
   never see a flash of the wrong theme.
 - `<ThemeToggle />` exposes a System / Light / Dark control persisted to
   `localStorage.cs_theme`.

@@ -25,14 +25,37 @@
  * Reserved subdomain names (admin/api/mail/etc.) cannot be claimed by a
  * tenant - they fall through to the marketing rewrite.
  *
- * Note: Supabase session-refresh wiring is intentionally not in this file
- * yet. It will be added once the auth flow lands in a follow-up task.
+ * Auth: `resolveUser` uses `@supabase/ssr` with cookie `getAll` / `setAll`.
+ * `getUser()` refreshes expired sessions when needed and applies updated
+ * cookies on the outgoing response (see `applyCookies`).
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { resolveTenantSubscriptionAccessForSlug } from '@/lib/billing/resolveTenantSubscriptionAccessForSlug';
+import {
+  isTenantPortalSuspended,
+  isTenantSuspendedEscapePath,
+} from '@/lib/billing/tenantSubscriptionAccess';
+import { resolveTenantMembershipForSlug } from '@/lib/auth/resolveTenantMembershipForSlug';
+import {
+  fieldEmployeeCanAccessBrowserPath,
+  fieldEmployeeLandingPath,
+  isFieldEmployeeRole,
+} from '@/lib/tenant/fieldEmployeeAccess';
+import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
+import { resolveActiveWhiteLabelCustomerPortal } from '@/lib/portal/resolveWhiteLabelCustomerPortal';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
+
+/** Served as marketing routes on any host; no session required (sign-in, OAuth return, post-auth denial). */
+const PUBLIC_MARKETING_PATHS = new Set([
+  '/sign-in',
+  '/sign-in/mfa',
+  '/auth/callback',
+  '/access-denied',
+  '/complete-employee-invite',
+]);
 
 // Subdomains reserved for platform use. Tenants cannot register these.
 const RESERVED_SUBDOMAINS = new Set([
@@ -69,14 +92,16 @@ function getApexHost(): string {
   return process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'lvh.me:3000';
 }
 
-function extractSubdomain(host: string, apex: string): string | null {
+function extractSubdomainLabel(host: string, apex: string): string | null {
   const apexWithoutPort = apex.split(':')[0]!.toLowerCase();
   const hostWithoutPort = host.split(':')[0]!.toLowerCase();
 
   if (hostWithoutPort === apexWithoutPort) return null;
 
   if (hostWithoutPort.endsWith(`.${apexWithoutPort}`)) {
-    return hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
+    const prefix = hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
+    const firstLabel = prefix.split('.')[0];
+    return firstLabel ?? null;
   }
 
   // Unrecognised origin (Vercel preview URL, raw IP) - render marketing.
@@ -99,8 +124,9 @@ function applyCookies(target: NextResponse, cookies: CookieToSet[]) {
 }
 
 function buildMarketingUrl(request: NextRequest, pathname: string, nextPath?: string): URL {
-  const apex = getApexHost();
-  const url = new URL(`${request.nextUrl.protocol}//${apex}${pathname}`);
+  // Keep redirects on the current host/subdomain so auth cookies are set for
+  // the exact portal domain the user is trying to access.
+  const url = new URL(pathname, request.url);
   if (nextPath) {
     url.searchParams.set('next', nextPath);
   }
@@ -118,23 +144,26 @@ async function resolveUser(request: NextRequest): Promise<{
     return { userId: null, cookiesToSet };
   }
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(newCookies: CookieToSet[]) {
-          newCookies.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            cookiesToSet.push({ name, value, options });
-          });
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, {
+          ...init,
+          cache: 'no-store',
+        }),
+    },
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(newCookies: CookieToSet[]) {
+        newCookies.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          cookiesToSet.push({ name, value, options });
+        });
       },
     },
-  );
+  });
 
   const { data, error } = await supabase.auth.getUser();
   if (error) {
@@ -146,13 +175,39 @@ async function resolveUser(request: NextRequest): Promise<{
 export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const apex = getApexHost();
-  const subdomain = extractSubdomain(host, apex);
-  const { kind, tenantSlug } = classify(subdomain);
+  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
+  const isOurApexHost = isPlatformApexHost(host, apex);
+  const whiteLabelPortal = !isOurApexHost
+    ? await resolveActiveWhiteLabelCustomerPortal(hostWithoutPort)
+    : null;
+
+  const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
+  const requestedPath = request.nextUrl.pathname;
+  const isPublicMarketingPath =
+    PUBLIC_MARKETING_PATHS.has(requestedPath) ||
+    (requestedPath === '/contact' && subdomain === null && !whiteLabelPortal);
+  const isPublicCustomerInvite =
+    (subdomain === 'my' || whiteLabelPortal) &&
+    (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
+
+  const baseClassification = whiteLabelPortal
+    ? { kind: 'customer' as const, tenantSlug: whiteLabelPortal.tenantSlug }
+    : classify(subdomain);
+  const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
+  // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.
+  const tenantSlug =
+    isPublicMarketingPath && requestedPath !== '/access-denied'
+      ? undefined
+      : baseClassification.tenantSlug;
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-portal', kind);
   if (tenantSlug) {
     requestHeaders.set('x-tenant-slug', tenantSlug);
+  }
+  if (whiteLabelPortal) {
+    requestHeaders.set('x-white-label-customer-portal', '1');
+    requestHeaders.set('x-white-label-hostname', whiteLabelPortal.hostname);
   }
 
   // Build the rewritten URL. Avoid double-prefixing if the request is already
@@ -167,14 +222,70 @@ export async function middleware(request: NextRequest) {
     url.pathname = url.pathname === '/' ? prefix : `${prefix}${url.pathname}`;
   }
 
+  // Post-rewrite path (e.g. /tenant/billing) for server-side billing gate / layout decisions.
+  requestHeaders.set('x-internal-pathname', url.pathname);
+  // Browser-visible path on tenant host (e.g. /quotes) — used for subscription gating.
+  requestHeaders.set('x-tenant-pathname', requestedPath);
+
   const { userId, cookiesToSet } = await resolveUser(request);
-  const isProtectedPortal = kind !== 'marketing';
+  const isProtectedPortal = kind !== 'marketing' && !isPublicCustomerInvite;
+
+  let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
+  let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> = null;
+
+  if (kind === 'tenant' && userId && tenantSlug) {
+    [tenantMembership, tenantSubscription] = await Promise.all([
+      resolveTenantMembershipForSlug(userId, tenantSlug),
+      resolveTenantSubscriptionAccessForSlug(tenantSlug),
+    ]);
+  }
+
+  const subscriptionLocked =
+    tenantSubscription != null && isTenantPortalSuspended(tenantSubscription.access);
+
+  // Hard redirect field employees away from `/` before RSC layout runs (avoids blank first paint after login).
+  if (
+    kind === 'tenant' &&
+    tenantMembership &&
+    isFieldEmployeeRole(tenantMembership.role) &&
+    (requestedPath === '/' || requestedPath === '')
+  ) {
+    const landing = fieldEmployeeLandingPath(subscriptionLocked);
+    const landingUrl = new URL(landing, request.url);
+    const redirect = NextResponse.redirect(landingUrl);
+    applyCookies(redirect, cookiesToSet);
+    return redirect;
+  }
+
   if (isProtectedPortal && !userId) {
     const nextPath = request.nextUrl.pathname + request.nextUrl.search;
     const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
     const redirect = NextResponse.redirect(redirectUrl);
     applyCookies(redirect, cookiesToSet);
     return redirect;
+  }
+
+  if (
+    kind === 'tenant' &&
+    userId &&
+    tenantSlug &&
+    !isTenantSuspendedEscapePath(null, requestedPath)
+  ) {
+    if (subscriptionLocked) {
+      const fieldEmployeeOnAllowedPath =
+        tenantMembership &&
+        isFieldEmployeeRole(tenantMembership.role) &&
+        fieldEmployeeCanAccessBrowserPath(requestedPath);
+
+      if (!fieldEmployeeOnAllowedPath) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = '/billing';
+        redirectUrl.searchParams.set('subscribe', 'required');
+        const redirect = NextResponse.redirect(redirectUrl);
+        applyCookies(redirect, cookiesToSet);
+        return redirect;
+      }
+    }
   }
 
   const rewrite = NextResponse.rewrite(url, {
@@ -188,7 +299,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Run on every request except Next.js internals, file assets, and favicons.
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)'],
 };

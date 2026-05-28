@@ -1,16 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-function normalizeNext(value: string | null): string {
-  if (!value) return '/';
-  return value.startsWith('/') ? value : '/';
+function postAuthRedirectUrl(request: NextRequest, nextPath: string): URL {
+  if (nextPath.startsWith('http://') || nextPath.startsWith('https://')) {
+    return new URL(nextPath);
+  }
+  return new URL(nextPath, request.url);
 }
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
-  const nextPath = normalizeNext(request.nextUrl.searchParams.get('next'));
+  const nextPath = sanitizeAuthenticationNext(request.nextUrl.searchParams.get('next'));
 
   if (!code) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
@@ -40,7 +43,17 @@ export async function GET(request: NextRequest) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-  const redirectUrl = new URL(error ? '/sign-in?error=auth' : nextPath, request.url);
+  let redirectUrl: URL;
+  if (error) {
+    redirectUrl = new URL('/sign-in?error=auth', request.url);
+  } else {
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const needsMfa = aalData?.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2';
+    redirectUrl = needsMfa
+      ? new URL(`/sign-in/mfa?next=${encodeURIComponent(nextPath)}`, request.url)
+      : postAuthRedirectUrl(request, nextPath);
+  }
+
   const response = NextResponse.redirect(redirectUrl);
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options);

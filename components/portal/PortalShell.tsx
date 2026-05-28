@@ -21,9 +21,20 @@ export interface PortalShellProps {
   navItems: NavItem[];
   bottomNavItems?: NavItem[];
   brandLabel: string;
+  brandLogoUrl?: string | null;
+  /** When true, hide the cleanScheduler mark and show tenant logo or label only. */
+  hidePlatformLogo?: boolean;
   brandHref?: string;
   identity?: IdentityChipModel;
+  /** Account menu link; omit to hide Settings in the menu. Defaults to `/settings`. */
+  settingsHref?: string;
   tenantBadge?: ReactNode;
+  /** Non-production warning (e.g. dev/staging) shown above the top bar. */
+  environmentBanner?: ReactNode;
+  /** Optional banner (e.g. masquerade exit) below env banner, above the top bar. */
+  sessionNotice?: ReactNode;
+  /** Optional center slot (e.g. tenant global search). */
+  searchSlot?: ReactNode;
   children: ReactNode;
 }
 
@@ -31,22 +42,44 @@ export function PortalShell({
   navItems,
   bottomNavItems,
   brandLabel,
+  brandLogoUrl,
+  hidePlatformLogo = false,
   brandHref = '/',
   identity,
+  settingsHref = '/settings',
   tenantBadge,
+  environmentBanner,
+  sessionNotice,
+  searchSlot,
   children,
 }: PortalShellProps) {
+  const hasBottomNav = Boolean(bottomNavItems && bottomNavItems.length > 0);
+
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-bottom-nav={hasBottomNav || undefined}>
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
+      {environmentBanner ? (
+        <div className={styles.environmentBanner} role="status">
+          {environmentBanner}
+        </div>
+      ) : null}
+      {sessionNotice ? (
+        <div className={styles.sessionNotice} role="region" aria-label="Session notice">
+          {sessionNotice}
+        </div>
+      ) : null}
       <TopBar
         brandLabel={brandLabel}
+        brandLogoUrl={brandLogoUrl}
+        hidePlatformLogo={hidePlatformLogo}
         brandHref={brandHref}
         identity={identity}
+        settingsHref={settingsHref}
         tenantBadge={tenantBadge}
         navItems={navItems}
+        searchSlot={searchSlot}
       />
       <div className={styles.body}>
         <Sidebar items={navItems} />

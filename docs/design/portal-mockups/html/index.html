@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleanScheduler — Tenant portal mockups</title>
+    <link rel="stylesheet" href="tenant-shell.css" />
+  </head>
+  <body>
+    <nav class="gallery-nav" aria-label="Mockup views">
+      <h4>Tenant mockups</h4>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#quotes">Quotes</a>
+      <a href="#customers">Customers</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#reschedule">Reschedule requests</a>
+      <a href="#employees">Team</a>
+      <a href="#billing">Workspace billing</a>
+      <a href="#invoices">Invoices</a>
+      <a href="#transactions">Transactions</a>
+      <a href="#payment-audits">Payment audits</a>
+      <a href="#service-plans">Service plans</a>
+      <a href="#payment-setup">Payment setup</a>
+      <a href="#settings">Settings</a>
+      <a href="#reports">Reports</a>
+      <a href="#campaigns">Campaigns</a>
+    </nav>
+
+    <div class="mock-app">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-icon" aria-hidden="true"></span>
+          cleanScheduler
+        </div>
+        <ul class="nav" id="sidebar-nav">
+          <li><a href="#dashboard" data-nav="dashboard">Dashboard</a></li>
+          <li><a href="#quotes" data-nav="quotes">Quotes</a></li>
+          <li><a href="#customers" data-nav="customers">Customers</a></li>
+          <li><a href="#schedule" data-nav="schedule">Schedule</a></li>
+          <li><a href="#reschedule" data-nav="reschedule">Reschedule requests</a></li>
+          <li><a href="#employees" data-nav="employees">Employees</a></li>
+          <li><a href="#billing" data-nav="billing">Billing</a></li>
+          <li><a href="#settings" data-nav="settings">Settings</a></li>
+        </ul>
+        <div class="sidebar-user">
+          <span class="avatar">JD</span>
+          <div class="user-meta">
+            <strong>Jane Doe</strong>
+            <span>Acme Cleaning</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main-wrap">
+        <header class="topbar">
+          <input
+            type="search"
+            class="search-global"
+            placeholder="Search customers, appointments, quotes…"
+            readonly
+          />
+          <div class="topbar-actions">
+            <button type="button" class="icon-btn" aria-label="Theme">☾</button>
+            <button type="button" class="icon-btn" aria-label="Notifications">🔔</button>
+            <span class="avatar sm">JD</span>
+          </div>
+        </header>
+
+        <main class="content">
+          <!-- Dashboard -->
+          <section id="dashboard" class="mock-section active" data-nav="dashboard">
+            <header class="page-header">
+              <div>
+                <div class="page-title-row">
+                  <h1 class="page-title">Today's overview</h1>
+                  <span class="hint-icon" title="Quick read on jobs, money, and team">i</span>
+                </div>
+              </div>
+              <a href="#schedule" class="btn-primary">Open schedule →</a>
+            </header>
+            <div class="grid-4">
+              <article class="card">
+                <header class="card-header"><h3>Quotes</h3></header>
+                <div class="card-body">
+                  <div class="stat-value">12</div>
+                  <span class="pill">In your pipeline</span>
+                  <p style="margin-top:12px"><a href="#quotes" class="btn-secondary">Open quotes</a></p>
+                </div>
+              </article>
+              <article class="card">
+                <header class="card-header"><h3>Today's jobs</h3></header>
+                <div class="card-body">
+                  <div class="stat-value">6</div>
+                  <span class="pill">4 scheduled · 2 completed</span>
+                  <p style="margin-top:12px"><a href="#schedule" class="btn-secondary">Open schedule</a></p>
+                </div>
+              </article>
+              <article class="card">
+                <header class="card-header"><h3>Outstanding invoices</h3></header>
+                <div class="card-body">
+                  <div class="stat-value">$2,450</div>
+                  <span class="pill warn">3 invoices · 1 past due</span>
+                  <p style="margin-top:12px"><a href="#invoices" class="btn-secondary">Open invoices</a></p>
+                </div>
+              </article>
+              <article class="card">
+                <header class="card-header"><h3>Active customers</h3></header>
+                <div class="card-body">
+                  <div class="stat-value">48</div>
+                  <span class="pill">In your directory</span>
+                  <p style="margin-top:12px"><a href="#customers" class="btn-secondary">Open customers</a></p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- Quotes -->
+          <section id="quotes" class="mock-section" data-nav="quotes">
+            <header class="page-header">
+              <div>
+                <div class="page-title-row">
+                  <h1 class="page-title">Quotes</h1>
+                  <span class="hint-icon" title="Board by status — drag between columns">i</span>
+                </div>
+              </div>
+              <a href="#" class="btn-primary">+ Add quote</a>
+            </header>
+            <div class="kanban">
+              <div class="kanban-col">
+                <header class="kanban-col-header">Draft <span>3</span></header>
+                <div class="kanban-col-body">
+                  <article class="quote-card">
+                    <strong>Spring deep clean</strong>
+                    <span class="meta">Maria Garcia · $420</span>
+                  </article>
+                  <article class="quote-card">
+                    <strong>Office weekly</strong>
+                    <span class="meta">Riverside LLC · $280</span>
+                  </article>
+                </div>
+              </div>
+              <div class="kanban-col">
+                <header class="kanban-col-header">Sent <span>5</span></header>
+                <div class="kanban-col-body">
+                  <article class="quote-card">
+                    <strong>Move-out clean</strong>
+                    <span class="meta">James Chen · $650</span>
+                  </article>
+                </div>
+              </div>
+              <div class="kanban-col">
+                <header class="kanban-col-header">Viewed <span>2</span></header>
+                <div class="kanban-col-body">
+                  <p class="muted" style="text-align:center;margin:auto">Drop quotes here</p>
+                </div>
+              </div>
+              <div class="kanban-col">
+                <header class="kanban-col-header">Accepted <span>8</span></header>
+                <div class="kanban-col-body"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Customers -->
+          <section id="customers" class="mock-section" data-nav="customers">
+            <header class="page-header">
+              <div>
+                <div class="page-title-row">
+                  <h1 class="page-title">Customers</h1>
+                  <span class="hint-icon" title="Manage your customer roster">i</span>
+                </div>
+              </div>
+              <a href="#" class="btn-primary">+ Add customer</a>
+            </header>
+            <nav class="tabs">
+              <a href="#" class="tab active">All</a>
+              <a href="#" class="tab">Active</a>
+              <a href="#" class="tab">Inactive</a>
+            </nav>
+            <div class="filter-row">
+              <input type="search" class="select" placeholder="Search customers…" style="max-width:280px" readonly />
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Last service</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Jennifer Martinez</strong></td>
+                    <td>(217) 555-0148</td>
+                    <td>j.martinez@email.com</td>
+                    <td><span class="pill ok">Active</span></td>
+                    <td>May 6, 2026</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Riverside Office Park</strong></td>
+                    <td>(217) 555-0192</td>
+                    <td>facilities@riverside.com</td>
+                    <td><span class="pill ok">Active</span></td>
+                    <td>May 2, 2026</td>
+                  </tr>
+                  <tr>
+                    <td><strong>David Okonkwo</strong></td>
+                    <td>(217) 555-0161</td>
+                    <td>d.okonkwo@email.com</td>
+                    <td><span class="pill">Active</span></td>
+                    <td>Apr 28, 2026</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Schedule (reference) -->
+          <section id="schedule" class="mock-section" data-nav="schedule">
+            <header class="page-header">
+              <div>
+                <div class="page-title-row">
+                  <h1 class="page-title">Schedule</h1>
+                  <span class="hint-icon" title="Today's appointments">i</span>
+                </div>
+              </div>
+              <a href="#" class="btn-primary">+ New appointment</a>
+            </header>
+            <div class="filter-row" style="justify-content:space-between">
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn-secondary">‹</button>
+                <strong>Today, Friday May 8, 2026</strong>
+                <button class="btn-secondary">›</button>
+              </div>
+              <div style="display:flex;gap:4px">
+                <span class="filter-pill active">Day</span>
+                <span class="filter-pill">Week</span>
+                <span class="filter-pill">Month</span>
+              </div>
+            </div>
+            <div class="filter-row">
+              <select class="select"><option>All employees</option></select>
+              <select class="select"><option>All services</option></select>
+            </div>
+            <article class="card" style="min-height:400px;padding:20px">
+              <p class="muted">Day timeline with appointment cards (see <strong>02-tenant-schedule.png</strong>)</p>
+              <div style="margin-top:16px;border-left:4px solid var(--teal);padding:12px 16px;background:#f8fbfb;border-radius:8px;max-width:360px">
+                <strong>Jennifer Martinez</strong><br />
+                <span class="muted">1842 Oak Lane · 9:00 AM – 12:00 PM</span>
+              </div>
+            </article>
+          </section>
+
+          <!-- Reschedule requests -->
+          <section id="reschedule" class="mock-section" data-nav="reschedule">
+            <header class="page-header">
+              <div>
+                <div class="page-title-row">
+                  <h1 class="page-title">Reschedule requests</h1>
+                  <span class="hint-icon" title="Customer-requested time changes">i</span>
+                </div>
+              </div>
+            </header>
+            <div class="stack">
+              <article class="card reschedule-card">
+                <header class="card-header">
+                  <h3>Jennifer Martinez · Deep clean</h3>
+                  <span class="pill warn">Pending</span>
+                </header>
+                <div class="card-body">
+                  <p><strong>Originally:</strong> Fri May 8, 9:00 AM</p>
+                  <p><strong>Requested:</strong> Mon May 11, 2:00 PM</p>
+                  <div class="filter-row" style="margin-top:12px;margin-bottom:0">
+                    <button class="btn-primary">Approve</button>
+                    <button class="btn-secondary">Decline</button>
+                    <button class="btn-secondary">Schedule for another time</button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- Employees -->
+          <section id="employees" class="mock-section" data-nav="employees">
+            <header class="page-header">
+              <div>
+                <div class="page-title-row">
+                  <h1 class="page-title">Team</h1>
+                  <span class="hint-icon" title="People who can sign in to this workspace">i</span>
+                </div>
+              </div>
+              <a href="#" class="btn-primary">+ Invite member</a>
+            </header>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="avatar sm" style="display:inline-flex;vertical-align:middle;margin-right:8px">JD</span> Jane Doe</td>
+                    <td>Owner</td>
+                    <td><span class="pill ok">Active</span></td>
+                    <td><a href="#" class="btn-secondary">Manage</a></td>
+                  </tr>
+                  <tr>
+                    <td><span class="avatar sm" style="display:inline-flex;vertical-align:middle;margin-right:8px;background:#2c7a7a">MK</span> Maria Kim</td>
+                    <td>Scheduler</td>
+                    <td><span class="pill ok">Active</span></td>
+                    <td><a href="#" class="btn-secondary">Manage</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Billing hub -->
+          <section id="billing" class="mock-section" data-nav="billing">
+            <header class="page-header">
+              <div>
+                <div class="page-title-row">
+                  <h1 class="page-title">Workspace billing</h1>
+                  <span class="hint-icon" title="Platform subscription plus customer invoicing">i</span>
+                </div>
+              </div>
+            </header>
+            <div class="stack">
+              <article class="card">
+                <header class="card-header"><h3>Customer invoices</h3></header>
+                <div class="card-body">
+                  <p class="muted">Bill customers, collect cards via Stripe Connect, record manual payments.</p>
+                  <div class="filter-row">
+                    <a href="#invoices" class="btn-secondary">Open customer invoices</a>
+                    <a href="#service-plans" class="btn-secondary">Service plans</a>
+                    <a href="#payment-setup" class="btn-secondary">Payment setup</a>
+                    <a href="#transactions" class="btn-secondary">Transactions</a>
+                    <a href="#payment-audits" class="btn-secondary">Payment audits</a>
+                  </div>
+                </div>
+              </article>
+              <article class="card">
+                <header class="card-header"><h3>Current plan</h3></header>
+                <div class="card-body">
+                  <p><strong>Plan:</strong> Professional · <strong>Status:</strong> Active</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- Invoices -->
+          <section id="invoices" class="mock-section" data-nav="billing">
+            <header class="page-header">
+              <div class="page-title-row">
+                <a href="#billing" class="back-chevron" aria-label="Workspace billing">‹</a>
+                <h1 class="page-title">Customer invoices</h1>
+                <span class="hint-icon" title="Bill customers for completed work">i</span>
+              </div>
+              <a href="#" class="btn-primary">New invoice</a>
+            </header>
+            <div class="stack">
+              <a href="#" class="invoice-card-link">
+                <article class="card">
+                  <header class="card-header"><h3>May cleaning — Martinez</h3></header>
+                  <div class="card-body" style="display:flex;justify-content:space-between;align-items:center">
+                    <div><strong>$150.00</strong> <span class="muted">· paid $0.00</span></div>
+                    <span class="pill warn">open</span>
+                  </div>
+                </article>
+              </a>
+              <a href="#" class="invoice-card-link">
+                <article class="card">
+                  <header class="card-header"><h3>Q2 office — Riverside</h3></header>
+                  <div class="card-body" style="display:flex;justify-content:space-between;align-items:center">
+                    <div><strong>$840.00</strong> <span class="muted">· paid $840.00</span></div>
+                    <span class="pill ok">paid</span>
+                  </div>
+                </article>
+              </a>
+            </div>
+          </section>
+
+          <!-- Transactions -->
+          <section id="transactions" class="mock-section" data-nav="billing">
+            <header class="page-header">
+              <div class="page-title-row">
+                <a href="#billing" class="back-chevron" aria-label="Workspace billing">‹</a>
+                <h1 class="page-title">Transactions</h1>
+                <span class="hint-icon" title="All payments on customer invoices">i</span>
+              </div>
+            </header>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th>Method</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>May 7, 2026</td>
+                    <td>Q2 office — Riverside</td>
+                    <td>Riverside Office Park</td>
+                    <td>Card</td>
+                    <td><strong>$840.00</strong></td>
+                  </tr>
+                  <tr>
+                    <td>May 5, 2026</td>
+                    <td>May cleaning — Martinez</td>
+                    <td>Jennifer Martinez</td>
+                    <td>Check</td>
+                    <td><strong>$75.00</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Payment audits -->
+          <section id="payment-audits" class="mock-section" data-nav="billing">
+            <header class="page-header">
+              <div class="page-title-row">
+                <a href="#billing" class="back-chevron" aria-label="Workspace billing">‹</a>
+                <h1 class="page-title">Payment audits</h1>
+                <span class="hint-icon" title="Offline payments — receipt and deposit tracking">i</span>
+              </div>
+            </header>
+            <div class="date-range-bar">
+              <label>From <input type="date" class="date-input" value="2026-05-01" /></label>
+              <label>To <input type="date" class="date-input" value="2026-05-08" /></label>
+              <button class="btn-secondary">Apply range</button>
+            </div>
+            <nav class="filter-pills" style="margin-bottom:16px">
+              <a href="#" class="filter-pill active">All</a>
+              <a href="#" class="filter-pill">Awaiting receipt <span class="pill warn" style="margin-left:4px">2</span></a>
+              <a href="#" class="filter-pill">Awaiting deposit</a>
+              <a href="#" class="filter-pill">Complete</a>
+            </nav>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Posted</th>
+                    <th>Customer</th>
+                    <th>Invoice</th>
+                    <th>Amount</th>
+                    <th>Stage</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>May 5, 2026</td>
+                    <td>Jennifer Martinez</td>
+                    <td>May cleaning</td>
+                    <td>$75.00</td>
+                    <td><span class="pill warn">Awaiting deposit</span></td>
+                    <td><button class="btn-primary" style="padding:6px 12px;font-size:12px">Mark deposited</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Service plans -->
+          <section id="service-plans" class="mock-section" data-nav="billing">
+            <header class="page-header">
+              <div class="page-title-row">
+                <a href="#billing" class="back-chevron">‹</a>
+                <h1 class="page-title">Service plans</h1>
+                <span class="hint-icon" title="Recurring prices for customers">i</span>
+              </div>
+            </header>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Plan</th><th>Price</th><th>Interval</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Weekly residential</strong></td>
+                    <td>$120.00</td>
+                    <td>Weekly</td>
+                    <td><span class="pill ok">Active</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Payment setup -->
+          <section id="payment-setup" class="mock-section" data-nav="billing">
+            <header class="page-header">
+              <div class="page-title-row">
+                <a href="#billing" class="back-chevron">‹</a>
+                <h1 class="page-title">Payment setup</h1>
+                <span class="hint-icon" title="Stripe Connect for card payments">i</span>
+              </div>
+            </header>
+            <article class="card">
+              <header class="card-header"><h3>Stripe Connect</h3></header>
+              <div class="card-body">
+                <p><strong>Status:</strong> Live — card payments enabled</p>
+                <p class="muted" style="margin-top:12px">One connected account per workspace.</p>
+                <p style="margin-top:16px"><button class="btn-primary">Refresh status</button></p>
+              </div>
+            </article>
+          </section>
+
+          <!-- Settings -->
+          <section id="settings" class="mock-section" data-nav="settings">
+            <header class="page-header">
+              <div class="page-title-row">
+                <h1 class="page-title">Settings</h1>
+                <span class="hint-icon" title="Workspace profile and preferences">i</span>
+              </div>
+            </header>
+            <div class="stack">
+              <article class="card">
+                <header class="card-header"><h3>Business profile</h3></header>
+                <div class="card-body">
+                  <p><strong>Acme Cleaning</strong></p>
+                  <p class="muted">Timezone · America/Chicago</p>
+                </div>
+              </article>
+              <article class="card">
+                <header class="card-header"><h3>Brand color</h3></header>
+                <div class="card-body">
+                  <div style="width:48px;height:48px;border-radius:8px;background:var(--teal)"></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- Reports -->
+          <section id="reports" class="mock-section" data-nav="settings">
+            <header class="page-header">
+              <div class="page-title-row">
+                <h1 class="page-title">Reports</h1>
+                <span class="hint-icon" title="Revenue and utilization (coming soon)">i</span>
+              </div>
+            </header>
+            <article class="card">
+              <div class="card-body">
+                <p class="muted">Charts and exportable reports will appear here.</p>
+              </div>
+            </article>
+          </section>
+
+          <!-- Campaigns -->
+          <section id="campaigns" class="mock-section" data-nav="settings">
+            <header class="page-header">
+              <div class="page-title-row">
+                <h1 class="page-title">Campaigns</h1>
+                <span class="hint-icon" title="Email campaigns to customers">i</span>
+              </div>
+              <a href="#" class="btn-primary">New campaign</a>
+            </header>
+            <article class="card">
+              <div class="card-body">
+                <p class="muted">No campaigns yet.</p>
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      function showSection(id) {
+        document.querySelectorAll('.mock-section').forEach((s) => {
+          s.classList.toggle('active', s.id === id);
+        });
+        document.querySelectorAll('#sidebar-nav a').forEach((a) => {
+          const nav = document.getElementById(id)?.dataset.nav;
+          a.classList.toggle('active', a.dataset.nav === nav);
+        });
+      }
+
+      function onHashChange() {
+        const id = location.hash.slice(1) || 'dashboard';
+        if (document.getElementById(id)) showSection(id);
+      }
+
+      window.addEventListener('hashchange', onHashChange);
+      document.querySelectorAll('.gallery-nav a, #sidebar-nav a').forEach((a) => {
+        a.addEventListener('click', (e) => {
+          const href = a.getAttribute('href');
+          if (href?.startsWith('#')) {
+            e.preventDefault();
+            location.hash = href;
+            onHashChange();
+          }
+        });
+      });
+      onHashChange();
+    </script>
+  </body>
+</html>

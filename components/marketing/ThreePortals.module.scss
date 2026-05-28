@@ -1,0 +1,58 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/typography' as type;
+
+.section {
+  padding: var(--space-10) 0;
+  background-color: var(--color-surface);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  text-align: center;
+
+  @include type.display-2;
+}
+
+.lead {
+  max-width: 56ch;
+  margin: 0 auto;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-5);
+
+  @include mq.up(lg) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.portal {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0 var(--space-1);
+}
+
+.portalTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.portalDescription {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}

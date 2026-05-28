@@ -1,0 +1,14 @@
+-- =============================================================================
+-- cleanScheduler — PROD baseline (concatenated migrations)
+-- Generated (UTC): 2026-05-14T01:48:15Z
+-- Generator: supabase/scripts/build-prod-baseline.sh
+-- Source dir: supabase/migrations/*.sql (sorted)
+--
+-- USE ON: empty Postgres only (new Supabase project with no app schema yet).
+-- DO NOT run on DEV/PROD that already applied these migrations — duplicates will fail.
+-- Ongoing deploys: prefer supabase migration up / db push against migration history.
+--
+-- Apply:
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prod_baseline.sql
+-- Supabase Dashboard → SQL Editor works for moderate sizes; huge files may need psql.
+-- =============================================================================

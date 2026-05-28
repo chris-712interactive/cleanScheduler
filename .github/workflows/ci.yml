@@ -1,0 +1,52 @@
+name: CI
+on:
+  push:
+    branches: [main, staging, dev]
+  pull_request:
+
+jobs:
+  quality:
+    # Pin Node via container image so npm ci always runs on >=22.22.1 (engine-strict).
+    # Avoids setup-node / Actions runtime mismatches that caused EBADENGINE on GitHub.
+    runs-on: ubuntu-latest
+    container:
+      image: node:22.22.1-bookworm
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # PR default checkout is a merge commit (main + dev) which breaks package-lock.json.
+      # Use the PR branch tip only. On push, github.event.pull_request.head.sha is empty → github.ref.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+      - name: Verify Node and install dependencies
+        run: |
+          set -euxo pipefail
+          # checkout runs on the host; the container user must trust the workspace mount
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          node -v
+          npm -v
+          git log -1 --oneline
+          test -f package-lock.json
+          npm run check:engines
+          npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test
+      - name: Prettier
+        run: npm run format:check
+      - name: Migration prefix sanity
+        run: npm run check:migrations
+      - name: Migration order drift
+        run: npm run check:migration-drift
+      - name: ESLint
+        run: npm run lint
+      - name: Stylelint
+        run: npm run lint:styles
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4

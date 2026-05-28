@@ -1,0 +1,33 @@
+.section {
+  padding: var(--space-10) 0 var(--space-12);
+  background: radial-gradient(
+    ellipse at bottom,
+    color-mix(in srgb, var(--color-brand-primary) 10%, transparent) 0%,
+    transparent 60%
+  );
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  text-align: center;
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}

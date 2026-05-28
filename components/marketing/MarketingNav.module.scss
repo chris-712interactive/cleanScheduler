@@ -1,0 +1,65 @@
+@use 'mixins/breakpoints' as mq;
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-app-shell);
+  background-color: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(8px);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 64px;
+}
+
+.nav {
+  display: none;
+  align-items: center;
+  gap: var(--space-5);
+
+  @include mq.up(md) {
+    display: flex;
+  }
+}
+
+.navLink {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-brand-primary);
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  @include mq.up(sm) {
+    gap: var(--space-3);
+  }
+}
+
+.signInLink {
+  display: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+
+  @include mq.up(sm) {
+    display: inline-flex;
+  }
+
+  &:hover {
+    color: var(--color-brand-primary);
+  }
+}

@@ -1,0 +1,291 @@
+.form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+
+  span {
+    display: inline-flex;
+    justify-content: center;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+
+  span[data-active='true'] {
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  }
+}
+
+.stepSection {
+  display: grid;
+  gap: var(--space-3);
+}
+
+// Belt-and-suspenders: some browsers/layouts do not fully suppress `[hidden]`
+// when nested grids or portal styles interact with the UA stylesheet.
+.stepSectionHidden {
+  display: none !important;
+}
+
+.stepHint {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.optional {
+  font-weight: 500;
+  color: var(--color-text-subtle);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.slugRow {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.slugSuffix {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-subtle);
+}
+
+.slugStatus {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-subtle);
+
+  &[data-tone='ok'] {
+    color: var(--color-success);
+  }
+
+  &[data-tone='warn'] {
+    color: var(--color-warning);
+  }
+
+  &[data-tone='error'] {
+    color: var(--color-danger-600);
+  }
+}
+
+.submit {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-brand-primary);
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-on-brand);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.backButton {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+}
+
+.stepFieldError {
+  margin: calc(var(--space-2) * -1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+}
+
+.inputMismatch {
+  border-color: var(--color-danger-600);
+}
+
+.strengthBlock {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: calc(var(--space-2) * -1);
+}
+
+.strengthHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.strengthLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+
+  &[data-tone='danger'] {
+    color: var(--color-danger-600);
+  }
+
+  &[data-tone='warning'] {
+    color: var(--color-warning);
+  }
+
+  &[data-tone='neutral'] {
+    color: var(--color-text-muted);
+  }
+
+  &[data-tone='success'] {
+    color: var(--color-success);
+  }
+}
+
+.strengthCrackHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+}
+
+.strengthMeter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-1);
+  height: 6px;
+}
+
+.strengthSegment {
+  border-radius: var(--radius-sm);
+  background-color: var(--color-border-strong);
+
+  &[data-filled='true'][data-tone='danger'] {
+    background-color: var(--color-danger-600);
+  }
+
+  &[data-filled='true'][data-tone='warning'] {
+    background-color: var(--color-warning);
+  }
+
+  &[data-filled='true'][data-tone='neutral'] {
+    background-color: var(--color-text-muted);
+  }
+
+  &[data-filled='true'][data-tone='success'] {
+    background-color: var(--color-success);
+  }
+}
+
+.strengthFeedback {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+
+  a {
+    color: var(--color-brand-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+.tierFieldset {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  border: none;
+}
+
+.tierLead {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.tierOption {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &[data-selected='true'] {
+    border-color: var(--color-brand-primary);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+  }
+
+  input {
+    margin-top: 4px;
+  }
+}
+
+.tierCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tierNameRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.tierName {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.tierPrice {
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tierDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}

@@ -18,7 +18,15 @@ export interface GridProps {
 }
 
 export const Grid = forwardRef<HTMLElement, GridProps>(function Grid(
-  { as: Tag = 'div', min = '240px', gap = 4, className, children, style, ...rest }: GridProps & {
+  {
+    as: Tag = 'div',
+    min = '240px',
+    gap = 4,
+    className,
+    children,
+    style,
+    ...rest
+  }: GridProps & {
     style?: CSSProperties;
   },
   ref,

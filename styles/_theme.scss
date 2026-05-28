@@ -31,9 +31,10 @@
 :root,
 :root[data-theme='light'] {
   // -- color: surfaces / backgrounds --
-  --color-bg: #{c.$brand-bg-light};
-  --color-bg-subtle: #{c.$brand-surface-light};
-  --color-bg-muted: #{c.$gray-50-light};
+  // Page canvas is the soft teal tint; cards, sidebar, and top bar use white surface.
+  --color-bg: #{c.$brand-surface-light};
+  --color-bg-subtle: #{c.$gray-50-light};
+  --color-bg-muted: #{c.$gray-100-light};
   --color-surface: #{c.$brand-bg-light};
   --color-surface-raised: #{c.$brand-bg-light};
   --color-surface-overlay: #{c.$brand-bg-light};
@@ -63,6 +64,7 @@
   --color-warning-bg: #fffbeb;
   --color-danger: #{c.$danger-light};
   --color-danger-bg: #fef2f2;
+  --color-text-on-danger: #{c.$gray-0-light};
   --color-info: #{c.$info-light};
   --color-info-bg: #eff6ff;
 
@@ -117,6 +119,7 @@
   --color-warning-bg: #2a1c00;
   --color-danger: #{c.$danger-dark};
   --color-danger-bg: #2c0a0a;
+  --color-text-on-danger: #{c.$gray-0-light};
   --color-info: #{c.$info-dark};
   --color-info-bg: #0b2235;
 

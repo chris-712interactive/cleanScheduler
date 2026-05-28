@@ -17,10 +17,7 @@ export interface StatusPillProps {
 
 export function StatusPill({ tone = 'neutral', icon, children, className }: StatusPillProps) {
   return (
-    <span
-      data-tone={tone}
-      className={[styles.pill, className].filter(Boolean).join(' ')}
-    >
+    <span data-tone={tone} className={[styles.pill, className].filter(Boolean).join(' ')}>
       {icon ? (
         <span className={styles.icon} aria-hidden="true">
           {icon}

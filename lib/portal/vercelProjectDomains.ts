@@ -1,0 +1,317 @@
+import { publicEnv } from '@/lib/env';
+
+export interface VercelDomainVerificationRecord {
+  type: string;
+  domain: string;
+  value: string;
+  reason: string;
+}
+
+export interface VercelProjectDomainResult {
+  name: string;
+  verified: boolean;
+  verification: VercelDomainVerificationRecord[];
+}
+
+export interface VercelDomainDnsConfig {
+  misconfigured: boolean;
+  configuredBy: string | null;
+  recommendedCname: string | null;
+  recommendedARecords: string[];
+}
+
+export class VercelDomainError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'VercelDomainError';
+  }
+}
+
+interface VercelConfig {
+  token: string;
+  projectId: string;
+  teamId?: string;
+}
+
+interface VercelDomainTargetConfig {
+  gitBranch?: string;
+  customEnvironmentId?: string;
+}
+
+function readVercelDomainTargetConfig(): VercelDomainTargetConfig {
+  const gitBranch = process.env.VERCEL_DOMAIN_GIT_BRANCH?.trim();
+  const customEnvironmentId = process.env.VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID?.trim();
+  return {
+    gitBranch: gitBranch || undefined,
+    customEnvironmentId: customEnvironmentId || undefined,
+  };
+}
+
+function hasVercelDomainTargetConfig(config: VercelDomainTargetConfig): boolean {
+  return Boolean(config.gitBranch || config.customEnvironmentId);
+}
+
+function buildVercelDomainTargetPayload(config: VercelDomainTargetConfig): Record<string, string> {
+  const payload: Record<string, string> = {};
+  if (config.gitBranch) payload.gitBranch = config.gitBranch;
+  if (config.customEnvironmentId) payload.customEnvironmentId = config.customEnvironmentId;
+  return payload;
+}
+
+/** Human-readable label for which Vercel deployment receives new white-label domains. */
+export function describeVercelDomainTarget(): string | null {
+  const target = readVercelDomainTargetConfig();
+  if (target.customEnvironmentId) {
+    return `custom environment ${target.customEnvironmentId}`;
+  }
+  if (target.gitBranch) {
+    return `branch “${target.gitBranch}”`;
+  }
+  return null;
+}
+
+function readVercelConfig(): Partial<VercelConfig> {
+  const token = process.env.VERCEL_API_TOKEN?.trim();
+  const projectId =
+    process.env.VERCEL_PROJECT_ID?.trim() || process.env.VERCEL_PROJECT_NAME?.trim();
+  const teamId = process.env.VERCEL_TEAM_ID?.trim();
+  return { token, projectId, teamId: teamId || undefined };
+}
+
+export function isVercelDomainAutomationConfigured(): boolean {
+  const { token, projectId } = readVercelConfig();
+  return Boolean(token && projectId);
+}
+
+function requireVercelConfig(): VercelConfig {
+  const config = readVercelConfig();
+  if (!config.token || !config.projectId) {
+    throw new VercelDomainError(
+      'White-label domain automation is not configured on the server (VERCEL_API_TOKEN and VERCEL_PROJECT_ID).',
+    );
+  }
+  return { token: config.token, projectId: config.projectId, teamId: config.teamId };
+}
+
+async function vercelRequest(path: string, init?: RequestInit): Promise<Response> {
+  const { token, teamId } = requireVercelConfig();
+  const url = new URL(`https://api.vercel.com${path}`);
+  if (teamId) {
+    url.searchParams.set('teamId', teamId);
+  }
+
+  return fetch(url.toString(), {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    cache: 'no-store',
+  });
+}
+
+async function parseVercelError(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as {
+      error?: { message?: string; code?: string };
+      message?: string;
+    };
+    return body.error?.message ?? body.message ?? response.statusText;
+  } catch {
+    return response.statusText;
+  }
+}
+
+function normalizeVerification(
+  verification: VercelDomainVerificationRecord[] | undefined,
+): VercelDomainVerificationRecord[] {
+  return (verification ?? []).filter(
+    (row) => row.domain && row.value && row.type,
+  ) as VercelDomainVerificationRecord[];
+}
+
+function toDomainResult(payload: {
+  name: string;
+  verified?: boolean;
+  verification?: VercelDomainVerificationRecord[];
+}): VercelProjectDomainResult {
+  return {
+    name: payload.name,
+    verified: payload.verified === true,
+    verification: normalizeVerification(payload.verification),
+  };
+}
+
+/** Vercel may return verified=true on register before DNS is configured; pending records must be cleared too. */
+export function isVercelDomainFullyVerified(result: VercelProjectDomainResult): boolean {
+  return result.verified === true && result.verification.length === 0;
+}
+
+/** Apply git branch / custom environment targeting when configured for this deployment. */
+export async function ensureVercelProjectDomainTarget(hostname: string): Promise<void> {
+  const target = readVercelDomainTargetConfig();
+  if (!hasVercelDomainTargetConfig(target)) return;
+
+  const { projectId } = requireVercelConfig();
+  const response = await vercelRequest(
+    `/v9/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(hostname)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(buildVercelDomainTargetPayload(target)),
+    },
+  );
+
+  if (!response.ok) {
+    throw new VercelDomainError(await parseVercelError(response), response.status);
+  }
+}
+
+/** Register (or refresh) a hostname on the cleanScheduler Vercel project. */
+export async function registerVercelProjectDomain(
+  hostname: string,
+): Promise<VercelProjectDomainResult> {
+  const { projectId } = requireVercelConfig();
+  const target = readVercelDomainTargetConfig();
+
+  const response = await vercelRequest(`/v10/projects/${encodeURIComponent(projectId)}/domains`, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: hostname,
+      ...buildVercelDomainTargetPayload(target),
+    }),
+  });
+
+  if (response.ok) {
+    const body = (await response.json()) as {
+      name: string;
+      verified?: boolean;
+      verification?: VercelDomainVerificationRecord[];
+    };
+    return toDomainResult(body);
+  }
+
+  if (response.status === 400) {
+    const message = await parseVercelError(response);
+    if (/already exists/i.test(message)) {
+      await ensureVercelProjectDomainTarget(hostname);
+      return getVercelProjectDomain(hostname);
+    }
+    throw new VercelDomainError(message, response.status);
+  }
+
+  if (response.status === 409) {
+    throw new VercelDomainError(
+      'That domain is already connected to another Vercel project. Remove it there first or choose a different hostname.',
+      response.status,
+    );
+  }
+
+  throw new VercelDomainError(await parseVercelError(response), response.status);
+}
+
+export async function getVercelProjectDomain(hostname: string): Promise<VercelProjectDomainResult> {
+  const { projectId } = requireVercelConfig();
+
+  const response = await vercelRequest(
+    `/v9/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(hostname)}`,
+  );
+
+  if (!response.ok) {
+    throw new VercelDomainError(await parseVercelError(response), response.status);
+  }
+
+  const body = (await response.json()) as {
+    name: string;
+    verified?: boolean;
+    verification?: VercelDomainVerificationRecord[];
+  };
+  return toDomainResult(body);
+}
+
+/** DNS routing targets from Vercel (CNAME/A) — separate from ownership TXT challenges. */
+export async function getVercelDomainDnsConfig(hostname: string): Promise<VercelDomainDnsConfig> {
+  const response = await vercelRequest(`/v6/domains/${encodeURIComponent(hostname)}/config`);
+
+  if (!response.ok) {
+    throw new VercelDomainError(await parseVercelError(response), response.status);
+  }
+
+  const body = (await response.json()) as {
+    misconfigured?: boolean;
+    configuredBy?: string | null;
+    recommendedCNAME?: Array<{ rank: number; value: string }>;
+    recommendedIPv4?: Array<{ rank: number; value: string[] }>;
+  };
+
+  const cnameEntry = [...(body.recommendedCNAME ?? [])].sort((a, b) => a.rank - b.rank)[0];
+  const aEntry = [...(body.recommendedIPv4 ?? [])].sort((a, b) => a.rank - b.rank)[0];
+
+  return {
+    misconfigured: body.misconfigured === true,
+    configuredBy: body.configuredBy ?? null,
+    recommendedCname: cnameEntry?.value?.replace(/\.$/, '') ?? null,
+    recommendedARecords: aEntry?.value ?? [],
+  };
+}
+
+/** Ask Vercel to re-check DNS and return the latest verification state. */
+export async function verifyVercelProjectDomain(
+  hostname: string,
+): Promise<VercelProjectDomainResult> {
+  const { projectId } = requireVercelConfig();
+
+  const response = await vercelRequest(
+    `/v10/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(hostname)}/verify`,
+    { method: 'POST' },
+  );
+
+  if (!response.ok) {
+    throw new VercelDomainError(await parseVercelError(response), response.status);
+  }
+
+  const body = (await response.json()) as {
+    name: string;
+    verified?: boolean;
+    verification?: VercelDomainVerificationRecord[];
+  };
+  return toDomainResult(body);
+}
+
+/** Remove a hostname from the Vercel project (best-effort on cleanup). */
+export async function removeVercelProjectDomain(hostname: string): Promise<void> {
+  if (!isVercelDomainAutomationConfigured()) return;
+
+  const { projectId } = requireVercelConfig();
+  const response = await vercelRequest(
+    `/v9/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(hostname)}`,
+    { method: 'DELETE' },
+  );
+
+  if (response.ok || response.status === 404) return;
+
+  throw new VercelDomainError(await parseVercelError(response), response.status);
+}
+
+export function vercelDomainErrorMessage(error: unknown): string | null {
+  if (error instanceof VercelDomainError) {
+    return error.message;
+  }
+  return null;
+}
+
+/** Whether white-label save/verify should use Vercel automation (prod/dev always; local when configured). */
+export function shouldUseVercelDomainAutomation(): boolean {
+  if (isVercelDomainAutomationConfigured()) return true;
+  return publicEnv.NEXT_PUBLIC_APP_ENV === 'local';
+}
+
+export function whiteLabelAutomationUnavailableMessage(): string {
+  if (publicEnv.NEXT_PUBLIC_APP_ENV === 'local') {
+    return 'Set VERCEL_API_TOKEN and VERCEL_PROJECT_ID in .env.local to test automated domain registration locally.';
+  }
+  return 'Custom domain automation is temporarily unavailable. Please contact support.';
+}

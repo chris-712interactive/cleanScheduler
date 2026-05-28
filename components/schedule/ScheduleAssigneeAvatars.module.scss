@@ -1,0 +1,55 @@
+.row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.column {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+
+  > * + * {
+    margin-top: -10px;
+  }
+}
+
+.moreSm,
+.moreMd,
+.moreLg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
+}
+
+.moreSm {
+  min-width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+
+.moreMd {
+  min-width: 36px;
+  height: 36px;
+  font-size: 11px;
+}
+
+.moreLg {
+  min-width: 48px;
+  height: 48px;
+  font-size: 12px;
+}
+
+.moreCalendar {
+  min-width: 40px;
+  height: 40px;
+  font-size: 11px;
+}

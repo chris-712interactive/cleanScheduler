@@ -1,0 +1,340 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { getAuthContext } from '@/lib/auth/session';
+import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { isLimitExceededError } from '@/lib/billing/checkLimit';
+import {
+  assertCanAssignTeamSeat,
+  countTeamSeatUsage,
+  teamSeatGateErrorMessage,
+} from '@/lib/billing/teamSeats';
+import {
+  assertFeatureEnabledForTier,
+  featureGateErrorMessage,
+} from '@/lib/billing/tenantFeatureGate';
+import { isResendConfigured, sendEmployeeInviteEmail } from '@/lib/email/resend';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import {
+  allowedInviteRolesForActor,
+  canManageTeamInvitesAndRoles,
+  parseTenantRoleForInvite,
+} from '@/lib/tenant/employeePermissions';
+import type { TenantRole } from '@/lib/auth/types';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+function roleLabel(r: TenantRole): string {
+  if (r === 'admin') return 'Admin';
+  if (r === 'viewer') return 'Viewer';
+  if (r === 'employee') return 'Field employee';
+  if (r === 'owner') return 'Owner';
+  return r;
+}
+
+export interface EmployeeInviteFormState {
+  error?: string;
+  success?: string;
+  limitExceeded?: boolean;
+}
+
+export async function sendEmployeeInviteAction(
+  _prev: EmployeeInviteFormState,
+  formData: FormData,
+): Promise<EmployeeInviteFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const emailRaw = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
+  const roleRaw = String(formData.get('invited_role') ?? '').trim();
+
+  if (!slug || !emailRaw) {
+    return { error: 'Email and workspace are required.' };
+  }
+  if (!EMAIL_RE.test(emailRaw)) {
+    return { error: 'Enter a valid email address.' };
+  }
+
+  const invitedRole = parseTenantRoleForInvite(roleRaw);
+  if (!invitedRole) {
+    return { error: 'Pick a permission level for this invite.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, '/employees/new');
+  if (!canManageTeamInvitesAndRoles(membership.role)) {
+    return { error: 'Only workspace owners and admins can invite team members.' };
+  }
+  if (!allowedInviteRolesForActor(membership.role).includes(invitedRole)) {
+    return { error: 'You cannot assign that role.' };
+  }
+
+  const admin = createAdminClient();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+
+  if (invitedRole === 'admin' || invitedRole === 'viewer') {
+    try {
+      assertFeatureEnabledForTier(tier, 'rolePermissions');
+    } catch (error) {
+      const message = featureGateErrorMessage(error);
+      if (message) return { error: message };
+      throw error;
+    }
+  }
+
+  const { data: existingUsers, error: listErr } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 200,
+  });
+  if (listErr) {
+    return { error: listErr.message };
+  }
+
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { error: 'You must be signed in to send an invite.' };
+  }
+
+  if (!isResendConfigured()) {
+    return {
+      error:
+        'Configure RESEND_API_KEY and RESEND_FROM_EMAIL on the server to email employee invites.',
+    };
+  }
+
+  const existing = existingUsers.users.find(
+    (u) => (u.email ?? '').trim().toLowerCase() === emailRaw,
+  );
+  if (existing) {
+    const { data: already } = await admin
+      .from('tenant_memberships')
+      .select('id')
+      .eq('tenant_id', membership.tenantId)
+      .eq('user_id', existing.id)
+      .maybeSingle();
+    if (already) {
+      return { error: 'That person is already a member of this workspace.' };
+    }
+    const appRole = (existing.app_metadata as { app_role?: string })?.app_role;
+    if (appRole === 'customer') {
+      return {
+        error:
+          'That email already uses the customer portal. Use a work email or a different address for team access.',
+      };
+    }
+    const { data: otherMembership } = await admin
+      .from('tenant_memberships')
+      .select('tenant_id')
+      .eq('user_id', existing.id)
+      .neq('tenant_id', membership.tenantId)
+      .limit(1)
+      .maybeSingle();
+    if (otherMembership) {
+      return {
+        error:
+          'That login is already linked to another workspace. Ask them to open the invite link and use “Link existing account”, or use a different email.',
+      };
+    }
+  }
+
+  const { data: tenant, error: tErr } = await admin
+    .from('tenants')
+    .select('name, slug')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  if (tErr || !tenant) {
+    return { error: 'Could not load workspace.' };
+  }
+
+  const { data: existingPendingInvite } = await admin
+    .from('employee_invites')
+    .select('invited_role')
+    .eq('tenant_id', membership.tenantId)
+    .eq('email_normalized', emailRaw)
+    .is('used_at', null)
+    .maybeSingle();
+
+  try {
+    const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+    const usage = await countTeamSeatUsage(admin, membership.tenantId);
+    assertCanAssignTeamSeat({
+      plan: tier,
+      role: invitedRole,
+      usage,
+      replaceRole: existingPendingInvite
+        ? (existingPendingInvite.invited_role as TenantRole)
+        : undefined,
+    });
+  } catch (error) {
+    const message = teamSeatGateErrorMessage(error);
+    if (message) {
+      return { error: message, limitExceeded: isLimitExceededError(error) };
+    }
+    throw error;
+  }
+
+  const expires = new Date();
+  expires.setUTCDate(expires.getUTCDate() + 7);
+
+  await admin
+    .from('employee_invites')
+    .delete()
+    .eq('tenant_id', membership.tenantId)
+    .eq('email_normalized', emailRaw)
+    .is('used_at', null);
+
+  const { data: invite, error: invErr } = await admin
+    .from('employee_invites')
+    .insert({
+      tenant_id: membership.tenantId,
+      email_normalized: emailRaw,
+      invited_role: invitedRole,
+      invited_by_user_id: auth.user.id,
+      expires_at: expires.toISOString(),
+    })
+    .select('token')
+    .single();
+
+  if (invErr || !invite?.token) {
+    return { error: invErr?.message ?? 'Could not create invite.' };
+  }
+
+  const tenantName = String(tenant.name ?? tenant.slug).trim() || slug;
+  const acceptUrl = `${getPublicOrigin(null)}/complete-employee-invite?token=${invite.token}`;
+  const workspaceUrl = getPublicOrigin(tenant.slug);
+
+  const sent = await sendEmployeeInviteEmail({
+    to: emailRaw,
+    tenantName,
+    roleLabel: roleLabel(invitedRole),
+    acceptUrl,
+    workspaceUrl,
+  });
+  if (!sent.ok) {
+    await admin.from('employee_invites').delete().eq('token', invite.token);
+    return { error: sent.error };
+  }
+
+  revalidatePath('/employees');
+  revalidatePath('/employees/new');
+  return { success: `Invite sent to ${emailRaw}.` };
+}
+
+async function sendInviteEmailForToken(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  token: string,
+): Promise<EmployeeInviteFormState> {
+  const { data: invite, error: invErr } = await admin
+    .from('employee_invites')
+    .select('email_normalized, invited_role, tenant_id, used_at, expires_at')
+    .eq('token', token)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (invErr || !invite) {
+    return { error: 'Invite not found.' };
+  }
+  if (invite.used_at) {
+    return { error: 'That invite was already accepted.' };
+  }
+  if (new Date(invite.expires_at).getTime() <= Date.now()) {
+    return { error: 'That invite has expired. Send a new invite instead.' };
+  }
+
+  if (!isResendConfigured()) {
+    return {
+      error:
+        'Configure RESEND_API_KEY and RESEND_FROM_EMAIL on the server to email employee invites.',
+    };
+  }
+
+  const { data: tenant, error: tErr } = await admin
+    .from('tenants')
+    .select('name, slug')
+    .eq('id', tenantId)
+    .maybeSingle();
+  if (tErr || !tenant) {
+    return { error: 'Could not load workspace.' };
+  }
+
+  const tenantName = String(tenant.name ?? tenant.slug).trim() || tenant.slug;
+  const acceptUrl = `${getPublicOrigin(null)}/complete-employee-invite?token=${token}`;
+  const workspaceUrl = getPublicOrigin(tenant.slug);
+
+  const sent = await sendEmployeeInviteEmail({
+    to: invite.email_normalized,
+    tenantName,
+    roleLabel: roleLabel(invite.invited_role),
+    acceptUrl,
+    workspaceUrl,
+  });
+  if (!sent.ok) {
+    return { error: sent.error };
+  }
+
+  return { success: `Invite resent to ${invite.email_normalized}.` };
+}
+
+export async function resendEmployeeInviteAction(
+  _prev: EmployeeInviteFormState,
+  formData: FormData,
+): Promise<EmployeeInviteFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const token = String(formData.get('token') ?? '').trim();
+
+  if (!slug || !token) {
+    return { error: 'Missing invite details.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, '/employees');
+  if (!canManageTeamInvitesAndRoles(membership.role)) {
+    return { error: 'Only workspace owners and admins can manage invites.' };
+  }
+
+  const admin = createAdminClient();
+  const result = await sendInviteEmailForToken(admin, membership.tenantId, token);
+  if (result.success) {
+    revalidatePath('/employees');
+  }
+  return result;
+}
+
+export async function revokeEmployeeInviteAction(
+  _prev: EmployeeInviteFormState,
+  formData: FormData,
+): Promise<EmployeeInviteFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const token = String(formData.get('token') ?? '').trim();
+
+  if (!slug || !token) {
+    return { error: 'Missing invite details.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, '/employees');
+  if (!canManageTeamInvitesAndRoles(membership.role)) {
+    return { error: 'Only workspace owners and admins can manage invites.' };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('employee_invites')
+    .delete()
+    .eq('token', token)
+    .eq('tenant_id', membership.tenantId)
+    .is('used_at', null);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/employees');
+  return { success: 'Invite canceled.' };
+}

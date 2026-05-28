@@ -17,7 +17,7 @@ export async function requirePortalAccess(
 
   if (portal === 'admin') {
     if (!appRole || !ADMIN_APP_ROLES.includes(appRole)) {
-      redirect('/sign-in?error=forbidden');
+      redirect('/access-denied?reason=forbidden');
     }
     return auth;
   }
@@ -28,7 +28,7 @@ export async function requirePortalAccess(
     if (appRole === 'customer' || appRole === 'admin' || appRole === 'super_admin') {
       return auth;
     }
-    redirect('/sign-in?error=forbidden');
+    redirect('/access-denied?reason=forbidden');
   }
 
   // Tenant portal guard is completed by membership checks in tenantAccess.ts.

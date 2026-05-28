@@ -3,8 +3,10 @@ import 'modern-normalize';
 import '@/styles/globals.scss';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { themeScript } from '@/components/theme/themeScript';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getPublicOrigin(null)),
   title: {
     default: 'cleanScheduler',
     template: '%s | cleanScheduler',
@@ -12,6 +14,17 @@ export const metadata: Metadata = {
   description:
     'Multi-tenant scheduling, quoting, billing, and customer-service platform for residential and commercial cleaning businesses.',
   applicationName: 'cleanScheduler',
+  manifest: '/favicon/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon/icon0.svg', type: 'image/svg+xml' },
+      { url: '/favicon/favicon.ico', sizes: 'any' },
+      { url: '/favicon/icon1.png', type: 'image/png', sizes: '96x96' },
+      { url: '/favicon/web-app-manifest-192x192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/favicon/web-app-manifest-512x512.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [{ url: '/favicon/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
 };
 
 export const viewport: Viewport = {

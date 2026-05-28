@@ -3,9 +3,9 @@
 // they can be substituted at the theme layer without editing any component
 // SCSS.
 
-$font-sans: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto,
-  'Helvetica Neue', arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
-  'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+$font-sans:
+  -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, 'Helvetica Neue', arial, 'Noto Sans',
+  sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 $font-mono: ui-monospace, sfmono-regular, 'SF Mono', menlo, consolas, monospace;
 
 // Modular scale (1.125 - major second). Sizes are in rem so they scale with

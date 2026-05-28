@@ -2,6 +2,9 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
+import { needsMfaChallenge } from '@/lib/auth/mfa';
+import { parseAllowedAuthRedirectOrigin } from '@/lib/auth/whiteLabelRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
 
 export interface SignInState {
@@ -21,45 +24,77 @@ function getOriginFromHeaders(h: Headers): string {
   return `${protocol}://${host}`;
 }
 
-export async function requestMagicLink(
+async function resolveRedirectOrigin(formData: FormData): Promise<string> {
+  const h = await headers();
+  const headerOrigin = getOriginFromHeaders(h);
+  const clientOrigin = await parseAllowedAuthRedirectOrigin(
+    String(formData.get('return_origin') ?? ''),
+  );
+  if (clientOrigin) return clientOrigin;
+
+  const headerAllowed = await parseAllowedAuthRedirectOrigin(headerOrigin);
+  return headerAllowed ?? headerOrigin;
+}
+
+function normalizeNextFromForm(formData: FormData): string {
+  return sanitizeAuthenticationNext(String(formData.get('next') ?? '/'));
+}
+
+export async function signInWithPassword(
   _prevState: SignInState,
   formData: FormData,
 ): Promise<SignInState> {
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
-  const nextPathRaw = String(formData.get('next') ?? '/').trim();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
+  const password = String(formData.get('password') ?? '');
+  const nextPath = normalizeNextFromForm(formData);
 
-  const nextPath = nextPathRaw.startsWith('/') ? nextPathRaw : '/';
-
-  if (!email) {
-    return { error: 'Please enter your email address.' };
+  if (!email || !password) {
+    return { error: 'Email and password are required.' };
   }
 
   const supabase = await createClient();
-  const h = await headers();
-  const origin = getOriginFromHeaders(h);
-  const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (await needsMfaChallenge()) {
+    redirect(`/sign-in/mfa?next=${encodeURIComponent(nextPath)}`);
+  }
+
+  redirect(nextPath);
+}
+
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  const nextPath = normalizeNextFromForm(formData);
+  const origin = await resolveRedirectOrigin(formData);
+  const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
     options: {
-      emailRedirectTo,
+      redirectTo,
+      queryParams: {
+        prompt: 'select_account',
+      },
     },
   });
 
   if (error) {
-    return {
-      error: error.message,
-    };
+    redirect(
+      `/sign-in?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent(error.message)}`,
+    );
   }
 
-  return {
-    success:
-      'Check your inbox for a secure sign-in link. Once clicked, you will be redirected back to your portal.',
-  };
-}
+  if (data.url) {
+    redirect(data.url);
+  }
 
-export async function signOut(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/sign-in');
+  redirect(
+    `/sign-in?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent('Google sign-in failed.')}`,
+  );
 }

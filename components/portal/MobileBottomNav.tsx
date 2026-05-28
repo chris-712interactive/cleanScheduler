@@ -2,11 +2,12 @@
 
 /**
  * MobileBottomNav - icon + short-label navigation along the bottom edge of
- * the viewport on small screens. Shown only on `< md`. The customer portal
- * uses this; the tenant portal opts out and lets the drawer handle nav.
+ * the viewport on small screens. Shown only on `< md`. Customer and tenant
+ * portals opt in; other routes use the drawer for full navigation.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { isNavItemActive } from './navActive';
 import type { NavItem } from './types';
 import { navIcons } from './navIcons';
 import styles from './MobileBottomNav.module.scss';
@@ -21,9 +22,7 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
   return (
     <nav aria-label="Quick navigation" className={styles.nav}>
       {items.map((item) => {
-        const active = item.exact
-          ? pathname === item.href
-          : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = isNavItemActive(pathname, item, items);
         const Icon = navIcons[item.icon];
         return (
           <Link

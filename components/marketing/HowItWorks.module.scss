@@ -1,0 +1,77 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/typography' as type;
+
+.section {
+  padding: var(--space-10) 0;
+  background-color: var(--color-bg);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  text-align: center;
+
+  @include type.display-2;
+}
+
+.lead {
+  max-width: 52ch;
+  margin: 0 auto;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.steps {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  border-radius: var(--radius-circle);
+}
+
+.stepCopy {
+  display: grid;
+  gap: var(--space-1);
+
+  strong {
+    color: var(--color-text);
+    font-size: var(--font-size-lg);
+  }
+
+  span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+  }
+}

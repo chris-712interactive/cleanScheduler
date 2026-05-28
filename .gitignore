@@ -24,9 +24,11 @@ coverage/
 # Environment files
 .env
 .env.local
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 
 # Editors / OS
 .idea/
@@ -39,3 +41,6 @@ coverage/
 # Supabase local CLI artefacts (will be added later)
 supabase/.branches
 supabase/.temp
+
+# Generated PROD baseline SQL (see supabase/scripts/build-prod-baseline.sh)
+supabase/scripts/generated/

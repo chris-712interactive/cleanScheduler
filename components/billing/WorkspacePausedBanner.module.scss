@@ -1,0 +1,35 @@
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-warning-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
+}
+
+.copy {
+  max-width: 52rem;
+}
+
+.link {
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}

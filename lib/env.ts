@@ -9,6 +9,10 @@
  *     crashes for routes that import env-aware modules but are not executed.
  *   - Public (browser-shipped) vars are split from server-only vars so we
  *     can't accidentally read a server secret from a client component.
+ *   - Cross-env Stripe: prod requires sk_live_; non-prod must not use sk_live_
+ *     (see getServerEnv()).
+ *   - Supabase: prod requires https:// on NEXT_PUBLIC_SUPABASE_URL; optional
+ *     SUPABASE_DISALLOW_PROJECT_REF blocks local/dev from pointing at a known prod ref.
  *
  * Usage:
  *
@@ -83,20 +87,91 @@ const serverEnvSchema = z.object({
     .string()
     .min(1, 'SUPABASE_SERVICE_ROLE_KEY must be set on the server'),
 
+  /** Supabase Management API — white-label OAuth redirect URL automation. */
+  SUPABASE_ACCESS_TOKEN: z.string().optional(),
+  /** Optional override; defaults to project ref parsed from NEXT_PUBLIC_SUPABASE_URL. */
+  SUPABASE_PROJECT_REF: z.string().optional(),
+
   // Optional now, required when those integrations land.
   STRIPE_SECRET_KEY: z.string().optional(),
+  /** Signing secret for Stripe destination scoped to "Your account" (platform / tenant subscriptions). */
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  /** Signing secret for Stripe destination scoped to "Connected accounts" (Connect). */
+  STRIPE_CONNECT_WEBHOOK_SECRET: z.string().optional(),
+  /** @deprecated Use tier-specific prices; used as fallback when a tier id is unset. */
+  STRIPE_PLATFORM_PRICE_ID: z.string().optional(),
+  /** Stripe recurring Price IDs — cleanScheduler platform subscription per tier. */
+  STRIPE_PLATFORM_PRICE_STARTER: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS: z.string().optional(),
+  /** Monthly/yearly paid checkout — preferred over legacy *_SUBSCRIBE / tier defaults. */
+  STRIPE_PLATFORM_PRICE_STARTER_MONTHLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_STARTER_YEARLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS_MONTHLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS_YEARLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO_MONTHLY: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO_YEARLY: z.string().optional(),
+  /** Paid checkout (no trial) — optional legacy; use *_MONTHLY when set. */
+  STRIPE_PLATFORM_PRICE_STARTER_SUBSCRIBE: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_PRO_SUBSCRIBE: z.string().optional(),
+  STRIPE_PLATFORM_PRICE_BUSINESS_SUBSCRIBE: z.string().optional(),
   STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
+  /** Optional platform fee on tenant invoice Checkout (basis points, e.g. 100 = 1%). Max 10000. */
+  STRIPE_CONNECT_APPLICATION_FEE_BPS: z.string().optional(),
+  /** Optional Stripe Billing Portal configuration id for Connect customer portal sessions. */
+  STRIPE_CONNECT_BILLING_PORTAL_CONFIGURATION_ID: z.string().optional(),
 
   PLAID_CLIENT_ID: z.string().optional(),
   PLAID_SECRET: z.string().optional(),
   PLAID_ENV: z.enum(['sandbox', 'development', 'production']).optional(),
 
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_FROM_NUMBER: z.string().optional(),
+  /** sent.dm — https://app.sent.dm */
+  SENT_DM_API_KEY: z.string().optional(),
+  /** sent.dm webhook signing secret (whsec_…) */
+  SENT_WEBHOOK_SECRET: z.string().optional(),
+  SENT_DM_TEMPLATE_QUOTE_SENT: z.string().optional(),
+  SENT_DM_TEMPLATE_QUOTE_ACCEPTED: z.string().optional(),
+  SENT_DM_TEMPLATE_QUOTE_DECLINED: z.string().optional(),
+  SENT_DM_TEMPLATE_VISIT_REMINDER: z.string().optional(),
+  SENT_DM_TEMPLATE_INVOICE_OVERDUE: z.string().optional(),
 
+  /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),
+  /** Resend — verified sender for non-template sends (e.g. quotes). Portal invite template may define its own from. */
+  RESEND_FROM_EMAIL: z.string().min(1).optional(),
+  /** Resend — published template id/alias for customer portal invites (default create-customer-account). */
+  RESEND_CUSTOMER_INVITE_TEMPLATE_ID: z.string().min(1).optional(),
+  // onboarding create-user behavior:
+  // auto     -> dev/local auto-confirm, prod requires confirmation
+  // required -> always require email confirmation before first sign-in
+  // disabled -> always auto-confirm on signup
+  ONBOARDING_EMAIL_CONFIRM_MODE: z.enum(['auto', 'required', 'disabled']).default('auto'),
+  /** Vercel Cron / manual GET `/api/cron/materialize-recurring-visits` — `Authorization: Bearer …`. */
+  CRON_SECRET: z.string().optional(),
+  /** Vercel REST API — white-label customer portal domain registration (server-only). */
+  VERCEL_API_TOKEN: z.string().optional(),
+  /** Vercel project id or name that serves cleanScheduler (prod/dev deployment). */
+  VERCEL_PROJECT_ID: z.string().optional(),
+  /** Alias for VERCEL_PROJECT_ID when using the project slug/name instead of id. */
+  VERCEL_PROJECT_NAME: z.string().optional(),
+  /** Optional Vercel team id when the project lives under a team account. */
+  VERCEL_TEAM_ID: z.string().optional(),
+  /**
+   * Optional. Pin tenant white-label domains to a Vercel Preview branch instead of Production.
+   * Set on dev deployments (e.g. `develop`). Leave unset on production.
+   */
+  VERCEL_DOMAIN_GIT_BRANCH: z.string().optional(),
+  /**
+   * Optional. Pin tenant white-label domains to a Vercel custom environment (Pro/Enterprise).
+   * Takes precedence over branch assignment when both are set. Find the id in Project → Settings → Environments.
+   */
+  VERCEL_DOMAIN_CUSTOM_ENVIRONMENT_ID: z.string().optional(),
+  /**
+   * Optional guard: when set, `getServerEnv()` refuses to start if `NEXT_PUBLIC_APP_ENV` is
+   * `local` or `dev` and `NEXT_PUBLIC_SUPABASE_URL` contains this substring (e.g. your production
+   * Supabase project ref). Prevents accidental reads/writes against prod from a dev build.
+   */
+  SUPABASE_DISALLOW_PROJECT_REF: z.string().optional(),
 });
 
 // We lazy-instantiate so importing this module from a client component does
@@ -106,8 +181,7 @@ let _serverEnvCache: z.infer<typeof serverEnvSchema> | undefined;
 function getServerEnv(): z.infer<typeof serverEnvSchema> {
   if (typeof window !== 'undefined') {
     throw new Error(
-      'serverEnv accessed from a browser context. Use publicEnv for ' +
-        'client-safe values.',
+      'serverEnv accessed from a browser context. Use publicEnv for ' + 'client-safe values.',
     );
   }
 
@@ -120,6 +194,47 @@ function getServerEnv(): z.infer<typeof serverEnvSchema> {
         JSON.stringify(parsed.error.flatten().fieldErrors, null, 2),
     );
   }
+
+  const appEnv = process.env.NEXT_PUBLIC_APP_ENV;
+  if (appEnv === 'prod') {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeKey && !stripeKey.startsWith('sk_live_')) {
+      throw new Error(
+        'NEXT_PUBLIC_APP_ENV=prod but STRIPE_SECRET_KEY is not a live key (expected sk_live_…).',
+      );
+    }
+    const plaidSecret = process.env.PLAID_SECRET;
+    if (plaidSecret && process.env.PLAID_ENV && process.env.PLAID_ENV !== 'production') {
+      throw new Error(
+        'NEXT_PUBLIC_APP_ENV=prod with PLAID_SECRET set requires PLAID_ENV=production.',
+      );
+    }
+  } else {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeKey && stripeKey.startsWith('sk_live_')) {
+      throw new Error(
+        'STRIPE_SECRET_KEY is a live Stripe key (sk_live_…) but NEXT_PUBLIC_APP_ENV is not prod.',
+      );
+    }
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  if (appEnv === 'prod' && supabaseUrl.length > 0 && !supabaseUrl.startsWith('https://')) {
+    throw new Error('NEXT_PUBLIC_APP_ENV=prod requires NEXT_PUBLIC_SUPABASE_URL to use https://');
+  }
+
+  const disallow = parsed.data.SUPABASE_DISALLOW_PROJECT_REF?.trim();
+  if (disallow && (appEnv === 'local' || appEnv === 'dev') && supabaseUrl.includes(disallow)) {
+    throw new Error(
+      `SUPABASE_DISALLOW_PROJECT_REF="${disallow}" matches NEXT_PUBLIC_SUPABASE_URL while NEXT_PUBLIC_APP_ENV="${appEnv}". ` +
+        'Unset SUPABASE_DISALLOW_PROJECT_REF or point this environment at a non-production Supabase project.',
+    );
+  }
+
+  if (appEnv === 'prod' && !parsed.data.CRON_SECRET?.trim()) {
+    throw new Error('CRON_SECRET must be set when NEXT_PUBLIC_APP_ENV=prod.');
+  }
+
   _serverEnvCache = parsed.data;
   return _serverEnvCache;
 }

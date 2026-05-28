@@ -9,29 +9,38 @@
  * tree as the desktop sidebar.
  */
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { IdentityChip } from './IdentityChip';
+import { AccountMenu } from './AccountMenu';
 import { NavList } from './NavList';
 import type { IdentityChipModel, NavItem } from './types';
 import styles from './TopBar.module.scss';
 
 export interface TopBarProps {
   brandLabel: string;
+  brandLogoUrl?: string | null;
+  hidePlatformLogo?: boolean;
   brandHref?: string;
   identity?: IdentityChipModel;
+  settingsHref?: string;
   tenantBadge?: React.ReactNode;
   navItems: NavItem[];
+  searchSlot?: React.ReactNode;
 }
 
 export function TopBar({
   brandLabel,
+  brandLogoUrl,
+  hidePlatformLogo = false,
   brandHref = '/',
   identity,
+  settingsHref,
   tenantBadge,
   navItems,
+  searchSlot,
 }: TopBarProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -40,11 +49,7 @@ export function TopBar({
       <div className={styles.left}>
         <Dialog.Root open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <Dialog.Trigger asChild>
-            <button
-              type="button"
-              aria-label="Open navigation menu"
-              className={styles.menuButton}
-            >
+            <button type="button" aria-label="Open navigation menu" className={styles.menuButton}>
               <Menu size={20} aria-hidden="true" />
             </button>
           </Dialog.Trigger>
@@ -58,17 +63,39 @@ export function TopBar({
         </Dialog.Root>
 
         <Link href={brandHref} className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">
-            cs
-          </span>
+          {!hidePlatformLogo ? (
+            <span className={styles.brandMark}>
+              <Image
+                src="/brand/logo.svg"
+                alt=""
+                width={160}
+                height={32}
+                className={styles.brandLogo}
+                priority
+              />
+            </span>
+          ) : brandLogoUrl ? (
+            <span className={styles.brandMark}>
+              <Image
+                src={brandLogoUrl}
+                alt=""
+                width={160}
+                height={32}
+                className={styles.brandLogo}
+                priority
+                unoptimized
+              />
+            </span>
+          ) : null}
           <span className={styles.brandLabel}>{brandLabel}</span>
         </Link>
         {tenantBadge ? <div className={styles.tenantBadge}>{tenantBadge}</div> : null}
       </div>
 
       <div className={styles.right}>
+        {searchSlot}
         <ThemeToggle />
-        {identity ? <IdentityChip {...identity} /> : null}
+        {identity ? <AccountMenu {...identity} settingsHref={settingsHref} /> : null}
       </div>
     </header>
   );

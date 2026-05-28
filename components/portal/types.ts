@@ -8,6 +8,9 @@ export interface NavItem {
 
   // When true, this item only matches its href exactly (no descendant match).
   exact?: boolean;
+
+  // Nested links shown indented under this item (e.g. Billing sub-sections).
+  children?: NavItem[];
 }
 
 export interface IdentityChipModel {

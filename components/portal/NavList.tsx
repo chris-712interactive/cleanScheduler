@@ -7,10 +7,14 @@
  *   - Items flagged `exact` match only their own href (avoids the dashboard
  *     item being highlighted whenever any descendant route is active).
  *   - Other items match if the pathname starts with their href + "/" (or
- *     equals it exactly).
+ *     equals it exactly), unless a more specific sibling item also matches
+ *     (e.g. /schedule/reschedule-requests highlights only that item, not Schedule).
+ *   - Items with `children` highlight for any route under their href; children
+ *     render as an indented sub-list (e.g. Billing → Invoices, Transactions).
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { isNavChildActive, isNavItemActive } from './navActive';
 import type { NavItem } from './types';
 import { navIcons } from './navIcons';
 import styles from './NavList.module.scss';
@@ -20,12 +24,6 @@ export interface NavListProps {
   onNavigate?: () => void;
 }
 
-function isItemActive(pathname: string, item: NavItem): boolean {
-  if (item.exact) return pathname === item.href;
-  if (pathname === item.href) return true;
-  return pathname.startsWith(`${item.href}/`);
-}
-
 export function NavList({ items, onNavigate }: NavListProps) {
   const pathname = usePathname();
 
@@ -33,13 +31,21 @@ export function NavList({ items, onNavigate }: NavListProps) {
     <nav>
       <ul className={styles.list}>
         {items.map((item) => {
-          const active = isItemActive(pathname, item);
+          const active = isNavItemActive(pathname, item, items);
           const Icon = navIcons[item.icon];
+          const children = item.children ?? [];
+
           return (
-            <li key={item.href}>
+            <li key={item.href} className={children.length > 0 ? styles.group : undefined}>
               <Link
                 href={item.href}
-                aria-current={active ? 'page' : undefined}
+                aria-current={active && children.length === 0 ? 'page' : undefined}
+                aria-expanded={children.length > 0 ? active : undefined}
+                aria-label={
+                  typeof item.badge === 'number' && item.badge > 0
+                    ? `${item.label}, ${item.badge} pending`
+                    : undefined
+                }
                 className={styles.item}
                 data-active={active || undefined}
                 onClick={onNavigate}
@@ -52,6 +58,26 @@ export function NavList({ items, onNavigate }: NavListProps) {
                   </span>
                 ) : null}
               </Link>
+              {children.length > 0 ? (
+                <ul className={styles.subList}>
+                  {children.map((child) => {
+                    const childActive = isNavChildActive(pathname, child, children);
+                    return (
+                      <li key={child.href}>
+                        <Link
+                          href={child.href}
+                          aria-current={childActive ? 'page' : undefined}
+                          className={styles.subItem}
+                          data-active={childActive || undefined}
+                          onClick={onNavigate}
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
             </li>
           );
         })}

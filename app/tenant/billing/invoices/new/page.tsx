@@ -1,0 +1,133 @@
+import { PageHeader } from '@/components/portal/PageHeader';
+import { Card } from '@/components/ui/Card';
+import { Stack } from '@/components/layout/Stack';
+import { Button } from '@/components/ui/Button';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { getPortalContext } from '@/lib/portal';
+import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { createTenantInvoiceAction } from '@/lib/admin/tenantInvoiceActions';
+import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import styles from '../../billing.module.scss';
+
+export const dynamic = 'force-dynamic';
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function NewTenantInvoicePage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const defaultCustomerId = firstParam(sp.customer_id)?.trim() ?? '';
+  const defaultTitle = firstParam(sp.title)?.trim() ?? '';
+  const defaultAmount = firstParam(sp.amount_dollars)?.trim() ?? '';
+  const defaultNotes = firstParam(sp.notes)?.trim() ?? '';
+
+  const { tenantSlug } = await getPortalContext();
+  const membership = await requireTenantPortalAccess(tenantSlug, '/billing/invoices/new');
+  const db = createTenantPortalDbClient();
+
+  const { data: customers, error } = await db
+    .from('customers')
+    .select(
+      'id, customer_identity_id, customer_identities(first_name, last_name, full_name, email)',
+    )
+    .eq('tenant_id', membership.tenantId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true });
+
+  return (
+    <>
+      <PageHeader
+        title="New invoice"
+        backHref="/billing/invoices"
+        backLabel="Customer invoices"
+        titleHint="Issue a balance to a customer in this workspace."
+      />
+
+      {error ? (
+        <Card title="Could not load customers">
+          <p className={styles.muted}>{error.message}</p>
+        </Card>
+      ) : (
+        <Card title="Invoice details">
+          <form action={createTenantInvoiceAction} className={styles.resumeForm}>
+            <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+            <Stack gap={4} as="div">
+              <label className={styles.field}>
+                <span>Customer</span>
+                <select
+                  name="customer_id"
+                  required
+                  className={styles.select}
+                  defaultValue={defaultCustomerId}
+                >
+                  <option value="">Select…</option>
+                  {(customers ?? []).map((c) => {
+                    const idRow = c.customer_identities as {
+                      first_name: string | null;
+                      last_name: string | null;
+                      full_name: string | null;
+                      email: string | null;
+                    } | null;
+                    const fromName = idRow ? formatCustomerDisplayName(idRow) : 'Unnamed';
+                    const label =
+                      fromName !== 'Unnamed'
+                        ? fromName
+                        : idRow?.email?.trim() || `Customer ${c.id.slice(0, 8)}…`;
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span>Title</span>
+                <input
+                  name="title"
+                  type="text"
+                  className={styles.input}
+                  placeholder="e.g. March deep clean"
+                  defaultValue={defaultTitle}
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Amount (USD)</span>
+                <input
+                  name="amount_dollars"
+                  type="text"
+                  className={styles.input}
+                  placeholder="120.00"
+                  required
+                  defaultValue={defaultAmount}
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Due date (optional)</span>
+                <input name="due_date" type="date" className={styles.input} />
+              </label>
+              <label className={styles.field}>
+                <span>Notes (optional)</span>
+                <textarea
+                  name="notes"
+                  className={styles.textarea}
+                  rows={3}
+                  defaultValue={defaultNotes}
+                />
+              </label>
+              <Button type="submit" variant="primary">
+                Create invoice
+              </Button>
+            </Stack>
+          </form>
+        </Card>
+      )}
+    </>
+  );
+}
