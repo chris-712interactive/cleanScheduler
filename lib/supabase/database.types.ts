@@ -852,6 +852,7 @@ export type Database = {
           customer_id: string;
           visit_id: string | null;
           location_id: string | null;
+          quote_id: string | null;
           title: string;
           status: 'draft' | 'open' | 'paid' | 'void';
           currency: string;
@@ -876,6 +877,8 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           visit_id?: string | null;
+          location_id?: string | null;
+          quote_id?: string | null;
           title?: string;
           status?: 'draft' | 'open' | 'paid' | 'void';
           currency?: string;
@@ -900,6 +903,8 @@ export type Database = {
           tenant_id?: string;
           customer_id?: string;
           visit_id?: string | null;
+          location_id?: string | null;
+          quote_id?: string | null;
           title?: string;
           status?: 'draft' | 'open' | 'paid' | 'void';
           currency?: string;
@@ -1434,6 +1439,7 @@ export type Database = {
           drawn_png_base64: string | null;
           client_ip: string | null;
           user_agent: string | null;
+          preferred_payment_method: Database['public']['Enums']['tenant_payment_method'] | null;
           created_at: string;
         };
         Insert: {
@@ -1445,6 +1451,7 @@ export type Database = {
           drawn_png_base64?: string | null;
           client_ip?: string | null;
           user_agent?: string | null;
+          preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'] | null;
           created_at?: string;
         };
         Update: {
@@ -1456,6 +1463,7 @@ export type Database = {
           drawn_png_base64?: string | null;
           client_ip?: string | null;
           user_agent?: string | null;
+          preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'] | null;
           created_at?: string;
         };
         Relationships: [

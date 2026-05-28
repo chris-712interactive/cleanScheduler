@@ -1,6 +1,6 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-14** — billing **0025** + Connect follow-ups (§11.6); **CI** typecheck + Prettier + migration-prefix check + ESLint + Stylelint; **env** prod https Supabase + optional `SUPABASE_DISALLOW_PROJECT_REF` (see `cicdPipeline` / `envGuardrails` todos).
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-28** — **v1.0.0 shipped to PROD**; **release/1.1.0** in progress (quote ops wiring, Resend webhook verify, RLS smoke). See `docs/release/1.1.0.md`.
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
@@ -12,17 +12,17 @@ todos:
     content: "Implement the color system and theme provider: encode the provided light/dark palettes + derived role aliases in styles/tokens/_colors.scss, emit them as CSS custom properties in styles/_theme.scss (with [data-theme=dark] overrides), reserve --color-brand for the per-tenant hook, ship an inline pre-hydration script that picks System/Light/Dark from localStorage + prefers-color-scheme, and build the Settings toggle that persists to localStorage + profiles.theme_preference."
     status: completed
   - id: supabaseSetup
-    content: "PROD Supabase project exists; **incremental migrations not applied on PROD yet** (2026-05-12). DEV tracks `supabase/migrations/0001`\u2013latest. Use `npm run db:prod-baseline` \u2192 `supabase/scripts/generated/prod_baseline.sql` for one-shot apply on **empty** PROD (see `supabase/scripts/README.md`). Still TODO: pgsodium + Vault KEK on each project, typed client regen from PROD after apply, env wiring."
+    content: "PROD Supabase project live with **0001–0055** applied (v1.0.0 launch). DEV tracks latest migrations. Ongoing deploys via `supabase db push`. **Still TODO:** pgsodium + Vault KEK for column encryption; typed client regen after each PROD migration apply."
     status: in_progress
   - id: envProvisioning
-    content: "Provision multi-environment infra (\u00a716): Vercel env scopes; DNS root + wildcard; Stripe test/live + webhooks; Plaid sandbox/prod; Twilio (SMS); **Resend** verified sending domain(s) for transactional email; Sentry tags."
-    status: pending
+    content: "PROD Vercel + DNS + Stripe live + Resend + sent.dm shipped for v1.0.0. **Still TODO:** formal multi-env doc/runbook (DEV `*.dev.cleanscheduler.com` parity), Plaid prod keys when bank reconciliation goes live for tenants, Sentry DSN in prod."
+    status: in_progress
   - id: cicdPipeline
-    content: "Shipped: `.github/workflows/ci.yml` runs `npm run typecheck` + **`npm run format:check`** + **`npm run check:migrations`** + `npm run lint` + **`npm run lint:styles`** on every PR and on push to `main`/`staging`. Stylelint: disabled crash-prone `keyframe-block-no-duplicate-selectors`; fixed remaining violations. **`scripts/check-migration-prefixes.mjs`** catches duplicate `NNNN_*.sql` prefixes. Still missing vs §16: Vitest, `supabase db` migration diff / drift check, pg_tap RLS suite, ephemeral Supabase in CI, and Vercel branch deploy rules (staging\u2192DEV, gated PROD migrations)."
+    content: "Shipped: `.github/workflows/ci.yml` — typecheck, **`npm test`** (Vitest), Prettier, migration prefix + **drift** check, ESLint, Stylelint, dependency audit/review. Still missing: Playwright in CI, pg_tap RLS in CI (smoke SQL exists — see `npm run check:rls-smoke`), ephemeral Supabase, Vercel branch deploy rules."
     status: in_progress
   - id: envGuardrails
-    content: "Shipped: `lib/env.ts` Zod-validated `publicEnv`/`serverEnv`; `NEXT_PUBLIC_APP_ENV=prod` requires live Stripe key and production Plaid when Plaid is configured; **non-prod rejects `sk_live_` Stripe keys**; **prod requires `https://` on `NEXT_PUBLIC_SUPABASE_URL`**; optional **`SUPABASE_DISALLOW_PROJECT_REF`** blocks local/dev from pointing at a known production project ref (substring match). `getNonProdPortalBanner()` drives dev/local banner text in portals. `.env.example` documents the new guard."
-    status: in_progress
+    content: "Shipped: `lib/env.ts` Zod-validated env; prod requires live Stripe + `https://` Supabase URL + `CRON_SECRET`; non-prod rejects `sk_live_`; optional `SUPABASE_DISALLOW_PROJECT_REF`. **1.1.0:** `RESEND_WEBHOOK_SECRET` for campaign webhook verification."
+    status: completed
   - id: subdomainMiddleware
     content: Implement middleware that resolves subdomain -> tenant context, gates routes by app_role/tenant_role, and supports admin + my + tenant slugs with reserved-name guard.
     status: completed
@@ -33,17 +33,17 @@ todos:
     content: "Core shipped in `0001` + CRM/property/portal migrations (`0010`\u2013`0014`, etc.): `customer_identities`, `customers`, links, portal invites, tenant customer profiles/properties. **Gap:** pgsodium/Vault column encryption for PII not present in migrations yet; invite/claim flows exist but encryption story is still TODO."
     status: in_progress
   - id: schedulingQuotes
-    content: "Shipped as **tenant quotes** + **scheduled visits** (not the legacy `quote_stages` / `appointments` names in early plan sketches): `0009_tenant_quotes` through `0021_expire_sent_quotes_pg_cron.sql` (Kanban columns, line items, tax/discount, acceptance snapshots, e-signatures, notifications, expiry batch + pg_cron). Assignees in `0015`."
+    content: "Shipped: tenant quotes + scheduled visits through **0021** (Kanban, line items, tax/discount, e-sign, notifications, expiry cron). **1.1.0:** wire `tenant_operational_settings` into acceptance (payment methods, prepay invoice, prompt-staff queue). **Still TODO:** `auto_schedule` visit creation; quote-derived auto-schedule on accept."
     status: in_progress
   - id: billingPlans
-    content: "Shipped **`0023_tenant_billing_stripe_connect.sql`** + **`0024_service_plans_customer_subscriptions.sql`** + **`0025_recurring_visits_invoice_refunds_stripe_mirrors.sql`**: Connect onboarding + invoice Stripe columns (0023); **`service_plans`**, **`customer_subscriptions`**, **`tenant_customer_stripe_customers`** (0024); recurring visit rules + signed payments + subscription anchor (0025). **Still missing vs §15/\u00a717:** `plans` / `plan_features` / `tenant_addons` catalog in DB + seed; full payment status machine + check capture UX; `tenant_addons` purchases; Stripe **hosted invoice** sync."
+    content: "Shipped **0023–0025** + **0053** (Stripe invoice mirror). Connect, service plans, recurring rules, signed payments, mirrors. **Still missing:** DB catalog `plans`/`plan_features`/`tenant_addons`; `tenant_addons` checkout; Setup Intent UX."
     status: in_progress
   - id: paymentFlowsImpl
-    content: "Shipped: tenant **invoice pay** Checkout on connected account (`createInvoicePayCheckoutSessionAction`); **customer portal invoice pay** (`createCustomerInvoicePayCheckoutSessionAction`, `my` origin); **subscription Checkout** on connected account for `service_plans` (`createCustomerSubscriptionCheckoutSessionAction`); optional **`STRIPE_CONNECT_APPLICATION_FEE_BPS`** as payment-intent fee (invoice) or `application_fee_percent` (subscription). **Resend** tenant invoice email (`sendTenantInvoiceEmailAction`). **Refund-from-app** (`refundStripeInvoicePaymentAction`) + negative `tenant_invoice_payments` row. **Stripe Billing Portal** (Connect) for tenant staff + customer (`createConnectCustomerBillingPortalSession`, optional **`STRIPE_CONNECT_BILLING_PORTAL_CONFIGURATION_ID`**). Webhooks: `checkout.session.completed` payment + fee backfill via Balance Transaction; subscription + `tenant_customer_subscription` on Connect; `customer.subscription.*` on Connect when `metadata.kind=tenant_customer_subscription`; Connect **`refund.*`**, **`charge.dispute.*`** (tenant owner email), **`payout.*`** → mirror tables (`lib/stripe/connectChargeMirrorHandlers.ts`). **Still missing vs §17:** Setup Intent / saved payment methods; Stripe-hosted **invoice** sync into `tenant_invoices`; richer receipt templates."
+    content: "Shipped: invoice/subscription Checkout, Billing Portal, refunds, dispute/payout mirrors, Resend invoice email, **Connect `invoice.*` sync** (`0053`). **Still missing:** Setup Intent / saved PM UX beyond Stripe portal; richer receipt templates."
     status: in_progress
   - id: featureGatingMetering
-    content: "Build the feature-gating + metering + soft-stop overage infrastructure (section 15): lib/billing/features.ts (feature-key enum), lib/billing/requireFeature.ts (server-side gate utility, mirrors requireConnect.ts), lib/billing/checkLimit.ts (typed quota checker driving the upgrade-or-add-on modal), components/billing/UpgradeOrAddOnModal.tsx (soft-stop UI used by Invite Employee / Add Customer / etc.), supabase/functions/usage-rollup/index.ts (nightly Vercel Cron rollup of active users / customers / sms segments into tenant_usage_snapshots), and inline 80%/95%/100% utilization warning banners. **Note:** `tenant_usage_snapshots` table exists from migration `0023` but is not populated yet. Strawman feature keys: recurring_billing, kanban_customization, custom_roles, email_campaigns, plaid_reconciliation, payroll_exports, sales_tax_summary, sms_outbound, sms_inbound, branded_email, phone_support."
-    status: pending
+    content: "Shipped: `lib/billing/entitlements.ts`, `requireFeature`, `checkLimit`, `UpgradeOrAddOnModal`, usage rollup cron (`/api/cron/usage-rollup`), `UsageUtilizationBanner` in tenant shell. **Still missing:** `tenant_addons` purchase flow."
+    status: in_progress
   - id: stripeConnectOnboarding
     content: "MVP shipped (2026-05-12): Express **account.create** + **account_links** onboarding from **`/billing/payment-setup`** (`startStripeConnectOnboardingAction` / `refreshStripeConnectAccountAction`); metadata `tenant_id` on Stripe Account; return/refresh URLs. **Still missing vs plan:** dedicated long-form education + explicit trial skip flow copy in-page; webhook subscription UX checklist in product admin."
     status: in_progress
@@ -51,53 +51,53 @@ todos:
     content: "MVP shipped (2026-05-12): `lib/billing/requireConnect.ts` gates **invoice card Checkout** and **subscription Checkout**; manual **card** entry blocked in `recordInvoicePaymentAction`; **`ConnectStatusBanner`** in tenant shell until `tenants.stripe_connect_status=complete`; invoice detail shows pay-online CTA only when complete. **Still missing:** generated-column variant (today: enum column + trigger from `tenant_stripe_connect_accounts`)."
     status: in_progress
   - id: recurringBilling
-    content: "Shipped: **`0024_service_plans_customer_subscriptions.sql`** + **`0025_recurring_visits_invoice_refunds_stripe_mirrors.sql`** — `recurring_appointment_rules`, visit `recurring_rule_id`, signed invoice payments, `customer_subscriptions.billing_cycle_anchor`. **`/billing/service-plans`** CRUD + **Recurring billing** panel (subscription Checkout, optional monthly **billing day** 1–28, **billing portal**, **cancel at period end**). **`/customer/subscriptions`** list + portal + cancel. **`lib/schedule/recurringVisitMaterialize.ts`** + Vercel Cron **`/api/cron/materialize-recurring-visits`** (`vercel.json`, optional **`CRON_SECRET`**). Connect webhooks sync subscriptions + mirrors. **Still missing:** Stripe **invoice** object sync to `tenant_invoices`; customer-visible hosted invoice PDFs."
+    content: "Shipped: **0024–0025** + app — service plans, RRULE materializer cron, billing anchor, cancel + Billing Portal, customer `/subscriptions`. Connect webhooks + **0053** Stripe invoice mirror. **Still missing:** hosted invoice PDF surfacing in customer portal beyond mirror URLs."
     status: in_progress
   - id: checkPaymentWorkflow
-    content: "Mobile-first Accept Payment flow on Schedule appointment detail (employees mark check received with amount, check number, optional photo; sets received_in_field). Office workflow lets Billing admin progress checks through received_in_office \u2192 deposited \u2192 cleared/bounced with audit log entries. Reminder cron skips invoices under active check holds (tenant-configurable hold days; per-status overrides)."
-    status: pending
+    content: "Shipped: field Accept Payment on visit complete (`CompleteVisitPaymentModal`), check/Zelle metadata (**0052**), `/billing/payment-audits` lifecycle, reminder hold settings + cron honor `check_reminder_hold_days` / `check_hold_through_deposit`."
+    status: completed
   - id: reportsModule
-    content: "Tenant Reports at /reports (docs/product/tenant-reports.md): 19 slugs through Phase 3 baseline — CSV/PDF, JSON cache, PDF Storage cache, payout backfill cron. Remaining: Plaid bank reports (blocked on bank_links migration), audit-log export links."
+    content: "Shipped: `/reports` hub — 19 slugs, CSV/PDF, cache, payout backfill cron. **Remaining:** Plaid bank reports (when link active), audit-log export links."
     status: completed
   - id: phase2PlaidZelle
-    content: "Phase 2: Plaid Link integration for tenant business bank accounts; daily Plaid transactions sync; Zelle/ACH match-suggestion queue with one-click confirmation against open invoices; bank_links + bank_transactions + payment_match_suggestions tables."
-    status: pending
+    content: "Shipped: Plaid Link, daily sync cron, match-suggestion queue, `/billing/bank-connection` UI (**0037**, **0051**). **Needs:** prod Plaid keys + tenant QA; bank reports in `/reports` when link active."
+    status: in_progress
   - id: phase2PayrollExports
-    content: "Phase 2: Employee Performance & Compensation Report with tips per appointment, commission rules per role, and exports formatted for ADP / Gusto / QuickBooks Online; Sales Tax Summary by jurisdiction."
-    status: pending
+    content: "Shipped: payroll export report (generic + ADP/Gusto/QBO CSV), sales tax summary, compensation rules settings — gated by Business+ entitlements (**0035** + reports app)."
+    status: completed
   - id: phase3CsvBankImport
-    content: "Phase 3: CSV / OFX bank statement import as Zelle/ACH reconciliation fallback for banks not well-supported by Plaid."
-    status: pending
+    content: "Shipped: CSV/OFX bank statement import on `/billing/bank-connection` as Plaid fallback."
+    status: completed
   - id: messagingAuditInquiries
     content: "Partial in `0013`: `marketing_inquiries`, masquerade + `audit_log`, `customer_support_threads` + `customer_support_messages` (MVP messaging), customer invoice read policies. **Gap vs plan:** no generic `conversations`/`messages` product threading; `support_tickets` deferred to Phase 2 todo `phase2Tickets`."
     status: in_progress
   - id: rlsTestSuite
-    content: Author pg_tap or SQL test fixtures verifying tenant isolation, customer cross-tenant view, founder bypass, and masquerade scoping.
-    status: pending
+    content: "Partial: `supabase/tests/rls/tenant_isolation.sql` smoke checks + `npm run check:rls-smoke`. **1.1.0** expands policy coverage. Still missing: pg_tap fixtures, CI integration with ephemeral DB, masquerade scoping tests."
+    status: in_progress
   - id: marketingTrialSignup
     content: Build marketing site, inquiry form, and self-serve 7-day trial signup wired to Stripe Checkout (trial_period_days=7) and tenant + Super Admin creation.
     status: completed
   - id: stripeWebhooks
-    content: "Shipped: platform `checkout.session.completed` (subscription), `customer.subscription.*` (no `event.account`); **Connect:** `checkout.session.completed` payment + `tenant_invoice_pay` (fee columns backfilled from expanded PI → charge → balance_transaction); **Connect** `checkout.session.completed` subscription + `tenant_customer_subscription`; `customer.subscription.*` when `event.account` set + `metadata.kind=tenant_customer_subscription`; `account.updated` \u2192 `tenant_stripe_connect_accounts`; Connect **`refund.*`**, **`charge.dispute.*`**, **`payout.*`** \u2192 mirror tables + dispute email to `tenant_onboarding_profiles.owner_email`. **Remaining:** inquiry/trial lifecycle automation; Edge Function parity; Stripe Billing **`invoice.*`** for hosted-invoice products."
+    content: "Shipped: platform + Connect webhooks in `app/api/webhooks/stripe/route.ts` — checkout, subscriptions, account.updated, refunds/disputes/payouts, **Connect invoice.* mirror** (`0053`). **Still missing:** inquiry/trial lifecycle automation."
     status: in_progress
   - id: tenantPortalMvp
-    content: "Routes live for dashboard, customers CRUD, schedule (list + new visit + **recurring rules**), quotes Kanban + detail + Resend-backed notifications, billing invoices (**email**, **Stripe refund**, card pay) + **service plans** + Connect payment setup + **invoice + subscription Checkout**, employees list, **reports hub (15 slugs)**, settings (operational, **compensation**). **Gaps:** KPI depth per \u00a711."
+    content: "Shipped: full tenant surface including dashboard KPIs, owner onboarding checklist, campaigns, bank connection, API/webhooks, white-label domains. **Gaps:** deeper KPI analytics; `auto_schedule` on quote accept."
     status: in_progress
   - id: customerPortalMvp
-    content: "Dashboard, visits (read), **invoice list + detail + Pay balance (Connect Checkout on `my`)**, **subscriptions** (list + **Billing portal** + cancel at period end), messages threads, quotes (view/respond w/ e-sign), settings, payment methods, invite completion. **Gaps:** explicit reschedule-request workflow vs read-only schedule; consolidated cross-tenant billing rollups."
+    content: "Shipped: invoices, subscriptions, quotes (e-sign), messages, **reschedule requests**, SMS opt-in, portal domains. **Gap:** consolidated cross-tenant billing rollups."
     status: in_progress
   - id: founderAdminMvp
-    content: "Tenants list/detail, inquiries list/detail/status, audit log page, masquerade actions, dashboard shell. **Gaps:** richer founder dashboard KPIs, manual onboarding UX polish, masquerade session timer banner refinement."
+    content: "Shipped: tenants, inquiries, audit log, masquerade, platform dashboard stats (`getPlatformDashboardStats`). **Gaps:** manual onboarding polish, masquerade timer/consent UX."
     status: in_progress
   - id: transactionalEmail
-    content: "**Resend** (`resend` npm + `lib/email/resend.ts`): quotes, portal invites, **tenant invoice summary email** (`sendTenantInvoiceEmailAction` + `lib/email/tenantInvoiceEmailBody.ts`), dispute-opened notice to tenant owner. Configure `RESEND_API_KEY` + `RESEND_FROM_EMAIL` on the server."
+    content: "Shipped: Resend for quotes, invites, tenant invoice email, dispute notices. **1.1.0:** Resend webhook signature verification."
     status: in_progress
   - id: observabilityCi
-    content: "Sentry DSN slots exist in env schema; **CI quality lane** now covers typecheck + Prettier + migration-prefix + ESLint + Stylelint (overlaps `cicdPipeline`). Still missing: Playwright/Vitest suites, CI DB checks, Sentry release/sourcemap wiring."
-    status: pending
+    content: "CI: typecheck, Vitest, format, migrations, lint, audit. **Still missing:** Playwright in CI, Sentry release/sourcemaps in prod builds."
+    status: in_progress
   - id: phase2Twilio
-    content: "Phase 2: Twilio SMS in/out, tenant Integrations admin assignments, conversation surfacing in Messages."
-    status: pending
+    content: "Deferred — **sent.dm** shipped for transactional SMS (**0039**, **0054**, **0055**). Full two-way SMS inbox in Messages not built."
+    status: cancelled
   - id: phase2Tickets
     content: "Phase 2: Customer Service ticketing in founder admin + tenant-side ticket creation."
     status: pending
@@ -108,7 +108,7 @@ todos:
     content: "Phase 2: tenant Accounting view + founder Accounting (MRR, revenue YTD, CSV exports)."
     status: pending
   - id: phase3Campaigns
-    content: "Phase 3: Email Campaigns (gated by feature key 'campaigns' — see docs/product/email-campaigns.md and section 15): list + create + detail UI, audience presets, Resend send loop, webhook metrics, marketing opt-in."
+    content: "Shipped MVP: `/campaigns` list/create/detail/send, audience presets, Resend batch + webhook metrics, opt-in/suppressions (**0033**). **Still missing:** scheduled sends (V1.1 cron)."
     status: in_progress
   - id: phase3MasqueradePolish
     content: "Phase 3: full masquerade UX with tenant-side consent flow, per-action audit UI, and revocation."

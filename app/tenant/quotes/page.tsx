@@ -4,9 +4,10 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { QuotesBoard } from './QuotesBoard';
 import styles from './quotes.module.scss';
@@ -90,11 +91,24 @@ export default async function TenantQuotesPage({
   const scheduledQuoteIds = new Set(
     (visitsWithQuote ?? []).map((row) => row.quote_id).filter((id): id is string => Boolean(id)),
   );
+
   const archivedQuotes = quotes.filter(
     (q) => q.status === 'accepted' && scheduledQuoteIds.has(q.id),
   );
   const archivedQuoteIdSet = new Set(archivedQuotes.map((q) => q.id));
   const activeQuotes = quotes.filter((q) => !archivedQuoteIdSet.has(q.id));
+
+  const admin = createAdminClient();
+  const ops = await loadTenantOperationalSettings(admin, membership.tenantId);
+  const needsSchedulingQuoteIds =
+    ops.acceptedQuoteScheduleMode === 'prompt_staff'
+      ? new Set(
+          activeQuotes
+            .filter((q) => q.status === 'accepted' && !scheduledQuoteIds.has(q.id))
+            .map((q) => q.id),
+        )
+      : new Set<string>();
+
   const activeTabHref = '/quotes';
   const archivedTabHref = '/quotes?view=archived';
 
@@ -177,7 +191,22 @@ export default async function TenantQuotesPage({
             </ul>
           </Card>
         ) : (
-          <QuotesBoard tenantSlug={membership.tenantSlug} quotes={activeQuotes} />
+          <>
+            {needsSchedulingQuoteIds.size > 0 ? (
+              <p className={styles.schedulingQueueBanner} role="status">
+                {needsSchedulingQuoteIds.size}{' '}
+                {needsSchedulingQuoteIds.size === 1
+                  ? 'accepted quote needs'
+                  : 'accepted quotes need'}{' '}
+                a first visit scheduled. Open the quote and use Schedule to book work.
+              </p>
+            ) : null}
+            <QuotesBoard
+              tenantSlug={membership.tenantSlug}
+              quotes={activeQuotes}
+              needsSchedulingQuoteIds={needsSchedulingQuoteIds}
+            />
+          </>
         )}
       </Stack>
     </>

@@ -8,6 +8,11 @@ import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
+import {
+  loadTenantOperationalSettings,
+  resolveRequiredPreferredPaymentMethod,
+} from '@/lib/tenant/loadTenantOperationalSettings';
+import { applyQuoteAcceptanceFollowUp } from '@/lib/tenant/quoteAcceptanceFollowUp';
 import type { Database } from '@/lib/supabase/database.types';
 
 export type CustomerQuoteResponseState = { error?: string; success?: boolean };
@@ -43,7 +48,7 @@ export async function respondToCustomerQuote(
   const admin = createAdminClient();
   const { data: quote, error } = await admin
     .from('tenant_quotes')
-    .select('id, tenant_id, customer_id, status, is_locked, title')
+    .select('id, tenant_id, customer_id, status, is_locked, title, amount_cents, currency')
     .eq('id', quoteId)
     .maybeSingle();
 
@@ -67,7 +72,19 @@ export async function respondToCustomerQuote(
   const ua = (h.get('user-agent') ?? '').slice(0, 2000);
   const ip = clientIpFromHeaders(h);
 
+  let preferredPaymentMethod: Database['public']['Enums']['tenant_payment_method'] | null = null;
+
   if (decision === 'accept') {
+    const ops = await loadTenantOperationalSettings(admin, quote.tenant_id as string);
+    const preferredResult = resolveRequiredPreferredPaymentMethod(
+      ops,
+      String(formData.get('preferred_payment_method') ?? ''),
+    );
+    if (typeof preferredResult === 'object' && 'error' in preferredResult) {
+      return { error: preferredResult.error };
+    }
+    preferredPaymentMethod = preferredResult;
+
     const kindRaw = String(formData.get('signature_kind') ?? 'typed_name').trim();
     const kind: Database['public']['Enums']['quote_acceptance_signature_kind'] =
       kindRaw === 'drawn_png' ? 'drawn_png' : 'typed_name';
@@ -99,6 +116,7 @@ export async function respondToCustomerQuote(
       drawn_png_base64: drawnBase64,
       client_ip: ip,
       user_agent: ua || null,
+      preferred_payment_method: preferredPaymentMethod,
     });
 
     if (insSign.error) {
@@ -125,6 +143,17 @@ export async function respondToCustomerQuote(
   }
 
   if (decision === 'accept') {
+    const ops = await loadTenantOperationalSettings(admin, quote.tenant_id as string);
+    await applyQuoteAcceptanceFollowUp(admin, {
+      tenantId: quote.tenant_id as string,
+      quoteId,
+      customerId: quote.customer_id as string,
+      quoteTitle: (quote.title as string) ?? 'Quote',
+      amountCents: quote.amount_cents as number | null,
+      currency: (quote.currency as string) ?? 'usd',
+      ops,
+    });
+
     await sendQuoteNotificationEmail(admin, 'quote_accepted', {
       tenantId: quote.tenant_id as string,
       quoteId,
@@ -170,5 +199,6 @@ export async function respondToCustomerQuote(
   revalidatePath(`/customer/quotes/${quoteId}`, 'page');
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
+  revalidatePath('/tenant/billing/invoices', 'page');
   return { success: true };
 }
