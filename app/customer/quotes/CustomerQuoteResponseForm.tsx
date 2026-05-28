@@ -3,6 +3,10 @@
 import { useActionState, useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import {
+  CUSTOMER_PAYMENT_METHOD_LABEL,
+  type TenantPaymentMethod,
+} from '@/lib/tenant/operationalSettings';
 import { respondToCustomerQuote, type CustomerQuoteResponseState } from './actions';
 import styles from './quotes.module.scss';
 
@@ -24,12 +28,14 @@ export function CustomerQuoteResponseForm({
   tenantName,
   totalLabel,
   userEmail,
+  allowedPaymentMethods,
   layout = 'default',
 }: {
   quoteId: string;
   tenantName: string;
   totalLabel: string;
   userEmail: string | null;
+  allowedPaymentMethods: TenantPaymentMethod[];
   layout?: 'default' | 'panel';
 }) {
   const [state, action, pending] = useActionState(respondToCustomerQuote, initial);
@@ -140,6 +146,8 @@ export function CustomerQuoteResponseForm({
 
   const isPanel = layout === 'panel';
   const desktopActionsClass = isPanel ? styles.panelActions : styles.responseActions;
+  const showPaymentMethodChoice = allowedPaymentMethods.length > 1;
+  const defaultPaymentMethod = allowedPaymentMethods.length === 1 ? allowedPaymentMethods[0]! : '';
 
   if (state.success) {
     return (
@@ -269,6 +277,28 @@ export function CustomerQuoteResponseForm({
               aria-readonly="true"
             />
           </label>
+        ) : null}
+
+        {showPaymentMethodChoice ? (
+          <fieldset className={styles.paymentMethodFieldset}>
+            <legend className={styles.signatureLabel}>How do you plan to pay?</legend>
+            <div className={styles.paymentMethodOptions}>
+              {allowedPaymentMethods.map((method) => (
+                <label key={method} className={styles.paymentMethodOption}>
+                  <input
+                    type="radio"
+                    name="preferred_payment_method"
+                    value={method}
+                    required
+                    defaultChecked={method === allowedPaymentMethods[0]}
+                  />
+                  <span>{CUSTOMER_PAYMENT_METHOD_LABEL[method]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : defaultPaymentMethod ? (
+          <input type="hidden" name="preferred_payment_method" value={defaultPaymentMethod} />
         ) : null}
 
         {signatureMode === 'typed' ? (

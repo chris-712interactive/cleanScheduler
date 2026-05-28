@@ -1,15 +1,35 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { serverEnv, publicEnv } from '@/lib/env';
 import {
   handleResendWebhookEvent,
   type ResendWebhookPayload,
 } from '@/lib/campaigns/handleResendWebhook';
+import { verifyResendWebhookSignature } from '@/lib/campaigns/verifyResendWebhook';
 import type { Json } from '@/lib/supabase/database.types';
 
 export async function POST(request: Request) {
+  const rawBody = await request.text();
+
+  const webhookSecret = serverEnv.RESEND_WEBHOOK_SECRET?.trim();
+  if (webhookSecret) {
+    const verified = verifyResendWebhookSignature({
+      rawBody,
+      webhookId: request.headers.get('svix-id'),
+      timestamp: request.headers.get('svix-timestamp'),
+      signature: request.headers.get('svix-signature'),
+      secret: webhookSecret,
+    });
+    if (!verified) {
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+    }
+  } else if (publicEnv.NEXT_PUBLIC_APP_ENV === 'prod') {
+    console.warn('[resend webhook] RESEND_WEBHOOK_SECRET not set — accepting unsigned payload');
+  }
+
   let payload: ResendWebhookPayload;
   try {
-    payload = (await request.json()) as ResendWebhookPayload;
+    payload = JSON.parse(rawBody) as ResendWebhookPayload;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

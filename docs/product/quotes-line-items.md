@@ -22,7 +22,7 @@ Migrations: `0016_quote_line_items.sql` (lines), `0017_quote_acceptance_versioni
 
 **Versioning (`tenant_quotes`)**: `quote_group_id` groups all revisions; `version_number` orders them; `version_reason` documents why a new row exists (required in UI when creating an amendment from an accepted quote); `supersedes_quote_id` / `superseded_by_quote_id` link the chain. **Acceptance**: `is_locked`, `accepted_at`; `tenant_quote_acceptance_snapshots` stores a JSON payload (header fields including tax/discount + `line_items` with per-line discount fields) at the first transition to `accepted`.
 
-**Tenant operational settings** (`0018`): quote-accept workflow preference, invoice expectation, and customer payment method allow list — **wiring** into auto-schedule, invoices, and **enforcing `allowed_customer_payment_methods` on customer acceptance** is still TODO.
+**Tenant operational settings** (`0018`): quote-accept workflow preference, invoice expectation, and customer payment method allow list — **wired in release 1.1.0** (`0056`): customer acceptance enforces allowed methods, prepay creates quote-linked invoice, prompt-staff scheduling queue on Quotes board. **Still TODO:** `auto_schedule` visit creation on accept.
 
 ## Total math (implemented)
 

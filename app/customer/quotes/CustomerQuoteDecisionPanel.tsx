@@ -1,6 +1,7 @@
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
+import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 import { CustomerQuoteResponseForm } from './CustomerQuoteResponseForm';
 import styles from './quotes.module.scss';
 
@@ -66,6 +67,7 @@ export function CustomerQuoteDecisionPanel({
   cadence,
   totalLabel,
   userEmail,
+  allowedPaymentMethods,
 }: {
   quoteId: string;
   tenantName: string;
@@ -78,6 +80,7 @@ export function CustomerQuoteDecisionPanel({
   cadence: string | null;
   totalLabel: string;
   userEmail: string | null;
+  allowedPaymentMethods: TenantPaymentMethod[];
 }) {
   const statusMessage = panelStatusMessage({ status, canRespond, validUntil, acceptedAt });
 
@@ -122,6 +125,7 @@ export function CustomerQuoteDecisionPanel({
             tenantName={tenantName}
             totalLabel={totalLabel}
             userEmail={userEmail}
+            allowedPaymentMethods={allowedPaymentMethods}
             layout="panel"
           />
         ) : null}

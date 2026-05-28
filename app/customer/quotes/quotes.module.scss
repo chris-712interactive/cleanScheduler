@@ -606,6 +606,26 @@
   color: var(--color-text-muted);
 }
 
+.paymentMethodFieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.paymentMethodOptions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.paymentMethodOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
 .signatureHint {
   margin: 0;
   font-size: var(--font-size-xs);
