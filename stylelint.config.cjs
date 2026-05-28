@@ -58,5 +58,12 @@ module.exports = {
       },
     },
   ],
-  ignoreFiles: ['node_modules/**', '.next/**', 'out/**', '**/._*'],
+  ignoreFiles: [
+    'node_modules/**',
+    '.next/**',
+    'out/**',
+    '**/._*',
+    // Static HTML/CSS prototypes — not part of the app theme system
+    'docs/design/**',
+  ],
 };

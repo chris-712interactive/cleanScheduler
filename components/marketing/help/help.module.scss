@@ -15,6 +15,17 @@
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   background: var(--color-surface);
+
+  h3 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-md);
+  }
+
+  p {
+    margin: 0 0 var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
 }
 
 .cardLink {
@@ -35,17 +46,6 @@
       text-decoration: none;
     }
   }
-}
-
-.card h3 {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-md);
-}
-
-.card p {
-  margin: 0 0 var(--space-3);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
 }
 
 .cardLinkText {

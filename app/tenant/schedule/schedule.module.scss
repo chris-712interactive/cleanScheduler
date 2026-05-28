@@ -52,8 +52,8 @@
 }
 
 .scheduleWarning {
-  background: color-mix(in srgb, var(--color-warning, #b45309) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-warning, #b45309) 35%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
   border-radius: var(--radius-md);
   color: var(--color-text);
   font-size: var(--font-size-sm);
@@ -265,8 +265,7 @@
   gap: var(--space-2);
 }
 
-.viewToggleBtn,
-.viewToggleBtnActive {
+.viewToggleBtn {
   min-height: 36px;
   padding: var(--space-2) var(--space-4);
   font-size: var(--font-size-sm);
@@ -289,14 +288,26 @@
 }
 
 .viewToggleBtnActive {
-  border-color: var(--color-brand-primary);
+  min-height: 36px;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
   background: var(--color-brand-primary);
   color: var(--color-text-on-brand);
+  white-space: nowrap;
 
   &:hover {
     background: var(--color-brand-primary-hover);
     border-color: var(--color-brand-primary-hover);
     color: var(--color-text-on-brand);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
   }
 }
 
@@ -691,14 +702,6 @@
     color: var(--color-brand-primary);
     font-weight: 600;
   }
-}
-
-.visitDetailLabel {
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
 }
 
 .visitDetailMeta {

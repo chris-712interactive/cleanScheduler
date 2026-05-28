@@ -732,11 +732,6 @@
   font-weight: 600;
 }
 
-.wizardNavStepPast .wizardNavBadge {
-  background: var(--color-brand-primary);
-  color: var(--color-text-on-brand);
-}
-
 .wizardNavBadge {
   display: inline-flex;
   align-items: center;
@@ -747,6 +742,11 @@
   background: var(--color-surface-muted);
   font-size: var(--font-size-xs);
   font-weight: 700;
+}
+
+.wizardNavStepPast .wizardNavBadge {
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-brand);
 }
 
 .wizardLayout {

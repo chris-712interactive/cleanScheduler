@@ -179,6 +179,7 @@
   color: var(--color-text);
 }
 
+/* stylelint-disable color-no-hex, color-named -- payment network brand marks */
 .cardBrand {
   display: inline-flex;
   flex-shrink: 0;
@@ -221,6 +222,7 @@
     background: #f79e1b;
   }
 }
+/* stylelint-enable color-no-hex, color-named */
 
 .amountCell {
   text-align: right;

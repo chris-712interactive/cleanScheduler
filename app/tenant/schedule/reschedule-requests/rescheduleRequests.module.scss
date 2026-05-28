@@ -254,17 +254,17 @@
     background-color var(--duration-fast) var(--easing-standard),
     border-color var(--duration-fast) var(--easing-standard),
     color var(--duration-fast) var(--easing-standard);
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
 }
 
 .approveBtn {
   color: var(--color-text-on-brand);
   background-color: var(--color-brand-primary);
   border: 1px solid var(--color-brand-primary);
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 
   &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-primary) 88%, black);
@@ -277,6 +277,11 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-danger);
 
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
   &:hover:not(:disabled) {
     background-color: var(--color-danger-bg);
   }
@@ -287,7 +292,12 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-brand-primary);
 
-  &:hover {
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
     text-decoration: none;
   }
@@ -418,12 +428,6 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-}
-
-.approveBtn,
-.declineBtn,
-.scheduleBtn {
-  width: 100%;
 }
 
 // Viewports below lg: vertical card stack; schedule comparison and actions stay horizontal.

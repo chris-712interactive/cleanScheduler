@@ -274,6 +274,13 @@
   }
 }
 
+.invoiceCard {
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-fast) var(--easing-standard);
+}
+
 .invoiceCardLink {
   display: block;
   color: inherit;
@@ -301,13 +308,6 @@
     border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border));
     box-shadow: var(--shadow-sm);
   }
-}
-
-.invoiceCard {
-  cursor: pointer;
-  transition:
-    border-color var(--duration-fast) var(--easing-standard),
-    box-shadow var(--duration-fast) var(--easing-standard);
 }
 
 .invoiceRow {
