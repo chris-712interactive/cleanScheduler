@@ -4,14 +4,14 @@ Consolidates [PR #4](https://github.com/chris-712interactive/cleanScheduler/pull
 
 ## Upgraded
 
-| Package | From | To |
-| --- | --- | --- |
-| `@types/node` | 22.x | 25.x |
-| `typescript` | 5.7 | 6.0 |
-| `vitest` | 3.2 | 4.1 |
-| `stylelint` | 16.x | 17.x |
-| `stylelint-config-standard-scss` | 14 | 17 (ESM) |
-| `stylelint-order` | 6 | 8 |
+| Package                          | From | To       |
+| -------------------------------- | ---- | -------- |
+| `@types/node`                    | 22.x | 25.x     |
+| `typescript`                     | 5.7  | 6.0      |
+| `vitest`                         | 3.2  | 4.1      |
+| `stylelint`                      | 16.x | 17.x     |
+| `stylelint-config-standard-scss` | 14   | 17 (ESM) |
+| `stylelint-order`                | 6    | 8        |
 
 ## Deferred
 
