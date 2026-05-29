@@ -179,10 +179,7 @@ export function QuoteEditForm({
         <p className={styles.hint}>Add service locations on the customer profile first.</p>
       ) : null}
 
-      <QuoteLineItemsEditor
-        initialRows={snapshot.lineItems}
-        rowsRevision={rowsRevision}
-      />
+      <QuoteLineItemsEditor initialRows={snapshot.lineItems} rowsRevision={rowsRevision} />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />
 

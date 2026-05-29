@@ -86,7 +86,9 @@ export function TenantScheduleClient({
   const [view, setView] = useState(initialView);
   const [weekDayKeys, setWeekDayKeys] = useState(initialWeekDayKeys);
   const [employeeFilter, setEmployeeFilter] = useState(initialEmployeeFilter);
-  const [locationFilter, setLocationFilter] = useState(normalizeLocationFilter(initialLocationFilter));
+  const [locationFilter, setLocationFilter] = useState(
+    normalizeLocationFilter(initialLocationFilter),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
   const [nowLinePct, setNowLinePct] = useState<number | null>(null);

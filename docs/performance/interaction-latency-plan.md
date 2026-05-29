@@ -443,11 +443,11 @@ Forms update local display from action result; business settings actions omit `r
 
 #### 3.4 Phase 3 follow-ups ✅
 
-| Item | Detail |
-| ---- | ------ |
-| Quote edit form | Removed whole-form `key` remount; line items sync via `rowsRevision` after save |
-| Quote line items editor | Lazy-loaded via `QuoteLineItemsEditorLoadable.tsx` on create/edit routes |
-| Settings save UX | Inline button shimmer + `startTransition` submit (see PR #37) |
+| Item                    | Detail                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| Quote edit form         | Removed whole-form `key` remount; line items sync via `rowsRevision` after save |
+| Quote line items editor | Lazy-loaded via `QuoteLineItemsEditorLoadable.tsx` on create/edit routes        |
+| Settings save UX        | Inline button shimmer + `startTransition` submit (see PR #37)                   |
 
 ---
 
