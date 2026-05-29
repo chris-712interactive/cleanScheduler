@@ -52,6 +52,11 @@ function buildScheduleQuery(params: {
   return q.toString();
 }
 
+function normalizeLocationFilter(value: string): string {
+  const trimmed = value.trim();
+  return trimmed && trimmed !== 'all' ? trimmed : 'all';
+}
+
 export function TenantScheduleClient({
   visits: initialVisits,
   dateKey: initialDateKey,
@@ -61,7 +66,8 @@ export function TenantScheduleClient({
   employeeOptions,
   currentUserId,
   fieldEmployeeMode = false,
-  locationFilter = '',
+  locationFilter: initialLocationFilter = 'all',
+  locationOptions = [],
 }: {
   tenantSlug: string;
   visits: ScheduleVisitVM[];
@@ -73,12 +79,16 @@ export function TenantScheduleClient({
   currentUserId: string;
   fieldEmployeeMode?: boolean;
   locationFilter?: string;
+  locationOptions?: { id: string; label: string }[];
 }) {
   const [visits, setVisits] = useState(initialVisits);
   const [dateKey, setDateKey] = useState(initialDateKey);
   const [view, setView] = useState(initialView);
   const [weekDayKeys, setWeekDayKeys] = useState(initialWeekDayKeys);
   const [employeeFilter, setEmployeeFilter] = useState(initialEmployeeFilter);
+  const [locationFilter, setLocationFilter] = useState(
+    normalizeLocationFilter(initialLocationFilter),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
   const [nowLinePct, setNowLinePct] = useState<number | null>(null);
@@ -90,7 +100,15 @@ export function TenantScheduleClient({
     setView(initialView);
     setWeekDayKeys(initialWeekDayKeys);
     setEmployeeFilter(initialEmployeeFilter);
-  }, [initialVisits, initialDateKey, initialView, initialWeekDayKeys, initialEmployeeFilter]);
+    setLocationFilter(normalizeLocationFilter(initialLocationFilter));
+  }, [
+    initialVisits,
+    initialDateKey,
+    initialView,
+    initialWeekDayKeys,
+    initialEmployeeFilter,
+    initialLocationFilter,
+  ]);
 
   useEffect(() => {
     setExpandedVisitId(null);
@@ -125,22 +143,29 @@ export function TenantScheduleClient({
   );
 
   const push = useCallback(
-    (next: { date?: string; view?: ScheduleView; employee?: string }) => {
+    (next: { date?: string; view?: ScheduleView; employee?: string; location?: string }) => {
       const nextDate = next.date ?? dateKey;
       const nextView = next.view ?? view;
       const nextEmployee = next.employee ?? employeeFilter;
+      const nextLocation =
+        next.location !== undefined ? normalizeLocationFilter(next.location) : locationFilter;
 
       if (next.employee !== undefined) {
         setEmployeeFilter(nextEmployee);
       }
 
-      const needsVisitFetch = next.date !== undefined || next.view !== undefined;
+      if (next.location !== undefined) {
+        setLocationFilter(nextLocation);
+      }
+
+      const needsVisitFetch =
+        next.date !== undefined || next.view !== undefined || next.location !== undefined;
 
       const browserQuery = buildScheduleQuery({
         date: nextDate,
         view: nextView,
         employee: nextEmployee,
-        location: locationFilter,
+        location: nextLocation,
       });
       window.history.pushState(null, '', `/schedule?${browserQuery}`);
 
@@ -148,7 +173,7 @@ export function TenantScheduleClient({
         void fetchVisits({
           date: nextDate,
           view: nextView,
-          location: locationFilter,
+          location: nextLocation,
         });
       }
     },
@@ -161,11 +186,13 @@ export function TenantScheduleClient({
       const nextDate = params.get('date') ?? dateKey;
       const nextView = (params.get('view') ?? view) as ScheduleView;
       const nextEmployee = params.get('employee') ?? 'all';
+      const nextLocation = normalizeLocationFilter(params.get('location') ?? locationFilter);
       setEmployeeFilter(nextEmployee);
+      setLocationFilter(nextLocation);
       void fetchVisits({
         date: nextDate,
         view: nextView,
-        location: params.get('location') ?? locationFilter,
+        location: nextLocation,
       });
     };
 
@@ -352,6 +379,25 @@ export function TenantScheduleClient({
 
       {!fieldEmployeeMode ? (
         <div className={styles.scheduleFilters}>
+          {locationOptions.length > 0 ? (
+            <label className={styles.scheduleFilterField}>
+              <span className={styles.scheduleFilterLabel}>Location</span>
+              <select
+                className={styles.filterSelect}
+                aria-label="Location filter"
+                value={locationFilter}
+                onChange={(event) => push({ location: event.target.value })}
+                disabled={isLoading}
+              >
+                <option value="all">All locations</option>
+                {locationOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label className={styles.scheduleFilterField}>
             <span className={styles.scheduleFilterLabel}>Crew member</span>
             <select
@@ -359,6 +405,7 @@ export function TenantScheduleClient({
               aria-label="Employee filter"
               value={employeeFilter}
               onChange={(event) => push({ employee: event.target.value })}
+              disabled={isLoading}
             >
               <option value="all">All crew</option>
               <option value="me">My jobs</option>

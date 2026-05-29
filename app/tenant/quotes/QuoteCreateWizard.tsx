@@ -16,7 +16,7 @@ import {
   QuoteLineItemsEditor,
   createEmptyQuoteLineDraft,
   type QuoteLineItemDraft,
-} from './QuoteLineItemsEditor';
+} from './QuoteLineItemsEditorLoadable';
 import {
   QuoteHeaderPricingFields,
   defaultQuoteHeaderPricingValues,
