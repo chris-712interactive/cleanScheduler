@@ -20,6 +20,11 @@ import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { columnDroppableId, QUOTE_BOARD_COLUMN_ORDER } from '@/lib/tenant/quoteBoardColumns';
 import { moveTenantQuoteStatus } from './actions';
+import {
+  PORTAL_INTERACTION_FLOWS,
+  endPortalInteraction,
+  startPortalInteraction,
+} from '@/lib/performance/portalInteractionPerf';
 import styles from './quotes.module.scss';
 
 function sortInColumn(a: QuoteListEmbedRow, b: QuoteListEmbedRow): number {
@@ -344,10 +349,19 @@ export function QuotesBoard({
         prev.map((q) => (q.id === quoteId ? { ...q, status: nextStatus } : q)),
       );
 
+      startPortalInteraction(PORTAL_INTERACTION_FLOWS.quotesBoardDrag, {
+        quoteId,
+        nextStatus,
+      });
+
       startTransition(async () => {
         if (nextStatus === 'accepted') {
           setLocalQuotes(previousQuotes);
           setPendingQuoteId(null);
+          endPortalInteraction(PORTAL_INTERACTION_FLOWS.quotesBoardDrag, {
+            ok: false,
+            reason: 'accepted_requires_portal',
+          });
           setBoardError(
             'Accepted is only available when the customer signs in the customer portal.',
           );
@@ -355,6 +369,7 @@ export function QuotesBoard({
         }
         const res = await moveTenantQuoteStatus(tenantSlug, quoteId, nextStatus);
         setPendingQuoteId(null);
+        endPortalInteraction(PORTAL_INTERACTION_FLOWS.quotesBoardDrag, { ok: res.ok });
         if (!res.ok) {
           setLocalQuotes(previousQuotes);
           setBoardError(res.error);

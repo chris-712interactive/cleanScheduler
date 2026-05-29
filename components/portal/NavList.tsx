@@ -17,6 +17,11 @@ import { usePathname } from 'next/navigation';
 import { isNavChildActive, isNavItemActive } from './navActive';
 import { markPortalNavPending } from './portalNavPending';
 import { useClearPortalNavPendingOnNavigate } from './useClearPortalNavPendingOnNavigate';
+import { isScheduleNavHref } from '@/lib/performance/portalInteractionFlows';
+import {
+  PORTAL_INTERACTION_FLOWS,
+  startPortalInteraction,
+} from '@/lib/performance/portalInteractionPerf';
 import type { NavItem } from './types';
 import { navIcons } from './navIcons';
 import styles from './NavList.module.scss';
@@ -54,6 +59,11 @@ export function NavList({ items, onNavigate }: NavListProps) {
                 onClick={() => {
                   if (!active || children.length > 0) {
                     markPortalNavPending();
+                  }
+                  if (isScheduleNavHref(item.href)) {
+                    startPortalInteraction(PORTAL_INTERACTION_FLOWS.navSchedule, {
+                      href: item.href,
+                    });
                   }
                   onNavigate?.();
                 }}

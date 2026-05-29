@@ -9,6 +9,8 @@ import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerP
 import { getPortalContext } from '@/lib/portal';
 import { headers } from 'next/headers';
 import { RouteContentShell } from '@/components/portal/RouteContentShell';
+import { WebVitalsReporter } from '@/components/performance/WebVitalsReporter';
+import { debugPerfStart } from '@/lib/performance/debugPerf';
 import styles from './customer-layout.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -44,41 +46,52 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     return <div className={styles.publicInvite}>{children}</div>;
   }
 
-  const auth = await requirePortalAccess('customer', '/');
-  const nonProdBanner = getNonProdPortalBanner();
-  const identity = await getCustomerShellIdentity(auth.user.id);
-  const portal = await getPortalContext();
-  const ctx = await getCustomerPortalContext(auth.user.id);
-  const pendingQuoteCount = ctx ? await getCachedPendingCustomerQuoteCount(ctx.customerIds) : 0;
+  const endLayout = debugPerfStart('customer.layout', internal);
 
-  const navItems: NavItem[] = NAV_ITEMS.map((item) =>
-    item.href === '/quotes' && pendingQuoteCount > 0 ? { ...item, badge: pendingQuoteCount } : item,
-  );
+  try {
+    const auth = await requirePortalAccess('customer', '/');
+    const nonProdBanner = getNonProdPortalBanner();
+    const identity = await getCustomerShellIdentity(auth.user.id);
+    const portal = await getPortalContext();
+    const ctx = await getCustomerPortalContext(auth.user.id);
+    const pendingQuoteCount = ctx ? await getCachedPendingCustomerQuoteCount(ctx.customerIds) : 0;
 
-  const branding =
-    portal.whiteLabelCustomerPortal && portal.tenantSlug
-      ? await getCustomerPortalBrandingForTenantSlug(portal.tenantSlug)
-      : null;
+    const navItems: NavItem[] = NAV_ITEMS.map((item) =>
+      item.href === '/quotes' && pendingQuoteCount > 0
+        ? { ...item, badge: pendingQuoteCount }
+        : item,
+    );
 
-  return (
-    <PortalShell
-      brandLabel={branding?.tenantName ?? 'cleanScheduler'}
-      brandLogoUrl={branding?.logoUrl}
-      hidePlatformLogo={Boolean(branding)}
-      brandHref="/"
-      navItems={navItems}
-      bottomNavItems={BOTTOM_NAV}
-      identity={identity ?? IDENTITY}
-      tenantBadge={
-        portal.whiteLabelHostname ? (
-          <span>{portal.whiteLabelHostname}</span>
-        ) : (
-          <span>my.cleanscheduler.com</span>
-        )
-      }
-      environmentBanner={nonProdBanner}
-    >
-      <RouteContentShell>{children}</RouteContentShell>
-    </PortalShell>
-  );
+    const branding =
+      portal.whiteLabelCustomerPortal && portal.tenantSlug
+        ? await getCustomerPortalBrandingForTenantSlug(portal.tenantSlug)
+        : null;
+
+    return (
+      <>
+        <WebVitalsReporter portal="customer" />
+        <PortalShell
+          brandLabel={branding?.tenantName ?? 'cleanScheduler'}
+          brandLogoUrl={branding?.logoUrl}
+          hidePlatformLogo={Boolean(branding)}
+          brandHref="/"
+          navItems={navItems}
+          bottomNavItems={BOTTOM_NAV}
+          identity={identity ?? IDENTITY}
+          tenantBadge={
+            portal.whiteLabelHostname ? (
+              <span>{portal.whiteLabelHostname}</span>
+            ) : (
+              <span>my.cleanscheduler.com</span>
+            )
+          }
+          environmentBanner={nonProdBanner}
+        >
+          <RouteContentShell>{children}</RouteContentShell>
+        </PortalShell>
+      </>
+    );
+  } finally {
+    endLayout();
+  }
 }

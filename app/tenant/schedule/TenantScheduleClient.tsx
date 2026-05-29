@@ -23,6 +23,10 @@ import {
 import { VisitStatusPill } from './VisitStatusPill';
 import { ScheduleVisitBlock } from './ScheduleVisitBlock';
 import { FieldEmployeeDayJobs } from './FieldEmployeeDayJobs';
+import {
+  PORTAL_INTERACTION_FLOWS,
+  endPortalInteraction,
+} from '@/lib/performance/portalInteractionPerf';
 import styles from './schedule.module.scss';
 
 export type { ScheduleVisitVM } from '@/lib/tenant/scheduleVisitTypes';
@@ -113,6 +117,14 @@ export function TenantScheduleClient({
   useEffect(() => {
     setExpandedVisitId(null);
   }, [dateKey, view]);
+
+  useEffect(() => {
+    endPortalInteraction(PORTAL_INTERACTION_FLOWS.navSchedule, {
+      ready: true,
+      dateKey: initialDateKey,
+      view: initialView,
+    });
+  }, [initialDateKey, initialView]);
 
   const fetchVisits = useCallback(
     async (params: { date: string; view: ScheduleView; location: string }) => {
