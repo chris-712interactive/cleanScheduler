@@ -22,7 +22,7 @@ const config: NextConfig = {
     ],
   },
   sassOptions: {
-    includePaths: [path.join(process.cwd(), 'styles')],
+    loadPaths: [path.join(process.cwd(), 'styles')],
     silenceDeprecations: ['legacy-js-api'],
   },
   // typedRoutes is intentionally disabled during the scaffold phase. We'll

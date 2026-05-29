@@ -5,6 +5,11 @@ import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebho
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
 import { resolveConnectTenantId } from '@/lib/stripe/connectChargeMirrorHandlers';
 import {
+  stripePaymentIntentIdFromInvoice,
+  stripePaymentIntentLastErrorFromInvoice,
+  stripeSubscriptionFromInvoice,
+} from '@/lib/stripe/stripeBasilCompat';
+import {
   invoiceTitleFromStripe,
   mapStripeInvoiceStatus,
   stripeCustomerIdFromInvoice,
@@ -33,10 +38,8 @@ async function resolveCustomerId(
 
   const subId = stripeSubscriptionIdFromInvoice(invoice);
   if (subId) {
-    const subObj =
-      typeof invoice.subscription === 'object' && invoice.subscription
-        ? invoice.subscription
-        : null;
+    const subRaw = stripeSubscriptionFromInvoice(invoice);
+    const subObj = typeof subRaw === 'object' && subRaw ? subRaw : null;
     const metaCustomer = subObj?.metadata?.customer_id as string | undefined;
     if (metaCustomer) return metaCustomer;
 
@@ -189,8 +192,7 @@ async function recordInvoicePaidPayment(
     connectAccountId?: string;
   },
 ): Promise<void> {
-  const piRaw = params.invoice.payment_intent;
-  const paymentIntentId = typeof piRaw === 'string' ? piRaw : (piRaw?.id ?? null);
+  const paymentIntentId = stripePaymentIntentIdFromInvoice(params.invoice);
 
   if (paymentIntentId) {
     const { data: existingPay } = await admin
@@ -322,9 +324,7 @@ export async function handleConnectInvoicePaymentFailed(
 
   const errMsg =
     invoice.last_finalization_error?.message?.trim() ||
-    (typeof invoice.payment_intent === 'object' && invoice.payment_intent
-      ? invoice.payment_intent.last_payment_error?.message?.trim()
-      : null) ||
+    stripePaymentIntentLastErrorFromInvoice(invoice)?.message?.trim() ||
     'Payment failed';
 
   await admin

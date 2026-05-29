@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import type { PortalKind } from '@/middleware';
+import type { PortalKind } from '@/proxy';
 import { requireAuth } from './session';
 import type { AppRole, AuthContext } from './types';
 
