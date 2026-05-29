@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Assessment complete; implementation not started
+**Status:** Phase 1 shipped (1.2.0); Phase 2 partial (request-scoped layout cache + tagged nav chrome)
 
 ---
 

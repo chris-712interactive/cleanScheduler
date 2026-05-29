@@ -1,14 +1,11 @@
 import { PortalShell } from '@/components/portal/PortalShell';
-import { GlobalSearch } from '@/components/portal/GlobalSearch';
 import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
 import { UsageUtilizationBanner } from '@/components/billing/UsageUtilizationBanner';
 import { ConnectStatusBanner } from '@/components/billing/ConnectStatusBanner';
-import { loadTenantUsageUtilizationAlert } from '@/lib/billing/loadTenantUsageUtilization';
 import { TrialSubscriptionBanner } from '@/components/billing/TrialSubscriptionBanner';
 import { WorkspacePausedBanner } from '@/components/billing/WorkspacePausedBanner';
 import {
   needsSubscriptionPurchase,
-  resolveTenantSubscriptionAccess,
   shouldShowTrialPurchaseBanner,
   trialDaysRemaining,
 } from '@/lib/billing/tenantSubscriptionAccess';
@@ -16,10 +13,17 @@ import { getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
 import { getPortalContext } from '@/lib/portal';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { IdentityChipModel } from '@/components/portal/types';
-import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
-import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
+import {
+  getCachedOwnerOnboardingNavContext,
+  getCachedPendingRescheduleCount,
+  getCachedTenantUsageUtilizationAlert,
+} from '@/lib/portal/cachedNavChrome';
+import {
+  getTenantBillingSnapshot,
+  getTenantEntitlementPlan,
+  getTenantPortalMembership,
+} from '@/lib/portal/requestContext';
 import { buildTenantBillingNavItem } from '@/lib/tenant/buildTenantBillingNav';
 import { buildTenantSettingsNavItem } from '@/lib/tenant/buildTenantSettingsNav';
 import { buildTenantBottomNavItems, buildTenantNavItems } from '@/lib/tenant/buildTenantNavItems';
@@ -28,12 +32,22 @@ import {
   identitySubtitleForRole,
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
-import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
-import { loadOwnerOnboardingNavContext } from '@/lib/tenant/loadOwnerOnboardingNavContext';
+import { isFeatureEnabled } from '@/lib/billing/entitlements';
 import { expireStaleMasqueradeIfNeeded } from '@/lib/admin/expireStaleMasquerade';
 import { RouteContentShell } from '@/components/portal/RouteContentShell';
 import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
+import nextDynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import type { TenantStripeConnectStatus } from '@/components/billing/ConnectStatusBanner';
+
+const GlobalSearchLazy = nextDynamic(
+  () => import('@/components/portal/GlobalSearch').then((m) => ({ default: m.GlobalSearch })),
+  {
+    loading: () => <Skeleton width="100%" height={40} radius="md" />,
+  },
+);
 
 export const dynamic = 'force-dynamic';
 
@@ -46,9 +60,7 @@ export default async function TenantLayout({ children }: { children: React.React
   const { tenantSlug } = await getPortalContext();
   const requestHeaders = await headers();
   const browserPath = requestHeaders.get('x-tenant-pathname') ?? '/';
-  const membership = await requireTenantPortalAccess(tenantSlug, browserPath, {
-    browserPathname: browserPath,
-  });
+  const membership = await getTenantPortalMembership(tenantSlug ?? '', browserPath);
   const slug = membership.tenantSlug;
 
   const nonProdBanner = getNonProdPortalBanner();
@@ -60,28 +72,16 @@ export default async function TenantLayout({ children }: { children: React.React
     Boolean(auth?.claims.masqueradeTargetTenantId) &&
     (auth?.claims.appRole === 'super_admin' || auth?.claims.appRole === 'admin');
 
-  const supabase = createTenantPortalDbClient();
-  const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
-    supabase
-      .from('tenants')
-      .select('stripe_connect_status, is_active')
-      .eq('id', membership.tenantId)
-      .maybeSingle(),
-    supabase
-      .from('tenant_billing_accounts')
-      .select('status, trial_ends_at, stripe_subscription_id, activated_at')
-      .eq('tenant_id', membership.tenantId)
-      .maybeSingle(),
-  ]);
-
-  const subscriptionAccess = resolveTenantSubscriptionAccess({
-    billingStatus: billingRow?.status,
-    trialEndsAt: billingRow?.trial_ends_at,
-    tenantIsActive: tenantRow?.is_active !== false,
-    stripeSubscriptionId: billingRow?.stripe_subscription_id,
+  const billingSnapshot = await getTenantBillingSnapshot(membership.tenantId);
+  const { subscriptionAccess } = billingSnapshot;
+  const trialDaysLeft = trialDaysRemaining(billingSnapshot.trialEndsAt);
+  const purgeStatus = getTenantPurgeStatus({
+    activated_at: billingSnapshot.activatedAt,
+    trial_ends_at: billingSnapshot.trialEndsAt,
+    stripe_subscription_id: billingSnapshot.stripeSubscriptionId,
   });
-  const trialDaysLeft = trialDaysRemaining(billingRow?.trial_ends_at ?? null);
-  const purgeStatus = getTenantPurgeStatus(billingRow);
+
+  const supabase = createTenantPortalDbClient();
 
   let identityName = 'Team member';
   let identityInitials = 'TM';
@@ -107,27 +107,21 @@ export default async function TenantLayout({ children }: { children: React.React
     avatarUrl: identityAvatar,
   };
 
-  const connectStatus = tenantRow?.stripe_connect_status ?? 'not_started';
+  const connectStatus = (billingSnapshot.connectStatus ?? 'not_started') as TenantStripeConnectStatus;
 
-  const pendingRescheduleCount = await countPendingRescheduleRequests(
-    supabase,
-    membership.tenantId,
-  );
+  const pendingRescheduleCount = await getCachedPendingRescheduleCount(membership.tenantId);
 
-  const admin = createAdminClient();
   const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
-  const planTier = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  const planTier = await getTenantEntitlementPlan(membership.tenantId);
   const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
   const usageUtilizationAlert =
     !subscriptionLocked && !isFieldEmployeeRole(membership.role)
-      ? await loadTenantUsageUtilizationAlert(admin, membership.tenantId)
+      ? await getCachedTenantUsageUtilizationAlert(membership.tenantId)
       : null;
 
   const { gettingStartedNavItem, coreSetupComplete } = subscriptionLocked
     ? { gettingStartedNavItem: null, coreSetupComplete: true }
-    : await loadOwnerOnboardingNavContext({
-        db: supabase,
-        admin,
+    : await getCachedOwnerOnboardingNavContext({
         tenantId: membership.tenantId,
         tenantSlug: slug,
         role: membership.role,
@@ -198,7 +192,7 @@ export default async function TenantLayout({ children }: { children: React.React
       tenantBadge={<span>{slug}.cleanscheduler.com</span>}
       environmentBanner={nonProdBanner}
       sessionNotice={sessionNotice}
-      searchSlot={showGlobalSearch ? <GlobalSearch /> : undefined}
+      searchSlot={showGlobalSearch ? <GlobalSearchLazy /> : undefined}
       bottomNavItems={bottomNavItems}
     >
       <RouteContentShell>{children}</RouteContentShell>

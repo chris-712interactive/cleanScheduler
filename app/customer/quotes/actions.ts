@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { invalidateCustomerQuoteBadge } from '@/lib/portal/invalidatePortalCache';
 import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
@@ -200,5 +201,6 @@ export async function respondToCustomerQuote(
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
   revalidatePath('/tenant/billing/invoices', 'page');
+  invalidateCustomerQuoteBadge(quote.customer_id as string);
   return { success: true };
 }

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { invalidateTenantOnboarding } from '@/lib/portal/invalidatePortalCache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
@@ -16,9 +17,10 @@ import {
 } from '@/lib/tenant/ownerOnboardingState';
 import { OWNER_ONBOARDING_OPTIONAL_STEP_IDS } from '@/lib/tenant/ownerOnboardingSteps';
 
-function revalidateChecklistPaths(): void {
+function revalidateChecklistPaths(tenantId: string): void {
   revalidatePath('/tenant');
   revalidatePath('/tenant/getting-started');
+  invalidateTenantOnboarding(tenantId);
 }
 
 async function requireChecklistManager(tenantSlug: string) {
@@ -39,7 +41,7 @@ export async function snoozeOwnerChecklistAction(formData: FormData): Promise<vo
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await snoozeOwnerChecklist(admin, membership.tenantId);
-  revalidateChecklistPaths();
+  revalidateChecklistPaths(membership.tenantId);
 }
 
 export async function dismissOwnerChecklistAction(formData: FormData): Promise<void> {
@@ -49,7 +51,7 @@ export async function dismissOwnerChecklistAction(formData: FormData): Promise<v
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await dismissOwnerChecklist(admin, membership.tenantId);
-  revalidateChecklistPaths();
+  revalidateChecklistPaths(membership.tenantId);
 }
 
 export async function reopenOwnerChecklistAction(formData: FormData): Promise<void> {
@@ -59,7 +61,7 @@ export async function reopenOwnerChecklistAction(formData: FormData): Promise<vo
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await reopenOwnerChecklist(admin, membership.tenantId);
-  revalidateChecklistPaths();
+  revalidateChecklistPaths(membership.tenantId);
 }
 
 export async function skipOptionalChecklistStepAction(formData: FormData): Promise<void> {
@@ -79,7 +81,7 @@ export async function skipOptionalChecklistStepAction(formData: FormData): Promi
     }
   }
   await skipOptionalChecklistStep(admin, membership.tenantId, stepId);
-  revalidateChecklistPaths();
+  revalidateChecklistPaths(membership.tenantId);
 }
 
 export async function acknowledgeChecklistCompletionAction(formData: FormData): Promise<void> {
@@ -89,7 +91,7 @@ export async function acknowledgeChecklistCompletionAction(formData: FormData): 
   const membership = await requireChecklistManager(tenantSlug);
   const admin = createAdminClient();
   await acknowledgeChecklistCompletion(admin, membership.tenantId);
-  revalidateChecklistPaths();
+  revalidateChecklistPaths(membership.tenantId);
 }
 
 export async function dismissOwnerSurveyAction(formData: FormData): Promise<void> {

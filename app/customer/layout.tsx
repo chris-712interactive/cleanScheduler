@@ -4,10 +4,9 @@ import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import { countPendingCustomerQuotes } from '@/lib/customer/customerQuoteList';
+import { getCachedPendingCustomerQuoteCount } from '@/lib/portal/cachedNavChrome';
 import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerPortalBranding';
 import { getPortalContext } from '@/lib/portal';
-import { createAdminClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { RouteContentShell } from '@/components/portal/RouteContentShell';
 import styles from './customer-layout.module.scss';
@@ -50,8 +49,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const identity = await getCustomerShellIdentity(auth.user.id);
   const portal = await getPortalContext();
   const ctx = await getCustomerPortalContext(auth.user.id);
-  const admin = createAdminClient();
-  const pendingQuoteCount = ctx ? await countPendingCustomerQuotes(admin, ctx.customerIds) : 0;
+  const pendingQuoteCount = ctx ? await getCachedPendingCustomerQuoteCount(ctx.customerIds) : 0;
 
   const navItems: NavItem[] = NAV_ITEMS.map((item) =>
     item.href === '/quotes' && pendingQuoteCount > 0 ? { ...item, badge: pendingQuoteCount } : item,
