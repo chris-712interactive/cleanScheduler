@@ -34,7 +34,11 @@ export function CustomerEditForm({
   useServerActionSnapshot(state.success, state.customerSnapshot, onCustomerSnapshot);
 
   return (
-    <form action={formAction} className={styles.form} key={`${snapshot.customerId}-${formGeneration}`}>
+    <form
+      action={formAction}
+      className={styles.form}
+      key={`${snapshot.customerId}-${formGeneration}`}
+    >
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_id" value={snapshot.customerId} />
       {state.error ? (
