@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { invalidateTenantNavBadges } from '@/lib/portal/invalidatePortalCache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
@@ -148,5 +149,6 @@ export async function submitCustomerVisitRescheduleRequest(
   revalidatePath('/visits');
   revalidatePath('/');
   revalidatePath('/visits/reschedule');
+  invalidateTenantNavBadges(visit.tenant_id);
   redirect(`/visits?reschedule=sent`);
 }

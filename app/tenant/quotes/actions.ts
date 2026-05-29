@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { invalidateCustomerQuoteBadge } from '@/lib/portal/invalidatePortalCache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
@@ -66,7 +67,7 @@ export async function moveTenantQuoteStatus(
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
-    .select('id, status, is_locked')
+    .select('id, status, is_locked, customer_id')
     .eq('id', quoteId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -144,6 +145,10 @@ export async function moveTenantQuoteStatus(
 
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
+  if (existing.status === 'sent' || nextStatus === 'sent') {
+    const customerId = existing.customer_id as string | undefined;
+    if (customerId) invalidateCustomerQuoteBadge(customerId);
+  }
   return { ok: true };
 }
 
@@ -525,6 +530,9 @@ export async function createTenantQuote(
 
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath('/tenant/quotes/new', 'page');
+  if (initialStatus === 'sent') {
+    invalidateCustomerQuoteBadge(customerId);
+  }
   return { success: true, quoteId: newId };
 }
 
@@ -703,6 +711,9 @@ export async function updateTenantQuote(
 
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
+  if (priorStatus === 'sent' || status === 'sent') {
+    invalidateCustomerQuoteBadge(customerId);
+  }
   return { success: true };
 }
 
