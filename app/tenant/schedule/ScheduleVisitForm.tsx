@@ -1,7 +1,6 @@
 'use client';
 
 import { useActionState, useMemo, useState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { createScheduledVisit, type ScheduleFormState } from './actions';
 import type { QuoteCustomerOption } from '@/app/tenant/quotes/QuoteCreateForm';
@@ -34,7 +33,6 @@ export function ScheduleVisitForm({
   };
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
-  useRefreshOnServerActionSuccess(state.success);
 
   const [customerId, setCustomerId] = useState(defaults?.customerId ?? '');
   const [crewFilter, setCrewFilter] = useState('');

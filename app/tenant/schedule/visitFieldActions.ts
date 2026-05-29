@@ -20,10 +20,12 @@ import {
 } from '@/lib/billing/entitlements';
 import { featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { saveVisitProofPhotosFromForm } from '@/lib/visits/visitProofPhotos';
+import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 
 export interface VisitFieldActionState {
   error?: string;
   success?: string;
+  visitPatch?: VisitDetailPatch;
 }
 
 async function loadVisitForActor(
@@ -104,7 +106,10 @@ export async function checkInToVisitAction(
   if (upErr) return { error: upErr.message };
 
   revalidateVisitPaths(visitId);
-  return { success: 'Checked in at property.' };
+  return {
+    success: 'Checked in at property.',
+    visitPatch: { checkedInAt: now },
+  };
 }
 
 export async function completeVisitWithPaymentAction(
@@ -243,11 +248,26 @@ export async function completeVisitWithPaymentAction(
   });
 
   revalidateVisitPaths(visitId);
+  const visitPatch: VisitDetailPatch = {
+    status: 'completed',
+    checkedInAt: loaded.visit.checked_in_at ?? now,
+    completedAt: now,
+    completionPaymentCollected: paymentCollected,
+    completionCollectedMethod: paymentCollected ? (collectedMethod ?? null) : null,
+    completionCollectedAmountCents: paymentCollected ? billing.amountCents : null,
+    completionCheckNumber:
+      paymentCollected && collectedMethod === 'check' ? checkNumber || null : null,
+    completionInvoiceId: billing.invoiceId,
+  };
+
   if (billing.emailed) {
-    return { success: 'Job marked complete. Invoice emailed to the customer.' };
+    return {
+      success: 'Job marked complete. Invoice emailed to the customer.',
+      visitPatch,
+    };
   }
   if (paymentCollected) {
-    return { success: 'Job marked complete. On-site payment recorded.' };
+    return { success: 'Job marked complete. On-site payment recorded.', visitPatch };
   }
-  return { success: 'Job marked complete.' };
+  return { success: 'Job marked complete.', visitPatch };
 }

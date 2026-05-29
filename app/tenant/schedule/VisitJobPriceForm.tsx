@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useActionState, useEffect, useState } from 'react';
+import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { OFFICE_SET_PRICE_HINT } from '@/lib/billing/resolveVisitExpectedAmount';
+import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { updateVisitJobPrice, type ScheduleFormState } from './actions';
 import styles from './schedule.module.scss';
 
@@ -13,18 +14,27 @@ export function VisitJobPriceForm({
   tenantSlug,
   visitId,
   currentAmountCents,
+  onVisitPatch,
 }: {
   tenantSlug: string;
   visitId: string;
   currentAmountCents: number | null;
+  onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [state, formAction, pending] = useActionState(updateVisitJobPrice, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
-  const defaultDollars =
+  const [amountDollars, setAmountDollars] = useState(() =>
     currentAmountCents != null && currentAmountCents > 0
       ? formatCentsAsDollars(currentAmountCents)
-      : '';
+      : '',
+  );
+
+  useEffect(() => {
+    if (currentAmountCents != null && currentAmountCents > 0) {
+      setAmountDollars(formatCentsAsDollars(currentAmountCents));
+    }
+  }, [currentAmountCents]);
 
   return (
     <form action={formAction} className={styles.visitRescheduleCard}>
@@ -56,7 +66,8 @@ export function VisitJobPriceForm({
           className={styles.input}
           min="0"
           step="0.01"
-          defaultValue={defaultDollars}
+          value={amountDollars}
+          onChange={(e) => setAmountDollars(e.target.value)}
           placeholder="150.00"
           required
         />

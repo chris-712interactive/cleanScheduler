@@ -2,7 +2,6 @@
 
 import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { Button } from '@/components/ui/Button';
 import {
   ProofPhotoCapture,
@@ -16,6 +15,8 @@ import {
 } from '@/lib/tenant/customerBillingPreference';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
+import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
+import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { completeVisitWithPaymentAction, type VisitFieldActionState } from './visitFieldActions';
 import styles from './completeVisitModal.module.scss';
 
@@ -50,6 +51,7 @@ export function CompleteVisitPaymentModal({
   canAttachProofPhotos,
   proofPhotosSharedWithCustomers,
   isFieldEmployee = false,
+  onVisitPatch,
 }: {
   tenantSlug: string;
   visitId: string;
@@ -59,6 +61,7 @@ export function CompleteVisitPaymentModal({
   canAttachProofPhotos: boolean;
   proofPhotosSharedWithCustomers: boolean;
   isFieldEmployee?: boolean;
+  onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -70,7 +73,7 @@ export function CompleteVisitPaymentModal({
   const [proofPhotos, setProofPhotos] = useState<ProofPhotoCaptureItem[]>([]);
 
   const [state, formAction, pending] = useActionState(completeVisitWithPaymentAction, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
   const defaultAmountDollars =
     defaultAmountCents != null && defaultAmountCents > 0

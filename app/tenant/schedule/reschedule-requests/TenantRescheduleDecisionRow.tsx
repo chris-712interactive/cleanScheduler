@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Calendar, Check, X } from 'lucide-react';
 import { useActionState, useEffect, useState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
 import type { AssigneeConflictInfo } from '@/lib/schedule/visitAssigneeConflicts';
 import {
@@ -20,6 +19,7 @@ export function TenantRescheduleDecisionRow({
   visitId,
   canApplyTime,
   initialConflicts,
+  onRequestResolved,
 }: {
   tenantSlug: string;
   requestId: string;
@@ -27,10 +27,16 @@ export function TenantRescheduleDecisionRow({
   applyWhenLabel?: string | null;
   canApplyTime: boolean;
   initialConflicts: AssigneeConflictInfo[];
+  onRequestResolved?: (requestId: string) => void;
 }) {
   const [state, formAction, pending] = useActionState(resolveVisitRescheduleRequest, initial);
-  useRefreshOnServerActionSuccess(state.success);
   const [overlapConfirm, setOverlapConfirm] = useState(false);
+
+  useEffect(() => {
+    if (state.success && state.resolvedRequestId) {
+      onRequestResolved?.(state.resolvedRequestId);
+    }
+  }, [state.success, state.resolvedRequestId, onRequestResolved]);
 
   const conflicts = state.conflicts ?? initialConflicts;
   const hasConflicts = conflicts.length > 0;
