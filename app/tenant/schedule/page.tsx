@@ -51,6 +51,11 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         .order('name')
     : { data: [] };
 
+  const locationOptions = (locationRows ?? []).map((loc) => ({
+    id: loc.id,
+    label: `${loc.name}${loc.code ? ` (${loc.code})` : ''}`,
+  }));
+
   const supabase = createTenantPortalDbClient();
   const { visits, weekDayKeys } = await loadScheduleVisits({
     supabase,
@@ -144,33 +149,6 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         }
       />
 
-      {locationsEnabled && !isFieldEmployee && (locationRows?.length ?? 0) > 0 ? (
-        <form method="get" className={styles.scheduleLocationFilter}>
-          <input type="hidden" name="date" value={dateKey} />
-          <input type="hidden" name="view" value={view} />
-          {employeeFilter !== 'all' ? (
-            <input type="hidden" name="employee" value={employeeFilter} />
-          ) : null}
-          <label htmlFor="schedule-location-filter">Location</label>
-          <select
-            id="schedule-location-filter"
-            name="location"
-            defaultValue={locationFilter || 'all'}
-          >
-            <option value="all">All locations</option>
-            {(locationRows ?? []).map((loc) => (
-              <option key={loc.id} value={loc.id}>
-                {loc.name}
-                {loc.code ? ` (${loc.code})` : ''}
-              </option>
-            ))}
-          </select>
-          <Button type="submit" size="sm" variant="secondary">
-            Apply
-          </Button>
-        </form>
-      ) : null}
-
       {!isFieldEmployee && unpricedUpcomingCount > 0 ? (
         <p className={styles.scheduleWarning} role="status">
           {unpricedUpcomingCount} upcoming visit{unpricedUpcomingCount === 1 ? '' : 's'} in the next
@@ -189,7 +167,8 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         employeeOptions={employeeOptions}
         currentUserId={currentUserId}
         fieldEmployeeMode={isFieldEmployee}
-        locationFilter={locationFilter}
+        locationFilter={locationFilter || 'all'}
+        locationOptions={locationsEnabled ? locationOptions : []}
       />
     </div>
   );

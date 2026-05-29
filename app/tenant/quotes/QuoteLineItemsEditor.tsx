@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Tables } from '@/lib/supabase/database.types';
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
@@ -369,12 +369,15 @@ export function QuoteLineItemsEditor({
   rows: controlledRows,
   onRowsChange,
   hideLegend = false,
+  rowsRevision,
 }: {
   initialRows?: QuoteLineItemRow[] | null;
   layout?: 'grid' | 'cards';
   rows?: QuoteLineItemDraft[];
   onRowsChange?: (rows: QuoteLineItemDraft[]) => void;
   hideLegend?: boolean;
+  /** Bump after a successful save to reload rows from `initialRows` without remounting the parent form. */
+  rowsRevision?: number;
 }) {
   const [internalRows, setInternalRows] = useState<QuoteLineItemDraft[]>(() => {
     const fromDb = draftsFromQuoteLineRows(initialRows ?? null);
@@ -383,6 +386,12 @@ export function QuoteLineItemsEditor({
 
   const controlled = controlledRows !== undefined && onRowsChange !== undefined;
   const rows = controlled ? controlledRows : internalRows;
+
+  useEffect(() => {
+    if (controlled || !rowsRevision) return;
+    const fromDb = draftsFromQuoteLineRows(initialRows ?? null);
+    setInternalRows(fromDb.length > 0 ? fromDb : [createEmptyQuoteLineDraft()]);
+  }, [rowsRevision, controlled, initialRows]);
 
   const setRows = useCallback(
     (updater: QuoteLineItemDraft[] | ((prev: QuoteLineItemDraft[]) => QuoteLineItemDraft[])) => {

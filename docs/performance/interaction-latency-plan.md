@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3.2–3.3b shipped; Phase 3.3c complete (remaining action DTOs)
+**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3 complete (3.1–3.3c + follow-ups)
 
 ---
 
@@ -408,7 +408,7 @@ Apply to: `QuotesBoard`, `GlobalSearch`, `QuoteLineItemsEditor`.
 
 **Goal:** High-frequency interactions do not round-trip through full RSC.
 
-#### 3.1 Quotes Kanban — optimistic UI
+#### 3.1 Quotes Kanban — optimistic UI ✅
 
 - On drag end: update local column state immediately
 - Fire `moveTenantQuoteStatus` in background
@@ -423,7 +423,7 @@ Apply to: `QuotesBoard`, `GlobalSearch`, `QuoteLineItemsEditor`.
 - Fetch new date range via Route Handler returning **JSON** (not RSC)
 - Avoid `router.push` for in-calendar prev/next day; use `history.pushState` + `/api/tenant/schedule/visits`
 - Shared loader: `lib/tenant/loadScheduleVisits.ts`
-- Employee filter remains client-side (no refetch); location filter still uses form GET (full reload)
+- Employee filter remains client-side (no refetch); **location filter** uses the same client fetch + URL sync (no form GET)
 
 **Files:** `TenantScheduleClient.tsx`, `app/api/tenant/schedule/visits/route.ts`, `lib/tenant/loadScheduleVisits.ts`
 
@@ -439,7 +439,15 @@ Pattern:
 - Customer edit, business settings, operational settings, customer quote accept/decline
 - All `useRefreshOnServerActionSuccess` call sites removed from portal forms
 
-Forms update local display from action result; `revalidatePath` still runs for cache coherence on next navigation.
+Forms update local display from action result; business settings actions omit `revalidatePath` to avoid duplicate UI during save (page is `force-dynamic`).
+
+#### 3.4 Phase 3 follow-ups ✅
+
+| Item                    | Detail                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| Quote edit form         | Removed whole-form `key` remount; line items sync via `rowsRevision` after save |
+| Quote line items editor | Lazy-loaded via `QuoteLineItemsEditorLoadable.tsx` on create/edit routes        |
+| Settings save UX        | Inline button shimmer + `startTransition` submit (see PR #37)                   |
 
 ---
 
