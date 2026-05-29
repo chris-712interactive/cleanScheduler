@@ -23,6 +23,8 @@ export type RescheduleRequestCardProps = {
   applyWhenLabel: string | null;
   canApplyTime: boolean;
   conflicts: AssigneeConflictInfo[];
+  tenantTimezone: string;
+  onRequestResolved?: (requestId: string) => void;
 };
 
 export function RescheduleRequestCard({
@@ -40,7 +42,8 @@ export function RescheduleRequestCard({
   canApplyTime,
   conflicts,
   tenantTimezone,
-}: RescheduleRequestCardProps & { tenantTimezone: string }) {
+  onRequestResolved,
+}: RescheduleRequestCardProps) {
   const initials = formatCustomerInitials(customerName);
   const phoneLabel = formatContactPhone(phone);
   const emailLabel = email?.trim() || null;
@@ -136,6 +139,7 @@ export function RescheduleRequestCard({
           applyWhenLabel={applyWhenLabel}
           canApplyTime={canApplyTime}
           initialConflicts={conflicts}
+          onRequestResolved={onRequestResolved}
         />
       </div>
     </article>

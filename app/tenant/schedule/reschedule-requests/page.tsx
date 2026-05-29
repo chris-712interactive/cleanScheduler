@@ -19,7 +19,7 @@ import {
   buildRescheduleHistoryTimes,
   formatRescheduleResolverLabel,
 } from '@/lib/schedule/rescheduleRequestTimeLabels';
-import { RescheduleRequestCard } from './RescheduleRequestCard';
+import { RescheduleRequestsPendingList } from './RescheduleRequestsPendingList';
 import styles from './rescheduleRequests.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -293,36 +293,32 @@ export default async function TenantRescheduleRequestsPage({ searchParams }: Pag
               description="When a customer asks to reschedule, their request will appear here."
             />
           ) : (
-            <ul className={styles.list}>
-              {pending.map((r) => {
+            <RescheduleRequestsPendingList
+              tenantSlug={slug}
+              tenantTimezone={tenantTimezone}
+              requests={pending.map((r) => {
                 const v = r.tenant_scheduled_visits;
                 const preview = pendingPreviews.get(r.id);
                 const contact = customerContact(r);
                 const originalStarts = r.original_starts_at ?? v?.starts_at ?? null;
                 const originalEnds = r.original_ends_at ?? v?.ends_at ?? null;
 
-                return (
-                  <li key={r.id}>
-                    <RescheduleRequestCard
-                      tenantSlug={slug}
-                      requestId={r.id}
-                      visitId={v?.id ?? null}
-                      customerName={customerLabel(r)}
-                      phone={contact.phone}
-                      email={contact.email}
-                      originalStartsAt={originalStarts}
-                      originalEndsAt={originalEnds}
-                      preferredStartsAt={r.preferred_starts_at}
-                      preferredEndsAt={r.preferred_ends_at}
-                      applyWhenLabel={preview?.applyWhenLabel ?? null}
-                      canApplyTime={preview?.canApplyTime ?? false}
-                      conflicts={preview?.conflicts ?? []}
-                      tenantTimezone={tenantTimezone}
-                    />
-                  </li>
-                );
+                return {
+                  requestId: r.id,
+                  visitId: v?.id ?? null,
+                  customerName: customerLabel(r),
+                  phone: contact.phone,
+                  email: contact.email,
+                  originalStartsAt: originalStarts,
+                  originalEndsAt: originalEnds,
+                  preferredStartsAt: r.preferred_starts_at,
+                  preferredEndsAt: r.preferred_ends_at,
+                  applyWhenLabel: preview?.applyWhenLabel ?? null,
+                  canApplyTime: preview?.canApplyTime ?? false,
+                  conflicts: preview?.conflicts ?? [],
+                };
               })}
-            </ul>
+            />
           )}
         </section>
       ) : (

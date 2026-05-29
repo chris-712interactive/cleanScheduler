@@ -1,9 +1,10 @@
 'use client';
 
 import { useActionState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { Button } from '@/components/ui/Button';
+import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
+import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import {
   FIELD_EMPLOYEE_NO_PRICE_MESSAGE,
   OFFICE_NO_PRICE_MESSAGE,
@@ -27,6 +28,7 @@ export function VisitFieldWorkPanel({
   proofPhotosSharedWithCustomers,
   isFieldEmployee = false,
   hasBillableAmount = true,
+  onVisitPatch,
 }: {
   tenantSlug: string;
   visitId: string;
@@ -40,12 +42,13 @@ export function VisitFieldWorkPanel({
   proofPhotosSharedWithCustomers: boolean;
   isFieldEmployee?: boolean;
   hasBillableAmount?: boolean;
+  onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [checkInState, checkInAction, checkInPending] = useActionState(
     checkInToVisitAction,
     initial,
   );
-  useRefreshOnServerActionSuccess(checkInState.success);
+  useServerActionVisitPatch(checkInState.success, checkInState.visitPatch, onVisitPatch);
 
   if (!canCheckIn && !canComplete) return null;
 
@@ -105,6 +108,7 @@ export function VisitFieldWorkPanel({
             canAttachProofPhotos={canAttachProofPhotos}
             proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
             isFieldEmployee={isFieldEmployee}
+            onVisitPatch={onVisitPatch}
           />
         </div>
       ) : null}
