@@ -1,13 +1,14 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useMemo, useState } from 'react';
+import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionQuoteSnapshot } from '@/lib/hooks/useServerActionQuoteSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { CustomerPropertyGroup } from './QuoteCreateForm';
 import { QUOTE_STATUS_LABEL, TENANT_QUOTE_STATUS_EDIT_OPTIONS } from '@/lib/tenant/quoteLabels';
-import { QuoteLineItemsEditor } from './QuoteLineItemsEditor';
+import { QuoteLineItemsEditor } from './QuoteLineItemsEditorLoadable';
 import { QuoteHeaderPricingFields } from './QuoteHeaderPricingFields';
 import styles from './quotes.module.scss';
 
@@ -36,7 +37,7 @@ export function QuoteEditForm({
   readOnly?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
-  const [formGeneration, setFormGeneration] = useState(0);
+  const [rowsRevision, setRowsRevision] = useState(0);
   const [state, formAction, pending] = useActionState(updateTenantQuote, initial);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export function QuoteEditForm({
 
   const onQuoteSnapshot = useCallback((next: QuoteEditSnapshot) => {
     setSnapshot(next);
-    setFormGeneration((g) => g + 1);
+    setRowsRevision((revision) => revision + 1);
   }, []);
 
   useServerActionQuoteSnapshot(state.success, state.quoteSnapshot, onQuoteSnapshot);
@@ -54,7 +55,7 @@ export function QuoteEditForm({
 
   useEffect(() => {
     setCustomerId(snapshot.customerId);
-  }, [snapshot.customerId, formGeneration]);
+  }, [snapshot.customerId]);
 
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
@@ -75,6 +76,10 @@ export function QuoteEditForm({
     return base;
   }, [snapshot.status]);
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    submitServerActionForm(event, formAction);
+  };
+
   if (readOnly) {
     return (
       <div className={styles.readOnlyNotice} role="status">
@@ -86,7 +91,7 @@ export function QuoteEditForm({
   }
 
   return (
-    <form key={formGeneration} action={formAction} className={styles.form}>
+    <form onSubmit={handleSubmit} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="quote_id" value={snapshot.quoteId} />
       {state.error ? (
@@ -156,7 +161,7 @@ export function QuoteEditForm({
         Service location (optional)
       </label>
       <select
-        key={`edit_prop_${customerId || 'none'}_${formGeneration}`}
+        key={`edit_prop_${customerId || 'none'}`}
         id="edit_quote_property"
         name="property_id"
         className={styles.select}
@@ -175,8 +180,8 @@ export function QuoteEditForm({
       ) : null}
 
       <QuoteLineItemsEditor
-        key={`${snapshot.quoteId}_${formGeneration}`}
         initialRows={snapshot.lineItems}
+        rowsRevision={rowsRevision}
       />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />
