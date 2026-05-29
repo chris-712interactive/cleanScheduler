@@ -1,5 +1,30 @@
 @use 'mixins/breakpoints' as mq;
 
+@mixin settingsSubmitSaving {
+  &[data-saving='true'] {
+    cursor: wait;
+    opacity: 1;
+    background-image: linear-gradient(
+      110deg,
+      var(--color-brand-primary) 0%,
+      color-mix(in srgb, var(--color-brand-primary) 55%, white) 45%,
+      var(--color-brand-primary) 90%
+    );
+    background-size: 220% 100%;
+    animation: settingsSubmitShimmer 1.1s ease-in-out infinite;
+  }
+}
+
+@keyframes settingsSubmitShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
 .themeRow {
   display: flex;
   flex-wrap: wrap;
@@ -97,6 +122,13 @@
   font-weight: 600;
   cursor: pointer;
   width: fit-content;
+
+  &:disabled:not([data-saving='true']) {
+    opacity: 0.65;
+    cursor: default;
+  }
+
+  @include settingsSubmitSaving;
 }
 
 .profileGrid {
@@ -418,9 +450,20 @@
   font-weight: 600;
   cursor: pointer;
 
-  &:disabled {
+  &:disabled:not([data-saving='true']) {
     opacity: 0.65;
     cursor: default;
+  }
+
+  @include settingsSubmitSaving;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saveButton[data-saving='true'],
+  .opsSubmit[data-saving='true'] {
+    animation: none;
+    background-image: none;
+    background-color: var(--color-brand-primary);
   }
 }
 

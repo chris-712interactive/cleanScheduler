@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import { useActionState, useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Upload } from 'lucide-react';
+import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
+import { SettingsSaveButton } from '../SettingsSaveButton';
 import type { TenantBusinessSnapshot } from '@/lib/tenant/tenantBusinessSettings';
 import {
   updateBrandingAction,
@@ -45,8 +47,7 @@ function BrandColorForm({
   );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    action(new FormData(event.currentTarget));
+    submitServerActionForm(event, action);
   };
 
   return (
@@ -84,11 +85,7 @@ function BrandColorForm({
         This color will be used for buttons, highlights, and branding elements.
       </p>
 
-      {!readOnly ? (
-        <button type="submit" className={styles.saveButton} disabled={pending}>
-          {pending ? 'Saving…' : 'Save changes'}
-        </button>
-      ) : null}
+      {!readOnly ? <SettingsSaveButton pending={pending} /> : null}
     </form>
   );
 }
@@ -125,8 +122,7 @@ function LogoUploadForm({
   }, [state.success]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    action(new FormData(event.currentTarget));
+    submitServerActionForm(event, action);
   };
 
   return (
@@ -162,9 +158,7 @@ function LogoUploadForm({
           <Upload size={24} aria-hidden />
           <span className={styles.logoDropzoneTitle}>Upload your logo</span>
           <span className={styles.logoDropzoneHint}>PNG, JPG or SVG (max. 2MB)</span>
-          <button type="submit" className={styles.saveButton} disabled={pending}>
-            {pending ? 'Uploading…' : 'Upload logo'}
-          </button>
+          <SettingsSaveButton pending={pending} idleLabel="Upload logo" pendingLabel="Uploading…" />
         </label>
       ) : null}
     </form>

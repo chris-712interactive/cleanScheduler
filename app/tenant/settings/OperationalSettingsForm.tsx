@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
+import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
 import {
@@ -53,8 +54,12 @@ export function OperationalSettingsForm({
   );
   useServerActionSnapshot(state.success, state.settingsSnapshot, onSettingsSnapshot);
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    submitServerActionForm(event, formAction);
+  };
+
   return (
-    <form action={formAction} className={styles.opsForm}>
+    <form onSubmit={handleSubmit} className={styles.opsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       {state.error ? (
         <p className={styles.opsError} role="alert">
@@ -305,7 +310,13 @@ export function OperationalSettingsForm({
       </fieldset>
 
       {!readOnly ? (
-        <button type="submit" className={styles.opsSubmit} disabled={pending}>
+        <button
+          type="submit"
+          className={styles.opsSubmit}
+          disabled={pending}
+          data-saving={pending || undefined}
+          aria-busy={pending || undefined}
+        >
           {pending ? 'Saving…' : 'Save workflow & payment options'}
         </button>
       ) : null}

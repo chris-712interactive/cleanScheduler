@@ -1,7 +1,9 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
+import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
+import { SettingsSaveButton } from '../SettingsSaveButton';
 import {
   TENANT_COUNTRY_OPTIONS,
   US_STATE_OPTIONS,
@@ -34,8 +36,12 @@ export function BusinessAddressForm({
 
   useServerActionSnapshot(state.success, state.businessPatch, onBusinessPatch);
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    submitServerActionForm(event, formAction);
+  };
+
   return (
-    <form action={formAction} className={styles.settingsForm}>
+    <form onSubmit={handleSubmit} className={styles.settingsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       {state.error ? (
         <p className={styles.formError} role="alert">
@@ -125,11 +131,7 @@ export function BusinessAddressForm({
         ))}
       </select>
 
-      {!readOnly ? (
-        <button type="submit" className={styles.saveButton} disabled={pending}>
-          {pending ? 'Saving…' : 'Save changes'}
-        </button>
-      ) : null}
+      {!readOnly ? <SettingsSaveButton pending={pending} /> : null}
     </form>
   );
 }
