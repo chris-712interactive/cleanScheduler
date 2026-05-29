@@ -10,7 +10,10 @@ import {
   formatCustomerPreferredBilling,
   isElectronicPreferredBilling,
 } from '@/lib/tenant/customerBillingPreference';
-import { CUSTOMER_PAYMENT_METHOD_LABEL, type TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
+import {
+  CUSTOMER_PAYMENT_METHOD_LABEL,
+  type TenantPaymentMethod,
+} from '@/lib/tenant/operationalSettings';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import {
   resolveExpectedAmountCentsSync,
@@ -171,9 +174,7 @@ export function VisitDetailCard({ initial }: { initial: VisitDetailSnapshot }) {
           {hasBillableAmount && !(canManage && visit.status === 'scheduled') ? (
             <div className={styles.detailRow}>
               <span className={styles.detailLabel}>Job price</span>
-              <p className={styles.detailValue}>
-                ${formatCentsAsDollars(defaultAmountCents ?? 0)}
-              </p>
+              <p className={styles.detailValue}>${formatCentsAsDollars(defaultAmountCents ?? 0)}</p>
             </div>
           ) : null}
           {visit.quoteTitle ? (
