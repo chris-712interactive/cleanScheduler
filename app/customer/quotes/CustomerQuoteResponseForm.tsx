@@ -1,8 +1,13 @@
 'use client';
 
-import { useActionState, useCallback, useRef, useState } from 'react';
+import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
+import {
+  PORTAL_INTERACTION_FLOWS,
+  endPortalInteraction,
+  startPortalInteraction,
+} from '@/lib/performance/portalInteractionPerf';
 import type { CustomerQuoteResponsePatch } from '@/lib/tenant/customerQuoteResponsePatch';
 import {
   CUSTOMER_PAYMENT_METHOD_LABEL,
@@ -43,6 +48,22 @@ export function CustomerQuoteResponseForm({
 }) {
   const [state, action, pending] = useActionState(respondToCustomerQuote, initial);
   useServerActionSnapshot(state.success, state.quoteResponse, onQuoteResponse);
+  const interactionStarted = useRef(false);
+
+  useEffect(() => {
+    if (pending && !interactionStarted.current) {
+      startPortalInteraction(PORTAL_INTERACTION_FLOWS.customerQuoteAccept, { quoteId });
+      interactionStarted.current = true;
+    }
+
+    if (!pending && interactionStarted.current) {
+      endPortalInteraction(PORTAL_INTERACTION_FLOWS.customerQuoteAccept, {
+        success: Boolean(state.success),
+        error: state.error ?? null,
+      });
+      interactionStarted.current = false;
+    }
+  }, [pending, state.success, state.error, quoteId]);
 
   const [step, setStep] = useState<FlowStep>('decision');
   const [declineOpen, setDeclineOpen] = useState(false);

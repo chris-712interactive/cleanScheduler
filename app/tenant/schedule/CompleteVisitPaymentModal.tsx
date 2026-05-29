@@ -18,6 +18,11 @@ import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { completeVisitWithPaymentAction, type VisitFieldActionState } from './visitFieldActions';
+import {
+  PORTAL_INTERACTION_FLOWS,
+  endPortalInteraction,
+  startPortalInteraction,
+} from '@/lib/performance/portalInteractionPerf';
 import styles from './completeVisitModal.module.scss';
 
 const initial: VisitFieldActionState = {};
@@ -109,10 +114,16 @@ export function CompleteVisitPaymentModal({
 
   useEffect(() => {
     if (state.success) {
+      endPortalInteraction(PORTAL_INTERACTION_FLOWS.visitComplete, { success: true });
       setOpen(false);
       resetFlow();
+    } else if (state.error && !pending) {
+      endPortalInteraction(PORTAL_INTERACTION_FLOWS.visitComplete, {
+        success: false,
+        error: state.error,
+      });
     }
-  }, [state.success, resetFlow]);
+  }, [state.success, state.error, pending, resetFlow]);
 
   function validateCurrentStep(): string | null {
     if (currentStep === 'collected') {
@@ -172,6 +183,7 @@ export function CompleteVisitPaymentModal({
       }
     }
 
+    startPortalInteraction(PORTAL_INTERACTION_FLOWS.visitComplete, { visitId });
     formAction(formData);
   }
 

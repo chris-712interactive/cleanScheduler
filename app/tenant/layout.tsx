@@ -35,6 +35,8 @@ import {
 import { isFeatureEnabled } from '@/lib/billing/entitlements';
 import { expireStaleMasqueradeIfNeeded } from '@/lib/admin/expireStaleMasquerade';
 import { RouteContentShell } from '@/components/portal/RouteContentShell';
+import { WebVitalsReporter } from '@/components/performance/WebVitalsReporter';
+import { debugPerfStart } from '@/lib/performance/debugPerf';
 import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 import nextDynamic from 'next/dynamic';
@@ -57,146 +59,155 @@ export const dynamic = 'force-dynamic';
  */
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
-  const { tenantSlug } = await getPortalContext();
   const requestHeaders = await headers();
   const browserPath = requestHeaders.get('x-tenant-pathname') ?? '/';
-  const membership = await getTenantPortalMembership(tenantSlug ?? '', browserPath);
-  const slug = membership.tenantSlug;
+  const endLayout = debugPerfStart('tenant.layout', browserPath);
 
-  const nonProdBanner = getNonProdPortalBanner();
-  const auth = await getAuthContext();
-  if (auth) {
-    await expireStaleMasqueradeIfNeeded(auth);
-  }
-  const masquerading =
-    Boolean(auth?.claims.masqueradeTargetTenantId) &&
-    (auth?.claims.appRole === 'super_admin' || auth?.claims.appRole === 'admin');
+  try {
+    const { tenantSlug } = await getPortalContext();
+    const membership = await getTenantPortalMembership(tenantSlug ?? '', browserPath);
+    const slug = membership.tenantSlug;
 
-  const billingSnapshot = await getTenantBillingSnapshot(membership.tenantId);
-  const { subscriptionAccess } = billingSnapshot;
-  const trialDaysLeft = trialDaysRemaining(billingSnapshot.trialEndsAt);
-  const purgeStatus = getTenantPurgeStatus({
-    activated_at: billingSnapshot.activatedAt,
-    trial_ends_at: billingSnapshot.trialEndsAt,
-    stripe_subscription_id: billingSnapshot.stripeSubscriptionId,
-  });
+    const nonProdBanner = getNonProdPortalBanner();
+    const auth = await getAuthContext();
+    if (auth) {
+      await expireStaleMasqueradeIfNeeded(auth);
+    }
+    const masquerading =
+      Boolean(auth?.claims.masqueradeTargetTenantId) &&
+      (auth?.claims.appRole === 'super_admin' || auth?.claims.appRole === 'admin');
 
-  const supabase = createTenantPortalDbClient();
+    const billingSnapshot = await getTenantBillingSnapshot(membership.tenantId);
+    const { subscriptionAccess } = billingSnapshot;
+    const trialDaysLeft = trialDaysRemaining(billingSnapshot.trialEndsAt);
+    const purgeStatus = getTenantPurgeStatus({
+      activated_at: billingSnapshot.activatedAt,
+      trial_ends_at: billingSnapshot.trialEndsAt,
+      stripe_subscription_id: billingSnapshot.stripeSubscriptionId,
+    });
 
-  let identityName = 'Team member';
-  let identityInitials = 'TM';
-  let identityAvatar: string | undefined;
-  if (auth?.user.id) {
-    const { data: prof } = await supabase
-      .from('user_profiles')
-      .select('display_name, avatar_url')
-      .eq('user_id', auth.user.id)
-      .maybeSingle();
-    const dn = prof?.display_name?.trim();
-    const emailLocal = auth.user.email?.split('@')[0];
-    identityName = dn || emailLocal || 'Team member';
-    const compact = identityName.replace(/\s+/g, '');
-    identityInitials = compact.slice(0, 2).toUpperCase().padEnd(2, '·');
-    if (prof?.avatar_url) identityAvatar = prof.avatar_url;
-  }
+    const supabase = createTenantPortalDbClient();
 
-  const identity: IdentityChipModel = {
-    name: identityName,
-    subtitle: identitySubtitleForRole(membership.role),
-    initials: identityInitials,
-    avatarUrl: identityAvatar,
-  };
+    let identityName = 'Team member';
+    let identityInitials = 'TM';
+    let identityAvatar: string | undefined;
+    if (auth?.user.id) {
+      const { data: prof } = await supabase
+        .from('user_profiles')
+        .select('display_name, avatar_url')
+        .eq('user_id', auth.user.id)
+        .maybeSingle();
+      const dn = prof?.display_name?.trim();
+      const emailLocal = auth.user.email?.split('@')[0];
+      identityName = dn || emailLocal || 'Team member';
+      const compact = identityName.replace(/\s+/g, '');
+      identityInitials = compact.slice(0, 2).toUpperCase().padEnd(2, '·');
+      if (prof?.avatar_url) identityAvatar = prof.avatar_url;
+    }
 
-  const connectStatus = (billingSnapshot.connectStatus ??
-    'not_started') as TenantStripeConnectStatus;
+    const identity: IdentityChipModel = {
+      name: identityName,
+      subtitle: identitySubtitleForRole(membership.role),
+      initials: identityInitials,
+      avatarUrl: identityAvatar,
+    };
 
-  const pendingRescheduleCount = await getCachedPendingRescheduleCount(membership.tenantId);
+    const connectStatus = (billingSnapshot.connectStatus ??
+      'not_started') as TenantStripeConnectStatus;
 
-  const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
-  const planTier = await getTenantEntitlementPlan(membership.tenantId);
-  const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
-  const usageUtilizationAlert =
-    !subscriptionLocked && !isFieldEmployeeRole(membership.role)
-      ? await getCachedTenantUsageUtilizationAlert(membership.tenantId)
-      : null;
+    const pendingRescheduleCount = await getCachedPendingRescheduleCount(membership.tenantId);
 
-  const { gettingStartedNavItem, coreSetupComplete } = subscriptionLocked
-    ? { gettingStartedNavItem: null, coreSetupComplete: true }
-    : await getCachedOwnerOnboardingNavContext({
-        tenantId: membership.tenantId,
-        tenantSlug: slug,
-        role: membership.role,
-        connectStatus,
-      });
+    const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
+    const planTier = await getTenantEntitlementPlan(membership.tenantId);
+    const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
+    const usageUtilizationAlert =
+      !subscriptionLocked && !isFieldEmployeeRole(membership.role)
+        ? await getCachedTenantUsageUtilizationAlert(membership.tenantId)
+        : null;
 
-  const billingNavItem = buildTenantBillingNavItem();
-  const settingsNavItem = buildTenantSettingsNavItem();
+    const { gettingStartedNavItem, coreSetupComplete } = subscriptionLocked
+      ? { gettingStartedNavItem: null, coreSetupComplete: true }
+      : await getCachedOwnerOnboardingNavContext({
+          tenantId: membership.tenantId,
+          tenantSlug: slug,
+          role: membership.role,
+          connectStatus,
+        });
 
-  const navItems = buildTenantNavItems({
-    role: membership.role,
-    subscriptionLocked,
-    billingNavItem,
-    settingsNavItem,
-    campaignsNavEnabled,
-    pendingRescheduleCount,
-    gettingStartedNavItem,
-  });
+    const billingNavItem = buildTenantBillingNavItem();
+    const settingsNavItem = buildTenantSettingsNavItem();
 
-  const bottomNavItems = buildTenantBottomNavItems({
-    role: membership.role,
-    subscriptionLocked,
-  });
+    const navItems = buildTenantNavItems({
+      role: membership.role,
+      subscriptionLocked,
+      billingNavItem,
+      settingsNavItem,
+      campaignsNavEnabled,
+      pendingRescheduleCount,
+      gettingStartedNavItem,
+    });
 
-  const showGlobalSearch = !subscriptionLocked && !isFieldEmployeeRole(membership.role);
-  const brandHref = isFieldEmployeeRole(membership.role) ? fieldEmployeeHomePath() : '/';
+    const bottomNavItems = buildTenantBottomNavItems({
+      role: membership.role,
+      subscriptionLocked,
+    });
 
-  const sessionNotices: ReactNode[] = [];
-  if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
-  if (shouldShowTrialPurchaseBanner(subscriptionAccess) && !subscriptionLocked) {
-    sessionNotices.push(
-      <TrialSubscriptionBanner
-        key="trial"
-        access={subscriptionAccess}
-        daysRemaining={trialDaysLeft}
-      />,
+    const showGlobalSearch = !subscriptionLocked && !isFieldEmployeeRole(membership.role);
+    const brandHref = isFieldEmployeeRole(membership.role) ? fieldEmployeeHomePath() : '/';
+
+    const sessionNotices: ReactNode[] = [];
+    if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
+    if (shouldShowTrialPurchaseBanner(subscriptionAccess) && !subscriptionLocked) {
+      sessionNotices.push(
+        <TrialSubscriptionBanner
+          key="trial"
+          access={subscriptionAccess}
+          daysRemaining={trialDaysLeft}
+        />,
+      );
+    }
+    if (subscriptionLocked) {
+      sessionNotices.push(
+        <WorkspacePausedBanner
+          key="paused"
+          access={subscriptionAccess}
+          role={membership.role}
+          purgeStatus={purgeStatus}
+        />,
+      );
+    }
+    if (
+      !subscriptionLocked &&
+      coreSetupComplete &&
+      connectStatus !== 'complete' &&
+      !isFieldEmployeeRole(membership.role)
+    ) {
+      sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
+    }
+    if (usageUtilizationAlert) {
+      sessionNotices.push(<UsageUtilizationBanner key="usage" alert={usageUtilizationAlert} />);
+    }
+    const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;
+
+    return (
+      <>
+        <WebVitalsReporter portal="tenant" />
+        <PortalShell
+          brandLabel={slug}
+          brandHref={brandHref}
+          navItems={navItems}
+          identity={identity}
+          tenantBadge={<span>{slug}.cleanscheduler.com</span>}
+          environmentBanner={nonProdBanner}
+          sessionNotice={sessionNotice}
+          searchSlot={showGlobalSearch ? <GlobalSearchLazy /> : undefined}
+          bottomNavItems={bottomNavItems}
+        >
+          <RouteContentShell>{children}</RouteContentShell>
+        </PortalShell>
+      </>
     );
+  } finally {
+    endLayout();
   }
-  if (subscriptionLocked) {
-    sessionNotices.push(
-      <WorkspacePausedBanner
-        key="paused"
-        access={subscriptionAccess}
-        role={membership.role}
-        purgeStatus={purgeStatus}
-      />,
-    );
-  }
-  if (
-    !subscriptionLocked &&
-    coreSetupComplete &&
-    connectStatus !== 'complete' &&
-    !isFieldEmployeeRole(membership.role)
-  ) {
-    sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
-  }
-  if (usageUtilizationAlert) {
-    sessionNotices.push(<UsageUtilizationBanner key="usage" alert={usageUtilizationAlert} />);
-  }
-  const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;
-
-  return (
-    <PortalShell
-      brandLabel={slug}
-      brandHref={brandHref}
-      navItems={navItems}
-      identity={identity}
-      tenantBadge={<span>{slug}.cleanscheduler.com</span>}
-      environmentBanner={nonProdBanner}
-      sessionNotice={sessionNotice}
-      searchSlot={showGlobalSearch ? <GlobalSearchLazy /> : undefined}
-      bottomNavItems={bottomNavItems}
-    >
-      <RouteContentShell>{children}</RouteContentShell>
-    </PortalShell>
-  );
 }
