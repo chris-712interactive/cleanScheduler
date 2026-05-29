@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
@@ -16,11 +15,6 @@ export interface BusinessSettingsActionState {
   error?: string;
   success?: string;
   businessPatch?: Partial<TenantBusinessSnapshot>;
-}
-
-function revalidateBusinessSettings() {
-  revalidatePath('/tenant/settings/business', 'page');
-  revalidatePath('/tenant/settings', 'page');
 }
 
 async function requireBusinessSettingsAccess(slug: string) {
@@ -64,7 +58,6 @@ export async function updateBusinessProfileAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
     return {
       success: 'Business profile saved.',
       businessPatch: {
@@ -116,7 +109,6 @@ export async function updateWorkWeekAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
     return {
       success: 'Work week saved.',
       businessPatch: {
@@ -156,7 +148,6 @@ export async function updateBrandingAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
     return {
       success: 'Branding saved.',
       businessPatch: { brandColor },
@@ -219,7 +210,6 @@ export async function uploadTenantLogoAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
     return {
       success: 'Logo uploaded.',
       businessPatch: { logoUrl: pub.publicUrl },
@@ -260,7 +250,6 @@ export async function updateBusinessAddressAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
     return {
       success: 'Business address saved.',
       businessPatch: {
