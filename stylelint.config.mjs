@@ -7,7 +7,8 @@
  * the codebase.
  */
 
-module.exports = {
+/** @type {import('stylelint').Config} */
+const config = {
   extends: ['stylelint-config-standard-scss'],
   plugins: ['stylelint-order'],
   rules: {
@@ -37,8 +38,6 @@ module.exports = {
     'property-no-vendor-prefix': null,
     'media-feature-range-notation': null,
     'keyframes-name-pattern': null,
-    // Stylelint 16 + postcss-selector-parser can throw `findLastIndex is not a function`
-    // when walking some @keyframes blocks (e.g. TopBar.module.scss). Re-enable when upstream fixes land.
     'keyframe-block-no-duplicate-selectors': null,
     'selector-not-notation': null,
     'declaration-block-no-redundant-longhand-properties': null,
@@ -67,3 +66,5 @@ module.exports = {
     'docs/design/**',
   ],
 };
+
+export default config;
