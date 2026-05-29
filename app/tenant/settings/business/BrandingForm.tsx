@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import type { TenantBusinessSnapshot } from '@/lib/tenant/tenantBusinessSettings';
@@ -25,8 +25,8 @@ export function BrandingForm({
   readOnly?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
-  const [brandFormKey, setBrandFormKey] = useState(0);
-  const [logoFormKey, setLogoFormKey] = useState(0);
+  const [brandColor, setBrandColor] = useState(initialSnapshot.brandColor);
+  const logoFormRef = useRef<HTMLFormElement>(null);
   const [brandState, brandAction, brandPending] = useActionState(
     updateBrandingAction,
     brandingInitial,
@@ -35,20 +35,29 @@ export function BrandingForm({
 
   useEffect(() => {
     setSnapshot(initialSnapshot);
+    setBrandColor(initialSnapshot.brandColor);
   }, [initialSnapshot]);
+
+  useEffect(() => {
+    setBrandColor(snapshot.brandColor);
+  }, [snapshot.brandColor]);
 
   const onBusinessPatch = useCallback((patch: Partial<TenantBusinessSnapshot>) => {
     setSnapshot((current) => ({ ...current, ...patch }));
-    if ('brandColor' in patch) setBrandFormKey((k) => k + 1);
-    if ('logoUrl' in patch) setLogoFormKey((k) => k + 1);
   }, []);
 
   useServerActionSnapshot(brandState.success, brandState.businessPatch, onBusinessPatch);
   useServerActionSnapshot(logoState.success, logoState.businessPatch, onBusinessPatch);
 
+  useEffect(() => {
+    if (logoState.success) {
+      logoFormRef.current?.reset();
+    }
+  }, [logoState.success]);
+
   return (
     <div className={styles.brandingStack}>
-      <form key={brandFormKey} action={brandAction} className={styles.settingsForm}>
+      <form action={brandAction} className={styles.settingsForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         {brandState.error ? (
           <p className={styles.formError} role="alert">
@@ -67,7 +76,7 @@ export function BrandingForm({
         <div className={styles.colorFieldRow}>
           <span
             className={styles.colorSwatch}
-            style={{ backgroundColor: snapshot.brandColor }}
+            style={{ backgroundColor: brandColor }}
             aria-hidden
           />
           <input
@@ -75,7 +84,8 @@ export function BrandingForm({
             name="brand_color"
             type="text"
             className={styles.fieldInput}
-            defaultValue={snapshot.brandColor}
+            value={brandColor}
+            onChange={(e) => setBrandColor(e.target.value)}
             pattern="^#[0-9A-Fa-f]{6}$"
             disabled={readOnly}
           />
@@ -91,7 +101,7 @@ export function BrandingForm({
         ) : null}
       </form>
 
-      <form key={logoFormKey} action={logoAction} className={styles.settingsForm}>
+      <form ref={logoFormRef} action={logoAction} className={styles.settingsForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         {logoState.error ? (
           <p className={styles.formError} role="alert">

@@ -19,7 +19,6 @@ export function CustomerEditForm({
   snapshot: CustomerEditSnapshot;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
-  const [formGeneration, setFormGeneration] = useState(0);
   const [state, formAction, pending] = useActionState(updateTenantCustomer, initial);
 
   useEffect(() => {
@@ -28,17 +27,12 @@ export function CustomerEditForm({
 
   const onCustomerSnapshot = useCallback((next: CustomerEditSnapshot) => {
     setSnapshot(next);
-    setFormGeneration((g) => g + 1);
   }, []);
 
   useServerActionSnapshot(state.success, state.customerSnapshot, onCustomerSnapshot);
 
   return (
-    <form
-      action={formAction}
-      className={styles.form}
-      key={`${snapshot.customerId}-${formGeneration}`}
-    >
+    <form action={formAction} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_id" value={snapshot.customerId} />
       {state.error ? (
