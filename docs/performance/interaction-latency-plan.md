@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Phase 1 shipped (1.2.0); Phase 2 partial (request-scoped layout cache + tagged nav chrome)
+**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped (request-scoped layout cache + tagged nav chrome); Phase 3.2 in progress (schedule client-side date navigation)
 
 ---
 
@@ -417,13 +417,15 @@ Apply to: `QuotesBoard`, `GlobalSearch`, `QuoteLineItemsEditor`.
 
 **File:** `app/tenant/quotes/QuotesBoard.tsx`
 
-#### 3.2 Schedule — client-side date navigation
+#### 3.2 Schedule — client-side date navigation ✅ (Phase 3.2 PR)
 
 - Keep visit data in client state for current week/day view
-- Fetch new date range via Route Handler or server action returning **JSON** (not RSC)
-- Avoid `router.push` for in-calendar prev/next day
+- Fetch new date range via Route Handler returning **JSON** (not RSC)
+- Avoid `router.push` for in-calendar prev/next day; use `history.pushState` + `/api/tenant/schedule/visits`
+- Shared loader: `lib/tenant/loadScheduleVisits.ts`
+- Employee filter remains client-side (no refetch); location filter still uses form GET (full reload)
 
-**Files:** `TenantScheduleClient.tsx`, new `app/api/tenant/schedule/visits/route.ts`
+**Files:** `TenantScheduleClient.tsx`, `app/api/tenant/schedule/visits/route.ts`, `lib/tenant/loadScheduleVisits.ts`
 
 #### 3.3 Server actions return updated DTOs
 
