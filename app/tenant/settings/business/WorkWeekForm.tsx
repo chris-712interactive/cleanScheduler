@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import {
   WORK_WEEK_DAY_KEYS,
   WORK_WEEK_DAY_LABEL,
@@ -15,20 +15,32 @@ const initial: BusinessSettingsActionState = {};
 
 export function WorkWeekForm({
   tenantSlug,
-  snapshot,
+  snapshot: initialSnapshot,
   readOnly,
 }: {
   tenantSlug: string;
   snapshot: TenantBusinessSnapshot;
   readOnly?: boolean;
 }) {
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const [formKey, setFormKey] = useState(0);
   const [state, formAction, pending] = useActionState(updateWorkWeekAction, initial);
-  useRefreshOnServerActionSuccess(state.success);
   const timeOptions = buildWorkTimeOptions();
   const selectedDays = new Set(snapshot.workWeekDays);
 
+  useEffect(() => {
+    setSnapshot(initialSnapshot);
+  }, [initialSnapshot]);
+
+  const onBusinessPatch = useCallback((patch: Partial<TenantBusinessSnapshot>) => {
+    setSnapshot((current) => ({ ...current, ...patch }));
+    setFormKey((k) => k + 1);
+  }, []);
+
+  useServerActionSnapshot(state.success, state.businessPatch, onBusinessPatch);
+
   return (
-    <form action={formAction} className={styles.settingsForm}>
+    <form key={formKey} action={formAction} className={styles.settingsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       {state.error ? (
         <p className={styles.formError} role="alert">

@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useActionState } from 'react';
+import { useActionState, useCallback, useEffect, useState } from 'react';
 import { Upload } from 'lucide-react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import type { TenantBusinessSnapshot } from '@/lib/tenant/tenantBusinessSettings';
 import {
   updateBrandingAction,
@@ -17,23 +17,38 @@ const logoInitial: BusinessSettingsActionState = {};
 
 export function BrandingForm({
   tenantSlug,
-  snapshot,
+  snapshot: initialSnapshot,
   readOnly,
 }: {
   tenantSlug: string;
   snapshot: TenantBusinessSnapshot;
   readOnly?: boolean;
 }) {
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const [brandFormKey, setBrandFormKey] = useState(0);
+  const [logoFormKey, setLogoFormKey] = useState(0);
   const [brandState, brandAction, brandPending] = useActionState(
     updateBrandingAction,
     brandingInitial,
   );
   const [logoState, logoAction, logoPending] = useActionState(uploadTenantLogoAction, logoInitial);
-  useRefreshOnServerActionSuccess(brandState.success ?? logoState.success);
+
+  useEffect(() => {
+    setSnapshot(initialSnapshot);
+  }, [initialSnapshot]);
+
+  const onBusinessPatch = useCallback((patch: Partial<TenantBusinessSnapshot>) => {
+    setSnapshot((current) => ({ ...current, ...patch }));
+    if ('brandColor' in patch) setBrandFormKey((k) => k + 1);
+    if ('logoUrl' in patch) setLogoFormKey((k) => k + 1);
+  }, []);
+
+  useServerActionSnapshot(brandState.success, brandState.businessPatch, onBusinessPatch);
+  useServerActionSnapshot(logoState.success, logoState.businessPatch, onBusinessPatch);
 
   return (
     <div className={styles.brandingStack}>
-      <form action={brandAction} className={styles.settingsForm}>
+      <form key={brandFormKey} action={brandAction} className={styles.settingsForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         {brandState.error ? (
           <p className={styles.formError} role="alert">
@@ -76,7 +91,7 @@ export function BrandingForm({
         ) : null}
       </form>
 
-      <form action={logoAction} className={styles.settingsForm}>
+      <form key={logoFormKey} action={logoAction} className={styles.settingsForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         {logoState.error ? (
           <p className={styles.formError} role="alert">

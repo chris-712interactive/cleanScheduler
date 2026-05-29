@@ -11,11 +11,16 @@ import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 import { parseCustomerPreferredPaymentMethod } from '@/lib/tenant/customerBillingPreference';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
+import {
+  buildCustomerEditSnapshot,
+  type CustomerEditSnapshot,
+} from '@/lib/tenant/customerEditSnapshot';
 
 export interface CustomerFormState {
   error?: string;
   success?: boolean;
   limitExceeded?: boolean;
+  customerSnapshot?: CustomerEditSnapshot;
 }
 
 function normalizeContactMethod(
@@ -265,5 +270,20 @@ export async function updateTenantCustomer(
 
   revalidatePath('/tenant/customers', 'page');
   revalidatePath(`/tenant/customers/${customerId}`, 'page');
-  return { success: true };
+  return {
+    success: true,
+    customerSnapshot: buildCustomerEditSnapshot({
+      customerId,
+      firstName,
+      lastName,
+      email,
+      phone,
+      status: statusNorm,
+      companyName,
+      preferredContactMethod: preferredContactMethod ?? '',
+      preferredPaymentMethod,
+      internalNotes,
+      marketingEmailOptIn,
+    }),
+  };
 }

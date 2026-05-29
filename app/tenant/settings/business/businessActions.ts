@@ -9,11 +9,13 @@ import {
   parseTenantTimezone,
   parseWorkTimeFromForm,
   parseWorkWeekDaysFromForm,
+  type TenantBusinessSnapshot,
 } from '@/lib/tenant/tenantBusinessSettings';
 
 export interface BusinessSettingsActionState {
   error?: string;
   success?: string;
+  businessPatch?: Partial<TenantBusinessSnapshot>;
 }
 
 function revalidateBusinessSettings() {
@@ -63,7 +65,15 @@ export async function updateBusinessProfileAction(
 
     if (error) return { error: error.message };
     revalidateBusinessSettings();
-    return { success: 'Business profile saved.' };
+    return {
+      success: 'Business profile saved.',
+      businessPatch: {
+        name,
+        businessEmail,
+        businessPhone,
+        timezone,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save business profile.' };
   }
@@ -107,7 +117,14 @@ export async function updateWorkWeekAction(
 
     if (error) return { error: error.message };
     revalidateBusinessSettings();
-    return { success: 'Work week saved.' };
+    return {
+      success: 'Work week saved.',
+      businessPatch: {
+        workWeekDays,
+        workDayStart,
+        workDayEnd,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save work week.' };
   }
@@ -140,7 +157,10 @@ export async function updateBrandingAction(
 
     if (error) return { error: error.message };
     revalidateBusinessSettings();
-    return { success: 'Branding saved.' };
+    return {
+      success: 'Branding saved.',
+      businessPatch: { brandColor },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save branding.' };
   }
@@ -200,7 +220,10 @@ export async function uploadTenantLogoAction(
 
     if (error) return { error: error.message };
     revalidateBusinessSettings();
-    return { success: 'Logo uploaded.' };
+    return {
+      success: 'Logo uploaded.',
+      businessPatch: { logoUrl: pub.publicUrl },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not upload logo.' };
   }
@@ -238,7 +261,16 @@ export async function updateBusinessAddressAction(
 
     if (error) return { error: error.message };
     revalidateBusinessSettings();
-    return { success: 'Business address saved.' };
+    return {
+      success: 'Business address saved.',
+      businessPatch: {
+        addressLine1,
+        city,
+        state,
+        postalCode,
+        country,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save business address.' };
   }
