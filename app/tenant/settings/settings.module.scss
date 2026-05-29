@@ -1,6 +1,6 @@
 @use 'mixins/breakpoints' as mq;
 
-@mixin settingsSubmitSaving {
+@mixin settings-submit-saving {
   &[data-saving='true'] {
     cursor: wait;
     opacity: 1;
@@ -128,7 +128,7 @@
     cursor: default;
   }
 
-  @include settingsSubmitSaving;
+  @include settings-submit-saving;
 }
 
 .profileGrid {
@@ -455,7 +455,7 @@
     cursor: default;
   }
 
-  @include settingsSubmitSaving;
+  @include settings-submit-saving;
 }
 
 @media (prefers-reduced-motion: reduce) {
