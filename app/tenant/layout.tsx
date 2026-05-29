@@ -107,7 +107,8 @@ export default async function TenantLayout({ children }: { children: React.React
     avatarUrl: identityAvatar,
   };
 
-  const connectStatus = (billingSnapshot.connectStatus ?? 'not_started') as TenantStripeConnectStatus;
+  const connectStatus = (billingSnapshot.connectStatus ??
+    'not_started') as TenantStripeConnectStatus;
 
   const pendingRescheduleCount = await getCachedPendingRescheduleCount(membership.tenantId);
 
