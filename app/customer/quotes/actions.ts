@@ -16,7 +16,13 @@ import {
 import { applyQuoteAcceptanceFollowUp } from '@/lib/tenant/quoteAcceptanceFollowUp';
 import type { Database } from '@/lib/supabase/database.types';
 
-export type CustomerQuoteResponseState = { error?: string; success?: boolean };
+import type { CustomerQuoteResponsePatch } from '@/lib/tenant/customerQuoteResponsePatch';
+
+export type CustomerQuoteResponseState = {
+  error?: string;
+  success?: boolean;
+  quoteResponse?: CustomerQuoteResponsePatch;
+};
 
 function clientIpFromHeaders(h: Headers): string | null {
   const fwd = h.get('x-forwarded-for');
@@ -202,5 +208,14 @@ export async function respondToCustomerQuote(
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
   revalidatePath('/tenant/billing/invoices', 'page');
   invalidateCustomerQuoteBadge(quote.customer_id as string);
-  return { success: true };
+
+  const acceptedAt = decision === 'accept' ? new Date().toISOString() : null;
+  return {
+    success: true,
+    quoteResponse: {
+      status: decision === 'accept' ? 'accepted' : 'declined',
+      acceptedAt,
+      canRespond: false,
+    },
+  };
 }

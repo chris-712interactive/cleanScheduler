@@ -1,39 +1,44 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import { CUSTOMER_PREFERRED_BILLING_OPTIONS } from '@/lib/tenant/customerBillingPreference';
+import type { CustomerEditSnapshot } from '@/lib/tenant/customerEditSnapshot';
 import { updateTenantCustomer, type CustomerFormState } from './actions';
 import styles from './customers.module.scss';
 
-const initial: CustomerFormState = {};
+export type { CustomerEditSnapshot } from '@/lib/tenant/customerEditSnapshot';
 
-export interface CustomerEditSnapshot {
-  customerId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  status: string;
-  companyName: string;
-  preferredContactMethod: string;
-  preferredPaymentMethod: string;
-  internalNotes: string;
-  marketingEmailOptIn: boolean;
-}
+const initial: CustomerFormState = {};
 
 export function CustomerEditForm({
   tenantSlug,
-  snapshot,
+  snapshot: initialSnapshot,
 }: {
   tenantSlug: string;
   snapshot: CustomerEditSnapshot;
 }) {
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const [formGeneration, setFormGeneration] = useState(0);
   const [state, formAction, pending] = useActionState(updateTenantCustomer, initial);
-  useRefreshOnServerActionSuccess(state.success);
+
+  useEffect(() => {
+    setSnapshot(initialSnapshot);
+  }, [initialSnapshot]);
+
+  const onCustomerSnapshot = useCallback((next: CustomerEditSnapshot) => {
+    setSnapshot(next);
+    setFormGeneration((g) => g + 1);
+  }, []);
+
+  useServerActionSnapshot(state.success, state.customerSnapshot, onCustomerSnapshot);
 
   return (
-    <form action={formAction} className={styles.form} key={snapshot.customerId}>
+    <form
+      action={formAction}
+      className={styles.form}
+      key={`${snapshot.customerId}-${formGeneration}`}
+    >
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_id" value={snapshot.customerId} />
       {state.error ? (

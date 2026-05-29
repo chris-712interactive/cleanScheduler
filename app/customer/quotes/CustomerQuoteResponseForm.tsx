@@ -2,7 +2,8 @@
 
 import { useActionState, useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
+import type { CustomerQuoteResponsePatch } from '@/lib/tenant/customerQuoteResponsePatch';
 import {
   CUSTOMER_PAYMENT_METHOD_LABEL,
   type TenantPaymentMethod,
@@ -30,6 +31,7 @@ export function CustomerQuoteResponseForm({
   userEmail,
   allowedPaymentMethods,
   layout = 'default',
+  onQuoteResponse,
 }: {
   quoteId: string;
   tenantName: string;
@@ -37,9 +39,10 @@ export function CustomerQuoteResponseForm({
   userEmail: string | null;
   allowedPaymentMethods: TenantPaymentMethod[];
   layout?: 'default' | 'panel';
+  onQuoteResponse?: (patch: CustomerQuoteResponsePatch) => void;
 }) {
   const [state, action, pending] = useActionState(respondToCustomerQuote, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionSnapshot(state.success, state.quoteResponse, onQuoteResponse);
 
   const [step, setStep] = useState<FlowStep>('decision');
   const [declineOpen, setDeclineOpen] = useState(false);

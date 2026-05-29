@@ -1,7 +1,11 @@
+'use client';
+
+import { useCallback, useState } from 'react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
+import type { CustomerQuoteResponsePatch } from '@/lib/tenant/customerQuoteResponsePatch';
 import { CustomerQuoteResponseForm } from './CustomerQuoteResponseForm';
 import styles from './quotes.module.scss';
 
@@ -58,12 +62,12 @@ function panelStatusMessage(input: {
 export function CustomerQuoteDecisionPanel({
   quoteId,
   tenantName,
-  status,
+  status: initialStatus,
   currency,
   amountCents,
   validUntil,
-  canRespond,
-  acceptedAt,
+  canRespond: initialCanRespond,
+  acceptedAt: initialAcceptedAt,
   cadence,
   totalLabel,
   userEmail,
@@ -82,6 +86,16 @@ export function CustomerQuoteDecisionPanel({
   userEmail: string | null;
   allowedPaymentMethods: TenantPaymentMethod[];
 }) {
+  const [status, setStatus] = useState(initialStatus);
+  const [canRespond, setCanRespond] = useState(initialCanRespond);
+  const [acceptedAt, setAcceptedAt] = useState(initialAcceptedAt);
+
+  const onQuoteResponse = useCallback((patch: CustomerQuoteResponsePatch) => {
+    setStatus(patch.status);
+    setCanRespond(patch.canRespond);
+    setAcceptedAt(patch.acceptedAt);
+  }, []);
+
   const statusMessage = panelStatusMessage({ status, canRespond, validUntil, acceptedAt });
 
   return (
@@ -127,6 +141,7 @@ export function CustomerQuoteDecisionPanel({
             userEmail={userEmail}
             allowedPaymentMethods={allowedPaymentMethods}
             layout="panel"
+            onQuoteResponse={onQuoteResponse}
           />
         ) : null}
       </div>
