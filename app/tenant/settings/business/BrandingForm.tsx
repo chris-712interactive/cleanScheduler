@@ -67,11 +67,7 @@ function BrandColorForm({
         Brand color
       </label>
       <div className={styles.colorFieldRow}>
-        <span
-          className={styles.colorSwatch}
-          style={{ backgroundColor: swatchColor }}
-          aria-hidden
-        />
+        <span className={styles.colorSwatch} style={{ backgroundColor: swatchColor }} aria-hidden />
         <input
           id="brand_color"
           key={savedBrandColor}
@@ -191,7 +187,11 @@ export function BrandingForm({
         initialBrandColor={snapshot.brandColor}
         readOnly={readOnly}
       />
-      <LogoUploadForm tenantSlug={tenantSlug} initialLogoUrl={snapshot.logoUrl} readOnly={readOnly} />
+      <LogoUploadForm
+        tenantSlug={tenantSlug}
+        initialLogoUrl={snapshot.logoUrl}
+        readOnly={readOnly}
+      />
     </div>
   );
 }
