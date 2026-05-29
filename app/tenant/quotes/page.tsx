@@ -9,8 +9,16 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
-import { QuotesBoard } from './QuotesBoard';
+import nextDynamic from 'next/dynamic';
+import { PortalRouteLoading } from '@/components/portal/PortalRouteLoading';
 import styles from './quotes.module.scss';
+
+const QuotesBoard = nextDynamic(
+  () => import('./QuotesBoard').then((m) => ({ default: m.QuotesBoard })),
+  {
+    loading: () => <PortalRouteLoading variant="board" />,
+  },
+);
 
 export const dynamic = 'force-dynamic';
 
