@@ -36,7 +36,6 @@ export function OperationalSettingsForm({
   invoiceReminderSmsEditable?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
-  const [formKey, setFormKey] = useState(0);
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
   const messagingChannels = new Set(snapshot.messaging_channels);
 
@@ -46,7 +45,6 @@ export function OperationalSettingsForm({
 
   const onSettingsSnapshot = useCallback((next: OperationalSettingsFormSnapshot) => {
     setSnapshot(next);
-    setFormKey((k) => k + 1);
   }, []);
 
   const [state, formAction, pending] = useActionState(
@@ -56,7 +54,7 @@ export function OperationalSettingsForm({
   useServerActionSnapshot(state.success, state.settingsSnapshot, onSettingsSnapshot);
 
   return (
-    <form key={formKey} action={formAction} className={styles.opsForm}>
+    <form action={formAction} className={styles.opsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       {state.error ? (
         <p className={styles.opsError} role="alert">
