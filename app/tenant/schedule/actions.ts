@@ -19,12 +19,15 @@ import {
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
+import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 
 export interface ScheduleFormState {
   error?: string;
   success?: boolean;
   conflicts?: AssigneeConflictInfo[];
   needsOverlapConfirm?: boolean;
+  visitPatch?: VisitDetailPatch;
+  resolvedRequestId?: string;
 }
 
 const VISIT_STATUSES = new Set<Database['public']['Enums']['visit_status']>([
@@ -343,7 +346,10 @@ export async function updateScheduledVisitTimes(
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${visitId}`);
   revalidatePath('/schedule/reschedule-requests');
-  return { success: true };
+  return {
+    success: true,
+    visitPatch: { startsAt, endsAt },
+  };
 }
 
 export async function resolveVisitRescheduleRequest(
@@ -491,7 +497,14 @@ export async function resolveVisitRescheduleRequest(
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${request.visit_id}`);
   invalidateTenantNavBadges(membership.tenantId);
-  return { success: true };
+  return {
+    success: true,
+    resolvedRequestId: requestId,
+    visitPatch:
+      resolution === 'completed' && appliedStartsAt && appliedEndsAt
+        ? { startsAt: appliedStartsAt, endsAt: appliedEndsAt }
+        : undefined,
+  };
 }
 
 export async function updateVisitJobPrice(
@@ -550,5 +563,8 @@ export async function updateVisitJobPrice(
 
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${visitId}`);
-  return { success: true };
+  return {
+    success: true,
+    visitPatch: { expectedAmountCents: cents },
+  };
 }

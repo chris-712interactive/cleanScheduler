@@ -1,7 +1,6 @@
 'use client';
 
 import { useActionState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { deleteScheduledVisit, type ScheduleFormState } from './actions';
 import styles from './schedule.module.scss';
 
@@ -15,7 +14,6 @@ export function DeleteVisitButton({
   visitId: string;
 }) {
   const [state, action, pending] = useActionState(deleteScheduledVisit, initial);
-  useRefreshOnServerActionSuccess(state.success);
   return (
     <form action={action} className={styles.rowActions}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />

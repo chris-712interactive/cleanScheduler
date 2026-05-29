@@ -1,9 +1,10 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
 import { isoToLocalDatetimeLocalValue } from '@/lib/datetime/isoToLocalDatetimeLocalValue';
+import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
+import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { updateScheduledVisitTimes, type ScheduleFormState } from '@/app/tenant/schedule/actions';
 import styles from './schedule.module.scss';
 
@@ -15,15 +16,17 @@ export function VisitTimeRescheduleForm({
   visitId,
   startsAtIso,
   endsAtIso,
+  onVisitPatch,
 }: {
   tenantSlug: string;
   tenantTimezone: string;
   visitId: string;
   startsAtIso: string;
   endsAtIso: string;
+  onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [state, formAction, pending] = useActionState(updateScheduledVisitTimes, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
   const [startsLocal, setStartsLocal] = useState('');
   const [endsLocal, setEndsLocal] = useState('');
