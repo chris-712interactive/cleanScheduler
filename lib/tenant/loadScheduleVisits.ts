@@ -165,7 +165,9 @@ export async function loadScheduleVisits(params: {
   let visits = mapVisitRows(visitRows ?? []);
 
   if (params.fieldEmployeeMode && params.currentUserId) {
-    visits = visits.filter((visit) => isVisitAssignee(visit.assigneeUserIds, params.currentUserId!));
+    visits = visits.filter((visit) =>
+      isVisitAssignee(visit.assigneeUserIds, params.currentUserId!),
+    );
   }
 
   return {

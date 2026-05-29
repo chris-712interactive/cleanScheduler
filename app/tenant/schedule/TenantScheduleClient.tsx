@@ -134,8 +134,7 @@ export function TenantScheduleClient({
         setEmployeeFilter(nextEmployee);
       }
 
-      const needsVisitFetch =
-        next.date !== undefined || next.view !== undefined;
+      const needsVisitFetch = next.date !== undefined || next.view !== undefined;
 
       const browserQuery = buildScheduleQuery({
         date: nextDate,

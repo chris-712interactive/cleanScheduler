@@ -6,10 +6,7 @@ import type { TenantRole } from '@/lib/auth/types';
 import { getPortalContext } from '@/lib/portal';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { loadScheduleVisits } from '@/lib/tenant/loadScheduleVisits';
-import {
-  normalizeDateKey,
-  normalizeView,
-} from '@/lib/tenant/scheduleDateRange';
+import { normalizeDateKey, normalizeView } from '@/lib/tenant/scheduleDateRange';
 
 export async function GET(request: Request) {
   const { tenantSlug } = await getPortalContext();
