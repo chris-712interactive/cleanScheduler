@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import type { ScheduleVisitVM } from '@/lib/tenant/scheduleVisitTypes';
 import type { ScheduleView } from '@/lib/tenant/scheduleDateRange';
 import {
   buildUtcMonthGrid,
@@ -20,37 +20,48 @@ import {
   resolveTimelineWindow,
   visitOverlapsLocalDay,
 } from './scheduleTimelineUtils';
-import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import { VisitStatusPill } from './VisitStatusPill';
 import { ScheduleVisitBlock } from './ScheduleVisitBlock';
 import { FieldEmployeeDayJobs } from './FieldEmployeeDayJobs';
 import styles from './schedule.module.scss';
 
-export type ScheduleVisitVM = {
-  id: string;
-  title: string;
-  starts_at: string;
-  ends_at: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
-  notes: string | null;
-  customerName: string;
-  customerPhone: string | null;
-  siteLine: string;
-  quoteTitle: string | null;
-  expectedAmountCents: number | null;
-  assignees: ScheduleAssigneeChip[];
-  assigneeUserIds: string[];
+export type { ScheduleVisitVM } from '@/lib/tenant/scheduleVisitTypes';
+
+type ScheduleVisitsPayload = {
+  visits: ScheduleVisitVM[];
+  dateKey: string;
+  view: ScheduleView;
+  weekDayKeys: string[];
 };
 
+function buildScheduleQuery(params: {
+  date: string;
+  view: ScheduleView;
+  employee: string;
+  location: string;
+}): string {
+  const q = new URLSearchParams();
+  q.set('date', params.date);
+  q.set('view', params.view);
+  if (params.employee && params.employee !== 'all') {
+    q.set('employee', params.employee);
+  }
+  if (params.location && params.location !== 'all') {
+    q.set('location', params.location);
+  }
+  return q.toString();
+}
+
 export function TenantScheduleClient({
-  visits,
-  dateKey,
-  view,
-  weekDayKeys,
-  employeeFilter,
+  visits: initialVisits,
+  dateKey: initialDateKey,
+  view: initialView,
+  weekDayKeys: initialWeekDayKeys,
+  employeeFilter: initialEmployeeFilter,
   employeeOptions,
   currentUserId,
   fieldEmployeeMode = false,
+  locationFilter = '',
 }: {
   tenantSlug: string;
   visits: ScheduleVisitVM[];
@@ -61,25 +72,106 @@ export function TenantScheduleClient({
   employeeOptions: { id: string; label: string }[];
   currentUserId: string;
   fieldEmployeeMode?: boolean;
+  locationFilter?: string;
 }) {
-  const router = useRouter();
+  const [visits, setVisits] = useState(initialVisits);
+  const [dateKey, setDateKey] = useState(initialDateKey);
+  const [view, setView] = useState(initialView);
+  const [weekDayKeys, setWeekDayKeys] = useState(initialWeekDayKeys);
+  const [employeeFilter, setEmployeeFilter] = useState(initialEmployeeFilter);
+  const [isLoading, setIsLoading] = useState(false);
   const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
   const [nowLinePct, setNowLinePct] = useState<number | null>(null);
+  const fetchSeq = useRef(0);
+
+  useEffect(() => {
+    setVisits(initialVisits);
+    setDateKey(initialDateKey);
+    setView(initialView);
+    setWeekDayKeys(initialWeekDayKeys);
+    setEmployeeFilter(initialEmployeeFilter);
+  }, [initialVisits, initialDateKey, initialView, initialWeekDayKeys, initialEmployeeFilter]);
 
   useEffect(() => {
     setExpandedVisitId(null);
   }, [dateKey, view]);
 
-  const push = (next: { date?: string; view?: ScheduleView; employee?: string }) => {
-    const params = new URLSearchParams();
-    params.set('date', next.date ?? dateKey);
-    params.set('view', next.view ?? view);
-    const employee = next.employee ?? employeeFilter;
-    if (employee && employee !== 'all') {
-      params.set('employee', employee);
-    }
-    router.push(`/schedule?${params.toString()}`);
-  };
+  const fetchVisits = useCallback(
+    async (params: { date: string; view: ScheduleView; location: string }) => {
+      const seq = ++fetchSeq.current;
+      setIsLoading(true);
+      try {
+        const q = new URLSearchParams();
+        q.set('date', params.date);
+        q.set('view', params.view);
+        if (params.location && params.location !== 'all') {
+          q.set('location', params.location);
+        }
+        const res = await fetch(`/api/tenant/schedule/visits?${q.toString()}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as ScheduleVisitsPayload;
+        if (seq !== fetchSeq.current) return;
+        setVisits(data.visits);
+        setDateKey(data.dateKey);
+        setView(data.view);
+        setWeekDayKeys(data.weekDayKeys);
+      } finally {
+        if (seq === fetchSeq.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  const push = useCallback(
+    (next: { date?: string; view?: ScheduleView; employee?: string }) => {
+      const nextDate = next.date ?? dateKey;
+      const nextView = next.view ?? view;
+      const nextEmployee = next.employee ?? employeeFilter;
+
+      if (next.employee !== undefined) {
+        setEmployeeFilter(nextEmployee);
+      }
+
+      const needsVisitFetch = next.date !== undefined || next.view !== undefined;
+
+      const browserQuery = buildScheduleQuery({
+        date: nextDate,
+        view: nextView,
+        employee: nextEmployee,
+        location: locationFilter,
+      });
+      window.history.pushState(null, '', `/schedule?${browserQuery}`);
+
+      if (needsVisitFetch) {
+        void fetchVisits({
+          date: nextDate,
+          view: nextView,
+          location: locationFilter,
+        });
+      }
+    },
+    [dateKey, view, employeeFilter, locationFilter, fetchVisits],
+  );
+
+  useEffect(() => {
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const nextDate = params.get('date') ?? dateKey;
+      const nextView = (params.get('view') ?? view) as ScheduleView;
+      const nextEmployee = params.get('employee') ?? 'all';
+      setEmployeeFilter(nextEmployee);
+      void fetchVisits({
+        date: nextDate,
+        view: nextView,
+        location: params.get('location') ?? locationFilter,
+      });
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [dateKey, view, locationFilter, fetchVisits]);
 
   const filteredVisits = useMemo(() => {
     if (employeeFilter === 'all') return visits;
@@ -150,7 +242,12 @@ export function TenantScheduleClient({
   const nextLabel = view === 'month' ? 'Next month' : view === 'week' ? 'Next week' : 'Next day';
 
   return (
-    <div className={styles.scheduleShell}>
+    <div
+      className={[styles.scheduleShell, isLoading ? styles.scheduleShellLoading : '']
+        .filter(Boolean)
+        .join(' ')}
+      aria-busy={isLoading}
+    >
       <div className={styles.scheduleControlBar}>
         <div className={styles.scheduleDateNav}>
           <button
@@ -158,6 +255,7 @@ export function TenantScheduleClient({
             className={styles.iconNavBtn}
             aria-label={prevLabel}
             onClick={goPrev}
+            disabled={isLoading}
           >
             <ChevronLeft size={20} aria-hidden="true" />
           </button>
@@ -168,6 +266,7 @@ export function TenantScheduleClient({
                 type="button"
                 className={styles.todayLink}
                 onClick={() => push({ date: todayKey, view: fieldEmployeeMode ? 'today' : view })}
+                disabled={isLoading}
               >
                 Jump to today
               </button>
@@ -178,6 +277,7 @@ export function TenantScheduleClient({
             className={styles.iconNavBtn}
             aria-label={nextLabel}
             onClick={goNext}
+            disabled={isLoading}
           >
             <ChevronRight size={20} aria-hidden="true" />
           </button>
@@ -189,6 +289,7 @@ export function TenantScheduleClient({
               type="button"
               className={view === 'today' ? styles.viewToggleBtnActive : styles.viewToggleBtn}
               onClick={() => push({ view: 'today', date: isLocalToday ? dateKey : todayKey })}
+              disabled={isLoading}
             >
               My jobs
             </button>
@@ -196,6 +297,7 @@ export function TenantScheduleClient({
               type="button"
               className={view !== 'today' ? styles.viewToggleBtnActive : styles.viewToggleBtn}
               onClick={() => push({ view: 'week' })}
+              disabled={isLoading}
             >
               Calendar
             </button>
@@ -208,6 +310,7 @@ export function TenantScheduleClient({
                 type="button"
                 className={view === v ? styles.viewToggleBtnActive : styles.viewToggleBtn}
                 onClick={() => push({ view: v })}
+                disabled={isLoading}
               >
                 {v === 'day' ? 'Day' : v === 'week' ? 'Week' : 'Month'}
               </button>
@@ -222,6 +325,7 @@ export function TenantScheduleClient({
             type="button"
             className={styles.fieldBrowseBack}
             onClick={() => push({ view: 'today' })}
+            disabled={isLoading}
           >
             ← Back to job list
           </button>
@@ -230,6 +334,7 @@ export function TenantScheduleClient({
               type="button"
               className={view === 'week' ? styles.fieldBrowseViewActive : styles.fieldBrowseView}
               onClick={() => push({ view: 'week' })}
+              disabled={isLoading}
             >
               Week
             </button>
@@ -237,6 +342,7 @@ export function TenantScheduleClient({
               type="button"
               className={view === 'month' ? styles.fieldBrowseViewActive : styles.fieldBrowseView}
               onClick={() => push({ view: 'month' })}
+              disabled={isLoading}
             >
               Month
             </button>
@@ -429,6 +535,7 @@ export function TenantScheduleClient({
                       view: fieldEmployeeMode ? 'today' : 'day',
                     })
                   }
+                  disabled={isLoading}
                 >
                   <span className={styles.monthCellDay}>{cell.day}</span>
                   {n > 0 ? (
