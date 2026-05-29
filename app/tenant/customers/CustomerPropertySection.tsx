@@ -1,8 +1,11 @@
 'use client';
 
-import { useActionState, useState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
-import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
+import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useServerActionPropertiesPatch } from '@/lib/hooks/useServerActionPropertiesPatch';
+import {
+  applyCustomerPropertiesPatch,
+  type CustomerPropertyVM,
+} from '@/lib/tenant/customerPropertyPatch';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import {
@@ -13,8 +16,6 @@ import {
   type PropertyFormState,
 } from './propertyActions';
 import styles from './customers.module.scss';
-
-type PropertyRow = NonNullable<CustomerDetailEmbedRow['tenant_customer_properties']>[number];
 
 const initial: PropertyFormState = {};
 
@@ -38,13 +39,22 @@ function PropertyActionMessages({ state }: { state: PropertyFormState }) {
 export function CustomerPropertySection({
   tenantSlug,
   customerId,
-  properties,
+  properties: initialProperties,
 }: {
   tenantSlug: string;
   customerId: string;
-  properties: PropertyRow[];
+  properties: CustomerPropertyVM[];
 }) {
+  const [properties, setProperties] = useState(initialProperties);
   const [addLocationOpen, setAddLocationOpen] = useState(false);
+
+  useEffect(() => {
+    setProperties(initialProperties);
+  }, [initialProperties]);
+
+  const onPropertiesPatch = useCallback((patch: Parameters<typeof applyCustomerPropertiesPatch>[1]) => {
+    setProperties((current) => applyCustomerPropertiesPatch(current, patch));
+  }, []);
 
   const sorted = [...properties].sort((a, b) => {
     if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
@@ -86,16 +96,23 @@ export function CustomerPropertySection({
                       tenantSlug={tenantSlug}
                       customerId={customerId}
                       propertyId={p.id}
+                      onPropertiesPatch={onPropertiesPatch}
                     />
                   ) : null}
                   <DeletePropertyForm
                     tenantSlug={tenantSlug}
                     customerId={customerId}
                     propertyId={p.id}
+                    onPropertiesPatch={onPropertiesPatch}
                   />
                 </div>
 
-                <EditPropertyForm tenantSlug={tenantSlug} customerId={customerId} property={p} />
+                <EditPropertyForm
+                  tenantSlug={tenantSlug}
+                  customerId={customerId}
+                  property={p}
+                  onPropertiesPatch={onPropertiesPatch}
+                />
               </div>
             </details>
           ))
@@ -108,6 +125,8 @@ export function CustomerPropertySection({
             tenantSlug={tenantSlug}
             customerId={customerId}
             hasAny={sorted.length > 0}
+            onPropertiesPatch={onPropertiesPatch}
+            onAdded={() => setAddLocationOpen(false)}
           />
           <button
             type="button"
@@ -130,17 +149,21 @@ export function CustomerPropertySection({
   );
 }
 
+type PatchHandler = (patch: Parameters<typeof applyCustomerPropertiesPatch>[1]) => void;
+
 function SetPrimaryForm({
   tenantSlug,
   customerId,
   propertyId,
+  onPropertiesPatch,
 }: {
   tenantSlug: string;
   customerId: string;
   propertyId: string;
+  onPropertiesPatch: PatchHandler;
 }) {
   const [state, action, pending] = useActionState(setPrimaryCustomerProperty, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
   return (
     <form action={action} className={styles.inlineForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -158,13 +181,15 @@ function DeletePropertyForm({
   tenantSlug,
   customerId,
   propertyId,
+  onPropertiesPatch,
 }: {
   tenantSlug: string;
   customerId: string;
   propertyId: string;
+  onPropertiesPatch: PatchHandler;
 }) {
   const [state, action, pending] = useActionState(deleteCustomerProperty, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
   return (
     <form action={action} className={styles.inlineForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -182,13 +207,15 @@ function EditPropertyForm({
   tenantSlug,
   customerId,
   property,
+  onPropertiesPatch,
 }: {
   tenantSlug: string;
   customerId: string;
-  property: PropertyRow;
+  property: CustomerPropertyVM;
+  onPropertiesPatch: PatchHandler;
 }) {
   const [state, action, pending] = useActionState(updateCustomerProperty, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
   return (
     <form action={action} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -294,13 +321,24 @@ function AddPropertyForm({
   tenantSlug,
   customerId,
   hasAny,
+  onPropertiesPatch,
+  onAdded,
 }: {
   tenantSlug: string;
   customerId: string;
   hasAny: boolean;
+  onPropertiesPatch: PatchHandler;
+  onAdded: () => void;
 }) {
   const [state, action, pending] = useActionState(addCustomerProperty, initial);
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
+
+  useEffect(() => {
+    if (state.success) {
+      onAdded();
+    }
+  }, [state.success, onAdded]);
+
   return (
     <div className={styles.sectionCard}>
       <header className={styles.sectionHeader}>

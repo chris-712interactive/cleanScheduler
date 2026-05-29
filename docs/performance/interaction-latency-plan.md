@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3.2 shipped; Phase 3.3 in progress (schedule actions return DTOs)
+**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3.2–3.3 schedule shipped; Phase 3.3b in progress (customer properties + quote edit)
 
 ---
 
@@ -437,7 +437,7 @@ Pattern:
 
 - Schedule visit detail: time, job price, check-in, and completion update client state via `VisitDetailCard`
 - Reschedule request approve/decline removes row from list via `resolvedRequestId`
-- Remaining: quote edit, customer forms, settings forms (~10 call sites)
+- Remaining: customer edit, settings forms (~6 call sites)
 
 Forms update local display from action result; `revalidatePath` still runs for cache coherence on next navigation.
 

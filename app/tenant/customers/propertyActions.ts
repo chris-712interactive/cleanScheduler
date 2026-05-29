@@ -4,10 +4,16 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  CUSTOMER_PROPERTY_SELECT,
+  type CustomerPropertiesPatch,
+  type CustomerPropertyVM,
+} from '@/lib/tenant/customerPropertyPatch';
 
 export interface PropertyFormState {
   error?: string;
   success?: boolean;
+  propertiesPatch?: CustomerPropertiesPatch;
 }
 
 const KINDS = new Set<Database['public']['Enums']['customer_property_kind']>([
@@ -83,26 +89,36 @@ export async function addCustomerProperty(
       .eq('tenant_id', membership.tenantId);
   }
 
-  const ins = await admin.from('tenant_customer_properties').insert({
-    tenant_id: membership.tenantId,
-    customer_id: customerId,
-    label: label || null,
-    property_kind: kind,
-    address_line1: line1 || null,
-    address_line2: line2 || null,
-    city: city || null,
-    state: state || null,
-    postal_code: postal || null,
-    site_notes: siteNotes || null,
-    is_primary: makePrimary,
-  });
+  const ins = await admin
+    .from('tenant_customer_properties')
+    .insert({
+      tenant_id: membership.tenantId,
+      customer_id: customerId,
+      label: label || null,
+      property_kind: kind,
+      address_line1: line1 || null,
+      address_line2: line2 || null,
+      city: city || null,
+      state: state || null,
+      postal_code: postal || null,
+      site_notes: siteNotes || null,
+      is_primary: makePrimary,
+    })
+    .select(CUSTOMER_PROPERTY_SELECT)
+    .single();
 
-  if (ins.error) {
-    return { error: ins.error.message };
+  if (ins.error || !ins.data) {
+    return { error: ins.error?.message ?? 'Could not add location.' };
   }
 
   await revalidateCustomerPaths(customerId);
-  return { success: true };
+  return {
+    success: true,
+    propertiesPatch: {
+      op: 'add',
+      property: ins.data as CustomerPropertyVM,
+    },
+  };
 }
 
 export async function updateCustomerProperty(
@@ -155,14 +171,22 @@ export async function updateCustomerProperty(
       site_notes: siteNotes || null,
     })
     .eq('id', propertyId)
-    .eq('tenant_id', membership.tenantId);
+    .eq('tenant_id', membership.tenantId)
+    .select(CUSTOMER_PROPERTY_SELECT)
+    .single();
 
-  if (upd.error) {
-    return { error: upd.error.message };
+  if (upd.error || !upd.data) {
+    return { error: upd.error?.message ?? 'Could not update location.' };
   }
 
   await revalidateCustomerPaths(customerId);
-  return { success: true };
+  return {
+    success: true,
+    propertiesPatch: {
+      op: 'update',
+      property: upd.data as CustomerPropertyVM,
+    },
+  };
 }
 
 export async function setPrimaryCustomerProperty(
@@ -211,7 +235,10 @@ export async function setPrimaryCustomerProperty(
   }
 
   await revalidateCustomerPaths(customerId);
-  return { success: true };
+  return {
+    success: true,
+    propertiesPatch: { op: 'setPrimary', primaryPropertyId: propertyId },
+  };
 }
 
 export async function deleteCustomerProperty(
@@ -253,6 +280,7 @@ export async function deleteCustomerProperty(
     return { error: del.error.message };
   }
 
+  let nextPrimaryId: string | null = null;
   if (victim.is_primary) {
     const { data: nextPrimary } = await admin
       .from('tenant_customer_properties')
@@ -264,6 +292,7 @@ export async function deleteCustomerProperty(
       .maybeSingle();
 
     if (nextPrimary?.id) {
+      nextPrimaryId = nextPrimary.id;
       await admin
         .from('tenant_customer_properties')
         .update({ is_primary: true })
@@ -273,5 +302,12 @@ export async function deleteCustomerProperty(
   }
 
   await revalidateCustomerPaths(customerId);
-  return { success: true };
+  return {
+    success: true,
+    propertiesPatch: {
+      op: 'delete',
+      propertyId,
+      primaryPropertyId: nextPrimaryId,
+    },
+  };
 }
