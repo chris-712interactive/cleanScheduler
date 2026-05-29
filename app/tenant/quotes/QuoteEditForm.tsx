@@ -1,48 +1,20 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useActionState, useCallback, useEffect, useMemo, useState } from 'react';
+import { useServerActionQuoteSnapshot } from '@/lib/hooks/useServerActionQuoteSnapshot';
+import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { CustomerPropertyGroup } from './QuoteCreateForm';
-import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_STATUS_LABEL, TENANT_QUOTE_STATUS_EDIT_OPTIONS } from '@/lib/tenant/quoteLabels';
-import type { Tables } from '@/lib/supabase/database.types';
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditor';
-import {
-  QuoteHeaderPricingFields,
-  type QuoteHeaderPricingDefaults,
-} from './QuoteHeaderPricingFields';
+import { QuoteHeaderPricingFields } from './QuoteHeaderPricingFields';
 import styles from './quotes.module.scss';
 
+export type { QuoteEditSnapshot, QuoteEditLineItem } from '@/lib/tenant/loadQuoteEditSnapshot';
+export type { QuoteHeaderPricingDefaults } from './QuoteHeaderPricingFields';
+
 const initial: QuoteFormState = {};
-
-export type QuoteEditLineItem = Pick<
-  Tables<'tenant_quote_line_items'>,
-  | 'id'
-  | 'sort_order'
-  | 'service_label'
-  | 'frequency'
-  | 'frequency_detail'
-  | 'amount_cents'
-  | 'line_discount_kind'
-  | 'line_discount_value'
-  | 'pricing_method'
-  | 'estimated_hours'
->;
-
-export interface QuoteEditSnapshot {
-  quoteId: string;
-  title: string;
-  status: QuoteStatus;
-  customerId: string;
-  propertyId: string;
-  amountCents: number | null;
-  notes: string;
-  validUntilYmd: string;
-  lineItems: QuoteEditLineItem[];
-  headerPricing: QuoteHeaderPricingDefaults;
-}
 
 function formatAmountField(cents: number | null): string {
   if (cents == null) return '';
@@ -53,7 +25,7 @@ export function QuoteEditForm({
   tenantSlug,
   customerOptions,
   customerPropertyGroups,
-  snapshot,
+  snapshot: initialSnapshot,
   readOnly = false,
 }: {
   tenantSlug: string;
@@ -63,10 +35,26 @@ export function QuoteEditForm({
   /** When true, quote was accepted (frozen); show notice instead of the form. */
   readOnly?: boolean;
 }) {
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const [formGeneration, setFormGeneration] = useState(0);
   const [state, formAction, pending] = useActionState(updateTenantQuote, initial);
-  useRefreshOnServerActionSuccess(state.success);
 
-  const [customerId, setCustomerId] = useState(snapshot.customerId);
+  useEffect(() => {
+    setSnapshot(initialSnapshot);
+  }, [initialSnapshot]);
+
+  const onQuoteSnapshot = useCallback((next: QuoteEditSnapshot) => {
+    setSnapshot(next);
+    setFormGeneration((g) => g + 1);
+  }, []);
+
+  useServerActionQuoteSnapshot(state.success, state.quoteSnapshot, onQuoteSnapshot);
+
+  const [customerId, setCustomerId] = useState(initialSnapshot.customerId);
+
+  useEffect(() => {
+    setCustomerId(snapshot.customerId);
+  }, [snapshot.customerId, formGeneration]);
 
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
@@ -98,7 +86,7 @@ export function QuoteEditForm({
   }
 
   return (
-    <form action={formAction} className={styles.form}>
+    <form key={formGeneration} action={formAction} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="quote_id" value={snapshot.quoteId} />
       {state.error ? (
@@ -168,7 +156,7 @@ export function QuoteEditForm({
         Service location (optional)
       </label>
       <select
-        key={`edit_prop_${customerId || 'none'}`}
+        key={`edit_prop_${customerId || 'none'}_${formGeneration}`}
         id="edit_quote_property"
         name="property_id"
         className={styles.select}
@@ -186,7 +174,10 @@ export function QuoteEditForm({
         <p className={styles.hint}>Add service locations on the customer profile first.</p>
       ) : null}
 
-      <QuoteLineItemsEditor key={snapshot.quoteId} initialRows={snapshot.lineItems} />
+      <QuoteLineItemsEditor
+        key={`${snapshot.quoteId}_${formGeneration}`}
+        initialRows={snapshot.lineItems}
+      />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />
 

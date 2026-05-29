@@ -30,12 +30,15 @@ import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
+import { loadQuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
+import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 
 export interface QuoteFormState {
   error?: string;
   success?: boolean;
   /** Set after create — client navigates when present (avoids redirect prefetch race). */
   quoteId?: string;
+  quoteSnapshot?: QuoteEditSnapshot;
 }
 
 const QUOTE_STATUSES = new Set<Database['public']['Enums']['quote_status']>([
@@ -714,7 +717,13 @@ export async function updateTenantQuote(
   if (priorStatus === 'sent' || status === 'sent') {
     invalidateCustomerQuoteBadge(customerId);
   }
-  return { success: true };
+
+  const quoteSnapshot = await loadQuoteEditSnapshot(admin, membership.tenantId, quoteId);
+  if (!quoteSnapshot) {
+    return { error: 'Quote saved but could not reload the latest details.' };
+  }
+
+  return { success: true, quoteSnapshot };
 }
 
 export interface AmendmentFormState {
