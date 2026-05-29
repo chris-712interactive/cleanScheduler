@@ -52,9 +52,12 @@ export function CustomerPropertySection({
     setProperties(initialProperties);
   }, [initialProperties]);
 
-  const onPropertiesPatch = useCallback((patch: Parameters<typeof applyCustomerPropertiesPatch>[1]) => {
-    setProperties((current) => applyCustomerPropertiesPatch(current, patch));
-  }, []);
+  const onPropertiesPatch = useCallback(
+    (patch: Parameters<typeof applyCustomerPropertiesPatch>[1]) => {
+      setProperties((current) => applyCustomerPropertiesPatch(current, patch));
+    },
+    [],
+  );
 
   const sorted = [...properties].sort((a, b) => {
     if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;

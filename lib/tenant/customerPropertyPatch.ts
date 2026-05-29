@@ -28,10 +28,7 @@ export function applyCustomerPropertiesPatch(
   switch (patch.op) {
     case 'add':
       if (patch.property.is_primary) {
-        return [
-          ...properties.map((p) => ({ ...p, is_primary: false })),
-          patch.property,
-        ];
+        return [...properties.map((p) => ({ ...p, is_primary: false })), patch.property];
       }
       return [...properties, patch.property];
     case 'update':
