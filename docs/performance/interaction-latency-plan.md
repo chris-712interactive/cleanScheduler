@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3.2–3.3 schedule shipped; Phase 3.3b in progress (customer properties + quote edit)
+**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3.2–3.3b shipped; Phase 3.3c complete (remaining action DTOs)
 
 ---
 
@@ -427,7 +427,7 @@ Apply to: `QuotesBoard`, `GlobalSearch`, `QuoteLineItemsEditor`.
 
 **Files:** `TenantScheduleClient.tsx`, `app/api/tenant/schedule/visits/route.ts`, `lib/tenant/loadScheduleVisits.ts`
 
-#### 3.3 Server actions return updated DTOs (Phase 3.3 — schedule first)
+#### 3.3 Server actions return updated DTOs ✅
 
 Pattern:
 
@@ -435,9 +435,9 @@ Pattern:
 // Return { success: true, visitPatch: { startsAt, endsAt } } instead of router.refresh()
 ```
 
-- Schedule visit detail: time, job price, check-in, and completion update client state via `VisitDetailCard`
-- Reschedule request approve/decline removes row from list via `resolvedRequestId`
-- Remaining: customer edit, settings forms (~6 call sites)
+- Schedule visit detail, reschedule requests, customer properties, quote edit
+- Customer edit, business settings, operational settings, customer quote accept/decline
+- All `useRefreshOnServerActionSuccess` call sites removed from portal forms
 
 Forms update local display from action result; `revalidatePath` still runs for cache coherence on next navigation.
 

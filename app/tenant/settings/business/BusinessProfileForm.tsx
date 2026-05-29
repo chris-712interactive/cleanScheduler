@@ -1,7 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
+import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
+import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
+import { SettingsSaveButton } from '../SettingsSaveButton';
 import { TENANT_TIMEZONE_OPTIONS } from '@/lib/tenant/tenantBusinessSettings';
 import type { TenantBusinessSnapshot } from '@/lib/tenant/tenantBusinessSettings';
 import { updateBusinessProfileAction, type BusinessSettingsActionState } from './businessActions';
@@ -11,18 +13,32 @@ const initial: BusinessSettingsActionState = {};
 
 export function BusinessProfileForm({
   tenantSlug,
-  snapshot,
+  snapshot: initialSnapshot,
   readOnly,
 }: {
   tenantSlug: string;
   snapshot: TenantBusinessSnapshot;
   readOnly?: boolean;
 }) {
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [state, formAction, pending] = useActionState(updateBusinessProfileAction, initial);
-  useRefreshOnServerActionSuccess(state.success);
+
+  useEffect(() => {
+    setSnapshot(initialSnapshot);
+  }, [initialSnapshot]);
+
+  const onBusinessPatch = useCallback((patch: Partial<TenantBusinessSnapshot>) => {
+    setSnapshot((current) => ({ ...current, ...patch }));
+  }, []);
+
+  useServerActionSnapshot(state.success, state.businessPatch, onBusinessPatch);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    submitServerActionForm(event, formAction);
+  };
 
   return (
-    <form action={formAction} className={styles.settingsForm}>
+    <form onSubmit={handleSubmit} className={styles.settingsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       {state.error ? (
         <p className={styles.formError} role="alert">
@@ -90,11 +106,7 @@ export function BusinessProfileForm({
       </select>
       <p className={styles.fieldHint}>This timezone is used for scheduling, jobs, and reports.</p>
 
-      {!readOnly ? (
-        <button type="submit" className={styles.saveButton} disabled={pending}>
-          {pending ? 'Saving…' : 'Save changes'}
-        </button>
-      ) : null}
+      {!readOnly ? <SettingsSaveButton pending={pending} /> : null}
     </form>
   );
 }

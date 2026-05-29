@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
@@ -9,16 +8,13 @@ import {
   parseTenantTimezone,
   parseWorkTimeFromForm,
   parseWorkWeekDaysFromForm,
+  type TenantBusinessSnapshot,
 } from '@/lib/tenant/tenantBusinessSettings';
 
 export interface BusinessSettingsActionState {
   error?: string;
   success?: string;
-}
-
-function revalidateBusinessSettings() {
-  revalidatePath('/tenant/settings/business', 'page');
-  revalidatePath('/tenant/settings', 'page');
+  businessPatch?: Partial<TenantBusinessSnapshot>;
 }
 
 async function requireBusinessSettingsAccess(slug: string) {
@@ -62,8 +58,15 @@ export async function updateBusinessProfileAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
-    return { success: 'Business profile saved.' };
+    return {
+      success: 'Business profile saved.',
+      businessPatch: {
+        name,
+        businessEmail,
+        businessPhone,
+        timezone,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save business profile.' };
   }
@@ -106,8 +109,14 @@ export async function updateWorkWeekAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
-    return { success: 'Work week saved.' };
+    return {
+      success: 'Work week saved.',
+      businessPatch: {
+        workWeekDays,
+        workDayStart,
+        workDayEnd,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save work week.' };
   }
@@ -139,8 +148,10 @@ export async function updateBrandingAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
-    return { success: 'Branding saved.' };
+    return {
+      success: 'Branding saved.',
+      businessPatch: { brandColor },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save branding.' };
   }
@@ -199,8 +210,10 @@ export async function uploadTenantLogoAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
-    return { success: 'Logo uploaded.' };
+    return {
+      success: 'Logo uploaded.',
+      businessPatch: { logoUrl: pub.publicUrl },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not upload logo.' };
   }
@@ -237,8 +250,16 @@ export async function updateBusinessAddressAction(
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
-    revalidateBusinessSettings();
-    return { success: 'Business address saved.' };
+    return {
+      success: 'Business address saved.',
+      businessPatch: {
+        addressLine1,
+        city,
+        state,
+        postalCode,
+        country,
+      },
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save business address.' };
   }

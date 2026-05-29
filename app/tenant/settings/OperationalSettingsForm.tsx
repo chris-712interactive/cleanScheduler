@@ -1,7 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useRefreshOnServerActionSuccess } from '@/lib/hooks/useRefreshOnServerActionSuccess';
+import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
+import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
+import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
+import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
 import {
   ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL,
   CUSTOMER_PAYMENT_METHOD_LABEL,
@@ -9,8 +11,6 @@ import {
   INVOICE_EXPECTATION_LABEL,
   type AcceptedQuoteScheduleMode,
   type TenantInvoiceExpectation,
-  type TenantPaymentMethod,
-  type MessagingChannel,
   MESSAGING_CHANNEL_LABEL,
 } from '@/lib/tenant/operationalSettings';
 import { updateTenantOperationalSettings } from './actions';
@@ -19,7 +19,7 @@ import styles from './settings.module.scss';
 
 export function OperationalSettingsForm({
   tenantSlug,
-  snapshot,
+  snapshot: initialSnapshot,
   readOnly = false,
   smsEditable = false,
   smsTrialLocked = false,
@@ -28,23 +28,7 @@ export function OperationalSettingsForm({
   invoiceReminderSmsEditable = false,
 }: {
   tenantSlug: string;
-  snapshot: {
-    accepted_quote_schedule_mode: AcceptedQuoteScheduleMode;
-    invoice_expectation: TenantInvoiceExpectation;
-    allowed_customer_payment_methods: TenantPaymentMethod[];
-    email_notify_quote_sent: boolean;
-    email_notify_quote_accepted: boolean;
-    email_notify_quote_declined: boolean;
-    sms_notify_quote_sent: boolean;
-    sms_notify_quote_accepted: boolean;
-    sms_notify_quote_declined: boolean;
-    sms_notify_visit_reminder: boolean;
-    email_notify_invoice_overdue: boolean;
-    sms_notify_invoice_overdue: boolean;
-    check_reminder_hold_days: number;
-    check_hold_through_deposit: boolean;
-    messaging_channels: MessagingChannel[];
-  };
+  snapshot: OperationalSettingsFormSnapshot;
   readOnly?: boolean;
   smsEditable?: boolean;
   smsTrialLocked?: boolean;
@@ -52,17 +36,30 @@ export function OperationalSettingsForm({
   invoiceReminderEmailEditable?: boolean;
   invoiceReminderSmsEditable?: boolean;
 }) {
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
   const messagingChannels = new Set(snapshot.messaging_channels);
+
+  useEffect(() => {
+    setSnapshot(initialSnapshot);
+  }, [initialSnapshot]);
+
+  const onSettingsSnapshot = useCallback((next: OperationalSettingsFormSnapshot) => {
+    setSnapshot(next);
+  }, []);
 
   const [state, formAction, pending] = useActionState(
     updateTenantOperationalSettings,
     operationalSettingsFormInitial,
   );
-  useRefreshOnServerActionSuccess(state.success);
+  useServerActionSnapshot(state.success, state.settingsSnapshot, onSettingsSnapshot);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    submitServerActionForm(event, formAction);
+  };
 
   return (
-    <form action={formAction} className={styles.opsForm}>
+    <form onSubmit={handleSubmit} className={styles.opsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       {state.error ? (
         <p className={styles.opsError} role="alert">
@@ -313,7 +310,13 @@ export function OperationalSettingsForm({
       </fieldset>
 
       {!readOnly ? (
-        <button type="submit" className={styles.opsSubmit} disabled={pending}>
+        <button
+          type="submit"
+          className={styles.opsSubmit}
+          disabled={pending}
+          data-saving={pending || undefined}
+          aria-busy={pending || undefined}
+        >
           {pending ? 'Saving…' : 'Save workflow & payment options'}
         </button>
       ) : null}
