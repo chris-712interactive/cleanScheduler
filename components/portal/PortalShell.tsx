@@ -18,14 +18,23 @@ import type { IdentityChipModel, NavItem } from './types';
 import styles from './PortalShell.module.scss';
 
 export interface PortalShellProps {
-  navItems: NavItem[];
+  /** Static nav items (admin portal). Omit when using sidebarNav. */
+  navItems?: NavItem[];
+  /** Streamed sidebar nav (tenant/customer portals). */
+  sidebarNav?: ReactNode;
+  /** Streamed mobile drawer nav; defaults to sidebarNav when omitted. */
+  mobileNav?: ReactNode;
   bottomNavItems?: NavItem[];
   brandLabel: string;
   brandLogoUrl?: string | null;
   /** When true, hide the cleanScheduler mark and show tenant logo or label only. */
   hidePlatformLogo?: boolean;
   brandHref?: string;
+  /** Replaces default brand link (e.g. streamed white-label branding). */
+  brandSlot?: ReactNode;
   identity?: IdentityChipModel;
+  /** Replaces default account menu (e.g. streamed customer identity). */
+  identitySlot?: ReactNode;
   /** Account menu link; omit to hide Settings in the menu. Defaults to `/settings`. */
   settingsHref?: string;
   tenantBadge?: ReactNode;
@@ -33,6 +42,8 @@ export interface PortalShellProps {
   environmentBanner?: ReactNode;
   /** Optional banner (e.g. masquerade exit) below env banner, above the top bar. */
   sessionNotice?: ReactNode;
+  /** Streamed session banners (connect/usage) below sessionNotice. */
+  deferredSessionNotice?: ReactNode;
   /** Optional center slot (e.g. tenant global search). */
   searchSlot?: ReactNode;
   children: ReactNode;
@@ -40,16 +51,21 @@ export interface PortalShellProps {
 
 export function PortalShell({
   navItems,
+  sidebarNav,
+  mobileNav,
   bottomNavItems,
   brandLabel,
   brandLogoUrl,
   hidePlatformLogo = false,
   brandHref = '/',
+  brandSlot,
   identity,
+  identitySlot,
   settingsHref = '/settings',
   tenantBadge,
   environmentBanner,
   sessionNotice,
+  deferredSessionNotice,
   searchSlot,
   children,
 }: PortalShellProps) {
@@ -70,19 +86,27 @@ export function PortalShell({
           {sessionNotice}
         </div>
       ) : null}
+      {deferredSessionNotice ? (
+        <div className={styles.sessionNotice} role="region" aria-label="Account notice">
+          {deferredSessionNotice}
+        </div>
+      ) : null}
       <TopBar
         brandLabel={brandLabel}
         brandLogoUrl={brandLogoUrl}
         hidePlatformLogo={hidePlatformLogo}
         brandHref={brandHref}
+        brandSlot={brandSlot}
         identity={identity}
+        identitySlot={identitySlot}
         settingsHref={settingsHref}
         tenantBadge={tenantBadge}
         navItems={navItems}
+        mobileNav={mobileNav ?? sidebarNav}
         searchSlot={searchSlot}
       />
       <div className={styles.body}>
-        <Sidebar items={navItems} />
+        {sidebarNav ? <Sidebar>{sidebarNav}</Sidebar> : <Sidebar items={navItems} />}
         <main id="main" className={styles.main}>
           {children}
         </main>

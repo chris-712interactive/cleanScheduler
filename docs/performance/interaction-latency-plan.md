@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Phase 0 shipped (measurement); Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3 complete (3.1–3.3c + follow-ups)
+**Status:** Phase 0 shipped (measurement); Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3 complete (3.1–3.3c + follow-ups); Phase 4 shipped (layout split + Suspense streaming)
 
 ---
 
@@ -451,16 +451,18 @@ Forms update local display from action result; business settings actions omit `r
 
 ---
 
-### Phase 4 — Structural layout split (long-term)
+### Phase 4 — Structural layout split (long-term) ✅
 
 **Goal:** Static portal chrome + dynamic slots.
 
-| Approach               | Detail                                                                                                                              |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Split layout           | Static `PortalShell` frame; dynamic `<NavBadges />`, `<SessionBanners />` as separate async server components wrapped in `Suspense` |
-| Reduce `force-dynamic` | Layout shell can be dynamic; badge/banner slots stream in                                                                           |
-| PPR / streaming        | When Next.js PPR is stable for auth-gated apps, evaluate for marketing + public pages first                                         |
-| White-label cache      | Edge cache for `host → tenant` mapping (short TTL)                                                                                  |
+| Approach               | Detail                                                                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Split layout           | Static `PortalShell` frame; dynamic nav badges, session banners, customer branding/identity as async server components in `Suspense` |
+| Reduce `force-dynamic` | Layouts remain auth-gated; deferred slots stream without blocking `{children}` / route `loading.tsx`                                 |
+| PPR / streaming        | When Next.js PPR is stable for auth-gated apps, evaluate for marketing + public pages first                                          |
+| White-label cache      | `unstable_cache` (300s) for `host → tenant` mapping in `resolveActiveWhiteLabelCustomerPortal`; `revalidateTag` on domain changes    |
+
+**Implementation:** `components/portal/portalNav/*`, `lib/tenant/loadTenantNavItems.ts`, `lib/customer/loadCustomerNavItems.ts`, `PortalShell` nav/brand/identity slots.
 
 ---
 

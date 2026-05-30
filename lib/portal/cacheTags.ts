@@ -20,3 +20,11 @@ export function customerIdsCacheKey(customerIds: string[]): string {
   if (customerIds.length === 0) return '';
   return [...customerIds].sort().join(',');
 }
+
+export function whiteLabelHostTag(hostname: string): string {
+  return `white-label-host:${hostname}`;
+}
+
+export function whiteLabelTenantTag(tenantId: string): string {
+  return `white-label-tenant:${tenantId}`;
+}

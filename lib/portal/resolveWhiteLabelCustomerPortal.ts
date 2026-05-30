@@ -1,7 +1,9 @@
+import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHostname';
+import { whiteLabelHostTag } from '@/lib/portal/cacheTags';
 
 export interface ActiveWhiteLabelCustomerPortal {
   tenantId: string;
@@ -9,8 +11,7 @@ export interface ActiveWhiteLabelCustomerPortal {
   hostname: string;
 }
 
-/** Resolves an active white-label customer portal host to its tenant (service role). */
-export async function resolveActiveWhiteLabelCustomerPortal(
+async function resolveActiveWhiteLabelCustomerPortalUncached(
   rawHost: string,
 ): Promise<ActiveWhiteLabelCustomerPortal | null> {
   const hostname = normalizeCustomerPortalHostname(rawHost);
@@ -48,4 +49,18 @@ export async function resolveActiveWhiteLabelCustomerPortal(
     tenantSlug: tenant.slug,
     hostname: row.hostname,
   };
+}
+
+/** Resolves an active white-label customer portal host to its tenant (service role). */
+export async function resolveActiveWhiteLabelCustomerPortal(
+  rawHost: string,
+): Promise<ActiveWhiteLabelCustomerPortal | null> {
+  const hostname = normalizeCustomerPortalHostname(rawHost);
+  if (!hostname) return null;
+
+  return unstable_cache(
+    () => resolveActiveWhiteLabelCustomerPortalUncached(rawHost),
+    ['white-label-customer-portal', hostname],
+    { revalidate: 300, tags: [whiteLabelHostTag(hostname)] },
+  )();
 }

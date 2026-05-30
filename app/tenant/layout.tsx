@@ -1,7 +1,6 @@
+import { Suspense, type ReactNode } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
-import { UsageUtilizationBanner } from '@/components/billing/UsageUtilizationBanner';
-import { ConnectStatusBanner } from '@/components/billing/ConnectStatusBanner';
 import { TrialSubscriptionBanner } from '@/components/billing/TrialSubscriptionBanner';
 import { WorkspacePausedBanner } from '@/components/billing/WorkspacePausedBanner';
 import {
@@ -14,35 +13,24 @@ import { getPortalContext } from '@/lib/portal';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { IdentityChipModel } from '@/components/portal/types';
 import { getAuthContext } from '@/lib/auth/session';
-import {
-  getCachedOwnerOnboardingNavContext,
-  getCachedPendingRescheduleCount,
-  getCachedTenantUsageUtilizationAlert,
-} from '@/lib/portal/cachedNavChrome';
-import {
-  getTenantBillingSnapshot,
-  getTenantEntitlementPlan,
-  getTenantPortalMembership,
-} from '@/lib/portal/requestContext';
-import { buildTenantBillingNavItem } from '@/lib/tenant/buildTenantBillingNav';
-import { buildTenantSettingsNavItem } from '@/lib/tenant/buildTenantSettingsNav';
-import { buildTenantBottomNavItems, buildTenantNavItems } from '@/lib/tenant/buildTenantNavItems';
+import { getTenantBillingSnapshot, getTenantPortalMembership } from '@/lib/portal/requestContext';
+import { buildTenantBottomNavItems } from '@/lib/tenant/buildTenantNavItems';
 import {
   fieldEmployeeHomePath,
   identitySubtitleForRole,
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
-import { isFeatureEnabled } from '@/lib/billing/entitlements';
 import { expireStaleMasqueradeIfNeeded } from '@/lib/admin/expireStaleMasquerade';
 import { RouteContentShell } from '@/components/portal/RouteContentShell';
 import { WebVitalsReporter } from '@/components/performance/WebVitalsReporter';
 import { debugPerfStart } from '@/lib/performance/debugPerf';
-import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 import nextDynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
-import type { TenantStripeConnectStatus } from '@/components/billing/ConnectStatusBanner';
+import { PortalNavSkeleton } from '@/components/portal/portalNav/PortalNavSkeleton';
+import { TenantNavList } from '@/components/portal/portalNav/TenantNavList';
+import { TenantDeferredSessionNotices } from '@/components/portal/portalNav/TenantDeferredSessionNotices';
 
 const GlobalSearchLazy = nextDynamic(
   () => import('@/components/portal/GlobalSearch').then((m) => ({ default: m.GlobalSearch })),
@@ -56,6 +44,9 @@ export const dynamic = 'force-dynamic';
 /**
  * Sidebar order matches product build priority for net-new tenant work (after
  * Dashboard): quotes → customers → schedule (`lib/tenant/portalBuildOrder.ts`).
+ *
+ * Phase 4: shell paints with membership + billing; nav badges and deferred
+ * banners stream in via Suspense without blocking page content.
  */
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
@@ -112,40 +103,13 @@ export default async function TenantLayout({ children }: { children: React.React
       avatarUrl: identityAvatar,
     };
 
-    const connectStatus = (billingSnapshot.connectStatus ??
-      'not_started') as TenantStripeConnectStatus;
-
-    const pendingRescheduleCount = await getCachedPendingRescheduleCount(membership.tenantId);
-
     const subscriptionLocked = needsSubscriptionPurchase(subscriptionAccess);
-    const planTier = await getTenantEntitlementPlan(membership.tenantId);
-    const campaignsNavEnabled = isFeatureEnabled(planTier, 'campaigns');
-    const usageUtilizationAlert =
-      !subscriptionLocked && !isFieldEmployeeRole(membership.role)
-        ? await getCachedTenantUsageUtilizationAlert(membership.tenantId)
-        : null;
-
-    const { gettingStartedNavItem, coreSetupComplete } = subscriptionLocked
-      ? { gettingStartedNavItem: null, coreSetupComplete: true }
-      : await getCachedOwnerOnboardingNavContext({
-          tenantId: membership.tenantId,
-          tenantSlug: slug,
-          role: membership.role,
-          connectStatus,
-        });
-
-    const billingNavItem = buildTenantBillingNavItem();
-    const settingsNavItem = buildTenantSettingsNavItem();
-
-    const navItems = buildTenantNavItems({
+    const navShellParams = {
+      tenantId: membership.tenantId,
+      tenantSlug: slug,
       role: membership.role,
-      subscriptionLocked,
-      billingNavItem,
-      settingsNavItem,
-      campaignsNavEnabled,
-      pendingRescheduleCount,
-      gettingStartedNavItem,
-    });
+      billingSnapshot,
+    };
 
     const bottomNavItems = buildTenantBottomNavItems({
       role: membership.role,
@@ -176,18 +140,9 @@ export default async function TenantLayout({ children }: { children: React.React
         />,
       );
     }
-    if (
-      !subscriptionLocked &&
-      coreSetupComplete &&
-      connectStatus !== 'complete' &&
-      !isFieldEmployeeRole(membership.role)
-    ) {
-      sessionNotices.push(<ConnectStatusBanner key="connect" status={connectStatus} />);
-    }
-    if (usageUtilizationAlert) {
-      sessionNotices.push(<UsageUtilizationBanner key="usage" alert={usageUtilizationAlert} />);
-    }
     const sessionNotice = sessionNotices.length > 0 ? <>{sessionNotices}</> : null;
+
+    const navSuspenseFallback = <PortalNavSkeleton rows={subscriptionLocked ? 2 : 10} />;
 
     return (
       <>
@@ -195,11 +150,33 @@ export default async function TenantLayout({ children }: { children: React.React
         <PortalShell
           brandLabel={slug}
           brandHref={brandHref}
-          navItems={navItems}
+          sidebarNav={
+            <Suspense fallback={navSuspenseFallback}>
+              <TenantNavList {...navShellParams} />
+            </Suspense>
+          }
+          mobileNav={
+            <Suspense fallback={navSuspenseFallback}>
+              <TenantNavList {...navShellParams} />
+            </Suspense>
+          }
           identity={identity}
           tenantBadge={<span>{slug}.cleanscheduler.com</span>}
           environmentBanner={nonProdBanner}
           sessionNotice={sessionNotice}
+          deferredSessionNotice={
+            !subscriptionLocked && !isFieldEmployeeRole(membership.role) ? (
+              <Suspense fallback={null}>
+                <TenantDeferredSessionNotices
+                  tenantId={membership.tenantId}
+                  tenantSlug={slug}
+                  role={membership.role}
+                  connectStatus={billingSnapshot.connectStatus}
+                  subscriptionAccess={subscriptionAccess}
+                />
+              </Suspense>
+            ) : null
+          }
           searchSlot={showGlobalSearch ? <GlobalSearchLazy /> : undefined}
           bottomNavItems={bottomNavItems}
         >
