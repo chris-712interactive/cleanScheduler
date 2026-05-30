@@ -67,24 +67,24 @@ Fill in after exercising each flow on **staging** (or local with production-like
 
 | Flow                  | Run 1 (ms) | Run 2 (ms) | Run 3 (ms) | Notes |
 | --------------------- | ---------- | ---------- | ---------- | ----- |
-| quotes_board_drag     |            |            |            |       |
+| quotes_board_drag     | 3345.8     |            |            |       |
 | customer_create       |            |            |            |       |
-| visit_complete        |            |            |            |       |
-| nav_schedule          |            |            |            |       |
+| visit_complete        | 2309.7     |            |            |       |
+| nav_schedule          | 1404.29    |            |            |       |
 | customer_quote_accept |            |            |            |       |
 
 | Web Vital | Tenant /quotes | Tenant /schedule | Customer /quotes |
 | --------- | -------------- | ---------------- | ---------------- |
 | INP (p75) |                |                  |                  |
-| TTFB      |                |                  |                  |
-| LCP       |                |                  |                  |
+| TTFB      | 63 / "good"    | 67.199 / "good"  |                  |
+| LCP       | 2040 / "good"  | 1312 / "good"    |                  |
 
 ## Exit criteria
 
-- [ ] All five flows exercised; `interaction_end` durations captured
-- [ ] Web Vitals logged on tenant + customer shell
-- [ ] Server timing captured with `DEBUG_PERF=1` for at least one nav
-- [ ] Worksheet filled in (or linked from release notes)
+- All five flows exercised; `interaction_end` durations captured
+- Web Vitals logged on tenant + customer shell
+- Server timing captured with `DEBUG_PERF=1` for at least one nav
+- Worksheet filled in (or linked from release notes)
 
 ## Implementation reference
 
