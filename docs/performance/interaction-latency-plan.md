@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3 complete (3.1–3.3c + follow-ups)
+**Status:** Phase 0 shipped (measurement); Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3 complete (3.1–3.3c + follow-ups)
 
 ---
 
@@ -273,18 +273,18 @@ flowchart LR
 
 ## Implementation plan
 
-### Phase 0 — Measure (3–5 days)
+### Phase 0 — Measure ✅
 
-Establish baselines before changing behavior.
+Establish baselines before changing behavior. See [phase-0-baselines.md](./phase-0-baselines.md).
 
-| Task                     | Detail                                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------------------ |
-| Add Web Vitals reporting | `instrumentation.ts` or Vercel Speed Insights; track LCP, INP on tenant/customer           |
-| Server timing logs       | Optional `console.time` behind `DEBUG_PERF=1` in layout + middleware for dev               |
-| Document targets         | Nav click p95 < 1s TTFB; action feedback < 100ms perceived                                 |
-| Pick 5 critical flows    | Quotes board drag, customer create, visit complete, nav to schedule, customer quote accept |
+| Task                     | Detail                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| Add Web Vitals reporting | `WebVitalsReporter` on tenant + customer layouts; logs INP, LCP, CLS, FCP, TTFB |
+| Server timing logs       | `DEBUG_PERF=1` → `tenant.layout`, `customer.layout`, `proxy.request`            |
+| Interaction flow marks   | Five critical flows emit `[portal-perf]` interaction_start/end with durationMs  |
+| Document targets         | Nav click p95 < 1s TTFB; action feedback < 100ms perceived                      |
 
-**Exit criteria:** Baseline numbers recorded for the 5 flows in dev/staging.
+**Exit criteria:** Baseline numbers recorded for the 5 flows in dev/staging (worksheet in phase-0-baselines.md).
 
 ---
 

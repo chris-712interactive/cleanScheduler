@@ -45,6 +45,7 @@ import {
 } from '@/lib/tenant/fieldEmployeeAccess';
 import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
 import { resolveActiveWhiteLabelCustomerPortal } from '@/lib/portal/resolveWhiteLabelCustomerPortal';
+import { debugPerfStart } from '@/lib/performance/debugPerf';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
 
@@ -173,128 +174,135 @@ async function resolveUser(request: NextRequest): Promise<{
 }
 
 export async function proxy(request: NextRequest) {
-  const host = request.headers.get('host') ?? '';
-  const apex = getApexHost();
-  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
-  const isOurApexHost = isPlatformApexHost(host, apex);
-  const whiteLabelPortal = !isOurApexHost
-    ? await resolveActiveWhiteLabelCustomerPortal(hostWithoutPort)
-    : null;
+  const endProxy = debugPerfStart('proxy.request', request.nextUrl.pathname);
 
-  const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
-  const requestedPath = request.nextUrl.pathname;
-  const isPublicMarketingPath =
-    PUBLIC_MARKETING_PATHS.has(requestedPath) ||
-    (requestedPath === '/contact' && subdomain === null && !whiteLabelPortal);
-  const isPublicCustomerInvite =
-    (subdomain === 'my' || whiteLabelPortal) &&
-    (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
+  try {
+    const host = request.headers.get('host') ?? '';
+    const apex = getApexHost();
+    const hostWithoutPort = host.split(':')[0]!.toLowerCase();
+    const isOurApexHost = isPlatformApexHost(host, apex);
+    const whiteLabelPortal = !isOurApexHost
+      ? await resolveActiveWhiteLabelCustomerPortal(hostWithoutPort)
+      : null;
 
-  const baseClassification = whiteLabelPortal
-    ? { kind: 'customer' as const, tenantSlug: whiteLabelPortal.tenantSlug }
-    : classify(subdomain);
-  const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
-  // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.
-  const tenantSlug =
-    isPublicMarketingPath && requestedPath !== '/access-denied'
-      ? undefined
-      : baseClassification.tenantSlug;
+    const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
+    const requestedPath = request.nextUrl.pathname;
+    const isPublicMarketingPath =
+      PUBLIC_MARKETING_PATHS.has(requestedPath) ||
+      (requestedPath === '/contact' && subdomain === null && !whiteLabelPortal);
+    const isPublicCustomerInvite =
+      (subdomain === 'my' || whiteLabelPortal) &&
+      (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-portal', kind);
-  if (tenantSlug) {
-    requestHeaders.set('x-tenant-slug', tenantSlug);
-  }
-  if (whiteLabelPortal) {
-    requestHeaders.set('x-white-label-customer-portal', '1');
-    requestHeaders.set('x-white-label-hostname', whiteLabelPortal.hostname);
-  }
+    const baseClassification = whiteLabelPortal
+      ? { kind: 'customer' as const, tenantSlug: whiteLabelPortal.tenantSlug }
+      : classify(subdomain);
+    const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
+    // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.
+    const tenantSlug =
+      isPublicMarketingPath && requestedPath !== '/access-denied'
+        ? undefined
+        : baseClassification.tenantSlug;
 
-  // Build the rewritten URL. Avoid double-prefixing if the request is already
-  // hitting an internal portal path (e.g. when Next.js itself recursively
-  // calls the proxy for an asset chunk that lives under the rewritten
-  // path).
-  const url = request.nextUrl.clone();
-  const prefix = PORTAL_PATH_PREFIX[kind];
-  const alreadyPrefixed = url.pathname === prefix || url.pathname.startsWith(`${prefix}/`);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-portal', kind);
+    if (tenantSlug) {
+      requestHeaders.set('x-tenant-slug', tenantSlug);
+    }
+    if (whiteLabelPortal) {
+      requestHeaders.set('x-white-label-customer-portal', '1');
+      requestHeaders.set('x-white-label-hostname', whiteLabelPortal.hostname);
+    }
 
-  if (!alreadyPrefixed) {
-    url.pathname = url.pathname === '/' ? prefix : `${prefix}${url.pathname}`;
-  }
+    // Build the rewritten URL. Avoid double-prefixing if the request is already
+    // hitting an internal portal path (e.g. when Next.js itself recursively
+    // calls the proxy for an asset chunk that lives under the rewritten
+    // path).
+    const url = request.nextUrl.clone();
+    const prefix = PORTAL_PATH_PREFIX[kind];
+    const alreadyPrefixed = url.pathname === prefix || url.pathname.startsWith(`${prefix}/`);
 
-  // Post-rewrite path (e.g. /tenant/billing) for server-side billing gate / layout decisions.
-  requestHeaders.set('x-internal-pathname', url.pathname);
-  // Browser-visible path on tenant host (e.g. /quotes) — used for subscription gating.
-  requestHeaders.set('x-tenant-pathname', requestedPath);
+    if (!alreadyPrefixed) {
+      url.pathname = url.pathname === '/' ? prefix : `${prefix}${url.pathname}`;
+    }
 
-  const { userId, cookiesToSet } = await resolveUser(request);
-  const isProtectedPortal = kind !== 'marketing' && !isPublicCustomerInvite;
+    // Post-rewrite path (e.g. /tenant/billing) for server-side billing gate / layout decisions.
+    requestHeaders.set('x-internal-pathname', url.pathname);
+    // Browser-visible path on tenant host (e.g. /quotes) — used for subscription gating.
+    requestHeaders.set('x-tenant-pathname', requestedPath);
 
-  let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
-  let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> = null;
+    const { userId, cookiesToSet } = await resolveUser(request);
+    const isProtectedPortal = kind !== 'marketing' && !isPublicCustomerInvite;
 
-  if (kind === 'tenant' && userId && tenantSlug) {
-    [tenantMembership, tenantSubscription] = await Promise.all([
-      resolveTenantMembershipForSlug(userId, tenantSlug),
-      resolveTenantSubscriptionAccessForSlug(tenantSlug),
-    ]);
-  }
+    let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
+    let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> =
+      null;
 
-  const subscriptionLocked =
-    tenantSubscription != null && isTenantPortalSuspended(tenantSubscription.access);
+    if (kind === 'tenant' && userId && tenantSlug) {
+      [tenantMembership, tenantSubscription] = await Promise.all([
+        resolveTenantMembershipForSlug(userId, tenantSlug),
+        resolveTenantSubscriptionAccessForSlug(tenantSlug),
+      ]);
+    }
 
-  // Hard redirect field employees away from `/` before RSC layout runs (avoids blank first paint after login).
-  if (
-    kind === 'tenant' &&
-    tenantMembership &&
-    isFieldEmployeeRole(tenantMembership.role) &&
-    (requestedPath === '/' || requestedPath === '')
-  ) {
-    const landing = fieldEmployeeLandingPath(subscriptionLocked);
-    const landingUrl = new URL(landing, request.url);
-    const redirect = NextResponse.redirect(landingUrl);
-    applyCookies(redirect, cookiesToSet);
-    return redirect;
-  }
+    const subscriptionLocked =
+      tenantSubscription != null && isTenantPortalSuspended(tenantSubscription.access);
 
-  if (isProtectedPortal && !userId) {
-    const nextPath = request.nextUrl.pathname + request.nextUrl.search;
-    const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
-    const redirect = NextResponse.redirect(redirectUrl);
-    applyCookies(redirect, cookiesToSet);
-    return redirect;
-  }
+    // Hard redirect field employees away from `/` before RSC layout runs (avoids blank first paint after login).
+    if (
+      kind === 'tenant' &&
+      tenantMembership &&
+      isFieldEmployeeRole(tenantMembership.role) &&
+      (requestedPath === '/' || requestedPath === '')
+    ) {
+      const landing = fieldEmployeeLandingPath(subscriptionLocked);
+      const landingUrl = new URL(landing, request.url);
+      const redirect = NextResponse.redirect(landingUrl);
+      applyCookies(redirect, cookiesToSet);
+      return redirect;
+    }
 
-  if (
-    kind === 'tenant' &&
-    userId &&
-    tenantSlug &&
-    !isTenantSuspendedEscapePath(null, requestedPath)
-  ) {
-    if (subscriptionLocked) {
-      const fieldEmployeeOnAllowedPath =
-        tenantMembership &&
-        isFieldEmployeeRole(tenantMembership.role) &&
-        fieldEmployeeCanAccessBrowserPath(requestedPath);
+    if (isProtectedPortal && !userId) {
+      const nextPath = request.nextUrl.pathname + request.nextUrl.search;
+      const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
+      const redirect = NextResponse.redirect(redirectUrl);
+      applyCookies(redirect, cookiesToSet);
+      return redirect;
+    }
 
-      if (!fieldEmployeeOnAllowedPath) {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = '/billing';
-        redirectUrl.searchParams.set('subscribe', 'required');
-        const redirect = NextResponse.redirect(redirectUrl);
-        applyCookies(redirect, cookiesToSet);
-        return redirect;
+    if (
+      kind === 'tenant' &&
+      userId &&
+      tenantSlug &&
+      !isTenantSuspendedEscapePath(null, requestedPath)
+    ) {
+      if (subscriptionLocked) {
+        const fieldEmployeeOnAllowedPath =
+          tenantMembership &&
+          isFieldEmployeeRole(tenantMembership.role) &&
+          fieldEmployeeCanAccessBrowserPath(requestedPath);
+
+        if (!fieldEmployeeOnAllowedPath) {
+          const redirectUrl = request.nextUrl.clone();
+          redirectUrl.pathname = '/billing';
+          redirectUrl.searchParams.set('subscribe', 'required');
+          const redirect = NextResponse.redirect(redirectUrl);
+          applyCookies(redirect, cookiesToSet);
+          return redirect;
+        }
       }
     }
-  }
 
-  const rewrite = NextResponse.rewrite(url, {
-    request: {
-      headers: requestHeaders,
-    },
-  });
-  applyCookies(rewrite, cookiesToSet);
-  return rewrite;
+    const rewrite = NextResponse.rewrite(url, {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+    applyCookies(rewrite, cookiesToSet);
+    return rewrite;
+  } finally {
+    endProxy();
+  }
 }
 
 export const config = {

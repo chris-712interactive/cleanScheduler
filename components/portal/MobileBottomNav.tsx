@@ -10,6 +10,11 @@ import { usePathname } from 'next/navigation';
 import { isNavItemActive } from './navActive';
 import { markPortalNavPending } from './portalNavPending';
 import { useClearPortalNavPendingOnNavigate } from './useClearPortalNavPendingOnNavigate';
+import { isScheduleNavHref } from '@/lib/performance/portalInteractionFlows';
+import {
+  PORTAL_INTERACTION_FLOWS,
+  startPortalInteraction,
+} from '@/lib/performance/portalInteractionPerf';
 import type { NavItem } from './types';
 import { navIcons } from './navIcons';
 import styles from './MobileBottomNav.module.scss';
@@ -37,6 +42,11 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
             onClick={() => {
               if (!active) {
                 markPortalNavPending();
+              }
+              if (isScheduleNavHref(item.href)) {
+                startPortalInteraction(PORTAL_INTERACTION_FLOWS.navSchedule, {
+                  href: item.href,
+                });
               }
             }}
           >

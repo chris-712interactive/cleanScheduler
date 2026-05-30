@@ -1,7 +1,12 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { UpgradeOrAddOnModal } from '@/components/billing/UpgradeOrAddOnModal';
+import {
+  PORTAL_INTERACTION_FLOWS,
+  endPortalInteraction,
+  startPortalInteraction,
+} from '@/lib/performance/portalInteractionPerf';
 import { CUSTOMER_PREFERRED_BILLING_OPTIONS } from '@/lib/tenant/customerBillingPreference';
 import { createTenantCustomer, type CustomerFormState } from './actions';
 import styles from './customers.module.scss';
@@ -11,6 +16,22 @@ const initial: CustomerFormState = {};
 export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
   const [state, formAction, pending] = useActionState(createTenantCustomer, initial);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const interactionStarted = useRef(false);
+
+  useEffect(() => {
+    if (pending && !interactionStarted.current) {
+      startPortalInteraction(PORTAL_INTERACTION_FLOWS.customerCreate);
+      interactionStarted.current = true;
+    }
+
+    if (!pending && interactionStarted.current) {
+      endPortalInteraction(PORTAL_INTERACTION_FLOWS.customerCreate, {
+        success: !state.error,
+        limitExceeded: Boolean(state.limitExceeded),
+      });
+      interactionStarted.current = false;
+    }
+  }, [pending, state.error, state.limitExceeded]);
 
   useEffect(() => {
     if (state.limitExceeded) {
