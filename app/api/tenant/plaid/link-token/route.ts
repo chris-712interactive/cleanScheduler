@@ -14,9 +14,17 @@ import {
   isPlaidConfigured,
 } from '@/lib/plaid/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!isPlaidConfigured()) {
     return NextResponse.json({ error: 'Plaid is not configured on this server.' }, { status: 501 });
+  }
+
+  const consent = new URL(request.url).searchParams.get('consent');
+  if (consent !== '1') {
+    return NextResponse.json(
+      { error: 'Bank connection consent is required (consent=1).' },
+      { status: 400 },
+    );
   }
 
   const { tenantSlug } = await getPortalContext();
