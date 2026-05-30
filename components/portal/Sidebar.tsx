@@ -9,13 +9,14 @@ import type { NavItem } from './types';
 import styles from './Sidebar.module.scss';
 
 export interface SidebarProps {
-  items: NavItem[];
+  items?: NavItem[];
+  children?: React.ReactNode;
 }
 
-export function Sidebar({ items }: SidebarProps) {
+export function Sidebar({ items, children }: SidebarProps) {
   return (
     <aside className={styles.sidebar} aria-label="Primary">
-      <NavList items={items} />
+      {children ?? (items ? <NavList items={items} /> : null)}
     </aside>
   );
 }

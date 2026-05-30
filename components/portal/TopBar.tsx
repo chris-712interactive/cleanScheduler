@@ -11,7 +11,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { AccountMenu } from './AccountMenu';
@@ -24,10 +25,16 @@ export interface TopBarProps {
   brandLogoUrl?: string | null;
   hidePlatformLogo?: boolean;
   brandHref?: string;
+  /** When set, replaces the default brand link (e.g. streamed white-label branding). */
+  brandSlot?: ReactNode;
   identity?: IdentityChipModel;
+  /** When set, replaces the default account menu (e.g. streamed customer identity). */
+  identitySlot?: ReactNode;
   settingsHref?: string;
   tenantBadge?: React.ReactNode;
-  navItems: NavItem[];
+  navItems?: NavItem[];
+  /** Streamed nav tree for the mobile drawer (preferred over navItems). */
+  mobileNav?: ReactNode;
   searchSlot?: React.ReactNode;
 }
 
@@ -36,13 +43,21 @@ export function TopBar({
   brandLogoUrl,
   hidePlatformLogo = false,
   brandHref = '/',
+  brandSlot,
   identity,
+  identitySlot,
   settingsHref,
   tenantBadge,
   navItems,
+  mobileNav,
   searchSlot,
 }: TopBarProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   return (
     <header className={styles.topBar}>
@@ -57,45 +72,48 @@ export function TopBar({
             <Dialog.Overlay className={styles.drawerOverlay} />
             <Dialog.Content className={styles.drawerContent} aria-describedby={undefined}>
               <Dialog.Title className={styles.drawerTitle}>{brandLabel}</Dialog.Title>
-              <NavList items={navItems} onNavigate={() => setMobileNavOpen(false)} />
+              {mobileNav ?? (navItems ? <NavList items={navItems} /> : null)}
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
 
-        <Link href={brandHref} className={styles.brand}>
-          {!hidePlatformLogo ? (
-            <span className={styles.brandMark}>
-              <Image
-                src="/brand/logo.svg"
-                alt=""
-                width={160}
-                height={32}
-                className={styles.brandLogo}
-                priority
-              />
-            </span>
-          ) : brandLogoUrl ? (
-            <span className={styles.brandMark}>
-              <Image
-                src={brandLogoUrl}
-                alt=""
-                width={160}
-                height={32}
-                className={styles.brandLogo}
-                priority
-                unoptimized
-              />
-            </span>
-          ) : null}
-          <span className={styles.brandLabel}>{brandLabel}</span>
-        </Link>
+        {brandSlot ?? (
+          <Link href={brandHref} className={styles.brand}>
+            {!hidePlatformLogo ? (
+              <span className={styles.brandMark}>
+                <Image
+                  src="/brand/logo.svg"
+                  alt=""
+                  width={160}
+                  height={32}
+                  className={styles.brandLogo}
+                  priority
+                />
+              </span>
+            ) : brandLogoUrl ? (
+              <span className={styles.brandMark}>
+                <Image
+                  src={brandLogoUrl}
+                  alt=""
+                  width={160}
+                  height={32}
+                  className={styles.brandLogo}
+                  priority
+                  unoptimized
+                />
+              </span>
+            ) : null}
+            <span className={styles.brandLabel}>{brandLabel}</span>
+          </Link>
+        )}
         {tenantBadge ? <div className={styles.tenantBadge}>{tenantBadge}</div> : null}
       </div>
 
       <div className={styles.right}>
         {searchSlot}
         <ThemeToggle />
-        {identity ? <AccountMenu {...identity} settingsHref={settingsHref} /> : null}
+        {identitySlot ??
+          (identity ? <AccountMenu {...identity} settingsHref={settingsHref} /> : null)}
       </div>
     </header>
   );

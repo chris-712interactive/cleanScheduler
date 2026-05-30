@@ -1,31 +1,22 @@
+import { Suspense } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
-import type { NavItem, IdentityChipModel } from '@/components/portal/types';
+import type { NavItem } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
-import { getCustomerShellIdentity } from '@/lib/customer/customerShell';
-import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import { getCachedPendingCustomerQuoteCount } from '@/lib/portal/cachedNavChrome';
-import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerPortalBranding';
 import { getPortalContext } from '@/lib/portal';
 import { headers } from 'next/headers';
 import { RouteContentShell } from '@/components/portal/RouteContentShell';
 import { WebVitalsReporter } from '@/components/performance/WebVitalsReporter';
 import { debugPerfStart } from '@/lib/performance/debugPerf';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { PortalNavSkeleton } from '@/components/portal/portalNav/PortalNavSkeleton';
+import { CustomerNavList } from '@/components/portal/portalNav/CustomerNavList';
+import { CustomerWhiteLabelBrand } from '@/components/portal/portalNav/CustomerWhiteLabelBrand';
+import { CustomerIdentityMenu } from '@/components/portal/portalNav/CustomerIdentityMenu';
 import styles from './customer-layout.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
-  { label: 'Schedule', href: '/visits', icon: 'visits' },
-  { label: 'Billing', href: '/invoices', icon: 'invoices' },
-  { label: 'Quotes', href: '/quotes', icon: 'quotes' },
-  { label: 'Messages', href: '/messages', icon: 'messages' },
-  { label: 'Settings', href: '/settings', icon: 'settings' },
-];
-
-// Customer portal opts in to a mobile bottom nav for the most common
-// destinations. The full nav stays accessible via the drawer.
 const BOTTOM_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
   { label: 'Schedule', href: '/visits', icon: 'visits' },
@@ -33,11 +24,17 @@ const BOTTOM_NAV: NavItem[] = [
   { label: 'Messages', href: '/messages', icon: 'messages' },
 ];
 
-const IDENTITY: IdentityChipModel = {
-  name: 'Customer',
-  subtitle: 'Account',
-  initials: 'CU',
-};
+function CustomerBrandFallback() {
+  return (
+    <span className={styles.brandFallback} aria-busy="true">
+      <Skeleton width={140} height={24} radius="md" />
+    </span>
+  );
+}
+
+function CustomerIdentityFallback() {
+  return <Skeleton width={36} height={36} radius="pill" />;
+}
 
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
   const h = await headers();
@@ -51,33 +48,39 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   try {
     const auth = await requirePortalAccess('customer', '/');
     const nonProdBanner = getNonProdPortalBanner();
-    const identity = await getCustomerShellIdentity(auth.user.id);
     const portal = await getPortalContext();
-    const ctx = await getCustomerPortalContext(auth.user.id);
-    const pendingQuoteCount = ctx ? await getCachedPendingCustomerQuoteCount(ctx.customerIds) : 0;
-
-    const navItems: NavItem[] = NAV_ITEMS.map((item) =>
-      item.href === '/quotes' && pendingQuoteCount > 0
-        ? { ...item, badge: pendingQuoteCount }
-        : item,
-    );
-
-    const branding =
-      portal.whiteLabelCustomerPortal && portal.tenantSlug
-        ? await getCustomerPortalBrandingForTenantSlug(portal.tenantSlug)
-        : null;
+    const whiteLabel = Boolean(portal.whiteLabelCustomerPortal && portal.tenantSlug);
 
     return (
       <>
         <WebVitalsReporter portal="customer" />
         <PortalShell
-          brandLabel={branding?.tenantName ?? 'cleanScheduler'}
-          brandLogoUrl={branding?.logoUrl}
-          hidePlatformLogo={Boolean(branding)}
+          brandLabel={whiteLabel ? (portal.tenantSlug ?? 'Portal') : 'cleanScheduler'}
+          brandSlot={
+            whiteLabel && portal.tenantSlug ? (
+              <Suspense fallback={<CustomerBrandFallback />}>
+                <CustomerWhiteLabelBrand tenantSlug={portal.tenantSlug} />
+              </Suspense>
+            ) : undefined
+          }
+          hidePlatformLogo={whiteLabel}
           brandHref="/"
-          navItems={navItems}
+          sidebarNav={
+            <Suspense fallback={<PortalNavSkeleton rows={6} />}>
+              <CustomerNavList userId={auth.user.id} />
+            </Suspense>
+          }
+          mobileNav={
+            <Suspense fallback={<PortalNavSkeleton rows={6} />}>
+              <CustomerNavList userId={auth.user.id} />
+            </Suspense>
+          }
           bottomNavItems={BOTTOM_NAV}
-          identity={identity ?? IDENTITY}
+          identitySlot={
+            <Suspense fallback={<CustomerIdentityFallback />}>
+              <CustomerIdentityMenu userId={auth.user.id} />
+            </Suspense>
+          }
           tenantBadge={
             portal.whiteLabelHostname ? (
               <span>{portal.whiteLabelHostname}</span>

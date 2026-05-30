@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { randomBytes } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -11,6 +11,7 @@ import {
 } from '@/lib/billing/whiteLabelPortalGate';
 import { customerPortalDomainUserError } from '@/lib/portal/customerPortalDomainCopy';
 import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHostname';
+import { whiteLabelHostTag } from '@/lib/portal/cacheTags';
 import { cleanupCustomerPortalDomainResources } from '@/lib/portal/customerPortalDomainActivation';
 import {
   customerPortalDomainSyncUserMessage,
@@ -36,6 +37,13 @@ type DomainRow = {
   status: string;
   verification_token: string | null;
 };
+
+function revalidateWhiteLabelHostCache(hostname: string | null | undefined): void {
+  const normalized = hostname ? normalizeCustomerPortalHostname(hostname) : null;
+  if (normalized) {
+    revalidateTag(whiteLabelHostTag(normalized), 'max');
+  }
+}
 
 async function loadDomainRow(tenantId: string): Promise<DomainRow | null> {
   const admin = createAdminClient();
@@ -187,6 +195,7 @@ export async function continueCustomerPortalDomainAction(
     });
     if (upsertResult.error) return { error: upsertResult.error };
 
+    revalidateWhiteLabelHostCache(hostname);
     revalidatePath('/tenant/settings/customer-portal', 'page');
     return {
       success: `Next, add the DNS records below for ${hostname}, then click Check connection.`,
@@ -205,6 +214,7 @@ export async function continueCustomerPortalDomainAction(
   });
   if (upsertResult.error) return { error: upsertResult.error };
 
+  revalidateWhiteLabelHostCache(hostname);
   revalidatePath('/tenant/settings/customer-portal', 'page');
   return {
     success: `Next, add the DNS records below for ${hostname}, then click Check connection.`,
@@ -296,6 +306,12 @@ export async function verifyCustomerPortalDomainAction(
   }
 
   const outcome = await syncCustomerPortalDomainVerification(admin, membership.tenantId);
+  const { data: activatedRow } = await admin
+    .from('tenant_customer_portal_domains')
+    .select('hostname')
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+  revalidateWhiteLabelHostCache(activatedRow?.hostname);
   revalidatePath('/tenant/settings/customer-portal', 'page');
   const message = customerPortalDomainSyncUserMessage(outcome);
   if (outcome.status === 'activated') {
@@ -336,6 +352,7 @@ export async function removeCustomerPortalDomainAction(
 
   if (error) return { error: error.message };
 
+  revalidateWhiteLabelHostCache(row?.hostname);
   revalidatePath('/tenant/settings/customer-portal', 'page');
   return { success: 'Custom address removed. Invite links will use the shared portal again.' };
 }
