@@ -91,7 +91,36 @@ export default function PrivacyPolicyPage() {
                 <strong>Stripe:</strong> Connect account status, charges, refunds, disputes, and
                 payouts related to your workspace.
               </li>
+              <li>
+                <strong>Plaid (optional):</strong> when a tenant admin connects a business bank
+                account for reconciliation, Plaid provides institution name, account mask, and
+                transaction history. We store Plaid access tokens server-side only (never in the
+                browser) and use them to sync deposits for invoice matching. See Section 5 and our{' '}
+                <Link href="/security/information-security-policy">
+                  Information Security Policy
+                </Link>
+                .
+              </li>
             </ul>
+
+            <h3>Bank connection data (Plaid)</h3>
+            <p>
+              If you connect a business checking account through Plaid, we receive account metadata
+              (institution, account name, last four digits) and transaction details needed to
+              identify incoming Zelle, ACH, and similar deposits. We use this data only to suggest
+              matches against open invoices in your workspace. We do not sell this data. You can
+              disconnect your bank at any time from Billing → Bank connection; we call Plaid to
+              revoke the connection and stop syncing. Plaid&apos;s handling of data you share during
+              Link is described in the{' '}
+              <a
+                href="https://plaid.com/legal/#end-user-privacy-policy"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Plaid End User Privacy Policy
+              </a>
+              .
+            </p>
 
             <h2>3. How we use information</h2>
             <p>We use information to:</p>
@@ -103,6 +132,10 @@ export default function PrivacyPolicyPage() {
                 Send transactional email and, when configured by a tenant, marketing campaigns;
               </li>
               <li>Generate reports, exports, and operational notifications;</li>
+              <li>
+                Match bank deposits to open invoices when a tenant connects an account through
+                Plaid;
+              </li>
               <li>Respond to support requests and improve the product;</li>
               <li>Comply with law and protect against fraud or abuse.</li>
             </ul>

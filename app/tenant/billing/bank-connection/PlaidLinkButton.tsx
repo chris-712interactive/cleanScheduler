@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { Button } from '@/components/ui/Button';
+import { PLAID_CONSENT_REQUIRED_ERROR } from '@/lib/plaid/plaidConsentCopy';
 import { connectBankFromPlaidAction, fetchPlaidLinkTokenAction } from './actions';
 import { finishBankConnectionAction } from './finishBankConnectionAction';
+import { PlaidPreLinkConsent } from './PlaidPreLinkConsent';
 
 interface PlaidLinkButtonProps {
   tenantSlug: string;
@@ -13,16 +15,22 @@ interface PlaidLinkButtonProps {
 }
 
 export function PlaidLinkButton({ tenantSlug, label, variant = 'primary' }: PlaidLinkButtonProps) {
+  const [consentChecked, setConsentChecked] = useState(false);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loadingToken, setLoadingToken] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchLinkToken = useCallback(async () => {
+    if (!consentChecked) {
+      setError(PLAID_CONSENT_REQUIRED_ERROR);
+      return;
+    }
+
     setLoadingToken(true);
     setError(null);
     try {
-      const result = await fetchPlaidLinkTokenAction(tenantSlug);
+      const result = await fetchPlaidLinkTokenAction(tenantSlug, { consentAcknowledged: true });
       if ('error' in result) {
         throw new Error(result.error);
       }
@@ -33,7 +41,7 @@ export function PlaidLinkButton({ tenantSlug, label, variant = 'primary' }: Plai
     } finally {
       setLoadingToken(false);
     }
-  }, [tenantSlug]);
+  }, [consentChecked, tenantSlug]);
 
   const { open, ready } = usePlaidLink({
     token: linkToken,
@@ -51,6 +59,7 @@ export function PlaidLinkButton({ tenantSlug, label, variant = 'primary' }: Plai
         formData.set('tenant_slug', tenantSlug);
         formData.set('public_token', publicToken);
         formData.set('account_json', JSON.stringify(account));
+        formData.set('plaid_consent', '1');
         if (metadata.institution) {
           formData.set('institution_json', JSON.stringify(metadata.institution));
         }
@@ -71,13 +80,15 @@ export function PlaidLinkButton({ tenantSlug, label, variant = 'primary' }: Plai
 
   return (
     <div>
+      <PlaidPreLinkConsent consentChecked={consentChecked} onConsentChange={setConsentChecked} />
       <Button
         type="button"
         variant={variant}
-        disabled={loadingToken || submitting}
+        disabled={!consentChecked || loadingToken || submitting}
         onClick={() => {
           void fetchLinkToken();
         }}
+        style={{ marginTop: 'var(--space-4)' }}
       >
         {loadingToken || submitting ? 'Opening Plaid…' : label}
       </Button>

@@ -206,10 +206,12 @@ function getServerEnv(): z.infer<typeof serverEnvSchema> {
       );
     }
     const plaidSecret = process.env.PLAID_SECRET;
-    if (plaidSecret && process.env.PLAID_ENV && process.env.PLAID_ENV !== 'production') {
-      throw new Error(
-        'NEXT_PUBLIC_APP_ENV=prod with PLAID_SECRET set requires PLAID_ENV=production.',
-      );
+    if (plaidSecret) {
+      if (!process.env.PLAID_ENV || process.env.PLAID_ENV !== 'production') {
+        throw new Error(
+          'NEXT_PUBLIC_APP_ENV=prod with PLAID_SECRET set requires PLAID_ENV=production.',
+        );
+      }
     }
   } else {
     const stripeKey = process.env.STRIPE_SECRET_KEY;
