@@ -36,6 +36,27 @@ function shouldRemovePlaidItem(link: {
   return !isManualImportLink(link);
 }
 
+/** Best-effort Plaid `/item/remove` for an active link row. */
+export async function removePlaidItemAtPlaid(accessToken: string): Promise<boolean> {
+  if (!isPlaidConfigured()) return false;
+  try {
+    const client = getPlaidClient();
+    await client.itemRemove({ access_token: accessToken });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function tryRemovePlaidLinkItem(link: {
+  plaid_access_token: string;
+  plaid_item_id: string;
+  status: Database['public']['Enums']['bank_link_status'];
+}): Promise<boolean> {
+  if (!shouldRemovePlaidItem(link)) return false;
+  return removePlaidItemAtPlaid(link.plaid_access_token);
+}
+
 /**
  * Revokes a tenant's Plaid bank link: calls Plaid /item/remove when applicable and
  * marks the local row disconnected (unless the tenant row will cascade-delete it).
@@ -64,17 +85,7 @@ export async function revokePlaidBankLink(
   }
 
   const manualImport = isManualImportLink(link);
-  let plaidItemRemoved = false;
-
-  if (shouldRemovePlaidItem(link) && isPlaidConfigured()) {
-    try {
-      const client = getPlaidClient();
-      await client.itemRemove({ access_token: link.plaid_access_token });
-      plaidItemRemoved = true;
-    } catch {
-      // Best-effort; still mark revoked locally when persisting state.
-    }
-  }
+  const plaidItemRemoved = await tryRemovePlaidLinkItem(link);
 
   if (options?.skipLocalUpdate) {
     return {

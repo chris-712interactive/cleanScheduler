@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { getPlaidClient } from '@/lib/plaid/server';
+import { tryRemovePlaidLinkItem } from '@/lib/plaid/revokePlaidBankLink';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
 
 type Admin = SupabaseClient<Database>;
@@ -25,6 +26,12 @@ export async function exchangeAndSaveBankLink(
   account: PlaidLinkAccountMetadata,
   institution: PlaidLinkInstitutionMetadata | null,
 ): Promise<void> {
+  const { data: existing } = await admin
+    .from('bank_links')
+    .select('id, plaid_access_token, plaid_item_id, status')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
   const client = getPlaidClient();
   const exchange = await client.itemPublicTokenExchange({ public_token: publicToken });
   const accessToken = exchange.data.access_token;
@@ -34,6 +41,11 @@ export async function exchangeAndSaveBankLink(
   const plaidAccount = accountsRes.data.accounts.find((row) => row.account_id === account.id);
   if (!plaidAccount) {
     throw new Error('Selected bank account was not found on the Plaid item.');
+  }
+
+  // Replace flow: new Plaid Item — revoke the previous Item before overwriting our row.
+  if (existing && existing.plaid_item_id !== itemId) {
+    await tryRemovePlaidLinkItem(existing);
   }
 
   const now = new Date().toISOString();
@@ -55,12 +67,6 @@ export async function exchangeAndSaveBankLink(
     last_sync_error: null,
     updated_at: now,
   };
-
-  const { data: existing } = await admin
-    .from('bank_links')
-    .select('id')
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
 
   if (existing?.id) {
     const { error } = await admin.from('bank_links').update(row).eq('id', existing.id);

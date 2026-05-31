@@ -10,7 +10,6 @@ export const PLAID_PRE_LINK = {
     'Connection uses bank-grade encryption. You can disconnect at any time from this page; we revoke the Plaid connection and stop syncing.',
   ],
   plaidPrivacyUrl: 'https://plaid.com/legal/#end-user-privacy-policy',
-  ourPrivacyPath: '/privacy',
   checkboxLabel:
     'I authorize cleanScheduler to access my linked account information through Plaid for bank reconciliation as described above, and I have read the Privacy Policy.',
 } as const;

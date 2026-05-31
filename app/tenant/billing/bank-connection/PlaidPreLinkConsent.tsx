@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { PLAID_PRE_LINK } from '@/lib/plaid/plaidConsentCopy';
+import { marketingPrivacyPolicyUrl } from '@/lib/portal/publicOrigin';
 import styles from './PlaidPreLinkConsent.module.scss';
 
 export interface PlaidPreLinkConsentProps {
@@ -31,7 +31,9 @@ export function PlaidPreLinkConsent({
           Plaid End User Privacy Policy
         </a>
         {' · '}
-        <Link href={PLAID_PRE_LINK.ourPrivacyPath}>cleanScheduler Privacy Policy</Link>
+        <a href={marketingPrivacyPolicyUrl()} rel="noopener noreferrer" target="_blank">
+          cleanScheduler Privacy Policy
+        </a>
       </p>
       <label className={styles.consentRow} htmlFor={id}>
         <input
