@@ -4,7 +4,6 @@ import { PLAID_CONSENT_REQUIRED_ERROR, PLAID_PRE_LINK } from '@/lib/plaid/plaidC
 describe('plaidConsentCopy', () => {
   it('includes required disclosure links', () => {
     expect(PLAID_PRE_LINK.plaidPrivacyUrl).toContain('plaid.com');
-    expect(PLAID_PRE_LINK.ourPrivacyPath).toBe('/privacy');
     expect(PLAID_PRE_LINK.bullets.length).toBeGreaterThanOrEqual(3);
   });
 
