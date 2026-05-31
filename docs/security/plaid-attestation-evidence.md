@@ -104,12 +104,13 @@ Use this checklist when completing attestations in the Plaid Security Portal.
 
 Plaid Link: tenant portal `/billing/bank-connection` (owner/admin only).
 
-| Evidence                 | Location                                                                                            |
-| ------------------------ | --------------------------------------------------------------------------------------------------- |
-| TOTP enrollment UI       | [`app/tenant/settings/account/page.tsx`](../app/tenant/settings/account/page.tsx)                   |
-| Sign-in MFA challenge    | [`app/marketing/sign-in/mfa/page.tsx`](../app/marketing/sign-in/mfa/page.tsx)                       |
-| Plaid action enforcement | [`app/tenant/billing/bank-connection/actions.ts`](../app/tenant/billing/bank-connection/actions.ts) |
-| Link token API gate      | [`app/api/tenant/plaid/link-token/route.ts`](../app/api/tenant/plaid/link-token/route.ts)           |
+| Evidence                       | Location                                                                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| TOTP enrollment UI             | [`app/tenant/settings/account/page.tsx`](../app/tenant/settings/account/page.tsx)                                             |
+| Sign-in MFA challenge          | [`app/marketing/sign-in/mfa/page.tsx`](../app/marketing/sign-in/mfa/page.tsx)                                                 |
+| Plaid action enforcement       | [`app/tenant/billing/bank-connection/actions.ts`](../app/tenant/billing/bank-connection/actions.ts)                           |
+| Pre-Link consent UI            | [`app/tenant/billing/bank-connection/PlaidPreLinkConsent.tsx`](../app/tenant/billing/bank-connection/PlaidPreLinkConsent.tsx) |
+| Production readiness checklist | [`docs/plaid/production-readiness.md`](../plaid/production-readiness.md)                                                      |
 
 **Manual:** Supabase Dashboard → Authentication → MFA → enable TOTP. Enroll test owner account.
 

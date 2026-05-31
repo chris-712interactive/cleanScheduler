@@ -1,7 +1,9 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 import { serverEnv } from '@/lib/env';
+import { getPlaidRuntimeEnv } from '@/lib/plaid/plaidEnv';
 
 let plaidClient: PlaidApi | null = null;
+let plaidClientEnv: ReturnType<typeof getPlaidRuntimeEnv> | null = null;
 
 export function isPlaidConfigured(): boolean {
   return Boolean(
@@ -9,23 +11,28 @@ export function isPlaidConfigured(): boolean {
   );
 }
 
+function plaidBasePathForEnv(envName: ReturnType<typeof getPlaidRuntimeEnv>): string {
+  switch (envName) {
+    case 'production':
+      return PlaidEnvironments.production as string;
+    case 'development':
+      return PlaidEnvironments.development as string;
+    default:
+      return PlaidEnvironments.sandbox as string;
+  }
+}
+
 export function getPlaidClient(): PlaidApi {
   if (!isPlaidConfigured()) {
     throw new Error('Plaid is not configured. Set PLAID_CLIENT_ID, PLAID_SECRET, and PLAID_ENV.');
   }
 
-  if (!plaidClient) {
-    const envName = serverEnv.PLAID_ENV ?? 'sandbox';
-    const basePath =
-      envName === 'production'
-        ? PlaidEnvironments.production
-        : envName === 'development'
-          ? PlaidEnvironments.development
-          : PlaidEnvironments.sandbox;
-
+  const envName = getPlaidRuntimeEnv();
+  if (!plaidClient || plaidClientEnv !== envName) {
+    plaidClientEnv = envName;
     plaidClient = new PlaidApi(
       new Configuration({
-        basePath,
+        basePath: plaidBasePathForEnv(envName),
         baseOptions: {
           headers: {
             'PLAID-CLIENT-ID': serverEnv.PLAID_CLIENT_ID!,

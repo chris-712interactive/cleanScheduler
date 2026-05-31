@@ -11,6 +11,7 @@ import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitleme
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { isPlaidConfigured } from '@/lib/plaid/server';
+import { isPlaidSandboxEnv, plaidEnvLabel } from '@/lib/plaid/plaidEnv';
 import { DisconnectBankButton, SyncBankButton } from './BankConnectionControls';
 import { DepositCandidatesTable } from './DepositCandidatesTable';
 import { BankStatementImportForm } from './BankStatementImportForm';
@@ -51,6 +52,7 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
   const imported = Number(firstParam(sp.imported) ?? '0');
   const skipped = Number(firstParam(sp.skipped) ?? '0');
   const plaidReady = isPlaidConfigured();
+  const plaidSandbox = plaidReady && isPlaidSandboxEnv();
   const canManageBank = canManageBankReconciliation(membership.role);
   const mfaStatus = canManageBank ? await getMfaStatus() : null;
   const mfaBlocksPlaid =
@@ -225,7 +227,11 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
         <Stack gap={6}>
           <Card
             title="Plaid Link"
-            description="Sandbox mode uses Plaid test institutions. Use username user_good and password pass_good on First Platypus Bank."
+            description={
+              plaidSandbox
+                ? 'Sandbox mode — use Plaid test credentials (user_good / pass_good on First Platypus Bank). Production uses your real business checking account.'
+                : `Plaid ${plaidEnvLabel()} — connect a business checking account to import deposits and match them to invoices.`
+            }
           >
             <p className={styles.muted} style={{ marginTop: 0 }}>
               Status: <strong>{statusLabel}</strong>

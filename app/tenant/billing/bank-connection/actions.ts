@@ -21,6 +21,7 @@ import {
 } from '@/lib/plaid/confirmPaymentMatch';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
 import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
+import { PLAID_CONSENT_REQUIRED_ERROR } from '@/lib/plaid/plaidConsentCopy';
 import {
   createPlaidLinkToken,
   createPlaidUpdateLinkToken,
@@ -28,6 +29,10 @@ import {
 } from '@/lib/plaid/server';
 import type { TenantRole } from '@/lib/auth/types';
 import type { BankConnectionActionResult } from './finishBankConnectionAction';
+
+function requirePlaidConsentAcknowledged(acknowledged: boolean): string | null {
+  return acknowledged ? null : PLAID_CONSENT_REQUIRED_ERROR;
+}
 
 function bankConnectionPath(): string {
   return '/billing/bank-connection';
@@ -57,7 +62,11 @@ async function bankReconciliationGateError(
 
 export async function fetchPlaidLinkTokenAction(
   tenantSlug: string,
+  options?: { consentAcknowledged?: boolean },
 ): Promise<{ link_token: string } | { error: string }> {
+  const consentErr = requirePlaidConsentAcknowledged(options?.consentAcknowledged === true);
+  if (consentErr) return { error: consentErr };
+
   await requirePortalAccess('tenant', '/billing/bank-connection');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
   const roleErr = await requireBankAdminWithMfa(membership);
@@ -110,6 +119,9 @@ export async function connectBankFromPlaidAction(
 
   if (!isPlaidConfigured()) {
     return { error: 'Plaid is not configured on this server.' };
+  }
+  if (String(formData.get('plaid_consent') ?? '') !== '1') {
+    return { error: PLAID_CONSENT_REQUIRED_ERROR };
   }
   if (!publicToken || !accountJson) {
     return { error: 'Plaid did not return a public token.' };
