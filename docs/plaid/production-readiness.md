@@ -19,15 +19,15 @@ Checklist for launching bank reconciliation with Plaid in **Production**. Aligns
 
 ## 2. Secure storage of sensitive Plaid data
 
-| Item                                                           | Status | Evidence                                                                       |
-| -------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------ |
-| Access tokens server-side only (service role)                  | ✅     | `bank_links.plaid_access_token`; RLS migration `0051_bank_links_token_rls.sql` |
-| Tenant members see `bank_links_member_safe` view (no token)    | ✅     | `0051`, tenant page selects safe columns                                       |
-| Tokens never sent to browser / client bundles                  | ✅     | Link token is short-lived; public token exchanged server-side only             |
-| Revoke on disconnect, trial expiry, subscription cancel, purge | ✅     | `lib/plaid/revokePlaidBankLink.ts`                                             |
+| Item                                                           | Status | Evidence                                                                        |
+| -------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------- |
+| Access tokens server-side only (service role)                  | ✅     | `bank_links.plaid_access_token`; RLS migration `0051_bank_links_token_rls.sql`  |
+| Tenant members see `bank_links_member_safe` view (no token)    | ✅     | `0051`, tenant page selects safe columns                                        |
+| Tokens never sent to browser / client bundles                  | ✅     | Link token is short-lived; public token exchanged server-side only              |
+| Revoke on disconnect, trial expiry, subscription cancel, purge | ✅     | `lib/plaid/revokePlaidBankLink.ts`                                              |
 | Revoke previous Item when replacing bank (new Plaid Item)      | ✅     | `exchangeAndSaveBankLink` calls `tryRemovePlaidLinkItem` when `item_id` changes |
-| MFA required before Link (owner/admin)                         | ✅     | `requireMfaForBankAdmin`, account settings                                     |
-| Webhook JWT verification in production                         | ✅     | `lib/plaid/verifyPlaidWebhook.ts`                                              |
+| MFA required before Link (owner/admin)                         | ✅     | `requireMfaForBankAdmin`, account settings                                      |
+| Webhook JWT verification in production                         | ✅     | `lib/plaid/verifyPlaidWebhook.ts`                                               |
 
 ---
 
