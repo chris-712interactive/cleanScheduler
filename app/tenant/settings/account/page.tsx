@@ -1,10 +1,9 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { SignOutButton } from '@/components/auth/SignOutButton';
-import { KeyValueList } from '@/components/ui/KeyValueList';
+import { MfaSettingsPanel } from '@/components/auth/MfaSettingsPanel';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
@@ -13,11 +12,11 @@ import { getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { teamRoleLabel } from '@/lib/tenant/teamMemberDisplay';
 import type { TenantRole } from '@/lib/auth/types';
-import { ProfileSettingsForm } from '../ProfileSettingsForm';
-import { DeleteWorkspacePanel } from '../DeleteWorkspacePanel';
-import { MfaSettingsPanel } from '@/components/auth/MfaSettingsPanel';
 import { hasMinimumTenantRole } from '@/lib/auth/tenantRoleAccess';
-import styles from '../settings.module.scss';
+import { syncedFullNameFromParts } from '@/lib/people/personName';
+import { AccountPreferencesPanel } from './AccountPreferencesPanel';
+import { AccountDeleteWorkspacePanel } from './AccountDeleteWorkspacePanel';
+import styles from './account-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,13 +33,23 @@ export default async function TenantAccountSettingsPage() {
     auth?.user.id != null
       ? await supabase
           .from('user_profiles')
-          .select('display_name, avatar_url')
+          .select('display_name, first_name, last_name, avatar_url')
           .eq('user_id', auth.user.id)
           .maybeSingle()
       : { data: null };
+  const firstName =
+    myProfile?.first_name?.trim() ||
+    myProfile?.display_name?.trim().split(/\s+/)[0] ||
+    auth?.user?.email?.split('@')[0] ||
+    '';
+  const lastName = myProfile?.last_name?.trim() || '';
   const displayName =
-    myProfile?.display_name?.trim() || auth?.user?.email?.split('@')[0] || 'Team member';
+    syncedFullNameFromParts(firstName, lastName) ||
+    myProfile?.display_name?.trim() ||
+    auth?.user?.email?.split('@')[0] ||
+    'Team member';
   const avatarUrl = myProfile?.avatar_url ?? null;
+  const email = auth?.user.email?.trim() || '';
   const isOwner = membership.role === 'owner';
   const isFieldEmployee = isFieldEmployeeRole(membership.role);
   const requiresMfaForPlaid = hasMinimumTenantRole(membership.role, 'admin');
@@ -53,76 +62,138 @@ export default async function TenantAccountSettingsPage() {
     .maybeSingle();
   const purgeStatus = getTenantPurgeStatus(billing);
 
+  const navItems = [
+    { href: '#account-profile', label: 'Profile' },
+    ...(requiresMfaForPlaid ? [{ href: '#account-security', label: 'Security' }] : []),
+    { href: '#account-workspace', label: 'Workspace' },
+    { href: '#account-session', label: 'Session' },
+    ...(isOwner ? [{ href: '#account-danger', label: 'Delete' }] : []),
+  ];
+
   return (
     <>
       <PageHeader
         title="Account"
-        titleHint="Personal profile and preferences for your login."
+        titleHint="Your profile, sign-in security, and workspace snapshot."
         backHref="/settings"
         backLabel="Settings"
       />
 
-      <Stack gap={6}>
-        <Card title="Appearance" description="Light, dark, or match your system.">
-          <div className={styles.themeRow}>
-            <span className={styles.label}>Theme</span>
-            <ThemeToggle />
+      <Stack gap={5}>
+        <div className={styles.identityHero}>
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt=""
+              width={64}
+              height={64}
+              className={styles.identityAvatar}
+            />
+          ) : (
+            <div className={styles.identityAvatarPlaceholder} aria-hidden>
+              {(displayName.trim().slice(0, 2) || 'Me').toUpperCase()}
+            </div>
+          )}
+          <div className={styles.identityCopy}>
+            <h2 className={styles.identityName}>{displayName}</h2>
+            {email ? <p className={styles.identityEmail}>{email}</p> : null}
+            <div className={styles.identityMeta}>
+              <span className={styles.metaChip}>
+                {teamRoleLabel(membership.role as TenantRole)}
+              </span>
+              <span className={styles.metaChip}>{membership.tenantName}</span>
+            </div>
           </div>
-        </Card>
+        </div>
 
-        <Card
-          title="Your profile"
-          description="Name and photo shown to teammates in this workspace."
-        >
-          <ProfileSettingsForm
+        <nav className={styles.sectionNav} aria-label="Account sections">
+          {navItems.map((item) => (
+            <a key={item.href} className={styles.sectionNavLink} href={item.href}>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className={styles.accountStack}>
+          <AccountPreferencesPanel
             tenantSlug={membership.tenantSlug}
-            displayName={displayName}
+            firstName={firstName}
+            lastName={lastName}
             avatarUrl={avatarUrl}
+            initials={(displayName.trim().slice(0, 2) || 'Me').toUpperCase()}
           />
-        </Card>
 
-        {requiresMfaForPlaid ? (
-          <Card
-            title="Two-factor authentication"
-            description="Required for owners and admins before connecting bank accounts."
-          >
-            <MfaSettingsPanel requiredForPlaid />
-          </Card>
-        ) : null}
-
-        <Card title="Workspace" description="Read-only snapshot from your tenant record.">
-          <KeyValueList
-            items={[
-              { key: 'Name', value: membership.tenantName },
-              { key: 'Slug', value: membership.tenantSlug },
-              { key: 'Your role', value: teamRoleLabel(membership.role as TenantRole) },
-            ]}
-          />
-          {!isFieldEmployee ? (
-            <p className={styles.muted}>
-              Billing and Stripe Connect are managed under{' '}
-              <Link href="/billing" className={styles.inlineLink}>
-                Billing
-              </Link>
-              .
-            </p>
+          {requiresMfaForPlaid ? (
+            <section id="account-security" className={styles.settingsSection} aria-label="Security">
+              <MfaSettingsPanel requiredForPlaid />
+            </section>
           ) : null}
-        </Card>
 
-        <Card title="Sign out" description="End your session on this device.">
-          <p className={styles.muted}>Signed in as {auth?.user.email?.trim() || 'your account'}.</p>
-          <SignOutButton variant="settings" />
-        </Card>
-
-        {isOwner ? (
-          <Card
-            title="Delete workspace"
-            description="Permanently remove this workspace and all tenant data."
-            className={styles.dangerCard}
+          <section
+            id="account-workspace"
+            className={styles.settingsSection}
+            aria-labelledby="workspace-heading"
           >
-            <DeleteWorkspacePanel tenantSlug={membership.tenantSlug} purgeStatus={purgeStatus} />
-          </Card>
-        ) : null}
+            <header className={styles.sectionHeader}>
+              <h2 id="workspace-heading" className={styles.sectionTitle}>
+                Workspace
+              </h2>
+              <p className={styles.sectionLead}>
+                Read-only details for the workspace you are signed into.
+              </p>
+            </header>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoTile}>
+                <span className={styles.infoLabel}>Name</span>
+                <span className={styles.infoValue}>{membership.tenantName}</span>
+              </div>
+              <div className={styles.infoTile}>
+                <span className={styles.infoLabel}>Address slug</span>
+                <span className={styles.infoValue}>{membership.tenantSlug}</span>
+              </div>
+              <div className={styles.infoTile}>
+                <span className={styles.infoLabel}>Your role</span>
+                <span className={styles.infoValue}>
+                  {teamRoleLabel(membership.role as TenantRole)}
+                </span>
+              </div>
+            </div>
+            {!isFieldEmployee ? (
+              <p className={styles.sectionLead}>
+                Billing and card payments are under{' '}
+                <Link href="/billing" className={styles.inlineLink}>
+                  Billing
+                </Link>
+                .
+              </p>
+            ) : null}
+          </section>
+
+          <section
+            id="account-session"
+            className={styles.settingsSection}
+            aria-labelledby="session-heading"
+          >
+            <header className={styles.sectionHeader}>
+              <h2 id="session-heading" className={styles.sectionTitle}>
+                Session
+              </h2>
+            </header>
+            <div className={styles.sessionRow}>
+              <p className={styles.sessionCopy}>
+                Signed in as <strong>{email || 'your account'}</strong>
+              </p>
+              <SignOutButton variant="settings" />
+            </div>
+          </section>
+
+          {isOwner ? (
+            <AccountDeleteWorkspacePanel
+              tenantSlug={membership.tenantSlug}
+              purgeStatus={purgeStatus}
+            />
+          ) : null}
+        </div>
       </Stack>
     </>
   );

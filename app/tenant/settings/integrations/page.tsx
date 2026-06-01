@@ -1,5 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
+import { Stack } from '@/components/layout/Stack';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -17,7 +17,7 @@ import { countActiveIntegrations } from '@/lib/integrations/integrationLimits';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { IntegrationsPanel } from './IntegrationsPanel';
-import styles from '../settings.module.scss';
+import styles from './integrations-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,33 +72,24 @@ export default async function TenantIntegrationsSettingsPage() {
     <>
       <PageHeader
         title="Integrations"
-        titleHint="REST API keys and outbound webhooks for Pro workspaces."
+        titleHint="Connect Zapier, custom scripts, or your own backend to Clean Scheduler."
         backHref="/settings"
         backLabel="Settings"
       />
 
-      {!canEdit ? (
-        <p className={styles.readOnlyNotice} role="status">
-          You can view integration settings here. Only owners and admins can make changes.
-        </p>
-      ) : null}
+      <Stack gap={6}>
+        {!apiTierEnabled ? (
+          <FeatureUpgradePanel
+            title="Upgrade to unlock API & webhooks"
+            description="Pro includes a read-only REST API, outbound webhooks, and up to 20 integration connections."
+          />
+        ) : !apiPaid ? (
+          <p className={styles.bannerWarning} role="status">
+            API keys and webhooks are included with Pro after you subscribe. Add a payment method
+            from Workspace billing to create connections during your trial.
+          </p>
+        ) : null}
 
-      {!apiTierEnabled ? (
-        <FeatureUpgradePanel
-          title="Upgrade to unlock API & webhooks"
-          description="Pro includes a read-only REST API, outbound webhooks, and up to 20 integration connections."
-        />
-      ) : !apiPaid ? (
-        <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }} role="status">
-          API and webhooks are included with Pro after you subscribe. Add a payment method from
-          Workspace billing to create keys and webhook endpoints during your trial.
-        </p>
-      ) : null}
-
-      <Card
-        title="API & webhooks"
-        description="Connect Zapier, custom scripts, or your own backend. Quote lifecycle webhooks are live; invoice and visit events follow the same delivery pipeline."
-      >
         {integrationsAllowed ? (
           <IntegrationsPanel
             tenantSlug={membership.tenantSlug}
@@ -110,12 +101,28 @@ export default async function TenantIntegrationsSettingsPage() {
             webhookEndpoints={webhookEndpoints}
           />
         ) : (
-          <p className={styles.opsIntro}>
-            Available endpoints when unlocked: <code>/api/v1/customers</code>,{' '}
-            <code>/api/v1/quotes</code>, <code>/api/v1/visits</code>, <code>/api/v1/invoices</code>.
-          </p>
+          <div className={styles.settingsSection}>
+            <header className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>What you get with Pro</h2>
+              <p className={styles.sectionLead}>
+                Once unlocked, you can create API keys to read workspace data and webhooks to
+                receive automatic updates when quotes, visits, or invoices change.
+              </p>
+            </header>
+            <div className={styles.dataGrid}>
+              {['Customers', 'Quotes', 'Visits', 'Invoices'].map((label) => (
+                <div key={label} className={styles.dataTile}>
+                  {label}
+                </div>
+              ))}
+            </div>
+            <p className={styles.lockedEndpoints}>
+              Available API paths: <code>/api/v1/customers</code>, <code>/api/v1/quotes</code>,{' '}
+              <code>/api/v1/visits</code>, <code>/api/v1/invoices</code>.
+            </p>
+          </div>
         )}
-      </Card>
+      </Stack>
     </>
   );
 }
