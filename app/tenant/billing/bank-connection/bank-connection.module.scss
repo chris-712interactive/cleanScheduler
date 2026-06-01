@@ -236,7 +236,7 @@
   font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-text);
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .matchCardActions {
