@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { salutationFirstName } from '@/lib/people/personName';
 import { publicEnv } from '@/lib/env';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -31,7 +32,7 @@ export async function notifyTenantTrialEndingSoon(
     admin.from('tenants').select('slug, name').eq('id', tenantId).maybeSingle(),
     admin
       .from('tenant_onboarding_profiles')
-      .select('owner_email, owner_name')
+      .select('owner_email, owner_first_name, owner_name')
       .eq('tenant_id', tenantId)
       .maybeSingle(),
   ]);
@@ -47,12 +48,15 @@ export async function notifyTenantTrialEndingSoon(
       })
     : 'soon';
 
-  const ownerName = profile?.owner_name?.trim() || 'there';
+  const ownerFirstName = salutationFirstName({
+    first_name: profile?.owner_first_name,
+    full_name: profile?.owner_name,
+  });
   const workspace = tenant.name?.trim() || tenant.slug;
   const billingUrl = tenantBillingUrl(tenant.slug);
 
   const textBody = [
-    `Hi ${ownerName},`,
+    `Hi ${ownerFirstName},`,
     '',
     `Your free trial for ${workspace} ends on ${trialEnd}.`,
     '',
@@ -69,7 +73,7 @@ export async function notifyTenantTrialEndingSoon(
     subject: `${workspace}: your cleanScheduler trial ends ${trialEnd}`,
     text: textBody,
     html: [
-      `<p>Hi ${ownerName},</p>`,
+      `<p>Hi ${ownerFirstName},</p>`,
       `<p>Your free trial for <strong>${workspace}</strong> ends on <strong>${trialEnd}</strong>.</p>`,
       `<p><a href="${billingUrl}">Add a subscription</a> to keep scheduling, quotes, and billing running without interruption.</p>`,
       '<p>If you already added a payment method in Stripe, you can ignore this email.</p>',
