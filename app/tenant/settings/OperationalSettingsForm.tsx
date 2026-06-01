@@ -1,21 +1,83 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
 import {
-  ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL,
   CUSTOMER_PAYMENT_METHOD_LABEL,
   CUSTOMER_PAYMENT_METHOD_VALUES,
-  INVOICE_EXPECTATION_LABEL,
+  MESSAGING_CHANNEL_LABEL,
   type AcceptedQuoteScheduleMode,
   type TenantInvoiceExpectation,
-  MESSAGING_CHANNEL_LABEL,
 } from '@/lib/tenant/operationalSettings';
+import { SettingsSaveButton } from './SettingsSaveButton';
 import { updateTenantOperationalSettings } from './actions';
 import { operationalSettingsFormInitial } from './operationalSettingsFormState';
-import styles from './settings.module.scss';
+import styles from './operations/operations-settings.module.scss';
+
+const WORKFLOW_CHOICES: {
+  value: AcceptedQuoteScheduleMode;
+  title: string;
+  hint: string;
+  badge?: string;
+}[] = [
+  {
+    value: 'prompt_staff',
+    title: 'Team schedules after acceptance',
+    hint: 'When a customer accepts a quote, your staff picks the first visit date. Recommended for most cleaning businesses.',
+  },
+  {
+    value: 'auto_schedule',
+    title: 'Automatic scheduling',
+    hint: 'Visits will be created automatically from accepted quotes once this feature launches.',
+    badge: 'Coming soon',
+  },
+];
+
+const INVOICING_CHOICES: {
+  value: TenantInvoiceExpectation;
+  title: string;
+  hint: string;
+}[] = [
+  {
+    value: 'pay_after_service',
+    title: 'Bill after the cleaning',
+    hint: 'Send invoices once work is done. Best for recurring residential and most commercial jobs.',
+  },
+  {
+    value: 'prepay',
+    title: 'Collect payment before service',
+    hint: 'Use when you require prepayment or deposits before dispatching a crew.',
+  },
+];
+
+const QUOTE_NOTIFICATION_ROWS = [
+  {
+    label: 'Quote sent to customer',
+    emailName: 'email_notify_quote_sent',
+    smsName: 'sms_notify_quote_sent',
+    emailKey: 'email_notify_quote_sent' as const,
+    smsKey: 'sms_notify_quote_sent' as const,
+  },
+  {
+    label: 'Customer accepts a quote',
+    emailName: 'email_notify_quote_accepted',
+    smsName: 'sms_notify_quote_accepted',
+    emailKey: 'email_notify_quote_accepted' as const,
+    smsKey: 'sms_notify_quote_accepted' as const,
+    audience: 'your team',
+  },
+  {
+    label: 'Customer declines a quote',
+    emailName: 'email_notify_quote_declined',
+    smsName: 'sms_notify_quote_declined',
+    emailKey: 'email_notify_quote_declined' as const,
+    smsKey: 'sms_notify_quote_declined' as const,
+    audience: 'your team',
+  },
+] as const;
 
 export function OperationalSettingsForm({
   tenantSlug,
@@ -26,6 +88,7 @@ export function OperationalSettingsForm({
   sentDmConfigured = false,
   invoiceReminderEmailEditable = false,
   invoiceReminderSmsEditable = false,
+  smsUsageSummary,
 }: {
   tenantSlug: string;
   snapshot: OperationalSettingsFormSnapshot;
@@ -35,6 +98,7 @@ export function OperationalSettingsForm({
   sentDmConfigured?: boolean;
   invoiceReminderEmailEditable?: boolean;
   invoiceReminderSmsEditable?: boolean;
+  smsUsageSummary?: string | null;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
@@ -58,214 +122,426 @@ export function OperationalSettingsForm({
     submitServerActionForm(event, formAction);
   };
 
+  const enabledEmailCount = useMemo(() => {
+    let count = 0;
+    if (snapshot.email_notify_quote_sent) count += 1;
+    if (snapshot.email_notify_quote_accepted) count += 1;
+    if (snapshot.email_notify_quote_declined) count += 1;
+    if (snapshot.email_notify_invoice_overdue) count += 1;
+    return count;
+  }, [snapshot]);
+
+  const enabledSmsCount = useMemo(() => {
+    if (!smsEditable) return 0;
+    let count = 0;
+    if (snapshot.sms_notify_quote_sent) count += 1;
+    if (snapshot.sms_notify_quote_accepted) count += 1;
+    if (snapshot.sms_notify_quote_declined) count += 1;
+    if (snapshot.sms_notify_visit_reminder) count += 1;
+    if (snapshot.sms_notify_invoice_overdue) count += 1;
+    return count;
+  }, [snapshot, smsEditable]);
+
+  const smsDisabled = readOnly || !smsEditable || !sentDmConfigured;
+
   return (
-    <form onSubmit={handleSubmit} className={styles.opsForm}>
+    <form onSubmit={handleSubmit} className={styles.opsStack}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
+
       {state.error ? (
-        <p className={styles.opsError} role="alert">
+        <p className={styles.bannerError} role="alert">
           {state.error}
         </p>
       ) : null}
       {state.success ? (
-        <p className={styles.opsSuccess} role="status">
-          Saved.
+        <p className={styles.bannerSuccess} role="status">
+          Settings saved.
         </p>
       ) : null}
 
-      <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>When a quote is accepted</legend>
-        <p className={styles.opsIntro}>
-          Controls how your team moves from an accepted quote to scheduled work. Automatic
-          scheduling will respect this preference once the engine is built.
+      <section className={styles.opsHero} aria-labelledby="ops-overview-heading">
+        <h2 id="ops-overview-heading" className={styles.opsHeroTitle}>
+          How your business runs day to day
+        </h2>
+        <p className={styles.opsHeroLead}>
+          Set defaults for quotes, scheduling, customer payments, and automatic notifications. You
+          can change these anytime — updates apply to new activity going forward.
         </p>
-        <div className={styles.opsRadioStack}>
-          {(Object.keys(ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL) as AcceptedQuoteScheduleMode[]).map(
-            (value) => (
-              <label key={value} className={styles.opsRadio}>
+        <div className={styles.opsHeroMeta}>
+          <span className={styles.summaryChip}>
+            {snapshot.allowed_customer_payment_methods.length} payment methods enabled
+          </span>
+          <span className={styles.summaryChip}>{enabledEmailCount} email alerts on</span>
+          {smsEditable ? (
+            <span className={styles.summaryChip}>{enabledSmsCount} text alerts on</span>
+          ) : null}
+        </div>
+      </section>
+
+      <nav className={styles.sectionNav} aria-label="Jump to section">
+        <a className={styles.sectionNavLink} href="#ops-workflow">
+          Workflow
+        </a>
+        <a className={styles.sectionNavLink} href="#ops-payments">
+          Payments
+        </a>
+        <a className={styles.sectionNavLink} href="#ops-notifications">
+          Notifications
+        </a>
+        <a className={styles.sectionNavLink} href="#ops-checks">
+          Check reminders
+        </a>
+      </nav>
+
+      <section
+        id="ops-workflow"
+        className={styles.settingsSection}
+        aria-labelledby="workflow-heading"
+      >
+        <header className={styles.sectionHeader}>
+          <p className={styles.sectionEyebrow}>Workflow</p>
+          <h3 id="workflow-heading" className={styles.sectionTitle}>
+            Quotes & scheduling
+          </h3>
+          <p className={styles.sectionLead}>
+            Choose what happens after a customer accepts a quote and how you typically invoice for
+            work.
+          </p>
+        </header>
+
+        <div>
+          <p className={styles.subsectionTitle}>After a quote is accepted</p>
+          <div className={styles.choiceGrid}>
+            {WORKFLOW_CHOICES.map((choice) => (
+              <label key={choice.value} className={styles.choiceCard}>
                 <input
                   type="radio"
                   name="accepted_quote_schedule_mode"
-                  value={value}
-                  defaultChecked={snapshot.accepted_quote_schedule_mode === value}
+                  value={choice.value}
+                  defaultChecked={snapshot.accepted_quote_schedule_mode === choice.value}
                   disabled={readOnly}
                 />
-                <span>{ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL[value]}</span>
+                <span className={styles.choiceTitle}>{choice.title}</span>
+                <span className={styles.choiceHint}>{choice.hint}</span>
+                {choice.badge ? <span className={styles.choiceBadge}>{choice.badge}</span> : null}
               </label>
-            ),
-          )}
+            ))}
+          </div>
         </div>
-      </fieldset>
 
-      <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>Typical invoicing</legend>
-        <p className={styles.opsIntro}>
-          Helps staff and future customer flows understand how you prefer to get paid.
-        </p>
-        <div className={styles.opsRadioStack}>
-          {(Object.keys(INVOICE_EXPECTATION_LABEL) as TenantInvoiceExpectation[]).map((value) => (
-            <label key={value} className={styles.opsRadio}>
+        <div>
+          <p className={styles.subsectionTitle}>Default invoicing style</p>
+          <div className={styles.choiceGrid}>
+            {INVOICING_CHOICES.map((choice) => (
+              <label key={choice.value} className={styles.choiceCard}>
+                <input
+                  type="radio"
+                  name="invoice_expectation"
+                  value={choice.value}
+                  defaultChecked={snapshot.invoice_expectation === choice.value}
+                  disabled={readOnly}
+                />
+                <span className={styles.choiceTitle}>{choice.title}</span>
+                <span className={styles.choiceHint}>{choice.hint}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="ops-payments"
+        className={styles.settingsSection}
+        aria-labelledby="payments-heading"
+      >
+        <header className={styles.sectionHeader}>
+          <p className={styles.sectionEyebrow}>Payments</p>
+          <h3 id="payments-heading" className={styles.sectionTitle}>
+            Payment methods for customers
+          </h3>
+          <p className={styles.sectionLead}>
+            Choose which options customers can pick when accepting quotes or paying invoices online.
+            Card payments still require Stripe setup under{' '}
+            <Link href="/billing/payment-setup">Billing → Accept card payments</Link>.
+          </p>
+        </header>
+
+        <div className={styles.paymentGrid}>
+          {CUSTOMER_PAYMENT_METHOD_VALUES.map((method) => (
+            <label key={method} className={styles.paymentToggle}>
               <input
-                type="radio"
-                name="invoice_expectation"
-                value={value}
-                defaultChecked={snapshot.invoice_expectation === value}
+                type="checkbox"
+                name={`method_${method}`}
+                defaultChecked={allowed.has(method)}
                 disabled={readOnly}
               />
-              <span>{INVOICE_EXPECTATION_LABEL[value]}</span>
+              <span>{CUSTOMER_PAYMENT_METHOD_LABEL[method]}</span>
             </label>
           ))}
         </div>
-      </fieldset>
-
-      <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>Quote email notifications (Resend)</legend>
-        <p className={styles.opsIntro}>
-          When enabled, the app sends transactional email using your server&apos;s Resend
-          configuration. Quote &quot;sent&quot; goes to the customer; accept/decline notices go to
-          your workspace onboarding email when available.
+        <p className={styles.technicalNote}>
+          Select at least one method. Customers only see options you enable here.
         </p>
-        <div className={styles.opsCheckboxGrid}>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="email_notify_quote_sent"
-              defaultChecked={snapshot.email_notify_quote_sent}
-              disabled={readOnly}
-            />
-            <span>Email customer when a quote is marked Sent</span>
-          </label>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="email_notify_quote_accepted"
-              defaultChecked={snapshot.email_notify_quote_accepted}
-              disabled={readOnly}
-            />
-            <span>Email your team when a customer accepts a quote</span>
-          </label>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="email_notify_quote_declined"
-              defaultChecked={snapshot.email_notify_quote_declined}
-              disabled={readOnly}
-            />
-            <span>Email your team when a customer declines a quote</span>
-          </label>
-        </div>
-      </fieldset>
+      </section>
 
-      <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>SMS notifications (Pro)</legend>
-        <p className={styles.opsIntro}>
-          {smsEditable
-            ? sentDmConfigured
-              ? 'Transactional SMS via sent.dm. Counts against your monthly Pro SMS segment allowance (each enabled channel counts separately). Customers with email-only preference are skipped.'
-              : 'sent.dm is not configured on this server. Add SENT_DM_API_KEY and SENT_DM_TEMPLATE_* variables to enable sends.'
-            : smsTrialLocked
-              ? 'SMS is included with Pro after you subscribe. Add a payment method from Workspace billing to unlock these toggles during your trial.'
-              : 'Upgrade to Pro to send quote and visit reminder texts to customers.'}
-        </p>
-        <div className={styles.opsCheckboxGrid}>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="sms_notify_quote_sent"
-              defaultChecked={snapshot.sms_notify_quote_sent}
-              disabled={readOnly || !smsEditable || !sentDmConfigured}
-            />
-            <span>SMS customer when a quote is marked Sent</span>
-          </label>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="sms_notify_quote_accepted"
-              defaultChecked={snapshot.sms_notify_quote_accepted}
-              disabled={readOnly || !smsEditable || !sentDmConfigured}
-            />
-            <span>SMS your team when a customer accepts</span>
-          </label>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="sms_notify_quote_declined"
-              defaultChecked={snapshot.sms_notify_quote_declined}
-              disabled={readOnly || !smsEditable || !sentDmConfigured}
-            />
-            <span>SMS your team when a customer declines</span>
-          </label>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="sms_notify_visit_reminder"
-              defaultChecked={snapshot.sms_notify_visit_reminder}
-              disabled={readOnly || !smsEditable || !sentDmConfigured}
-            />
-            <span>SMS visit reminder ~24 hours before scheduled cleanings</span>
-          </label>
-        </div>
-        {smsEditable && sentDmConfigured ? (
-          <div className={styles.opsCheckboxGrid}>
-            <p className={styles.opsIntro}>
-              Delivery channels (SMS is always enabled). WhatsApp and RCS require setup on your
-              sent.dm account.
+      <section
+        id="ops-notifications"
+        className={styles.settingsSection}
+        aria-labelledby="notifications-heading"
+      >
+        <header className={styles.sectionHeader}>
+          <p className={styles.sectionEyebrow}>Notifications</p>
+          <h3 id="notifications-heading" className={styles.sectionTitle}>
+            Customer & team alerts
+          </h3>
+          <p className={styles.sectionLead}>
+            Turn email and text alerts on or off for quote activity, visit reminders, and overdue
+            invoices.
+          </p>
+        </header>
+
+        {smsEditable && smsUsageSummary ? (
+          <p className={styles.sectionLead}>
+            Text message usage: {smsUsageSummary}.{' '}
+            <Link href="/billing" className={styles.planNoticeLink}>
+              View billing
+            </Link>
+          </p>
+        ) : smsTrialLocked ? (
+          <div className={styles.planNotice} role="status">
+            <p className={styles.planNoticeTitle}>Text alerts unlock with Pro</p>
+            <p className={styles.planNoticeBody}>
+              Subscribe to enable quote and visit reminder texts.{' '}
+              <Link href="/billing" className={styles.planNoticeLink}>
+                Add a payment method
+              </Link>
             </p>
-            <label className={styles.opsCheckbox}>
-              <input type="checkbox" checked disabled readOnly />
-              <span>{MESSAGING_CHANNEL_LABEL.sms} (required)</span>
-            </label>
-            <label className={styles.opsCheckbox}>
-              <input
-                type="checkbox"
-                name="messaging_channel_whatsapp"
-                defaultChecked={messagingChannels.has('whatsapp')}
-                disabled={readOnly}
-              />
-              <span>{MESSAGING_CHANNEL_LABEL.whatsapp}</span>
-            </label>
-            <label className={styles.opsCheckbox}>
-              <input
-                type="checkbox"
-                name="messaging_channel_rcs"
-                defaultChecked={messagingChannels.has('rcs')}
-                disabled={readOnly}
-              />
-              <span>{MESSAGING_CHANNEL_LABEL.rcs}</span>
-            </label>
+          </div>
+        ) : !smsEditable ? (
+          <div className={styles.planNotice}>
+            <p className={styles.planNoticeTitle}>Upgrade for text alerts</p>
+            <p className={styles.planNoticeBody}>
+              Pro includes customer text notifications for quotes, visit reminders, and overdue
+              invoices.
+            </p>
           </div>
         ) : null}
-      </fieldset>
 
-      <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>Invoice reminders</legend>
-        <p className={styles.opsIntro}>
-          {invoiceReminderEmailEditable
-            ? 'Daily cron sends overdue reminders when an open invoice is past due. Check payments in holding status respect your check hold window.'
-            : 'Upgrade to Business to send automated overdue invoice reminder emails.'}
-        </p>
-        <div className={styles.opsCheckboxGrid}>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="email_notify_invoice_overdue"
-              defaultChecked={snapshot.email_notify_invoice_overdue}
-              disabled={readOnly || !invoiceReminderEmailEditable}
-            />
-            <span>Email customer when an invoice is overdue</span>
-          </label>
-          <label className={styles.opsCheckbox}>
-            <input
-              type="checkbox"
-              name="sms_notify_invoice_overdue"
-              defaultChecked={snapshot.sms_notify_invoice_overdue}
-              disabled={readOnly || !invoiceReminderSmsEditable || !sentDmConfigured}
-            />
-            <span>SMS customer when an invoice is overdue (Pro)</span>
-          </label>
+        <div>
+          <p className={styles.subsectionTitle}>Quote updates</p>
+          <div className={styles.notificationTableWrap}>
+            <table className={styles.notificationTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Event</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                {QUOTE_NOTIFICATION_ROWS.map((row) => (
+                  <tr key={row.label}>
+                    <th scope="row">
+                      {row.label}
+                      {'audience' in row ? (
+                        <span className={styles.notifyUnavailable}> — notifies {row.audience}</span>
+                      ) : null}
+                    </th>
+                    <td>
+                      <label className={styles.notifyToggle}>
+                        <input
+                          type="checkbox"
+                          name={row.emailName}
+                          defaultChecked={snapshot[row.emailKey]}
+                          disabled={readOnly}
+                        />
+                        On
+                      </label>
+                    </td>
+                    <td>
+                      {smsDisabled ? (
+                        <span className={styles.notifyUnavailable}>
+                          {smsTrialLocked ? 'Pro' : !smsEditable ? 'Pro' : 'Unavailable'}
+                        </span>
+                      ) : (
+                        <label className={styles.notifyToggle}>
+                          <input
+                            type="checkbox"
+                            name={row.smsName}
+                            defaultChecked={snapshot[row.smsKey]}
+                            disabled={smsDisabled}
+                          />
+                          On
+                        </label>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div className={styles.opsCheckboxGrid}>
-          <label className={styles.opsField}>
-            <span className={styles.opsLabel}>Check reminder hold (days)</span>
+
+        <div>
+          <p className={styles.subsectionTitle}>Visit reminders</p>
+          <div className={styles.notificationTableWrap}>
+            <table className={styles.notificationTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Event</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Reminder ~24 hours before a scheduled cleaning</th>
+                  <td>
+                    <span className={styles.notifyUnavailable}>Not available</span>
+                  </td>
+                  <td>
+                    {smsDisabled ? (
+                      <span className={styles.notifyUnavailable}>
+                        {smsTrialLocked ? 'Pro' : !smsEditable ? 'Pro' : 'Unavailable'}
+                      </span>
+                    ) : (
+                      <label className={styles.notifyToggle}>
+                        <input
+                          type="checkbox"
+                          name="sms_notify_visit_reminder"
+                          defaultChecked={snapshot.sms_notify_visit_reminder}
+                          disabled={smsDisabled}
+                        />
+                        On
+                      </label>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <p className={styles.subsectionTitle}>Overdue invoices</p>
+          {!invoiceReminderEmailEditable ? (
+            <div className={styles.planNotice}>
+              <p className={styles.planNoticeTitle}>Email reminders require Business or Pro</p>
+              <p className={styles.planNoticeBody}>
+                Upgrade to send automatic overdue invoice emails to customers.
+              </p>
+            </div>
+          ) : null}
+          <div className={styles.notificationTableWrap}>
+            <table className={styles.notificationTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Event</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Invoice is past due</th>
+                  <td>
+                    {invoiceReminderEmailEditable ? (
+                      <label className={styles.notifyToggle}>
+                        <input
+                          type="checkbox"
+                          name="email_notify_invoice_overdue"
+                          defaultChecked={snapshot.email_notify_invoice_overdue}
+                          disabled={readOnly}
+                        />
+                        On
+                      </label>
+                    ) : (
+                      <span className={styles.notifyUnavailable}>Business+</span>
+                    )}
+                  </td>
+                  <td>
+                    {smsDisabled || !invoiceReminderSmsEditable ? (
+                      <span className={styles.notifyUnavailable}>
+                        {smsTrialLocked || !invoiceReminderSmsEditable ? 'Pro' : 'Unavailable'}
+                      </span>
+                    ) : (
+                      <label className={styles.notifyToggle}>
+                        <input
+                          type="checkbox"
+                          name="sms_notify_invoice_overdue"
+                          defaultChecked={snapshot.sms_notify_invoice_overdue}
+                          disabled={smsDisabled}
+                        />
+                        On
+                      </label>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {invoiceReminderEmailEditable ? (
+            <p className={styles.technicalNote}>
+              Overdue reminders run once per day for open invoices past their due date.
+            </p>
+          ) : null}
+        </div>
+
+        {smsEditable && sentDmConfigured ? (
+          <div>
+            <p className={styles.subsectionTitle}>Text delivery channels</p>
+            <p className={styles.sectionLead}>
+              SMS is always used for text alerts. Enable additional channels if your messaging
+              provider supports them.
+            </p>
+            <div className={styles.channelGrid}>
+              <label className={styles.paymentToggle}>
+                <input type="checkbox" checked disabled readOnly />
+                <span>{MESSAGING_CHANNEL_LABEL.sms} (required)</span>
+              </label>
+              <label className={styles.paymentToggle}>
+                <input
+                  type="checkbox"
+                  name="messaging_channel_whatsapp"
+                  defaultChecked={messagingChannels.has('whatsapp')}
+                  disabled={readOnly}
+                />
+                <span>{MESSAGING_CHANNEL_LABEL.whatsapp}</span>
+              </label>
+              <label className={styles.paymentToggle}>
+                <input
+                  type="checkbox"
+                  name="messaging_channel_rcs"
+                  defaultChecked={messagingChannels.has('rcs')}
+                  disabled={readOnly}
+                />
+                <span>{MESSAGING_CHANNEL_LABEL.rcs}</span>
+              </label>
+            </div>
+          </div>
+        ) : smsEditable && !sentDmConfigured ? (
+          <p className={styles.technicalNote} role="status">
+            Text messaging is not configured on this server yet. Contact support if alerts stay
+            unavailable.
+          </p>
+        ) : null}
+      </section>
+
+      <section id="ops-checks" className={styles.settingsSection} aria-labelledby="checks-heading">
+        <header className={styles.sectionHeader}>
+          <p className={styles.sectionEyebrow}>Check payments</p>
+          <h3 id="checks-heading" className={styles.sectionTitle}>
+            Check reminder timing
+          </h3>
+          <p className={styles.sectionLead}>
+            When a customer pays by check, you can pause overdue invoice reminders until the check
+            has had time to clear or be deposited.
+          </p>
+        </header>
+
+        <div className={styles.inlineFieldRow}>
+          <label className={styles.numberField}>
+            <span className={styles.numberLabel}>Wait before reminding (days)</span>
             <input
               type="number"
               name="check_reminder_hold_days"
@@ -273,52 +549,26 @@ export function OperationalSettingsForm({
               max={120}
               defaultValue={snapshot.check_reminder_hold_days}
               disabled={readOnly}
-              className={styles.opsInput}
+              className={styles.numberInput}
             />
           </label>
-          <label className={styles.opsCheckbox}>
+          <label className={styles.inlineCheckbox}>
             <input
               type="checkbox"
               name="check_hold_through_deposit"
               defaultChecked={snapshot.check_hold_through_deposit}
               disabled={readOnly}
             />
-            <span>Hold reminders until check is deposited (not just received)</span>
+            <span>Keep waiting until the check is deposited, not just received</span>
           </label>
         </div>
-      </fieldset>
-
-      <fieldset className={styles.opsFieldset}>
-        <legend className={styles.opsLegend}>Payment methods customers may use</legend>
-        <p className={styles.opsIntro}>
-          When customers accept quotes or pay invoices in the app, only these options will be
-          offered. Card/ACH may still depend on your Stripe Connect setup under Billing.
-        </p>
-        <div className={styles.opsCheckboxGrid}>
-          {CUSTOMER_PAYMENT_METHOD_VALUES.map((m) => (
-            <label key={m} className={styles.opsCheckbox}>
-              <input
-                type="checkbox"
-                name={`method_${m}`}
-                defaultChecked={allowed.has(m)}
-                disabled={readOnly}
-              />
-              <span>{CUSTOMER_PAYMENT_METHOD_LABEL[m]}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      </section>
 
       {!readOnly ? (
-        <button
-          type="submit"
-          className={styles.opsSubmit}
-          disabled={pending}
-          data-saving={pending || undefined}
-          aria-busy={pending || undefined}
-        >
-          {pending ? 'Saving…' : 'Save workflow & payment options'}
-        </button>
+        <div className={styles.saveBar}>
+          <p className={styles.saveBarHint}>Save once after updating any sections above.</p>
+          <SettingsSaveButton pending={pending} idleLabel="Save operations settings" />
+        </div>
       ) : null}
     </form>
   );

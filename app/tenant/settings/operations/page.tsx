@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
+import { Stack } from '@/components/layout/Stack';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -21,7 +20,7 @@ import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
 import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
 import { normalizeMessagingChannelsFromDb } from '@/lib/sms/sentMessagingChannels';
 import { OperationalSettingsForm } from '../OperationalSettingsForm';
-import styles from '../settings.module.scss';
+import styles from './operations-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +43,9 @@ export default async function TenantOperationsSettingsPage() {
   const smsTrialLocked = smsTierEnabled && !canUseSmsCommunication(billing?.status);
   const sentDmConfigured = isSentDmConfigured();
   const smsUsed = smsAllowed ? await countSmsSegmentsUsedThisMonth(admin, membership.tenantId) : 0;
+  const smsUsageSummary = smsAllowed
+    ? formatSmsUsageSummary(smsUsed, subscriptionTier ?? 'pro')
+    : null;
   const invoiceReminderEmailEditable = isFeatureEnabled(plan, 'salesTaxSummary');
   const invoiceReminderSmsEditable = smsAllowed;
 
@@ -103,34 +105,20 @@ export default async function TenantOperationsSettingsPage() {
         backLabel="Settings"
       />
 
-      {!canEdit ? (
-        <p className={styles.readOnlyNotice} role="status">
-          You can view operational settings here. Only owners and admins can make changes.
-        </p>
-      ) : null}
+      <Stack gap={6}>
+        {!canEdit ? (
+          <p className={styles.readOnlyNotice} role="status">
+            You can view operational settings here. Only owners and admins can make changes.
+          </p>
+        ) : null}
 
-      {smsAllowed ? (
-        <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }}>
-          SMS usage: {formatSmsUsageSummary(smsUsed, subscriptionTier ?? 'pro')}.{' '}
-          <Link href="/billing">Upgrade plan</Link>
-        </p>
-      ) : smsTrialLocked ? (
-        <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }} role="status">
-          SMS is included with Pro after you subscribe.{' '}
-          <Link href="/billing">Add a payment method</Link> to unlock quote and visit reminder
-          texts.
-        </p>
-      ) : (
-        <FeatureUpgradePanel
-          title="Upgrade to unlock SMS notifications"
-          description="Pro includes SMS customer communication — quote alerts, visit reminders, and 25,000 segments per month."
-        />
-      )}
+        {!smsTierEnabled ? (
+          <FeatureUpgradePanel
+            title="Upgrade to unlock text notifications"
+            description="Pro includes customer text alerts for quotes, visit reminders, and overdue invoices — 25,000 segments per month."
+          />
+        ) : null}
 
-      <Card
-        title="Quotes, scheduling & customer payments"
-        description="Defaults for quotes, scheduling, payments, and email/SMS notifications."
-      >
         <OperationalSettingsForm
           tenantSlug={membership.tenantSlug}
           snapshot={opsSnapshot}
@@ -140,8 +128,9 @@ export default async function TenantOperationsSettingsPage() {
           sentDmConfigured={sentDmConfigured}
           invoiceReminderEmailEditable={invoiceReminderEmailEditable}
           invoiceReminderSmsEditable={invoiceReminderSmsEditable}
+          smsUsageSummary={smsUsageSummary}
         />
-      </Card>
+      </Stack>
     </>
   );
 }
