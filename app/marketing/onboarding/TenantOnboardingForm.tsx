@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useActionState } from 'react';
 import zxcvbn from 'zxcvbn';
+import { fireSlugAvailableConfetti } from '@/lib/ui/slugAvailableConfetti';
 import { createTenantAndOwner, type TenantOnboardingState } from './actions';
 import {
   formatPasswordFeedback,
@@ -13,6 +15,9 @@ import {
 import styles from './onboarding.module.scss';
 
 const initialState: TenantOnboardingState = {};
+
+const SLUG_CHECK_DEBOUNCE_MS = 500;
+const SLUG_CONFETTI_DEBOUNCE_MS = 600;
 
 export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string }) {
   const [state, formAction, pending] = useActionState(createTenantAndOwner, initialState);
@@ -29,11 +34,27 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
   const [stepError, setStepError] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [slugStatus, setSlugStatus] = useState<{
-    tone: 'idle' | 'ok' | 'warn' | 'error';
+    tone: 'idle' | 'checking' | 'ok' | 'warn' | 'error';
     message: string;
   }>({ tone: 'idle', message: 'Choose a unique slug for your workspace URL.' });
+  const celebratedSlugRef = useRef<string | null>(null);
 
   const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+  useEffect(() => {
+    if (slugStatus.tone !== 'ok') return;
+
+    const normalizedSlug = slug.trim().toLowerCase();
+    if (!normalizedSlug) return;
+
+    const timeout = setTimeout(() => {
+      if (celebratedSlugRef.current === normalizedSlug) return;
+      celebratedSlugRef.current = normalizedSlug;
+      void fireSlugAvailableConfetti();
+    }, SLUG_CONFETTI_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeout);
+  }, [slug, slugStatus.tone]);
 
   useEffect(() => {
     if (!slug.trim()) {
@@ -41,8 +62,12 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
       return;
     }
 
+    setSlugStatus({ tone: 'idle', message: 'Checking availability…' });
+
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
+      setSlugStatus({ tone: 'checking', message: 'Checking availability…' });
+
       try {
         const response = await fetch(
           `/api/onboarding/slug-availability?slug=${encodeURIComponent(slug)}`,
@@ -66,7 +91,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
       } catch {
         setSlugStatus({ tone: 'error', message: 'Could not check slug right now.' });
       }
-    }, 300);
+    }, SLUG_CHECK_DEBOUNCE_MS);
 
     return () => {
       clearTimeout(timeout);
@@ -89,6 +114,8 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
     password.length >= 8 &&
     passwordConfirm.length >= 8 &&
     !passwordsMismatch;
+
+  const workspaceStepBlocked = !businessName.trim() || !slug.trim() || slugStatus.tone !== 'ok';
 
   useEffect(() => {
     setStepError(null);
@@ -131,8 +158,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
 
   function goNext() {
     if (step === 0) {
-      if (!businessName.trim() || !slug.trim()) return;
-      if (slugStatus.tone === 'warn' || slugStatus.tone === 'error') return;
+      if (!businessName.trim() || !slug.trim() || slugStatus.tone !== 'ok') return;
     }
     if (step === 1) {
       const validationError = validateAccountStep();
@@ -193,22 +219,41 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         <label className={styles.label} htmlFor="workspace_slug">
           Workspace slug
         </label>
-        <div className={styles.slugRow}>
-          <input
-            id="workspace_slug"
-            name="workspace_slug"
-            className={styles.input}
-            required
-            pattern="^[a-z0-9][a-z0-9\\-]{1,61}[a-z0-9]$"
-            placeholder="acme"
-            value={slug}
-            onChange={(event) => setSlug(event.target.value)}
-          />
-          <span className={styles.slugSuffix}>.{domainSuffix}</span>
+        <div className={styles.slugField} data-tone={slugStatus.tone}>
+          <div className={styles.slugRow}>
+            <input
+              id="workspace_slug"
+              name="workspace_slug"
+              className={styles.input}
+              required
+              pattern="^[a-z0-9][a-z0-9\\-]{1,61}[a-z0-9]$"
+              placeholder="acme"
+              value={slug}
+              onChange={(event) => setSlug(event.target.value)}
+              aria-invalid={slugStatus.tone === 'warn' || slugStatus.tone === 'error' || undefined}
+              aria-describedby="workspace_slug_status"
+              aria-busy={slugStatus.tone === 'checking' || undefined}
+            />
+            <span className={styles.slugSuffix}>.{domainSuffix}</span>
+          </div>
+          <p
+            id="workspace_slug_status"
+            className={styles.slugStatus}
+            data-tone={slugStatus.tone}
+            aria-live="polite"
+          >
+            {slugStatus.tone === 'checking' ? (
+              <Loader2 size={16} className={styles.slugStatusIcon} aria-hidden="true" />
+            ) : null}
+            {slugStatus.tone === 'ok' ? (
+              <CheckCircle2 size={16} className={styles.slugStatusIcon} aria-hidden="true" />
+            ) : null}
+            {slugStatus.tone === 'warn' || slugStatus.tone === 'error' ? (
+              <XCircle size={16} className={styles.slugStatusIcon} aria-hidden="true" />
+            ) : null}
+            <span>{slugStatus.message}</span>
+          </p>
         </div>
-        <p className={styles.slugStatus} data-tone={slugStatus.tone}>
-          {slugStatus.message}
-        </p>
       </section>
 
       <section
@@ -450,7 +495,12 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           <span />
         )}
         {step < 2 ? (
-          <button type="button" className={styles.submit} onClick={goNext}>
+          <button
+            type="button"
+            className={styles.submit}
+            onClick={goNext}
+            disabled={step === 0 && workspaceStepBlocked}
+          >
             Continue
           </button>
         ) : (
