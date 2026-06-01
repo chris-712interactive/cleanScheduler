@@ -4,7 +4,6 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageBankReconciliation } from '@/lib/auth/tenantRoleAccess';
 import { getMfaStatus } from '@/lib/auth/mfa';
-import Link from 'next/link';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
@@ -15,6 +14,7 @@ import {
   type BankLinkView,
   type DepositMatchingStats,
 } from './DepositMatchingWorkspace';
+import { BankConnectionFlashBanners } from './BankConnectionFlashBanners';
 import { type MatchSuggestionRow } from './MatchSuggestionsPanel';
 import styles from '../billing.module.scss';
 
@@ -202,55 +202,20 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
         </p>
       ) : null}
 
-      {err ? (
-        <p className={styles.bannerError} role="alert">
-          {err}
-        </p>
-      ) : null}
-      {mfaBlocksPlaid ? (
-        <p className={styles.bannerError} role="alert">
-          Two-factor authentication is required before connecting a bank account.{' '}
-          <Link href="/settings/account">Enable MFA in Account settings</Link>
-          {!mfaStatus?.enrolled ? null : (
-            <>
-              {' '}
-              or <Link href="/sign-in/mfa?next=/billing/bank-connection">verify your session</Link>.
-            </>
-          )}
-        </p>
-      ) : null}
-      {connected ? (
-        <p className={styles.bannerOk} role="status">
-          Bank account connected. Initial transaction sync started.
-        </p>
-      ) : null}
-      {synced ? (
-        <p className={styles.bannerOk} role="status">
-          Bank transactions refreshed.
-        </p>
-      ) : null}
-      {matched ? (
-        <p className={styles.bannerOk} role="status">
-          Deposit matched and invoice payment recorded.
-        </p>
-      ) : null}
-      {dismissed ? (
-        <p className={styles.bannerOk} role="status">
-          Match suggestion dismissed.
-        </p>
-      ) : null}
-      {disconnected ? (
-        <p className={styles.bannerOk} role="status">
-          Bank connection removed.
-        </p>
-      ) : null}
-      {imported > 0 ? (
-        <p className={styles.bannerOk} role="status">
-          Imported {imported} bank deposit row{imported === 1 ? '' : 's'}
-          {skipped > 0 ? ` (${skipped} duplicate or invalid rows skipped)` : ''}. Match suggestions
-          were refreshed.
-        </p>
-      ) : null}
+      <BankConnectionFlashBanners
+        flash={{
+          error: err,
+          connected,
+          synced,
+          matched,
+          dismissed,
+          disconnected,
+          imported,
+          skipped,
+        }}
+        mfaBlocksPlaid={mfaBlocksPlaid}
+        mfaEnrolled={mfaStatus?.enrolled ?? false}
+      />
 
       {!bankReconciliationEnabled ? (
         <FeatureUpgradePanel
