@@ -84,7 +84,7 @@ export default async function CustomerQuotesPage({
       ) : view === 'active' && activeRows.length === 0 ? (
         <EmptyState
           title="No active quotes"
-          description="When a provider sends you a quote through cleanScheduler, it will appear here for review."
+          description="When a provider sends you a quote through Clean Scheduler, it will appear here for review."
         />
       ) : view === 'archived' && archivedRows.length === 0 ? (
         <EmptyState

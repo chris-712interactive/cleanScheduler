@@ -81,7 +81,7 @@ export default async function CompleteEmployeeInvitePage({ searchParams }: PageP
       <Container size="sm">
         <Card title="Invite expired">
           <p className={styles.lead}>
-            Ask your manager to send a fresh invite from cleanScheduler.
+            Ask your manager to send a fresh invite from Clean Scheduler.
           </p>
         </Card>
       </Container>

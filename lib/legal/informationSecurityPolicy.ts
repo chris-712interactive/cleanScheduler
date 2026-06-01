@@ -15,8 +15,8 @@ export const INFORMATION_SECURITY_POLICY_SECTIONS: PolicySection[] = [
     id: 'scope',
     title: '1. Scope and purpose',
     paragraphs: [
-      'This Information Security Policy (ISP) defines how cleanScheduler protects information assets processed through the Service, including tenant workspace data, customer portal data, platform billing records, and workforce access to production systems.',
-      'It applies to all personnel with access to cleanScheduler source code, infrastructure dashboards, or production data.',
+      'This Information Security Policy (ISP) defines how Clean Scheduler protects information assets processed through the Service, including tenant workspace data, customer portal data, platform billing records, and workforce access to production systems.',
+      'It applies to all personnel with access to Clean Scheduler source code, infrastructure dashboards, or production data.',
     ],
   },
   {
@@ -45,7 +45,7 @@ export const INFORMATION_SECURITY_POLICY_SECTIONS: PolicySection[] = [
     id: 'encryption',
     title: '4. Encryption and transmission security',
     paragraphs: [
-      'All web traffic to cleanScheduler uses HTTPS (TLS). Database and object storage encryption at rest is provided by Supabase. Payment card data is processed by Stripe; cleanScheduler does not store full card numbers.',
+      'All web traffic to Clean Scheduler uses HTTPS (TLS). Database and object storage encryption at rest is provided by Supabase. Payment card data is processed by Stripe; Clean Scheduler does not store full card numbers.',
       'Plaid bank connection tokens are stored server-side only and are not exposed to browser clients or non-admin tenant roles.',
     ],
   },
@@ -65,7 +65,7 @@ export const INFORMATION_SECURITY_POLICY_SECTIONS: PolicySection[] = [
     id: 'vulnerability',
     title: '6. Vulnerability management',
     paragraphs: [
-      'cleanScheduler maintains a vulnerability scanning program integrated into continuous integration:',
+      'Clean Scheduler maintains a vulnerability scanning program integrated into continuous integration:',
     ],
     bullets: [
       'Dependabot opens weekly pull requests for npm and GitHub Actions dependency updates.',
@@ -121,7 +121,7 @@ export const INFORMATION_SECURITY_POLICY_SECTIONS: PolicySection[] = [
     id: 'zero-trust',
     title: '12. Zero trust principles',
     paragraphs: [
-      'cleanScheduler applies zero trust principles to its SaaS architecture: no implicit trust based on network location, verification of every authenticated request, least-privilege access, and short-lived credentials where supported.',
+      'Clean Scheduler applies zero trust principles to its SaaS architecture: no implicit trust based on network location, verification of every authenticated request, least-privilege access, and short-lived credentials where supported.',
       'Detailed mapping of controls is documented in the Zero Trust Posture document.',
     ],
   },

@@ -51,7 +51,7 @@ export async function createPlaidLinkToken(tenantId: string): Promise<string> {
   const webhook = process.env.PLAID_WEBHOOK_URL?.trim() || undefined;
   const response = await client.linkTokenCreate({
     user: { client_user_id: tenantId },
-    client_name: 'cleanScheduler',
+    client_name: 'Clean Scheduler',
     products: [Products.Transactions],
     country_codes: [CountryCode.Us],
     language: 'en',
@@ -69,7 +69,7 @@ export async function createPlaidUpdateLinkToken(
   const client = getPlaidClient();
   const response = await client.linkTokenCreate({
     user: { client_user_id: tenantId },
-    client_name: 'cleanScheduler',
+    client_name: 'Clean Scheduler',
     products: [Products.Transactions],
     country_codes: [CountryCode.Us],
     language: 'en',

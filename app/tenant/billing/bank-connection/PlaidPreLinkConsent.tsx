@@ -32,7 +32,7 @@ export function PlaidPreLinkConsent({
         </a>
         {' · '}
         <a href={marketingPrivacyPolicyUrl()} rel="noopener noreferrer" target="_blank">
-          cleanScheduler Privacy Policy
+          Clean Scheduler Privacy Policy
         </a>
       </p>
       <label className={styles.consentRow} htmlFor={id}>

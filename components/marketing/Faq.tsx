@@ -16,7 +16,7 @@ export function Faq({ items, id = 'faq' }: FaqProps) {
           <Stack gap={2} align="center" as="div">
             <h2 className={styles.title}>Frequently asked questions</h2>
             <p className={styles.lead}>
-              Straight answers for cleaning business owners evaluating cleanScheduler.
+              Straight answers for cleaning business owners evaluating Clean Scheduler.
             </p>
           </Stack>
           <div className={styles.list}>

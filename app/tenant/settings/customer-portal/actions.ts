@@ -109,7 +109,7 @@ function parseHostnameFromForm(formData: FormData): string | { error: string } {
 
   const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN.split(':')[0]!.toLowerCase();
   if (hostname === apex || hostname.endsWith(`.${apex}`)) {
-    return { error: 'Use your own domain, not a cleanScheduler address.' };
+    return { error: 'Use your own domain, not a Clean Scheduler address.' };
   }
 
   return hostname;

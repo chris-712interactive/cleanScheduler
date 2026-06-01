@@ -13,7 +13,7 @@ export function buildTenantInvoiceEmailContent(params: {
 }): { subject: string; text: string; html: string } {
   const subject = `Invoice from ${params.tenantName}: ${params.invoiceTitle}`;
   const text = [
-    `${params.tenantName} sent you an invoice in cleanScheduler.`,
+    `${params.tenantName} sent you an invoice in Clean Scheduler.`,
     ``,
     `Invoice: ${params.invoiceTitle}`,
     `Status: ${params.status}`,

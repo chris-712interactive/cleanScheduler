@@ -23,6 +23,15 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/help">
               Help Center
             </Link>
+            <Link className={styles.link} href="/help/cleaning-businesses">
+              Guides for owners
+            </Link>
+            <Link className={styles.link} href="/why-cleanscheduler">
+              Why Clean Scheduler
+            </Link>
+            <Link className={styles.link} href="/for/residential-cleaning-companies">
+              Residential cleaning
+            </Link>
             <Link className={styles.link} href="/security">
               Security
             </Link>

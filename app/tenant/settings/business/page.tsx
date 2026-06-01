@@ -92,7 +92,7 @@ export default async function TenantBusinessSettingsPage() {
         <SettingsSectionCard
           icon={Palette}
           title="Branding"
-          description="Customize how your brand appears in cleanScheduler."
+          description="Customize how your brand appears in Clean Scheduler."
         >
           <BrandingForm
             tenantSlug={membership.tenantSlug}

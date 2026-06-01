@@ -67,7 +67,7 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Customer reschedule inbox with approve/deny',
     ],
     imageSrc: '/marketing/feature-schedule.png',
-    imageAlt: 'cleanScheduler schedule view showing cleaning visits on a day calendar',
+    imageAlt: 'Clean Scheduler schedule view showing cleaning visits on a day calendar',
   },
   {
     id: 'quotes',
@@ -81,7 +81,7 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Convert accepted work to invoices',
     ],
     imageSrc: '/marketing/feature-quotes.png',
-    imageAlt: 'cleanScheduler quotes pipeline with estimate cards by status',
+    imageAlt: 'Clean Scheduler quotes pipeline with estimate cards by status',
   },
   {
     id: 'billing',
@@ -95,7 +95,7 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Payment audit workflow for field collections',
     ],
     imageSrc: '/marketing/feature-billing.png',
-    imageAlt: 'cleanScheduler invoice list with payment status and amounts due',
+    imageAlt: 'Clean Scheduler invoice list with payment status and amounts due',
   },
   {
     id: 'customer-portal',
@@ -109,7 +109,7 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Request reschedule times online',
     ],
     imageSrc: '/marketing/feature-customers.png',
-    imageAlt: 'cleanScheduler customer directory with residential and commercial accounts',
+    imageAlt: 'Clean Scheduler customer directory with residential and commercial accounts',
     tierBadge: { label: 'Business plan', tier: 'business' },
   },
   {
@@ -124,7 +124,7 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Draft, schedule, and performance metrics',
     ],
     imageSrc: '/marketing/feature-portals.png',
-    imageAlt: 'cleanScheduler workspace billing hub showing customer AR tools',
+    imageAlt: 'Clean Scheduler workspace billing hub showing customer AR tools',
     tierBadge: { label: 'Business plan', tier: 'business' },
   },
   {
@@ -139,7 +139,7 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Advanced analytics and forecasting on Pro',
     ],
     imageSrc: '/marketing/feature-reports.png',
-    imageAlt: 'cleanScheduler payment audits report for check and cash tracking',
+    imageAlt: 'Clean Scheduler payment audits report for check and cash tracking',
     tierBadge: { label: 'Business+', tier: 'business' },
   },
   {
@@ -154,7 +154,7 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Review request campaigns alongside email',
     ],
     imageSrc: '/marketing/feature-portals.png',
-    imageAlt: 'cleanScheduler customer communication features',
+    imageAlt: 'Clean Scheduler customer communication features',
     tierBadge: { label: 'Pro plan', tier: 'pro' },
   },
 ];
@@ -183,19 +183,19 @@ export const MARKETING_THREE_PORTALS = [
     title: 'Team portal',
     description: 'Your office and field staff manage quotes, schedule, billing, and reports.',
     imageSrc: '/marketing/hero-dashboard.png',
-    imageAlt: 'cleanScheduler team dashboard with today’s jobs and key metrics',
+    imageAlt: 'Clean Scheduler team dashboard with today’s jobs and key metrics',
   },
   {
     title: 'Customer portal',
     description: 'Clients view appointments, pay invoices, and request reschedules online.',
     imageSrc: '/marketing/feature-customers.png',
-    imageAlt: 'cleanScheduler customer-facing account management',
+    imageAlt: 'Clean Scheduler customer-facing account management',
   },
   {
     title: 'Mobile-friendly field view',
     description: 'Crews check in, complete visits, and record payments from any phone.',
     imageSrc: '/marketing/feature-schedule-mobile.png',
-    imageAlt: 'cleanScheduler mobile schedule for field workers',
+    imageAlt: 'Clean Scheduler mobile schedule for field workers',
     variant: 'mobile' as const,
   },
 ];
@@ -214,12 +214,12 @@ export const MARKETING_FAQ: MarketingFaqItem[] = [
   {
     question: 'What is the difference between platform billing and customer payments?',
     answer:
-      'Your cleanScheduler subscription (Starter, Business, or Pro) is separate from payments you collect from your cleaning clients. Customer invoicing uses your own Stripe Connect account.',
+      'Your Clean Scheduler subscription (Starter, Business, or Pro) is separate from payments you collect from your cleaning clients. Customer invoicing uses your own Stripe Connect account.',
   },
   {
     question: 'How does Zelle tracking work?',
     answer:
-      'cleanScheduler does not connect directly to Zelle. When you link your business bank account, we help match Zelle and ACH deposits to open invoices during reconciliation.',
+      'Clean Scheduler does not connect directly to Zelle. When you link your business bank account, we help match Zelle and ACH deposits to open invoices during reconciliation.',
   },
   {
     question: 'Do you integrate with QuickBooks or payroll systems?',
@@ -232,7 +232,7 @@ export const MARKETING_FAQ: MarketingFaqItem[] = [
       'If you subscribe, your workspace stays active. If not, access pauses until you subscribe. Owners can manage billing or delete the workspace from account settings.',
   },
   {
-    question: 'Is cleanScheduler only for cleaning businesses?',
+    question: 'Is Clean Scheduler only for cleaning businesses?',
     answer:
       'Yes. We built the product specifically for residential and commercial cleaning companies — not generic field service.',
   },

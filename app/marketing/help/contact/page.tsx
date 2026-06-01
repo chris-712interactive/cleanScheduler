@@ -8,7 +8,7 @@ import styles from '@/components/marketing/help/help.module.scss';
 export const metadata = buildHelpPageMetadata({
   path: '/help/contact',
   title: 'Contact Support',
-  description: 'How to reach cleanScheduler sales, support, and legal teams.',
+  description: 'How to reach Clean Scheduler sales, support, and legal teams.',
 });
 
 export default function HelpContactPage() {

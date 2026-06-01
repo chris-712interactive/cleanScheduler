@@ -136,15 +136,27 @@ const COMPARISON_ROWS: ComparisonRow[] = [
 function CellValue({ value }: { value: boolean | string }) {
   if (typeof value === 'string') {
     if (value === '—') {
-      return <Minus size={18} aria-hidden className={styles.minusIcon} />;
+      return (
+        <span className={styles.cellValue}>
+          <Minus size={18} aria-hidden className={styles.minusIcon} />
+        </span>
+      );
     }
-    return <span className={styles.textValue}>{value}</span>;
+    return (
+      <span className={styles.cellValue}>
+        <span className={styles.textValue}>{value}</span>
+      </span>
+    );
   }
 
-  return value ? (
-    <Check size={18} aria-hidden className={styles.checkIcon} />
-  ) : (
-    <Minus size={18} aria-hidden className={styles.minusIcon} />
+  return (
+    <span className={styles.cellValue}>
+      {value ? (
+        <Check size={18} aria-hidden className={styles.checkIcon} />
+      ) : (
+        <Minus size={18} aria-hidden className={styles.minusIcon} />
+      )}
+    </span>
   );
 }
 

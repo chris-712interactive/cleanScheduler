@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { PRODUCT_NAME } from '@/lib/legal/site';
 import styles from './MarketingLogo.module.scss';
 
 interface MarketingLogoProps {
@@ -18,7 +19,7 @@ export function MarketingLogo({ href = '/', className }: MarketingLogoProps) {
         className={styles.logoMark}
         aria-hidden
       />
-      <span className={styles.logoText}>cleanScheduler</span>
+      <span className={styles.logoText}>{PRODUCT_NAME}</span>
     </>
   );
 

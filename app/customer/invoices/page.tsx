@@ -66,7 +66,7 @@ export default async function CustomerInvoicesPage() {
       ) : !list.length ? (
         <EmptyState
           title="No invoices yet"
-          description="When a provider sends you an invoice through cleanScheduler, it will appear here with balance and status."
+          description="When a provider sends you an invoice through Clean Scheduler, it will appear here with balance and status."
         />
       ) : (
         <Stack gap={3}>

@@ -48,9 +48,8 @@ export function CompleteEmployeeInviteForms({
           ) : null}
           {pwState.duplicateAccount ? (
             <p className={styles.hint}>
-              Use <strong>Link my account</strong> below if you already have this password on
-              cleanScheduler, or open <Link href={marketingSignInUrl}>sign in</Link> and return
-              here.
+              Use <strong>Link my account</strong> below if you already have this password on Clean
+              Scheduler, or open <Link href={marketingSignInUrl}>sign in</Link> and return here.
             </p>
           ) : null}
           <label className={styles.label} htmlFor="emp-password">
@@ -86,7 +85,7 @@ export function CompleteEmployeeInviteForms({
       </Card>
 
       <Card
-        title="Already have a cleanScheduler login?"
+        title="Already have a Clean Scheduler login?"
         description="Use the same email this invite was sent to. Stay on this page in the same browser."
       >
         {hasSession ? (

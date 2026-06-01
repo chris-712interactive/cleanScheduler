@@ -47,18 +47,18 @@ export async function sendDbOnlyTrialEndingEmail(params: {
     'Choose a plan and subscribe to keep scheduling, quotes, and billing running without interruption:',
     billingUrl,
     '',
-    '— cleanScheduler',
+    '— Clean Scheduler',
   ].join('\n');
 
   await sendTransactionalEmail({
     to: params.ownerEmail,
-    subject: `${workspace}: your cleanScheduler trial ends ${trialEnd}`,
+    subject: `${workspace}: your Clean Scheduler trial ends ${trialEnd}`,
     text: textBody,
     html: [
       `<p>Hi ${ownerFirstName},</p>`,
       `<p>Your free trial for <strong>${workspace}</strong> ends on <strong>${trialEnd}</strong>.</p>`,
       `<p><a href="${billingUrl}">Choose a plan and subscribe</a> to keep scheduling, quotes, and billing running without interruption.</p>`,
-      '<p>— cleanScheduler</p>',
+      '<p>— Clean Scheduler</p>',
     ].join(''),
   });
 }
