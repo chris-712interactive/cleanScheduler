@@ -1,21 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui/Button';
 import { disconnectBankLinkAction, syncBankTransactionsAction } from './actions';
 import { finishBankConnectionAction } from './finishBankConnectionAction';
 
 interface BankConnectionControlsProps {
   tenantSlug: string;
+  size?: ButtonSize;
 }
 
-export function SyncBankButton({ tenantSlug }: BankConnectionControlsProps) {
+export function SyncBankButton({ tenantSlug, size = 'sm' }: BankConnectionControlsProps) {
   const [pending, setPending] = useState(false);
 
   return (
     <Button
       type="button"
       variant="secondary"
+      size={size}
       disabled={pending}
       onClick={() => {
         void (async () => {
@@ -32,13 +34,18 @@ export function SyncBankButton({ tenantSlug }: BankConnectionControlsProps) {
   );
 }
 
-export function DisconnectBankButton({ tenantSlug }: BankConnectionControlsProps) {
+export function DisconnectBankButton({
+  tenantSlug,
+  size = 'sm',
+  variant = 'ghost',
+}: BankConnectionControlsProps & { variant?: ButtonVariant }) {
   const [pending, setPending] = useState(false);
 
   return (
     <Button
       type="button"
-      variant="secondary"
+      variant={variant}
+      size={size}
       disabled={pending}
       onClick={() => {
         void (async () => {

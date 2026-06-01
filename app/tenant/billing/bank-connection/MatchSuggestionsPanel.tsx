@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { confirmPaymentMatchAction, dismissPaymentMatchAction } from './actions';
 import { finishBankConnectionAction } from './finishBankConnectionAction';
-import styles from '../billing.module.scss';
+import styles from './bank-connection.module.scss';
 
 export interface MatchSuggestionRow {
   id: string;
@@ -23,6 +23,7 @@ interface MatchSuggestionsPanelProps {
   tenantSlug: string;
   suggestions: MatchSuggestionRow[];
   canManage?: boolean;
+  reconnectNeeded?: boolean;
 }
 
 function formatUsd(cents: number): string {
@@ -31,16 +32,27 @@ function formatUsd(cents: number): string {
   );
 }
 
+function formatDate(date: string): string {
+  const parsed = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 export function MatchSuggestionsPanel({
   tenantSlug,
   suggestions,
   canManage = true,
+  reconnectNeeded = false,
 }: MatchSuggestionsPanelProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
 
+  if (reconnectNeeded) {
+    return <p className={styles.emptyHint}>Reconnect your bank to see new deposit suggestions.</p>;
+  }
+
   if (suggestions.length === 0) {
     return (
-      <p className={styles.muted} style={{ margin: 0 }}>
+      <p className={styles.emptyHint}>
         No suggested matches right now. After sync, incoming deposits are compared to open invoices
         by amount and customer name.
       </p>
@@ -48,78 +60,70 @@ export function MatchSuggestionsPanel({
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th align="left">Bank deposit</th>
-            <th align="left">Suggested invoice</th>
-            <th align="left">Confidence</th>
-            {canManage ? <th align="right">Actions</th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {suggestions.map((row) => (
-            <tr key={row.id}>
-              <td>
-                <div>{row.transactionName}</div>
-                <div className={styles.muted} style={{ fontSize: '0.875rem' }}>
-                  {row.transactionDate} · {formatUsd(row.transactionAmountCents)}
+    <div className={styles.sectionBlock}>
+      {suggestions.map((row) => {
+        const confidence = Math.round(row.confidenceScore * 100);
+        return (
+          <article key={row.id} className={styles.matchCard}>
+            <div className={styles.matchCardInner}>
+              <div className={styles.matchCardMeta}>
+                <div className={styles.matchCardTopRow}>
+                  <span className={styles.statusPill} data-tone="info">
+                    {confidence}% match
+                  </span>
+                  <span className={styles.muted}>{formatDate(row.transactionDate)}</span>
                 </div>
-              </td>
-              <td>
-                <Link href={`/billing/invoices/${row.invoiceId}`}>{row.invoiceTitle}</Link>
-                <div className={styles.muted} style={{ fontSize: '0.875rem' }}>
-                  Remaining {formatUsd(row.invoiceRemainingCents)}
-                </div>
-              </td>
-              <td>{Math.round(row.confidenceScore * 100)}%</td>
+                <p className={styles.matchCardTitle}>{row.transactionName}</p>
+                <p className={styles.muted}>
+                  Deposit {formatUsd(row.transactionAmountCents)} →{' '}
+                  <Link href={`/billing/invoices/${row.invoiceId}`}>{row.invoiceTitle}</Link> (
+                  {formatUsd(row.invoiceRemainingCents)} due)
+                </p>
+              </div>
               {canManage ? (
-                <td align="right">
-                  <div
-                    style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}
+                <div className={styles.matchCardActions}>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={pendingId === row.id}
+                    onClick={() => {
+                      void (async () => {
+                        setPendingId(row.id);
+                        const formData = new FormData();
+                        formData.set('tenant_slug', tenantSlug);
+                        formData.set('suggestion_id', row.id);
+                        const result = await confirmPaymentMatchAction(formData);
+                        finishBankConnectionAction(result, 'matched');
+                      })();
+                    }}
                   >
-                    <Button
-                      type="button"
-                      variant="primary"
-                      disabled={pendingId === row.id}
-                      onClick={() => {
-                        void (async () => {
-                          setPendingId(row.id);
-                          const formData = new FormData();
-                          formData.set('tenant_slug', tenantSlug);
-                          formData.set('suggestion_id', row.id);
-                          const result = await confirmPaymentMatchAction(formData);
-                          finishBankConnectionAction(result, 'matched');
-                        })();
-                      }}
-                    >
-                      Confirm
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={pendingId === row.id}
-                      onClick={() => {
-                        void (async () => {
-                          setPendingId(row.id);
-                          const formData = new FormData();
-                          formData.set('tenant_slug', tenantSlug);
-                          formData.set('suggestion_id', row.id);
-                          const result = await dismissPaymentMatchAction(formData);
-                          finishBankConnectionAction(result, 'dismissed');
-                        })();
-                      }}
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
-                </td>
+                    Confirm payment
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={pendingId === row.id}
+                    onClick={() => {
+                      void (async () => {
+                        setPendingId(row.id);
+                        const formData = new FormData();
+                        formData.set('tenant_slug', tenantSlug);
+                        formData.set('suggestion_id', row.id);
+                        const result = await dismissPaymentMatchAction(formData);
+                        finishBankConnectionAction(result, 'dismissed');
+                      })();
+                    }}
+                  >
+                    Not this invoice
+                  </Button>
+                </div>
               ) : null}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
