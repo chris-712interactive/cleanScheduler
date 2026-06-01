@@ -1,5 +1,5 @@
-import { Globe } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { Stack } from '@/components/layout/Stack';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -22,10 +22,9 @@ import {
   type VercelDomainVerificationRecord,
 } from '@/lib/portal/vercelProjectDomains';
 import { publicEnv } from '@/lib/env';
-import { SettingsSectionCard } from '../SettingsSectionCard';
 import { CustomerPortalDomainPanel } from './CustomerPortalDomainPanel';
 import { reconcileCustomerPortalDomainWithVercel } from '@/lib/portal/customerPortalDomainSync';
-import styles from '../settings.module.scss';
+import styles from './customer-portal-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,34 +103,30 @@ export default async function TenantCustomerPortalSettingsPage() {
     <>
       <PageHeader
         title="Customer portal"
-        titleHint="Use your own web address and branding for the customer portal (Pro)."
+        titleHint="Use your own web address so clients see your brand in portal links and sign-in."
         backHref="/settings"
         backLabel="Settings"
       />
 
       {!canEdit ? (
         <p className={styles.readOnlyNotice} role="status">
-          You can view customer portal settings here. Only owners and admins can make changes.
+          You can view these settings, but only owners and admins can change the portal address.
         </p>
       ) : null}
 
-      {!tierEnabled ? (
-        <FeatureUpgradePanel
-          title="Upgrade to use your own portal address"
-          description={`Pro lets you use a custom web address, your logo, and your business name in the customer portal. ${getEntitlementsForTier('business').displayName} includes the shared portal at my.*.`}
-        />
-      ) : !paid ? (
-        <p className={styles.opsIntro} style={{ marginBottom: 'var(--space-4)' }} role="status">
-          A custom portal address is included with Pro after you subscribe. Add a payment method
-          from Workspace billing to set one up during your trial.
-        </p>
-      ) : null}
+      <Stack gap={6}>
+        {!tierEnabled ? (
+          <FeatureUpgradePanel
+            title="Upgrade to use your own portal address"
+            description={`Pro lets you use a custom web address with your logo and business name. ${getEntitlementsForTier('business').displayName} includes the shared portal at my.*.`}
+          />
+        ) : !paid ? (
+          <p className={styles.setupSectionLead} role="status">
+            A custom portal address is included with Pro after you subscribe. Add a payment method
+            from Workspace billing to set one up during your trial.
+          </p>
+        ) : null}
 
-      <SettingsSectionCard
-        icon={Globe}
-        title="Custom web address"
-        description="Let customers open the portal on your domain with your logo and business name."
-      >
         {whiteLabelAllowed ? (
           <CustomerPortalDomainPanel
             tenantSlug={membership.tenantSlug}
@@ -143,12 +138,14 @@ export default async function TenantCustomerPortalSettingsPage() {
             domain={domain}
           />
         ) : (
-          <p className={styles.opsIntro}>
-            Available on Pro with an active subscription. Customers on Business use the shared
-            portal at <code>{sharedPortalHost}</code>.
-          </p>
+          <section className={styles.setupSection}>
+            <p className={styles.setupSectionLead}>
+              Available on Pro with an active subscription. Customers on Business use the shared
+              portal at <strong>{sharedPortalHost}</strong>.
+            </p>
+          </section>
         )}
-      </SettingsSectionCard>
+      </Stack>
     </>
   );
 }

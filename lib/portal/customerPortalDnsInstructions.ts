@@ -3,37 +3,67 @@ import type {
   VercelDomainVerificationRecord,
 } from '@/lib/portal/vercelProjectDomains';
 
+export type CustomerPortalDnsRecordCategory = 'ownership' | 'routing';
+
 export interface CustomerPortalDnsInstruction {
   id: string;
   type: string;
+  category: CustomerPortalDnsRecordCategory;
   hostLabel: string;
+  hostHelp?: string;
   value: string;
+  valueHelp?: string;
   purpose: string;
   detail?: string;
 }
 
-function dnsHostLabel(recordHost: string, portalHostname: string): string {
+function dnsHostParts(
+  recordHost: string,
+  portalHostname: string,
+): { hostLabel: string; hostHelp?: string } {
   const host = recordHost.trim().toLowerCase();
   const portal = portalHostname.trim().toLowerCase();
 
-  if (host === portal) return '@ (root) — some providers label this “@” or leave the name blank';
-  if (host.endsWith(`.${portal}`)) {
-    const prefix = host.slice(0, -(portal.length + 1));
-    return prefix || '@';
+  if (host === portal) {
+    return {
+      hostLabel: '@',
+      hostHelp:
+        'Use @ for the root domain. Some providers leave the Name or Host field blank instead.',
+    };
   }
 
-  return recordHost;
+  if (host.endsWith(`.${portal}`)) {
+    const prefix = host.slice(0, -(portal.length + 1));
+    if (prefix) return { hostLabel: prefix };
+  }
+
+  return { hostLabel: recordHost };
+}
+
+function categoryForRecord(type: string): CustomerPortalDnsRecordCategory {
+  return type.toUpperCase() === 'TXT' ? 'ownership' : 'routing';
 }
 
 function purposeForRecord(type: string, reason: string | undefined): string {
   const normalized = type.toUpperCase();
   if (normalized === 'TXT') {
-    return 'Confirms that you own this domain';
+    return 'Proves you own this domain';
   }
   if (normalized === 'CNAME' || normalized === 'A' || normalized === 'AAAA') {
-    return 'Connects your portal address to Clean Scheduler';
+    return 'Routes visitors to your customer portal';
   }
   return reason?.trim() || 'Required to finish setup';
+}
+
+function valueHelpForRecord(type: string): string | undefined {
+  const normalized = type.toUpperCase();
+  if (normalized === 'CNAME') {
+    return 'Your provider may label this Target, Points to, or Alias.';
+  }
+  if (normalized === 'A' || normalized === 'AAAA') {
+    return 'Enter this IP address exactly as shown.';
+  }
+  return undefined;
 }
 
 export function buildDnsInstructionsFromVercel(
@@ -42,14 +72,21 @@ export function buildDnsInstructionsFromVercel(
 ): CustomerPortalDnsInstruction[] {
   return records
     .filter((record) => record.value.trim().length > 0)
-    .map((record, index) => ({
-      id: `${record.type}-${record.domain}-${index}`,
-      type: record.type.toUpperCase(),
-      hostLabel: dnsHostLabel(record.domain, portalHostname),
-      value: record.value,
-      purpose: purposeForRecord(record.type, record.reason),
-      detail: record.reason?.trim() || undefined,
-    }));
+    .map((record, index) => {
+      const type = record.type.toUpperCase();
+      const { hostLabel, hostHelp } = dnsHostParts(record.domain, portalHostname);
+      return {
+        id: `${record.type}-${record.domain}-${index}`,
+        type,
+        category: categoryForRecord(record.type),
+        hostLabel,
+        hostHelp,
+        value: record.value,
+        valueHelp: valueHelpForRecord(record.type),
+        purpose: purposeForRecord(record.type, record.reason),
+        detail: record.reason?.trim() || undefined,
+      };
+    });
 }
 
 function subdomainHostLabel(portalHostname: string): string {
@@ -69,11 +106,14 @@ function buildRoutingInstructionsFromVercelConfig(
       {
         id: 'vercel-cname',
         type: 'CNAME',
+        category: 'routing',
         hostLabel,
+        hostHelp: 'Enter only the first part of your portal address — not the full domain.',
         value: config.recommendedCname,
-        purpose: 'Connects your portal address to Clean Scheduler',
+        valueHelp: 'Your provider may label this Target, Points to, or Alias.',
+        purpose: 'Routes visitors to your customer portal',
         detail:
-          'Copy this value exactly. Some providers call this field “Target”, “Points to”, or “Alias”.',
+          'Copy this value exactly, including any trailing dot your provider adds automatically.',
       },
     ];
   }
@@ -82,9 +122,12 @@ function buildRoutingInstructionsFromVercelConfig(
     return config.recommendedARecords.map((ip, index) => ({
       id: `vercel-a-${index}`,
       type: 'A',
+      category: 'routing',
       hostLabel,
+      hostHelp: 'Enter only the first part of your portal address — not the full domain.',
       value: ip,
-      purpose: 'Connects your portal address to Clean Scheduler',
+      valueHelp: 'Enter this IP address exactly as shown.',
+      purpose: 'Routes visitors to your customer portal',
     }));
   }
 
@@ -127,9 +170,10 @@ export function buildLocalDevTxtInstruction(
   return {
     id: 'local-txt',
     type: 'TXT',
+    category: 'ownership',
     hostLabel: txtRecordName,
     value: verificationToken,
-    purpose: `Confirms that you own ${portalHostname}`,
+    purpose: `Proves you own ${portalHostname}`,
   };
 }
 
@@ -140,20 +184,32 @@ export function buildFallbackDnsInstructions(
     {
       id: 'fallback-txt',
       type: 'TXT',
+      category: 'ownership',
       hostLabel: `_vercel.${portalHostname}`,
-      value: 'Loading… click Refresh below if this stays empty',
-      purpose: 'Confirms that you own this domain',
-      detail:
+      hostHelp:
         'Your DNS provider may show only part of the name (for example _vercel or _vercel.portal).',
+      value: 'Loading… click Refresh records if this stays empty',
+      purpose: 'Proves you own this domain',
     },
     {
       id: 'fallback-cname',
       type: 'CNAME',
+      category: 'routing',
       hostLabel: portalHostname.includes('.') ? portalHostname.split('.')[0]! : portalHostname,
+      hostHelp: 'Enter only the first part of your portal address — not the full domain.',
       value: 'cname.vercel-dns.com',
-      purpose: 'Connects your portal address to Clean Scheduler',
-      detail:
-        'Enter only the first part of your address (for example portal, not the full domain).',
+      valueHelp: 'Your provider may label this Target, Points to, or Alias.',
+      purpose: 'Routes visitors to your customer portal',
     },
   ];
+}
+
+export function groupDnsInstructionsByCategory(instructions: CustomerPortalDnsInstruction[]): {
+  ownership: CustomerPortalDnsInstruction[];
+  routing: CustomerPortalDnsInstruction[];
+} {
+  return {
+    ownership: instructions.filter((record) => record.category === 'ownership'),
+    routing: instructions.filter((record) => record.category === 'routing'),
+  };
 }
