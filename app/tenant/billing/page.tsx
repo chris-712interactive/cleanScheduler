@@ -237,7 +237,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
         ? 'Your free trial has ended. Pick a plan to restore scheduling, quotes, customers, and the rest of your workspace.'
         : 'Your free trial has ended. Scheduling and other workspace areas are unavailable until an owner or admin renews the plan.'
       : canManageSubscription
-        ? 'This workspace is paused. Pick a plan to turn cleanScheduler back on.'
+        ? 'This workspace is paused. Pick a plan to turn Clean Scheduler back on.'
         : 'This workspace is paused. Contact an owner or admin to renew the plan.'
     : subscriptionAccess === 'trialing' && daysLeft != null
       ? `You have ${daysLeft} day${daysLeft === 1 ? '' : 's'} left. Subscribe now to keep access when your trial ends.`
@@ -280,7 +280,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
     <>
       <PageHeader
         title="Billing"
-        titleHint="Your cleanScheduler plan and the tools you use to bill customers."
+        titleHint="Your Clean Scheduler plan and the tools you use to bill customers."
       />
 
       <Stack gap={6}>
@@ -402,7 +402,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
               </h2>
               <p className={styles.customerSectionLead}>
                 Send invoices, accept payments, and track what you are owed — separate from your
-                cleanScheduler subscription above.
+                Clean Scheduler subscription above.
               </p>
             </header>
 

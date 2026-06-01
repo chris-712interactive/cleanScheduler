@@ -11,7 +11,7 @@ export interface FinalCtaProps {
 
 export function FinalCta({
   title = 'Ready to tidy up your operations?',
-  lead = 'Join cleaning businesses using cleanScheduler to schedule crews, close quotes, and get paid faster.',
+  lead = 'Join cleaning businesses using Clean Scheduler to schedule crews, close quotes, and get paid faster.',
 }: FinalCtaProps) {
   return (
     <section className={styles.section}>

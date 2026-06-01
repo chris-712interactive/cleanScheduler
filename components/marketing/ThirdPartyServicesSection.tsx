@@ -66,7 +66,7 @@ export function ThirdPartyServicesSection() {
       <p>
         <strong>Tenant payment processing.</strong> When a cleaning business connects Stripe
         Connect, card and bank payments for that business&apos;s customers are processed by Stripe
-        under that business&apos;s Stripe account. cleanScheduler receives payment status, amounts,
+        under that business&apos;s Stripe account. Clean Scheduler receives payment status, amounts,
         and dispute notifications to operate invoicing and reporting; Stripe&apos;s handling of
         cardholder data is governed by Stripe&apos;s policies and the tenant&apos;s agreement with
         Stripe.

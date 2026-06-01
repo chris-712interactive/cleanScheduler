@@ -41,7 +41,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       <main className={styles.page}>
         <Container size="sm">
           <Card
-            title="Sign in to cleanScheduler"
+            title="Sign in to Clean Scheduler"
             description="Sign in to your existing workspace. New businesses should start a free trial first."
           >
             <SignInForm nextPath={nextPath} urlError={signInUrlError} defaultEmail={defaultEmail} />

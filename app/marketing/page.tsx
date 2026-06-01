@@ -46,7 +46,7 @@ export const metadata: Metadata = {
         url: '/marketing/og-home.png',
         width: 1280,
         height: 800,
-        alt: 'cleanScheduler dashboard for cleaning businesses',
+        alt: 'Clean Scheduler dashboard for cleaning businesses',
       },
     ],
   },
@@ -92,7 +92,7 @@ export default async function MarketingHome() {
               </h2>
               <p className={styles.sectionLead}>
                 Whether you are the owner wearing every hat, running the office, or closing the
-                books — cleanScheduler meets you where you work.
+                books — Clean Scheduler meets you where you work.
               </p>
             </Stack>
           </Container>

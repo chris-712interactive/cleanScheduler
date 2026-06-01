@@ -9,7 +9,7 @@ import { MfaChallengeForm } from './MfaChallengeForm';
 import styles from '../sign-in.module.scss';
 
 export const metadata = {
-  title: 'Two-factor verification · cleanScheduler',
+  title: 'Two-factor verification · Clean Scheduler',
 };
 
 interface PageProps {

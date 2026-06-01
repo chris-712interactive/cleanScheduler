@@ -84,7 +84,7 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
       <Container size="sm">
         <Card title="Invite expired">
           <p className={styles.lead}>
-            Ask your provider to send a fresh invite from their cleanScheduler workspace.
+            Ask your provider to send a fresh invite from their Clean Scheduler workspace.
           </p>
         </Card>
       </Container>

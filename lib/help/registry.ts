@@ -1,6 +1,22 @@
 import type { HelpArticleEntry, HelpCategory } from './types';
+import { CLEANING_BUSINESS_ARTICLES, CLEANING_BUSINESS_HUB } from '@/lib/marketing/seoContent';
 
 export const HELP_HUB_CATEGORIES: HelpCategory[] = [
+  {
+    slug: CLEANING_BUSINESS_HUB.slug,
+    path: CLEANING_BUSINESS_HUB.path,
+    title: CLEANING_BUSINESS_HUB.title,
+    description: CLEANING_BUSINESS_HUB.description,
+    audience: 'cleaning-businesses',
+    sectionTitle: CLEANING_BUSINESS_HUB.sectionTitle,
+    cards: CLEANING_BUSINESS_ARTICLES.map((article) => ({
+      title: article.title,
+      description: article.description,
+      href: article.path,
+      hrefLabel: 'Read guide',
+      badges: [{ label: 'How-to' }, { label: 'Owners' }],
+    })),
+  },
   {
     slug: 'customers',
     path: '/help/customers',
@@ -126,7 +142,7 @@ export const HELP_ARTICLES: HelpArticleEntry[] = [
   {
     path: '/help/faq',
     title: 'FAQ',
-    description: 'Frequently asked questions about cleanScheduler.',
+    description: 'Frequently asked questions about Clean Scheduler.',
   },
   {
     path: '/help/contact',
@@ -140,6 +156,20 @@ export const HELP_ARTICLES: HelpArticleEntry[] = [
     priority: 0.3,
     changeFrequency: 'monthly',
   },
+  {
+    path: CLEANING_BUSINESS_HUB.path,
+    title: CLEANING_BUSINESS_HUB.title,
+    description: CLEANING_BUSINESS_HUB.description,
+    priority: 0.6,
+    changeFrequency: 'monthly',
+  },
+  ...CLEANING_BUSINESS_ARTICLES.map((article) => ({
+    path: article.path,
+    title: article.title,
+    description: article.description,
+    priority: article.sitemapPriority,
+    changeFrequency: article.changeFrequency,
+  })),
 ];
 
 export function getHelpCategory(slug: string): HelpCategory | undefined {

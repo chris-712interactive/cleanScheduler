@@ -44,7 +44,7 @@ export const ACCESS_CONTROL_POLICY_SECTIONS: PolicySection[] = [
     id: 'purpose',
     title: '1. Purpose',
     paragraphs: [
-      'This Access Control Policy defines how cleanScheduler grants, modifies, reviews, and revokes access to application features and production systems.',
+      'This Access Control Policy defines how Clean Scheduler grants, modifies, reviews, and revokes access to application features and production systems.',
     ],
   },
   {

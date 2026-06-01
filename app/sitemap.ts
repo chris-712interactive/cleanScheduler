@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { HELP_ARTICLES } from '@/lib/help/registry';
+import { getAllPublicSeoPaths } from '@/lib/marketing/seoContent';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 
 const MARKETING_PATHS = [
@@ -29,16 +29,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const origin = getPublicOrigin(null);
   const lastModified = new Date();
 
-  const helpPaths = HELP_ARTICLES.map(({ path, priority, changeFrequency }) => ({
-    path,
-    priority: priority ?? 0.3,
-    changeFrequency: changeFrequency ?? ('monthly' as const),
-  }));
+  const seoPaths = getAllPublicSeoPaths();
 
-  return [...MARKETING_PATHS, ...helpPaths].map(({ path, priority, changeFrequency }) => ({
-    url: `${origin}${path}`,
-    lastModified,
-    changeFrequency,
-    priority,
-  }));
+  const helpPaths = [
+    { path: '/help', priority: 0.5, changeFrequency: 'monthly' as const },
+    { path: '/help/customers', priority: 0.4, changeFrequency: 'monthly' as const },
+    { path: '/help/developers', priority: 0.4, changeFrequency: 'monthly' as const },
+    { path: '/help/compliance', priority: 0.4, changeFrequency: 'monthly' as const },
+    { path: '/help/faq', priority: 0.5, changeFrequency: 'monthly' as const },
+    { path: '/help/contact', priority: 0.4, changeFrequency: 'yearly' as const },
+    { path: '/help/tcr', priority: 0.3, changeFrequency: 'monthly' as const },
+  ];
+
+  const allPaths = [...MARKETING_PATHS, ...seoPaths, ...helpPaths];
+  const seen = new Set<string>();
+
+  return allPaths
+    .filter(({ path }) => {
+      if (seen.has(path)) return false;
+      seen.add(path);
+      return true;
+    })
+    .map(({ path, priority, changeFrequency }) => ({
+      url: `${origin}${path}`,
+      lastModified,
+      changeFrequency,
+      priority,
+    }));
 }

@@ -21,7 +21,7 @@ export function PersonaCards({ personas }: PersonaCardsProps) {
                   {persona.pain}
                 </p>
                 <p className={styles.solution}>
-                  <span className={styles.label}>With cleanScheduler</span>
+                  <span className={styles.label}>With Clean Scheduler</span>
                   {persona.solution}
                 </p>
               </div>

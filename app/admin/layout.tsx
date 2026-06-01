@@ -1,4 +1,5 @@
 import { PortalShell } from '@/components/portal/PortalShell';
+import { PRODUCT_NAME } from '@/lib/legal/site';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem, IdentityChipModel } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
@@ -31,7 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <PortalShell
-      brandLabel="cleanScheduler"
+      brandLabel={PRODUCT_NAME}
       brandHref="/"
       navItems={NAV_ITEMS}
       identity={identity}
