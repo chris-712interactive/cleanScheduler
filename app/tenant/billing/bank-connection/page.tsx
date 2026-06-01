@@ -1,5 +1,4 @@
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Stack } from '@/components/layout/Stack';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
