@@ -6,11 +6,7 @@ import styles from '../billing.module.scss';
 
 export function BankStatementImportForm({ tenantSlug }: { tenantSlug: string }) {
   return (
-    <form
-      action={importBankStatementAction}
-      className={styles.invoiceRow}
-      encType="multipart/form-data"
-    >
+    <form action={importBankStatementAction} className={styles.invoiceRow}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <label className={styles.field}>
         Bank statement CSV

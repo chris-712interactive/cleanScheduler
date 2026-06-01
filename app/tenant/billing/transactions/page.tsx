@@ -132,7 +132,7 @@ export default async function TenantBillingTransactionsPage({
         backHref="/billing"
         backLabel="Workspace billing"
         titleHint="All payments recorded on customer invoices — manual entries and Stripe Checkout."
-        description="Payment ledger for your customers. For bank deposit matching, use Bank connection; for check/cash stages, use Payment audits."
+        description="Payment ledger for your customers. For Zelle and bank deposits, use Deposit matching; for check and cash entries, use Payment audits."
         actions={
           canExport ? (
             <Button variant="secondary" as="a" href="/api/tenant/billing/export?type=transactions">
