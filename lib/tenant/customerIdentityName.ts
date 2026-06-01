@@ -3,13 +3,9 @@
  * Writes should set first_name + last_name and synced full_name (see server actions).
  */
 
-export function syncedFullNameFromParts(first: string, last: string): string | null {
-  const f = first.trim();
-  const l = last.trim();
-  const parts = [f, l].filter(Boolean);
-  if (parts.length === 0) return null;
-  return parts.join(' ');
-}
+export { syncedFullNameFromParts, salutationFirstName } from '@/lib/people/personName';
+
+import { salutationFirstName } from '@/lib/people/personName';
 
 export function formatCustomerDisplayName(identity: {
   first_name?: string | null;
@@ -40,10 +36,5 @@ export function inviteTemplateCustomerFirstName(identity: {
   first_name?: string | null;
   full_name?: string | null;
 }): string {
-  const f = (identity.first_name ?? '').trim();
-  if (f) return f;
-  const legacy = (identity.full_name ?? '').trim();
-  if (!legacy) return 'there';
-  const token = legacy.split(/\s+/)[0];
-  return token || 'there';
+  return salutationFirstName(identity);
 }

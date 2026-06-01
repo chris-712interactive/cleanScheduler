@@ -20,17 +20,20 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
   const [slug, setSlug] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('residential');
-  const [displayName, setDisplayName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [step1Error, setStep1Error] = useState<string | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [slugStatus, setSlugStatus] = useState<{
     tone: 'idle' | 'ok' | 'warn' | 'error';
     message: string;
   }>({ tone: 'idle', message: 'Choose a unique slug for your workspace URL.' });
+
+  const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
   useEffect(() => {
     if (!slug.trim()) {
@@ -76,24 +79,79 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
     [password],
   );
 
+  const passwordsMismatch =
+    passwordConfirm.length > 0 && password.length > 0 && password !== passwordConfirm;
+  const passwordTooShort = password.length > 0 && password.length < 8;
+  const canSubmit =
+    acceptedTerms &&
+    displayName.length > 0 &&
+    email.trim().length > 0 &&
+    password.length >= 8 &&
+    passwordConfirm.length >= 8 &&
+    !passwordsMismatch;
+
   useEffect(() => {
-    setStep1Error(null);
-  }, [password, passwordConfirm]);
+    setStepError(null);
+  }, [firstName, lastName, email, password, passwordConfirm, acceptedTerms]);
+
+  function validateAccountStep(): string | null {
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      return 'First name, last name, and email are required.';
+    }
+    return null;
+  }
+
+  function validateFinalStep(): string | null {
+    const accountError = validateAccountStep();
+    if (accountError) return accountError;
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (password !== passwordConfirm) {
+      return 'Passwords do not match.';
+    }
+    if (!acceptedTerms) {
+      return 'Accept the Terms of Service and Privacy Policy to continue.';
+    }
+    return null;
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    if (step !== 2) {
+      event.preventDefault();
+      return;
+    }
+
+    const validationError = validateFinalStep();
+    if (validationError) {
+      event.preventDefault();
+      setStepError(validationError);
+    }
+  }
 
   function goNext() {
     if (step === 0) {
       if (!businessName.trim() || !slug.trim()) return;
       if (slugStatus.tone === 'warn' || slugStatus.tone === 'error') return;
     }
-    if (step < 1) setStep((prev) => prev + 1);
+    if (step === 1) {
+      const validationError = validateAccountStep();
+      if (validationError) {
+        setStepError(validationError);
+        return;
+      }
+    }
+    setStepError(null);
+    if (step < 2) setStep((prev) => prev + 1);
   }
 
   function goBack() {
+    setStepError(null);
     if (step > 0) setStep((prev) => prev - 1);
   }
 
   return (
-    <form action={formAction} className={styles.form}>
+    <form action={formAction} className={styles.form} onSubmit={handleSubmit} noValidate>
       {state.error ? (
         <p className={styles.error} role="alert">
           {state.error}
@@ -102,7 +160,8 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
 
       <div className={styles.steps} aria-label="Trial setup progress">
         <span data-active={step === 0 || undefined}>1. Workspace</span>
-        <span data-active={step === 1 || undefined}>2. Your account</span>
+        <span data-active={step === 1 || undefined}>2. Your details</span>
+        <span data-active={step === 2 || undefined}>3. Password</span>
       </div>
 
       <section
@@ -168,17 +227,36 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           </Link>
         </p>
 
-        <label className={styles.label} htmlFor="display_name">
-          Your full name
-        </label>
-        <input
-          id="display_name"
-          name="display_name"
-          className={styles.input}
-          required
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value)}
-        />
+        <div className={styles.nameRow}>
+          <div className={styles.nameField}>
+            <label className={styles.label} htmlFor="first_name">
+              First name
+            </label>
+            <input
+              id="first_name"
+              name="first_name"
+              className={styles.input}
+              required
+              autoComplete="given-name"
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+            />
+          </div>
+          <div className={styles.nameField}>
+            <label className={styles.label} htmlFor="last_name">
+              Last name
+            </label>
+            <input
+              id="last_name"
+              name="last_name"
+              className={styles.input}
+              required
+              autoComplete="family-name"
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+            />
+          </div>
+        </div>
 
         <label className={styles.label} htmlFor="email">
           Owner email
@@ -201,11 +279,47 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           id="owner_phone"
           name="owner_phone"
           type="tel"
+          autoComplete="tel"
           className={styles.input}
           placeholder="(555) 555-5555"
           value={ownerPhone}
           onChange={(event) => setOwnerPhone(event.target.value)}
         />
+
+        <label className={styles.label} htmlFor="business_type">
+          Business type
+        </label>
+        <select
+          id="business_type"
+          name="business_type"
+          className={styles.input}
+          value={businessType}
+          onChange={(event) => setBusinessType(event.target.value)}
+        >
+          <option value="residential">Residential cleaning</option>
+          <option value="commercial">Commercial cleaning</option>
+          <option value="both">Both residential and commercial</option>
+        </select>
+
+        {stepError ? (
+          <p className={styles.stepFieldError} role="alert">
+            {stepError}
+          </p>
+        ) : null}
+      </section>
+
+      <section
+        hidden={step !== 2}
+        inert={step !== 2}
+        aria-hidden={step !== 2}
+        className={
+          step === 2 ? styles.stepSection : `${styles.stepSection} ${styles.stepSectionHidden}`
+        }
+      >
+        <p className={styles.stepHint}>
+          Create a password for {email.trim() || 'your account'}. You will use this email and
+          password to sign in to your workspace.
+        </p>
 
         <label className={styles.label} htmlFor="password">
           Password
@@ -216,11 +330,21 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           type="password"
           autoComplete="new-password"
           minLength={8}
-          className={styles.input}
+          className={[styles.input, passwordsMismatch ? styles.inputInvalid : '']
+            .filter(Boolean)
+            .join(' ')}
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          aria-describedby={passwordStrength ? 'password-strength-hint' : undefined}
+          aria-invalid={passwordsMismatch || passwordTooShort || undefined}
+          aria-describedby={
+            [
+              passwordStrength ? 'password-strength-hint' : null,
+              passwordsMismatch ? 'password_confirm_error' : null,
+            ]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }
         />
 
         {passwordStrength ? (
@@ -274,32 +398,20 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           type="password"
           autoComplete="new-password"
           minLength={8}
-          className={[
-            styles.input,
-            passwordConfirm.length > 0 && password !== passwordConfirm ? styles.inputMismatch : '',
-          ]
+          className={[styles.input, passwordsMismatch ? styles.inputInvalid : '']
             .filter(Boolean)
             .join(' ')}
           required
           value={passwordConfirm}
           onChange={(event) => setPasswordConfirm(event.target.value)}
-          aria-invalid={passwordConfirm.length > 0 && password !== passwordConfirm}
+          aria-invalid={passwordsMismatch || undefined}
+          aria-describedby={passwordsMismatch ? 'password_confirm_error' : undefined}
         />
-
-        <label className={styles.label} htmlFor="business_type">
-          Business type
-        </label>
-        <select
-          id="business_type"
-          name="business_type"
-          className={styles.input}
-          value={businessType}
-          onChange={(event) => setBusinessType(event.target.value)}
-        >
-          <option value="residential">Residential cleaning</option>
-          <option value="commercial">Commercial cleaning</option>
-          <option value="both">Both residential and commercial</option>
-        </select>
+        {passwordsMismatch ? (
+          <p id="password_confirm_error" className={styles.fieldError} role="alert">
+            Passwords do not match.
+          </p>
+        ) : null}
 
         <label className={styles.checkboxRow}>
           <input
@@ -322,9 +434,9 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           </span>
         </label>
 
-        {step1Error ? (
+        {stepError ? (
           <p className={styles.stepFieldError} role="alert">
-            {step1Error}
+            {stepError}
           </p>
         ) : null}
       </section>
@@ -337,31 +449,12 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         ) : (
           <span />
         )}
-        {step < 1 ? (
+        {step < 2 ? (
           <button type="button" className={styles.submit} onClick={goNext}>
             Continue
           </button>
         ) : (
-          <button
-            type="submit"
-            className={styles.submit}
-            disabled={pending}
-            onClick={() => {
-              if (!displayName.trim() || !email.trim()) {
-                setStep1Error('Your name and email are required.');
-                return;
-              }
-              if (password.length < 8) {
-                setStep1Error('Password must be at least 8 characters.');
-                return;
-              }
-              if (password !== passwordConfirm) {
-                setStep1Error('Passwords must match.');
-                return;
-              }
-              setStep1Error(null);
-            }}
-          >
+          <button type="submit" className={styles.submit} disabled={pending || !canSubmit}>
             {pending ? 'Creating workspace...' : 'Start free trial'}
           </button>
         )}

@@ -24,6 +24,7 @@ import {
 } from 'react';
 import {
   THEME_STORAGE_KEY,
+  isLightOnlyPath,
   isMarketingHostname,
   type ResolvedTheme,
   type ThemePreference,
@@ -66,20 +67,20 @@ function clearMarketingLightTheme() {
   document.documentElement.removeAttribute('data-marketing-theme');
 }
 
-function isMarketingPortal(): boolean {
+function shouldLockLightTheme(): boolean {
   if (typeof window === 'undefined') return false;
-  return isMarketingHostname(window.location.hostname);
+  return isMarketingHostname(window.location.hostname) || isLightOnlyPath(window.location.pathname);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [marketingThemeLocked] = useState(() =>
-    typeof window === 'undefined' ? false : isMarketingPortal(),
+    typeof window === 'undefined' ? false : shouldLockLightTheme(),
   );
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
   const [resolved, setResolved] = useState<ResolvedTheme>('light');
 
   useEffect(() => {
-    if (isMarketingPortal()) {
+    if (shouldLockLightTheme()) {
       applyMarketingLightTheme();
       setPreferenceState('light');
       setResolved('light');
@@ -95,7 +96,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isMarketingPortal()) return;
+    if (shouldLockLightTheme()) return;
     if (preference !== 'system') return;
     if (typeof window === 'undefined') return;
 
@@ -110,7 +111,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [preference]);
 
   const setPreference = useCallback((next: ThemePreference) => {
-    if (isMarketingPortal()) return;
+    if (shouldLockLightTheme()) return;
 
     const nextResolved = resolve(next);
     setPreferenceState(next);

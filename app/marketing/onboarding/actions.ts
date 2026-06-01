@@ -9,6 +9,7 @@ import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { publicEnv } from '@/lib/env';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
+import { syncedFullNameFromParts } from '@/lib/people/personName';
 
 export interface TenantOnboardingState {
   error?: string;
@@ -61,7 +62,11 @@ export async function createTenantAndOwner(
   const teamSize = String(formData.get('team_size') ?? '').trim();
   const businessType = String(formData.get('business_type') ?? '').trim();
   const referralSource = String(formData.get('referral_source') ?? '').trim();
-  const displayName = String(formData.get('display_name') ?? '').trim();
+  const firstName = String(formData.get('first_name') ?? '').trim();
+  const lastName = String(formData.get('last_name') ?? '').trim();
+  const displayName =
+    syncedFullNameFromParts(firstName, lastName) ||
+    String(formData.get('display_name') ?? '').trim();
   const ownerPhone = String(formData.get('owner_phone') ?? '').trim();
   const email = String(formData.get('email') ?? '')
     .trim()
@@ -72,7 +77,7 @@ export async function createTenantAndOwner(
   const slugInput = String(formData.get('workspace_slug') ?? '');
   const slug = normalizeSlug(slugInput);
 
-  if (!businessName || !displayName || !email || !password || !slug) {
+  if (!businessName || !firstName || !lastName || !email || !password || !slug) {
     return {
       error: 'Business name, workspace slug, owner name, email, and password are required.',
     };
@@ -109,6 +114,8 @@ export async function createTenantAndOwner(
     },
     user_metadata: {
       display_name: displayName,
+      first_name: firstName,
+      last_name: lastName || null,
       owner_phone: ownerPhone || null,
       company_name: businessName,
     },
@@ -178,6 +185,8 @@ export async function createTenantAndOwner(
     business_type: businessType || null,
     referral_source: referralSource || null,
     owner_name: displayName,
+    owner_first_name: firstName,
+    owner_last_name: lastName || null,
     owner_email: email,
     owner_phone: ownerPhone || null,
   });
@@ -195,6 +204,8 @@ export async function createTenantAndOwner(
       user_id: userId,
       app_role: 'admin',
       display_name: displayName,
+      first_name: firstName,
+      last_name: lastName || null,
     },
     { onConflict: 'user_id' },
   );

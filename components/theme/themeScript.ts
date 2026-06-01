@@ -17,6 +17,21 @@ export const THEME_STORAGE_KEY = 'cs_theme';
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
 
+/** Auth and signup surfaces always render in light mode, even on tenant hosts. */
+export const LIGHT_ONLY_PATHS = [
+  '/sign-in',
+  '/sign-in/mfa',
+  '/start-trial',
+  '/forgot-password',
+  '/reset-password',
+  '/complete-employee-invite',
+  '/access-denied',
+] as const;
+
+export function isLightOnlyPath(pathname: string): boolean {
+  return (LIGHT_ONLY_PATHS as readonly string[]).includes(pathname);
+}
+
 /** Mirrors middleware portal classification for the marketing site. */
 const RESERVED_MARKETING_SUBDOMAINS = new Set([
   'api',
@@ -64,11 +79,21 @@ export function isMarketingHostname(
 
 const MARKETING_APEX = marketingApexHost().split(':')[0]!.toLowerCase();
 const MARKETING_RESERVED = JSON.stringify([...RESERVED_MARKETING_SUBDOMAINS]);
+const LIGHT_ONLY_PATHS_JSON = JSON.stringify(LIGHT_ONLY_PATHS);
 
 export const themeScript = /* javascript */ `
 (function () {
   try {
     var root = document.documentElement;
+    var path = window.location.pathname;
+    var lightOnlyPaths = ${LIGHT_ONLY_PATHS_JSON};
+    if (lightOnlyPaths.indexOf(path) >= 0) {
+      root.setAttribute('data-theme', 'light');
+      root.setAttribute('data-theme-pref', 'light');
+      root.setAttribute('data-marketing-theme', 'locked');
+      return;
+    }
+
     var host = window.location.hostname.toLowerCase();
     var apex = '${MARKETING_APEX}';
     var reserved = ${MARKETING_RESERVED};

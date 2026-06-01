@@ -1,3 +1,5 @@
+@use 'mixins/breakpoints' as mq;
+
 .form {
   display: grid;
   gap: var(--space-3);
@@ -25,6 +27,13 @@
     color: var(--color-brand-primary);
     background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
   }
+
+  @include mq.down(sm) {
+    span {
+      font-size: var(--font-size-xs);
+      padding: var(--space-2) var(--space-1);
+    }
+  }
 }
 
 .stepSection {
@@ -43,6 +52,22 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   line-height: 1.5;
+}
+
+.nameRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @include mq.down(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nameField {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .optional {
@@ -103,6 +128,11 @@
   color: var(--color-text-on-brand);
   font-weight: 600;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 }
 
 .actions {
@@ -135,8 +165,26 @@
   color: var(--color-danger-600);
 }
 
-.inputMismatch {
-  border-color: var(--color-danger-600);
+.inputInvalid {
+  border-color: var(--color-danger);
+  background-color: color-mix(in srgb, var(--color-danger) 6%, var(--color-surface));
+
+  &:focus-visible {
+    outline: 2px solid var(--color-danger);
+    outline-offset: 1px;
+  }
+}
+
+.fieldError {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-danger);
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .strengthBlock {

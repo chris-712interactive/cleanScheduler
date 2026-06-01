@@ -56,6 +56,9 @@ const PUBLIC_MARKETING_PATHS = new Set([
   '/auth/callback',
   '/access-denied',
   '/complete-employee-invite',
+  '/start-trial',
+  '/forgot-password',
+  '/reset-password',
 ]);
 
 // Subdomains reserved for platform use. Tenants cannot register these.

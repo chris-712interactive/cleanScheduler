@@ -1324,6 +1324,8 @@ export type Database = {
           team_size: string | null;
           business_type: string | null;
           referral_source: string | null;
+          owner_first_name: string | null;
+          owner_last_name: string | null;
           owner_name: string | null;
           owner_email: string | null;
           owner_phone: string | null;
@@ -1346,6 +1348,8 @@ export type Database = {
           team_size?: string | null;
           business_type?: string | null;
           referral_source?: string | null;
+          owner_first_name?: string | null;
+          owner_last_name?: string | null;
           owner_name?: string | null;
           owner_email?: string | null;
           owner_phone?: string | null;
@@ -1368,6 +1372,8 @@ export type Database = {
           team_size?: string | null;
           business_type?: string | null;
           referral_source?: string | null;
+          owner_first_name?: string | null;
+          owner_last_name?: string | null;
           owner_name?: string | null;
           owner_email?: string | null;
           owner_phone?: string | null;
@@ -3112,6 +3118,8 @@ export type Database = {
           user_id: string;
           app_role: 'super_admin' | 'admin' | 'employee' | 'customer';
           display_name: string | null;
+          first_name: string | null;
+          last_name: string | null;
           avatar_url: string | null;
           created_at: string;
           updated_at: string;
@@ -3120,6 +3128,8 @@ export type Database = {
           user_id: string;
           app_role?: 'super_admin' | 'admin' | 'employee' | 'customer';
           display_name?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
           avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3128,6 +3138,8 @@ export type Database = {
           user_id?: string;
           app_role?: 'super_admin' | 'admin' | 'employee' | 'customer';
           display_name?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
           avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
