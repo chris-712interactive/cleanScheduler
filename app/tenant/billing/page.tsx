@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import {
   ArrowLeftRight,
+  ArrowRight,
   Briefcase,
+  ChevronRight,
   CreditCard,
   FileText,
   Landmark,
@@ -9,7 +11,6 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -25,7 +26,6 @@ import {
   parsePlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
 import { getPlatformPricingDisplay, formatPlanPriceUsd } from '@/lib/billing/platformPricing';
-import { getMarketingFeatureBullets } from '@/lib/billing/marketingPlanCatalog';
 import {
   canAccessCustomerBillingTools,
   needsSubscriptionPurchase,
@@ -33,8 +33,14 @@ import {
   trialDaysRemaining,
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { formatAutoPurgeDate, getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
+import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingInvoices';
+import { getTenantPaidInvoicesLast30DaysCents } from '@/lib/tenant/dashboardMetrics';
+import { formatUsdFromCents } from '@/lib/format/money';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
-import { CUSTOMER_AR_NAV_LINKS } from '@/lib/tenant/customerBillingNav';
+import {
+  CUSTOMER_BILLING_HUB_PRIMARY,
+  CUSTOMER_BILLING_HUB_SECONDARY,
+} from '@/lib/tenant/customerBillingHub';
 import type { Tables } from '@/lib/supabase/database.types';
 import { openPlatformBillingPortal } from './actions';
 import { SubscribePlanPicker } from '@/components/billing/SubscribePlanPicker';
@@ -60,7 +66,7 @@ function formatPlanStatus(
     case 'active':
       return { label: 'Active', tone: 'success' };
     case 'trialing':
-      return { label: 'Trial', tone: 'info' };
+      return { label: 'Free trial', tone: 'info' };
     case 'past_due':
       return { label: 'Past due', tone: 'warning' };
     case 'canceled':
@@ -70,27 +76,27 @@ function formatPlanStatus(
   }
 }
 
-function formatNextPayment(
+function formatNextPaymentDate(
   access: ReturnType<typeof resolveTenantSubscriptionAccess>,
   billing: TenantBillingRow,
-): string {
+): string | null {
   if (access === 'trial_expired' || access === 'suspended') {
-    return '—';
+    return null;
   }
-  const dateSource =
-    billing.status === 'trialing' && billing.trial_ends_at ? billing.trial_ends_at : null;
-  if (!dateSource) return '—';
-  return new Date(String(dateSource)).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  if (billing.status === 'trialing' && billing.trial_ends_at) {
+    return new Date(String(billing.trial_ends_at)).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+  return null;
 }
 
-function formatBillingCycle(interval: TenantBillingRow['billing_interval']): string {
-  if (interval === 'year') return 'Yearly';
-  if (interval === 'month') return 'Monthly';
-  return '—';
+function formatBillingCycle(interval: TenantBillingRow['billing_interval']): string | null {
+  if (interval === 'year') return 'Yearly billing';
+  if (interval === 'month') return 'Monthly billing';
+  return null;
 }
 
 function formatPlanAmountForInterval(
@@ -100,26 +106,66 @@ function formatPlanAmountForInterval(
     annualPriceUsd: number;
   } | null,
   interval: TenantBillingRow['billing_interval'],
-): string {
-  if (!pricing) return '—';
+): string | null {
+  if (!pricing) return null;
   if (interval === 'year') {
-    return `${formatPlanPriceUsd(pricing.annualPriceUsd, { showCents: true })} USD/yr (${formatPlanPriceUsd(pricing.annualEffectiveMonthlyUsd, { showCents: true })}/mo)`;
+    return `${formatPlanPriceUsd(pricing.annualPriceUsd, { showCents: true })}/year`;
   }
-  return `${formatPlanPriceUsd(pricing.monthlyPriceUsd, { showCents: true })} USD/mo`;
+  return `${formatPlanPriceUsd(pricing.monthlyPriceUsd, { showCents: true })}/month`;
 }
+
+function planStatusLine(params: {
+  subscriptionAccess: ReturnType<typeof resolveTenantSubscriptionAccess>;
+  billing: TenantBillingRow | null;
+  daysLeft: number | null;
+  planAmount: string | null;
+  billingCycle: string | null;
+  nextDate: string | null;
+}): string {
+  const { subscriptionAccess, billing, daysLeft, planAmount, billingCycle, nextDate } = params;
+
+  if (!billing) return 'We could not load your workspace plan details.';
+
+  if (subscriptionAccess === 'trialing' && daysLeft != null) {
+    const dayLabel = `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in your trial`;
+    return nextDate ? `${dayLabel} · Trial ends ${nextDate}` : dayLabel;
+  }
+
+  if (subscriptionAccess === 'trial_expired') {
+    return 'Your trial has ended. Subscribe to restore access to your workspace.';
+  }
+
+  if (subscriptionAccess === 'suspended' || billing.status === 'canceled') {
+    return 'This workspace is paused until a plan is active again.';
+  }
+
+  if (billing.status === 'past_due') {
+    return 'Your last payment did not go through. Update billing in Stripe to avoid interruption.';
+  }
+
+  const parts: string[] = [];
+  if (planAmount) parts.push(planAmount);
+  if (billingCycle) parts.push(billingCycle);
+  if (nextDate) {
+    parts.push(
+      billing.status === 'trialing' ? `Trial ends ${nextDate}` : `Next payment ${nextDate}`,
+    );
+  }
+  return parts.length > 0 ? parts.join(' · ') : 'Your workspace plan is active.';
+}
+
+const HUB_ICONS = {
+  '/billing/invoices': FileText,
+  '/billing/payment-setup': CreditCard,
+  '/billing/transactions': ArrowLeftRight,
+  '/billing/service-plans': Layers,
+  '/billing/bank-connection': Landmark,
+  '/billing/payment-audits': ShieldCheck,
+} as const;
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
-
-const CUSTOMER_AR_ICONS = {
-  '/billing/invoices': FileText,
-  '/billing/service-plans': Layers,
-  '/billing/transactions': ArrowLeftRight,
-  '/billing/payment-audits': ShieldCheck,
-  '/billing/bank-connection': Landmark,
-  '/billing/payment-setup': CreditCard,
-} as const;
 
 export default async function TenantBillingPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -130,13 +176,19 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   });
 
   const supabase = createTenantPortalDbClient();
-  const [billingRes, tenantRes] = await Promise.all([
+  const [billingRes, tenantRes, outstandingInvoices, paidLast30DaysCents] = await Promise.all([
     supabase
       .from('tenant_billing_accounts')
       .select('*')
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
-    supabase.from('tenants').select('is_active').eq('id', membership.tenantId).maybeSingle(),
+    supabase
+      .from('tenants')
+      .select('is_active, stripe_connect_status')
+      .eq('id', membership.tenantId)
+      .maybeSingle(),
+    getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
+    getTenantPaidInvoicesLast30DaysCents(supabase, membership.tenantId),
   ]);
   const billing = billingRes.data as unknown as TenantBillingRow | null;
   const error = billingRes.error;
@@ -159,6 +211,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const daysLeft = trialDaysRemaining(billing?.trial_ends_at ?? null);
   const purgeStatus = getTenantPurgeStatus(billing);
   const isOwner = membership.role === 'owner';
+  const connectStatus = tenantRes.data?.stripe_connect_status ?? 'not_started';
 
   const planKey = parsePlatformPlanTier(String(billing?.platform_plan ?? ''));
   const planLabel = planKey ? PLATFORM_PLAN_LABELS[planKey] : null;
@@ -167,7 +220,6 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const currentPlanPricing = planKey
     ? (pricingTiers.find((tier) => tier.tier === planKey) ?? null)
     : null;
-  const planFeatureBullets = planKey ? getMarketingFeatureBullets(planKey) : [];
   const planStatus = formatPlanStatus(subscriptionAccess, billing?.status);
   const marketingPlansUrl = `${getPublicOrigin(null)}/pricing`;
 
@@ -182,20 +234,53 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const subscribeLead = mustSubscribe
     ? subscriptionAccess === 'trial_expired'
       ? canManageSubscription
-        ? 'Your free trial has ended. Subscribe to restore access to scheduling, quotes, customers, and the rest of your workspace.'
+        ? 'Your free trial has ended. Pick a plan to restore scheduling, quotes, customers, and the rest of your workspace.'
         : 'Your free trial has ended. Scheduling and other workspace areas are unavailable until an owner or admin renews the plan.'
       : canManageSubscription
-        ? 'This workspace is paused. Subscribe to turn your cleanScheduler plan back on.'
+        ? 'This workspace is paused. Pick a plan to turn cleanScheduler back on.'
         : 'This workspace is paused. Contact an owner or admin to renew the plan.'
     : subscriptionAccess === 'trialing' && daysLeft != null
-      ? `You have ${daysLeft} day${daysLeft === 1 ? '' : 's'} left in your trial. Subscribe now to keep access when it ends.`
+      ? `You have ${daysLeft} day${daysLeft === 1 ? '' : 's'} left. Subscribe now to keep access when your trial ends.`
       : null;
+
+  const planAmount =
+    billing && !onTrial
+      ? formatPlanAmountForInterval(currentPlanPricing, billing.billing_interval)
+      : null;
+  const billingCycle = billing && !onTrial ? formatBillingCycle(billing.billing_interval) : null;
+  const nextPaymentDate = billing ? formatNextPaymentDate(subscriptionAccess, billing) : null;
+  const statusLine = planStatusLine({
+    subscriptionAccess,
+    billing,
+    daysLeft,
+    planAmount,
+    billingCycle,
+    nextDate: nextPaymentDate,
+  });
+
+  const connectLabel =
+    connectStatus === 'complete'
+      ? 'Stripe connected'
+      : connectStatus === 'pending'
+        ? 'Stripe setup in progress'
+        : connectStatus === 'restricted'
+          ? 'Stripe needs attention'
+          : 'Card payments not set up';
+
+  const connectTone: StatusTone =
+    connectStatus === 'complete'
+      ? 'success'
+      : connectStatus === 'restricted'
+        ? 'danger'
+        : connectStatus === 'pending'
+          ? 'warning'
+          : 'neutral';
 
   return (
     <>
       <PageHeader
-        title="Workspace billing"
-        titleHint="Platform subscription for cleanScheduler, plus customer invoicing for your clients."
+        title="Billing"
+        titleHint="Your cleanScheduler plan and the tools you use to bill customers."
       />
 
       <Stack gap={6}>
@@ -203,7 +288,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           <p className={styles.bannerError} role="status">
             {canManageSubscription
               ? 'Subscribe below to continue using this workspace. Other pages are unavailable until your plan is active.'
-              : 'This workspace needs an active subscription. Ask an owner or admin to renew on this billing page.'}
+              : 'This workspace needs an active subscription. Ask an owner or admin to renew on this page.'}
           </p>
         ) : null}
 
@@ -237,143 +322,179 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           </p>
         ) : null}
 
-        {showSubscribePicker ? (
-          <section className={styles.subscribeCard} aria-labelledby="subscribe-heading">
-            <h2 id="subscribe-heading" className={styles.subscribeCardTitle}>
-              {mustSubscribe
-                ? canManageSubscription
-                  ? 'Subscribe to continue'
-                  : 'Workspace paused'
-                : 'Choose your plan'}
-            </h2>
-            {subscribeLead ? <p className={styles.subscribeCardLead}>{subscribeLead}</p> : null}
-            {canManageSubscription ? (
-              <SubscribePlanPicker
-                tenantSlug={membership.tenantSlug}
-                pricingTiers={pricingTiers}
-                submitLabel={mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
-              />
-            ) : null}
-          </section>
-        ) : null}
+        <section className={styles.planHero} aria-labelledby="workspace-plan-heading">
+          <div className={styles.planHeroTop}>
+            <div className={styles.planHeroIconWrap} aria-hidden>
+              <Briefcase size={28} strokeWidth={1.75} />
+            </div>
+            <div className={styles.planHeroCopy}>
+              <div className={styles.planHeroHeadingRow}>
+                <h2 id="workspace-plan-heading" className={styles.planHeroTitle}>
+                  Your workspace plan
+                </h2>
+                {billing && !error ? (
+                  <StatusPill tone={planStatus.tone}>{planStatus.label}</StatusPill>
+                ) : null}
+              </div>
+              {error || !billing ? (
+                <p className={styles.planHeroLead}>No billing record found for this workspace.</p>
+              ) : (
+                <>
+                  <p className={styles.planHeroPlanName}>
+                    {planLabel ?? (onTrial ? 'Free trial' : 'No plan selected')}
+                  </p>
+                  <p className={styles.planHeroLead}>{statusLine}</p>
+                  {planTagline && !onTrial ? (
+                    <p className={styles.planHeroTagline}>{planTagline}</p>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
 
-        <Card
-          title="Customer accounts receivable"
-          description={
-            customerBillingUnlocked
-              ? 'Invoices, offline payment tracking, Stripe setup, and bank reconciliation for your clients.'
-              : 'Available after you subscribe to a workspace plan.'
-          }
-        >
-          {customerBillingUnlocked ? (
-            <nav className={styles.hubNav} aria-label="Customer billing">
-              {CUSTOMER_AR_NAV_LINKS.map(({ href, label }) => {
-                const Icon = CUSTOMER_AR_ICONS[href as keyof typeof CUSTOMER_AR_ICONS];
+          {billing && !error ? (
+            <div className={styles.planHeroActions}>
+              {canManagePlan ? (
+                <form action={openPlatformBillingPortal}>
+                  <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                  <Button type="submit" variant="secondary">
+                    Manage plan in Stripe
+                  </Button>
+                </form>
+              ) : null}
+              <a
+                href={marketingPlansUrl}
+                className={styles.planHeroLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Compare plans
+              </a>
+            </div>
+          ) : null}
+
+          {showSubscribePicker ? (
+            <div className={styles.subscribeBlock}>
+              <h3 className={styles.subscribeBlockTitle}>
+                {mustSubscribe
+                  ? canManageSubscription
+                    ? 'Subscribe to continue'
+                    : 'Workspace paused'
+                  : 'Choose your plan'}
+              </h3>
+              {subscribeLead ? <p className={styles.subscribeBlockLead}>{subscribeLead}</p> : null}
+              {canManageSubscription ? (
+                <SubscribePlanPicker
+                  tenantSlug={membership.tenantSlug}
+                  pricingTiers={pricingTiers}
+                  submitLabel={mustSubscribe ? 'Subscribe now' : 'Subscribe with Stripe'}
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+
+        {customerBillingUnlocked ? (
+          <section className={styles.customerSection} aria-labelledby="customer-billing-heading">
+            <header className={styles.customerSectionHeader}>
+              <h2 id="customer-billing-heading" className={styles.customerSectionTitle}>
+                Bill your customers
+              </h2>
+              <p className={styles.customerSectionLead}>
+                Send invoices, accept payments, and track what you are owed — separate from your
+                cleanScheduler subscription above.
+              </p>
+            </header>
+
+            <div className={styles.snapshotGrid}>
+              <Link href="/billing/invoices" className={styles.snapshotCard}>
+                <span className={styles.snapshotLabel}>Outstanding</span>
+                <span className={styles.snapshotValue}>
+                  {formatUsdFromCents(outstandingInvoices.totalCents)}
+                </span>
+                <span className={styles.snapshotMeta}>
+                  {outstandingInvoices.invoiceCount === 0
+                    ? 'No open balances'
+                    : `${outstandingInvoices.invoiceCount} open invoice${outstandingInvoices.invoiceCount === 1 ? '' : 's'}`}
+                  {outstandingInvoices.pastDueCount > 0
+                    ? ` · ${outstandingInvoices.pastDueCount} past due`
+                    : ''}
+                </span>
+              </Link>
+
+              <Link href="/billing/transactions" className={styles.snapshotCard}>
+                <span className={styles.snapshotLabel}>Collected (30 days)</span>
+                <span className={styles.snapshotValue}>
+                  {formatUsdFromCents(paidLast30DaysCents)}
+                </span>
+                <span className={styles.snapshotMeta}>Recent customer payments</span>
+              </Link>
+
+              <Link href="/billing/payment-setup" className={styles.snapshotCard}>
+                <span className={styles.snapshotLabel}>Online payments</span>
+                <span className={styles.snapshotValueCompact}>
+                  <StatusPill tone={connectTone}>{connectLabel}</StatusPill>
+                </span>
+                <span className={styles.snapshotMeta}>
+                  {connectStatus === 'complete'
+                    ? 'Customers can pay invoices by card'
+                    : 'Set up Stripe to accept cards'}
+                </span>
+              </Link>
+            </div>
+
+            <div className={styles.actionGrid}>
+              {CUSTOMER_BILLING_HUB_PRIMARY.map(({ href, label, description }) => {
+                const Icon = HUB_ICONS[href as keyof typeof HUB_ICONS];
                 return (
-                  <Link key={href} href={href} className={styles.hubNavLink}>
-                    <Icon size={18} strokeWidth={2} aria-hidden />
-                    {label}
+                  <Link key={href} href={href} className={styles.actionCard}>
+                    <span className={styles.actionCardIconWrap} aria-hidden>
+                      <Icon size={22} strokeWidth={1.75} />
+                    </span>
+                    <span className={styles.actionCardCopy}>
+                      <span className={styles.actionCardTitle}>{label}</span>
+                      <span className={styles.actionCardDescription}>{description}</span>
+                    </span>
+                    <ChevronRight
+                      size={18}
+                      strokeWidth={2}
+                      className={styles.actionCardChevron}
+                      aria-hidden
+                    />
                   </Link>
                 );
               })}
-            </nav>
-          ) : (
-            <p className={styles.customerBillingLocked}>
+            </div>
+
+            <div className={styles.moreTools}>
+              <h3 className={styles.moreToolsTitle}>More billing tools</h3>
+              <ul className={styles.moreToolsList}>
+                {CUSTOMER_BILLING_HUB_SECONDARY.map(({ href, label, description }) => (
+                  <li key={href}>
+                    <Link href={href} className={styles.moreToolsLink}>
+                      <span className={styles.moreToolsLinkCopy}>
+                        <span className={styles.moreToolsLinkLabel}>{label}</span>
+                        <span className={styles.moreToolsLinkDescription}>{description}</span>
+                      </span>
+                      <ArrowRight size={16} strokeWidth={2} aria-hidden />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        ) : (
+          <section className={styles.customerLocked} aria-labelledby="customer-billing-locked">
+            <h2 id="customer-billing-locked" className={styles.customerLockedTitle}>
+              Customer invoicing
+            </h2>
+            <p className={styles.customerLockedLead}>
               {canManageSubscription
-                ? 'Customer invoicing, subscription plans, and payment setup unlock once your workspace subscription is active. Use Subscribe above to continue.'
+                ? 'Invoices, payment setup, and customer payment tracking unlock once your workspace subscription is active.'
                 : 'Customer invoicing and payment tools are unavailable until an owner or admin renews the workspace subscription.'}
             </p>
-          )}
-        </Card>
-
-        <Card
-          title="Your cleanScheduler subscription"
-          description="Platform plan for this workspace — separate from customer invoices above."
-        >
-          {error || !billing ? (
-            <p className={styles.muted}>No billing record found for this workspace.</p>
-          ) : (
-            <div className={styles.planLayout}>
-              <div className={styles.planSummary}>
-                <div className={styles.planIconWrap} aria-hidden>
-                  <Briefcase size={28} strokeWidth={1.75} />
-                </div>
-                <div className={styles.planSummaryCopy}>
-                  <h3 className={styles.planName}>
-                    {planLabel ?? (onTrial ? 'Free trial' : 'No plan selected')}
-                  </h3>
-                  {planTagline ? (
-                    <p className={styles.planTagline}>{planTagline}</p>
-                  ) : onTrial ? (
-                    <p className={styles.planTagline}>
-                      Explore scheduling, quotes, customers, and invoicing. Choose a plan above when
-                      you are ready to subscribe.
-                    </p>
-                  ) : null}
-                  {planFeatureBullets.length > 0 ? (
-                    <ul className={styles.planFeatureList}>
-                      {planFeatureBullets.map((bullet) => (
-                        <li key={bullet}>{bullet}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  <a
-                    href={marketingPlansUrl}
-                    className={styles.planDetailsLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View plan details &gt;
-                  </a>
-                </div>
-              </div>
-
-              <div className={styles.planDivider} aria-hidden />
-
-              <div className={styles.planDetails}>
-                <dl className={styles.planFacts}>
-                  <div className={styles.planFact}>
-                    <dt className={styles.planFactLabel}>Status</dt>
-                    <dd className={styles.planFactValue}>
-                      <StatusPill tone={planStatus.tone}>{planStatus.label}</StatusPill>
-                    </dd>
-                  </div>
-                  <div className={styles.planFact}>
-                    <dt className={styles.planFactLabel}>Billing cycle</dt>
-                    <dd className={styles.planFactValue}>
-                      {onTrial ? '—' : formatBillingCycle(billing.billing_interval)}
-                    </dd>
-                  </div>
-                  <div className={styles.planFact}>
-                    <dt className={styles.planFactLabel}>Next payment</dt>
-                    <dd className={styles.planFactValue}>
-                      {formatNextPayment(subscriptionAccess, billing)}
-                    </dd>
-                  </div>
-                  <div className={styles.planFact}>
-                    <dt className={styles.planFactLabel}>Amount</dt>
-                    <dd className={styles.planFactValue}>
-                      {onTrial
-                        ? '—'
-                        : formatPlanAmountForInterval(currentPlanPricing, billing.billing_interval)}
-                    </dd>
-                  </div>
-                </dl>
-
-                <div className={styles.planManageForm}>
-                  {canManagePlan ? (
-                    <form action={openPlatformBillingPortal}>
-                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                      <Button type="submit" variant="secondary" className={styles.planManageButton}>
-                        Manage plan
-                      </Button>
-                    </form>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          )}
-        </Card>
+          </section>
+        )}
       </Stack>
     </>
   );

@@ -4,6 +4,6 @@ export const CUSTOMER_AR_NAV_LINKS = [
   { href: '/billing/service-plans', label: 'Subscription plans' },
   { href: '/billing/transactions', label: 'Customer payments' },
   { href: '/billing/payment-audits', label: 'Payment audits' },
-  { href: '/billing/bank-connection', label: 'Bank connection' },
-  { href: '/billing/payment-setup', label: 'Payment setup' },
+  { href: '/billing/bank-connection', label: 'Deposit matching' },
+  { href: '/billing/payment-setup', label: 'Card payments' },
 ] as const;

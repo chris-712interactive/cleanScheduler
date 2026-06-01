@@ -23,7 +23,7 @@ export function ConnectStatusBanner({ status }: { status: TenantStripeConnectSta
     <p className={styles.banner}>
       <span>{blurb}</span>
       <Link href="/billing/payment-setup" className={styles.link}>
-        Payment setup →
+        Accept card payments →
       </Link>
     </p>
   );
