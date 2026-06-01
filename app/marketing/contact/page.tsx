@@ -8,7 +8,7 @@ import { submitMarketingInquiryAction } from './actions';
 import styles from './contact.module.scss';
 
 export const metadata = {
-  title: 'Contact sales · cleanScheduler',
+  title: 'Contact sales · Clean Scheduler',
 };
 
 interface PageProps {

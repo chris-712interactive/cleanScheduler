@@ -4,16 +4,17 @@ import '@/styles/globals.scss';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { themeScript } from '@/components/theme/themeScript';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { PRODUCT_NAME } from '@/lib/legal/site';
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicOrigin(null)),
   title: {
-    default: 'cleanScheduler',
-    template: '%s | cleanScheduler',
+    default: PRODUCT_NAME,
+    template: `%s | ${PRODUCT_NAME}`,
   },
   description:
     'Multi-tenant scheduling, quoting, billing, and customer-service platform for residential and commercial cleaning businesses.',
-  applicationName: 'cleanScheduler',
+  applicationName: PRODUCT_NAME,
   manifest: '/favicon/manifest.json',
   icons: {
     icon: [

@@ -81,7 +81,7 @@ export async function notifyTenantDisputeOpened(
   if (!to) return;
   const { data: t } = await admin.from('tenants').select('name').eq('id', tenantId).maybeSingle();
   const tenantName = t?.name?.trim() || 'Your workspace';
-  const subject = `[cleanScheduler] Stripe dispute opened — ${tenantName}`;
+  const subject = `[Clean Scheduler] Stripe dispute opened — ${tenantName}`;
   const text = `A card dispute was opened on your connected Stripe account.\n\nDispute: ${dispute.id}\nAmount (cents): ${dispute.amount}\nStatus: ${dispute.status}\n\nRespond in the Stripe Dashboard for your connected account.`;
   const html = `<p>A card dispute was opened for <strong>${escapeHtml(tenantName)}</strong>.</p><ul><li>Dispute ID: <code>${escapeHtml(dispute.id)}</code></li><li>Amount: ${escapeHtml(String(dispute.amount))} ${escapeHtml(dispute.currency)}</li><li>Status: ${escapeHtml(dispute.status)}</li></ul><p>Respond in your Stripe Express account.</p>`;
   await sendTransactionalEmail({ to, subject, text, html });

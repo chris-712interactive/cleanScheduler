@@ -289,7 +289,7 @@ export async function sendTenantWebhookTestAction(
     data: {
       quote_id: 'test_quote_id',
       customer_id: 'test_customer_id',
-      title: 'Test webhook from cleanScheduler',
+      title: 'Test webhook from Clean Scheduler',
       status: 'sent',
       test: true,
     },

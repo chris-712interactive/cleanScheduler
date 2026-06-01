@@ -31,7 +31,7 @@ function purposeForRecord(type: string, reason: string | undefined): string {
     return 'Confirms that you own this domain';
   }
   if (normalized === 'CNAME' || normalized === 'A' || normalized === 'AAAA') {
-    return 'Connects your portal address to cleanScheduler';
+    return 'Connects your portal address to Clean Scheduler';
   }
   return reason?.trim() || 'Required to finish setup';
 }
@@ -71,7 +71,7 @@ function buildRoutingInstructionsFromVercelConfig(
         type: 'CNAME',
         hostLabel,
         value: config.recommendedCname,
-        purpose: 'Connects your portal address to cleanScheduler',
+        purpose: 'Connects your portal address to Clean Scheduler',
         detail:
           'Copy this value exactly. Some providers call this field “Target”, “Points to”, or “Alias”.',
       },
@@ -84,7 +84,7 @@ function buildRoutingInstructionsFromVercelConfig(
       type: 'A',
       hostLabel,
       value: ip,
-      purpose: 'Connects your portal address to cleanScheduler',
+      purpose: 'Connects your portal address to Clean Scheduler',
     }));
   }
 
@@ -151,7 +151,7 @@ export function buildFallbackDnsInstructions(
       type: 'CNAME',
       hostLabel: portalHostname.includes('.') ? portalHostname.split('.')[0]! : portalHostname,
       value: 'cname.vercel-dns.com',
-      purpose: 'Connects your portal address to cleanScheduler',
+      purpose: 'Connects your portal address to Clean Scheduler',
       detail:
         'Enter only the first part of your address (for example portal, not the full domain).',
     },

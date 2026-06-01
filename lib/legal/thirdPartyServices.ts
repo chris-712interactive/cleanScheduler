@@ -1,5 +1,5 @@
 /**
- * Third-party services that process data on behalf of cleanScheduler.
+ * Third-party services that process data on behalf of Clean Scheduler.
  * Keep in sync with integrations in lib/, app/api/webhooks/, and .env.example.
  */
 
@@ -8,7 +8,7 @@ export type ThirdPartyServiceStatus = 'active' | 'planned';
 export type ThirdPartyService = {
   name: string;
   status: ThirdPartyServiceStatus;
-  /** How this service is used in cleanScheduler. */
+  /** How this service is used in Clean Scheduler. */
   purpose: string;
   /** Categories of data that may be sent to the provider. */
   dataShared: string;
@@ -48,7 +48,7 @@ export const ACTIVE_THIRD_PARTY_SERVICES: ThirdPartyService[] = [
     name: 'Google',
     status: 'active',
     purpose:
-      'Optional “Sign in with Google” through Supabase Auth (OAuth). Google does not receive your cleanScheduler workspace data directly.',
+      'Optional “Sign in with Google” through Supabase Auth (OAuth). Google does not receive your Clean Scheduler workspace data directly.',
     dataShared:
       'OAuth profile information (such as name and email) handled by Supabase Auth during sign-in.',
     privacyPolicyUrl: 'https://policies.google.com/privacy',

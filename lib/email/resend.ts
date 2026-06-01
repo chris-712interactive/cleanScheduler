@@ -154,7 +154,7 @@ export async function sendEmployeeInviteEmail(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const tenant = escapeHtmlLite(params.tenantName);
   const role = escapeHtmlLite(params.roleLabel);
-  const subject = `You're invited to ${params.tenantName} on cleanScheduler`;
+  const subject = `You're invited to ${params.tenantName} on Clean Scheduler`;
   const text = [
     `${params.tenantName} invited you as ${params.roleLabel}.`,
     '',

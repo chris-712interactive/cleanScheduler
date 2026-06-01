@@ -1,6 +1,6 @@
 /** Product and legal contact constants shared by public legal pages. */
 
-export const PRODUCT_NAME = 'cleanScheduler';
+export const PRODUCT_NAME = 'Clean Scheduler';
 
 /** Shown on legal pages; update when policies materially change. */
 export const LEGAL_LAST_UPDATED = 'May 24, 2026';

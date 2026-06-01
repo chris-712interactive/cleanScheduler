@@ -19,7 +19,7 @@ const COPY: Record<string, { title: string; description: string }> = {
   membership: {
     title: 'No access to this workspace',
     description:
-      'You are signed in, but this account is not a member of this organization on cleanScheduler. Ask an owner to invite you, or sign out and use a different account.',
+      'You are signed in, but this account is not a member of this organization on Clean Scheduler. Ask an owner to invite you, or sign out and use a different account.',
   },
   membership_inactive: {
     title: 'Workspace access deactivated',

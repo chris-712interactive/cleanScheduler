@@ -39,7 +39,9 @@ export default function HelpIndexPage() {
                       ? 'Customers'
                       : category.audience === 'developers'
                         ? 'Developers'
-                        : 'Compliance'}
+                        : category.audience === 'cleaning-businesses'
+                          ? 'Owners'
+                          : 'Compliance'}
                   </span>
                 </div>
                 <p className={styles.cardLinkText}>Open section</p>

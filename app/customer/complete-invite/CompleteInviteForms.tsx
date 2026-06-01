@@ -109,7 +109,7 @@ export function CompleteInviteForms({
           <label className={styles.checkboxRow} htmlFor="sms_opt_in">
             <input id="sms_opt_in" name="sms_opt_in" type="checkbox" value="on" />
             <span>
-              I agree to receive text messages from cleanScheduler about my bookings and account.
+              I agree to receive text messages from Clean Scheduler about my bookings and account.
               Message frequency varies based on your bookings. Message and data rates may apply.
               Reply STOP to unsubscribe. Reply HELP for help. View our{' '}
               <Link href="/privacy">Privacy Policy</Link> and{' '}
@@ -124,7 +124,7 @@ export function CompleteInviteForms({
       </Card>
 
       <Card
-        title="Already have a cleanScheduler login?"
+        title="Already have a Clean Scheduler login?"
         description="Use the same email this invite was sent to. Stay on this page in the same browser."
       >
         {hasSession ? (

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getCustomerPortalBrandingForTenantSlug } from '@/lib/customer/customerPortalBranding';
+import { PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../TopBar.module.scss';
 
 export async function CustomerWhiteLabelBrand({
@@ -27,7 +28,7 @@ export async function CustomerWhiteLabelBrand({
           />
         </span>
       ) : null}
-      <span className={styles.brandLabel}>{branding?.tenantName ?? 'cleanScheduler'}</span>
+      <span className={styles.brandLabel}>{branding?.tenantName ?? PRODUCT_NAME}</span>
     </Link>
   );
 }

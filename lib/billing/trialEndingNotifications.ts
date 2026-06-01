@@ -65,19 +65,19 @@ export async function notifyTenantTrialEndingSoon(
     '',
     'If you already added a payment method in Stripe, you can ignore this email.',
     '',
-    '— cleanScheduler',
+    '— Clean Scheduler',
   ].join('\n');
 
   await sendTransactionalEmail({
     to,
-    subject: `${workspace}: your cleanScheduler trial ends ${trialEnd}`,
+    subject: `${workspace}: your Clean Scheduler trial ends ${trialEnd}`,
     text: textBody,
     html: [
       `<p>Hi ${ownerFirstName},</p>`,
       `<p>Your free trial for <strong>${workspace}</strong> ends on <strong>${trialEnd}</strong>.</p>`,
       `<p><a href="${billingUrl}">Add a subscription</a> to keep scheduling, quotes, and billing running without interruption.</p>`,
       '<p>If you already added a payment method in Stripe, you can ignore this email.</p>',
-      '<p>— cleanScheduler</p>',
+      '<p>— Clean Scheduler</p>',
     ].join(''),
   });
 }

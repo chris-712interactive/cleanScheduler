@@ -76,7 +76,7 @@ export function SignInForm({
       </form>
 
       <p className={styles.trialPrompt}>
-        New to cleanScheduler?{' '}
+        New to Clean Scheduler?{' '}
         <Link href="/start-trial" className={styles.trialLink}>
           Start your free trial
         </Link>{' '}

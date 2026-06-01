@@ -33,7 +33,7 @@ export function MarketingHero({ eyebrow, title, lead, note }: MarketingHeroProps
           </Stack>
           <ProductScreenshot
             src="/marketing/hero-dashboard.png"
-            alt="cleanScheduler dashboard showing today's jobs, quotes, outstanding invoices, and active customers"
+            alt="Clean Scheduler dashboard showing today's jobs, quotes, outstanding invoices, and active customers"
             priority
           />
         </div>

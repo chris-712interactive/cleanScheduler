@@ -63,8 +63,8 @@ export default async function PricingPage() {
             <Stack gap={4} align="center">
               <h2 className={styles.ctaTitle}>Start your 7-day free trial</h2>
               <p className={styles.ctaLead}>
-                No credit card required. Set up your workspace in minutes and see how cleanScheduler
-                fits your team.
+                No credit card required. Set up your workspace in minutes and see how Clean
+                Scheduler fits your team.
               </p>
               <Button size="lg" href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>
                 Start free trial

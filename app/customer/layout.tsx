@@ -3,6 +3,7 @@ import { PortalShell } from '@/components/portal/PortalShell';
 import { getNonProdPortalBanner } from '@/lib/portal/nonProdBanner';
 import type { NavItem } from '@/components/portal/types';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
+import { PRODUCT_NAME } from '@/lib/legal/site';
 import { getPortalContext } from '@/lib/portal';
 import { headers } from 'next/headers';
 import { RouteContentShell } from '@/components/portal/RouteContentShell';
@@ -55,7 +56,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       <>
         <WebVitalsReporter portal="customer" />
         <PortalShell
-          brandLabel={whiteLabel ? (portal.tenantSlug ?? 'Portal') : 'cleanScheduler'}
+          brandLabel={whiteLabel ? (portal.tenantSlug ?? 'Portal') : PRODUCT_NAME}
           brandSlot={
             whiteLabel && portal.tenantSlug ? (
               <Suspense fallback={<CustomerBrandFallback />}>

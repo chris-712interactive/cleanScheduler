@@ -9,7 +9,7 @@ import styles from '@/components/marketing/help/help.module.scss';
 export const metadata = buildHelpPageMetadata({
   path: '/help/faq',
   title: 'FAQ',
-  description: 'Frequently asked questions about cleanScheduler trials, billing, and features.',
+  description: 'Frequently asked questions about Clean Scheduler trials, billing, and features.',
 });
 
 export default function HelpFaqPage() {
@@ -20,7 +20,7 @@ export default function HelpFaqPage() {
       <Container size="md">
         <PageHeader
           title="Frequently asked questions"
-          description="Straight answers for cleaning business owners evaluating cleanScheduler."
+          description="Straight answers for cleaning business owners evaluating Clean Scheduler."
           backHref="/help"
           backLabel="Help Center"
           breadcrumbs={[{ label: 'Help', href: '/help' }, { label: 'FAQ' }]}
