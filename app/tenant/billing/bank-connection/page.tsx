@@ -1,6 +1,4 @@
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
-import { Stack } from '@/components/layout/Stack';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -11,12 +9,13 @@ import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitleme
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { isPlaidConfigured } from '@/lib/plaid/server';
-import { isPlaidSandboxEnv, plaidEnvLabel } from '@/lib/plaid/plaidEnv';
-import { DisconnectBankButton, SyncBankButton } from './BankConnectionControls';
-import { DepositCandidatesTable } from './DepositCandidatesTable';
-import { BankStatementImportForm } from './BankStatementImportForm';
-import { PlaidLinkButton } from './PlaidLinkButton';
-import { MatchSuggestionsPanel, type MatchSuggestionRow } from './MatchSuggestionsPanel';
+import { isPlaidSandboxEnv } from '@/lib/plaid/plaidEnv';
+import {
+  DepositMatchingWorkspace,
+  type BankLinkView,
+  type DepositMatchingStats,
+} from './DepositMatchingWorkspace';
+import { type MatchSuggestionRow } from './MatchSuggestionsPanel';
 import styles from '../billing.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -30,11 +29,11 @@ interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  active: 'Connected',
-  login_required: 'Login required',
-  disconnected: 'Disconnected',
-};
+function monthStartIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
 export default async function TenantBankConnectionPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const { tenantSlug } = await getPortalContext();
@@ -59,26 +58,34 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
     canManageBank && mfaStatus != null && (!mfaStatus.enrolled || !mfaStatus.verifiedThisSession);
 
   const db = createTenantPortalDbClient();
-  const [{ data: link }, { data: transactions }, { data: suggestions }, { data: openInvoices }] =
-    await Promise.all([
-      db
-        .from('bank_links')
-        .select(
-          'id, tenant_id, status, institution_name, account_mask, plaid_item_id, last_synced_at, last_sync_error, created_at, updated_at',
-        )
-        .eq('tenant_id', membership.tenantId)
-        .maybeSingle(),
-      db
-        .from('bank_transactions')
-        .select('id, posted_date, name, merchant_name, amount_cents, pending, matched_payment_id')
-        .eq('tenant_id', membership.tenantId)
-        .lt('amount_cents', 0)
-        .order('posted_date', { ascending: false })
-        .limit(50),
-      db
-        .from('payment_match_suggestions')
-        .select(
-          `
+  const monthStart = monthStartIso();
+
+  const [
+    { data: link },
+    { data: transactions },
+    { data: suggestions },
+    { data: openInvoices },
+    { count: unmatchedCount },
+    { count: matchedThisMonthCount },
+  ] = await Promise.all([
+    db
+      .from('bank_links')
+      .select(
+        'id, tenant_id, status, institution_name, account_mask, plaid_item_id, last_synced_at, last_sync_error, created_at, updated_at',
+      )
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+    db
+      .from('bank_transactions')
+      .select('id, posted_date, name, merchant_name, amount_cents, pending, matched_payment_id')
+      .eq('tenant_id', membership.tenantId)
+      .lt('amount_cents', 0)
+      .order('posted_date', { ascending: false })
+      .limit(50),
+    db
+      .from('payment_match_suggestions')
+      .select(
+        `
         id,
         confidence_score,
         bank_transactions (
@@ -95,19 +102,32 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
           amount_paid_cents
         )
       `,
-        )
-        .eq('tenant_id', membership.tenantId)
-        .eq('status', 'suggested')
-        .order('confidence_score', { ascending: false })
-        .limit(20),
-      db
-        .from('tenant_invoices')
-        .select('id, title, amount_cents, amount_paid_cents')
-        .eq('tenant_id', membership.tenantId)
-        .eq('status', 'open')
-        .order('due_date', { ascending: true })
-        .limit(100),
-    ]);
+      )
+      .eq('tenant_id', membership.tenantId)
+      .eq('status', 'suggested')
+      .order('confidence_score', { ascending: false })
+      .limit(20),
+    db
+      .from('tenant_invoices')
+      .select('id, title, amount_cents, amount_paid_cents')
+      .eq('tenant_id', membership.tenantId)
+      .eq('status', 'open')
+      .order('due_date', { ascending: true })
+      .limit(100),
+    db
+      .from('bank_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', membership.tenantId)
+      .lt('amount_cents', 0)
+      .eq('pending', false)
+      .is('matched_payment_id', null),
+    db
+      .from('bank_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', membership.tenantId)
+      .not('matched_payment_id', 'is', null)
+      .gte('posted_date', monthStart),
+  ]);
 
   const matchRows: MatchSuggestionRow[] = (suggestions ?? [])
     .map((row) => {
@@ -128,8 +148,17 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
     })
     .filter((row): row is MatchSuggestionRow => row !== null);
 
-  const status = link?.status ?? null;
-  const statusLabel = status ? (STATUS_LABEL[status] ?? status) : 'Not connected';
+  const suggestedTransactionIds = matchRows.map((row) => row.transactionId);
+
+  const linkView: BankLinkView | null = link
+    ? {
+        status: link.status as BankLinkView['status'],
+        institutionName: link.institution_name,
+        accountMask: link.account_mask,
+        lastSyncedAt: link.last_synced_at,
+        lastSyncError: link.last_sync_error,
+      }
+    : null;
 
   const depositRows = (transactions ?? []).map((tx) => ({
     id: tx.id,
@@ -152,19 +181,24 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
     })
     .filter((row): row is NonNullable<typeof row> => row !== null);
 
+  const stats: DepositMatchingStats = {
+    needsReview: matchRows.length,
+    unmatched: unmatchedCount ?? 0,
+    matchedThisMonth: matchedThisMonthCount ?? 0,
+  };
+
   return (
     <>
       <PageHeader
-        title="Bank connection"
+        title="Deposit matching"
         backHref="/billing"
         backLabel="Workspace billing"
-        titleHint="Connect a business checking account with Plaid to import deposits and match them to open invoices."
+        titleHint="Match bank deposits to open invoices (Zelle, ACH, wires)."
       />
 
-      {!plaidReady ? (
+      {!plaidReady && canManageBank ? (
         <p className={styles.bannerError} role="alert">
-          Plaid is not configured on this server. Add PLAID_CLIENT_ID, PLAID_SECRET, and PLAID_ENV
-          to your environment, then restart the app.
+          Bank connection is temporarily unavailable. Contact support if this persists.
         </p>
       ) : null}
 
@@ -192,7 +226,7 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
       ) : null}
       {synced ? (
         <p className={styles.bannerOk} role="status">
-          Bank transactions refreshed from Plaid.
+          Bank transactions refreshed.
         </p>
       ) : null}
       {matched ? (
@@ -224,104 +258,19 @@ export default async function TenantBankConnectionPage({ searchParams }: PagePro
           description={`${minimumTierLabelForFeature('plaidReconciliation')} plans include Plaid bank connection, deposit import, and invoice matching for Zelle and ACH payments.`}
         />
       ) : (
-        <Stack gap={6}>
-          <Card
-            title="Plaid Link"
-            description={
-              plaidSandbox
-                ? 'Sandbox mode — use Plaid test credentials (user_good / pass_good on First Platypus Bank). Production uses your real business checking account.'
-                : `Plaid ${plaidEnvLabel()} — connect a business checking account to import deposits and match them to invoices.`
-            }
-          >
-            <p className={styles.muted} style={{ marginTop: 0 }}>
-              Status: <strong>{statusLabel}</strong>
-              {link?.institution_name ? (
-                <>
-                  {' '}
-                  · {link.institution_name}
-                  {link.account_mask ? ` ·•••${link.account_mask}` : null}
-                </>
-              ) : null}
-            </p>
-            {link?.last_synced_at ? (
-              <p className={styles.muted}>
-                Last synced {new Date(link.last_synced_at).toLocaleString()}
-              </p>
-            ) : null}
-            {link?.last_sync_error ? (
-              <p className={styles.bannerError} role="alert">
-                Last sync error: {link.last_sync_error}
-              </p>
-            ) : null}
-
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 'var(--space-3)',
-                marginTop: 'var(--space-4)',
-              }}
-            >
-              {plaidReady && canManageBank && !mfaBlocksPlaid ? (
-                <>
-                  <PlaidLinkButton
-                    tenantSlug={membership.tenantSlug}
-                    label={
-                      !link || link.status === 'disconnected'
-                        ? 'Connect bank account'
-                        : link.status === 'login_required'
-                          ? 'Reconnect bank account'
-                          : 'Replace bank account'
-                    }
-                  />
-                  {link && link.status !== 'disconnected' ? (
-                    <SyncBankButton tenantSlug={membership.tenantSlug} />
-                  ) : null}
-                  {link && link.status !== 'disconnected' ? (
-                    <DisconnectBankButton tenantSlug={membership.tenantSlug} />
-                  ) : null}
-                </>
-              ) : null}
-              {plaidReady && !canManageBank ? (
-                <p className={styles.muted} style={{ margin: 0 }}>
-                  Bank connection changes require Admin access. You can review deposits below.
-                </p>
-              ) : null}
-            </div>
-          </Card>
-
-          {canManageBank ? (
-            <Card
-              title="Import bank statement (CSV)"
-              description="Fallback when Plaid does not cover your bank — same matching workflow as live sync."
-            >
-              <BankStatementImportForm tenantSlug={membership.tenantSlug} />
-            </Card>
-          ) : null}
-
-          <Card
-            title="Suggested matches"
-            description="Review before confirming — this records an invoice payment."
-          >
-            <MatchSuggestionsPanel
-              tenantSlug={membership.tenantSlug}
-              suggestions={matchRows}
-              canManage={canManageBank}
-            />
-          </Card>
-
-          <Card
-            title="Recent deposit candidates"
-            description="Incoming bank deposits only — match to open invoices manually or via suggestions above."
-          >
-            <DepositCandidatesTable
-              tenantSlug={membership.tenantSlug}
-              canManage={canManageBank}
-              deposits={depositRows}
-              openInvoices={invoiceOptions}
-            />
-          </Card>
-        </Stack>
+        <DepositMatchingWorkspace
+          tenantSlug={membership.tenantSlug}
+          canManageBank={canManageBank}
+          plaidReady={plaidReady}
+          mfaBlocksPlaid={mfaBlocksPlaid}
+          plaidSandbox={plaidSandbox}
+          link={linkView}
+          stats={stats}
+          suggestions={matchRows}
+          deposits={depositRows}
+          suggestedTransactionIds={suggestedTransactionIds}
+          openInvoices={invoiceOptions}
+        />
       )}
     </>
   );

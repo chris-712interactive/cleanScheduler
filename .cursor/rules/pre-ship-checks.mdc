@@ -9,6 +9,7 @@ Before opening a PR or declaring work ready to ship, **always** run these comman
 
 ```bash
 npm run format
+npm run lint
 npm run lint:styles
 ```
 

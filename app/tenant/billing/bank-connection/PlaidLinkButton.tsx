@@ -7,15 +7,26 @@ import { PLAID_CONSENT_REQUIRED_ERROR } from '@/lib/plaid/plaidConsentCopy';
 import { connectBankFromPlaidAction, fetchPlaidLinkTokenAction } from './actions';
 import { finishBankConnectionAction } from './finishBankConnectionAction';
 import { PlaidPreLinkConsent } from './PlaidPreLinkConsent';
+import styles from './bank-connection.module.scss';
 
 interface PlaidLinkButtonProps {
   tenantSlug: string;
   label: string;
   variant?: 'primary' | 'secondary';
+  size?: 'sm' | 'md' | 'lg';
+  /** Show consent checkbox only after the user clicks the initial button. */
+  consentFlow?: 'inline' | 'step';
 }
 
-export function PlaidLinkButton({ tenantSlug, label, variant = 'primary' }: PlaidLinkButtonProps) {
+export function PlaidLinkButton({
+  tenantSlug,
+  label,
+  variant = 'primary',
+  size = 'md',
+  consentFlow = 'inline',
+}: PlaidLinkButtonProps) {
   const [consentChecked, setConsentChecked] = useState(false);
+  const [consentStepOpen, setConsentStepOpen] = useState(consentFlow === 'inline');
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loadingToken, setLoadingToken] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,22 +89,46 @@ export function PlaidLinkButton({ tenantSlug, label, variant = 'primary' }: Plai
     }
   }, [linkToken, ready, open]);
 
+  const showConsent = consentFlow === 'inline' || consentStepOpen;
+  const primaryDisabled =
+    consentFlow === 'step' && !consentStepOpen
+      ? loadingToken || submitting
+      : !consentChecked || loadingToken || submitting;
+
   return (
     <div>
-      <PlaidPreLinkConsent consentChecked={consentChecked} onConsentChange={setConsentChecked} />
+      {showConsent ? (
+        <PlaidPreLinkConsent consentChecked={consentChecked} onConsentChange={setConsentChecked} />
+      ) : null}
       <Button
         type="button"
         variant={variant}
-        disabled={!consentChecked || loadingToken || submitting}
+        size={size}
+        disabled={primaryDisabled}
         onClick={() => {
+          if (consentFlow === 'step' && !consentStepOpen) {
+            setConsentStepOpen(true);
+            setError(null);
+            return;
+          }
           void fetchLinkToken();
         }}
-        style={{ marginTop: 'var(--space-4)' }}
+        style={showConsent ? { marginTop: 'var(--space-4)' } : undefined}
       >
-        {loadingToken || submitting ? 'Opening Plaid…' : label}
+        {loadingToken || submitting
+          ? 'Opening Plaid…'
+          : consentFlow === 'step' && !consentStepOpen
+            ? label
+            : consentFlow === 'step'
+              ? 'Continue to Plaid'
+              : label}
       </Button>
       {error ? (
-        <p style={{ color: 'var(--color-danger)', marginTop: 'var(--space-2)' }} role="alert">
+        <p
+          className={styles.muted}
+          style={{ color: 'var(--color-danger)', marginTop: 'var(--space-2)' }}
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
