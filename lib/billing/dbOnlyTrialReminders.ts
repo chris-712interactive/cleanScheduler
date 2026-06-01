@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { salutationFirstName } from '@/lib/people/personName';
 import { publicEnv } from '@/lib/env';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -26,7 +27,7 @@ function formatTrialEndDate(iso: string): string {
 
 export async function sendDbOnlyTrialEndingEmail(params: {
   ownerEmail: string;
-  ownerName: string;
+  ownerFirstName: string;
   workspaceName: string;
   tenantSlug: string;
   trialEndsAt: string;
@@ -34,12 +35,12 @@ export async function sendDbOnlyTrialEndingEmail(params: {
   if (!isResendConfigured()) return;
 
   const trialEnd = formatTrialEndDate(params.trialEndsAt);
-  const ownerName = params.ownerName.trim() || 'there';
+  const ownerFirstName = params.ownerFirstName.trim() || 'there';
   const workspace = params.workspaceName.trim() || params.tenantSlug;
   const billingUrl = tenantBillingUrl(params.tenantSlug);
 
   const textBody = [
-    `Hi ${ownerName},`,
+    `Hi ${ownerFirstName},`,
     '',
     `Your free trial for ${workspace} ends on ${trialEnd}.`,
     '',
@@ -54,7 +55,7 @@ export async function sendDbOnlyTrialEndingEmail(params: {
     subject: `${workspace}: your cleanScheduler trial ends ${trialEnd}`,
     text: textBody,
     html: [
-      `<p>Hi ${ownerName},</p>`,
+      `<p>Hi ${ownerFirstName},</p>`,
       `<p>Your free trial for <strong>${workspace}</strong> ends on <strong>${trialEnd}</strong>.</p>`,
       `<p><a href="${billingUrl}">Choose a plan and subscribe</a> to keep scheduling, quotes, and billing running without interruption.</p>`,
       '<p>— cleanScheduler</p>',
@@ -100,7 +101,7 @@ export async function notifyDbOnlyTrialsEndingSoon(
       admin.from('tenants').select('slug, name').eq('id', row.tenant_id).maybeSingle(),
       admin
         .from('tenant_onboarding_profiles')
-        .select('owner_email, owner_name')
+        .select('owner_email, owner_first_name, owner_name')
         .eq('tenant_id', row.tenant_id)
         .maybeSingle(),
     ]);
@@ -110,7 +111,10 @@ export async function notifyDbOnlyTrialsEndingSoon(
 
     await sendDbOnlyTrialEndingEmail({
       ownerEmail: to,
-      ownerName: profile?.owner_name?.trim() || 'there',
+      ownerFirstName: salutationFirstName({
+        first_name: profile?.owner_first_name,
+        full_name: profile?.owner_name,
+      }),
       workspaceName: tenant.name?.trim() || tenant.slug,
       tenantSlug: tenant.slug,
       trialEndsAt: row.trial_ends_at,

@@ -17,7 +17,7 @@ export default async function StartTrialPage() {
         <Container size="md">
           <Card
             title="Start your 7-day free trial"
-            description="Two quick steps: workspace and your account. No credit card required — choose a plan when you subscribe."
+            description="Three quick steps: workspace, your details, and a password. No credit card required — choose a plan when you subscribe."
           >
             <TenantOnboardingForm domainSuffix={domainSuffix} />
           </Card>
