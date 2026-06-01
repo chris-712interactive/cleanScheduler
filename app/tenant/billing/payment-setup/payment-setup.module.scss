@@ -1,0 +1,176 @@
+@use 'mixins/breakpoints' as mq;
+
+.connectHero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.connectHeroTop {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.connectHeroIconWrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  color: var(--color-brand-primary);
+  background-color: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-lg);
+}
+
+.connectHeroCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.connectHeroHeadingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.connectHeroEyebrow {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.connectHeroTitle {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.connectHeroLead {
+  margin: 0;
+  max-width: 40rem;
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.connectHeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.setupChecklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4);
+  list-style: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+}
+
+.setupChecklistItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+
+  &[data-done='true'] {
+    color: var(--color-text);
+    font-weight: 500;
+  }
+}
+
+.setupChecklistIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-text-subtle);
+
+  .setupChecklistItem[data-done='true'] & {
+    color: var(--color-success);
+  }
+}
+
+.nextStepCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+  background: var(--color-success-bg);
+}
+
+.nextStepTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.nextStepLead {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.nextStepLink {
+  align-self: flex-start;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.goodToKnow {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+}
+
+.goodToKnowTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.goodToKnowList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
