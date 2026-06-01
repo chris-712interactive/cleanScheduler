@@ -30,12 +30,12 @@ const FLASH_QUERY_KEYS = [
 function hasFlash(flash: BankConnectionFlash): boolean {
   return Boolean(
     flash.error ||
-      flash.connected ||
-      flash.synced ||
-      flash.matched ||
-      flash.dismissed ||
-      flash.disconnected ||
-      (flash.imported ?? 0) > 0,
+    flash.connected ||
+    flash.synced ||
+    flash.matched ||
+    flash.dismissed ||
+    flash.disconnected ||
+    (flash.imported ?? 0) > 0,
   );
 }
 
