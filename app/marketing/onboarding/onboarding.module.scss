@@ -96,26 +96,138 @@
   gap: var(--space-2);
 }
 
+.slugField {
+  display: grid;
+  gap: var(--space-2);
+
+  .input {
+    transition:
+      border-color 0.2s ease,
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  &[data-tone='checking'] {
+    .input {
+      border-color: var(--color-brand-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+      animation: slugCheckingPulse 1.4s ease-in-out infinite;
+    }
+
+    .slugSuffix {
+      color: var(--color-brand-primary);
+    }
+  }
+
+  &[data-tone='ok'] {
+    .input {
+      border-color: var(--color-success);
+      background-color: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
+
+      &:focus-visible {
+        outline: 2px solid var(--color-success);
+        outline-offset: 1px;
+      }
+    }
+
+    .slugSuffix {
+      color: var(--color-success);
+    }
+  }
+
+  &[data-tone='warn'],
+  &[data-tone='error'] {
+    .input {
+      border-color: var(--color-danger);
+      background-color: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+
+      &:focus-visible {
+        outline: 2px solid var(--color-danger);
+        outline-offset: 1px;
+      }
+    }
+
+    .slugSuffix {
+      color: var(--color-danger-600);
+    }
+  }
+}
+
 .slugSuffix {
   font-size: var(--font-size-sm);
   color: var(--color-text-subtle);
+  transition: color 0.2s ease;
 }
 
 .slugStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
   font-size: var(--font-size-sm);
   color: var(--color-text-subtle);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  &[data-tone='checking'] {
+    color: var(--color-text-muted);
+    border-color: var(--color-border);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 6%, var(--color-surface));
+  }
 
   &[data-tone='ok'] {
     color: var(--color-success);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    background-color: var(--color-success-bg);
+    font-weight: 600;
   }
 
-  &[data-tone='warn'] {
-    color: var(--color-warning);
-  }
-
+  &[data-tone='warn'],
   &[data-tone='error'] {
     color: var(--color-danger-600);
+    border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+    background-color: var(--color-danger-bg);
+    font-weight: 600;
+  }
+}
+
+.slugStatusIcon {
+  flex-shrink: 0;
+
+  .slugStatus[data-tone='checking'] & {
+    animation: slugSpinner 0.8s linear infinite;
+  }
+}
+
+@keyframes slugCheckingPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+  }
+}
+
+@keyframes slugSpinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slugField[data-tone='checking'] .input {
+    animation: none;
+  }
+
+  .slugStatusIcon {
+    animation: none !important;
   }
 }
 
