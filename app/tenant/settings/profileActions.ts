@@ -9,6 +9,7 @@ import {
   AVATAR_MAX_UPLOAD_BYTES,
   prepareEmployeeAvatar,
 } from '@/lib/images/employeeAvatar';
+import { syncedFullNameFromParts } from '@/lib/people/personName';
 
 export interface ProfileActionState {
   error?: string;
@@ -22,30 +23,61 @@ export async function updateOwnDisplayNameAction(
   const slug = String(formData.get('tenant_slug') ?? '')
     .trim()
     .toLowerCase();
-  const name = String(formData.get('display_name') ?? '').trim();
+  const firstName = String(formData.get('first_name') ?? '').trim();
+  const lastName = String(formData.get('last_name') ?? '').trim();
   if (!slug) return { error: 'Missing workspace.' };
-  if (!name || name.length > 120) {
-    return { error: 'Enter a display name (max 120 characters).' };
+  if (!firstName || firstName.length > 60) {
+    return { error: 'Enter a first name (max 60 characters).' };
+  }
+  if (lastName.length > 60) {
+    return { error: 'Last name must be 60 characters or fewer.' };
   }
 
-  await requireTenantPortalAccess(slug, '/settings');
+  const displayName = syncedFullNameFromParts(firstName, lastName);
+  if (!displayName) {
+    return { error: 'Enter a first name.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, '/settings');
   const auth = await getAuthContext();
   if (!auth) return { error: 'Not signed in.' };
 
   const admin = createAdminClient();
   const { error } = await admin
     .from('user_profiles')
-    .update({ display_name: name, updated_at: new Date().toISOString() })
+    .update({
+      first_name: firstName,
+      last_name: lastName || null,
+      display_name: displayName,
+      updated_at: new Date().toISOString(),
+    })
     .eq('user_id', auth.user.id);
   if (error) return { error: error.message };
 
+  if (membership.role === 'owner') {
+    const { error: onboardingError } = await admin
+      .from('tenant_onboarding_profiles')
+      .update({
+        owner_first_name: firstName,
+        owner_last_name: lastName || null,
+        owner_name: displayName,
+      })
+      .eq('tenant_id', membership.tenantId);
+    if (onboardingError) return { error: onboardingError.message };
+  }
+
   await admin.auth.admin.updateUserById(auth.user.id, {
-    user_metadata: { ...auth.user.user_metadata, display_name: name },
+    user_metadata: {
+      ...auth.user.user_metadata,
+      first_name: firstName,
+      last_name: lastName || null,
+      display_name: displayName,
+    },
   });
 
   revalidatePath('/settings');
   revalidatePath('/settings/account');
-  return { success: 'Display name saved.' };
+  return { success: 'Name saved.' };
 }
 
 export async function uploadOwnAvatarAction(
