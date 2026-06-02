@@ -12,6 +12,12 @@ export const COMPENSATION_RULE_TYPE_LABEL: Record<CompensationRuleType, string> 
   flat_per_job_cents: 'Flat amount per job',
 };
 
+export const COMPENSATION_RULE_TYPE_HINT: Record<CompensationRuleType, string> = {
+  commission_percent_bps: 'Pay a percentage of each completed job to cleaners or leads.',
+  tip_split_percent_bps: 'Split tips among crew members by percentage.',
+  flat_per_job_cents: 'Pay a fixed dollar amount for every completed job.',
+};
+
 export function parseCompensationRuleType(raw: string): CompensationRuleType | null {
   const v = raw.trim() as CompensationRuleType;
   return COMPENSATION_RULE_TYPES.includes(v) ? v : null;

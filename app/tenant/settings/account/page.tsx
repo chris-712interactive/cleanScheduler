@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -80,32 +79,6 @@ export default async function TenantAccountSettingsPage() {
       />
 
       <Stack gap={5}>
-        <div className={styles.identityHero}>
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt=""
-              width={64}
-              height={64}
-              className={styles.identityAvatar}
-            />
-          ) : (
-            <div className={styles.identityAvatarPlaceholder} aria-hidden>
-              {(displayName.trim().slice(0, 2) || 'Me').toUpperCase()}
-            </div>
-          )}
-          <div className={styles.identityCopy}>
-            <h2 className={styles.identityName}>{displayName}</h2>
-            {email ? <p className={styles.identityEmail}>{email}</p> : null}
-            <div className={styles.identityMeta}>
-              <span className={styles.metaChip}>
-                {teamRoleLabel(membership.role as TenantRole)}
-              </span>
-              <span className={styles.metaChip}>{membership.tenantName}</span>
-            </div>
-          </div>
-        </div>
-
         <nav className={styles.sectionNav} aria-label="Account sections">
           {navItems.map((item) => (
             <a key={item.href} className={styles.sectionNavLink} href={item.href}>
@@ -121,6 +94,8 @@ export default async function TenantAccountSettingsPage() {
             lastName={lastName}
             avatarUrl={avatarUrl}
             initials={(displayName.trim().slice(0, 2) || 'Me').toUpperCase()}
+            email={email}
+            roleLabel={teamRoleLabel(membership.role as TenantRole)}
           />
 
           {requiresMfaForPlaid ? (

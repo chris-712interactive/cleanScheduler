@@ -1,16 +1,19 @@
-import { Building2, CalendarDays, MapPin, Palette } from 'lucide-react';
+import { Stack } from '@/components/layout/Stack';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
-import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
-import { SettingsSectionCard } from '../SettingsSectionCard';
+import {
+  WORK_WEEK_DAY_LABEL,
+  tenantBusinessSnapshotFromRow,
+} from '@/lib/tenant/tenantBusinessSettings';
 import { BusinessAddressForm } from './BusinessAddressForm';
 import { BusinessProfileForm } from './BusinessProfileForm';
 import { BrandingForm } from './BrandingForm';
 import { WorkWeekForm } from './WorkWeekForm';
-import styles from '../settings.module.scss';
+import layoutStyles from './business-settings.module.scss';
+import formStyles from '../settings.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,11 +51,11 @@ export default async function TenantBusinessSettingsPage() {
       <>
         <PageHeader
           title="Business settings"
-          titleHint="Manage your business profile, branding, hours, and address."
+          titleHint="Your company profile, branding, hours, and address."
           backHref="/settings"
           backLabel="Settings"
         />
-        <p className={styles.formError} role="alert">
+        <p className={formStyles.formError} role="alert">
           Could not load business settings{error ? ` (${error.message})` : ''}.
         </p>
       </>
@@ -60,71 +63,148 @@ export default async function TenantBusinessSettingsPage() {
   }
 
   const snapshot = tenantBusinessSnapshotFromRow(tenantRow);
+  const workDayLabels = snapshot.workWeekDays.map((day) => WORK_WEEK_DAY_LABEL[day]).join(', ');
+  const addressSummary = [snapshot.city, snapshot.state].filter(Boolean).join(', ');
 
   return (
     <>
       <PageHeader
         title="Business settings"
-        titleHint="Manage your business profile, branding, hours, and address."
+        titleHint="Your company profile, branding, hours, and address."
         backHref="/settings"
         backLabel="Settings"
       />
 
-      {!canEdit ? (
-        <p className={styles.readOnlyNotice} role="status">
-          You can view business settings here. Only owners and admins can make changes.
-        </p>
-      ) : null}
+      <Stack gap={6}>
+        <div className={layoutStyles.stack}>
+          {!canEdit ? (
+            <p className={layoutStyles.readOnlyNotice} role="status">
+              You can view business settings here. Only owners and admins can make changes.
+            </p>
+          ) : null}
 
-      <div className={styles.businessGrid}>
-        <SettingsSectionCard
-          icon={Building2}
-          title="Business profile"
-          description="Update your business information and timezone."
-        >
-          <BusinessProfileForm
-            tenantSlug={membership.tenantSlug}
-            snapshot={snapshot}
-            readOnly={!canEdit}
-          />
-        </SettingsSectionCard>
+          <header className={layoutStyles.hero}>
+            <h2 className={layoutStyles.heroTitle}>How your business appears</h2>
+            <p className={layoutStyles.heroLead}>
+              These details show up on quotes, invoices, and customer emails. Set them once and
+              update them whenever your business info changes.
+            </p>
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>{snapshot.name}</span>
+              <span className={layoutStyles.metaChip}>{workDayLabels || 'No work days set'}</span>
+              {snapshot.logoUrl ? (
+                <span className={layoutStyles.metaChip}>Logo uploaded</span>
+              ) : (
+                <span className={layoutStyles.metaChip}>No logo yet</span>
+              )}
+              {addressSummary ? (
+                <span className={layoutStyles.metaChip}>{addressSummary}</span>
+              ) : null}
+            </div>
+          </header>
 
-        <SettingsSectionCard
-          icon={Palette}
-          title="Branding"
-          description="Customize how your brand appears in Clean Scheduler."
-        >
-          <BrandingForm
-            tenantSlug={membership.tenantSlug}
-            snapshot={snapshot}
-            readOnly={!canEdit}
-          />
-        </SettingsSectionCard>
+          <nav className={layoutStyles.sectionNav} aria-label="Business settings sections">
+            <a className={layoutStyles.sectionNavLink} href="#business-profile">
+              Profile
+            </a>
+            <a className={layoutStyles.sectionNavLink} href="#business-branding">
+              Branding
+            </a>
+            <a className={layoutStyles.sectionNavLink} href="#business-hours">
+              Work week
+            </a>
+            <a className={layoutStyles.sectionNavLink} href="#business-address">
+              Address
+            </a>
+          </nav>
 
-        <SettingsSectionCard
-          icon={CalendarDays}
-          title="Work week"
-          description="Configure your default business days and hours."
-        >
-          <WorkWeekForm
-            tenantSlug={membership.tenantSlug}
-            snapshot={snapshot}
-            readOnly={!canEdit}
-          />
-        </SettingsSectionCard>
+          <section
+            className={layoutStyles.settingsSection}
+            id="business-profile"
+            aria-labelledby="business-profile-heading"
+          >
+            <header className={layoutStyles.sectionHeader}>
+              <h3 id="business-profile-heading" className={layoutStyles.sectionTitle}>
+                Business profile
+              </h3>
+              <p className={layoutStyles.sectionLead}>
+                Name, contact info, and timezone used for scheduling and reports.
+              </p>
+            </header>
+            <div className={layoutStyles.formWrap}>
+              <BusinessProfileForm
+                tenantSlug={membership.tenantSlug}
+                snapshot={snapshot}
+                readOnly={!canEdit}
+              />
+            </div>
+          </section>
 
-        <SettingsSectionCard
-          icon={MapPin}
-          title="Business address"
-          description="Set your main business address."
-        >
-          <BusinessAddressForm
-            tenantSlug={membership.tenantSlug}
-            snapshot={snapshot}
-            readOnly={!canEdit}
-          />
-        </SettingsSectionCard>
-      </div>
+          <section
+            className={layoutStyles.settingsSection}
+            id="business-branding"
+            aria-labelledby="business-branding-heading"
+          >
+            <header className={layoutStyles.sectionHeader}>
+              <h3 id="business-branding-heading" className={layoutStyles.sectionTitle}>
+                Branding
+              </h3>
+              <p className={layoutStyles.sectionLead}>
+                Your logo and brand color on customer-facing pages and PDFs.
+              </p>
+            </header>
+            <BrandingForm
+              tenantSlug={membership.tenantSlug}
+              snapshot={snapshot}
+              readOnly={!canEdit}
+            />
+          </section>
+
+          <section
+            className={layoutStyles.settingsSection}
+            id="business-hours"
+            aria-labelledby="business-hours-heading"
+          >
+            <header className={layoutStyles.sectionHeader}>
+              <h3 id="business-hours-heading" className={layoutStyles.sectionTitle}>
+                Work week
+              </h3>
+              <p className={layoutStyles.sectionLead}>
+                Default days and hours for scheduling new visits and crew availability.
+              </p>
+            </header>
+            <div className={layoutStyles.formWrap}>
+              <WorkWeekForm
+                tenantSlug={membership.tenantSlug}
+                snapshot={snapshot}
+                readOnly={!canEdit}
+              />
+            </div>
+          </section>
+
+          <section
+            className={layoutStyles.settingsSection}
+            id="business-address"
+            aria-labelledby="business-address-heading"
+          >
+            <header className={layoutStyles.sectionHeader}>
+              <h3 id="business-address-heading" className={layoutStyles.sectionTitle}>
+                Business address
+              </h3>
+              <p className={layoutStyles.sectionLead}>
+                Your main business location — used on documents and tax summaries when applicable.
+              </p>
+            </header>
+            <div className={layoutStyles.formWrap}>
+              <BusinessAddressForm
+                tenantSlug={membership.tenantSlug}
+                snapshot={snapshot}
+                readOnly={!canEdit}
+              />
+            </div>
+          </section>
+        </div>
+      </Stack>
     </>
   );
 }
