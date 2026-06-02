@@ -63,7 +63,7 @@ export async function sendEmailCampaignNow(params: {
 
   const { data: tenant } = await params.admin
     .from('tenants')
-    .select('name, brand_color, address_line1, city, state, postal_code')
+    .select('name, brand_color, logo_url, address_line1, city, state, postal_code')
     .eq('id', params.tenantId)
     .maybeSingle();
 
@@ -139,13 +139,17 @@ export async function sendEmailCampaignNow(params: {
     const content = buildCampaignEmailContent({
       tenantName: tenant.name,
       customerFirstName: member.firstName,
+      customerLastName: member.lastName,
+      customerFullName: member.fullName,
       subject: campaign.subject,
       bodyText: campaign.body_text,
+      bodyHtml: campaign.body_html ?? '',
       templateKey: campaign.template_key as CampaignTemplateKey,
       portalUrl: `${portalOrigin}/`,
       unsubscribeUrl,
       addressLine: addressLine || null,
       brandColor,
+      logoUrl: tenant.logo_url?.trim() || null,
     });
 
     const result = await sendCampaignEmail({

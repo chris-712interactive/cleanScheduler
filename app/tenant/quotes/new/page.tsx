@@ -8,6 +8,8 @@ import type { Tables } from '@/lib/supabase/database.types';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
+import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
+import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { createAdminClient } from '@/lib/supabase/server';
 import { QuoteCreateWizard } from '../QuoteCreateWizard';
 import type { CustomerPropertyGroup } from '../quoteFormTypes';
@@ -97,7 +99,11 @@ export default async function TenantQuoteNewPage() {
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
 
   const admin = createAdminClient();
-  const jobTypeCatalog = await loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true });
+  const [jobTypeCatalog, ops] = await Promise.all([
+    loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
+    loadTenantOperationalSettings(admin, membership.tenantId),
+  ]);
+  const autoScheduleEnabled = isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode);
 
   return (
     <>
@@ -118,6 +124,7 @@ export default async function TenantQuoteNewPage() {
           customerOptions={customerOptions}
           customerPropertyGroups={customerPropertyGroups}
           jobTypeCatalog={jobTypeCatalog}
+          autoScheduleEnabled={autoScheduleEnabled}
         />
       </Stack>
     </>

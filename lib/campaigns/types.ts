@@ -26,4 +26,6 @@ export interface CampaignAudienceMember {
   customerId: string;
   email: string;
   firstName: string;
+  lastName: string;
+  fullName: string;
 }

@@ -44,19 +44,23 @@ export async function applyQuoteAcceptanceFollowUp(
     }
   }
 
-  const scheduleResult = await ensureAutoScheduledVisitForAcceptedQuote(admin, {
-    tenantId: input.tenantId,
-    quoteId: input.quoteId,
-    customerId: input.customerId,
-    quoteTitle: input.quoteTitle,
-  });
-  if (scheduleResult.visitIds?.length) {
-    result.autoScheduleVisitIds = scheduleResult.visitIds;
-    result.autoScheduleVisitId = scheduleResult.visitIds[0];
-    result.autoScheduleCreatedCount = scheduleResult.createdCount;
-    result.autoScheduleAlreadyExists = scheduleResult.alreadyScheduled;
-  } else if (scheduleResult.skippedReason) {
-    result.skippedAutoScheduleReason = scheduleResult.skippedReason;
+  if (input.ops.acceptedQuoteScheduleMode === 'auto_schedule') {
+    const scheduleResult = await ensureAutoScheduledVisitForAcceptedQuote(admin, {
+      tenantId: input.tenantId,
+      quoteId: input.quoteId,
+      customerId: input.customerId,
+      quoteTitle: input.quoteTitle,
+    });
+    if (scheduleResult.visitIds?.length) {
+      result.autoScheduleVisitIds = scheduleResult.visitIds;
+      result.autoScheduleVisitId = scheduleResult.visitIds[0];
+      result.autoScheduleCreatedCount = scheduleResult.createdCount;
+      result.autoScheduleAlreadyExists = scheduleResult.alreadyScheduled;
+    } else if (scheduleResult.skippedReason) {
+      result.skippedAutoScheduleReason = scheduleResult.skippedReason;
+    }
+  } else {
+    result.skippedAutoScheduleReason = 'auto_schedule_disabled';
   }
 
   return result;

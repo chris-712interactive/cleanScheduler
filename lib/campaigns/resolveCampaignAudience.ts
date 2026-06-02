@@ -72,11 +72,18 @@ function passesBaseMarketable(
         full_name: identity.full_name,
       })
     : 'there';
+  const lastName = identity?.last_name?.trim() || '';
+  const fullName =
+    identity?.full_name?.trim() ||
+    [identity?.first_name, identity?.last_name].filter(Boolean).join(' ').trim() ||
+    firstName;
 
   return {
     customerId: row.id,
     email,
     firstName,
+    lastName,
+    fullName,
   };
 }
 

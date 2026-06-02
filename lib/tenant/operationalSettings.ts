@@ -37,9 +37,13 @@ export const CUSTOMER_PAYMENT_METHOD_LABEL: Record<TenantPaymentMethod, string> 
 };
 
 export const ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL: Record<AcceptedQuoteScheduleMode, string> = {
-  prompt_staff: 'Prompt staff to schedule unscheduled accepted quotes',
-  auto_schedule: 'Auto-schedule flagged lines; skip manual scheduling queue',
+  prompt_staff: 'Team schedules manually after acceptance',
+  auto_schedule: 'Automatic scheduling when customer accepts',
 };
+
+export function isTenantAutoScheduleEnabled(mode: AcceptedQuoteScheduleMode): boolean {
+  return mode === 'auto_schedule';
+}
 
 export const INVOICE_EXPECTATION_LABEL: Record<TenantInvoiceExpectation, string> = {
   prepay: 'Prefer prepayment before service',

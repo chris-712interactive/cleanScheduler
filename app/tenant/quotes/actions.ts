@@ -31,6 +31,8 @@ import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
 import { ensureAutoScheduledVisitForAcceptedQuote } from '@/lib/tenant/quoteAutoSchedule';
 import { autoScheduleSkippedMessage } from '@/lib/tenant/quoteAutoScheduleReasons';
+import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
+import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 import { loadQuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
@@ -909,6 +911,11 @@ export async function retryQuoteAutoSchedule(
 
   if (!quote.customer_id) {
     return { error: autoScheduleSkippedMessage('missing_customer') };
+  }
+
+  const ops = await loadTenantOperationalSettings(admin, membership.tenantId);
+  if (!isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode)) {
+    return { error: autoScheduleSkippedMessage('auto_schedule_disabled') };
   }
 
   const result = await ensureAutoScheduledVisitForAcceptedQuote(admin, {
