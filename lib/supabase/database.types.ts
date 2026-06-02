@@ -2510,6 +2510,7 @@ export type Database = {
           subject: string;
           template_key: 'promo' | 'seasonal' | 're_engagement' | 'review_ask' | 'service_reminder';
           body_text: string;
+          body_html: string;
           audience_preset:
             | 'all_marketable'
             | 'email_preferred'
@@ -2538,6 +2539,7 @@ export type Database = {
           subject: string;
           template_key: 'promo' | 'seasonal' | 're_engagement' | 'review_ask' | 'service_reminder';
           body_text?: string;
+          body_html?: string;
           audience_preset:
             | 'all_marketable'
             | 'email_preferred'
@@ -2566,6 +2568,7 @@ export type Database = {
           subject?: string;
           template_key?: 'promo' | 'seasonal' | 're_engagement' | 'review_ask' | 'service_reminder';
           body_text?: string;
+          body_html?: string;
           audience_preset?:
             | 'all_marketable'
             | 'email_preferred'

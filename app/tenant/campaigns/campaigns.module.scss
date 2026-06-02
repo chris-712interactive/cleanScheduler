@@ -91,6 +91,15 @@
 
 .clickableRow {
   cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-brand-primary) 4%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: -2px;
+  }
 }
 
 .colName {
@@ -116,11 +125,6 @@
 .campaignName {
   font-weight: 600;
   color: var(--color-text);
-  text-decoration: none;
-
-  &:hover {
-    color: var(--color-brand-primary);
-  }
 }
 
 .campaignSubject {
@@ -415,4 +419,260 @@
 .empty {
   margin: 0;
   color: var(--color-text-muted);
+}
+
+.composeLayout {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  }
+}
+
+.composeLayout .previewPanel {
+  @include mq.up(lg) {
+    min-height: calc(100dvh - var(--portal-top-bar-height, 56px) - var(--space-4) * 2);
+    max-height: calc(100dvh - var(--portal-top-bar-height, 56px) - var(--space-4) * 2);
+    overflow: hidden;
+  }
+}
+
+.composeLayout .previewFrameWrap {
+  @include mq.up(lg) {
+    min-height: 0;
+  }
+}
+
+.composeLayout .previewFrame {
+  @include mq.up(lg) {
+    min-height: 100%;
+    height: 100%;
+  }
+}
+
+.fieldHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.mergeTagBar {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.mergeTagBarLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.mergeTagButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.mergeTagButton {
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.templatePicker {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.templateCard {
+  display: block;
+  cursor: pointer;
+}
+
+.templateCardInput {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.templateCardBody {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+
+.templateCard[data-selected] .templateCardBody {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 1px var(--color-brand-primary);
+}
+
+.templateCardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.templateCardBadge {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-brand-primary);
+}
+
+.templateCardDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.templatePreviewFrameWrap {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  height: 180px;
+}
+
+.templatePreviewFrame {
+  width: 200%;
+  height: 360px;
+  border: 0;
+  transform: scale(0.5);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.richEditor {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.richToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.richToolButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.richEditorSurface {
+  min-height: 180px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  line-height: 1.55;
+
+  &:focus {
+    outline: 2px solid color-mix(in srgb, var(--color-brand-primary) 35%, transparent);
+    outline-offset: 1px;
+  }
+}
+
+.previewPanel {
+  position: sticky;
+  top: calc(var(--portal-top-bar-height, 56px) + var(--space-4));
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: var(--space-3);
+  max-height: calc(100dvh - var(--portal-top-bar-height, 56px) - var(--space-4) * 2);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.previewPanelHeader {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.previewPanelTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.previewPanelHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.previewSubjectRow {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.previewSubjectLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.previewSubjectValue {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.previewFrameWrap {
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  min-height: 280px;
+}
+
+.previewFrame {
+  display: block;
+  width: 100%;
+  min-height: 280px;
+  border: 0;
+}
+
+.readOnlyMessage {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  line-height: 1.55;
 }

@@ -3,19 +3,13 @@ import { ChevronLeft, ChevronRight, Mail, MousePointerClick, Send, TrendingUp } 
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { StatusPill } from '@/components/ui/StatusPill';
 import { DashboardStatCard } from '@/app/tenant/DashboardStatCard';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canManageEmailCampaigns } from '@/lib/tenant/campaignPermissions';
-import {
-  CAMPAIGN_AUDIENCE_PRESET_LABEL,
-  CAMPAIGN_STATUS_LABEL,
-  campaignStatusTone,
-  formatCampaignRate,
-} from '@/lib/campaigns/campaignDisplay';
+import { formatCampaignRate } from '@/lib/campaigns/campaignDisplay';
 import {
   buildCampaignSearchParams,
   CAMPAIGN_PAGE_SIZE,
@@ -23,6 +17,7 @@ import {
   parseCampaignStatusFilter,
 } from '@/lib/campaigns/campaignPaging';
 import type { CampaignAudiencePreset, CampaignStatus } from '@/lib/campaigns/types';
+import { CampaignDirectoryTableRow } from './CampaignDirectoryTableRow';
 import styles from './campaigns.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -227,41 +222,21 @@ export default async function TenantCampaignsPage({ searchParams }: PageProps) {
               </thead>
               <tbody>
                 {pageRows.map((row) => (
-                  <tr key={row.id} className={styles.clickableRow}>
-                    <td>
-                      <Link href={`/campaigns/${row.id}`} className={styles.campaignName}>
-                        {row.name}
-                      </Link>
-                      <p className={styles.campaignSubject}>{row.subject}</p>
-                    </td>
-                    <td>
-                      {
-                        CAMPAIGN_AUDIENCE_PRESET_LABEL[
-                          row.audience_preset as CampaignAudiencePreset
-                        ]
-                      }
-                    </td>
-                    <td>
-                      <StatusPill tone={campaignStatusTone(row.status as CampaignStatus)}>
-                        {CAMPAIGN_STATUS_LABEL[row.status as CampaignStatus]}
-                      </StatusPill>
-                    </td>
-                    <td>
-                      {formatCampaignRate(row.opened_count, row.delivered_count || row.sent_count)}
-                    </td>
-                    <td>
-                      {formatCampaignRate(row.clicked_count, row.delivered_count || row.sent_count)}
-                    </td>
-                    <td>
-                      {row.sent_at
-                        ? new Date(row.sent_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })
-                        : '—'}
-                    </td>
-                  </tr>
+                  <CampaignDirectoryTableRow
+                    key={row.id}
+                    row={{
+                      id: row.id,
+                      name: row.name,
+                      subject: row.subject,
+                      audience_preset: row.audience_preset as CampaignAudiencePreset,
+                      status: row.status as CampaignStatus,
+                      opened_count: row.opened_count,
+                      clicked_count: row.clicked_count,
+                      delivered_count: row.delivered_count,
+                      sent_count: row.sent_count,
+                      sent_at: row.sent_at,
+                    }}
+                  />
                 ))}
               </tbody>
             </table>

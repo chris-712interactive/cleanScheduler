@@ -55,11 +55,13 @@ export function QuoteCreateWizard({
   customerOptions,
   customerPropertyGroups,
   jobTypeCatalog = [],
+  autoScheduleEnabled = false,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
   customerPropertyGroups: CustomerPropertyGroup[];
   jobTypeCatalog?: JobTypeCatalogEntry[];
+  autoScheduleEnabled?: boolean;
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
@@ -854,6 +856,7 @@ export function QuoteCreateWizard({
               hideLegend
               jobTypeCatalog={jobTypeCatalog}
               quotePropertyKind={quotePropertyType as CustomerPropertyKind}
+              autoScheduleEnabled={autoScheduleEnabled}
             />
             <h3 className={styles.wizardSubheading}>Add from library</h3>
             <div className={styles.addonLibraryRow}>

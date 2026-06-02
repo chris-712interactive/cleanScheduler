@@ -11,6 +11,8 @@ export function autoScheduleSkippedMessage(reason: string | undefined): string {
       return 'Could not read quote line items. If you recently deployed, apply database migration 0058 (quote line auto-schedule).';
     case 'visit_create_failed':
       return 'Visits could not be saved. Apply migrations 0058 and 0059 (auto-schedule and staffing), then try again.';
+    case 'auto_schedule_disabled':
+      return 'Automatic scheduling is turned off in Operations settings. Enable it there, or schedule visits manually.';
     default:
       return 'Visits were not created automatically. Try again or schedule manually.';
   }

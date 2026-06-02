@@ -32,6 +32,7 @@ export function QuoteEditForm({
   readOnly = false,
   jobTypeCatalog = [],
   quotePropertyKind = null,
+  autoScheduleEnabled = false,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -41,6 +42,7 @@ export function QuoteEditForm({
   readOnly?: boolean;
   jobTypeCatalog?: JobTypeCatalogEntry[];
   quotePropertyKind?: CustomerPropertyKind | null;
+  autoScheduleEnabled?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [rowsRevision, setRowsRevision] = useState(0);
@@ -190,6 +192,7 @@ export function QuoteEditForm({
         rowsRevision={rowsRevision}
         jobTypeCatalog={jobTypeCatalog}
         quotePropertyKind={quotePropertyKind}
+        autoScheduleEnabled={autoScheduleEnabled}
       />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />
