@@ -20,6 +20,7 @@ import {
   resolveRescheduleTargetWindow,
   type AssigneeConflictInfo,
 } from '@/lib/schedule/visitAssigneeConflicts';
+import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
@@ -602,5 +603,66 @@ export async function updateVisitJobPrice(
   return {
     success: true,
     visitPatch: { expectedAmountCents: cents },
+  };
+}
+
+export async function updateScheduledVisitAssignees(
+  _prev: ScheduleFormState,
+  formData: FormData,
+): Promise<ScheduleFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const visitId = String(formData.get('visit_id') ?? '').trim();
+
+  if (!slug || !visitId) {
+    return { error: 'Workspace and visit are required.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  const admin = createAdminClient();
+
+  const assigneeIds = formData
+    .getAll('assignee_user_id')
+    .map((x) => String(x).trim())
+    .filter((x) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x),
+    );
+
+  const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
+  const confirmUnavailable = String(formData.get('confirm_unavailable') ?? '') === 'true';
+
+  const { data: tenantRow } = await admin
+    .from('tenants')
+    .select('timezone')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+
+  const applied = await applyVisitAssignees(admin, {
+    tenantId: membership.tenantId,
+    visitId,
+    assigneeUserIds: assigneeIds,
+    confirmOverlap,
+    confirmUnavailable,
+    tenantTimezone,
+  });
+
+  if (!applied.ok) {
+    return {
+      error: applied.error,
+      conflicts: applied.conflicts,
+      needsOverlapConfirm: applied.needsOverlapConfirm,
+    };
+  }
+
+  revalidatePath('/schedule');
+  revalidatePath(`/schedule/${visitId}`);
+  return {
+    success: true,
+    visitPatch: {
+      assignees: applied.assignees,
+      assigneeUserIds: applied.assigneeUserIds,
+    },
   };
 }

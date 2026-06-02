@@ -19,6 +19,7 @@ import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
 import { RelatedRecordsPanel } from '@/app/tenant/RelatedRecordsPanel';
 import { VisitDetailCard } from '../VisitDetailCard';
 import { createAdminClient } from '@/lib/supabase/server';
+import { SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import styles from '../visitDetail.module.scss';
@@ -29,10 +30,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function TenantVisitDetailPage({ params }: PageProps) {
+export default async function TenantVisitDetailPage({ params, searchParams }: PageProps) {
   const { id: rawId } = await params;
+  const sp = await searchParams;
+  const fromIssues = sp.from === 'issues';
   const visitId = rawId.trim();
   if (!UUID_RE.test(visitId)) notFound();
 
@@ -144,11 +148,39 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
       ? await listVisitProofPhotos(admin, visitId)
       : [];
 
+  let employeeOptions: { id: string; label: string }[] = [];
+  if (!isFieldEmployee) {
+    const membersRes = await supabase
+      .from('tenant_memberships')
+      .select('user_id, role')
+      .eq('tenant_id', membership.tenantId)
+      .eq('is_active', true)
+      .order('role', { ascending: true });
+
+    const memberUserIds = [...new Set((membersRes.data ?? []).map((m) => m.user_id))];
+    const { data: memberProfiles } =
+      memberUserIds.length > 0
+        ? await supabase
+            .from('user_profiles')
+            .select('user_id, display_name')
+            .in('user_id', memberUserIds)
+        : { data: [] as { user_id: string; display_name: string | null }[] };
+
+    const displayByUserId = new Map((memberProfiles ?? []).map((p) => [p.user_id, p.display_name]));
+    employeeOptions = (membersRes.data ?? []).map((m) => ({
+      id: m.user_id,
+      label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
+    }));
+  }
+
   return (
     <>
       <p className={styles.backWrap}>
-        <Link href="/schedule" className={styles.backLink}>
-          ← Back to schedule
+        <Link
+          href={fromIssues ? SCHEDULE_ISSUES_TAB_HREF : '/schedule'}
+          className={styles.backLink}
+        >
+          ← Back to {fromIssues ? 'issues' : 'schedule'}
         </Link>
       </p>
 
@@ -162,6 +194,7 @@ export default async function TenantVisitDetailPage({ params }: PageProps) {
         {!isFieldEmployee ? <RelatedRecordsPanel snapshot={relatedRecords} /> : null}
 
         <VisitDetailCard
+          employeeOptions={employeeOptions}
           initial={{
             visitId,
             tenantSlug: membership.tenantSlug,

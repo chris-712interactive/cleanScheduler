@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
@@ -13,15 +14,34 @@ import {
   normalizeView,
 } from '@/lib/tenant/scheduleDateRange';
 import { loadScheduleVisits } from '@/lib/tenant/loadScheduleVisits';
-import { visitHasBillableAmount } from '@/lib/billing/resolveVisitExpectedAmount';
 import type { TenantRole } from '@/lib/auth/types';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { listScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
-import { listVisitsNeedingStaffing } from '@/lib/tenant/staffingQueue';
+import { listScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { TenantScheduleClient } from './TenantScheduleClient';
+import { ScheduleIssuesList } from './ScheduleIssuesList';
 import styles from './schedule.module.scss';
 
 export const dynamic = 'force-dynamic';
+
+type ScheduleTab = 'schedule' | 'issues';
+
+function normalizeScheduleTab(raw: string | string[] | undefined): ScheduleTab {
+  const value = typeof raw === 'string' ? raw.trim() : '';
+  return value === 'issues' ? 'issues' : 'schedule';
+}
+
+function buildScheduleHref(sp: Record<string, string | string[] | undefined>): string {
+  const params = new URLSearchParams();
+  for (const key of ['date', 'view', 'employee', 'location'] as const) {
+    const raw = sp[key];
+    if (typeof raw === 'string' && raw.trim()) {
+      params.set(key, raw.trim());
+    }
+  }
+  const qs = params.toString();
+  return qs ? `/schedule?${qs}` : '/schedule';
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -34,6 +54,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const auth = await getAuthContext();
   const currentUserId = auth?.user.id ?? '';
   const isFieldEmployee = isFieldEmployeeRole(membership.role as TenantRole);
+  const tab = isFieldEmployee ? 'schedule' : normalizeScheduleTab(sp.tab);
   const dateKey = normalizeDateKey(sp.date);
   const view = normalizeView(sp.view, { defaultForFieldEmployee: isFieldEmployee });
   const employeeFilter = isFieldEmployee
@@ -59,6 +80,13 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   }));
 
   const supabase = createTenantPortalDbClient();
+  const { data: tenantRow } = await supabase
+    .from('tenants')
+    .select('timezone')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+
   const { visits, weekDayKeys } = await loadScheduleVisits({
     supabase,
     tenantId: membership.tenantId,
@@ -92,45 +120,46 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
   }));
 
-  let unpricedUpcomingCount = 0;
-  if (!isFieldEmployee) {
-    const weekAheadIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: upcomingRows } = await supabase
-      .from('tenant_scheduled_visits')
-      .select('expected_amount_cents, tenant_quotes ( amount_cents )')
-      .eq('tenant_id', membership.tenantId)
-      .eq('status', 'scheduled')
-      .gte('starts_at', new Date().toISOString())
-      .lte('starts_at', weekAheadIso);
-
-    unpricedUpcomingCount = (upcomingRows ?? []).filter(
-      (row) =>
-        !visitHasBillableAmount({
-          expectedAmountCents: row.expected_amount_cents,
-          quoteAmountCents: row.tenant_quotes?.amount_cents ?? null,
-        }),
-    ).length;
-  }
-
   const scheduleRenewalReminders =
     !isFieldEmployee && admin ? await listScheduleRenewalReminders(admin, membership.tenantId) : [];
 
-  const visitsNeedingStaffing =
-    !isFieldEmployee && admin ? await listVisitsNeedingStaffing(admin, membership.tenantId, 5) : [];
+  const scheduleIssues =
+    !isFieldEmployee && tab === 'issues'
+      ? await listScheduleIssues(admin, membership.tenantId)
+      : [];
 
-  const subtitle = isFieldEmployee
-    ? view === 'today'
-      ? isLocalCalendarToday(dateKey)
-        ? 'Tap a job to check in, add photos, and mark complete.'
-        : 'Jobs assigned to you on this day.'
-      : 'Browse upcoming weeks — tap a job to open it.'
-    : view === 'day' && isLocalCalendarToday(dateKey)
-      ? "Today's appointments"
-      : view === 'day'
-        ? 'Day view — appointments on the timeline below.'
-        : view === 'week'
-          ? 'Week view — scan the crew grid at a glance.'
-          : 'Month view — tap a day to open the day timeline.';
+  const issueCount =
+    !isFieldEmployee && tab === 'schedule'
+      ? (await listScheduleIssues(admin, membership.tenantId)).length
+      : scheduleIssues.length;
+
+  const scheduleHref = buildScheduleHref(sp);
+
+  const subtitle =
+    tab === 'issues'
+      ? 'Appointments that need crew, pricing, or schedule fixes.'
+      : isFieldEmployee
+        ? view === 'today'
+          ? isLocalCalendarToday(dateKey)
+            ? 'Tap a job to check in, add photos, and mark complete.'
+            : 'Jobs assigned to you on this day.'
+          : 'Browse upcoming weeks — tap a job to open it.'
+        : view === 'day' && isLocalCalendarToday(dateKey)
+          ? "Today's appointments"
+          : view === 'day'
+            ? 'Day view — appointments on the timeline below.'
+            : view === 'week'
+              ? 'Week view — scan the crew grid at a glance.'
+              : 'Month view — tap a day to open the day timeline.';
+
+  const tabLinks: { key: ScheduleTab; label: string; href: string }[] = [
+    { key: 'schedule', label: 'Schedule', href: scheduleHref },
+    {
+      key: 'issues',
+      label: issueCount ? `Issues (${issueCount})` : 'Issues',
+      href: SCHEDULE_ISSUES_TAB_HREF,
+    },
+  ];
 
   return (
     <div className={styles.schedulePage}>
@@ -164,32 +193,20 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         }
       />
 
-      {!isFieldEmployee && unpricedUpcomingCount > 0 ? (
-        <p className={styles.scheduleWarning} role="status">
-          {unpricedUpcomingCount} upcoming visit{unpricedUpcomingCount === 1 ? '' : 's'} in the next
-          7 days {unpricedUpcomingCount === 1 ? 'has' : 'have'} no job price — field crews cannot
-          complete them until you add a quote or job price when scheduling.
-        </p>
-      ) : null}
-
-      {!isFieldEmployee && visitsNeedingStaffing.length > 0 ? (
-        <div className={styles.scheduleStaffingBanner} role="status">
-          <p>
-            {visitsNeedingStaffing.length}+ upcoming visit
-            {visitsNeedingStaffing.length === 1 ? '' : 's'} still need crew — open a visit to assign
-            someone or reschedule.
-          </p>
-          <ul className={styles.scheduleRenewalList}>
-            {visitsNeedingStaffing.map((item) => (
-              <li key={item.visitId}>
-                <a href={item.href} className={styles.scheduleRenewalLink}>
-                  {item.customerName}
-                </a>
-                <span className={styles.scheduleRenewalMeta}> · {item.title}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {!isFieldEmployee ? (
+        <nav className={styles.scheduleTabs} aria-label="Schedule views">
+          {tabLinks.map((t) => (
+            <Link
+              key={t.key}
+              href={t.href}
+              className={styles.scheduleTab}
+              data-active={tab === t.key || undefined}
+              aria-current={tab === t.key ? 'page' : undefined}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </nav>
       ) : null}
 
       {!isFieldEmployee && scheduleRenewalReminders.length > 0 ? (
@@ -217,19 +234,23 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         </div>
       ) : null}
 
-      <TenantScheduleClient
-        tenantSlug={membership.tenantSlug}
-        visits={visits}
-        dateKey={dateKey}
-        view={view}
-        weekDayKeys={weekDayKeys}
-        employeeFilter={employeeFilter}
-        employeeOptions={employeeOptions}
-        currentUserId={currentUserId}
-        fieldEmployeeMode={isFieldEmployee}
-        locationFilter={locationFilter || 'all'}
-        locationOptions={locationsEnabled ? locationOptions : []}
-      />
+      {tab === 'issues' && !isFieldEmployee ? (
+        <ScheduleIssuesList items={scheduleIssues} tenantTimezone={tenantTimezone} />
+      ) : (
+        <TenantScheduleClient
+          tenantSlug={membership.tenantSlug}
+          visits={visits}
+          dateKey={dateKey}
+          view={view}
+          weekDayKeys={weekDayKeys}
+          employeeFilter={employeeFilter}
+          employeeOptions={employeeOptions}
+          currentUserId={currentUserId}
+          fieldEmployeeMode={isFieldEmployee}
+          locationFilter={locationFilter || 'all'}
+          locationOptions={locationsEnabled ? locationOptions : []}
+        />
+      )}
     </div>
   );
 }
