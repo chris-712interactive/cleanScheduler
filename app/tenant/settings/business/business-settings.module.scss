@@ -1,0 +1,57 @@
+@use 'mixins/tenant-settings-layout' as layout;
+
+.stack {
+  @include layout.stack;
+}
+
+.readOnlyNotice {
+  @include layout.read-only-notice;
+}
+
+.hero {
+  @include layout.hero;
+}
+
+.heroTitle {
+  @include layout.hero-title;
+}
+
+.heroLead {
+  @include layout.hero-lead;
+}
+
+.heroMeta {
+  @include layout.meta-chips;
+}
+
+.metaChip {
+  @include layout.meta-chip;
+}
+
+.sectionNav {
+  @include layout.section-nav;
+}
+
+.sectionNavLink {
+  @include layout.section-nav-link;
+}
+
+.settingsSection {
+  @include layout.settings-section;
+}
+
+.sectionHeader {
+  @include layout.section-header;
+}
+
+.sectionTitle {
+  @include layout.section-title;
+}
+
+.sectionLead {
+  @include layout.section-lead;
+}
+
+.formWrap {
+  max-width: 36rem;
+}

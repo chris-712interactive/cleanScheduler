@@ -1,0 +1,125 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/tenant-settings-layout' as layout;
+
+.stack {
+  @include layout.stack;
+}
+
+.hero {
+  @include layout.hero;
+}
+
+.heroTitle {
+  @include layout.hero-title;
+}
+
+.heroLead {
+  @include layout.hero-lead;
+}
+
+.heroMeta {
+  @include layout.meta-chips;
+}
+
+.metaChip {
+  @include layout.meta-chip;
+}
+
+.sectionNav {
+  @include layout.section-nav;
+}
+
+.sectionNavLink {
+  @include layout.section-nav-link;
+}
+
+.settingsSection {
+  @include layout.settings-section;
+}
+
+.sectionHeader {
+  @include layout.section-header;
+}
+
+.sectionTitle {
+  @include layout.section-title;
+}
+
+.sectionLead {
+  @include layout.section-lead;
+}
+
+.rolesGrid {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+  scroll-margin-top: var(--space-4);
+}
+
+.roleCardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.roleCardTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.roleCardSummary {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.rolePermissionList {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text);
+
+  li + li {
+    margin-top: var(--space-1);
+  }
+}
+
+.footnote {
+  margin: 0;
+  padding: var(--space-4);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+}
+
+.inlineLink {
+  @include layout.inline-link;
+}
+
+.lockedSection {
+  @include layout.settings-section;
+}
+
+.lockedLead {
+  @include layout.section-lead;
+}

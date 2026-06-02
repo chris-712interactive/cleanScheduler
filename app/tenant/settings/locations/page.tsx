@@ -1,5 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
+import { Stack } from '@/components/layout/Stack';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { LocationsPanel } from './LocationsPanel';
-import styles from '../settings.module.scss';
+import styles from './locations-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,40 +33,42 @@ export default async function TenantLocationsSettingsPage() {
     <>
       <PageHeader
         title="Locations"
-        titleHint="Tag visits and invoices by branch or territory (Pro)."
+        titleHint="Tag visits and invoices by branch or territory."
         backHref="/settings"
         backLabel="Settings"
       />
 
-      {!canEdit ? (
-        <p className={styles.readOnlyNotice} role="status">
-          You can view locations here. Only owners and admins can make changes.
-        </p>
-      ) : null}
+      <Stack gap={6}>
+        {!canEdit ? (
+          <p className={styles.readOnlyNotice} role="status">
+            You can view locations here. Only owners and admins can make changes.
+          </p>
+        ) : null}
 
-      {!locationsEnabled ? (
-        <FeatureUpgradePanel
-          title="Upgrade to unlock multi-location controls"
-          description="Pro lets you organize crews and reporting by branch or territory, with schedule filtering by location."
-        />
-      ) : null}
-
-      <Card
-        title="Branches & territories"
-        description="Optional location tags for schedule filtering and future per-location reporting."
-      >
-        {locationsEnabled ? (
+        {!locationsEnabled ? (
+          <>
+            <FeatureUpgradePanel
+              title="Upgrade to unlock multi-location controls"
+              description="Pro lets you organize crews and reporting by branch or territory, with schedule filtering by location."
+            />
+            <div className={styles.lockedSection}>
+              <header className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>What locations are for</h2>
+                <p className={styles.lockedLead}>
+                  When unlocked, you can tag visits and invoices by crew or service area and filter
+                  the schedule by location.
+                </p>
+              </header>
+            </div>
+          </>
+        ) : (
           <LocationsPanel
             tenantSlug={membership.tenantSlug}
             canEdit={canEdit}
             locations={locations}
           />
-        ) : (
-          <p className={styles.opsIntro}>
-            Schedule, invoices, and reports stay workspace-wide on Starter and Business.
-          </p>
         )}
-      </Card>
+      </Stack>
     </>
   );
 }
