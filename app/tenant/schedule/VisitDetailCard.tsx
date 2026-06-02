@@ -37,7 +37,9 @@ import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import { DeleteVisitButton } from './DeleteVisitButton';
 import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
 import { VisitTimeRescheduleForm } from './VisitTimeRescheduleForm';
+import { VisitCrewAssignForm } from './VisitCrewAssignForm';
 import { VisitJobPriceForm } from './VisitJobPriceForm';
+import type { EmployeeOption } from './ScheduleVisitForm';
 import styles from './visitDetail.module.scss';
 
 const STATUS_LABEL = {
@@ -94,7 +96,13 @@ export type VisitDetailSnapshot = {
   completionInvoiceId: string | null;
 };
 
-export function VisitDetailCard({ initial }: { initial: VisitDetailSnapshot }) {
+export function VisitDetailCard({
+  initial,
+  employeeOptions = [],
+}: {
+  initial: VisitDetailSnapshot;
+  employeeOptions?: EmployeeOption[];
+}) {
   const [visit, setVisit] = useState(initial);
 
   const onVisitPatch = useCallback((patch: VisitDetailPatch) => {
@@ -273,14 +281,25 @@ export function VisitDetailCard({ initial }: { initial: VisitDetailSnapshot }) {
         />
 
         {visit.status === 'scheduled' && !visit.checkedInAt && canManage ? (
-          <VisitTimeRescheduleForm
-            tenantSlug={visit.tenantSlug}
-            tenantTimezone={visit.tenantTimezone}
-            visitId={visit.visitId}
-            startsAtIso={visit.startsAt}
-            endsAtIso={visit.endsAt}
-            onVisitPatch={onVisitPatch}
-          />
+          <>
+            <VisitCrewAssignForm
+              tenantSlug={visit.tenantSlug}
+              visitId={visit.visitId}
+              startsAtIso={visit.startsAt}
+              endsAtIso={visit.endsAt}
+              currentAssigneeUserIds={visit.assigneeUserIds}
+              employeeOptions={employeeOptions}
+              onVisitPatch={onVisitPatch}
+            />
+            <VisitTimeRescheduleForm
+              tenantSlug={visit.tenantSlug}
+              tenantTimezone={visit.tenantTimezone}
+              visitId={visit.visitId}
+              startsAtIso={visit.startsAt}
+              endsAtIso={visit.endsAt}
+              onVisitPatch={onVisitPatch}
+            />
+          </>
         ) : null}
 
         {canDelete ? (
