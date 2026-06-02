@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { createScheduledVisit, type ScheduleFormState } from './actions';
 import type { QuoteCustomerOption } from '@/app/tenant/quotes/QuoteCreateForm';
@@ -9,6 +9,13 @@ import { OFFICE_SET_PRICE_HINT } from '@/lib/billing/resolveVisitExpectedAmount'
 import styles from './schedule.module.scss';
 
 const initial: ScheduleFormState = {};
+
+type CrewAvailabilityRow = {
+  userId: string;
+  name: string;
+  available: boolean;
+  reasons: string[];
+};
 
 export type EmployeeOption = { id: string; label: string };
 
@@ -36,6 +43,50 @@ export function ScheduleVisitForm({
 
   const [customerId, setCustomerId] = useState(defaults?.customerId ?? '');
   const [crewFilter, setCrewFilter] = useState('');
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
+  const [crewAvailability, setCrewAvailability] = useState<CrewAvailabilityRow[]>([]);
+  const [confirmUnavailable, setConfirmUnavailable] = useState(false);
+
+  useEffect(() => {
+    if (!startsAt || !endsAt) {
+      setCrewAvailability([]);
+      return;
+    }
+
+    const startMs = new Date(startsAt).getTime();
+    const endMs = new Date(endsAt).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+      setCrewAvailability([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const params = new URLSearchParams({
+          starts_at: new Date(startsAt).toISOString(),
+          ends_at: new Date(endsAt).toISOString(),
+        });
+        const res = await fetch(`/api/tenant/schedule/crew-availability?${params}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { crew?: CrewAvailabilityRow[] };
+        setCrewAvailability(json.crew ?? []);
+      } catch {
+        /* ignore abort / network */
+      }
+    };
+
+    void load();
+    return () => controller.abort();
+  }, [startsAt, endsAt]);
+
+  const availabilityByUser = useMemo(
+    () => new Map(crewAvailability.map((row) => [row.userId, row])),
+    [crewAvailability],
+  );
 
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
@@ -55,10 +106,25 @@ export function ScheduleVisitForm({
         name="client_timezone_offset"
         value={String(new Date().getTimezoneOffset())}
       />
+      {confirmUnavailable ? (
+        <input type="hidden" name="confirm_unavailable" value="true" readOnly />
+      ) : null}
       {state.error ? (
         <p className={styles.error} role="alert">
           {state.error}
         </p>
+      ) : null}
+      {state.needsOverlapConfirm && !confirmUnavailable ? (
+        <div className={styles.confirmBox} role="status">
+          <p>Some selected crew are unavailable at this time.</p>
+          <button
+            type="button"
+            className={styles.confirmBtn}
+            onClick={() => setConfirmUnavailable(true)}
+          >
+            Schedule anyway
+          </button>
+        </div>
       ) : null}
       {state.success ? (
         <p className={styles.success} role="status">
@@ -179,6 +245,11 @@ export function ScheduleVisitForm({
             className={styles.input}
             type="datetime-local"
             required
+            value={startsAt}
+            onChange={(e) => {
+              setConfirmUnavailable(false);
+              setStartsAt(e.target.value);
+            }}
           />
         </div>
         <div className={styles.formField}>
@@ -191,6 +262,11 @@ export function ScheduleVisitForm({
             className={styles.input}
             type="datetime-local"
             required
+            value={endsAt}
+            onChange={(e) => {
+              setConfirmUnavailable(false);
+              setEndsAt(e.target.value);
+            }}
           />
         </div>
       </div>
@@ -213,19 +289,33 @@ export function ScheduleVisitForm({
             </p>
           ) : (
             <ul className={styles.crewList}>
-              {filteredCrew.map((e) => (
-                <li key={e.id} className={styles.crewItem}>
-                  <label className={styles.crewLabel}>
-                    <input
-                      type="checkbox"
-                      name="assignee_user_id"
-                      value={e.id}
-                      className={styles.crewCheck}
-                    />
-                    <span>{e.label}</span>
-                  </label>
-                </li>
-              ))}
+              {filteredCrew.map((e) => {
+                const availability = availabilityByUser.get(e.id);
+                return (
+                  <li key={e.id} className={styles.crewItem}>
+                    <label className={styles.crewLabel}>
+                      <input
+                        type="checkbox"
+                        name="assignee_user_id"
+                        value={e.id}
+                        className={styles.crewCheck}
+                      />
+                      <span>{e.label}</span>
+                      {availability ? (
+                        <span
+                          className={
+                            availability.available ? styles.crewAvailable : styles.crewUnavailable
+                          }
+                        >
+                          {availability.available
+                            ? 'Available'
+                            : availability.reasons.join(' · ') || 'Unavailable'}
+                        </span>
+                      ) : null}
+                    </label>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </fieldset>

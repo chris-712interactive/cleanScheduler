@@ -16,6 +16,8 @@ import { loadScheduleVisits } from '@/lib/tenant/loadScheduleVisits';
 import { visitHasBillableAmount } from '@/lib/billing/resolveVisitExpectedAmount';
 import type { TenantRole } from '@/lib/auth/types';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
+import { listScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
+import { listVisitsNeedingStaffing } from '@/lib/tenant/staffingQueue';
 import { TenantScheduleClient } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
 
@@ -110,6 +112,12 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     ).length;
   }
 
+  const scheduleRenewalReminders =
+    !isFieldEmployee && admin ? await listScheduleRenewalReminders(admin, membership.tenantId) : [];
+
+  const visitsNeedingStaffing =
+    !isFieldEmployee && admin ? await listVisitsNeedingStaffing(admin, membership.tenantId, 5) : [];
+
   const subtitle = isFieldEmployee
     ? view === 'today'
       ? isLocalCalendarToday(dateKey)
@@ -131,8 +139,15 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         title={isFieldEmployee ? (view === 'today' ? 'My jobs' : 'My schedule') : 'Schedule'}
         description={<span className={styles.scheduleSubtitle}>{subtitle}</span>}
         actions={
-          isFieldEmployee ? undefined : (
+          isFieldEmployee ? (
+            <Button as="a" href="/schedule/time-off" variant="secondary">
+              Time off
+            </Button>
+          ) : (
             <div className={styles.scheduleHeaderActions}>
+              <Button as="a" href="/schedule/time-off-requests" variant="secondary">
+                Time off requests
+              </Button>
               <Button as="a" href="/schedule/recurring" variant="secondary">
                 Recurring visits
               </Button>
@@ -155,6 +170,51 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           7 days {unpricedUpcomingCount === 1 ? 'has' : 'have'} no job price — field crews cannot
           complete them until you add a quote or job price when scheduling.
         </p>
+      ) : null}
+
+      {!isFieldEmployee && visitsNeedingStaffing.length > 0 ? (
+        <div className={styles.scheduleStaffingBanner} role="status">
+          <p>
+            {visitsNeedingStaffing.length}+ upcoming visit
+            {visitsNeedingStaffing.length === 1 ? '' : 's'} still need crew — open a visit to assign
+            someone or reschedule.
+          </p>
+          <ul className={styles.scheduleRenewalList}>
+            {visitsNeedingStaffing.map((item) => (
+              <li key={item.visitId}>
+                <a href={item.href} className={styles.scheduleRenewalLink}>
+                  {item.customerName}
+                </a>
+                <span className={styles.scheduleRenewalMeta}> · {item.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {!isFieldEmployee && scheduleRenewalReminders.length > 0 ? (
+        <div className={styles.scheduleRenewalBanner} role="status">
+          <p>
+            {scheduleRenewalReminders.length}{' '}
+            {scheduleRenewalReminders.length === 1 ? 'customer has' : 'customers have'} no upcoming
+            visits on recurring service — schedule the next block of cleanings.
+          </p>
+          <ul className={styles.scheduleRenewalList}>
+            {scheduleRenewalReminders.slice(0, 5).map((reminder) => (
+              <li key={reminder.customerId}>
+                <a href={reminder.href} className={styles.scheduleRenewalLink}>
+                  {reminder.customerName}
+                </a>
+                <span className={styles.scheduleRenewalMeta}> · {reminder.quoteTitle}</span>
+              </li>
+            ))}
+          </ul>
+          {scheduleRenewalReminders.length > 5 ? (
+            <p className={styles.scheduleRenewalMore}>
+              + {scheduleRenewalReminders.length - 5} more in the dashboard queue
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <TenantScheduleClient

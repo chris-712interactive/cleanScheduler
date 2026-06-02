@@ -9,6 +9,7 @@ const FIELD_EMPLOYEE_SCHEDULE_ADMIN_PREFIXES = [
   '/schedule/new',
   '/schedule/recurring',
   '/schedule/reschedule-requests',
+  '/schedule/time-off-requests',
 ];
 
 export function isFieldEmployeeRole(role: TenantRole): boolean {
@@ -57,6 +58,10 @@ export function fieldEmployeeCanAccessBrowserPath(pathname: string): boolean {
     return true;
   }
 
+  if (path === '/schedule/time-off') {
+    return true;
+  }
+
   if (path.startsWith('/schedule/')) {
     const segment = path.slice('/schedule/'.length).split('/')[0] ?? '';
     return UUID_RE.test(segment);
@@ -91,6 +96,7 @@ export function enforceFieldEmployeeRouteAccess(
 export function buildFieldEmployeeNavItems(): NavItem[] {
   return [
     { label: 'Schedule', href: fieldEmployeeHomePath(), icon: 'schedule' },
+    { label: 'Time off', href: '/schedule/time-off', icon: 'visits' },
     { label: 'Account', href: '/settings/account', icon: 'settings' },
   ];
 }

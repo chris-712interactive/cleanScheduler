@@ -7,6 +7,8 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
+import { createAdminClient } from '@/lib/supabase/server';
 import { QuoteCreateWizard } from '../QuoteCreateWizard';
 import type { CustomerPropertyGroup } from '../quoteFormTypes';
 import styles from '../quotes.module.scss';
@@ -94,6 +96,9 @@ export default async function TenantQuoteNewPage() {
 
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
 
+  const admin = createAdminClient();
+  const jobTypeCatalog = await loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true });
+
   return (
     <>
       <PageHeader
@@ -112,6 +117,7 @@ export default async function TenantQuoteNewPage() {
           tenantSlug={membership.tenantSlug}
           customerOptions={customerOptions}
           customerPropertyGroups={customerPropertyGroups}
+          jobTypeCatalog={jobTypeCatalog}
         />
       </Stack>
     </>

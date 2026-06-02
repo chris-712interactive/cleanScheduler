@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import type { TenantOperationalSettingsSnapshot } from '@/lib/tenant/loadTenantOperationalSettings';
+import { ensureAutoScheduledVisitForAcceptedQuote } from '@/lib/tenant/quoteAutoSchedule';
 
 type Admin = SupabaseClient<Database>;
 
@@ -17,6 +18,11 @@ export interface QuoteAcceptanceFollowUpInput {
 export interface QuoteAcceptanceFollowUpResult {
   prepayInvoiceId?: string;
   skippedPrepayReason?: string;
+  autoScheduleVisitId?: string;
+  autoScheduleVisitIds?: string[];
+  autoScheduleCreatedCount?: number;
+  skippedAutoScheduleReason?: string;
+  autoScheduleAlreadyExists?: boolean;
 }
 
 /**
@@ -38,7 +44,21 @@ export async function applyQuoteAcceptanceFollowUp(
     }
   }
 
-  // auto_schedule: stored for a future release — no visit materialization here yet.
+  const scheduleResult = await ensureAutoScheduledVisitForAcceptedQuote(admin, {
+    tenantId: input.tenantId,
+    quoteId: input.quoteId,
+    customerId: input.customerId,
+    quoteTitle: input.quoteTitle,
+  });
+  if (scheduleResult.visitIds?.length) {
+    result.autoScheduleVisitIds = scheduleResult.visitIds;
+    result.autoScheduleVisitId = scheduleResult.visitIds[0];
+    result.autoScheduleCreatedCount = scheduleResult.createdCount;
+    result.autoScheduleAlreadyExists = scheduleResult.alreadyScheduled;
+  } else if (scheduleResult.skippedReason) {
+    result.skippedAutoScheduleReason = scheduleResult.skippedReason;
+  }
+
   return result;
 }
 

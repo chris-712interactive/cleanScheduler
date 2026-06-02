@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Building2,
   Cable,
+  ClipboardList,
   Globe,
   MapPin,
   Percent,
@@ -52,6 +53,12 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Operations',
         description: 'Quotes, scheduling defaults, payments, and notifications.',
         icon: SlidersHorizontal,
+      },
+      {
+        href: '/settings/services',
+        label: 'Service types',
+        description: 'Default visit durations by job type for auto-scheduling.',
+        icon: ClipboardList,
       },
       {
         href: '/settings/locations',

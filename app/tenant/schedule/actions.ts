@@ -11,6 +11,10 @@ import type { Database } from '@/lib/supabase/database.types';
 
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
 import { applyVisitScheduleTime } from '@/lib/schedule/applyVisitScheduleTime';
+import {
+  checkEmployeeAvailability,
+  UNAVAILABILITY_LABEL,
+} from '@/lib/schedule/employeeAvailability';
 import { emitVisitWebhookEvent } from '@/lib/integrations/emitVisitWebhook';
 import {
   resolveRescheduleTargetWindow,
@@ -167,6 +171,8 @@ export async function createScheduledVisit(
     return { error: pricing.error };
   }
 
+  const confirmUnavailable = formData.get('confirm_unavailable') === 'true';
+
   const ins = await admin
     .from('tenant_scheduled_visits')
     .insert({
@@ -180,6 +186,7 @@ export async function createScheduledVisit(
       ends_at: endsAt,
       status,
       notes: notes || null,
+      staffing_status: 'needs_staffing',
     })
     .select('id')
     .single();
@@ -205,6 +212,28 @@ export async function createScheduledVisit(
     }
   }
 
+  if (uniqueAssignees.length > 0 && status === 'scheduled' && !confirmUnavailable) {
+    const unavailable: string[] = [];
+    for (const uid of uniqueAssignees) {
+      const result = await checkEmployeeAvailability(admin, {
+        tenantId: membership.tenantId,
+        userId: uid,
+        startsAt,
+        endsAt,
+      });
+      if (!result.available) {
+        unavailable.push(`${uid}:${result.reasons.map((r) => UNAVAILABILITY_LABEL[r]).join(', ')}`);
+      }
+    }
+    if (unavailable.length > 0) {
+      await admin.from('tenant_scheduled_visits').delete().eq('id', visitId);
+      return {
+        error: `Some crew are unavailable at this time (${unavailable.length}). Adjust the time, pick different crew, or confirm scheduling anyway.`,
+        needsOverlapConfirm: true,
+      };
+    }
+  }
+
   if (uniqueAssignees.length > 0) {
     const insA = await admin
       .from('tenant_scheduled_visit_assignees')
@@ -213,6 +242,13 @@ export async function createScheduledVisit(
       await admin.from('tenant_scheduled_visits').delete().eq('id', visitId);
       return { error: insA.error.message };
     }
+
+    const staffingStatus = confirmUnavailable ? 'override_confirmed' : 'assigned';
+    await admin
+      .from('tenant_scheduled_visits')
+      .update({ staffing_status: staffingStatus })
+      .eq('id', visitId)
+      .eq('tenant_id', membership.tenantId);
   }
 
   if (status === 'scheduled') {

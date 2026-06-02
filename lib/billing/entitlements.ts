@@ -21,7 +21,8 @@ export type EntitlementFeature =
   | 'smsCommunication'
   | 'whiteLabelCustomerPortal'
   | 'proofOfServicePhotos'
-  | 'proofOfServicePortalShare';
+  | 'proofOfServicePortalShare'
+  | 'customServiceTypes';
 
 export type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -78,6 +79,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: false,
       proofOfServicePortalShare: false,
+      customServiceTypes: false,
     },
     limits: {
       includedOfficeSeats: 1,
@@ -115,6 +117,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: true,
       proofOfServicePortalShare: false,
+      customServiceTypes: false,
     },
     limits: {
       includedOfficeSeats: 2,
@@ -152,6 +155,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       whiteLabelCustomerPortal: true,
       proofOfServicePhotos: true,
       proofOfServicePortalShare: true,
+      customServiceTypes: true,
     },
     limits: {
       includedOfficeSeats: 10,
@@ -195,6 +199,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     whiteLabelCustomerPortal: false,
     proofOfServicePhotos: true,
     proofOfServicePortalShare: false,
+    customServiceTypes: false,
   },
   limits: {
     includedOfficeSeats: 2,

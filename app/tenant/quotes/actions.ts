@@ -29,6 +29,8 @@ import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
+import { ensureAutoScheduledVisitForAcceptedQuote } from '@/lib/tenant/quoteAutoSchedule';
+import { autoScheduleSkippedMessage } from '@/lib/tenant/quoteAutoScheduleReasons';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 import { loadQuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
@@ -246,6 +248,9 @@ function linePayloadFromParsed(lines: ParsedQuoteLineItem[]) {
     line_discount_value: l.line_discount_value,
     pricing_method: l.pricing_method,
     estimated_hours: l.estimated_hours,
+    auto_schedule_on_accept: l.auto_schedule_on_accept,
+    auto_schedule_visit_count: l.auto_schedule_visit_count,
+    service_template_id: l.service_template_id,
   }));
 }
 
@@ -863,4 +868,68 @@ export async function createTenantQuoteAmendment(
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${priorQuoteId}`, 'page');
   return { quoteId: newId };
+}
+
+export interface RetryAutoScheduleState {
+  error?: string;
+  success?: boolean;
+  createdCount?: number;
+}
+
+export async function retryQuoteAutoSchedule(
+  _prev: RetryAutoScheduleState,
+  formData: FormData,
+): Promise<RetryAutoScheduleState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
+
+  if (!slug || !quoteId) {
+    return { error: 'Missing workspace or quote.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/quotes/${quoteId}`);
+  const admin = createAdminClient();
+
+  const { data: quote, error: quoteErr } = await admin
+    .from('tenant_quotes')
+    .select('id, customer_id, title, status')
+    .eq('id', quoteId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (quoteErr || !quote) {
+    return { error: 'Quote not found.' };
+  }
+
+  if (quote.status !== 'accepted') {
+    return { error: 'Auto-schedule can only run on accepted quotes.' };
+  }
+
+  if (!quote.customer_id) {
+    return { error: autoScheduleSkippedMessage('missing_customer') };
+  }
+
+  const result = await ensureAutoScheduledVisitForAcceptedQuote(admin, {
+    tenantId: membership.tenantId,
+    quoteId,
+    customerId: quote.customer_id,
+    quoteTitle: (quote.title as string) ?? 'Quote',
+  });
+
+  if (result.skippedReason) {
+    console.error('[retryQuoteAutoSchedule] skipped:', result.skippedReason, { quoteId });
+    return { error: autoScheduleSkippedMessage(result.skippedReason) };
+  }
+
+  revalidatePath('/schedule', 'page');
+  revalidatePath('/tenant/schedule', 'page');
+  revalidatePath('/quotes', 'page');
+  revalidatePath(`/quotes/${quoteId}`, 'page');
+
+  return {
+    success: true,
+    createdCount: result.createdCount ?? 0,
+  };
 }
