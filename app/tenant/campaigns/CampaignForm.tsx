@@ -12,10 +12,11 @@ import {
   updateCampaignDraftAction,
   type CampaignActionState,
 } from './campaignActions';
+import { CampaignComposeLayout } from './CampaignComposeLayout';
 import { CampaignEmailPreview } from './CampaignEmailPreview';
 import { CampaignMergeTagBar } from './CampaignMergeTagBar';
 import { CampaignRichTextEditor } from './CampaignRichTextEditor';
-import { CampaignTemplatePicker } from './CampaignTemplatePicker';
+import { CampaignTemplateTiles } from './CampaignTemplateTiles';
 import styles from './campaigns.module.scss';
 
 const initial: CampaignActionState = {};
@@ -112,122 +113,136 @@ export function CampaignForm({
   };
 
   return (
-    <div className={styles.composeLayout}>
-      <div className={styles.formStack}>
-        {(sendState.error || draftState.error) && (
-          <p className={styles.formError} role="alert">
-            {sendState.error ?? draftState.error}
-          </p>
-        )}
-
-        <form className={styles.sectionCard}>
-          <input type="hidden" name="tenant_slug" value={tenantSlug} />
-          {campaignId ? <input type="hidden" name="campaign_id" value={campaignId} /> : null}
-
-          <h2 className={styles.sectionTitle}>Content</h2>
-          <label className={styles.label} htmlFor="campaign_name">
-            Campaign name
-          </label>
-          <input
-            id="campaign_name"
-            name="name"
-            className={styles.input}
-            required
-            disabled={readOnly}
-            defaultValue={initialValues?.name}
-          />
-
-          <label className={styles.label} htmlFor="campaign_subject">
-            Subject line
-          </label>
-          <input
-            ref={subjectRef}
-            id="campaign_subject"
-            name="subject"
-            className={styles.input}
-            required
-            disabled={readOnly}
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
-          {!readOnly ? <CampaignMergeTagBar onInsert={insertSubjectToken} /> : null}
-
-          <p className={styles.fieldHint}>
-            Choose a layout template. Each includes a styled preview — your message appears inside
-            it.
-          </p>
-          <CampaignTemplatePicker
-            value={templateKey}
-            branding={previewBranding}
-            disabled={readOnly}
-            onChange={handleTemplateChange}
-          />
-
-          <label className={styles.label}>Message</label>
-          {readOnly ? (
-            <div
-              className={styles.readOnlyMessage}
-              dangerouslySetInnerHTML={{ __html: bodyHtml || bodyText }}
-            />
-          ) : (
-            <CampaignRichTextEditor
-              key={editorKey}
-              initialHtml={bodyHtml}
-              disabled={readOnly}
-              onChange={handleBodyChange}
-            />
+    <CampaignComposeLayout
+      form={
+        <>
+          {(sendState.error || draftState.error) && (
+            <p className={styles.formError} role="alert">
+              {sendState.error ?? draftState.error}
+            </p>
           )}
 
-          <h2 className={styles.sectionTitle}>Audience</h2>
-          <fieldset className={styles.audienceFieldset} disabled={readOnly}>
-            <legend className={styles.srOnly}>Audience preset</legend>
-            {AUDIENCE_PRESETS.map((preset) => (
-              <label key={preset} className={styles.audienceOption}>
+          <form className={styles.sectionCard}>
+            <input type="hidden" name="tenant_slug" value={tenantSlug} />
+            {campaignId ? <input type="hidden" name="campaign_id" value={campaignId} /> : null}
+
+            <div className={styles.composeSetupRow}>
+              <div className={styles.composeSetupField}>
+                <label className={styles.label} htmlFor="campaign_name">
+                  Campaign name
+                </label>
                 <input
-                  type="radio"
-                  name="audience_preset"
-                  value={preset}
-                  defaultChecked={(initialValues?.audiencePreset ?? 'all_marketable') === preset}
+                  id="campaign_name"
+                  name="name"
+                  className={styles.input}
+                  required
+                  disabled={readOnly}
+                  defaultValue={initialValues?.name}
+                  placeholder="Spring promo — March"
                 />
-                <span>
-                  {CAMPAIGN_AUDIENCE_PRESET_LABEL[preset]}
-                  <span className={styles.audienceCount}>{audienceCounts[preset]} recipients</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-
-          {!readOnly ? (
-            <div className={styles.formActions}>
-              <button
-                type="submit"
-                className={styles.secondaryButton}
-                formAction={draftAction}
-                disabled={draftPending || sendPending}
-              >
-                {draftPending ? 'Saving…' : campaignId ? 'Save changes' : 'Save draft'}
-              </button>
-              <button
-                type="submit"
-                className={styles.primaryButton}
-                formAction={sendAction}
-                disabled={sendPending || draftPending}
-              >
-                {sendPending ? 'Sending…' : 'Send now'}
-              </button>
+              </div>
+              <div className={styles.composeSetupField}>
+                <label className={styles.label} htmlFor="campaign_audience">
+                  Audience
+                </label>
+                <select
+                  id="campaign_audience"
+                  name="audience_preset"
+                  className={styles.select}
+                  defaultValue={initialValues?.audiencePreset ?? 'all_marketable'}
+                  disabled={readOnly}
+                >
+                  {AUDIENCE_PRESETS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {CAMPAIGN_AUDIENCE_PRESET_LABEL[preset]} ({audienceCounts[preset]})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          ) : null}
-        </form>
-      </div>
 
-      <CampaignEmailPreview
-        subject={subject}
-        bodyText={bodyText}
-        bodyHtml={bodyHtml}
-        templateKey={templateKey}
-        branding={previewBranding}
-        mergeContext={previewMergeContext}
-      />
-    </div>
+            <div className={styles.emailComposeBlock}>
+              <h2 className={styles.emailComposeTitle}>Email</h2>
+
+              {readOnly ? (
+                <p className={styles.fieldHint}>
+                  Layout: {getCampaignTemplateDefinition(templateKey).accentLabel}
+                </p>
+              ) : (
+                <CampaignTemplateTiles
+                  value={templateKey}
+                  branding={previewBranding}
+                  disabled={readOnly}
+                  onChange={handleTemplateChange}
+                />
+              )}
+
+              <label className={styles.label} htmlFor="campaign_subject">
+                Subject line
+              </label>
+              {!readOnly ? <CampaignMergeTagBar onInsert={insertSubjectToken} /> : null}
+              <input
+                ref={subjectRef}
+                id="campaign_subject"
+                name="subject"
+                className={styles.input}
+                required
+                disabled={readOnly}
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+              />
+
+              <label className={styles.label} htmlFor="campaign_message">
+                Message
+              </label>
+              {readOnly ? (
+                <div
+                  className={styles.readOnlyMessage}
+                  dangerouslySetInnerHTML={{ __html: bodyHtml || bodyText }}
+                />
+              ) : (
+                <CampaignRichTextEditor
+                  key={editorKey}
+                  initialHtml={bodyHtml}
+                  disabled={readOnly}
+                  onChange={handleBodyChange}
+                />
+              )}
+            </div>
+
+            {!readOnly ? (
+              <div className={styles.formActions}>
+                <button
+                  type="submit"
+                  className={styles.secondaryButton}
+                  formAction={draftAction}
+                  disabled={draftPending || sendPending}
+                >
+                  {draftPending ? 'Saving…' : campaignId ? 'Save changes' : 'Save draft'}
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  formAction={sendAction}
+                  disabled={sendPending || draftPending}
+                >
+                  {sendPending ? 'Sending…' : 'Send now'}
+                </button>
+              </div>
+            ) : null}
+          </form>
+        </>
+      }
+      preview={
+        <CampaignEmailPreview
+          subject={subject}
+          bodyText={bodyText}
+          bodyHtml={bodyHtml}
+          templateKey={templateKey}
+          branding={previewBranding}
+          mergeContext={previewMergeContext}
+        />
+      }
+    />
   );
 }
