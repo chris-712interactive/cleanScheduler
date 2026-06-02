@@ -4,7 +4,7 @@ import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingIn
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import { countPendingTimeOffRequests } from '@/lib/tenant/pendingTimeOffCount';
 import { countScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
-import { countVisitsNeedingStaffing } from '@/lib/tenant/staffingQueue';
+import { countScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 
 export interface DashboardTodayQueueItem {
@@ -25,7 +25,7 @@ export interface DashboardTodayQueue {
   matchSuggestionCount: number;
   scheduleRenewalCount: number;
   pendingTimeOffCount: number;
-  needsStaffingCount: number;
+  scheduleIssueCount: number;
   items: DashboardTodayQueueItem[];
 }
 
@@ -42,7 +42,7 @@ export async function getDashboardTodayQueue(
     matchSuggestionRes,
     scheduleRenewalCount,
     pendingTimeOffCount,
-    needsStaffingCount,
+    scheduleIssueCount,
   ] = await Promise.all([
     countPendingRescheduleRequests(db, tenantId),
     getTenantTodaysJobsSummary(db, tenantId),
@@ -67,7 +67,7 @@ export async function getDashboardTodayQueue(
       .eq('status', 'suggested'),
     countScheduleRenewalReminders(db, tenantId),
     countPendingTimeOffRequests(db, tenantId),
-    countVisitsNeedingStaffing(db, tenantId),
+    countScheduleIssues(db, tenantId),
   ]);
 
   const awaitingReceiptCount = awaitingReceiptRes.count ?? 0;
@@ -96,12 +96,12 @@ export async function getDashboardTodayQueue(
     });
   }
 
-  if (needsStaffingCount > 0) {
+  if (scheduleIssueCount > 0) {
     items.push({
-      id: 'staffing',
-      label: `${needsStaffingCount} visit${needsStaffingCount === 1 ? '' : 's'} need crew`,
-      detail: 'Auto-schedule or manual visits without assignees',
-      href: '/schedule',
+      id: 'schedule-issues',
+      label: `${scheduleIssueCount} appointment${scheduleIssueCount === 1 ? '' : 's'} need attention`,
+      detail: 'Missing crew, pricing, conflicts, or open reschedule requests on visits',
+      href: SCHEDULE_ISSUES_TAB_HREF,
       tone: 'warn',
     });
   }
@@ -187,7 +187,7 @@ export async function getDashboardTodayQueue(
     matchSuggestionCount,
     scheduleRenewalCount,
     pendingTimeOffCount,
-    needsStaffingCount,
+    scheduleIssueCount,
     items,
   };
 }

@@ -56,9 +56,7 @@ export function VisitTimeRescheduleForm({
       />
 
       <p className={styles.visitRescheduleTitle}>Change appointment time</p>
-      <p className={styles.visitRescheduleHint}>
-        Adjust start and end. Crew assignment stays as-is unless you edit on another screen.
-      </p>
+      <p className={styles.visitRescheduleHint}>Adjust start and end for this visit.</p>
 
       {state.error ? (
         <p className={styles.error} role="alert">
