@@ -78,12 +78,16 @@ export function AccountPreferencesPanel({
   lastName,
   avatarUrl,
   initials,
+  email,
+  roleLabel,
 }: {
   tenantSlug: string;
   firstName: string;
   lastName: string;
   avatarUrl: string | null;
   initials: string;
+  email: string;
+  roleLabel: string;
 }) {
   const [nameState, nameAction, namePending] = useActionState(updateOwnDisplayNameAction, initial);
 
@@ -97,7 +101,15 @@ export function AccountPreferencesPanel({
         <h2 id="profile-heading" className={styles.sectionTitle}>
           Profile & appearance
         </h2>
-        <p className={styles.sectionLead}>How teammates see you in this workspace.</p>
+        <p className={styles.sectionLead}>
+          {email ? (
+            <>
+              Signed in as <strong>{email}</strong> · {roleLabel}
+            </>
+          ) : (
+            <>How teammates see you in this workspace.</>
+          )}
+        </p>
       </header>
 
       <div className={styles.profileCard}>

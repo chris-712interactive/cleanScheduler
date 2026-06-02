@@ -1,0 +1,131 @@
+@use 'mixins/breakpoints' as mq;
+
+.hubStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.hubHero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.hubHeroTitle {
+  margin: 0;
+  font-size: clamp(1.125rem, 2.5vw, 1.375rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.hubHeroLead {
+  margin: 0;
+  max-width: 42rem;
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.hubGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.hubGroupHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.hubGroupTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.hubGroupLead {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.hubGrid {
+  display: grid;
+  gap: var(--space-3);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.hubCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--color-brand-primary) 45%, var(--color-border));
+    background: color-mix(in srgb, var(--color-brand-primary) 6%, var(--color-surface));
+  }
+}
+
+.hubCardIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.hubCardCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.hubCardTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hubCardTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.hubCardDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.hubCardStatus {
+  flex-shrink: 0;
+}

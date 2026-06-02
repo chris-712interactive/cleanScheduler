@@ -1,0 +1,117 @@
+@use 'mixins/tenant-settings-layout' as layout;
+
+.stack {
+  @include layout.stack;
+}
+
+.readOnlyNotice {
+  @include layout.read-only-notice;
+}
+
+.hero {
+  @include layout.hero;
+}
+
+.heroTitle {
+  @include layout.hero-title;
+}
+
+.heroLead {
+  @include layout.hero-lead;
+}
+
+.heroMeta {
+  @include layout.meta-chips;
+}
+
+.metaChip {
+  @include layout.meta-chip;
+}
+
+.sectionNav {
+  @include layout.section-nav;
+}
+
+.sectionNavLink {
+  @include layout.section-nav-link;
+}
+
+.settingsSection {
+  @include layout.settings-section;
+}
+
+.sectionHeader {
+  @include layout.section-header;
+}
+
+.sectionTitle {
+  @include layout.section-title;
+}
+
+.sectionLead {
+  @include layout.section-lead;
+}
+
+.bannerError {
+  @include layout.banner-error;
+}
+
+.emptyState {
+  @include layout.empty-state;
+}
+
+.itemList {
+  @include layout.item-list;
+}
+
+.itemCard {
+  @include layout.item-card;
+}
+
+.itemMain {
+  @include layout.item-main;
+}
+
+.itemTitle {
+  @include layout.item-title;
+}
+
+.itemMeta {
+  @include layout.item-meta;
+}
+
+.itemActions {
+  @include layout.item-actions;
+}
+
+.setupCard {
+  @include layout.setup-card;
+}
+
+.setupTitle {
+  @include layout.setup-title;
+}
+
+.field {
+  @include layout.field;
+}
+
+.fieldLabel {
+  @include layout.field-label;
+}
+
+.fieldHint {
+  @include layout.field-hint;
+}
+
+.textInput {
+  @include layout.text-input;
+}
+
+.lockedSection {
+  @include layout.settings-section;
+}
+
+.lockedLead {
+  @include layout.section-lead;
+}

@@ -1,0 +1,183 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/tenant-settings-layout' as layout;
+
+.stack {
+  @include layout.stack;
+}
+
+.readOnlyNotice {
+  @include layout.read-only-notice;
+}
+
+.hero {
+  @include layout.hero;
+}
+
+.heroTitle {
+  @include layout.hero-title;
+}
+
+.heroLead {
+  @include layout.hero-lead;
+}
+
+.heroMeta {
+  @include layout.meta-chips;
+}
+
+.metaChip {
+  @include layout.meta-chip;
+}
+
+.bannerError {
+  @include layout.banner-error;
+}
+
+.bannerSuccess {
+  @include layout.banner-success;
+}
+
+.settingsSection {
+  @include layout.settings-section;
+}
+
+.sectionHeader {
+  @include layout.section-header;
+}
+
+.sectionTitle {
+  @include layout.section-title;
+}
+
+.sectionLead {
+  @include layout.section-lead;
+}
+
+.ruleTypeGrid {
+  display: grid;
+  gap: var(--space-2);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ruleTypeCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+}
+
+.ruleTypeTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ruleTypeHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.emptyState {
+  @include layout.empty-state;
+}
+
+.itemList {
+  @include layout.item-list;
+}
+
+.itemCard {
+  @include layout.item-card;
+}
+
+.itemMain {
+  @include layout.item-main;
+}
+
+.itemTitle {
+  @include layout.item-title;
+}
+
+.itemMeta {
+  @include layout.item-meta;
+}
+
+.itemActions {
+  @include layout.item-actions;
+}
+
+.setupCard {
+  @include layout.setup-card;
+}
+
+.setupTitle {
+  @include layout.setup-title;
+}
+
+.formGrid {
+  display: grid;
+  gap: var(--space-3);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.field {
+  @include layout.field;
+}
+
+.fieldWide {
+  @include layout.field;
+
+  @include mq.up(md) {
+    grid-column: 1 / -1;
+  }
+}
+
+.fieldLabel {
+  @include layout.field-label;
+}
+
+.fieldHint {
+  @include layout.field-hint;
+}
+
+.textInput {
+  @include layout.text-input;
+
+  max-width: none;
+}
+
+.selectInput {
+  @include layout.select-input;
+
+  max-width: none;
+}
+
+.lockedSection {
+  @include layout.settings-section;
+}
+
+.lockedLead {
+  @include layout.section-lead;
+}
+
+.inlineLink {
+  @include layout.inline-link;
+}
+
+.footnote {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
