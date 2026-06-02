@@ -37,8 +37,8 @@ export const CUSTOMER_PAYMENT_METHOD_LABEL: Record<TenantPaymentMethod, string> 
 };
 
 export const ACCEPTED_QUOTE_SCHEDULE_MODE_LABEL: Record<AcceptedQuoteScheduleMode, string> = {
-  prompt_staff: 'Prompt staff to schedule (recommended)',
-  auto_schedule: 'Automatically create visits (coming soon — stored for later)',
+  prompt_staff: 'Prompt staff to schedule unscheduled accepted quotes',
+  auto_schedule: 'Auto-schedule flagged lines; skip manual scheduling queue',
 };
 
 export const INVOICE_EXPECTATION_LABEL: Record<TenantInvoiceExpectation, string> = {

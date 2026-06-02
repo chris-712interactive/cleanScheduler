@@ -151,7 +151,7 @@ export async function respondToCustomerQuote(
 
   if (decision === 'accept') {
     const ops = await loadTenantOperationalSettings(admin, quote.tenant_id as string);
-    await applyQuoteAcceptanceFollowUp(admin, {
+    const followUp = await applyQuoteAcceptanceFollowUp(admin, {
       tenantId: quote.tenant_id as string,
       quoteId,
       customerId: quote.customer_id as string,
@@ -160,6 +160,20 @@ export async function respondToCustomerQuote(
       currency: (quote.currency as string) ?? 'usd',
       ops,
     });
+
+    if (followUp.skippedAutoScheduleReason) {
+      console.error(
+        '[respondToCustomerQuote] auto-schedule skipped:',
+        followUp.skippedAutoScheduleReason,
+        { quoteId },
+      );
+    }
+
+    if (followUp.autoScheduleVisitIds?.length || followUp.autoScheduleVisitId) {
+      revalidatePath('/schedule', 'page');
+      revalidatePath('/tenant/schedule', 'page');
+      revalidatePath('/quotes', 'page');
+    }
 
     await sendQuoteNotificationEmail(admin, 'quote_accepted', {
       tenantId: quote.tenant_id as string,

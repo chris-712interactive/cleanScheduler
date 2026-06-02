@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Tables } from '@/lib/supabase/database.types';
@@ -17,8 +17,12 @@ import { formatQuoteMoney, formatQuoteLineDiscountShort } from '@/lib/tenant/quo
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
 import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
+import { resolveAutoScheduleVisitCount } from '@/lib/tenant/quoteLineAutoSchedule';
+import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
+import { QuoteAutoScheduleBanner } from '../QuoteAutoScheduleBanner';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
 import { parseQuoteScopeSnapshot } from '@/lib/tenant/quoteStructuredFields';
 import { quoteHeaderPricingDefaultsFromQuote } from '@/lib/tenant/quoteHeaderPricingDefaults';
@@ -118,7 +122,10 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           line_discount_kind,
           line_discount_value,
           pricing_method,
-          estimated_hours
+          estimated_hours,
+          auto_schedule_on_accept,
+          auto_schedule_visit_count,
+          service_template_id
         )
       `,
     )
@@ -132,11 +139,19 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const [customersRes, propertiesRes, snapRes, eSignRes, versionsRes] = await Promise.all([
-    supabase
-      .from('customers')
-      .select(
-        `
+  const admin = createAdminClient();
+  const quotePropertyKind = (row.job_type as CustomerPropertyKind | null) ?? null;
+  const jobTypeCatalog = await loadJobTypeCatalog(admin, membership.tenantId, {
+    propertyKind: quotePropertyKind,
+    activeOnly: true,
+  });
+
+  const [customersRes, propertiesRes, snapRes, eSignRes, versionsRes, visitsRes] =
+    await Promise.all([
+      supabase
+        .from('customers')
+        .select(
+          `
         id,
         customer_identities (
           first_name,
@@ -144,38 +159,43 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           full_name
         )
       `,
-      )
-      .eq('tenant_id', membership.tenantId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .overrideTypes<CustomerPickRow[], { merge: false }>(),
-    supabase
-      .from('tenant_customer_properties')
-      .select(
-        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
-      )
-      .eq('tenant_id', membership.tenantId)
-      .order('is_primary', { ascending: false })
-      .overrideTypes<PropertyPickRow[], { merge: false }>(),
-    supabase
-      .from('tenant_quote_acceptance_snapshots')
-      .select('captured_at, payload')
-      .eq('quote_id', id)
-      .maybeSingle(),
-    supabase
-      .from('tenant_quote_acceptance_e_signatures')
-      .select(
-        'signature_kind, typed_full_name, drawn_png_base64, client_ip, user_agent, created_at',
-      )
-      .eq('quote_id', id)
-      .maybeSingle(),
-    supabase
-      .from('tenant_quotes')
-      .select('id, version_number, title, status, created_at')
-      .eq('quote_group_id', row.quote_group_id)
-      .eq('tenant_id', membership.tenantId)
-      .order('version_number', { ascending: true }),
-  ]);
+        )
+        .eq('tenant_id', membership.tenantId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .overrideTypes<CustomerPickRow[], { merge: false }>(),
+      supabase
+        .from('tenant_customer_properties')
+        .select(
+          'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+        )
+        .eq('tenant_id', membership.tenantId)
+        .order('is_primary', { ascending: false })
+        .overrideTypes<PropertyPickRow[], { merge: false }>(),
+      supabase
+        .from('tenant_quote_acceptance_snapshots')
+        .select('captured_at, payload')
+        .eq('quote_id', id)
+        .maybeSingle(),
+      supabase
+        .from('tenant_quote_acceptance_e_signatures')
+        .select(
+          'signature_kind, typed_full_name, drawn_png_base64, client_ip, user_agent, created_at',
+        )
+        .eq('quote_id', id)
+        .maybeSingle(),
+      supabase
+        .from('tenant_quotes')
+        .select('id, version_number, title, status, created_at')
+        .eq('quote_group_id', row.quote_group_id)
+        .eq('tenant_id', membership.tenantId)
+        .order('version_number', { ascending: true }),
+      supabase
+        .from('tenant_scheduled_visits')
+        .select('id', { count: 'exact', head: true })
+        .eq('quote_id', id)
+        .eq('tenant_id', membership.tenantId),
+    ]);
 
   const customerRows = customersRes.data ?? [];
   const propertyRows = propertiesRes.data ?? [];
@@ -194,6 +214,16 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   const quoteLineItems = [...(row.tenant_quote_line_items ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order,
   );
+
+  const flaggedAutoScheduleLines = quoteLineItems.filter((line) => line.auto_schedule_on_accept);
+  const expectedAutoScheduleVisitCount = flaggedAutoScheduleLines.reduce(
+    (sum, line) =>
+      sum + resolveAutoScheduleVisitCount(line.frequency, line.auto_schedule_visit_count),
+    0,
+  );
+  const scheduledVisitCount = visitsRes.count ?? 0;
+  const showAutoScheduleRetryBanner =
+    row.status === 'accepted' && flaggedAutoScheduleLines.length > 0 && scheduledVisitCount === 0;
 
   const acceptanceSnapshot = snapRes.data;
   const eSign = eSignRes.data;
@@ -296,6 +326,15 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       />
 
       <Stack gap={6}>
+        {showAutoScheduleRetryBanner && membership.tenantSlug ? (
+          <QuoteAutoScheduleBanner
+            tenantSlug={membership.tenantSlug}
+            quoteId={row.id}
+            flaggedLineCount={flaggedAutoScheduleLines.length}
+            expectedVisitCount={expectedAutoScheduleVisitCount}
+          />
+        ) : null}
+
         <Card title="Summary" description="Identifiers and key dates for this revision.">
           <KeyValueList items={summaryItems} />
         </Card>
@@ -444,6 +483,8 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
             tenantSlug={membership.tenantSlug}
             customerOptions={customerOptions}
             customerPropertyGroups={customerPropertyGroups}
+            jobTypeCatalog={jobTypeCatalog}
+            quotePropertyKind={quotePropertyKind}
             snapshot={{
               quoteId: row.id,
               title: row.title,

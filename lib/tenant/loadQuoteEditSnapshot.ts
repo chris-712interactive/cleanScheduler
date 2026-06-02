@@ -15,6 +15,9 @@ export type QuoteEditLineItem = Pick<
   | 'line_discount_value'
   | 'pricing_method'
   | 'estimated_hours'
+  | 'auto_schedule_on_accept'
+  | 'auto_schedule_visit_count'
+  | 'service_template_id'
 >;
 
 export type QuoteEditSnapshot = {
@@ -68,7 +71,10 @@ export async function loadQuoteEditSnapshot(
         line_discount_kind,
         line_discount_value,
         pricing_method,
-        estimated_hours
+        estimated_hours,
+        auto_schedule_on_accept,
+        auto_schedule_visit_count,
+        service_template_id
       )
     `,
     )

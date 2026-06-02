@@ -60,6 +60,7 @@ function revalidateVisitPaths(visitId: string) {
   revalidatePath('/schedule');
   revalidatePath(`/schedule/${visitId}`);
   revalidatePath('/billing/invoices');
+  revalidatePath('/dashboard');
 }
 
 export async function checkInToVisitAction(

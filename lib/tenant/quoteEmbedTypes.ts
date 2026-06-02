@@ -47,6 +47,9 @@ export type QuoteDetailEmbedRow = Tables<'tenant_quotes'> & {
         | 'line_discount_value'
         | 'pricing_method'
         | 'estimated_hours'
+        | 'auto_schedule_on_accept'
+        | 'auto_schedule_visit_count'
+        | 'service_template_id'
       >[]
     | null;
 };

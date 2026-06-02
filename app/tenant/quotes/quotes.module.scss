@@ -589,6 +589,11 @@
   gap: var(--space-3);
 }
 
+.lineItemRowGroup {
+  display: grid;
+  gap: var(--space-2);
+}
+
 @media (min-width: 900px) {
   .lineItemsHeaderRow {
     display: grid;
@@ -1022,4 +1027,83 @@
   @include mq.up(sm) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.lineItemAutoSchedule {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.lineItemAutoScheduleLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  cursor: pointer;
+
+  input {
+    margin-top: 0.15rem;
+  }
+}
+
+.lineItemAutoScheduleHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.lineItemAutoScheduleCount {
+  max-width: 12rem;
+}
+
+.autoScheduleBanner,
+.autoScheduleBannerSuccess {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.autoScheduleBanner {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
+}
+
+.autoScheduleBannerSuccess {
+  margin: 0;
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border: 1px solid color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+}
+
+.autoScheduleBannerIcon {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--color-warning);
+}
+
+.autoScheduleBannerBody {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.autoScheduleBannerTitle {
+  margin: 0;
+  font-weight: 600;
+}
+
+.autoScheduleBannerHint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.autoScheduleBannerActions {
+  margin: 0;
 }

@@ -28,6 +28,7 @@ const FEATURE_MINIMUM_TIER: Record<EntitlementFeature, PlatformPlanTier> = {
   whiteLabelCustomerPortal: 'pro',
   proofOfServicePhotos: 'business',
   proofOfServicePortalShare: 'pro',
+  customServiceTypes: 'pro',
 };
 
 export function minimumTierForFeature(feature: EntitlementFeature): PlatformPlanTier {

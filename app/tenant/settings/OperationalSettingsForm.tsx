@@ -26,13 +26,12 @@ const WORKFLOW_CHOICES: {
   {
     value: 'prompt_staff',
     title: 'Team schedules after acceptance',
-    hint: 'When a customer accepts a quote, your staff picks the first visit date. Recommended for most cleaning businesses.',
+    hint: 'When a customer accepts, your staff picks visit dates for lines that were not flagged for auto-schedule on the quote.',
   },
   {
     value: 'auto_schedule',
     title: 'Automatic scheduling',
-    hint: 'Visits will be created automatically from accepted quotes once this feature launches.',
-    badge: 'Coming soon',
+    hint: 'Same as above, but highlights accepted quotes that still need manual scheduling on the quotes board.',
   },
 ];
 

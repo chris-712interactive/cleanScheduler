@@ -7,6 +7,11 @@ import {
   parseQuoteLineDiscountKind,
 } from '@/lib/tenant/quoteHeaderPricingForm';
 import { parseQuoteLinePricingMethod } from '@/lib/tenant/quoteLinePricingMethod';
+import {
+  isRecurringQuoteLineFrequency,
+  parseAutoScheduleFlag,
+  parseAutoScheduleVisitCount,
+} from '@/lib/tenant/quoteLineAutoSchedule';
 
 export type QuoteLineDiscountKind = Database['public']['Enums']['quote_line_discount_kind'];
 export type QuoteLinePricingMethod = Database['public']['Enums']['quote_line_pricing_method'];
@@ -21,6 +26,9 @@ export interface ParsedQuoteLineItem {
   line_discount_value: number;
   pricing_method: QuoteLinePricingMethod;
   estimated_hours: number | null;
+  auto_schedule_on_accept: boolean;
+  auto_schedule_visit_count: number | null;
+  service_template_id: string | null;
 }
 
 function parseDollarsToCents(
@@ -52,6 +60,11 @@ export function parseQuoteLineItemsFromForm(
   const discInputs = formData.getAll('line_discount_input').map((v) => String(v));
   const pricingMethods = formData.getAll('line_pricing_method').map((v) => String(v));
   const estimatedHours = formData.getAll('line_estimated_hours').map((v) => String(v));
+  const autoScheduleFlags = formData.getAll('line_auto_schedule').map((v) => String(v));
+  const autoScheduleVisitCounts = formData
+    .getAll('line_auto_schedule_visit_count')
+    .map((v) => String(v));
+  const serviceTemplateIds = formData.getAll('line_service_template_id').map((v) => String(v));
 
   const n = Math.max(
     services.length,
@@ -62,6 +75,9 @@ export function parseQuoteLineItemsFromForm(
     discInputs.length,
     pricingMethods.length,
     estimatedHours.length,
+    autoScheduleFlags.length,
+    autoScheduleVisitCounts.length,
+    serviceTemplateIds.length,
   );
   const lines: ParsedQuoteLineItem[] = [];
 
@@ -74,6 +90,8 @@ export function parseQuoteLineItemsFromForm(
     const discInputRaw = discInputs[i] ?? '';
     const pricing_method = parseQuoteLinePricingMethod(pricingMethods[i] ?? 'flat');
     const hoursRaw = (estimatedHours[i] ?? '').trim();
+    const auto_schedule_on_accept = parseAutoScheduleFlag(autoScheduleFlags[i] ?? '');
+    const frequencyForCount = frequency;
 
     const rowBlank =
       !service_label && !amountRaw.trim() && line_discount_kind === 'none' && !discInputRaw.trim();
@@ -113,6 +131,18 @@ export function parseQuoteLineItemsFromForm(
       estimated_hours = Math.round(h * 100) / 100;
     }
 
+    let auto_schedule_visit_count: number | null = null;
+    if (auto_schedule_on_accept) {
+      if (isRecurringQuoteLineFrequency(frequencyForCount)) {
+        auto_schedule_visit_count = parseAutoScheduleVisitCount(
+          autoScheduleVisitCounts[i] ?? '',
+          frequencyForCount,
+        );
+      } else {
+        auto_schedule_visit_count = 1;
+      }
+    }
+
     lines.push({
       sort_order: lines.length,
       service_label,
@@ -123,6 +153,9 @@ export function parseQuoteLineItemsFromForm(
       line_discount_value,
       pricing_method,
       estimated_hours,
+      auto_schedule_on_accept,
+      auto_schedule_visit_count,
+      service_template_id: (serviceTemplateIds[i] ?? '').trim() || null,
     });
   }
 

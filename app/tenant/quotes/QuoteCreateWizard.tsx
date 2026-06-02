@@ -24,6 +24,8 @@ import {
 } from './QuoteHeaderPricingFields';
 import { QuoteLiveTotalSidebar } from './QuoteLiveTotalSidebar';
 import type { CustomerPropertyGroup, QuoteCustomerOption } from './quoteFormTypes';
+import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import styles from './quotes.module.scss';
 
 const initial: QuoteFormState = {};
@@ -52,10 +54,12 @@ export function QuoteCreateWizard({
   tenantSlug,
   customerOptions,
   customerPropertyGroups,
+  jobTypeCatalog = [],
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
   customerPropertyGroups: CustomerPropertyGroup[];
+  jobTypeCatalog?: JobTypeCatalogEntry[];
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
@@ -848,6 +852,8 @@ export function QuoteCreateWizard({
               rows={lineRows}
               onRowsChange={setLineRows}
               hideLegend
+              jobTypeCatalog={jobTypeCatalog}
+              quotePropertyKind={quotePropertyType as CustomerPropertyKind}
             />
             <h3 className={styles.wizardSubheading}>Add from library</h3>
             <div className={styles.addonLibraryRow}>

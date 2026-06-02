@@ -12,11 +12,18 @@ import type { QuoteLineDiscountKind } from '@/lib/tenant/quoteHeaderPricingForm'
 import { QUOTE_LINE_DISCOUNT_OPTIONS } from '@/lib/tenant/quoteHeaderPricingForm';
 import type { QuoteLinePricingMethod } from '@/lib/tenant/quoteLinePricingMethod';
 import { QUOTE_LINE_PRICING_METHOD_OPTIONS } from '@/lib/tenant/quoteLinePricingMethod';
+import {
+  defaultAutoScheduleVisitCount,
+  isRecurringQuoteLineFrequency,
+} from '@/lib/tenant/quoteLineAutoSchedule';
+import { findCatalogEntry, type JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import styles from './quotes.module.scss';
 
 export type QuoteLineItemDraft = {
   key: string;
   service_label: string;
+  service_template_id: string;
   frequency: QuoteLineFrequency;
   frequency_detail: string;
   amount_dollars: string;
@@ -24,6 +31,8 @@ export type QuoteLineItemDraft = {
   line_discount_input: string;
   pricing_method: QuoteLinePricingMethod;
   estimated_hours: string;
+  auto_schedule_on_accept: boolean;
+  auto_schedule_visit_count: string;
 };
 
 type QuoteLineItemRow = Pick<
@@ -38,6 +47,9 @@ type QuoteLineItemRow = Pick<
   | 'line_discount_value'
   | 'pricing_method'
   | 'estimated_hours'
+  | 'auto_schedule_on_accept'
+  | 'auto_schedule_visit_count'
+  | 'service_template_id'
 >;
 
 function discountInputFromRow(kind: QuoteLineDiscountKind, value: number): string {
@@ -53,6 +65,7 @@ export function createEmptyQuoteLineDraft(): QuoteLineItemDraft {
         ? crypto.randomUUID()
         : `row_${Math.random()}`,
     service_label: '',
+    service_template_id: '',
     frequency: 'one_time',
     frequency_detail: '',
     amount_dollars: '',
@@ -60,6 +73,8 @@ export function createEmptyQuoteLineDraft(): QuoteLineItemDraft {
     line_discount_input: '',
     pricing_method: 'flat',
     estimated_hours: '',
+    auto_schedule_on_accept: false,
+    auto_schedule_visit_count: '',
   };
 }
 
@@ -73,6 +88,7 @@ export function draftsFromQuoteLineRows(
     .map((l) => ({
       key: l.id,
       service_label: l.service_label,
+      service_template_id: l.service_template_id ?? '',
       frequency: l.frequency,
       frequency_detail: l.frequency_detail ?? '',
       amount_dollars: (l.amount_cents / 100).toFixed(2),
@@ -81,18 +97,172 @@ export function draftsFromQuoteLineRows(
       pricing_method: l.pricing_method ?? 'flat',
       estimated_hours:
         l.estimated_hours != null && Number(l.estimated_hours) > 0 ? String(l.estimated_hours) : '',
+      auto_schedule_on_accept: l.auto_schedule_on_accept ?? false,
+      auto_schedule_visit_count:
+        l.auto_schedule_visit_count != null && l.auto_schedule_visit_count > 0
+          ? String(l.auto_schedule_visit_count)
+          : l.auto_schedule_on_accept && isRecurringQuoteLineFrequency(l.frequency)
+            ? String(defaultAutoScheduleVisitCount(l.frequency))
+            : '',
     }));
+}
+
+function catalogDefaultHoursForRow(
+  row: QuoteLineItemDraft,
+  catalog: JobTypeCatalogEntry[],
+  propertyKind?: CustomerPropertyKind | null,
+): number | null {
+  const entry = findCatalogEntry(catalog, {
+    serviceTemplateId: row.service_template_id || null,
+    serviceLabel: row.service_label,
+    propertyKind,
+  });
+  return entry?.estimated_hours ?? null;
+}
+
+function AutoScheduleFields({
+  row,
+  updateRow,
+  catalogDefaultHours,
+}: {
+  row: QuoteLineItemDraft;
+  updateRow: (key: string, patch: Partial<QuoteLineItemDraft>) => void;
+  catalogDefaultHours: number | null;
+}) {
+  const showVisitCount =
+    row.auto_schedule_on_accept && isRecurringQuoteLineFrequency(row.frequency);
+
+  return (
+    <div className={styles.lineItemAutoSchedule}>
+      <label className={styles.lineItemAutoScheduleLabel} htmlFor={`line_auto_schedule_${row.key}`}>
+        <input
+          id={`line_auto_schedule_${row.key}`}
+          type="checkbox"
+          checked={row.auto_schedule_on_accept}
+          onChange={(e) => {
+            const auto_schedule_on_accept = e.target.checked;
+            updateRow(row.key, {
+              auto_schedule_on_accept,
+              auto_schedule_visit_count:
+                auto_schedule_on_accept && isRecurringQuoteLineFrequency(row.frequency)
+                  ? row.auto_schedule_visit_count ||
+                    String(defaultAutoScheduleVisitCount(row.frequency))
+                  : '',
+              estimated_hours: auto_schedule_on_accept ? row.estimated_hours : '',
+            });
+          }}
+        />
+        <span>
+          Auto-schedule on accept
+          <span className={styles.lineItemAutoScheduleHint}>
+            {' '}
+            — create visits for this line when the customer accepts.
+          </span>
+        </span>
+      </label>
+      <input
+        type="hidden"
+        name="line_auto_schedule"
+        value={row.auto_schedule_on_accept ? 'true' : 'false'}
+        readOnly
+      />
+      {row.auto_schedule_on_accept ? (
+        <>
+          <label className={styles.label} htmlFor={`line_visit_duration_${row.key}`}>
+            Visit duration (hours)
+          </label>
+          <input
+            id={`line_visit_duration_${row.key}`}
+            name="line_estimated_hours"
+            className={`${styles.input} ${styles.lineItemAutoScheduleCount}`}
+            inputMode="decimal"
+            placeholder={
+              catalogDefaultHours != null ? `Default: ${catalogDefaultHours}` : 'Default: 2'
+            }
+            value={row.estimated_hours}
+            onChange={(e) => updateRow(row.key, { estimated_hours: e.target.value })}
+          />
+          <p className={styles.lineItemAutoScheduleHint}>
+            Optional override for this customer. Leave blank to use the default from{' '}
+            <a href="/settings/services" className={styles.inlineLink}>
+              Service types
+            </a>
+            .
+          </p>
+        </>
+      ) : (
+        <input
+          name="line_estimated_hours"
+          className={styles.visuallyHidden}
+          value=""
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+        />
+      )}
+      {showVisitCount ? (
+        <>
+          <label className={styles.label} htmlFor={`line_auto_schedule_count_${row.key}`}>
+            Visits to schedule initially
+          </label>
+          <input
+            id={`line_auto_schedule_count_${row.key}`}
+            name="line_auto_schedule_visit_count"
+            className={`${styles.input} ${styles.lineItemAutoScheduleCount}`}
+            inputMode="numeric"
+            min={1}
+            max={52}
+            placeholder={String(defaultAutoScheduleVisitCount(row.frequency))}
+            value={row.auto_schedule_visit_count}
+            onChange={(e) => updateRow(row.key, { auto_schedule_visit_count: e.target.value })}
+          />
+          <p className={styles.lineItemAutoScheduleHint}>
+            For recurring lines, how many upcoming visits to book now (e.g. deep clean once, or 4
+            weekly cleans).
+          </p>
+        </>
+      ) : (
+        <input
+          name="line_auto_schedule_visit_count"
+          className={styles.visuallyHidden}
+          value=""
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+        />
+      )}
+    </div>
+  );
 }
 
 function LineItemFields({
   row,
   updateRow,
   layout,
+  catalog,
+  propertyKind,
 }: {
   row: QuoteLineItemDraft;
   updateRow: (key: string, patch: Partial<QuoteLineItemDraft>) => void;
   layout: 'grid' | 'cards';
+  catalog: JobTypeCatalogEntry[];
+  propertyKind?: CustomerPropertyKind | null;
 }) {
+  const serviceSuggestions = [
+    ...new Set(
+      catalog
+        .filter((entry) => !propertyKind || entry.job_type === propertyKind)
+        .map((entry) => entry.service_label),
+    ),
+  ].sort();
+
+  const syncCatalogMatch = (serviceLabel: string) => {
+    const entry = findCatalogEntry(catalog, { serviceLabel, propertyKind });
+    return {
+      service_template_id: entry?.id ?? '',
+    };
+  };
+
   if (layout === 'cards') {
     return (
       <div className={styles.lineItemCardFields}>
@@ -103,9 +273,24 @@ function LineItemFields({
           id={`line_service_${row.key}`}
           name="line_service"
           className={styles.input}
-          placeholder="e.g. Deep clean, Weekly maintenance"
+          list={`line_service_suggestions_${row.key}`}
+          placeholder="e.g. Deep cleaning"
           value={row.service_label}
-          onChange={(e) => updateRow(row.key, { service_label: e.target.value })}
+          onChange={(e) => {
+            const service_label = e.target.value;
+            updateRow(row.key, { service_label, ...syncCatalogMatch(service_label) });
+          }}
+        />
+        <datalist id={`line_service_suggestions_${row.key}`}>
+          {serviceSuggestions.map((label) => (
+            <option key={label} value={label} />
+          ))}
+        </datalist>
+        <input
+          type="hidden"
+          name="line_service_template_id"
+          value={row.service_template_id}
+          readOnly
         />
         <div className={styles.lineItemCardGrid}>
           <div>
@@ -122,6 +307,11 @@ function LineItemFields({
                 updateRow(row.key, {
                   frequency,
                   frequency_detail: frequency === 'custom' ? row.frequency_detail : '',
+                  auto_schedule_visit_count:
+                    row.auto_schedule_on_accept && isRecurringQuoteLineFrequency(frequency)
+                      ? row.auto_schedule_visit_count ||
+                        String(defaultAutoScheduleVisitCount(frequency))
+                      : '',
                 });
               }}
             >
@@ -241,20 +431,6 @@ function LineItemFields({
               ))}
             </select>
           </div>
-          <div>
-            <label className={styles.label} htmlFor={`line_estimated_hours_${row.key}`}>
-              Est. hours
-            </label>
-            <input
-              id={`line_estimated_hours_${row.key}`}
-              name="line_estimated_hours"
-              className={styles.input}
-              inputMode="decimal"
-              placeholder="Optional"
-              value={row.estimated_hours}
-              onChange={(e) => updateRow(row.key, { estimated_hours: e.target.value })}
-            />
-          </div>
         </div>
       </div>
     );
@@ -265,10 +441,25 @@ function LineItemFields({
       <input
         name="line_service"
         className={styles.input}
-        placeholder="e.g. Deep clean, Weekly tidy"
+        list={`line_service_suggestions_${row.key}`}
+        placeholder="e.g. Deep cleaning"
         value={row.service_label}
-        onChange={(e) => updateRow(row.key, { service_label: e.target.value })}
+        onChange={(e) => {
+          const service_label = e.target.value;
+          updateRow(row.key, { service_label, ...syncCatalogMatch(service_label) });
+        }}
         aria-label="Service name"
+      />
+      <datalist id={`line_service_suggestions_${row.key}`}>
+        {serviceSuggestions.map((label) => (
+          <option key={label} value={label} />
+        ))}
+      </datalist>
+      <input
+        type="hidden"
+        name="line_service_template_id"
+        value={row.service_template_id}
+        readOnly
       />
       <select
         name="line_frequency"
@@ -279,6 +470,10 @@ function LineItemFields({
           updateRow(row.key, {
             frequency,
             frequency_detail: frequency === 'custom' ? row.frequency_detail : '',
+            auto_schedule_visit_count:
+              row.auto_schedule_on_accept && isRecurringQuoteLineFrequency(frequency)
+                ? row.auto_schedule_visit_count || String(defaultAutoScheduleVisitCount(frequency))
+                : '',
           });
         }}
         aria-label="Cadence"
@@ -352,13 +547,6 @@ function LineItemFields({
         readOnly
         aria-hidden
       />
-      <input
-        type="hidden"
-        name="line_estimated_hours"
-        value={row.estimated_hours}
-        readOnly
-        aria-hidden
-      />
     </>
   );
 }
@@ -370,6 +558,8 @@ export function QuoteLineItemsEditor({
   onRowsChange,
   hideLegend = false,
   rowsRevision,
+  jobTypeCatalog = [],
+  quotePropertyKind = null,
 }: {
   initialRows?: QuoteLineItemRow[] | null;
   layout?: 'grid' | 'cards';
@@ -378,6 +568,8 @@ export function QuoteLineItemsEditor({
   hideLegend?: boolean;
   /** Bump after a successful save to reload rows from `initialRows` without remounting the parent form. */
   rowsRevision?: number;
+  jobTypeCatalog?: JobTypeCatalogEntry[];
+  quotePropertyKind?: CustomerPropertyKind | null;
 }) {
   const [internalRows, setInternalRows] = useState<QuoteLineItemDraft[]>(() => {
     const fromDb = draftsFromQuoteLineRows(initialRows ?? null);
@@ -435,7 +627,8 @@ export function QuoteLineItemsEditor({
           <legend className={styles.lineItemsLegend}>Services &amp; pricing</legend>
           <p className={styles.lineItemsIntro}>
             Add one row per priced service. Cadence describes how often that price applies. Line
-            discounts reduce that row&apos;s amount before the quote subtotal.
+            discounts reduce that row&apos;s amount before the quote subtotal. Flag lines to
+            auto-schedule when the customer accepts.
           </p>
         </>
       ) : null}
@@ -453,18 +646,35 @@ export function QuoteLineItemsEditor({
           </div>
           <div className={styles.lineItemsRows}>
             {rows.map((row) => (
-              <div key={row.key} className={styles.lineItemRow}>
-                <LineItemFields row={row} updateRow={updateRow} layout="grid" />
-                <div className={styles.lineItemActions}>
-                  <button
-                    type="button"
-                    className={styles.lineItemIconButton}
-                    onClick={() => removeRow(row.key)}
-                    aria-label="Remove service row"
-                  >
-                    <Trash2 size={18} aria-hidden />
-                  </button>
+              <div key={row.key} className={styles.lineItemRowGroup}>
+                <div className={styles.lineItemRow}>
+                  <LineItemFields
+                    row={row}
+                    updateRow={updateRow}
+                    layout="grid"
+                    catalog={jobTypeCatalog}
+                    propertyKind={quotePropertyKind}
+                  />
+                  <div className={styles.lineItemActions}>
+                    <button
+                      type="button"
+                      className={styles.lineItemIconButton}
+                      onClick={() => removeRow(row.key)}
+                      aria-label="Remove service row"
+                    >
+                      <Trash2 size={18} aria-hidden />
+                    </button>
+                  </div>
                 </div>
+                <AutoScheduleFields
+                  row={row}
+                  updateRow={updateRow}
+                  catalogDefaultHours={catalogDefaultHoursForRow(
+                    row,
+                    jobTypeCatalog,
+                    quotePropertyKind,
+                  )}
+                />
               </div>
             ))}
           </div>
@@ -484,7 +694,22 @@ export function QuoteLineItemsEditor({
                   <Trash2 size={18} aria-hidden />
                 </button>
               </div>
-              <LineItemFields row={row} updateRow={updateRow} layout="cards" />
+              <LineItemFields
+                row={row}
+                updateRow={updateRow}
+                layout="cards"
+                catalog={jobTypeCatalog}
+                propertyKind={quotePropertyKind}
+              />
+              <AutoScheduleFields
+                row={row}
+                updateRow={updateRow}
+                catalogDefaultHours={catalogDefaultHoursForRow(
+                  row,
+                  jobTypeCatalog,
+                  quotePropertyKind,
+                )}
+              />
             </div>
           ))}
         </div>

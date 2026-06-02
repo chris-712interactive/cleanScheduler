@@ -2,6 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingInvoices';
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
+import { countPendingTimeOffRequests } from '@/lib/tenant/pendingTimeOffCount';
+import { countScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
+import { countVisitsNeedingStaffing } from '@/lib/tenant/staffingQueue';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 
 export interface DashboardTodayQueueItem {
@@ -20,6 +23,9 @@ export interface DashboardTodayQueue {
   awaitingReceiptCount: number;
   awaitingDepositCount: number;
   matchSuggestionCount: number;
+  scheduleRenewalCount: number;
+  pendingTimeOffCount: number;
+  needsStaffingCount: number;
   items: DashboardTodayQueueItem[];
 }
 
@@ -34,6 +40,9 @@ export async function getDashboardTodayQueue(
     awaitingReceiptRes,
     awaitingDepositRes,
     matchSuggestionRes,
+    scheduleRenewalCount,
+    pendingTimeOffCount,
+    needsStaffingCount,
   ] = await Promise.all([
     countPendingRescheduleRequests(db, tenantId),
     getTenantTodaysJobsSummary(db, tenantId),
@@ -56,6 +65,9 @@ export async function getDashboardTodayQueue(
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .eq('status', 'suggested'),
+    countScheduleRenewalReminders(db, tenantId),
+    countPendingTimeOffRequests(db, tenantId),
+    countVisitsNeedingStaffing(db, tenantId),
   ]);
 
   const awaitingReceiptCount = awaitingReceiptRes.count ?? 0;
@@ -70,6 +82,26 @@ export async function getDashboardTodayQueue(
       label: `${pendingReschedules} reschedule request${pendingReschedules === 1 ? '' : 's'}`,
       detail: 'Customers waiting on a new time',
       href: '/schedule/reschedule-requests',
+      tone: 'warn',
+    });
+  }
+
+  if (pendingTimeOffCount > 0) {
+    items.push({
+      id: 'time-off',
+      label: `${pendingTimeOffCount} time off request${pendingTimeOffCount === 1 ? '' : 's'}`,
+      detail: 'Team members waiting on approval',
+      href: '/schedule/time-off-requests',
+      tone: 'warn',
+    });
+  }
+
+  if (needsStaffingCount > 0) {
+    items.push({
+      id: 'staffing',
+      label: `${needsStaffingCount} visit${needsStaffingCount === 1 ? '' : 's'} need crew`,
+      detail: 'Auto-schedule or manual visits without assignees',
+      href: '/schedule',
       tone: 'warn',
     });
   }
@@ -135,6 +167,16 @@ export async function getDashboardTodayQueue(
     });
   }
 
+  if (scheduleRenewalCount > 0) {
+    items.push({
+      id: 'schedule-renewal',
+      label: `${scheduleRenewalCount} customer${scheduleRenewalCount === 1 ? '' : 's'} need more visits`,
+      detail: 'Recurring service with no upcoming appointments',
+      href: '/schedule',
+      tone: 'warn',
+    });
+  }
+
   return {
     pendingReschedules,
     todaysJobCount: todaysJobs.count,
@@ -143,6 +185,9 @@ export async function getDashboardTodayQueue(
     awaitingReceiptCount,
     awaitingDepositCount,
     matchSuggestionCount,
+    scheduleRenewalCount,
+    pendingTimeOffCount,
+    needsStaffingCount,
     items,
   };
 }

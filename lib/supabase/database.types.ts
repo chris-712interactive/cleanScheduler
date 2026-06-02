@@ -1065,6 +1065,132 @@ export type Database = {
           },
         ];
       };
+      tenant_member_schedule_profiles: {
+        Row: {
+          tenant_id: string;
+          user_id: string;
+          use_tenant_default: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          user_id: string;
+          use_tenant_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          user_id?: string;
+          use_tenant_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_member_schedule_profiles_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_member_availability_days: {
+        Row: {
+          tenant_id: string;
+          user_id: string;
+          weekday: string;
+          starts_at: string;
+          ends_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          user_id: string;
+          weekday: string;
+          starts_at: string;
+          ends_at: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          user_id?: string;
+          weekday?: string;
+          starts_at?: string;
+          ends_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_member_availability_days_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_member_time_off: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          starts_at: string;
+          ends_at: string;
+          status: Database['public']['Enums']['tenant_time_off_status'];
+          request_note: string;
+          review_note: string | null;
+          requested_at: string;
+          reviewed_at: string | null;
+          reviewed_by_user_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          starts_at: string;
+          ends_at: string;
+          status?: Database['public']['Enums']['tenant_time_off_status'];
+          request_note?: string;
+          review_note?: string | null;
+          requested_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          user_id?: string;
+          starts_at?: string;
+          ends_at?: string;
+          status?: Database['public']['Enums']['tenant_time_off_status'];
+          request_note?: string;
+          review_note?: string | null;
+          requested_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_member_time_off_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_operational_settings: {
         Row: {
           tenant_id: string;
@@ -1503,6 +1629,9 @@ export type Database = {
           line_discount_value: number;
           pricing_method: Database['public']['Enums']['quote_line_pricing_method'];
           estimated_hours: number | null;
+          auto_schedule_on_accept: boolean;
+          auto_schedule_visit_count: number | null;
+          service_template_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1519,6 +1648,9 @@ export type Database = {
           line_discount_value?: number;
           pricing_method?: Database['public']['Enums']['quote_line_pricing_method'];
           estimated_hours?: number | null;
+          auto_schedule_on_accept?: boolean;
+          auto_schedule_visit_count?: number | null;
+          service_template_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1535,6 +1667,9 @@ export type Database = {
           line_discount_value?: number;
           pricing_method?: Database['public']['Enums']['quote_line_pricing_method'];
           estimated_hours?: number | null;
+          auto_schedule_on_accept?: boolean;
+          auto_schedule_visit_count?: number | null;
+          service_template_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1573,6 +1708,7 @@ export type Database = {
           job_type: Database['public']['Enums']['customer_property_kind'] | null;
           sort_order: number;
           is_active: boolean;
+          is_system_default: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1593,6 +1729,7 @@ export type Database = {
           job_type?: Database['public']['Enums']['customer_property_kind'] | null;
           sort_order?: number;
           is_active?: boolean;
+          is_system_default?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1613,6 +1750,7 @@ export type Database = {
           job_type?: Database['public']['Enums']['customer_property_kind'] | null;
           sort_order?: number;
           is_active?: boolean;
+          is_system_default?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1962,11 +2100,14 @@ export type Database = {
           property_id: string | null;
           location_id: string | null;
           quote_id: string | null;
+          quote_line_item_id: string | null;
+          auto_schedule_sequence: number | null;
           expected_amount_cents: number | null;
           title: string;
           starts_at: string;
           ends_at: string;
           status: 'scheduled' | 'completed' | 'cancelled';
+          staffing_status: Database['public']['Enums']['visit_staffing_status'];
           notes: string | null;
           recurring_rule_id: string | null;
           checked_in_at: string | null;
@@ -1987,11 +2128,14 @@ export type Database = {
           customer_id: string;
           property_id?: string | null;
           quote_id?: string | null;
+          quote_line_item_id?: string | null;
+          auto_schedule_sequence?: number | null;
           expected_amount_cents?: number | null;
           title?: string;
           starts_at: string;
           ends_at: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
+          staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
@@ -2012,11 +2156,14 @@ export type Database = {
           customer_id?: string;
           property_id?: string | null;
           quote_id?: string | null;
+          quote_line_item_id?: string | null;
+          auto_schedule_sequence?: number | null;
           expected_amount_cents?: number | null;
           title?: string;
           starts_at?: string;
           ends_at?: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
+          staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
@@ -3217,6 +3364,8 @@ export type Database = {
       tenant_service_template_kind: 'service_line' | 'scope_template' | 'addon';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
+      visit_staffing_status: 'assigned' | 'needs_staffing' | 'override_confirmed';
+      tenant_time_off_status: 'pending' | 'approved' | 'denied' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';
       tenant_invoice_source: 'manual' | 'checkout' | 'stripe_billing';
       tenant_payment_method: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';

@@ -4,6 +4,8 @@ import { useActionState, useCallback, useEffect, useMemo, useState, type FormEve
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionQuoteSnapshot } from '@/lib/hooks/useServerActionQuoteSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
+import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { CustomerPropertyGroup } from './QuoteCreateForm';
@@ -28,6 +30,8 @@ export function QuoteEditForm({
   customerPropertyGroups,
   snapshot: initialSnapshot,
   readOnly = false,
+  jobTypeCatalog = [],
+  quotePropertyKind = null,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -35,6 +39,8 @@ export function QuoteEditForm({
   snapshot: QuoteEditSnapshot;
   /** When true, quote was accepted (frozen); show notice instead of the form. */
   readOnly?: boolean;
+  jobTypeCatalog?: JobTypeCatalogEntry[];
+  quotePropertyKind?: CustomerPropertyKind | null;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [rowsRevision, setRowsRevision] = useState(0);
@@ -179,7 +185,12 @@ export function QuoteEditForm({
         <p className={styles.hint}>Add service locations on the customer profile first.</p>
       ) : null}
 
-      <QuoteLineItemsEditor initialRows={snapshot.lineItems} rowsRevision={rowsRevision} />
+      <QuoteLineItemsEditor
+        initialRows={snapshot.lineItems}
+        rowsRevision={rowsRevision}
+        jobTypeCatalog={jobTypeCatalog}
+        quotePropertyKind={quotePropertyKind}
+      />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />
 
