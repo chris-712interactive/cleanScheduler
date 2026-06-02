@@ -83,7 +83,7 @@ export default async function NewCampaignPage() {
     <>
       <PageHeader
         title="New campaign"
-        titleHint="Pick a template, personalize your message with variables, preview it, then send to opted-in customers."
+        titleHint="Name your campaign, write the email, pick an audience — live preview stays on the right."
         backHref="/campaigns"
         backLabel="Campaigns"
       />

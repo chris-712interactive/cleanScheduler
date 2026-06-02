@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -259,10 +257,6 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
           )}
         </section>
       ) : null}
-
-      <Link href="/campaigns">
-        <Button variant="secondary">Back to campaigns</Button>
-      </Link>
     </>
   );
 }
