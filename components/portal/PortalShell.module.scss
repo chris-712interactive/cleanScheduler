@@ -5,6 +5,13 @@
   flex-direction: column;
   min-height: 100dvh;
   background-color: var(--color-bg);
+
+  /* Matches TopBar height — use for sticky in-page panels below the header. */
+  --portal-top-bar-height: 56px;
+
+  @include mq.up(md) {
+    --portal-top-bar-height: 64px;
+  }
 }
 
 .environmentBanner {

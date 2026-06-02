@@ -26,12 +26,12 @@ const WORKFLOW_CHOICES: {
   {
     value: 'prompt_staff',
     title: 'Team schedules after acceptance',
-    hint: 'When a customer accepts, your staff picks visit dates for lines that were not flagged for auto-schedule on the quote.',
+    hint: 'Your staff picks visit dates after a customer accepts. Per-line auto-schedule flags on quotes are ignored.',
   },
   {
     value: 'auto_schedule',
     title: 'Automatic scheduling',
-    hint: 'Same as above, but highlights accepted quotes that still need manual scheduling on the quotes board.',
+    hint: 'When a customer accepts, create scheduled visits for quote lines you flagged for auto-schedule (using service durations and crew availability).',
   },
 ];
 

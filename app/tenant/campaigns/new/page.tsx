@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -5,11 +6,12 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { canManageEmailCampaigns } from '@/lib/tenant/campaignPermissions';
 import { resolveCampaignAudience } from '@/lib/campaigns/resolveCampaignAudience';
+import { campaignPreviewBrandingFromTenant } from '@/lib/campaigns/campaignPreviewBranding';
 import type { CampaignAudiencePreset } from '@/lib/campaigns/types';
 import { CAMPAIGN_AUDIENCE_PRESET_LABEL } from '@/lib/campaigns/campaignDisplay';
+import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { CampaignForm } from '../CampaignForm';
 import styles from '../campaigns.module.scss';
-import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,8 +42,14 @@ export default async function NewCampaignPage() {
     );
   }
 
-  const audienceCounts = Object.fromEntries(
-    await Promise.all(
+  const [{ data: tenant }, portalOrigin, audienceCountsEntries] = await Promise.all([
+    admin
+      .from('tenants')
+      .select('name, brand_color, logo_url, address_line1, city, state, postal_code')
+      .eq('id', membership.tenantId)
+      .maybeSingle(),
+    getCustomerPortalOriginForTenant(admin, membership.tenantId),
+    Promise.all(
       PRESETS.map(async (preset) => {
         const members = await resolveCampaignAudience({
           admin,
@@ -51,13 +59,31 @@ export default async function NewCampaignPage() {
         return [preset, members.length] as const;
       }),
     ),
-  ) as Record<CampaignAudiencePreset, number>;
+  ]);
+
+  const audienceCounts = Object.fromEntries(audienceCountsEntries) as Record<
+    CampaignAudiencePreset,
+    number
+  >;
+
+  const previewBranding = campaignPreviewBrandingFromTenant(
+    tenant ?? {
+      name: membership.tenantSlug,
+      brand_color: null,
+      logo_url: null,
+      address_line1: null,
+      city: null,
+      state: null,
+      postal_code: null,
+    },
+    `${portalOrigin}/`,
+  );
 
   return (
     <>
       <PageHeader
         title="New campaign"
-        titleHint="Choose a template, audience, and message — then send to opted-in customers."
+        titleHint="Pick a template, personalize your message with variables, preview it, then send to opted-in customers."
         backHref="/campaigns"
         backLabel="Campaigns"
       />
@@ -71,6 +97,7 @@ export default async function NewCampaignPage() {
       <CampaignForm
         tenantSlug={membership.tenantSlug}
         audienceCounts={audienceCounts}
+        previewBranding={previewBranding}
         readOnly={!canManage}
       />
     </>

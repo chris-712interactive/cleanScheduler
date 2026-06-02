@@ -1,5 +1,5 @@
 import { positiveAmountCents } from '@/lib/billing/resolveVisitExpectedAmount';
-import { pickAutoAssignEmployee } from '@/lib/schedule/employeeAvailability';
+import { findStaffedVisitWindow } from '@/lib/schedule/findStaffedVisitWindow';
 import { computeNextWorkDayVisitWindow } from '@/lib/schedule/nextWorkDayVisitWindow';
 import { offsetVisitWindowByFrequency } from '@/lib/schedule/offsetVisitWindowByFrequency';
 import type { Database } from '@/lib/supabase/database.types';
@@ -193,25 +193,38 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
         continue;
       }
 
-      const window = offsetVisitWindowByFrequency(baseWindow, sequence, line.frequency);
+      const anchorWindow = offsetVisitWindowByFrequency(
+        { startsAt: baseWindow.startsAt, endsAt: baseWindow.endsAt },
+        sequence,
+        line.frequency,
+      );
+
+      const searchNotBefore = new Date(
+        Math.max(Date.now(), new Date(anchorWindow.startsAt).getTime() - 24 * 3_600_000),
+      );
+
+      const staffed = await findStaffedVisitWindow(admin, {
+        tenantId: input.tenantId,
+        timezone: business.timezone,
+        workWeekDays: business.workWeekDays,
+        workDayStart: business.workDayStart,
+        workDayEnd: business.workDayEnd,
+        durationHours,
+        startAfterDays: sequence === 0 ? lineIndex : 0,
+        searchNotBefore,
+      });
+
+      const window = staffed
+        ? { startsAt: staffed.startsAt, endsAt: staffed.endsAt }
+        : anchorWindow;
+      const assigneeUserId = staffed?.assigneeUserId ?? null;
+      const staffingStatus = assigneeUserId ? 'assigned' : 'needs_staffing';
+
       const visitTitle = line.service_label.trim() || input.quoteTitle.trim() || 'Visit';
       const sequenceNote =
         visitCount > 1 && isRecurringQuoteLineFrequency(line.frequency)
           ? ` (${autoScheduleSequence} of ${visitCount})`
           : '';
-
-      let assigneeUserId: string | null = null;
-      try {
-        assigneeUserId = await pickAutoAssignEmployee(admin, {
-          tenantId: input.tenantId,
-          startsAt: window.startsAt,
-          endsAt: window.endsAt,
-        });
-      } catch (assignErr) {
-        console.error('[quoteAutoSchedule] auto-assign failed:', assignErr);
-      }
-
-      const staffingStatus = assigneeUserId ? 'assigned' : 'needs_staffing';
 
       const { data: created, error } = await admin
         .from('tenant_scheduled_visits')
@@ -230,7 +243,7 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
           expected_amount_cents: lineAmountCents,
           notes: assigneeUserId
             ? 'Scheduled automatically when the customer accepted this quote.'
-            : 'Scheduled automatically — no crew was available. Assign someone from the schedule.',
+            : 'Scheduled automatically — no crew slot was found in the next 28 days that matches business and employee availability. Assign someone from the schedule.',
         })
         .select('id')
         .single();

@@ -124,11 +124,44 @@ function AutoScheduleFields({
   row,
   updateRow,
   catalogDefaultHours,
+  autoScheduleEnabled,
 }: {
   row: QuoteLineItemDraft;
   updateRow: (key: string, patch: Partial<QuoteLineItemDraft>) => void;
   catalogDefaultHours: number | null;
+  autoScheduleEnabled: boolean;
 }) {
+  if (!autoScheduleEnabled) {
+    return (
+      <div className={styles.lineItemAutoSchedule}>
+        <p className={styles.lineItemAutoScheduleHint}>
+          Automatic scheduling is off for this workspace. Turn it on under{' '}
+          <a href="/settings/operations" className={styles.inlineLink}>
+            Settings → Operations
+          </a>{' '}
+          to flag lines for visits when a customer accepts.
+        </p>
+        <input type="hidden" name="line_auto_schedule" value="false" readOnly />
+        <input
+          name="line_estimated_hours"
+          className={styles.visuallyHidden}
+          value=""
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+        />
+        <input
+          name="line_auto_schedule_visit_count"
+          className={styles.visuallyHidden}
+          value=""
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+        />
+      </div>
+    );
+  }
+
   const showVisitCount =
     row.auto_schedule_on_accept && isRecurringQuoteLineFrequency(row.frequency);
 
@@ -560,6 +593,7 @@ export function QuoteLineItemsEditor({
   rowsRevision,
   jobTypeCatalog = [],
   quotePropertyKind = null,
+  autoScheduleEnabled = false,
 }: {
   initialRows?: QuoteLineItemRow[] | null;
   layout?: 'grid' | 'cards';
@@ -570,6 +604,7 @@ export function QuoteLineItemsEditor({
   rowsRevision?: number;
   jobTypeCatalog?: JobTypeCatalogEntry[];
   quotePropertyKind?: CustomerPropertyKind | null;
+  autoScheduleEnabled?: boolean;
 }) {
   const [internalRows, setInternalRows] = useState<QuoteLineItemDraft[]>(() => {
     const fromDb = draftsFromQuoteLineRows(initialRows ?? null);
@@ -674,6 +709,7 @@ export function QuoteLineItemsEditor({
                     jobTypeCatalog,
                     quotePropertyKind,
                   )}
+                  autoScheduleEnabled={autoScheduleEnabled}
                 />
               </div>
             ))}
@@ -709,6 +745,7 @@ export function QuoteLineItemsEditor({
                   jobTypeCatalog,
                   quotePropertyKind,
                 )}
+                autoScheduleEnabled={autoScheduleEnabled}
               />
             </div>
           ))}

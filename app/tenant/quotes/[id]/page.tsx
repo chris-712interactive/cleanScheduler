@@ -19,6 +19,8 @@ import { QUOTE_LINE_FREQUENCY_LABEL } from '@/lib/tenant/quoteLineFrequency';
 import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import { resolveAutoScheduleVisitCount } from '@/lib/tenant/quoteLineAutoSchedule';
 import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
+import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
+import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
@@ -141,10 +143,14 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   const admin = createAdminClient();
   const quotePropertyKind = (row.job_type as CustomerPropertyKind | null) ?? null;
-  const jobTypeCatalog = await loadJobTypeCatalog(admin, membership.tenantId, {
-    propertyKind: quotePropertyKind,
-    activeOnly: true,
-  });
+  const [jobTypeCatalog, ops] = await Promise.all([
+    loadJobTypeCatalog(admin, membership.tenantId, {
+      propertyKind: quotePropertyKind,
+      activeOnly: true,
+    }),
+    loadTenantOperationalSettings(admin, membership.tenantId),
+  ]);
+  const autoScheduleEnabled = isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode);
 
   const [customersRes, propertiesRes, snapRes, eSignRes, versionsRes, visitsRes] =
     await Promise.all([
@@ -223,7 +229,10 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   );
   const scheduledVisitCount = visitsRes.count ?? 0;
   const showAutoScheduleRetryBanner =
-    row.status === 'accepted' && flaggedAutoScheduleLines.length > 0 && scheduledVisitCount === 0;
+    autoScheduleEnabled &&
+    row.status === 'accepted' &&
+    flaggedAutoScheduleLines.length > 0 &&
+    scheduledVisitCount === 0;
 
   const acceptanceSnapshot = snapRes.data;
   const eSign = eSignRes.data;
@@ -485,6 +494,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
             customerPropertyGroups={customerPropertyGroups}
             jobTypeCatalog={jobTypeCatalog}
             quotePropertyKind={quotePropertyKind}
+            autoScheduleEnabled={autoScheduleEnabled}
             snapshot={{
               quoteId: row.id,
               title: row.title,
