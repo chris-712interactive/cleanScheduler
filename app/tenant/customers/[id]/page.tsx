@@ -18,6 +18,9 @@ import { CustomerPropertySection } from '../CustomerPropertySection';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { RecurringBillingPanel } from '../RecurringBillingPanel';
 import { CustomerActivityPanel } from '../CustomerActivityPanel';
+import { CustomerWalletPanel } from '../CustomerWalletPanel';
+import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
+import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import styles from '../customers.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +50,11 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const admin = createAdminClient();
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const customerPortalEnabled = isFeatureEnabled(tier, 'customerPortal');
+  const promotionsEnabled = isFeatureEnabled(tier, 'customerPromotions');
+  const canEditPromotions = canManageTeamInvitesAndRoles(membership.role);
+  const walletBalanceCents = promotionsEnabled
+    ? await getCustomerWalletBalanceCents(admin, membership.tenantId, id)
+    : 0;
 
   const supabase = createTenantPortalDbClient();
   const { data: row, error } = await supabase
@@ -189,6 +197,20 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         </Card>
 
         <CustomerActivityPanel tenantId={membership.tenantId} customerId={customer.id} />
+
+        {promotionsEnabled ? (
+          <Card
+            title="Account credit"
+            description="Wallet balance and credit-code redemption for this customer."
+          >
+            <CustomerWalletPanel
+              tenantSlug={membership.tenantSlug}
+              customerId={customer.id}
+              balanceCents={walletBalanceCents}
+              canEdit={canEditPromotions}
+            />
+          </Card>
+        ) : null}
 
         <Card
           title="Customer portal access"

@@ -14,6 +14,7 @@ import {
   resolveRequiredPreferredPaymentMethod,
 } from '@/lib/tenant/loadTenantOperationalSettings';
 import { applyQuoteAcceptanceFollowUp } from '@/lib/tenant/quoteAcceptanceFollowUp';
+import { finalizeQuotePromotionsOnAccept } from '@/lib/promotions/quotePromotions';
 import type { Database } from '@/lib/supabase/database.types';
 
 import type { CustomerQuoteResponsePatch } from '@/lib/tenant/customerQuoteResponsePatch';
@@ -150,6 +151,12 @@ export async function respondToCustomerQuote(
   }
 
   if (decision === 'accept') {
+    await finalizeQuotePromotionsOnAccept(admin, {
+      tenantId: quote.tenant_id as string,
+      quoteId,
+      customerId: quote.customer_id as string,
+    });
+
     const ops = await loadTenantOperationalSettings(admin, quote.tenant_id as string);
     const followUp = await applyQuoteAcceptanceFollowUp(admin, {
       tenantId: quote.tenant_id as string,

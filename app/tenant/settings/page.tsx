@@ -10,6 +10,7 @@ import {
   Percent,
   Shield,
   SlidersHorizontal,
+  Tag,
   UserRound,
 } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
@@ -83,6 +84,12 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Customer portal',
         description: 'White-label custom domain for client-facing portal (Pro).',
         icon: Globe,
+      },
+      {
+        href: '/settings/promotions',
+        label: 'Promotions',
+        description: 'Discount codes and customer wallet credits (Business+).',
+        icon: Tag,
       },
       {
         href: '/settings/integrations',

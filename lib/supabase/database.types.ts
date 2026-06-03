@@ -1439,6 +1439,72 @@ export type Database = {
           },
         ];
       };
+      tenant_customer_wallet_transactions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          kind: Database['public']['Enums']['tenant_customer_wallet_transaction_kind'];
+          amount_cents: number;
+          balance_after_cents: number;
+          promotion_id: string | null;
+          promotion_redemption_id: string | null;
+          quote_id: string | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          kind: Database['public']['Enums']['tenant_customer_wallet_transaction_kind'];
+          amount_cents: number;
+          balance_after_cents: number;
+          promotion_id?: string | null;
+          promotion_redemption_id?: string | null;
+          quote_id?: string | null;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          kind?: Database['public']['Enums']['tenant_customer_wallet_transaction_kind'];
+          amount_cents?: number;
+          balance_after_cents?: number;
+          promotion_id?: string | null;
+          promotion_redemption_id?: string | null;
+          quote_id?: string | null;
+          note?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_customer_wallets: {
+        Row: {
+          tenant_id: string;
+          customer_id: string;
+          balance_cents: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          customer_id: string;
+          balance_cents?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          customer_id?: string;
+          balance_cents?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       tenant_onboarding_profiles: {
         Row: {
           id: string;
@@ -1521,6 +1587,108 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      tenant_promotion_redemptions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          promotion_id: string;
+          customer_id: string;
+          quote_id: string | null;
+          status: Database['public']['Enums']['tenant_promotion_redemption_status'];
+          amount_applied_cents: number;
+          redeemed_at: string;
+          completed_at: string | null;
+          voided_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          promotion_id: string;
+          customer_id: string;
+          quote_id?: string | null;
+          status?: Database['public']['Enums']['tenant_promotion_redemption_status'];
+          amount_applied_cents?: number;
+          redeemed_at?: string;
+          completed_at?: string | null;
+          voided_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          promotion_id?: string;
+          customer_id?: string;
+          quote_id?: string | null;
+          status?: Database['public']['Enums']['tenant_promotion_redemption_status'];
+          amount_applied_cents?: number;
+          redeemed_at?: string;
+          completed_at?: string | null;
+          voided_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_promotions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          code: string;
+          promotion_type: Database['public']['Enums']['tenant_promotion_type'];
+          promotion_value: number;
+          usage_type: Database['public']['Enums']['tenant_promotion_usage_type'];
+          max_redemptions: number | null;
+          max_redemptions_per_customer: number;
+          min_purchase_cents: number | null;
+          valid_from: string | null;
+          valid_until: string | null;
+          is_active: boolean;
+          is_referral_only: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          code: string;
+          promotion_type: Database['public']['Enums']['tenant_promotion_type'];
+          promotion_value?: number;
+          usage_type?: Database['public']['Enums']['tenant_promotion_usage_type'];
+          max_redemptions?: number | null;
+          max_redemptions_per_customer?: number;
+          min_purchase_cents?: number | null;
+          valid_from?: string | null;
+          valid_until?: string | null;
+          is_active?: boolean;
+          is_referral_only?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          code?: string;
+          promotion_type?: Database['public']['Enums']['tenant_promotion_type'];
+          promotion_value?: number;
+          usage_type?: Database['public']['Enums']['tenant_promotion_usage_type'];
+          max_redemptions?: number | null;
+          max_redemptions_per_customer?: number;
+          min_purchase_cents?: number | null;
+          valid_from?: string | null;
+          valid_until?: string | null;
+          is_active?: boolean;
+          is_referral_only?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       tenant_quote_acceptance_snapshots: {
         Row: {
@@ -1791,6 +1959,9 @@ export type Database = {
           superseded_by_quote_id: string | null;
           accepted_at: string | null;
           is_locked: boolean;
+          applied_promotion_id: string | null;
+          applied_promo_code: string | null;
+          wallet_credit_applied_cents: number;
           created_at: string;
           updated_at: string;
         };
@@ -1820,6 +1991,9 @@ export type Database = {
           superseded_by_quote_id?: string | null;
           accepted_at?: string | null;
           is_locked?: boolean;
+          applied_promotion_id?: string | null;
+          applied_promo_code?: string | null;
+          wallet_credit_applied_cents?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -1849,6 +2023,9 @@ export type Database = {
           superseded_by_quote_id?: string | null;
           accepted_at?: string | null;
           is_locked?: boolean;
+          applied_promotion_id?: string | null;
+          applied_promo_code?: string | null;
+          wallet_credit_applied_cents?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -3417,6 +3594,14 @@ export type Database = {
       tenant_invoice_expectation: 'prepay' | 'pay_after_service';
       tenant_invoice_payment_recorded_via: 'manual' | 'stripe_checkout';
       tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';
+      tenant_customer_wallet_transaction_kind:
+        | 'credit_grant'
+        | 'credit_apply'
+        | 'credit_reverse'
+        | 'manual_adjustment';
+      tenant_promotion_redemption_status: 'pending' | 'completed' | 'voided';
+      tenant_promotion_type: 'percent' | 'fixed_cents' | 'account_credit';
+      tenant_promotion_usage_type: 'single_use' | 'single_use_per_customer' | 'ongoing' | 'limited';
       service_plan_billing_interval: 'week' | 'month' | 'year';
       visit_reschedule_request_status: 'pending' | 'completed' | 'declined' | 'withdrawn';
       tenant_customer_subscription_status:
