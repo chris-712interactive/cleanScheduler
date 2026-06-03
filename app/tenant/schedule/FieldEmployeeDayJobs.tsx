@@ -11,9 +11,11 @@ import styles from './schedule.module.scss';
 export function FieldEmployeeDayJobs({
   visits,
   isLocalToday,
+  tenantTimezone,
 }: {
   visits: ScheduleVisitVM[];
   isLocalToday: boolean;
+  tenantTimezone: string;
 }) {
   if (visits.length === 0) {
     return (
@@ -42,7 +44,7 @@ export function FieldEmployeeDayJobs({
             <Link href={`/schedule/${visit.id}`} className={styles.fieldJobCard}>
               <div className={styles.fieldJobCardHeader}>
                 <div className={styles.fieldJobCardTime}>
-                  {formatVisitTimeRange(visit.starts_at, visit.ends_at)}
+                  {formatVisitTimeRange(visit.starts_at, visit.ends_at, tenantTimezone)}
                 </div>
                 <VisitStatusPill status={visit.status} />
               </div>

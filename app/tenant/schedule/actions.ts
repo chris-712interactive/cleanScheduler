@@ -9,7 +9,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { TenantRole } from '@/lib/auth/types';
 import type { Database } from '@/lib/supabase/database.types';
 
-import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
+import { parseTenantDatetimeLocalToIso } from '@/lib/datetime/parseTenantDatetimeLocal';
 import { applyVisitScheduleTime } from '@/lib/schedule/applyVisitScheduleTime';
 import {
   checkEmployeeAvailability,
@@ -101,6 +101,14 @@ async function assertActiveTenantMember(
   return !!data;
 }
 
+async function loadTenantTimezone(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+): Promise<string> {
+  const { data } = await admin.from('tenants').select('timezone').eq('id', tenantId).maybeSingle();
+  return data?.timezone ?? 'America/New_York';
+}
+
 export async function createScheduledVisit(
   _prev: ScheduleFormState,
   formData: FormData,
@@ -114,7 +122,6 @@ export async function createScheduledVisit(
   const title = String(formData.get('title') ?? '').trim() || 'Visit';
   const startsRaw = String(formData.get('starts_at') ?? '').trim();
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
-  const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
   const notes = String(formData.get('notes') ?? '').trim();
   const jobPriceDollars = String(formData.get('job_price_dollars') ?? '').trim();
   const statusRaw = String(formData.get('status') ?? 'scheduled').trim();
@@ -150,13 +157,9 @@ export async function createScheduledVisit(
     quoteId = quoteRaw;
   }
 
-  const tzOffset = Number(tzOffsetRaw);
-  if (!Number.isFinite(tzOffset)) {
-    return { error: 'Missing timezone context. Please reload the page and try again.' };
-  }
-
-  const startsAt = parseBrowserDatetimeLocalToIso(startsRaw, tzOffset);
-  const endsAt = parseBrowserDatetimeLocalToIso(endsRaw, tzOffset);
+  const tenantTimezone = await loadTenantTimezone(admin, membership.tenantId);
+  const startsAt = parseTenantDatetimeLocalToIso(startsRaw, tenantTimezone);
+  const endsAt = parseTenantDatetimeLocalToIso(endsRaw, tenantTimezone);
   if (!startsAt || !endsAt) {
     return { error: 'Invalid start or end time.' };
   }
@@ -329,7 +332,6 @@ export async function updateScheduledVisitTimes(
   const visitId = String(formData.get('visit_id') ?? '').trim();
   const startsRaw = String(formData.get('starts_at') ?? '').trim();
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
-  const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
 
   if (!slug || !visitId || !startsRaw || !endsRaw) {
     return { error: 'Workspace, visit, start, and end times are required.' };
@@ -360,13 +362,9 @@ export async function updateScheduledVisitTimes(
     };
   }
 
-  const tzOffset = Number(tzOffsetRaw);
-  if (!Number.isFinite(tzOffset)) {
-    return { error: 'Missing timezone context. Please reload and try again.' };
-  }
-
-  const startsAt = parseBrowserDatetimeLocalToIso(startsRaw, tzOffset);
-  const endsAt = parseBrowserDatetimeLocalToIso(endsRaw, tzOffset);
+  const tenantTimezone = await loadTenantTimezone(admin, membership.tenantId);
+  const startsAt = parseTenantDatetimeLocalToIso(startsRaw, tenantTimezone);
+  const endsAt = parseTenantDatetimeLocalToIso(endsRaw, tenantTimezone);
   if (!startsAt || !endsAt) {
     return { error: 'Invalid start or end time.' };
   }
@@ -376,13 +374,6 @@ export async function updateScheduledVisitTimes(
 
   const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
   const confirmUnavailable = String(formData.get('confirm_unavailable') ?? '') === 'true';
-
-  const { data: tenantRow } = await admin
-    .from('tenants')
-    .select('timezone')
-    .eq('id', membership.tenantId)
-    .maybeSingle();
-  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
 
   const applied = await applyVisitScheduleTime(admin, {
     tenantId: membership.tenantId,
@@ -656,26 +647,17 @@ export async function updateScheduledVisitAssignees(
   const confirmUnavailable = String(formData.get('confirm_unavailable') ?? '') === 'true';
   const startsRaw = String(formData.get('starts_at') ?? '').trim();
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
-  const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
 
-  const { data: tenantRow } = await admin
-    .from('tenants')
-    .select('timezone')
-    .eq('id', membership.tenantId)
-    .maybeSingle();
-  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+  const tenantTimezone = await loadTenantTimezone(admin, membership.tenantId);
 
   let startsAtOverride: string | undefined;
   let endsAtOverride: string | undefined;
   if (startsRaw && endsRaw) {
-    const tzOffset = Number(tzOffsetRaw);
-    if (Number.isFinite(tzOffset)) {
-      const parsedStart = parseBrowserDatetimeLocalToIso(startsRaw, tzOffset);
-      const parsedEnd = parseBrowserDatetimeLocalToIso(endsRaw, tzOffset);
-      if (parsedStart && parsedEnd && new Date(parsedEnd) > new Date(parsedStart)) {
-        startsAtOverride = parsedStart;
-        endsAtOverride = parsedEnd;
-      }
+    const parsedStart = parseTenantDatetimeLocalToIso(startsRaw, tenantTimezone);
+    const parsedEnd = parseTenantDatetimeLocalToIso(endsRaw, tenantTimezone);
+    if (parsedStart && parsedEnd && new Date(parsedEnd) > new Date(parsedStart)) {
+      startsAtOverride = parsedStart;
+      endsAtOverride = parsedEnd;
     }
   }
 

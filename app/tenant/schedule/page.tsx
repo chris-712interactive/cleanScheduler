@@ -239,6 +239,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       ) : (
         <TenantScheduleClient
           tenantSlug={membership.tenantSlug}
+          tenantTimezone={tenantTimezone}
           visits={visits}
           dateKey={dateKey}
           view={view}
