@@ -30,6 +30,7 @@ const FEATURE_MINIMUM_TIER: Record<EntitlementFeature, PlatformPlanTier> = {
   proofOfServicePortalShare: 'pro',
   customServiceTypes: 'pro',
   customerPromotions: 'business',
+  customerReferralProgram: 'business',
 };
 
 export function minimumTierForFeature(feature: EntitlementFeature): PlatformPlanTier {

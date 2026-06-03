@@ -1690,6 +1690,150 @@ export type Database = {
         };
         Relationships: [];
       };
+      tenant_referral_programs: {
+        Row: {
+          tenant_id: string;
+          is_enabled: boolean;
+          reward_side_mode: Database['public']['Enums']['tenant_referral_reward_side_mode'];
+          referrer_promotion_id: string | null;
+          referee_promotion_id: string | null;
+          click_window_days: number;
+          share_headline: string | null;
+          terms_text: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          is_enabled?: boolean;
+          reward_side_mode?: Database['public']['Enums']['tenant_referral_reward_side_mode'];
+          referrer_promotion_id?: string | null;
+          referee_promotion_id?: string | null;
+          click_window_days?: number;
+          share_headline?: string | null;
+          terms_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          is_enabled?: boolean;
+          reward_side_mode?: Database['public']['Enums']['tenant_referral_reward_side_mode'];
+          referrer_promotion_id?: string | null;
+          referee_promotion_id?: string | null;
+          click_window_days?: number;
+          share_headline?: string | null;
+          terms_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      referral_attributions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          referral_code_id: string;
+          referrer_customer_id: string;
+          referee_customer_id: string;
+          touch_id: string | null;
+          status: Database['public']['Enums']['referral_attribution_status'];
+          attributed_at: string;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          referral_code_id: string;
+          referrer_customer_id: string;
+          referee_customer_id: string;
+          touch_id?: string | null;
+          status?: Database['public']['Enums']['referral_attribution_status'];
+          attributed_at?: string;
+          expires_at: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          referral_code_id?: string;
+          referrer_customer_id?: string;
+          referee_customer_id?: string;
+          touch_id?: string | null;
+          status?: Database['public']['Enums']['referral_attribution_status'];
+          attributed_at?: string;
+          expires_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      referral_touches: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          referral_code_id: string;
+          landing_path: string | null;
+          client_ip: string | null;
+          user_agent: string | null;
+          touched_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          referral_code_id: string;
+          landing_path?: string | null;
+          client_ip?: string | null;
+          user_agent?: string | null;
+          touched_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          referral_code_id?: string;
+          landing_path?: string | null;
+          client_ip?: string | null;
+          user_agent?: string | null;
+          touched_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      customer_referral_codes: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_id: string;
+          code: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_id: string;
+          code: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_id?: string;
+          code?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       tenant_quote_acceptance_snapshots: {
         Row: {
           id: string;
@@ -3602,6 +3746,8 @@ export type Database = {
       tenant_promotion_redemption_status: 'pending' | 'completed' | 'voided';
       tenant_promotion_type: 'percent' | 'fixed_cents' | 'account_credit';
       tenant_promotion_usage_type: 'single_use' | 'single_use_per_customer' | 'ongoing' | 'limited';
+      tenant_referral_reward_side_mode: 'referrer_only' | 'double_sided' | 'referee_only';
+      referral_attribution_status: 'pending' | 'qualified' | 'voided';
       service_plan_billing_interval: 'week' | 'month' | 'year';
       visit_reschedule_request_status: 'pending' | 'completed' | 'declined' | 'withdrawn';
       tenant_customer_subscription_status:
