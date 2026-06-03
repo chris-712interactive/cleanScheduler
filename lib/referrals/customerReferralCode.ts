@@ -46,7 +46,7 @@ export async function ensureCustomerReferralCode(
     if (!error && data) {
       return { code: data.code, id: data.id };
     }
-    if (!error?.message.includes('customer_referral_codes')) {
+    if (!error?.message.includes('customer_referral_codes_tenant_code_uidx')) {
       throw new Error(error?.message ?? 'Could not create referral code.');
     }
   }

@@ -47,9 +47,11 @@ create table public.customer_referral_codes (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint customer_referral_codes_code_nonempty check (char_length(trim(code)) >= 4),
-  unique (tenant_id, customer_id),
-  unique (tenant_id, lower(trim(code)))
+  unique (tenant_id, customer_id)
 );
+
+create unique index customer_referral_codes_tenant_code_uidx
+  on public.customer_referral_codes (tenant_id, lower(trim(code)));
 
 create index customer_referral_codes_customer_idx
   on public.customer_referral_codes (tenant_id, customer_id);
