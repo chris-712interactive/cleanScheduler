@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { emitTenantWebhook } from '@/lib/integrations/emitTenantWebhook';
 import { maybeQualifyReferralOnFirstPaidInvoice } from '@/lib/referrals/qualifyReferralOnFirstPaidInvoice';
+import { finalizeInvoicePromotionsOnPayment } from '@/lib/promotions/finalizeInvoicePromotionsOnPayment';
 
 type Admin = SupabaseClient<Database>;
 
@@ -38,6 +39,29 @@ export async function afterInvoicePaymentRecorded(
   admin: Admin,
   params: { tenantId: string; invoiceId: string },
 ): Promise<void> {
+  const { data: inv } = await admin
+    .from('tenant_invoices')
+    .select('customer_id, status')
+    .eq('tenant_id', params.tenantId)
+    .eq('id', params.invoiceId)
+    .maybeSingle();
+
+  if (inv?.customer_id && inv.status === 'paid') {
+    try {
+      await finalizeInvoicePromotionsOnPayment(admin, {
+        tenantId: params.tenantId,
+        invoiceId: params.invoiceId,
+        customerId: inv.customer_id,
+      });
+    } catch (error) {
+      console.error(
+        '[afterInvoicePaymentRecorded] invoice promotion finalize failed:',
+        error,
+        params,
+      );
+    }
+  }
+
   await maybeEmitInvoicePaidWebhook(admin, params);
   try {
     await maybeQualifyReferralOnFirstPaidInvoice(admin, params);

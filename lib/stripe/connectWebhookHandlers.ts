@@ -4,6 +4,7 @@ import type { Database, Json } from '@/lib/supabase/database.types';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
 import { retrieveConnectSubscription, subscriptionPeriodIso } from '@/lib/stripe/stripeBasilCompat';
+import { invoiceCollectibleCents } from '@/lib/promotions/invoiceCollectible';
 
 type Admin = SupabaseClient<Database>;
 
@@ -55,7 +56,9 @@ export async function handleTenantInvoiceCheckoutCompleted(
 
   const { data: inv, error: invErr } = await admin
     .from('tenant_invoices')
-    .select('id, tenant_id, status, amount_cents, amount_paid_cents')
+    .select(
+      'id, tenant_id, status, amount_cents, amount_paid_cents, promo_discount_cents, wallet_credit_applied_cents',
+    )
     .eq('id', invoiceId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -72,6 +75,7 @@ export async function handleTenantInvoiceCheckoutCompleted(
   const remaining = inv.amount_cents - inv.amount_paid_cents;
   if (remaining <= 0) return;
 
+  const collectible = invoiceCollectibleCents(inv);
   const applied = Math.min(amountTotal, remaining);
 
   const { data: inserted, error: insErr } = await admin
@@ -95,6 +99,20 @@ export async function handleTenantInvoiceCheckoutCompleted(
   }
   if (insErr) {
     throw new Error(insErr.message);
+  }
+
+  if (collectible > 0 && applied >= collectible) {
+    const promo = inv.promo_discount_cents ?? 0;
+    const wallet = inv.wallet_credit_applied_cents ?? 0;
+    const settled = inv.amount_paid_cents + applied + promo + wallet;
+    if (settled >= inv.amount_cents) {
+      await admin
+        .from('tenant_invoices')
+        .update({ status: 'paid' })
+        .eq('id', invoiceId)
+        .eq('tenant_id', tenantId)
+        .neq('status', 'void');
+    }
   }
 
   await afterInvoicePaymentRecorded(admin, { tenantId, invoiceId });

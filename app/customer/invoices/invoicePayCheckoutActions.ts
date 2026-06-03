@@ -11,6 +11,7 @@ import {
   parseConnectApplicationFeeBps,
   paymentIntentApplicationFeeAmountCents,
 } from '@/lib/billing/connectApplicationFee';
+import { invoiceCollectibleCents } from '@/lib/promotions/invoiceCollectible';
 
 export async function createCustomerInvoicePayCheckoutSessionAction(
   formData: FormData,
@@ -25,7 +26,9 @@ export async function createCustomerInvoicePayCheckoutSessionAction(
   const admin = createAdminClient();
   const { data: inv, error: invErr } = await admin
     .from('tenant_invoices')
-    .select('id, tenant_id, title, currency, status, amount_cents, amount_paid_cents, customer_id')
+    .select(
+      'id, tenant_id, title, currency, status, amount_cents, amount_paid_cents, customer_id, promo_discount_cents, wallet_credit_applied_cents',
+    )
     .eq('id', invoiceId)
     .maybeSingle();
 
@@ -55,8 +58,8 @@ export async function createCustomerInvoicePayCheckoutSessionAction(
     );
   }
 
-  const remaining = inv.amount_cents - inv.amount_paid_cents;
-  if (remaining <= 0) {
+  const collectible = invoiceCollectibleCents(inv);
+  if (collectible <= 0) {
     redirect(`/invoices/${invoiceId}?error=${encodeURIComponent('Invoice is already paid.')}`);
   }
 
@@ -67,7 +70,7 @@ export async function createCustomerInvoicePayCheckoutSessionAction(
 
   const origin = await getCustomerPortalOriginFromRequest();
   const feeBps = parseConnectApplicationFeeBps();
-  const applicationFeeAmount = paymentIntentApplicationFeeAmountCents(remaining, feeBps);
+  const applicationFeeAmount = paymentIntentApplicationFeeAmountCents(collectible, feeBps);
 
   const session = await stripe.checkout.sessions.create(
     {
@@ -76,7 +79,7 @@ export async function createCustomerInvoicePayCheckoutSessionAction(
         {
           price_data: {
             currency: (inv.currency ?? 'usd').toLowerCase(),
-            unit_amount: remaining,
+            unit_amount: collectible,
             product_data: {
               name: inv.title?.trim() || 'Invoice',
             },
