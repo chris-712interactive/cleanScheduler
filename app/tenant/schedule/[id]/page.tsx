@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { PageHeader } from '@/components/portal/PageHeader';
-import { Stack } from '@/components/layout/Stack';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
@@ -16,9 +14,10 @@ import { isVisitAssignee } from '@/lib/schedule/visitFieldWork';
 import type { TenantRole } from '@/lib/auth/types';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
-import { RelatedRecordsPanel } from '@/app/tenant/RelatedRecordsPanel';
 import { VisitDetailCard } from '../VisitDetailCard';
 import { createAdminClient } from '@/lib/supabase/server';
+import { resolveVisitDurationForVisit } from '@/lib/schedule/resolveVisitDurationForVisit';
+import { DEFAULT_VISIT_DURATION_HOURS } from '@/lib/schedule/visitDuration';
 import { SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
@@ -148,6 +147,14 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       ? await listVisitProofPhotos(admin, visitId)
       : [];
 
+  const durationResolution =
+    !isFieldEmployee && row.status === 'scheduled'
+      ? await resolveVisitDurationForVisit(admin, membership.tenantId, visitId)
+      : null;
+  const durationHours = durationResolution?.durationHours ?? DEFAULT_VISIT_DURATION_HOURS;
+  const durationSourceLabel =
+    durationResolution?.sourceLabel ?? `Default (${DEFAULT_VISIT_DURATION_HOURS} hr)`;
+
   let employeeOptions: { id: string; label: string }[] = [];
   if (!isFieldEmployee) {
     const membersRes = await supabase
@@ -175,62 +182,59 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
 
   return (
     <>
-      <p className={styles.backWrap}>
+      <header className={styles.visitPageHeader}>
         <Link
           href={fromIssues ? SCHEDULE_ISSUES_TAB_HREF : '/schedule'}
           className={styles.backLink}
         >
-          ← Back to {fromIssues ? 'issues' : 'schedule'}
+          ← {fromIssues ? 'Issues' : 'Schedule'}
         </Link>
-      </p>
+        <div className={styles.visitPageTitles}>
+          <h1 className={styles.visitPageTitle}>{customerName}</h1>
+          <p className={styles.visitPageSubtitle}>{row.title || 'Cleaning visit'}</p>
+        </div>
+      </header>
 
-      <PageHeader
-        title={customerName}
-        description={row.title || 'Cleaning visit'}
-        breadcrumbs={[{ label: 'Schedule', href: '/schedule' }, { label: customerName }]}
+      <VisitDetailCard
+        employeeOptions={employeeOptions}
+        relatedRecords={!isFieldEmployee ? relatedRecords : null}
+        initial={{
+          visitId,
+          tenantSlug: membership.tenantSlug,
+          tenantTimezone,
+          title: row.title || 'Cleaning visit',
+          customerName,
+          customerPhone,
+          customerEmail,
+          siteLine,
+          preferredPaymentMethod,
+          quoteTitle: row.tenant_quotes?.title ?? null,
+          quoteId: row.quote_id,
+          quoteAmountCents: quoteAmountRaw ?? null,
+          notes: row.notes,
+          assignees,
+          assigneeUserIds,
+          actorUserId,
+          actorRole,
+          isFieldEmployee,
+          canUseProofPhotos,
+          proofPhotosSharedWithCustomers,
+          proofPhotos,
+          startsAt: row.starts_at,
+          endsAt: row.ends_at,
+          durationHours,
+          durationSourceLabel,
+          status: row.status,
+          expectedAmountCents: row.expected_amount_cents,
+          checkedInAt: row.checked_in_at,
+          completedAt: row.completed_at,
+          completionPaymentCollected: row.completion_payment_collected,
+          completionCollectedMethod: row.completion_collected_method,
+          completionCollectedAmountCents: row.completion_collected_amount_cents,
+          completionCheckNumber: row.completion_check_number,
+          completionInvoiceId: row.completion_invoice_id,
+        }}
       />
-
-      <Stack gap={4}>
-        {!isFieldEmployee ? <RelatedRecordsPanel snapshot={relatedRecords} /> : null}
-
-        <VisitDetailCard
-          employeeOptions={employeeOptions}
-          initial={{
-            visitId,
-            tenantSlug: membership.tenantSlug,
-            tenantTimezone,
-            title: row.title || 'Cleaning visit',
-            customerName,
-            customerPhone,
-            customerEmail,
-            siteLine,
-            preferredPaymentMethod,
-            quoteTitle: row.tenant_quotes?.title ?? null,
-            quoteId: row.quote_id,
-            quoteAmountCents: quoteAmountRaw ?? null,
-            notes: row.notes,
-            assignees,
-            assigneeUserIds,
-            actorUserId,
-            actorRole,
-            isFieldEmployee,
-            canUseProofPhotos,
-            proofPhotosSharedWithCustomers,
-            proofPhotos,
-            startsAt: row.starts_at,
-            endsAt: row.ends_at,
-            status: row.status,
-            expectedAmountCents: row.expected_amount_cents,
-            checkedInAt: row.checked_in_at,
-            completedAt: row.completed_at,
-            completionPaymentCollected: row.completion_payment_collected,
-            completionCollectedMethod: row.completion_collected_method,
-            completionCollectedAmountCents: row.completion_collected_amount_cents,
-            completionCheckNumber: row.completion_check_number,
-            completionInvoiceId: row.completion_invoice_id,
-          }}
-        />
-      </Stack>
     </>
   );
 }

@@ -1,5 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { pickAutoAssignEmployee } from '@/lib/schedule/employeeAvailability';
+import {
+  findAvailableEmployees,
+  pickAutoAssignEmployee,
+} from '@/lib/schedule/employeeAvailability';
 import type { WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
 import { DEFAULT_WORK_WEEK_DAYS } from '@/lib/tenant/tenantBusinessSettings';
 import { localWallClockInTimeZoneToUtcIso } from '@/lib/schedule/nextWorkDayVisitWindow';
@@ -97,6 +100,12 @@ export type FindStaffedVisitWindowInput = {
   slotStepMinutes?: number;
   /** Do not return slots starting before this instant (defaults to `now`). */
   searchNotBefore?: Date;
+  /** When set, only return windows where every listed assignee is available. */
+  assigneeUserIds?: string[];
+  /** Exclude this visit from overlap checks. */
+  excludeVisitId?: string;
+  /** Maximum windows to return. Default 1. */
+  limit?: number;
 };
 
 export type StaffedVisitWindow = {
@@ -113,6 +122,41 @@ export async function findStaffedVisitWindow(
   admin: Admin,
   input: FindStaffedVisitWindowInput,
 ): Promise<StaffedVisitWindow | null> {
+  const windows = await findStaffedVisitWindows(admin, { ...input, limit: 1 });
+  return windows[0] ?? null;
+}
+
+async function slotMatchesAssignees(
+  admin: Admin,
+  input: FindStaffedVisitWindowInput,
+  window: { startsAt: string; endsAt: string },
+): Promise<string | null> {
+  const assigneeUserIds = input.assigneeUserIds ?? [];
+
+  if (assigneeUserIds.length > 0) {
+    const results = await findAvailableEmployees(admin, {
+      tenantId: input.tenantId,
+      startsAt: window.startsAt,
+      endsAt: window.endsAt,
+      userIds: assigneeUserIds,
+      excludeVisitId: input.excludeVisitId,
+    });
+    if (!results.every((row) => row.available)) return null;
+    return assigneeUserIds[0] ?? null;
+  }
+
+  return pickAutoAssignEmployee(admin, {
+    tenantId: input.tenantId,
+    startsAt: window.startsAt,
+    endsAt: window.endsAt,
+    excludeVisitId: input.excludeVisitId,
+  });
+}
+
+export async function findStaffedVisitWindows(
+  admin: Admin,
+  input: FindStaffedVisitWindowInput,
+): Promise<StaffedVisitWindow[]> {
   const timeZone = safeTimeZone(input.timezone);
   const workWeekDays =
     input.workWeekDays && input.workWeekDays.length > 0
@@ -128,12 +172,20 @@ export async function findStaffedVisitWindow(
   const notBefore = input.searchNotBefore ?? now;
   const startAfterDays = Math.max(0, input.startAfterDays ?? 0);
   const searchHorizonDays = Math.max(7, input.searchHorizonDays ?? 28);
+  const limit = Math.min(5, Math.max(1, input.limit ?? 5));
 
   if (durationMin > workEndMin - workStartMin) {
-    return null;
+    return [];
   }
 
-  for (let offset = startAfterDays; offset < startAfterDays + searchHorizonDays; offset += 1) {
+  const results: StaffedVisitWindow[] = [];
+  const seenStarts = new Set<string>();
+
+  outer: for (
+    let offset = startAfterDays;
+    offset < startAfterDays + searchHorizonDays;
+    offset += 1
+  ) {
     const probe = new Date(now.getTime() + offset * 24 * 3_600_000);
     const cal = calendarPartsInTimeZone(probe, timeZone);
     if (!workWeekDays.includes(cal.dayKey)) continue;
@@ -159,21 +211,23 @@ export async function findStaffedVisitWindow(
         continue;
       }
 
-      const assigneeUserId = await pickAutoAssignEmployee(admin, {
-        tenantId: input.tenantId,
+      if (seenStarts.has(window.startsAt)) continue;
+
+      const assigneeUserId = await slotMatchesAssignees(admin, input, window);
+      if (!assigneeUserId) continue;
+
+      seenStarts.add(window.startsAt);
+      results.push({
         startsAt: window.startsAt,
         endsAt: window.endsAt,
+        assigneeUserId,
       });
 
-      if (assigneeUserId) {
-        return {
-          startsAt: window.startsAt,
-          endsAt: window.endsAt,
-          assigneeUserId,
-        };
+      if (results.length >= limit) {
+        break outer;
       }
     }
   }
 
-  return null;
+  return results;
 }

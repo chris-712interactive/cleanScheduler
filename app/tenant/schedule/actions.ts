@@ -355,6 +355,7 @@ export async function updateScheduledVisitTimes(
   }
 
   const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
+  const confirmUnavailable = String(formData.get('confirm_unavailable') ?? '') === 'true';
 
   const { data: tenantRow } = await admin
     .from('tenants')
@@ -369,6 +370,7 @@ export async function updateScheduledVisitTimes(
     startsAt,
     endsAt,
     confirmOverlap,
+    confirmUnavailable,
     tenantTimezone,
   });
 
@@ -478,6 +480,7 @@ export async function resolveVisitRescheduleRequest(
       startsAt: window.startsAt,
       endsAt: window.endsAt,
       confirmOverlap,
+      confirmUnavailable: false,
       tenantTimezone,
     });
 
@@ -631,6 +634,9 @@ export async function updateScheduledVisitAssignees(
 
   const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
   const confirmUnavailable = String(formData.get('confirm_unavailable') ?? '') === 'true';
+  const startsRaw = String(formData.get('starts_at') ?? '').trim();
+  const endsRaw = String(formData.get('ends_at') ?? '').trim();
+  const tzOffsetRaw = String(formData.get('client_timezone_offset') ?? '').trim();
 
   const { data: tenantRow } = await admin
     .from('tenants')
@@ -639,6 +645,20 @@ export async function updateScheduledVisitAssignees(
     .maybeSingle();
   const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
 
+  let startsAtOverride: string | undefined;
+  let endsAtOverride: string | undefined;
+  if (startsRaw && endsRaw) {
+    const tzOffset = Number(tzOffsetRaw);
+    if (Number.isFinite(tzOffset)) {
+      const parsedStart = parseBrowserDatetimeLocalToIso(startsRaw, tzOffset);
+      const parsedEnd = parseBrowserDatetimeLocalToIso(endsRaw, tzOffset);
+      if (parsedStart && parsedEnd && new Date(parsedEnd) > new Date(parsedStart)) {
+        startsAtOverride = parsedStart;
+        endsAtOverride = parsedEnd;
+      }
+    }
+  }
+
   const applied = await applyVisitAssignees(admin, {
     tenantId: membership.tenantId,
     visitId,
@@ -646,6 +666,8 @@ export async function updateScheduledVisitAssignees(
     confirmOverlap,
     confirmUnavailable,
     tenantTimezone,
+    startsAt: startsAtOverride,
+    endsAt: endsAtOverride,
   });
 
   if (!applied.ok) {
