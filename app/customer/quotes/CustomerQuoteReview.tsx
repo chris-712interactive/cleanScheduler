@@ -107,6 +107,11 @@ export function CustomerQuoteReview({
   versionNumber,
   userEmail,
   allowedPaymentMethods,
+  promotionsEnabled = false,
+  walletBalanceCents = 0,
+  appliedPromoCode = null,
+  walletCreditAppliedCents = 0,
+  promotionDefaults,
 }: {
   quoteId: string;
   tenantName: string;
@@ -130,6 +135,14 @@ export function CustomerQuoteReview({
   versionNumber: number;
   userEmail: string | null;
   allowedPaymentMethods: TenantPaymentMethod[];
+  promotionsEnabled?: boolean;
+  walletBalanceCents?: number;
+  appliedPromoCode?: string | null;
+  walletCreditAppliedCents?: number;
+  promotionDefaults?: {
+    promoCode?: string;
+    walletCreditDollars?: string;
+  };
 }) {
   const cadence = primaryCadenceLabel(lines);
   const totalLabel = formatQuoteMoney(amountCents, currency);
@@ -238,6 +251,8 @@ export function CustomerQuoteReview({
             input={totalsInput}
             currency={currency}
             amountCents={amountCents}
+            appliedPromoCode={appliedPromoCode}
+            walletCreditAppliedCents={walletCreditAppliedCents}
           />
 
           {providerNotes ? (
@@ -272,6 +287,9 @@ export function CustomerQuoteReview({
           totalLabel={totalLabel}
           userEmail={userEmail}
           allowedPaymentMethods={allowedPaymentMethods}
+          promotionsEnabled={promotionsEnabled}
+          walletBalanceCents={walletBalanceCents}
+          promotionDefaults={promotionDefaults}
         />
       </div>
     </div>

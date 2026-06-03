@@ -14,14 +14,22 @@ export function CustomerQuoteTotalsBreakdown({
   input,
   currency,
   amountCents,
+  appliedPromoCode,
+  walletCreditAppliedCents = 0,
 }: {
   input: ComputeQuoteTotalsInput;
   currency: string;
   amountCents: number | null;
+  appliedPromoCode?: string | null;
+  walletCreditAppliedCents?: number;
 }) {
   const totals = computeQuoteTotals(input);
   const tax = taxLabel(input.tax_mode, input.tax_rate_bps);
-  const hasBreakdown = totals.quote_discount_cents > 0 || (tax != null && totals.tax_cents > 0);
+  const hasBreakdown =
+    totals.quote_discount_cents > 0 ||
+    walletCreditAppliedCents > 0 ||
+    Boolean(appliedPromoCode?.trim()) ||
+    (tax != null && totals.tax_cents > 0);
 
   if (!hasBreakdown) {
     return null;
@@ -37,7 +45,7 @@ export function CustomerQuoteTotalsBreakdown({
         </div>
         {totals.quote_discount_cents > 0 ? (
           <div className={styles.breakdownRow}>
-            <dt>Quote discount</dt>
+            <dt>{appliedPromoCode?.trim() ? `Promo (${appliedPromoCode})` : 'Quote discount'}</dt>
             <dd>−{formatQuoteMoney(totals.quote_discount_cents, currency)}</dd>
           </div>
         ) : null}
@@ -45,6 +53,12 @@ export function CustomerQuoteTotalsBreakdown({
           <div className={styles.breakdownRow}>
             <dt>{tax}</dt>
             <dd>+{formatQuoteMoney(totals.tax_cents, currency)}</dd>
+          </div>
+        ) : null}
+        {walletCreditAppliedCents > 0 ? (
+          <div className={styles.breakdownRow}>
+            <dt>Account credit</dt>
+            <dd>−{formatQuoteMoney(walletCreditAppliedCents, currency)}</dd>
           </div>
         ) : null}
         <div className={`${styles.breakdownRow} ${styles.breakdownRowTotal}`}>
