@@ -4,15 +4,13 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import Link from 'next/link';
 import { ChevronDown, ChevronUp, ClipboardList, FileText, Phone } from 'lucide-react';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
+import { formatVisitTime } from '@/lib/datetime/formatInTimeZone';
 import { resolveVisitExpandDirection } from './scheduleTimelineUtils';
 import type { ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
 
-function formatTimeRange(startsAt: string, endsAt: string): string {
-  const s = new Date(startsAt);
-  const e = new Date(endsAt);
-  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
-  return `${s.toLocaleString(undefined, opts)} – ${e.toLocaleString(undefined, opts)}`;
+function formatTimeRange(startsAt: string, endsAt: string, timeZone: string): string {
+  return `${formatVisitTime(startsAt, timeZone)} – ${formatVisitTime(endsAt, timeZone)}`;
 }
 
 function formatDurationLabel(startsAt: string, endsAt: string): string {
@@ -53,12 +51,14 @@ function visitCardPositionStyle(
 
 export function ScheduleVisitBlock({
   visit,
+  tenantTimezone,
   topPct,
   heightPct,
   expanded,
   onToggle,
 }: {
   visit: ScheduleVisitVM;
+  tenantTimezone: string;
   topPct: number;
   heightPct: number;
   expanded: boolean;
@@ -69,7 +69,7 @@ export function ScheduleVisitBlock({
     resolveVisitExpandDirection(topPct, heightPct),
   );
 
-  const timeLabel = formatTimeRange(visit.starts_at, visit.ends_at);
+  const timeLabel = formatTimeRange(visit.starts_at, visit.ends_at, tenantTimezone);
   const durationLabel = formatDurationLabel(visit.starts_at, visit.ends_at);
   const serviceLabel = visit.quoteTitle?.trim() || visit.title?.trim() || 'Service visit';
 

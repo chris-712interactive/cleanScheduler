@@ -1,18 +1,40 @@
 import { describe, expect, it } from 'vitest';
-import { layoutVisitOnLocalDay } from './scheduleTimelineUtils';
+import { parseTenantDatetimeLocalToIso } from '@/lib/datetime/parseTenantDatetimeLocal';
+import { layoutVisitOnCalendarDay, resolveTimelineWindow } from './scheduleTimelineUtils';
 
-describe('scheduleTimelineUtils day layout', () => {
-  it('positions a visit proportionally within the visible hour window', () => {
-    const dateKey = '2026-06-03';
+describe('scheduleTimelineUtils tenant timezone layout', () => {
+  const timeZone = 'America/Chicago';
+  const dateKey = '2026-06-03';
+
+  it('positions a 4pm–7pm visit on the matching hour lines', () => {
     const visit = {
-      starts_at: new Date(2026, 5, 3, 16, 0, 0).toISOString(),
-      ends_at: new Date(2026, 5, 3, 18, 0, 0).toISOString(),
+      starts_at: parseTenantDatetimeLocalToIso(`${dateKey}T16:00`, timeZone)!,
+      ends_at: parseTenantDatetimeLocalToIso(`${dateKey}T19:00`, timeZone)!,
     };
-    const window = { startHour: 13, endHour: 21 };
+    const window = resolveTimelineWindow(dateKey, [visit], timeZone);
+    const layout = layoutVisitOnCalendarDay(visit, dateKey, timeZone, window);
 
-    const layout = layoutVisitOnLocalDay(visit, dateKey, window);
     expect(layout.visible).toBe(true);
-    expect(layout.topPct).toBeCloseTo(37.5, 1);
-    expect(layout.heightPct).toBeCloseTo(25, 1);
+    expect(window.startHour).toBeLessThanOrEqual(16);
+    expect(window.endHour).toBeGreaterThanOrEqual(19);
+
+    const slotStartMs = new Date(visit.starts_at).getTime();
+    const slotEndMs = new Date(visit.ends_at).getTime();
+    const windowStartMs = new Date(
+      parseTenantDatetimeLocalToIso(
+        `${dateKey}T${String(window.startHour).padStart(2, '0')}:00`,
+        timeZone,
+      )!,
+    ).getTime();
+    const windowEndMs = new Date(
+      parseTenantDatetimeLocalToIso(
+        `${dateKey}T${String(window.endHour).padStart(2, '0')}:00`,
+        timeZone,
+      )!,
+    ).getTime();
+    const totalMs = windowEndMs - windowStartMs;
+
+    expect(layout.topPct).toBeCloseTo(((slotStartMs - windowStartMs) / totalMs) * 100, 1);
+    expect(layout.heightPct).toBeCloseTo(((slotEndMs - slotStartMs) / totalMs) * 100, 1);
   });
 });

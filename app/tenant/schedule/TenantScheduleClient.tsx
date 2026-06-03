@@ -12,13 +12,13 @@ import {
   visitOverlapsUtcCalendarDay,
 } from '@/lib/tenant/scheduleDateRange';
 import {
+  calendarDateKeyNow,
   currentTimeLinePct,
-  formatLocalYmd,
   formatVisitTimeRange,
   hourLabels,
-  layoutVisitOnLocalDay,
+  layoutVisitOnCalendarDay,
   resolveTimelineWindow,
-  visitOverlapsLocalDay,
+  visitOverlapsCalendarDay,
 } from './scheduleTimelineUtils';
 import { VisitStatusPill } from './VisitStatusPill';
 import { ScheduleVisitBlock } from './ScheduleVisitBlock';
@@ -72,8 +72,10 @@ export function TenantScheduleClient({
   fieldEmployeeMode = false,
   locationFilter: initialLocationFilter = 'all',
   locationOptions = [],
+  tenantTimezone,
 }: {
   tenantSlug: string;
+  tenantTimezone: string;
   visits: ScheduleVisitVM[];
   dateKey: string;
   view: ScheduleView;
@@ -219,7 +221,7 @@ export function TenantScheduleClient({
     return visits.filter((visit) => visit.assigneeUserIds.includes(targetUserId));
   }, [visits, employeeFilter, currentUserId]);
 
-  const todayKey = formatLocalYmd(new Date());
+  const todayKey = calendarDateKeyNow(tenantTimezone);
   const isLocalToday = dateKey === todayKey;
   const showingFieldJobs = fieldEmployeeMode && view === 'today';
   const showingFieldCalendar = fieldEmployeeMode && view !== 'today';
@@ -241,14 +243,14 @@ export function TenantScheduleClient({
   const dayVisits = useMemo(
     () =>
       filteredVisits
-        .filter((v) => visitOverlapsLocalDay(v, dateKey))
+        .filter((v) => visitOverlapsCalendarDay(v, dateKey, tenantTimezone))
         .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
-    [filteredVisits, dateKey],
+    [filteredVisits, dateKey, tenantTimezone],
   );
 
   const timelineWindow = useMemo(
-    () => resolveTimelineWindow(dateKey, dayVisits),
-    [dateKey, dayVisits],
+    () => resolveTimelineWindow(dateKey, dayVisits, tenantTimezone),
+    [dateKey, dayVisits, tenantTimezone],
   );
 
   const hours = useMemo(() => hourLabels(timelineWindow), [timelineWindow]);
@@ -256,13 +258,13 @@ export function TenantScheduleClient({
 
   useEffect(() => {
     const updateNowLine = () => {
-      setNowLinePct(currentTimeLinePct(dateKey, timelineWindow));
+      setNowLinePct(currentTimeLinePct(dateKey, tenantTimezone, timelineWindow));
     };
 
     updateNowLine();
     const id = window.setInterval(updateNowLine, 60_000);
     return () => window.clearInterval(id);
-  }, [dateKey, timelineWindow]);
+  }, [dateKey, tenantTimezone, timelineWindow]);
 
   const goPrev = () => {
     if (view === 'month') push({ date: shiftDateKeyByMonths(dateKey, -1) });
@@ -432,7 +434,11 @@ export function TenantScheduleClient({
       ) : null}
 
       {showingFieldJobs ? (
-        <FieldEmployeeDayJobs visits={dayVisits} isLocalToday={isLocalToday} />
+        <FieldEmployeeDayJobs
+          visits={dayVisits}
+          isLocalToday={isLocalToday}
+          tenantTimezone={tenantTimezone}
+        />
       ) : null}
 
       {view === 'day' && !showingFieldJobs ? (
@@ -466,9 +472,10 @@ export function TenantScheduleClient({
               </div>
             ) : null}
             {dayVisits.map((v) => {
-              const { topPct, heightPct, visible } = layoutVisitOnLocalDay(
+              const { topPct, heightPct, visible } = layoutVisitOnCalendarDay(
                 v,
                 dateKey,
+                tenantTimezone,
                 timelineWindow,
               );
               if (!visible) return null;
@@ -476,6 +483,7 @@ export function TenantScheduleClient({
                 <ScheduleVisitBlock
                   key={v.id}
                   visit={v}
+                  tenantTimezone={tenantTimezone}
                   topPct={topPct}
                   heightPct={heightPct}
                   expanded={expandedVisitId === v.id}
@@ -513,7 +521,7 @@ export function TenantScheduleClient({
                             <VisitStatusPill status={v.status} />
                           </span>
                           <span className={styles.weekItemMeta}>
-                            {formatVisitTimeRange(v.starts_at, v.ends_at)}
+                            {formatVisitTimeRange(v.starts_at, v.ends_at, tenantTimezone)}
                           </span>
                         </Link>
                       </li>
@@ -552,7 +560,7 @@ export function TenantScheduleClient({
                             <VisitStatusPill status={v.status} />
                           </span>
                           <span className={styles.weekItemMeta}>
-                            {formatVisitTimeRange(v.starts_at, v.ends_at)}
+                            {formatVisitTimeRange(v.starts_at, v.ends_at, tenantTimezone)}
                           </span>
                         </Link>
                       </li>
