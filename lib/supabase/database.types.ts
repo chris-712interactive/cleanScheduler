@@ -1729,6 +1729,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      referral_reward_events: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          attribution_id: string;
+          recipient: Database['public']['Enums']['referral_reward_recipient'];
+          customer_id: string;
+          promotion_id: string | null;
+          amount_applied_cents: number;
+          promotion_redemption_id: string | null;
+          wallet_transaction_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          attribution_id: string;
+          recipient: Database['public']['Enums']['referral_reward_recipient'];
+          customer_id: string;
+          promotion_id?: string | null;
+          amount_applied_cents?: number;
+          promotion_redemption_id?: string | null;
+          wallet_transaction_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          attribution_id?: string;
+          recipient?: Database['public']['Enums']['referral_reward_recipient'];
+          customer_id?: string;
+          promotion_id?: string | null;
+          amount_applied_cents?: number;
+          promotion_redemption_id?: string | null;
+          wallet_transaction_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       referral_attributions: {
         Row: {
           id: string;
@@ -1740,6 +1779,7 @@ export type Database = {
           status: Database['public']['Enums']['referral_attribution_status'];
           attributed_at: string;
           expires_at: string;
+          qualified_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1753,6 +1793,7 @@ export type Database = {
           status?: Database['public']['Enums']['referral_attribution_status'];
           attributed_at?: string;
           expires_at: string;
+          qualified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1766,6 +1807,7 @@ export type Database = {
           status?: Database['public']['Enums']['referral_attribution_status'];
           attributed_at?: string;
           expires_at?: string;
+          qualified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -3748,6 +3790,7 @@ export type Database = {
       tenant_promotion_usage_type: 'single_use' | 'single_use_per_customer' | 'ongoing' | 'limited';
       tenant_referral_reward_side_mode: 'referrer_only' | 'double_sided' | 'referee_only';
       referral_attribution_status: 'pending' | 'qualified' | 'voided';
+      referral_reward_recipient: 'referrer' | 'referee';
       service_plan_billing_interval: 'week' | 'month' | 'year';
       visit_reschedule_request_status: 'pending' | 'completed' | 'declined' | 'withdrawn';
       tenant_customer_subscription_status:
