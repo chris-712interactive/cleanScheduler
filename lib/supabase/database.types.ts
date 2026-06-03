@@ -871,6 +871,10 @@ export type Database = {
           billing_period_start: string | null;
           billing_period_end: string | null;
           last_payment_error: string | null;
+          applied_promotion_id: string | null;
+          applied_promo_code: string | null;
+          promo_discount_cents: number;
+          wallet_credit_applied_cents: number;
         };
         Insert: {
           id?: string;
@@ -897,6 +901,10 @@ export type Database = {
           billing_period_start?: string | null;
           billing_period_end?: string | null;
           last_payment_error?: string | null;
+          applied_promotion_id?: string | null;
+          applied_promo_code?: string | null;
+          promo_discount_cents?: number;
+          wallet_credit_applied_cents?: number;
         };
         Update: {
           id?: string;
@@ -923,6 +931,10 @@ export type Database = {
           billing_period_start?: string | null;
           billing_period_end?: string | null;
           last_payment_error?: string | null;
+          applied_promotion_id?: string | null;
+          applied_promo_code?: string | null;
+          promo_discount_cents?: number;
+          wallet_credit_applied_cents?: number;
         };
         Relationships: [
           {
@@ -1595,6 +1607,7 @@ export type Database = {
           promotion_id: string;
           customer_id: string;
           quote_id: string | null;
+          invoice_id: string | null;
           status: Database['public']['Enums']['tenant_promotion_redemption_status'];
           amount_applied_cents: number;
           redeemed_at: string;
@@ -1609,6 +1622,7 @@ export type Database = {
           promotion_id: string;
           customer_id: string;
           quote_id?: string | null;
+          invoice_id?: string | null;
           status?: Database['public']['Enums']['tenant_promotion_redemption_status'];
           amount_applied_cents?: number;
           redeemed_at?: string;
@@ -1623,6 +1637,7 @@ export type Database = {
           promotion_id?: string;
           customer_id?: string;
           quote_id?: string | null;
+          invoice_id?: string | null;
           status?: Database['public']['Enums']['tenant_promotion_redemption_status'];
           amount_applied_cents?: number;
           redeemed_at?: string;
@@ -1776,6 +1791,7 @@ export type Database = {
           referrer_customer_id: string;
           referee_customer_id: string;
           touch_id: string | null;
+          attribution_source: Database['public']['Enums']['referral_attribution_source'];
           status: Database['public']['Enums']['referral_attribution_status'];
           attributed_at: string;
           expires_at: string;
@@ -1790,6 +1806,7 @@ export type Database = {
           referrer_customer_id: string;
           referee_customer_id: string;
           touch_id?: string | null;
+          attribution_source?: Database['public']['Enums']['referral_attribution_source'];
           status?: Database['public']['Enums']['referral_attribution_status'];
           attributed_at?: string;
           expires_at: string;
@@ -1804,6 +1821,7 @@ export type Database = {
           referrer_customer_id?: string;
           referee_customer_id?: string;
           touch_id?: string | null;
+          attribution_source?: Database['public']['Enums']['referral_attribution_source'];
           status?: Database['public']['Enums']['referral_attribution_status'];
           attributed_at?: string;
           expires_at?: string;
@@ -3790,6 +3808,7 @@ export type Database = {
       tenant_promotion_usage_type: 'single_use' | 'single_use_per_customer' | 'ongoing' | 'limited';
       tenant_referral_reward_side_mode: 'referrer_only' | 'double_sided' | 'referee_only';
       referral_attribution_status: 'pending' | 'qualified' | 'voided';
+      referral_attribution_source: 'link' | 'manual';
       referral_reward_recipient: 'referrer' | 'referee';
       service_plan_billing_interval: 'week' | 'month' | 'year';
       visit_reschedule_request_status: 'pending' | 'completed' | 'declined' | 'withdrawn';

@@ -45,7 +45,7 @@ export function ReferralProgramPanel({
         Choose who earns rewards when a referred customer qualifies, and link each side to a
         promotion template from <Link href="/settings/promotions">Promotions</Link>. Referrals
         qualify when the new customer pays their first invoice; rewards deposit to wallets
-        automatically.
+        automatically. Review attributions in <Link href="/referrals">Referral activity</Link>.
       </p>
 
       {activePromotions.length === 0 ? (

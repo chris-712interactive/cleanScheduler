@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
@@ -29,6 +30,13 @@ export default async function TenantPromotionsSettingsPage() {
         titleHint="Discount codes and account credit your team can apply for customers."
         backHref="/settings"
         backLabel="Settings"
+        actions={
+          promotionsEnabled ? (
+            <Link href="/settings/promotions/activity" className={styles.activityLink}>
+              View activity
+            </Link>
+          ) : undefined
+        }
       />
 
       <Stack gap={6}>
