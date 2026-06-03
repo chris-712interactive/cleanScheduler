@@ -61,7 +61,10 @@ export default async function CustomerReferralsPage({ searchParams }: PageProps)
   if (!link) {
     return (
       <>
-        <PageHeader title="Referrals" description="Share your provider with friends and earn rewards." />
+        <PageHeader
+          title="Referrals"
+          description="Share your provider with friends and earn rewards."
+        />
         <p className={styles.emptyState}>No customer profile is linked to this login yet.</p>
       </>
     );
