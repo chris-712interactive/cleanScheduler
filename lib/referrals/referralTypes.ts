@@ -5,6 +5,7 @@ export type TenantReferralProgramRow =
 export type ReferralRewardSideMode =
   Database['public']['Enums']['tenant_referral_reward_side_mode'];
 export type ReferralAttributionStatus = Database['public']['Enums']['referral_attribution_status'];
+export type ReferralRewardRecipient = Database['public']['Enums']['referral_reward_recipient'];
 
 export function referralRewardSideModeLabel(mode: ReferralRewardSideMode): string {
   switch (mode) {

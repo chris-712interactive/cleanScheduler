@@ -43,8 +43,9 @@ export function ReferralProgramPanel({
     <div className={styles.stack}>
       <p className={styles.heroLead}>
         Choose who earns rewards when a referred customer qualifies, and link each side to a
-        promotion template from <Link href="/settings/promotions">Promotions</Link>. Rewards are
-        issued when referrals qualify (after their first paid visit — coming soon).
+        promotion template from <Link href="/settings/promotions">Promotions</Link>. Referrals
+        qualify when the new customer pays their first invoice; rewards deposit to wallets
+        automatically.
       </p>
 
       {activePromotions.length === 0 ? (

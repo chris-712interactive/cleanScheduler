@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { emitTenantWebhook } from '@/lib/integrations/emitTenantWebhook';
+import { maybeQualifyReferralOnFirstPaidInvoice } from '@/lib/referrals/qualifyReferralOnFirstPaidInvoice';
 
 type Admin = SupabaseClient<Database>;
 
@@ -38,4 +39,9 @@ export async function afterInvoicePaymentRecorded(
   params: { tenantId: string; invoiceId: string },
 ): Promise<void> {
   await maybeEmitInvoicePaidWebhook(admin, params);
+  try {
+    await maybeQualifyReferralOnFirstPaidInvoice(admin, params);
+  } catch (error) {
+    console.error('[afterInvoicePaymentRecorded] referral qualification failed:', error, params);
+  }
 }
