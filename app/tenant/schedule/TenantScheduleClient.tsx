@@ -440,7 +440,10 @@ export function TenantScheduleClient({
           className={[styles.dayBoard, expandedVisitId ? styles.dayBoardExpanded : '']
             .filter(Boolean)
             .join(' ')}
-          style={{ minHeight: `${Math.max(480, hours.length * 56)}px` }}
+          style={{
+            minHeight: `${Math.max(480, hours.length * 56)}px`,
+            ['--timeline-hours' as string]: hours.length,
+          }}
         >
           <div className={styles.hourRail}>
             {hours.map((h) => (
