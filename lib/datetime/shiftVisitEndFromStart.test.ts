@@ -7,7 +7,8 @@ describe('shiftEndFromStartAndDuration', () => {
       '2026-06-01T09:00',
       2,
       'America/New_York',
-      new Date('2026-06-01T12:00:00-04:00').getTimezoneOffset(),
+      // EDT (UTC-4): browser offset must match the submitting client, not CI clock.
+      240,
     );
     expect(end).toMatch(/^2026-06-01T11:00/);
   });
