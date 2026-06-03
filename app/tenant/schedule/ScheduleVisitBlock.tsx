@@ -32,7 +32,6 @@ function visitCardPositionStyle(
     return {
       top: `${topPct}%`,
       height: `${heightPct}%`,
-      minHeight: '76px',
     };
   }
 

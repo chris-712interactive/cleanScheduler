@@ -1,6 +1,7 @@
 import { rrulestr } from 'rrule';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
+import { isRecurringOccurrenceSkipped } from '@/lib/schedule/recurringOccurrenceSkips';
 
 type RuleRow = Database['public']['Tables']['recurring_appointment_rules']['Row'];
 
@@ -56,6 +57,12 @@ export async function materializeRecurringVisitsForAllTenants(): Promise<{
         if (dt.getTime() < anchor.getTime()) continue;
         const startsAt = dt.toISOString();
         const endsAt = new Date(dt.getTime() + durMs).toISOString();
+
+        if (await isRecurringOccurrenceSkipped(admin, { recurringRuleId: raw.id, startsAt })) {
+          skippedDuplicates += 1;
+          continue;
+        }
+
         const { error: insErr } = await admin.from('tenant_scheduled_visits').insert({
           tenant_id: raw.tenant_id,
           customer_id: raw.customer_id,
