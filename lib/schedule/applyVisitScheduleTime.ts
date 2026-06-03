@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import {
+  checkEmployeeAvailability,
+  UNAVAILABILITY_LABEL,
+} from '@/lib/schedule/employeeAvailability';
+import {
   findAssigneeScheduleConflicts,
   type AssigneeConflictInfo,
 } from '@/lib/schedule/visitAssigneeConflicts';
@@ -22,10 +26,19 @@ export async function applyVisitScheduleTime(
     startsAt: string;
     endsAt: string;
     confirmOverlap: boolean;
+    confirmUnavailable: boolean;
     tenantTimezone: string;
   },
 ): Promise<ApplyVisitScheduleTimeResult> {
-  const { tenantId, visitId, startsAt, endsAt, confirmOverlap, tenantTimezone } = params;
+  const {
+    tenantId,
+    visitId,
+    startsAt,
+    endsAt,
+    confirmOverlap,
+    confirmUnavailable,
+    tenantTimezone,
+  } = params;
 
   if (new Date(endsAt) <= new Date(startsAt)) {
     return { ok: false, error: 'End time must be after start time.' };
@@ -60,6 +73,31 @@ export async function applyVisitScheduleTime(
     .eq('visit_id', visitId);
 
   const assigneeUserIds = (assigneeRows ?? []).map((r) => r.user_id);
+
+  if (assigneeUserIds.length > 0 && !confirmUnavailable) {
+    const unavailable: string[] = [];
+    for (const uid of assigneeUserIds) {
+      const result = await checkEmployeeAvailability(admin, {
+        tenantId,
+        userId: uid,
+        startsAt,
+        endsAt,
+        excludeVisitId: visitId,
+      });
+      if (!result.available) {
+        unavailable.push(result.reasons.map((r) => UNAVAILABILITY_LABEL[r]).join(', '));
+      }
+    }
+    if (unavailable.length > 0) {
+      return {
+        ok: false,
+        error:
+          'Assigned crew are unavailable at this time. Pick a suggested slot below, adjust the time, or confirm scheduling anyway.',
+        needsOverlapConfirm: true,
+      };
+    }
+  }
+
   const conflicts = await findAssigneeScheduleConflicts(admin, {
     tenantId,
     excludeVisitId: visitId,

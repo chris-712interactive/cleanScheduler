@@ -29,6 +29,7 @@ export function VisitFieldWorkPanel({
   isFieldEmployee = false,
   hasBillableAmount = true,
   onVisitPatch,
+  compact = false,
 }: {
   tenantSlug: string;
   visitId: string;
@@ -43,6 +44,7 @@ export function VisitFieldWorkPanel({
   isFieldEmployee?: boolean;
   hasBillableAmount?: boolean;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
+  compact?: boolean;
 }) {
   const [checkInState, checkInAction, checkInPending] = useActionState(
     checkInToVisitAction,
@@ -56,6 +58,56 @@ export function VisitFieldWorkPanel({
   const noPriceMessage = isFieldEmployee
     ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE
     : OFFICE_NO_PRICE_MESSAGE;
+
+  const checkedInLabel = checkedInAt
+    ? `Checked in ${new Date(checkedInAt).toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })}`
+    : 'Check in on arrival, then complete the job when finished.';
+
+  if (compact) {
+    return (
+      <div className={styles.fieldWork}>
+        <p className={styles.fieldWorkCopy}>{checkedInLabel}</p>
+        <div className={styles.fieldWorkActions}>
+          {canCheckIn ? (
+            <form action={checkInAction}>
+              <input type="hidden" name="tenant_slug" value={tenantSlug} />
+              <input type="hidden" name="visit_id" value={visitId} />
+              <Button type="submit" variant="secondary" disabled={checkInPending}>
+                {checkInPending ? 'Checking in…' : 'Check in'}
+              </Button>
+            </form>
+          ) : null}
+          {canComplete && !blockedFromComplete ? (
+            <CompleteVisitPaymentModal
+              tenantSlug={tenantSlug}
+              visitId={visitId}
+              preferredPaymentMethod={preferredPaymentMethod}
+              defaultAmountCents={defaultAmountCents}
+              customerHasEmail={customerHasEmail}
+              canAttachProofPhotos={canAttachProofPhotos}
+              proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
+              isFieldEmployee={isFieldEmployee}
+              onVisitPatch={onVisitPatch}
+            />
+          ) : null}
+        </div>
+        {checkInState.error ? (
+          <p className={styles.error} role="alert">
+            {checkInState.error}
+          </p>
+        ) : null}
+        {checkInState.success ? <p className={styles.ok}>{checkInState.success}</p> : null}
+        {blockedFromComplete ? (
+          <p className={styles.error} role="alert">
+            {noPriceMessage}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <section className={styles.fieldWork}>

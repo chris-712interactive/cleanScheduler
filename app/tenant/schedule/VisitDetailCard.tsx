@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
-import { Card } from '@/components/ui/Card';
+import { MapPin, Phone } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
@@ -19,7 +19,7 @@ import {
   resolveExpectedAmountCentsSync,
   visitHasBillableAmount,
 } from '@/lib/billing/resolveVisitExpectedAmount';
-import { formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
+import { formatVisitDuration, formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
 import {
   canCheckInToVisit,
   canCompleteVisit,
@@ -27,6 +27,7 @@ import {
 } from '@/lib/schedule/visitFieldWork';
 import type { TenantRole } from '@/lib/auth/types';
 import type { VisitProofPhotoRow } from '@/lib/visits/visitProofPhotos';
+import type { RelatedRecordsSnapshot } from '@/lib/tenant/relatedRecordsTypes';
 import {
   mergeVisitDetailPatch,
   type CollectedMethod,
@@ -36,8 +37,7 @@ import {
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import { DeleteVisitButton } from './DeleteVisitButton';
 import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
-import { VisitTimeRescheduleForm } from './VisitTimeRescheduleForm';
-import { VisitCrewAssignForm } from './VisitCrewAssignForm';
+import { VisitScheduleEditPanel } from './VisitScheduleEditPanel';
 import { VisitJobPriceForm } from './VisitJobPriceForm';
 import type { EmployeeOption } from './ScheduleVisitForm';
 import styles from './visitDetail.module.scss';
@@ -85,6 +85,8 @@ export type VisitDetailSnapshot = {
   proofPhotos: VisitProofPhotoRow[];
   startsAt: string;
   endsAt: string;
+  durationHours: number;
+  durationSourceLabel: string;
   status: VisitStatus;
   expectedAmountCents: number | null;
   checkedInAt: string | null;
@@ -99,9 +101,11 @@ export type VisitDetailSnapshot = {
 export function VisitDetailCard({
   initial,
   employeeOptions = [],
+  relatedRecords,
 }: {
   initial: VisitDetailSnapshot;
   employeeOptions?: EmployeeOption[];
+  relatedRecords?: RelatedRecordsSnapshot | null;
 }) {
   const [visit, setVisit] = useState(initial);
 
@@ -135,180 +139,246 @@ export function VisitDetailCard({
   const showComplete = canCompleteVisit(fieldParams);
   const canManage = canManageScheduledVisit(visit.actorRole);
   const canDelete = canManage;
+  const showScheduleEdit =
+    visit.status === 'scheduled' && !visit.checkedInAt && canManage && !visit.isFieldEmployee;
+  const showFieldWork = showCheckIn || showComplete;
+  const durationLabel = formatVisitDuration(visit.startsAt, visit.endsAt);
+  const whenLabel = formatVisitWhenRange(visit.startsAt, visit.endsAt, visit.tenantTimezone);
+  const priceLabel = hasBillableAmount
+    ? `$${formatCentsAsDollars(defaultAmountCents ?? 0)}`
+    : 'Price needed';
 
   return (
-    <Card title="Visit details">
-      <div className={styles.stack}>
-        <div>
-          <StatusPill tone={STATUS_TONE[visit.status]}>{STATUS_LABEL[visit.status]}</StatusPill>
+    <div className={styles.workspace}>
+      <div className={styles.summaryStrip} aria-label="Appointment overview">
+        <StatusPill tone={STATUS_TONE[visit.status]}>{STATUS_LABEL[visit.status]}</StatusPill>
+        <span className={styles.summaryDivider} aria-hidden />
+        <div className={styles.summaryItem}>
+          <span className={styles.summaryLabel}>When</span>
+          <span className={styles.summaryValue}>{whenLabel}</span>
+          {durationLabel ? <span className={styles.summaryMuted}>({durationLabel})</span> : null}
         </div>
-
-        <div className={styles.detailGrid}>
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>When</span>
-            <p className={styles.detailValue}>
-              {formatVisitWhenRange(visit.startsAt, visit.endsAt, visit.tenantTimezone)}
-            </p>
-          </div>
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Service</span>
-            <p className={styles.detailValue}>{visit.title}</p>
-          </div>
-          {visit.siteLine ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Location</span>
-              <p className={styles.detailValue}>{visit.siteLine}</p>
-            </div>
-          ) : null}
-          {visit.customerPhone ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Customer phone</span>
-              <p className={styles.detailValue}>
-                <a href={`tel:${visit.customerPhone}`}>{visit.customerPhone}</a>
-              </p>
-            </div>
-          ) : null}
-          {visit.preferredPaymentMethod ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Billing preference</span>
-              <p className={styles.detailValue}>
-                {formatCustomerPreferredBilling(visit.preferredPaymentMethod)}
-                {isElectronicPreferredBilling(visit.preferredPaymentMethod)
-                  ? ' · Invoice via Stripe after service'
-                  : ' · Collect on site'}
-              </p>
-            </div>
-          ) : null}
-          {hasBillableAmount && !(canManage && visit.status === 'scheduled') ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Job price</span>
-              <p className={styles.detailValue}>${formatCentsAsDollars(defaultAmountCents ?? 0)}</p>
-            </div>
-          ) : null}
-          {visit.quoteTitle ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Quote</span>
-              <p className={styles.detailValue}>
-                {visit.quoteId && !visit.isFieldEmployee ? (
-                  <Link href={`/quotes/${visit.quoteId}`}>{visit.quoteTitle}</Link>
-                ) : (
-                  visit.quoteTitle
-                )}
-              </p>
-            </div>
-          ) : null}
-          {visit.notes ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Notes</span>
-              <p className={styles.detailValue}>{visit.notes}</p>
-            </div>
-          ) : null}
-          {formatTimestamp(visit.checkedInAt, visit.tenantTimezone) ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Checked in</span>
-              <p className={styles.detailValue}>
-                {formatTimestamp(visit.checkedInAt, visit.tenantTimezone)}
-              </p>
-            </div>
-          ) : null}
-          {formatTimestamp(visit.completedAt, visit.tenantTimezone) ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Completed</span>
-              <p className={styles.detailValue}>
-                {formatTimestamp(visit.completedAt, visit.tenantTimezone)}
-              </p>
-            </div>
-          ) : null}
-          {visit.completionPaymentCollected != null ? (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Payment at completion</span>
-              <p className={styles.detailValue}>
-                {visit.completionPaymentCollected
-                  ? visit.completionCollectedMethod
-                    ? `${CUSTOMER_PAYMENT_METHOD_LABEL[visit.completionCollectedMethod]} · $${formatCentsAsDollars(visit.completionCollectedAmountCents ?? 0)}${visit.completionCheckNumber ? ` · Check #${visit.completionCheckNumber}` : ''}`
-                    : 'Collected on site'
-                  : 'Not collected — invoice sent'}
-                {visit.completionInvoiceId && !visit.isFieldEmployee ? (
-                  <>
-                    {' '}
-                    <Link href={`/billing/invoices/${visit.completionInvoiceId}`}>
-                      View invoice
-                    </Link>
-                  </>
-                ) : null}
-              </p>
-            </div>
-          ) : null}
+        <span className={styles.summaryDivider} aria-hidden />
+        <div className={styles.summaryItem}>
+          <span className={styles.summaryLabel}>Crew</span>
+          {visit.assignees.length > 0 ? (
+            <ScheduleAssigneeAvatars assignees={visit.assignees} size="sm" />
+          ) : (
+            <span className={styles.summaryMuted}>Unassigned</span>
+          )}
         </div>
+        <span className={styles.summaryDivider} aria-hidden />
+        <div className={styles.summaryItem}>
+          <span className={styles.summaryLabel}>Price</span>
+          <span
+            className={hasBillableAmount ? styles.summaryValue : styles.summaryMuted}
+            data-warn={!hasBillableAmount || undefined}
+          >
+            {priceLabel}
+          </span>
+        </div>
+      </div>
 
-        {visit.assignees.length > 0 ? (
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Crew</span>
-            <div className={styles.crewRow}>
-              <ScheduleAssigneeAvatars assignees={visit.assignees} size="lg" />
-            </div>
-          </div>
-        ) : null}
-
-        <VisitProofPhotos
-          photos={visit.proofPhotos}
-          description="Uploaded by your crew when this job was marked complete."
-        />
-
-        {canManage && visit.status === 'scheduled' ? (
-          <VisitJobPriceForm
-            tenantSlug={visit.tenantSlug}
-            visitId={visit.visitId}
-            currentAmountCents={defaultAmountCents}
-            onVisitPatch={onVisitPatch}
-          />
-        ) : null}
-
-        <VisitFieldWorkPanel
-          tenantSlug={visit.tenantSlug}
-          visitId={visit.visitId}
-          canCheckIn={showCheckIn}
-          canComplete={showComplete}
-          checkedInAt={visit.checkedInAt}
-          preferredPaymentMethod={visit.preferredPaymentMethod}
-          defaultAmountCents={defaultAmountCents}
-          customerHasEmail={Boolean(visit.customerEmail)}
-          canAttachProofPhotos={visit.canUseProofPhotos}
-          proofPhotosSharedWithCustomers={visit.proofPhotosSharedWithCustomers}
-          isFieldEmployee={visit.isFieldEmployee}
-          hasBillableAmount={hasBillableAmount}
-          onVisitPatch={onVisitPatch}
-        />
-
-        {visit.status === 'scheduled' && !visit.checkedInAt && canManage ? (
-          <>
-            <VisitCrewAssignForm
-              tenantSlug={visit.tenantSlug}
-              visitId={visit.visitId}
-              startsAtIso={visit.startsAt}
-              endsAtIso={visit.endsAt}
-              currentAssigneeUserIds={visit.assigneeUserIds}
-              employeeOptions={employeeOptions}
-              onVisitPatch={onVisitPatch}
-            />
-            <VisitTimeRescheduleForm
+      <div className={styles.workspaceGrid}>
+        <div className={styles.workspaceMain}>
+          {showScheduleEdit ? (
+            <VisitScheduleEditPanel
               tenantSlug={visit.tenantSlug}
               tenantTimezone={visit.tenantTimezone}
               visitId={visit.visitId}
               startsAtIso={visit.startsAt}
               endsAtIso={visit.endsAt}
+              durationHours={visit.durationHours}
+              durationSourceLabel={visit.durationSourceLabel}
+              currentAssigneeUserIds={visit.assigneeUserIds}
+              employeeOptions={employeeOptions}
               onVisitPatch={onVisitPatch}
             />
-          </>
-        ) : null}
+          ) : null}
 
-        {canDelete ? (
-          <div className={styles.adminActions}>
-            <h2 className={styles.sectionTitle}>Admin</h2>
-            <DeleteVisitButton tenantSlug={visit.tenantSlug} visitId={visit.visitId} />
-          </div>
-        ) : null}
+          {showFieldWork ? (
+            <section className={styles.panel} aria-labelledby="field-actions-heading">
+              <h2 id="field-actions-heading" className={styles.panelTitle}>
+                Field actions
+              </h2>
+              <VisitFieldWorkPanel
+                tenantSlug={visit.tenantSlug}
+                visitId={visit.visitId}
+                canCheckIn={showCheckIn}
+                canComplete={showComplete}
+                checkedInAt={visit.checkedInAt}
+                preferredPaymentMethod={visit.preferredPaymentMethod}
+                defaultAmountCents={defaultAmountCents}
+                customerHasEmail={Boolean(visit.customerEmail)}
+                canAttachProofPhotos={visit.canUseProofPhotos}
+                proofPhotosSharedWithCustomers={visit.proofPhotosSharedWithCustomers}
+                isFieldEmployee={visit.isFieldEmployee}
+                hasBillableAmount={hasBillableAmount}
+                onVisitPatch={onVisitPatch}
+                compact
+              />
+            </section>
+          ) : null}
+
+          {visit.proofPhotos.length > 0 ? (
+            <section className={`${styles.panel} ${styles.proofPanel}`}>
+              <VisitProofPhotos
+                photos={visit.proofPhotos}
+                description="Proof photos from completion."
+              />
+            </section>
+          ) : null}
+        </div>
+
+        <aside className={styles.workspaceAside}>
+          <section className={styles.panel} aria-labelledby="customer-heading">
+            <h2 id="customer-heading" className={styles.panelTitle}>
+              Customer &amp; visit
+            </h2>
+            <dl className={styles.metaList}>
+              <div className={styles.metaRow}>
+                <dt className={styles.metaLabel}>Service</dt>
+                <dd className={styles.metaValue}>{visit.title}</dd>
+              </div>
+              {visit.siteLine ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Location</dt>
+                  <dd className={styles.metaValue}>
+                    <MapPin size={14} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                    {visit.siteLine}
+                  </dd>
+                </div>
+              ) : null}
+              {visit.customerPhone ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Phone</dt>
+                  <dd className={styles.metaValue}>
+                    <Phone size={14} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                    <a href={`tel:${visit.customerPhone}`}>{visit.customerPhone}</a>
+                  </dd>
+                </div>
+              ) : null}
+              {visit.customerEmail ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Email</dt>
+                  <dd className={styles.metaValue}>
+                    <a href={`mailto:${visit.customerEmail}`}>{visit.customerEmail}</a>
+                  </dd>
+                </div>
+              ) : null}
+              {visit.preferredPaymentMethod ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Billing</dt>
+                  <dd className={styles.metaValue}>
+                    {formatCustomerPreferredBilling(visit.preferredPaymentMethod)}
+                    {isElectronicPreferredBilling(visit.preferredPaymentMethod)
+                      ? ' · Invoice after service'
+                      : ' · Collect on site'}
+                  </dd>
+                </div>
+              ) : null}
+              {visit.quoteTitle ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Quote</dt>
+                  <dd className={styles.metaValue}>
+                    {visit.quoteId && !visit.isFieldEmployee ? (
+                      <Link href={`/quotes/${visit.quoteId}`}>{visit.quoteTitle}</Link>
+                    ) : (
+                      visit.quoteTitle
+                    )}
+                  </dd>
+                </div>
+              ) : null}
+              {formatTimestamp(visit.checkedInAt, visit.tenantTimezone) ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Checked in</dt>
+                  <dd className={styles.metaValue}>
+                    {formatTimestamp(visit.checkedInAt, visit.tenantTimezone)}
+                  </dd>
+                </div>
+              ) : null}
+              {formatTimestamp(visit.completedAt, visit.tenantTimezone) ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Completed</dt>
+                  <dd className={styles.metaValue}>
+                    {formatTimestamp(visit.completedAt, visit.tenantTimezone)}
+                  </dd>
+                </div>
+              ) : null}
+              {visit.completionPaymentCollected != null ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Payment</dt>
+                  <dd className={styles.metaValue}>
+                    {visit.completionPaymentCollected
+                      ? visit.completionCollectedMethod
+                        ? `${CUSTOMER_PAYMENT_METHOD_LABEL[visit.completionCollectedMethod]} · $${formatCentsAsDollars(visit.completionCollectedAmountCents ?? 0)}${visit.completionCheckNumber ? ` · Check #${visit.completionCheckNumber}` : ''}`
+                        : 'Collected on site'
+                      : 'Not collected — invoice sent'}
+                    {visit.completionInvoiceId && !visit.isFieldEmployee ? (
+                      <>
+                        {' '}
+                        <Link href={`/billing/invoices/${visit.completionInvoiceId}`}>
+                          View invoice
+                        </Link>
+                      </>
+                    ) : null}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </section>
+
+          {relatedRecords && relatedRecords.links.length > 0 ? (
+            <section className={styles.panel} aria-labelledby="related-heading">
+              <h2 id="related-heading" className={styles.panelTitle}>
+                Related
+              </h2>
+              <ul className={styles.relatedLinks}>
+                {relatedRecords.links.map((link) => (
+                  <li key={`${link.href}-${link.label}`}>
+                    <Link href={link.href} className={styles.relatedLink} title={link.detail}>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {visit.notes ? (
+            <section className={styles.panel} aria-labelledby="notes-heading">
+              <h2 id="notes-heading" className={styles.panelTitle}>
+                Notes
+              </h2>
+              <p className={styles.notesBlock}>{visit.notes}</p>
+            </section>
+          ) : null}
+
+          {canManage && visit.status === 'scheduled' ? (
+            <section className={styles.panel} aria-labelledby="price-heading">
+              <h2 id="price-heading" className={styles.panelTitle}>
+                Job price
+              </h2>
+              <VisitJobPriceForm
+                tenantSlug={visit.tenantSlug}
+                visitId={visit.visitId}
+                currentAmountCents={defaultAmountCents}
+                onVisitPatch={onVisitPatch}
+                compact
+              />
+            </section>
+          ) : null}
+
+          {canDelete ? (
+            <section className={styles.panel}>
+              <div className={styles.adminRow}>
+                <p className={styles.adminHint}>Permanently remove this visit from the schedule.</p>
+                <DeleteVisitButton tenantSlug={visit.tenantSlug} visitId={visit.visitId} />
+              </div>
+            </section>
+          ) : null}
+        </aside>
       </div>
-    </Card>
+    </div>
   );
 }

@@ -47,10 +47,21 @@ export async function applyVisitAssignees(
     confirmOverlap: boolean;
     confirmUnavailable: boolean;
     tenantTimezone: string;
+    /** When validating availability, use this window instead of the visit's saved times. */
+    startsAt?: string;
+    endsAt?: string;
   },
 ): Promise<ApplyVisitAssigneesResult> {
-  const { tenantId, visitId, assigneeUserIds, confirmOverlap, confirmUnavailable, tenantTimezone } =
-    params;
+  const {
+    tenantId,
+    visitId,
+    assigneeUserIds,
+    confirmOverlap,
+    confirmUnavailable,
+    tenantTimezone,
+    startsAt: startsAtOverride,
+    endsAt: endsAtOverride,
+  } = params;
 
   const uniqueAssignees = [...new Set(assigneeUserIds)];
 
@@ -76,6 +87,13 @@ export async function applyVisitAssignees(
     };
   }
 
+  const windowStartsAt = startsAtOverride ?? visit.starts_at;
+  const windowEndsAt = endsAtOverride ?? visit.ends_at;
+
+  if (new Date(windowEndsAt) <= new Date(windowStartsAt)) {
+    return { ok: false, error: 'End time must be after start time.' };
+  }
+
   for (const uid of uniqueAssignees) {
     if (!(await assertActiveTenantMember(admin, tenantId, uid))) {
       return {
@@ -91,8 +109,9 @@ export async function applyVisitAssignees(
       const result = await checkEmployeeAvailability(admin, {
         tenantId,
         userId: uid,
-        startsAt: visit.starts_at,
-        endsAt: visit.ends_at,
+        startsAt: windowStartsAt,
+        endsAt: windowEndsAt,
+        excludeVisitId: visitId,
       });
       if (!result.available) {
         unavailable.push(result.reasons.map((r) => UNAVAILABILITY_LABEL[r]).join(', '));
@@ -111,8 +130,8 @@ export async function applyVisitAssignees(
     const conflicts = await findAssigneeScheduleConflicts(admin, {
       tenantId,
       excludeVisitId: visitId,
-      startsAt: visit.starts_at,
-      endsAt: visit.ends_at,
+      startsAt: windowStartsAt,
+      endsAt: windowEndsAt,
       assigneeUserIds: uniqueAssignees,
       tenantTimezone,
     });

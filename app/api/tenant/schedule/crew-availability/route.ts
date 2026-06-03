@@ -24,6 +24,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const startsAt = (url.searchParams.get('starts_at') ?? '').trim();
   const endsAt = (url.searchParams.get('ends_at') ?? '').trim();
+  const visitId = (url.searchParams.get('visit_id') ?? '').trim() || undefined;
 
   if (!startsAt || !endsAt) {
     return NextResponse.json({ error: 'starts_at and ends_at are required.' }, { status: 400 });
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
     startsAt,
     endsAt,
     userIds,
+    excludeVisitId: visitId,
   });
 
   const profileIds = results.map((r) => r.userId);
