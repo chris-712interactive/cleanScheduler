@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { createAdminClient } from '@/lib/supabase/server';
+import { captureReferralFromRequest } from '@/lib/referrals/referralCookie';
 import { getAuthContext } from '@/lib/auth/session';
 import { getCustomerPortalOriginFromRequestHost } from '@/lib/portal/customerPortalOrigin';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
@@ -26,6 +27,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 export default async function CompleteCustomerInvitePage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const raw = firstParam(sp.token)?.trim().toLowerCase() ?? '';
+  const refRaw = firstParam(sp.ref);
 
   if (!TOKEN_RE.test(raw)) {
     return (
@@ -45,6 +47,7 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
     .select(
       `
       token,
+      tenant_id,
       email_normalized,
       expires_at,
       used_at,
@@ -89,6 +92,17 @@ export default async function CompleteCustomerInvitePage({ searchParams }: PageP
         </Card>
       </Container>
     );
+  }
+
+  if (refRaw) {
+    const h = await headers();
+    await captureReferralFromRequest(admin, {
+      rawCode: refRaw,
+      tenantId: invite.tenant_id as string,
+      landingPath: '/complete-invite',
+      clientIp: h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip'),
+      userAgent: h.get('user-agent'),
+    });
   }
 
   const { data: identity } = await admin

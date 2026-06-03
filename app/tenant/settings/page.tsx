@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
   Tag,
   UserRound,
+  Users,
 } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
@@ -90,6 +91,12 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Promotions',
         description: 'Discount codes and customer wallet credits (Business+).',
         icon: Tag,
+      },
+      {
+        href: '/settings/referrals',
+        label: 'Referral program',
+        description: 'Who earns referral rewards and which promotion templates apply (Business+).',
+        icon: Users,
       },
       {
         href: '/settings/integrations',

@@ -18,6 +18,8 @@ import {
 } from '@/lib/customer/customerQuoteList';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { headers } from 'next/headers';
+import { captureReferralFromRequest } from '@/lib/referrals/referralCookie';
 import {
   formatNextAppointmentWhen,
   formatUpcomingVisitDate,
@@ -98,8 +100,25 @@ function invoiceStatusTone(
   return 'neutral';
 }
 
-export default async function CustomerHomePage() {
+export default async function CustomerHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const auth = await requirePortalAccess('customer', '/');
+  const sp = await searchParams;
+  const refRaw = typeof sp.ref === 'string' ? sp.ref : sp.ref?.[0];
+  if (refRaw) {
+    const admin = createAdminClient();
+    const h = await headers();
+    await captureReferralFromRequest(admin, {
+      rawCode: refRaw,
+      landingPath: '/',
+      clientIp: h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip'),
+      userAgent: h.get('user-agent'),
+    });
+  }
+
   const ctx = await getCustomerPortalContext(auth.user.id);
 
   if (!ctx) {

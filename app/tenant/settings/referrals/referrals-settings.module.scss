@@ -1,0 +1,109 @@
+@use 'mixins/breakpoints' as mq;
+
+.stack {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.readOnlyNotice {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.bannerError {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-md);
+}
+
+.bannerSuccess {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+  background: var(--color-success-bg, var(--color-surface-muted));
+  border-radius: var(--radius-md);
+}
+
+.heroLead {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  max-width: 52rem;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.formGrid {
+  display: grid;
+  gap: var(--space-3);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.formGridFull {
+  grid-column: 1 / -1;
+}
+
+.label {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.linkRow {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.linkRow a {
+  color: var(--color-link, var(--color-brand));
+}
