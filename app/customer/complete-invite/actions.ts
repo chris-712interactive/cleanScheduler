@@ -8,6 +8,7 @@ import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import { applyStoredReferralAttribution } from '@/lib/referrals/referralCookie';
 
 const TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -57,6 +58,21 @@ async function loadActiveInvite(admin: SupabaseClient<Database>, token: string) 
   return { ok: true as const, invite };
 }
 
+async function tryApplyReferralAttributionForInvite(
+  admin: SupabaseClient<Database>,
+  tenantId: string,
+  customerId: string,
+): Promise<void> {
+  try {
+    await applyStoredReferralAttribution(admin, {
+      tenantId,
+      refereeCustomerId: customerId,
+    });
+  } catch (error) {
+    console.error('[complete-invite] referral attribution failed:', error);
+  }
+}
+
 export async function linkExistingCustomerInviteAction(
   _prev: CompleteInviteState,
   formData: FormData,
@@ -104,6 +120,11 @@ export async function linkExistingCustomerInviteAction(
         .from('customer_portal_invites')
         .update({ used_at: new Date().toISOString() })
         .eq('token', token);
+      await tryApplyReferralAttributionForInvite(
+        admin,
+        invite.tenant_id as string,
+        invite.customer_id as string,
+      );
       redirectAfterInviteComplete(nextPath);
     }
     return { error: 'This customer record is already linked to a different login.' };
@@ -155,6 +176,12 @@ export async function linkExistingCustomerInviteAction(
     .from('customer_portal_invites')
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
+
+  await tryApplyReferralAttributionForInvite(
+    admin,
+    invite.tenant_id as string,
+    invite.customer_id as string,
+  );
 
   redirectAfterInviteComplete(nextPath);
 }
@@ -322,6 +349,12 @@ export async function acceptCustomerPortalInviteAction(
     .from('customer_portal_invites')
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
+
+  await tryApplyReferralAttributionForInvite(
+    admin,
+    invite.tenant_id as string,
+    invite.customer_id as string,
+  );
 
   redirectAfterInviteComplete(nextPath);
 }
