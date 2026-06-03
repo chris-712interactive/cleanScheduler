@@ -24,7 +24,7 @@ export function CustomerReferralsClient({ view }: { view: CustomerReferralPortal
         <h2 className={styles.heroTitle}>{view.shareHeadline}</h2>
         <p className={styles.heroLead}>
           Share your personal link with friends. When they become a customer through your link,
-          rewards are tracked here. Payouts begin after they complete their first paid visit.
+          rewards are tracked here and paid to your wallet when they pay their first invoice.
         </p>
       </section>
 
