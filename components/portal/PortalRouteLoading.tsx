@@ -188,14 +188,14 @@ function CustomersLoading() {
       data-route-loading
     >
       <PageHeaderSkeleton />
-      <div className={styles.directoryTabs}>
-        <Skeleton width={72} height={18} />
-        <Skeleton width={88} height={18} />
-        <Skeleton width={96} height={18} />
-      </div>
       <div className={styles.directoryPanel}>
         <div className={styles.searchForm}>
           <Skeleton width="100%" height={44} radius="md" />
+          <div className={styles.directoryTabs}>
+            <Skeleton width={88} height={36} radius="pill" />
+            <Skeleton width={96} height={36} radius="pill" />
+            <Skeleton width={104} height={36} radius="pill" />
+          </div>
         </div>
         <div className={styles.tableHead}>
           <Skeleton width="40%" height={12} />

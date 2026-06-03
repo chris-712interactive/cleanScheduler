@@ -12,7 +12,7 @@ export type CustomerDirectoryRow = {
 
 export function CustomersDirectoryTable({ rows }: { rows: CustomerDirectoryRow[] }) {
   return (
-    <div className={styles.tableWrap}>
+    <div className={`${styles.tableWrap} ${styles.desktopTable}`}>
       <table className={styles.directoryTable}>
         <colgroup>
           <col className={styles.colCustomer} />
