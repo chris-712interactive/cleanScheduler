@@ -21,6 +21,7 @@ import {
   type AssigneeConflictInfo,
 } from '@/lib/schedule/visitAssigneeConflicts';
 import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
+import { recordRecurringOccurrenceSkip } from '@/lib/schedule/recurringOccurrenceSkips';
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
@@ -283,6 +284,25 @@ export async function deleteScheduledVisit(
 
   const membership = await requireTenantPortalAccess(slug, '/schedule');
   const admin = createAdminClient();
+
+  const { data: visit, error: loadErr } = await admin
+    .from('tenant_scheduled_visits')
+    .select('id, recurring_rule_id, starts_at')
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (loadErr || !visit) {
+    return { error: 'Visit not found.' };
+  }
+
+  if (visit.recurring_rule_id) {
+    await recordRecurringOccurrenceSkip(admin, {
+      recurringRuleId: visit.recurring_rule_id,
+      startsAt: visit.starts_at,
+      visitId: visit.id,
+    });
+  }
 
   const del = await admin
     .from('tenant_scheduled_visits')

@@ -8,6 +8,10 @@ import {
   findAssigneeScheduleConflicts,
   type AssigneeConflictInfo,
 } from '@/lib/schedule/visitAssigneeConflicts';
+import {
+  recordRecurringOccurrenceSkip,
+  shouldRecordRecurringOccurrenceSkip,
+} from '@/lib/schedule/recurringOccurrenceSkips';
 
 export type ApplyVisitScheduleTimeResult =
   | { ok: true }
@@ -46,7 +50,7 @@ export async function applyVisitScheduleTime(
 
   const { data: visit, error: vErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status, checked_in_at')
+    .select('id, status, checked_in_at, starts_at, recurring_rule_id')
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -115,6 +119,20 @@ export async function applyVisitScheduleTime(
       conflicts,
       needsOverlapConfirm: true,
     };
+  }
+
+  if (
+    shouldRecordRecurringOccurrenceSkip({
+      recurringRuleId: visit.recurring_rule_id,
+      previousStartsAt: visit.starts_at,
+      nextStartsAt: startsAt,
+    })
+  ) {
+    await recordRecurringOccurrenceSkip(admin, {
+      recurringRuleId: visit.recurring_rule_id!,
+      startsAt: visit.starts_at,
+      visitId,
+    });
   }
 
   const upd = await admin

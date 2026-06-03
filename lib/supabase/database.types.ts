@@ -2010,6 +2010,45 @@ export type Database = {
           },
         ];
       };
+      recurring_appointment_occurrence_skips: {
+        Row: {
+          id: string;
+          recurring_rule_id: string;
+          starts_at: string;
+          visit_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recurring_rule_id: string;
+          starts_at: string;
+          visit_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recurring_rule_id?: string;
+          starts_at?: string;
+          visit_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recurring_appointment_occurrence_skips_recurring_rule_id_fkey';
+            columns: ['recurring_rule_id'];
+            isOneToOne: false;
+            referencedRelation: 'recurring_appointment_rules';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'recurring_appointment_occurrence_skips_visit_id_fkey';
+            columns: ['visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       visit_reschedule_requests: {
         Row: {
           id: string;
