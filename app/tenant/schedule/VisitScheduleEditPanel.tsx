@@ -4,7 +4,7 @@ import { useActionState, useCallback, useEffect, useMemo, useState } from 'react
 import { Users } from 'lucide-react';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
 import { isoToLocalDatetimeLocalValue } from '@/lib/datetime/isoToLocalDatetimeLocalValue';
-import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
+import { parseTenantDatetimeLocalToIso } from '@/lib/datetime/parseTenantDatetimeLocal';
 import { shiftEndFromStartAndDuration } from '@/lib/datetime/shiftVisitEndFromStart';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type {
@@ -32,13 +32,13 @@ function useSchedulingPreview(params: {
   startsLocal: string;
   endsLocal: string;
   selectedAssigneeIds: string[];
-  tzOffsetMinutes: number;
+  tenantTimezone: string;
 }) {
   const [preview, setPreview] = useState<PreviewState>({ loading: false, data: null });
 
   useEffect(() => {
-    const startsIso = parseBrowserDatetimeLocalToIso(params.startsLocal, params.tzOffsetMinutes);
-    const endsIso = parseBrowserDatetimeLocalToIso(params.endsLocal, params.tzOffsetMinutes);
+    const startsIso = parseTenantDatetimeLocalToIso(params.startsLocal, params.tenantTimezone);
+    const endsIso = parseTenantDatetimeLocalToIso(params.endsLocal, params.tenantTimezone);
     if (!startsIso || !endsIso || new Date(endsIso) <= new Date(startsIso)) {
       setPreview({ loading: false, data: null });
       return;
@@ -81,7 +81,7 @@ function useSchedulingPreview(params: {
     params.startsLocal,
     params.endsLocal,
     params.selectedAssigneeIds,
-    params.tzOffsetMinutes,
+    params.tenantTimezone,
   ]);
 
   return preview;
@@ -153,7 +153,6 @@ export function VisitScheduleEditPanel({
   employeeOptions: EmployeeOption[];
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
-  const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const [timeState, timeAction, timePending] = useActionState(updateScheduledVisitTimes, initial);
   const [crewState, crewAction, crewPending] = useActionState(
     updateScheduledVisitAssignees,
@@ -201,7 +200,7 @@ export function VisitScheduleEditPanel({
     startsLocal,
     endsLocal,
     selectedAssigneeIds,
-    tzOffsetMinutes,
+    tenantTimezone,
   });
 
   const availabilityByUser = useMemo(() => {
@@ -232,16 +231,11 @@ export function VisitScheduleEditPanel({
     (value: string) => {
       setStartsLocal(value);
       if (!endManuallyEdited) {
-        const shifted = shiftEndFromStartAndDuration(
-          value,
-          durationHours,
-          tenantTimezone,
-          tzOffsetMinutes,
-        );
+        const shifted = shiftEndFromStartAndDuration(value, durationHours, tenantTimezone);
         if (shifted) setEndsLocal(shifted);
       }
     },
-    [durationHours, endManuallyEdited, tenantTimezone, tzOffsetMinutes],
+    [durationHours, endManuallyEdited, tenantTimezone],
   );
 
   const applySuggestion = useCallback(
@@ -303,7 +297,6 @@ export function VisitScheduleEditPanel({
         <form action={timeAction} className={styles.visitScheduleSection}>
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="visit_id" value={visitId} />
-          <input type="hidden" name="client_timezone_offset" value={String(tzOffsetMinutes)} />
           {timeConfirmUnavailable ? (
             <input type="hidden" name="confirm_unavailable" value="true" />
           ) : null}
@@ -392,7 +385,6 @@ export function VisitScheduleEditPanel({
           <input type="hidden" name="visit_id" value={visitId} />
           <input type="hidden" name="starts_at" value={startsLocal} />
           <input type="hidden" name="ends_at" value={endsLocal} />
-          <input type="hidden" name="client_timezone_offset" value={String(tzOffsetMinutes)} />
           {crewConfirmUnavailable ? (
             <input type="hidden" name="confirm_unavailable" value="true" />
           ) : null}

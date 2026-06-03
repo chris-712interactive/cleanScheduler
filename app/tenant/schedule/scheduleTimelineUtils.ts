@@ -1,4 +1,11 @@
-/** Local-day timeline layout (browser timezone) for tenant schedule day view. */
+/** Tenant-timezone timeline layout for schedule day view. */
+
+import { formatVisitTime } from '@/lib/datetime/formatInTimeZone';
+import { parseTenantDatetimeLocalToIso } from '@/lib/datetime/parseTenantDatetimeLocal';
+import {
+  calendarDateKeyInTimeZone,
+  visitTouchesCalendarDayInTimeZone,
+} from '@/lib/datetime/tenantCalendarDay';
 
 export interface TimelineWindow {
   /** Inclusive hour (0–23). */
@@ -16,51 +23,66 @@ export const DEFAULT_TIMELINE_WINDOW: TimelineWindow = {
 const MIN_TIMELINE_SPAN_HOURS = 8;
 const TIMELINE_PAD_HOURS = 1;
 
-export function formatLocalYmd(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+export function calendarDateKeyNow(timeZone: string): string {
+  return calendarDateKeyInTimeZone(timeZone, new Date());
 }
 
-function dayBounds(dateKey: string): { dayStart: Date; dayEnd: Date } {
-  const parts = dateKey.split('-').map(Number);
-  const y = parts[0]!;
-  const mo = parts[1]!;
-  const da = parts[2]!;
+function calendarPartsInTimeZone(iso: string, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(iso));
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+
+  let hour = Number(get('hour'));
+  if (get('hour') === '24') hour = 0;
+
   return {
-    dayStart: new Date(y, mo - 1, da, 0, 0, 0, 0),
-    dayEnd: new Date(y, mo - 1, da, 23, 59, 59, 999),
+    year: Number(get('year')),
+    month: Number(get('month')),
+    day: Number(get('day')),
+    hour,
+    minute: Number(get('minute')),
+    second: Number(get('second')),
   };
 }
 
-function slotBounds(dateKey: string, window: TimelineWindow): { slotStart: Date; slotEnd: Date } {
-  const parts = dateKey.split('-').map(Number);
-  const y = parts[0]!;
-  const mo = parts[1]!;
-  const da = parts[2]!;
-  return {
-    slotStart: new Date(y, mo - 1, da, window.startHour, 0, 0, 0),
-    slotEnd: new Date(y, mo - 1, da, window.endHour, 0, 0, 0),
-  };
+function fractionalHourInTimeZone(iso: string, timeZone: string): number {
+  const parts = calendarPartsInTimeZone(iso, timeZone);
+  return parts.hour + parts.minute / 60 + parts.second / 3600;
 }
 
-function visitLocalHourSpanOnDay(
+function slotInstantMs(dateKey: string, hour: number, timeZone: string): number {
+  const iso = parseTenantDatetimeLocalToIso(
+    `${dateKey}T${String(hour).padStart(2, '0')}:00`,
+    timeZone,
+  );
+  return iso ? new Date(iso).getTime() : Number.NaN;
+}
+
+function visitHourSpanOnDay(
   visit: { starts_at: string; ends_at: string },
   dateKey: string,
+  timeZone: string,
 ): { startHour: number; endHourExclusive: number } | null {
-  const { dayStart, dayEnd } = dayBounds(dateKey);
-  const vs = new Date(visit.starts_at).getTime();
-  const ve = new Date(visit.ends_at).getTime();
-  const clampedStart = Math.max(vs, dayStart.getTime());
-  const clampedEnd = Math.min(ve, dayEnd.getTime());
-  if (clampedEnd <= clampedStart) return null;
+  if (!visitTouchesCalendarDayInTimeZone(visit, dateKey, timeZone)) return null;
 
-  const start = new Date(clampedStart);
-  const end = new Date(clampedEnd);
-  const startHour = start.getHours() + start.getMinutes() / 60;
-  const endHour = end.getHours() + end.getMinutes() / 60;
+  const startKey = calendarDateKeyInTimeZone(timeZone, new Date(visit.starts_at));
+  const endKey = calendarDateKeyInTimeZone(timeZone, new Date(visit.ends_at));
+
+  const startHour = startKey === dateKey ? fractionalHourInTimeZone(visit.starts_at, timeZone) : 0;
+  const endHour = endKey === dateKey ? fractionalHourInTimeZone(visit.ends_at, timeZone) : 24;
   const endHourExclusive = Math.min(24, Math.max(startHour + 0.25, Math.ceil(endHour)));
+
+  if (endHourExclusive <= startHour) return null;
 
   return { startHour, endHourExclusive };
 }
@@ -69,9 +91,10 @@ function visitLocalHourSpanOnDay(
 export function resolveTimelineWindow(
   dateKey: string,
   visits: Array<{ starts_at: string; ends_at: string }>,
+  timeZone: string,
 ): TimelineWindow {
   const spans = visits
-    .map((visit) => visitLocalHourSpanOnDay(visit, dateKey))
+    .map((visit) => visitHourSpanOnDay(visit, dateKey, timeZone))
     .filter((span): span is NonNullable<typeof span> => span != null);
 
   if (spans.length === 0) {
@@ -97,48 +120,52 @@ export function resolveTimelineWindow(
   return { startHour, endHour };
 }
 
-export function layoutVisitOnLocalDay(
+export function layoutVisitOnCalendarDay(
   visit: { starts_at: string; ends_at: string },
   dateKey: string,
+  timeZone: string,
   window: TimelineWindow = DEFAULT_TIMELINE_WINDOW,
 ): { topPct: number; heightPct: number; visible: boolean } {
-  const { slotStart, slotEnd } = slotBounds(dateKey, window);
-  const totalMs = slotEnd.getTime() - slotStart.getTime();
-  if (totalMs <= 0) return { topPct: 0, heightPct: 0, visible: false };
+  const slotStartMs = slotInstantMs(dateKey, window.startHour, timeZone);
+  const slotEndMs = slotInstantMs(dateKey, window.endHour, timeZone);
+  const totalMs = slotEndMs - slotStartMs;
+  if (!Number.isFinite(totalMs) || totalMs <= 0) {
+    return { topPct: 0, heightPct: 0, visible: false };
+  }
 
   const vs = new Date(visit.starts_at).getTime();
   const ve = new Date(visit.ends_at).getTime();
-  const clampedStart = Math.max(vs, slotStart.getTime());
-  const clampedEnd = Math.min(ve, slotEnd.getTime());
+  const clampedStart = Math.max(vs, slotStartMs);
+  const clampedEnd = Math.min(ve, slotEndMs);
   if (clampedEnd <= clampedStart) return { topPct: 0, heightPct: 0, visible: false };
 
-  const topPct = ((clampedStart - slotStart.getTime()) / totalMs) * 100;
+  const topPct = ((clampedStart - slotStartMs) / totalMs) * 100;
   const heightPct = Math.max(((clampedEnd - clampedStart) / totalMs) * 100, 2.2);
   return { topPct, heightPct, visible: true };
 }
 
-export function visitOverlapsLocalDay(
+export function visitOverlapsCalendarDay(
   visit: { starts_at: string; ends_at: string },
   dateKey: string,
+  timeZone: string,
 ): boolean {
-  const { dayStart, dayEnd } = dayBounds(dateKey);
-  const vs = new Date(visit.starts_at).getTime();
-  const ve = new Date(visit.ends_at).getTime();
-  return vs <= dayEnd.getTime() && ve >= dayStart.getTime();
+  return visitTouchesCalendarDayInTimeZone(visit, dateKey, timeZone);
 }
 
 export function currentTimeLinePct(
   dateKey: string,
+  timeZone: string,
   window: TimelineWindow = DEFAULT_TIMELINE_WINDOW,
 ): number | null {
-  const now = new Date();
-  if (formatLocalYmd(now) !== dateKey) return null;
+  if (calendarDateKeyNow(timeZone) !== dateKey) return null;
 
-  const { slotStart, slotEnd } = slotBounds(dateKey, window);
-  const t = now.getTime();
-  if (t < slotStart.getTime() || t > slotEnd.getTime()) return null;
-  const totalMs = slotEnd.getTime() - slotStart.getTime();
-  return ((t - slotStart.getTime()) / totalMs) * 100;
+  const slotStartMs = slotInstantMs(dateKey, window.startHour, timeZone);
+  const slotEndMs = slotInstantMs(dateKey, window.endHour, timeZone);
+  const t = Date.now();
+  if (t < slotStartMs || t > slotEndMs) return null;
+
+  const totalMs = slotEndMs - slotStartMs;
+  return ((t - slotStartMs) / totalMs) * 100;
 }
 
 /** Minimum timeline % we want free when expanding in a direction. */
@@ -173,9 +200,6 @@ export function hourLabels(window: TimelineWindow = DEFAULT_TIMELINE_WINDOW): {
   return out;
 }
 
-export function formatVisitTimeRange(startsAt: string, endsAt: string): string {
-  const s = new Date(startsAt);
-  const e = new Date(endsAt);
-  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
-  return `${s.toLocaleString(undefined, opts)} – ${e.toLocaleString(undefined, opts)}`;
+export function formatVisitTimeRange(startsAt: string, endsAt: string, timeZone: string): string {
+  return `${formatVisitTime(startsAt, timeZone)} – ${formatVisitTime(endsAt, timeZone)}`;
 }
