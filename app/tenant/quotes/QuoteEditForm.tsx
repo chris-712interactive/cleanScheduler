@@ -12,6 +12,7 @@ import type { CustomerPropertyGroup } from './QuoteCreateForm';
 import { QUOTE_STATUS_LABEL, TENANT_QUOTE_STATUS_EDIT_OPTIONS } from '@/lib/tenant/quoteLabels';
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditorLoadable';
 import { QuoteHeaderPricingFields } from './QuoteHeaderPricingFields';
+import { QuotePromotionFields } from './QuotePromotionFields';
 import styles from './quotes.module.scss';
 
 export type { QuoteEditSnapshot, QuoteEditLineItem } from '@/lib/tenant/loadQuoteEditSnapshot';
@@ -33,6 +34,7 @@ export function QuoteEditForm({
   jobTypeCatalog = [],
   quotePropertyKind = null,
   autoScheduleEnabled = false,
+  promotionsEnabled = false,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -43,6 +45,7 @@ export function QuoteEditForm({
   jobTypeCatalog?: JobTypeCatalogEntry[];
   quotePropertyKind?: CustomerPropertyKind | null;
   autoScheduleEnabled?: boolean;
+  promotionsEnabled?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [rowsRevision, setRowsRevision] = useState(0);
@@ -196,6 +199,15 @@ export function QuoteEditForm({
       />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />
+
+      <QuotePromotionFields
+        promotionsEnabled={promotionsEnabled}
+        walletBalanceCents={snapshot.walletBalanceCents}
+        defaults={{
+          promoCode: snapshot.promoCode,
+          walletCreditDollars: snapshot.walletCreditDollars,
+        }}
+      />
 
       <label className={styles.label} htmlFor="edit_quote_amount">
         Amount (USD, optional if lines above)
