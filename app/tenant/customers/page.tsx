@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -7,10 +7,6 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
-  buildCustomerDirectorySearchOrFilter,
-  customerDirectoryStatusFromQuery,
-  customerIdentitySearchOrClause,
-  customerPropertySearchOrClause,
   parseCustomerDirectoryQuery,
   parseCustomerDirectoryStatus,
   type CustomerDirectoryStatusParam,
@@ -20,9 +16,12 @@ import {
   CUSTOMER_DIRECTORY_PAGE_SIZE,
   parseCustomerDirectoryPage,
 } from '@/lib/tenant/customerDirectoryPaging';
+import { fetchCustomerDirectoryPage } from '@/lib/tenant/customerDirectoryFetch';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { primaryCustomerAddressLine } from '@/lib/tenant/customerListDisplay';
 import { CustomerDirectoryPagination } from './CustomerDirectoryPagination';
+import { CustomerDirectorySearchForm } from './CustomerDirectorySearchForm';
+import { CustomersDirectoryCards } from './CustomersDirectoryCards';
 import { CustomersDirectoryTable, type CustomerDirectoryRow } from './CustomersDirectoryTable';
 import styles from './customers.module.scss';
 
@@ -32,7 +31,12 @@ interface PageProps {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }
 
-type CustomerListRow = {
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function toDirectoryRow(row: {
   id: string;
   status: string;
   customer_identities: {
@@ -52,14 +56,7 @@ type CustomerListRow = {
         is_primary: boolean;
       }[]
     | null;
-};
-
-function firstParam(value: string | string[] | undefined): string | undefined {
-  if (!value) return undefined;
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function toDirectoryRow(row: CustomerListRow): CustomerDirectoryRow {
+}): CustomerDirectoryRow {
   const identity = row.customer_identities;
   const name = identity ? formatCustomerDisplayName(identity) : 'Unnamed';
 
@@ -73,142 +70,78 @@ function toDirectoryRow(row: CustomerListRow): CustomerDirectoryRow {
   };
 }
 
+const TAB_LINKS: { key: CustomerDirectoryStatusParam; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'inactive', label: 'Inactive' },
+];
+
+function tabCountFor(
+  key: CustomerDirectoryStatusParam,
+  counts: { all: number; active: number; inactive: number },
+): number {
+  if (key === 'active') return counts.active;
+  if (key === 'inactive') return counts.inactive;
+  return counts.all;
+}
+
 export default async function TenantCustomersPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const q = parseCustomerDirectoryQuery(sp?.q);
   const statusFilter = parseCustomerDirectoryStatus(sp?.status);
-  const currentPage = parseCustomerDirectoryPage(firstParam(sp?.page));
+  const requestedPage = parseCustomerDirectoryPage(firstParam(sp?.page));
   const filtersActive = q.length > 0 || statusFilter !== 'all';
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/customers');
 
   const supabase = createTenantPortalDbClient();
+  const result = await fetchCustomerDirectoryPage(supabase, {
+    tenantId: membership.tenantId,
+    q,
+    statusFilter,
+    page: requestedPage,
+  });
 
-  let searchOrFilter: string | null = null;
-  if (q.length > 0) {
-    const statusFromQuery = customerDirectoryStatusFromQuery(q);
-
-    const [identResult, propertyResult, statusResult] = await Promise.all([
-      supabase.from('customer_identities').select('id').or(customerIdentitySearchOrClause(q)),
-      supabase
-        .from('tenant_customer_properties')
-        .select('customer_id')
-        .eq('tenant_id', membership.tenantId)
-        .or(customerPropertySearchOrClause(q)),
-      statusFromQuery
-        ? supabase
-            .from('customers')
-            .select('id')
-            .eq('tenant_id', membership.tenantId)
-            .eq('status', statusFromQuery)
-        : Promise.resolve({ data: null, error: null }),
-    ]);
-
-    const searchError = identResult.error ?? propertyResult.error ?? statusResult.error ?? null;
-
-    if (searchError) {
-      return (
-        <>
-          <PageHeader
-            title="Customers"
-            titleHint="Residential and commercial accounts you serve under this workspace."
-            actions={
-              <Button
-                variant="primary"
-                as="a"
-                href="/customers/new"
-                iconLeft={<Plus size={18} aria-hidden />}
-              >
-                Add customer
-              </Button>
-            }
-          />
-          <div className={styles.errorPanel}>
-            <p className={styles.empty} role="alert">
-              Search error ({searchError.message}).
-            </p>
-          </div>
-        </>
-      );
-    }
-
-    const identityIds = identResult.data?.map((row) => row.id) ?? [];
-    const customerIds = [
-      ...new Set([
-        ...(propertyResult.data?.map((row) => row.customer_id) ?? []),
-        ...(statusResult.data?.map((row) => row.id) ?? []),
-      ]),
-    ];
-
-    searchOrFilter = buildCustomerDirectorySearchOrFilter({ identityIds, customerIds });
+  if (!result.ok) {
+    return (
+      <>
+        <PageHeader
+          title="Customers"
+          titleHint="Residential and commercial accounts you serve under this workspace."
+          actions={
+            <Button
+              variant="primary"
+              as="a"
+              href="/customers/new"
+              iconLeft={<Plus size={18} aria-hidden />}
+            >
+              Add customer
+            </Button>
+          }
+        />
+        <div className={styles.errorPanel}>
+          <p className={styles.empty} role="alert">
+            {result.phase === 'search' ? 'Search error' : 'Could not load customers'} (
+            {result.message}).
+          </p>
+        </div>
+      </>
+    );
   }
 
-  let listError: { message: string } | null = null;
-  let customers: CustomerListRow[] = [];
-
-  if (q.length > 0 && searchOrFilter === null) {
-    customers = [];
-  } else {
-    let custQuery = supabase
-      .from('customers')
-      .select(
-        `
-      id,
-      status,
-      customer_identities (
-        email,
-        first_name,
-        last_name,
-        full_name,
-        phone
-      ),
-      tenant_customer_properties (
-        address_line1,
-        address_line2,
-        city,
-        state,
-        postal_code,
-        is_primary
-      )
-    `,
-      )
-      .eq('tenant_id', membership.tenantId)
-      .order('created_at', { ascending: false });
-
-    if (statusFilter !== 'all') {
-      custQuery = custQuery.eq('status', statusFilter);
-    }
-    if (searchOrFilter) {
-      custQuery = custQuery.or(searchOrFilter);
-    }
-
-    const { data: rows, error } = await custQuery.overrideTypes<
-      CustomerListRow[],
-      { merge: false }
-    >();
-    listError = error ? { message: error.message } : null;
-    customers = rows ?? [];
-  }
-
-  const directoryRows = customers.map(toDirectoryRow);
-  const totalCount = directoryRows.length;
+  const { rows, totalCount, statusCounts, page: safePage } = result;
   const totalPages = Math.max(1, Math.ceil(totalCount / CUSTOMER_DIRECTORY_PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
-  const start = (safePage - 1) * CUSTOMER_DIRECTORY_PAGE_SIZE;
-  const pageRows = directoryRows.slice(start, start + CUSTOMER_DIRECTORY_PAGE_SIZE);
-
-  const tabLinks: { key: CustomerDirectoryStatusParam; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'active', label: 'Active' },
-    { key: 'inactive', label: 'Inactive' },
-  ];
+  const start = totalCount === 0 ? 0 : (safePage - 1) * CUSTOMER_DIRECTORY_PAGE_SIZE;
+  const directoryRows = rows.map(toDirectoryRow);
+  const pageRows = directoryRows;
+  const showEmptyWorkspace = statusCounts.all === 0 && !filtersActive;
 
   return (
     <>
       <PageHeader
         title="Customers"
-        titleHint="Residential and commercial accounts you serve under this workspace."
+        titleHint="Search, filter, and open any account. Works whether you have a handful or thousands."
         actions={
           <Button
             variant="primary"
@@ -221,27 +154,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
         }
       />
 
-      <nav className={styles.directoryTabs} aria-label="Customer filters">
-        {tabLinks.map((tab) => (
-          <Link
-            key={tab.key}
-            href={`/customers${buildCustomerDirectorySearchParams({ q, status: tab.key })}`}
-            className={styles.directoryTab}
-            data-active={statusFilter === tab.key || undefined}
-            aria-current={statusFilter === tab.key ? 'page' : undefined}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
-
-      {listError ? (
-        <div className={styles.errorPanel}>
-          <p className={styles.empty} role="alert">
-            Could not load customers ({listError.message}).
-          </p>
-        </div>
-      ) : totalCount === 0 && !filtersActive ? (
+      {showEmptyWorkspace ? (
         <EmptyState
           title="No customers yet"
           description="Add your first customer to start scheduling, quoting, and billing."
@@ -253,31 +166,23 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
         />
       ) : (
         <div className={styles.directoryPanel}>
-          <form
-            method="get"
-            className={styles.searchForm}
-            aria-label="Search customers"
-            role="search"
-          >
-            {statusFilter !== 'all' ? (
-              <input type="hidden" name="status" value={statusFilter} />
-            ) : null}
-            <label className={styles.searchLabel} htmlFor="customer_directory_q">
-              Search customers
-            </label>
-            <div className={styles.searchField}>
-              <Search size={18} className={styles.searchIcon} aria-hidden />
-              <input
-                id="customer_directory_q"
-                name="q"
-                type="search"
-                className={styles.searchInput}
-                placeholder="Search customers..."
-                defaultValue={q}
-                autoComplete="off"
-              />
-            </div>
-          </form>
+          <div className={styles.panelToolbar}>
+            <CustomerDirectorySearchForm q={q} status={statusFilter} />
+            <nav className={styles.panelTabs} aria-label="Customer filters">
+              {TAB_LINKS.map((tab) => (
+                <Link
+                  key={tab.key}
+                  href={`/customers${buildCustomerDirectorySearchParams({ q, status: tab.key })}`}
+                  className={styles.panelTab}
+                  data-active={statusFilter === tab.key || undefined}
+                  aria-current={statusFilter === tab.key ? 'page' : undefined}
+                >
+                  {tab.label}
+                  <span className={styles.panelTabCount}>{tabCountFor(tab.key, statusCounts)}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
 
           {totalCount === 0 ? (
             <div className={styles.emptyPanel}>
@@ -294,6 +199,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
           ) : (
             <>
               <CustomersDirectoryTable rows={pageRows} />
+              <CustomersDirectoryCards rows={pageRows} />
               <CustomerDirectoryPagination
                 currentPage={safePage}
                 totalPages={totalPages}
