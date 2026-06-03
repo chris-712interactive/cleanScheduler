@@ -20,6 +20,8 @@ import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { captureReferralFromRequest } from '@/lib/referrals/referralCookie';
+import { loadCustomerWalletSummariesForLinks } from '@/lib/promotions/loadCustomerWalletPortal';
+import { CustomerWalletBalanceCard } from './CustomerWalletBalanceCard';
 import {
   formatNextAppointmentWhen,
   formatUpcomingVisitDate,
@@ -245,6 +247,7 @@ export default async function CustomerHomePage({
     : 0;
 
   const pendingRescheduleVisitIds = await getCustomerPendingRescheduleVisitIds(ctx.customerIds);
+  const walletSummaries = await loadCustomerWalletSummariesForLinks(admin, ctx.links);
 
   return (
     <div className={styles.dashboardPage}>
@@ -338,6 +341,8 @@ export default async function CustomerHomePage({
               </div>
             </section>
           ) : null}
+
+          <CustomerWalletBalanceCard wallets={walletSummaries} />
 
           {pendingQuote ? (
             <section className={`${styles.card} ${styles.quoteAwaitingCard}`}>

@@ -8,7 +8,9 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { captureReferralFromRequest } from '@/lib/referrals/referralCookie';
 import { loadCustomerReferralPortalView } from '@/lib/referrals/loadCustomerReferralPortal';
+import { loadCustomerWalletPortalView } from '@/lib/promotions/loadCustomerWalletPortal';
 import { CustomerReferralsClient } from './CustomerReferralsClient';
+import { CustomerWalletActivityList } from '../CustomerWalletActivityList';
 import styles from './referrals.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -81,6 +83,36 @@ export default async function CustomerReferralsPage({ searchParams }: PageProps)
     displayName: formatCustomerDisplayName(identity ?? {}),
   });
 
+  const wallet = await loadCustomerWalletPortalView(admin, link, { transactionLimit: 5 });
+
+  if (!view && !wallet) {
+    return (
+      <>
+        <PageHeader
+          title="Referrals"
+          description="Share your provider with friends and earn rewards."
+        />
+        <p className={styles.emptyState}>
+          {link.tenantName} has not enabled a customer referral program yet.
+        </p>
+      </>
+    );
+  }
+
+  if (!view && wallet) {
+    return (
+      <>
+        <PageHeader
+          title="Account credit"
+          description={`Wallet credits from ${wallet.tenantName}.`}
+        />
+        <Stack gap={6}>
+          <CustomerWalletActivityList wallet={wallet} />
+        </Stack>
+      </>
+    );
+  }
+
   if (!view) {
     return (
       <>
@@ -102,6 +134,7 @@ export default async function CustomerReferralsPage({ searchParams }: PageProps)
         description={`Share ${view.tenantName} with friends and track your rewards.`}
       />
       <Stack gap={6}>
+        {wallet ? <CustomerWalletActivityList wallet={wallet} /> : null}
         <CustomerReferralsClient view={view} />
       </Stack>
     </>

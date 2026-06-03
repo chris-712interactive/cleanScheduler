@@ -20,6 +20,8 @@ import {
 } from '@/lib/tenant/quoteStructuredFields';
 import { parseAcceptanceSnapshotLines } from '@/lib/customer/quoteAcceptanceSnapshot';
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
+import { customerPromotionsEnabledForTenant } from '@/lib/promotions/loadCustomerWalletPortal';
+import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
 import { CustomerQuoteReview } from '../CustomerQuoteReview';
 import type { CustomerQuoteLineView } from '../CustomerQuoteLineCards';
 import type { CustomerQuoteVersionRow } from '../CustomerQuoteVersionHistory';
@@ -68,6 +70,8 @@ type QuoteRow = Pick<
   | 'superseded_by_quote_id'
   | 'accepted_at'
   | 'is_locked'
+  | 'applied_promo_code'
+  | 'wallet_credit_applied_cents'
 >;
 
 interface PageProps {
@@ -172,6 +176,8 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
       superseded_by_quote_id,
       accepted_at,
       is_locked,
+      applied_promo_code,
+      wallet_credit_applied_cents,
       tenants:tenants!inner ( name ),
       tenant_customer_properties (
         label,
@@ -283,6 +289,19 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
     (acceptanceSnapshot?.captured_at as string | undefined) ?? (row.accepted_at as string | null);
 
   const ops = await loadTenantOperationalSettings(admin, row.tenant_id as string);
+  const promotionsEnabled = await customerPromotionsEnabledForTenant(
+    admin,
+    row.tenant_id as string,
+  );
+  const walletBalanceCents = promotionsEnabled
+    ? await getCustomerWalletBalanceCents(admin, row.tenant_id as string, customerId)
+    : 0;
+  const walletCreditAppliedCents = row.wallet_credit_applied_cents ?? 0;
+  const promotionDefaults = {
+    promoCode: row.applied_promo_code ?? '',
+    walletCreditDollars:
+      walletCreditAppliedCents > 0 ? (walletCreditAppliedCents / 100).toFixed(2) : '',
+  };
 
   return (
     <>
@@ -316,6 +335,11 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
         versionNumber={row.version_number}
         userEmail={portalAuth.user.email?.trim() || null}
         allowedPaymentMethods={ops.allowedCustomerPaymentMethods}
+        promotionsEnabled={promotionsEnabled && canRespond}
+        walletBalanceCents={walletBalanceCents}
+        appliedPromoCode={row.applied_promo_code}
+        walletCreditAppliedCents={walletCreditAppliedCents}
+        promotionDefaults={promotionDefaults}
       />
     </>
   );

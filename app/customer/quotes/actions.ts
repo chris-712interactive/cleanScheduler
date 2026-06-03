@@ -14,6 +14,7 @@ import {
   resolveRequiredPreferredPaymentMethod,
 } from '@/lib/tenant/loadTenantOperationalSettings';
 import { applyQuoteAcceptanceFollowUp } from '@/lib/tenant/quoteAcceptanceFollowUp';
+import { applyCustomerQuotePromotions } from '@/lib/promotions/applyCustomerQuotePromotions';
 import { finalizeQuotePromotionsOnAccept } from '@/lib/promotions/quotePromotions';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -25,6 +26,11 @@ export type CustomerQuoteResponseState = {
   quoteResponse?: CustomerQuoteResponsePatch;
 };
 
+export type CustomerQuotePromotionActionState = {
+  error?: string;
+  success?: boolean;
+};
+
 function clientIpFromHeaders(h: Headers): string | null {
   const fwd = h.get('x-forwarded-for');
   if (fwd) {
@@ -34,6 +40,60 @@ function clientIpFromHeaders(h: Headers): string | null {
   const real = h.get('x-real-ip')?.trim();
   if (real) return real.slice(0, 128);
   return null;
+}
+
+export async function applyCustomerQuotePromotionsAction(
+  _prev: CustomerQuotePromotionActionState,
+  formData: FormData,
+): Promise<CustomerQuotePromotionActionState> {
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
+  if (!quoteId) {
+    return { error: 'Invalid request.' };
+  }
+
+  const auth = await requirePortalAccess('customer', `/quotes/${quoteId}`);
+  const ctx = await getCustomerPortalContext(auth.user.id);
+  if (!ctx) {
+    return { error: 'Account not found.' };
+  }
+
+  const admin = createAdminClient();
+  const { data: quote, error } = await admin
+    .from('tenant_quotes')
+    .select('id, tenant_id, customer_id, status, is_locked')
+    .eq('id', quoteId)
+    .maybeSingle();
+
+  if (error || !quote?.customer_id) {
+    return { error: 'Quote not found.' };
+  }
+
+  if (!ctx.customerIds.includes(quote.customer_id)) {
+    return { error: 'Quote not found.' };
+  }
+
+  if (quote.status !== 'sent' || quote.is_locked) {
+    return { error: 'This quote is not open for promotion changes.' };
+  }
+
+  const result = await applyCustomerQuotePromotions(admin, {
+    tenantId: quote.tenant_id as string,
+    quoteId,
+    customerId: quote.customer_id as string,
+    rawPromoCode: String(formData.get('promo_code') ?? ''),
+    rawWalletCreditDollars: String(formData.get('wallet_credit_dollars') ?? ''),
+  });
+
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  revalidatePath(`/quotes/${quoteId}`, 'page');
+  revalidatePath('/quotes', 'page');
+  revalidatePath('/', 'page');
+  revalidatePath('/referrals', 'page');
+
+  return { success: true };
 }
 
 export async function respondToCustomerQuote(

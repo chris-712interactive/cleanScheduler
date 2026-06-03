@@ -770,3 +770,43 @@
     display: none !important;
   }
 }
+
+.promotionPanel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.promotionPanelTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.promotionPanelHint,
+.promotionFieldHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.promotionForm {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.promotionLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.promotionSuccess {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+}
