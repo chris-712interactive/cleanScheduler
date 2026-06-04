@@ -33,13 +33,20 @@ export type CustomerPortalInviteResult =
   | { ok: true; alreadyLinked: true; email: string }
   | { ok: false; error: string };
 
-export function buildCompleteInvitePath(token: string, returnPath?: string | null): string {
+export function buildCompleteInvitePath(
+  token: string,
+  returnPath?: string | null,
+  referralCode?: string | null,
+): string {
   const next = returnPath ? sanitizeAuthenticationNext(returnPath) : '/';
-  const base = `/complete-invite?token=${token}`;
-  if (next && next !== '/') {
-    return `${base}&next=${encodeURIComponent(next)}`;
+  const params = new URLSearchParams({ token });
+  if (referralCode?.trim()) {
+    params.set('ref', referralCode.trim());
   }
-  return base;
+  if (next && next !== '/') {
+    params.set('next', next);
+  }
+  return `/complete-invite?${params.toString()}`;
 }
 
 function buildAcceptUrl(portalOrigin: string, token: string, returnPath?: string | null): string {

@@ -8,6 +8,7 @@ import {
   loadTenantReferralProgram,
 } from '@/lib/referrals/loadTenantReferralProgram';
 import { buildReferralShareCopy } from '@/lib/referrals/referralProgramForm';
+import { buildReferralJoinPath } from '@/lib/referrals/loadReferralJoinLanding';
 import { formatPromotionValue } from '@/lib/promotions/promotionTypes';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
 
@@ -59,7 +60,7 @@ export async function loadCustomerReferralPortalView(
   const shareUrl = await customerPortalUrlForTenant(
     admin,
     input.link.tenantId,
-    `/?ref=${encodeURIComponent(code)}`,
+    buildReferralJoinPath(code),
   );
 
   let referrerRewardLabel: string | null = program.referrer_promotion_name;
