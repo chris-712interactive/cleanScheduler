@@ -19,7 +19,9 @@ import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { RecurringBillingPanel } from '../RecurringBillingPanel';
 import { CustomerActivityPanel } from '../CustomerActivityPanel';
 import { CustomerWalletPanel } from '../CustomerWalletPanel';
+import { CustomerReferralAttributionPanel } from '../CustomerReferralAttributionPanel';
 import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
+import { loadCustomerReferralAttributionView } from '@/lib/referrals/loadCustomerReferralAttribution';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import styles from '../customers.module.scss';
 
@@ -51,10 +53,14 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const customerPortalEnabled = isFeatureEnabled(tier, 'customerPortal');
   const promotionsEnabled = isFeatureEnabled(tier, 'customerPromotions');
+  const referralsEnabled = isFeatureEnabled(tier, 'customerReferralProgram');
   const canEditPromotions = canManageTeamInvitesAndRoles(membership.role);
   const walletBalanceCents = promotionsEnabled
     ? await getCustomerWalletBalanceCents(admin, membership.tenantId, id)
     : 0;
+  const referralAttribution = referralsEnabled
+    ? await loadCustomerReferralAttributionView(admin, membership.tenantId, id)
+    : { asReferee: null, asReferrer: { pendingCount: 0, qualifiedCount: 0 } };
 
   const supabase = createTenantPortalDbClient();
   const { data: row, error } = await supabase
@@ -208,6 +214,18 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
               customerId={customer.id}
               balanceCents={walletBalanceCents}
               canEdit={canEditPromotions}
+            />
+          </Card>
+        ) : null}
+
+        {referralsEnabled ? (
+          <Card title="Referrals" description="Referral attribution and rewards for this customer.">
+            <CustomerReferralAttributionPanel
+              tenantSlug={membership.tenantSlug}
+              customerId={customer.id}
+              canEdit={canEditPromotions}
+              asReferee={referralAttribution.asReferee}
+              asReferrer={referralAttribution.asReferrer}
             />
           </Card>
         ) : null}

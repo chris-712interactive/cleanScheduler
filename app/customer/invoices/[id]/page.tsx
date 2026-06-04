@@ -5,9 +5,16 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { createCustomerInvoicePayCheckoutSessionAction } from '@/app/customer/invoices/invoicePayCheckoutActions';
+import { CustomerInvoicePromotionPanel } from '@/app/customer/invoices/CustomerInvoicePromotionPanel';
+import { customerPromotionsEnabledForTenant } from '@/lib/promotions/loadCustomerWalletPortal';
+import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
+import {
+  invoiceCollectibleCents,
+  invoicePromotionDefaults,
+} from '@/lib/promotions/applyCustomerInvoicePromotions';
 import styles from '../invoices.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +33,9 @@ type InvoiceDetailRow = {
   hosted_invoice_url: string | null;
   invoice_pdf_url: string | null;
   source: string | null;
+  applied_promo_code: string | null;
+  promo_discount_cents: number;
+  wallet_credit_applied_cents: number;
   tenants: { name: string; stripe_connect_status: string } | null;
 };
 
@@ -73,6 +83,9 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
       hosted_invoice_url,
       invoice_pdf_url,
       source,
+      applied_promo_code,
+      promo_discount_cents,
+      wallet_credit_applied_cents,
       tenants:tenants!inner ( name, stripe_connect_status )
     `,
     )
@@ -85,9 +98,24 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
 
   const tenants = row.tenants;
   const connectComplete = tenants?.stripe_connect_status === 'complete';
-  const remaining = row.amount_cents - row.amount_paid_cents;
-  const canPayOnline = connectComplete && remaining > 0 && row.status !== 'void';
+  const unpaid = row.amount_cents - row.amount_paid_cents;
+  const promoDiscount = row.promo_discount_cents ?? 0;
+  const walletCredit = row.wallet_credit_applied_cents ?? 0;
+  const collectible = invoiceCollectibleCents(row);
+  const canPayOnline = connectComplete && collectible > 0 && row.status !== 'void';
   const stripeHostedPay = Boolean(row.hosted_invoice_url?.trim());
+  const showPromotions =
+    !stripeHostedPay && row.status !== 'void' && row.status !== 'paid' && unpaid > 0;
+
+  const admin = createAdminClient();
+  const promotionsEnabled = showPromotions
+    ? await customerPromotionsEnabledForTenant(admin, row.tenant_id)
+    : false;
+  const walletBalanceCents =
+    promotionsEnabled && showPromotions
+      ? await getCustomerWalletBalanceCents(admin, row.tenant_id, row.customer_id)
+      : 0;
+  const promotionDefaults = invoicePromotionDefaults(row);
 
   const checkoutErr = firstParam(sp.error);
   const checkoutOk = firstParam(sp.checkout) === 'success';
@@ -128,13 +156,40 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
 
       <Card title="Balance">
         <p className={styles.meta}>
-          Total {formatUsdFromCents(row.amount_cents)} · Paid{' '}
-          {formatUsdFromCents(row.amount_paid_cents)} · Balance{' '}
-          <strong>{formatUsdFromCents(Math.max(0, remaining))}</strong>
+          Invoice total {formatUsdFromCents(row.amount_cents)} · Paid{' '}
+          {formatUsdFromCents(row.amount_paid_cents)}
+        </p>
+        {promoDiscount > 0 || walletCredit > 0 ? (
+          <ul className={styles.balanceBreakdown}>
+            {promoDiscount > 0 ? (
+              <li>
+                Promo discount
+                {row.applied_promo_code ? ` (${row.applied_promo_code})` : ''}: −
+                {formatUsdFromCents(promoDiscount)}
+              </li>
+            ) : null}
+            {walletCredit > 0 ? (
+              <li>Account credit applied: −{formatUsdFromCents(walletCredit)}</li>
+            ) : null}
+          </ul>
+        ) : null}
+        <p className={styles.meta}>
+          Balance due <strong>{formatUsdFromCents(Math.max(0, collectible))}</strong>
         </p>
         {row.due_date ? (
           <p className={styles.meta}>Due {new Date(String(row.due_date)).toLocaleDateString()}</p>
         ) : null}
+
+        {promotionsEnabled && showPromotions ? (
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <CustomerInvoicePromotionPanel
+              invoiceId={row.id}
+              walletBalanceCents={walletBalanceCents}
+              defaults={promotionDefaults}
+            />
+          </div>
+        ) : null}
+
         {stripeHostedPay ? (
           <div
             style={{
@@ -170,10 +225,10 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
           >
             <input type="hidden" name="invoice_id" value={row.id} />
             <Button type="submit" variant="primary">
-              Pay balance with card
+              Pay {formatUsdFromCents(collectible)} with card
             </Button>
           </form>
-        ) : remaining > 0 ? (
+        ) : collectible > 0 ? (
           <p className={styles.muted} style={{ marginTop: 'var(--space-3)' }}>
             Online card payment becomes available when this provider finishes Stripe Connect setup.
             You can pay them using the methods they accept outside the app.
