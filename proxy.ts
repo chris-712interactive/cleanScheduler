@@ -46,6 +46,7 @@ import {
 import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
 import { customerPortalJoinRedirectUrl } from '@/lib/portal/customerPortalOrigin';
 import { resolveActiveWhiteLabelCustomerPortal } from '@/lib/portal/resolveWhiteLabelCustomerPortal';
+import { applyReferralCookieToResponse } from '@/lib/referrals/referralCookie';
 import { debugPerfStart } from '@/lib/performance/debugPerf';
 
 export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
@@ -204,7 +205,9 @@ export async function proxy(request: NextRequest) {
 
     const onCustomerPortalHost = subdomain === 'my' || whiteLabelPortal != null;
     if (isJoinPath && !onCustomerPortalHost) {
-      return NextResponse.redirect(customerPortalJoinRedirectUrl(request.nextUrl, apex));
+      const redirect = NextResponse.redirect(customerPortalJoinRedirectUrl(request.nextUrl, apex));
+      applyReferralCookieToResponse(redirect, request.nextUrl.searchParams.get('ref'));
+      return redirect;
     }
 
     const baseClassification = whiteLabelPortal
@@ -251,6 +254,7 @@ export async function proxy(request: NextRequest) {
       redirectUrl.searchParams.set('ref', refParam);
       const redirect = NextResponse.redirect(redirectUrl);
       applyCookies(redirect, cookiesToSet);
+      applyReferralCookieToResponse(redirect, refParam);
       return redirect;
     }
 
@@ -322,6 +326,9 @@ export async function proxy(request: NextRequest) {
       },
     });
     applyCookies(rewrite, cookiesToSet);
+    if (onCustomerPortalHost && refParam) {
+      applyReferralCookieToResponse(rewrite, refParam);
+    }
     return rewrite;
   } finally {
     endProxy();

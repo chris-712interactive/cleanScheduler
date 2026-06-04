@@ -1,4 +1,6 @@
 import { cookies } from 'next/headers';
+import type { NextResponse } from 'next/server';
+import type { CookieOptions } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import {
@@ -10,17 +12,38 @@ import { normalizeReferralCode } from '@/lib/referrals/normalizeReferralCode';
 
 type Admin = SupabaseClient<Database>;
 
-const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+export const REFERRAL_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
-export async function setReferralCookie(code: string): Promise<void> {
-  const jar = await cookies();
-  jar.set(REFERRAL_COOKIE_NAME, normalizeReferralCode(code), {
+export function normalizedReferralCodeFromParam(raw: string | null | undefined): string | null {
+  const code = normalizeReferralCode(raw ?? '');
+  return code.length >= 4 ? code : null;
+}
+
+/** Cookie options for proxy redirects and server actions (not RSC render). */
+export function referralCookieWriteOptions(): CookieOptions {
+  return {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    maxAge: COOKIE_MAX_AGE_SECONDS,
+    maxAge: REFERRAL_COOKIE_MAX_AGE_SECONDS,
     path: '/',
-  });
+  };
+}
+
+export function applyReferralCookieToResponse(
+  response: NextResponse,
+  rawRef: string | null | undefined,
+): void {
+  const code = normalizedReferralCodeFromParam(rawRef);
+  if (!code) return;
+  response.cookies.set(REFERRAL_COOKIE_NAME, code, referralCookieWriteOptions());
+}
+
+export async function setReferralCookie(code: string): Promise<void> {
+  const normalized = normalizedReferralCodeFromParam(code);
+  if (!normalized) return;
+  const jar = await cookies();
+  jar.set(REFERRAL_COOKIE_NAME, normalized, referralCookieWriteOptions());
 }
 
 export async function readReferralCookie(): Promise<string | null> {
@@ -34,6 +57,7 @@ export async function clearReferralCookie(): Promise<void> {
   jar.delete(REFERRAL_COOKIE_NAME);
 }
 
+/** Records a referral touch in the database. Cookie is set in proxy middleware. */
 export async function captureReferralFromRequest(
   admin: Admin,
   input: {
@@ -44,9 +68,7 @@ export async function captureReferralFromRequest(
     tenantId?: string;
   },
 ): Promise<void> {
-  const captured = await captureReferralFromCodeString(admin, input);
-  if (!captured) return;
-  await setReferralCookie(captured.code);
+  await captureReferralFromCodeString(admin, input);
 }
 
 export async function applyStoredReferralAttribution(
@@ -55,9 +77,9 @@ export async function applyStoredReferralAttribution(
     tenantId: string;
     refereeCustomerId: string;
   },
-): Promise<void> {
+): Promise<{ applied: boolean; skipped: boolean }> {
   const code = await readReferralCookie();
-  if (!code) return;
+  if (!code) return { applied: false, skipped: false };
 
   const result = await attributeRefereeFromReferralCode(admin, {
     tenantId: input.tenantId,
@@ -65,7 +87,9 @@ export async function applyStoredReferralAttribution(
     rawReferralCode: code,
   });
 
-  if (result.ok || result.skipped) {
-    await clearReferralCookie();
+  if (result.ok) {
+    return { applied: true, skipped: false };
   }
+
+  return { applied: false, skipped: Boolean(result.skipped) };
 }
