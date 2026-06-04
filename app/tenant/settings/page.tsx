@@ -99,6 +99,12 @@ const HUB_GROUPS: HubGroup[] = [
         icon: Users,
       },
       {
+        href: '/referrals',
+        label: 'Referral activity',
+        description: 'Attributions, rewards issued, and CSV export (Business+).',
+        icon: Users,
+      },
+      {
         href: '/settings/integrations',
         label: 'Integrations',
         description: 'REST API keys and outbound webhooks (Pro).',
