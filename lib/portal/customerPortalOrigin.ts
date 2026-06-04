@@ -5,13 +5,34 @@ import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { Database } from '@/lib/supabase/database.types';
 
 function portalProto(host: string): 'http' | 'https' {
-  return host.includes('localhost') || host.includes('127.0.0.1') || host.startsWith('lvh.me')
+  const hostname = host.split(':')[0]!;
+  return hostname.includes('localhost') ||
+    hostname.includes('127.0.0.1') ||
+    hostname.endsWith('.lvh.me') ||
+    hostname === 'lvh.me'
     ? 'http'
     : 'https';
 }
 
 export function originForHostname(hostname: string): string {
   return `${portalProto(hostname)}://${hostname}`;
+}
+
+/** Hostname for the shared customer portal (`my.<apex>`). */
+export function unifiedCustomerPortalHostname(apexDomain: string): string {
+  const host = apexDomain.split(':')[0]!;
+  const port = apexDomain.includes(':') ? apexDomain.slice(apexDomain.indexOf(':')) : '';
+  return `my.${host}${port}`;
+}
+
+/** Redirect `/join` requests on marketing/tenant hosts to the customer portal origin. */
+export function customerPortalJoinRedirectUrl(requestUrl: URL, apexDomain: string): URL {
+  const target = new URL(requestUrl.toString());
+  const hostname = unifiedCustomerPortalHostname(apexDomain);
+  target.protocol = `${portalProto(hostname)}:`;
+  target.host = hostname;
+  target.pathname = '/join';
+  return target;
 }
 
 /** Browser origin for customer portal invites and links (white-label when active). */
