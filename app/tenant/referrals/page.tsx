@@ -9,7 +9,9 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
+import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { loadTenantReferralAudit } from '@/lib/referrals/loadTenantReferralAudit';
+import { ReferralAttributionVoidButton } from './ReferralAttributionVoidButton';
 import styles from './referrals.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +37,7 @@ export default async function TenantReferralsAuditPage({ searchParams }: PagePro
   const admin = createAdminClient();
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const referralsEnabled = isFeatureEnabled(tier, 'customerReferralProgram');
+  const canEdit = canManageTeamInvitesAndRoles(membership.role);
 
   const snapshot = referralsEnabled
     ? await loadTenantReferralAudit(admin, membership.tenantId)
@@ -112,6 +115,7 @@ export default async function TenantReferralsAuditPage({ searchParams }: PagePro
                         <th scope="col">Source</th>
                         <th scope="col">Attributed</th>
                         <th scope="col">Qualified</th>
+                        {canEdit ? <th scope="col">Actions</th> : null}
                       </tr>
                     </thead>
                     <tbody>
@@ -144,6 +148,16 @@ export default async function TenantReferralsAuditPage({ searchParams }: PagePro
                           <td>
                             {row.qualifiedAt ? new Date(row.qualifiedAt).toLocaleDateString() : '—'}
                           </td>
+                          {canEdit ? (
+                            <td>
+                              <ReferralAttributionVoidButton
+                                tenantSlug={membership.tenantSlug}
+                                attributionId={row.id}
+                                status={row.status}
+                                canEdit={canEdit}
+                              />
+                            </td>
+                          ) : null}
                         </tr>
                       ))}
                     </tbody>

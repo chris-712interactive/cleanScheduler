@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { emitTenantWebhook } from '@/lib/integrations/emitTenantWebhook';
 import { maybeQualifyReferralOnFirstPaidInvoice } from '@/lib/referrals/qualifyReferralOnFirstPaidInvoice';
+import { maybeClawbackReferralOnQualifyingInvoiceChange } from '@/lib/referrals/clawbackReferralRewards';
 import { finalizeInvoicePromotionsOnPayment } from '@/lib/promotions/finalizeInvoicePromotionsOnPayment';
 
 type Admin = SupabaseClient<Database>;
@@ -63,6 +64,11 @@ export async function afterInvoicePaymentRecorded(
   }
 
   await maybeEmitInvoicePaidWebhook(admin, params);
+  try {
+    await maybeClawbackReferralOnQualifyingInvoiceChange(admin, params);
+  } catch (error) {
+    console.error('[afterInvoicePaymentRecorded] referral clawback failed:', error, params);
+  }
   try {
     await maybeQualifyReferralOnFirstPaidInvoice(admin, params);
   } catch (error) {
