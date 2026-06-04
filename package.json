@@ -34,7 +34,7 @@
     "@radix-ui/react-visually-hidden": "^1.1.2",
     "@sentdm/sentdm": "^0.29.0",
     "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/supabase-js": "^2.107.0",
     "@types/pdfkit": "^0.17.6",
     "canvas-confetti": "^1.9.4",
     "jose": "^6.2.3",
