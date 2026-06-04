@@ -196,6 +196,9 @@ export async function proxy(request: NextRequest) {
     const isPublicCustomerInvite =
       (subdomain === 'my' || whiteLabelPortal) &&
       (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
+    const isPublicCustomerJoin =
+      (subdomain === 'my' || whiteLabelPortal) &&
+      (requestedPath === '/join' || requestedPath.startsWith('/join/'));
 
     const baseClassification = whiteLabelPortal
       ? { kind: 'customer' as const, tenantSlug: whiteLabelPortal.tenantSlug }
@@ -235,7 +238,17 @@ export async function proxy(request: NextRequest) {
     requestHeaders.set('x-tenant-pathname', requestedPath);
 
     const { userId, cookiesToSet } = await resolveUser(request);
-    const isProtectedPortal = kind !== 'marketing' && !isPublicCustomerInvite;
+    const refParam = request.nextUrl.searchParams.get('ref')?.trim();
+    if (!userId && (subdomain === 'my' || whiteLabelPortal) && requestedPath === '/' && refParam) {
+      const redirectUrl = new URL('/join', request.url);
+      redirectUrl.searchParams.set('ref', refParam);
+      const redirect = NextResponse.redirect(redirectUrl);
+      applyCookies(redirect, cookiesToSet);
+      return redirect;
+    }
+
+    const isProtectedPortal =
+      kind !== 'marketing' && !isPublicCustomerInvite && !isPublicCustomerJoin;
 
     let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
     let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> =
