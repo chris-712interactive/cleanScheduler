@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import {
+  sendReferralQualificationEmails,
+  type IssuedReferralRewards,
+} from '@/lib/email/sendReferralNotifications';
 import { issueReferralPromotionReward } from '@/lib/referrals/issueReferralPromotionReward';
 import { loadTenantReferralProgram } from '@/lib/referrals/loadTenantReferralProgram';
 import {
@@ -16,7 +20,7 @@ export async function maybeQualifyReferralOnFirstPaidInvoice(
 ): Promise<void> {
   const { data: invoice, error: invoiceError } = await admin
     .from('tenant_invoices')
-    .select('id, customer_id, status')
+    .select('id, customer_id, status, amount_cents')
     .eq('tenant_id', params.tenantId)
     .eq('id', params.invoiceId)
     .maybeSingle();
@@ -73,6 +77,7 @@ export async function maybeQualifyReferralOnFirstPaidInvoice(
     .update({
       status: 'qualified',
       qualified_at: qualifiedAt,
+      qualifying_invoice_id: params.invoiceId,
     })
     .eq('id', attribution.id)
     .eq('status', 'pending')
@@ -83,7 +88,12 @@ export async function maybeQualifyReferralOnFirstPaidInvoice(
     return;
   }
 
+  const rewardBaseCents = invoice.amount_cents;
   const { grantReferrer, grantReferee } = referralRewardGrantsForSideMode(program.reward_side_mode);
+  const issued: IssuedReferralRewards = {
+    referrerRewardCents: null,
+    refereeRewardCents: null,
+  };
 
   if (grantReferrer && program.referrer_promotion_id) {
     const result = await issueReferralPromotionReward(admin, {
@@ -92,8 +102,11 @@ export async function maybeQualifyReferralOnFirstPaidInvoice(
       customerId: attribution.referrer_customer_id,
       promotionId: program.referrer_promotion_id,
       recipient: 'referrer',
+      rewardBaseCents,
     });
-    if (!result.ok && !result.skipped) {
+    if (result.ok) {
+      issued.referrerRewardCents = result.amountCents;
+    } else if (!result.skipped) {
       console.error('[referral] referrer reward failed:', result.error, {
         tenantId: params.tenantId,
         attributionId: attribution.id,
@@ -108,12 +121,28 @@ export async function maybeQualifyReferralOnFirstPaidInvoice(
       customerId: attribution.referee_customer_id,
       promotionId: program.referee_promotion_id,
       recipient: 'referee',
+      rewardBaseCents,
     });
-    if (!result.ok && !result.skipped) {
+    if (result.ok) {
+      issued.refereeRewardCents = result.amountCents;
+    } else if (!result.skipped) {
       console.error('[referral] referee reward failed:', result.error, {
         tenantId: params.tenantId,
         attributionId: attribution.id,
       });
     }
+  }
+
+  try {
+    await sendReferralQualificationEmails(admin, {
+      tenantId: params.tenantId,
+      attributionId: attribution.id,
+      referrerCustomerId: attribution.referrer_customer_id,
+      refereeCustomerId: attribution.referee_customer_id,
+      referrerRewardCents: issued.referrerRewardCents,
+      refereeRewardCents: issued.refereeRewardCents,
+    });
+  } catch (error) {
+    console.error('[referral] qualification emails failed:', error, params);
   }
 }

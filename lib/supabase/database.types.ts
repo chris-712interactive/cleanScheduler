@@ -1755,6 +1755,7 @@ export type Database = {
           amount_applied_cents: number;
           promotion_redemption_id: string | null;
           wallet_transaction_id: string | null;
+          clawed_back_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -1767,6 +1768,7 @@ export type Database = {
           amount_applied_cents?: number;
           promotion_redemption_id?: string | null;
           wallet_transaction_id?: string | null;
+          clawed_back_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -1779,6 +1781,7 @@ export type Database = {
           amount_applied_cents?: number;
           promotion_redemption_id?: string | null;
           wallet_transaction_id?: string | null;
+          clawed_back_at?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -1796,6 +1799,7 @@ export type Database = {
           attributed_at: string;
           expires_at: string;
           qualified_at: string | null;
+          qualifying_invoice_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1811,6 +1815,7 @@ export type Database = {
           attributed_at?: string;
           expires_at: string;
           qualified_at?: string | null;
+          qualifying_invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1826,6 +1831,7 @@ export type Database = {
           attributed_at?: string;
           expires_at?: string;
           qualified_at?: string | null;
+          qualifying_invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

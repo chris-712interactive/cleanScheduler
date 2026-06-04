@@ -79,3 +79,51 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
+
+.sharePanel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.shareRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.qrImage,
+.qrPlaceholder {
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: #fff;
+}
+
+.qrPlaceholder {
+  background: var(--color-surface);
+}
+
+.shareCopy {
+  display: grid;
+  gap: var(--space-2);
+  flex: 1 1 12rem;
+}
+
+.shareHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.shareError {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-danger-600);
+}

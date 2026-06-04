@@ -41,10 +41,19 @@ describe('referralPromotionWalletAmountCents', () => {
     ).toBe(1000);
   });
 
-  it('returns null for percent promotions', () => {
+  it('returns null for percent promotions without a base amount', () => {
     expect(
       referralPromotionWalletAmountCents({ promotion_type: 'percent', promotion_value: 1000 }),
     ).toBeNull();
+  });
+
+  it('calculates percent rewards from qualifying invoice base', () => {
+    expect(
+      referralPromotionWalletAmountCents(
+        { promotion_type: 'percent', promotion_value: 1000 },
+        50_000,
+      ),
+    ).toBe(5000);
   });
 });
 

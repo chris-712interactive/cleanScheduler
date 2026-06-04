@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import type { CustomerReferralPortalView } from '@/lib/referrals/loadCustomerReferralPortal';
+import { CustomerReferralSharePanel } from './CustomerReferralSharePanel';
 import styles from './referrals.module.scss';
 
 export function CustomerReferralsClient({ view }: { view: CustomerReferralPortalView }) {
@@ -37,6 +38,8 @@ export function CustomerReferralsClient({ view }: { view: CustomerReferralPortal
           </Button>
         </div>
       </section>
+
+      <CustomerReferralSharePanel shareUrl={view.shareUrl} shareHeadline={view.shareHeadline} />
 
       <section className={styles.card}>
         <h3 className={styles.cardTitle}>Your code</h3>

@@ -10,11 +10,14 @@ export type IssueReferralRewardResult =
   | { ok: true; amountCents: number; skipped?: false }
   | { ok: false; error: string; skipped?: boolean };
 
-function walletAmountFromPromotion(promotion: {
-  promotion_type: Database['public']['Enums']['tenant_promotion_type'];
-  promotion_value: number;
-}): number | null {
-  return referralPromotionWalletAmountCents(promotion);
+function walletAmountFromPromotion(
+  promotion: {
+    promotion_type: Database['public']['Enums']['tenant_promotion_type'];
+    promotion_value: number;
+  },
+  rewardBaseCents?: number | null,
+): number | null {
+  return referralPromotionWalletAmountCents(promotion, rewardBaseCents);
 }
 
 export async function issueReferralPromotionReward(
@@ -25,6 +28,7 @@ export async function issueReferralPromotionReward(
     customerId: string;
     promotionId: string;
     recipient: ReferralRewardRecipient;
+    rewardBaseCents?: number | null;
   },
 ): Promise<IssueReferralRewardResult> {
   const { data: existingEvent } = await admin
@@ -50,11 +54,14 @@ export async function issueReferralPromotionReward(
     return { ok: false, error: 'Linked promotion is inactive.', skipped: true };
   }
 
-  const amountCents = walletAmountFromPromotion(promotion);
+  const amountCents = walletAmountFromPromotion(promotion, input.rewardBaseCents);
   if (amountCents == null || amountCents <= 0) {
     return {
       ok: false,
-      error: 'Only account credit and fixed-amount promotions can be issued as referral rewards.',
+      error:
+        promotion.promotion_type === 'percent'
+          ? 'Percent referral reward could not be calculated from the qualifying invoice.'
+          : 'Only account credit, fixed-amount, and percent promotions can be issued as referral rewards.',
       skipped: true,
     };
   }

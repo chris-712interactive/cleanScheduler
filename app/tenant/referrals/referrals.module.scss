@@ -86,3 +86,20 @@
     border-top: none;
   }
 }
+
+.voidForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.voidError {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger-600);
+}
+
+.voidOk {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+}
