@@ -12,6 +12,11 @@ import { buildTenantSettingsNavItem } from '@/lib/tenant/buildTenantSettingsNav'
 import { buildTenantNavItems } from '@/lib/tenant/buildTenantNavItems';
 import { needsSubscriptionPurchase } from '@/lib/billing/tenantSubscriptionAccess';
 import type { TenantBillingSnapshot } from '@/lib/portal/requestContext';
+import {
+  countPendingReferralAttributions,
+  tenantReferralsNavEnabled,
+} from '@/lib/referrals/tenantReferralsNav';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export interface TenantNavShellParams {
   tenantId: string;
@@ -31,7 +36,8 @@ export const loadTenantNavItemsForShell = cache(
     const subscriptionLocked = needsSubscriptionPurchase(billingSnapshot.subscriptionAccess);
     const connectStatus = billingSnapshot.connectStatus;
 
-    const [pendingRescheduleCount, planTier, onboarding] = await Promise.all([
+    const admin = createAdminClient();
+    const [pendingRescheduleCount, planTier, onboarding, referralsEnabled] = await Promise.all([
       getCachedPendingRescheduleCount(tenantId),
       getTenantEntitlementPlan(tenantId),
       subscriptionLocked
@@ -42,7 +48,12 @@ export const loadTenantNavItemsForShell = cache(
             role,
             connectStatus,
           }),
+      tenantReferralsNavEnabled(admin, tenantId),
     ]);
+
+    const pendingReferralCount = referralsEnabled
+      ? await countPendingReferralAttributions(admin, tenantId)
+      : 0;
 
     return buildTenantNavItems({
       role,
@@ -50,7 +61,9 @@ export const loadTenantNavItemsForShell = cache(
       billingNavItem: buildTenantBillingNavItem(),
       settingsNavItem: buildTenantSettingsNavItem(),
       campaignsNavEnabled: isFeatureEnabled(planTier, 'campaigns'),
+      referralsNavEnabled: referralsEnabled,
       pendingRescheduleCount,
+      pendingReferralCount,
       gettingStartedNavItem: onboarding.gettingStartedNavItem,
     });
   },

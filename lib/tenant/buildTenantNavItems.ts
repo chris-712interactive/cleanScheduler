@@ -34,7 +34,9 @@ export function buildTenantNavItems(params: {
   billingNavItem: NavItem;
   settingsNavItem: NavItem;
   campaignsNavEnabled: boolean;
+  referralsNavEnabled: boolean;
   pendingRescheduleCount: number;
+  pendingReferralCount: number;
   gettingStartedNavItem?: NavItem | null;
 }): NavItem[] {
   const {
@@ -43,7 +45,9 @@ export function buildTenantNavItems(params: {
     billingNavItem,
     settingsNavItem,
     campaignsNavEnabled,
+    referralsNavEnabled,
     pendingRescheduleCount,
+    pendingReferralCount,
     gettingStartedNavItem,
   } = params;
 
@@ -64,15 +68,22 @@ export function buildTenantNavItems(params: {
         ...NAV_ITEMS_BASE.slice(6).filter(
           (item) => item.href !== '/campaigns' || campaignsNavEnabled,
         ),
+        ...(referralsNavEnabled
+          ? [{ label: 'Referrals', href: '/referrals', icon: 'referrals' as const }]
+          : []),
         settingsNavItem,
       ];
 
   return navItems.map((item) => {
-    if (item.href !== '/schedule/reschedule-requests' || pendingRescheduleCount <= 0) {
-      return item;
+    if (item.href === '/schedule/reschedule-requests' && pendingRescheduleCount > 0) {
+      const badge = pendingRescheduleCount > 99 ? '99+' : pendingRescheduleCount;
+      return { ...item, badge };
     }
-    const badge = pendingRescheduleCount > 99 ? '99+' : pendingRescheduleCount;
-    return { ...item, badge };
+    if (item.href === '/referrals' && pendingReferralCount > 0) {
+      const badge = pendingReferralCount > 99 ? '99+' : pendingReferralCount;
+      return { ...item, badge };
+    }
+    return item;
   });
 }
 

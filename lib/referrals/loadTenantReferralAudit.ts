@@ -34,6 +34,7 @@ export type ReferralRewardAuditRow = {
   amountLabel: string;
   createdAt: string;
   attributionId: string;
+  clawedBackAt: string | null;
 };
 
 export type TenantReferralAuditSnapshot = {
@@ -113,7 +114,9 @@ export async function loadTenantReferralAudit(
 
   const { data: rewardRows, error: rewardError } = await admin
     .from('referral_reward_events')
-    .select('id, attribution_id, recipient, customer_id, amount_applied_cents, created_at')
+    .select(
+      'id, attribution_id, recipient, customer_id, amount_applied_cents, created_at, clawed_back_at',
+    )
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(AUDIT_LIMIT);
@@ -148,6 +151,7 @@ export async function loadTenantReferralAudit(
     amountLabel: formatUsdFromCents(row.amount_applied_cents),
     createdAt: row.created_at,
     attributionId: row.attribution_id,
+    clawedBackAt: row.clawed_back_at,
   }));
 
   return { attributions, rewardEvents };

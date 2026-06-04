@@ -6,8 +6,24 @@ import {
 } from '@/lib/referrals/customerReferralCode';
 import { loadTenantReferralProgram } from '@/lib/referrals/loadTenantReferralProgram';
 import { normalizeReferralCode } from '@/lib/referrals/normalizeReferralCode';
+import { sendReferralAttributionRecordedEmails } from '@/lib/email/sendReferralNotifications';
 
 type Admin = SupabaseClient<Database>;
+
+async function notifyReferralAttributionRecorded(
+  admin: Admin,
+  input: {
+    tenantId: string;
+    referrerCustomerId: string;
+    refereeCustomerId: string;
+  },
+): Promise<void> {
+  try {
+    await sendReferralAttributionRecordedEmails(admin, input);
+  } catch (error) {
+    console.error('[referral] attribution emails failed:', error, input);
+  }
+}
 
 export async function recordReferralTouch(
   admin: Admin,
@@ -98,6 +114,12 @@ export async function attributeRefereeFromReferralCode(
     return { ok: false, error: error.message };
   }
 
+  await notifyReferralAttributionRecorded(admin, {
+    tenantId: input.tenantId,
+    referrerCustomerId: codeRow.customer_id,
+    refereeCustomerId: input.refereeCustomerId,
+  });
+
   return { ok: true, attributionId: data.id };
 }
 
@@ -182,6 +204,12 @@ export async function attributeRefereeByReferrerCustomer(
     }
     return { ok: false, error: error.message };
   }
+
+  await notifyReferralAttributionRecorded(admin, {
+    tenantId: input.tenantId,
+    referrerCustomerId: input.referrerCustomerId,
+    refereeCustomerId: input.refereeCustomerId,
+  });
 
   return { ok: true, attributionId: data.id };
 }

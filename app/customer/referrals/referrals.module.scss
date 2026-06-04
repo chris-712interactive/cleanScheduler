@@ -127,3 +127,30 @@
   font-size: var(--font-size-xs);
   color: var(--color-danger-600);
 }
+
+.activityList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.activityItem {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.activityName {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.activityDate {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
