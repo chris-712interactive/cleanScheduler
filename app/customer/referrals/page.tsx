@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { captureReferralFromRequest } from '@/lib/referrals/referralCookie';
 import { loadCustomerReferralPortalView } from '@/lib/referrals/loadCustomerReferralPortal';
+import { loadCustomerReferralActivity } from '@/lib/referrals/loadCustomerReferralActivity';
 import { loadCustomerWalletPortalView } from '@/lib/promotions/loadCustomerWalletPortal';
 import { CustomerReferralsClient } from './CustomerReferralsClient';
 import { CustomerWalletActivityList } from '../CustomerWalletActivityList';
@@ -83,6 +84,10 @@ export default async function CustomerReferralsPage({ searchParams }: PageProps)
     displayName: formatCustomerDisplayName(identity ?? {}),
   });
 
+  const recentActivity = view
+    ? await loadCustomerReferralActivity(admin, link.tenantId, link.customerId)
+    : [];
+
   const wallet = await loadCustomerWalletPortalView(admin, link, { transactionLimit: 5 });
 
   if (!view && !wallet) {
@@ -135,7 +140,7 @@ export default async function CustomerReferralsPage({ searchParams }: PageProps)
       />
       <Stack gap={6}>
         {wallet ? <CustomerWalletActivityList wallet={wallet} /> : null}
-        <CustomerReferralsClient view={view} />
+        <CustomerReferralsClient view={view} recentActivity={recentActivity} />
       </Stack>
     </>
   );

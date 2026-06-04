@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { createAdminClient } from '@/lib/supabase/server';
+import { tenantReferralsNavEnabled } from '@/lib/referrals/tenantReferralsNav';
 import { CustomerCreateForm } from '../CustomerCreateForm';
 import styles from '../customers.module.scss';
 
@@ -12,6 +14,8 @@ export const dynamic = 'force-dynamic';
 export default async function TenantCustomerNewPage() {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/customers/new');
+  const admin = createAdminClient();
+  const referralProgramEnabled = await tenantReferralsNavEnabled(admin, membership.tenantId);
 
   return (
     <>
@@ -31,7 +35,10 @@ export default async function TenantCustomerNewPage() {
           title="Customer details"
           description="Basic info, service address, and internal notes."
         >
-          <CustomerCreateForm tenantSlug={membership.tenantSlug} />
+          <CustomerCreateForm
+            tenantSlug={membership.tenantSlug}
+            referralProgramEnabled={referralProgramEnabled}
+          />
         </Card>
       </Stack>
     </>

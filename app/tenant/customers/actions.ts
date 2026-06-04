@@ -15,6 +15,9 @@ import {
   buildCustomerEditSnapshot,
   type CustomerEditSnapshot,
 } from '@/lib/tenant/customerEditSnapshot';
+import { attributeRefereeByReferrerCustomer } from '@/lib/referrals/referralAttribution';
+import { resolveTenantCustomerIdByEmail } from '@/lib/referrals/loadCustomerReferralAttribution';
+import { tenantReferralsNavEnabled } from '@/lib/referrals/tenantReferralsNav';
 
 export interface CustomerFormState {
   error?: string;
@@ -57,6 +60,9 @@ export async function createTenantCustomer(
     'card';
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
   const marketingEmailOptIn = formData.get('marketing_email_opt_in') === 'on';
+  const referrerEmail = String(formData.get('referrer_email') ?? '')
+    .trim()
+    .toLowerCase();
 
   if (!slug || !firstName) {
     return { error: 'Workspace and customer first name are required.' };
@@ -172,6 +178,32 @@ export async function createTenantCustomer(
     });
     if (!invite.ok) {
       console.warn('[createTenantCustomer] Portal invite not sent:', invite.error);
+    }
+  }
+
+  if (referrerEmail) {
+    const referralsEnabled = await tenantReferralsNavEnabled(admin, membership.tenantId);
+    if (referralsEnabled) {
+      const resolved = await resolveTenantCustomerIdByEmail(
+        admin,
+        membership.tenantId,
+        referrerEmail,
+      );
+      if (resolved.ok) {
+        const attribution = await attributeRefereeByReferrerCustomer(admin, {
+          tenantId: membership.tenantId,
+          refereeCustomerId: customerId,
+          referrerCustomerId: resolved.customerId,
+          referrerDisplayName: resolved.displayName,
+        });
+        if (!attribution.ok) {
+          console.warn('[createTenantCustomer] Referral attribution failed:', attribution.error);
+        } else {
+          revalidatePath('/referrals', 'page');
+        }
+      } else {
+        console.warn('[createTenantCustomer] Referrer lookup failed:', resolved.error);
+      }
     }
   }
 

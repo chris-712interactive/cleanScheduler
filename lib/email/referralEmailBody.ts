@@ -109,3 +109,61 @@ export function buildTenantReferralQualifiedEmailContent(params: {
     }),
   };
 }
+
+export function buildReferrerAttributionRecordedEmailContent(params: {
+  tenantName: string;
+  refereeName: string;
+  portalUrl: string;
+}): { subject: string; text: string; html: string } {
+  const subject = `${params.tenantName}: new referral tracked`;
+  const text = [
+    `${params.refereeName} joined with your referral link.`,
+    'Rewards are issued when they pay their first invoice.',
+    '',
+    `Track progress: ${params.portalUrl}`,
+  ].join('\n');
+
+  const bodyHtml = `
+    <p><strong>${escape(params.refereeName)}</strong> joined with your referral link at <strong>${escape(params.tenantName)}</strong>.</p>
+    <p>Rewards are issued when they pay their first invoice.</p>
+    <p style="margin:16px 0 0;"><a href="${escapeEmailAttr(params.portalUrl)}" style="color:#2563eb;">Track your referrals</a></p>
+  `.trim();
+
+  return {
+    subject,
+    text,
+    html: wrapTransactionalEmailHtml({
+      preheader: `${params.refereeName} used your referral`,
+      bodyHtml,
+    }),
+  };
+}
+
+export function buildRefereeAttributionRecordedEmailContent(params: {
+  tenantName: string;
+  referrerName: string;
+  portalUrl: string;
+}): { subject: string; text: string; html: string } {
+  const subject = `Welcome to ${params.tenantName}`;
+  const text = [
+    `You were referred by ${params.referrerName}.`,
+    `Your account with ${params.tenantName} is set up — view quotes, invoices, and schedule in your portal.`,
+    '',
+    params.portalUrl,
+  ].join('\n');
+
+  const bodyHtml = `
+    <p>Welcome to <strong>${escape(params.tenantName)}</strong> — you were referred by <strong>${escape(params.referrerName)}</strong>.</p>
+    <p>View quotes, invoices, and your schedule anytime in the customer portal.</p>
+    <p style="margin:16px 0 0;"><a href="${escapeEmailAttr(params.portalUrl)}" style="color:#2563eb;">Open customer portal</a></p>
+  `.trim();
+
+  return {
+    subject,
+    text,
+    html: wrapTransactionalEmailHtml({
+      preheader: `Welcome to ${params.tenantName}`,
+      bodyHtml,
+    }),
+  };
+}
