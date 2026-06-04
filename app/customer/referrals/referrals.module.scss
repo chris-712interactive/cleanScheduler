@@ -102,11 +102,11 @@
   height: 200px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .qrPlaceholder {
-  background: var(--color-surface);
+  background: var(--color-surface-muted);
 }
 
 .shareCopy {
