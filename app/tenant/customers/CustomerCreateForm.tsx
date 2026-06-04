@@ -13,7 +13,13 @@ import styles from './customers.module.scss';
 
 const initial: CustomerFormState = {};
 
-export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
+export function CustomerCreateForm({
+  tenantSlug,
+  referralProgramEnabled = false,
+}: {
+  tenantSlug: string;
+  referralProgramEnabled?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(createTenantCustomer, initial);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const interactionStarted = useRef(false);
@@ -230,6 +236,25 @@ export function CustomerCreateForm({ tenantSlug }: { tenantSlug: string }) {
             <input id="marketing_email_opt_in" name="marketing_email_opt_in" type="checkbox" />
             <span>Customer opted in to marketing emails</span>
           </label>
+
+          {referralProgramEnabled ? (
+            <>
+              <label className={styles.label} htmlFor="referrer_email">
+                Referred by (optional)
+              </label>
+              <input
+                id="referrer_email"
+                name="referrer_email"
+                type="email"
+                className={styles.input}
+                placeholder="referrer@email.com"
+                autoComplete="off"
+              />
+              <p className={styles.sectionHint}>
+                Link this customer to an existing referrer when they did not use a referral link.
+              </p>
+            </>
+          ) : null}
         </section>
 
         <button type="submit" className={styles.submit} disabled={pending}>

@@ -40,7 +40,7 @@ function CustomerIdentityFallback() {
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
   const h = await headers();
   const internal = h.get('x-internal-pathname') ?? '';
-  if (internal.startsWith('/customer/complete-invite')) {
+  if (internal.startsWith('/customer/complete-invite') || internal.startsWith('/customer/join')) {
     return <div className={styles.publicInvite}>{children}</div>;
   }
 

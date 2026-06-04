@@ -19,7 +19,11 @@ import {
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
-import { captureReferralFromRequest } from '@/lib/referrals/referralCookie';
+import { getPortalContext } from '@/lib/portal';
+import {
+  captureReferralFromRequest,
+  applyStoredReferralAttribution,
+} from '@/lib/referrals/referralCookie';
 import { loadCustomerWalletSummariesForLinks } from '@/lib/promotions/loadCustomerWalletPortal';
 import { CustomerWalletBalanceCard } from './CustomerWalletBalanceCard';
 import {
@@ -128,6 +132,24 @@ export default async function CustomerHomePage({
   }
 
   const admin = createAdminClient();
+  const portal = await getPortalContext();
+  const scopedSlug = portal.tenantSlug?.toLowerCase();
+  const referralLink =
+    (scopedSlug ? ctx.links.find((l) => l.tenantSlug === scopedSlug) : null) ??
+    ctx.links.find((l) => l.isPrimary) ??
+    ctx.links[0];
+
+  if (referralLink) {
+    try {
+      await applyStoredReferralAttribution(admin, {
+        tenantId: referralLink.tenantId,
+        refereeCustomerId: referralLink.customerId,
+      });
+    } catch (error) {
+      console.error('[customer-home] referral attribution failed:', error);
+    }
+  }
+
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
 

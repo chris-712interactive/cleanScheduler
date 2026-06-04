@@ -178,6 +178,7 @@ export default async function TenantReferralsAuditPage({ searchParams }: PagePro
                         <th scope="col">Recipient</th>
                         <th scope="col">Customer</th>
                         <th scope="col">Amount</th>
+                        <th scope="col">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -191,6 +192,7 @@ export default async function TenantReferralsAuditPage({ searchParams }: PagePro
                             </Link>
                           </td>
                           <td>{row.amountLabel}</td>
+                          <td>{row.clawedBackAt ? 'Clawed back' : 'Issued'}</td>
                         </tr>
                       ))}
                     </tbody>
