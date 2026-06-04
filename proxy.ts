@@ -44,6 +44,7 @@ import {
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
 import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
+import { customerPortalJoinRedirectUrl } from '@/lib/portal/customerPortalOrigin';
 import { resolveActiveWhiteLabelCustomerPortal } from '@/lib/portal/resolveWhiteLabelCustomerPortal';
 import { debugPerfStart } from '@/lib/performance/debugPerf';
 
@@ -190,6 +191,7 @@ export async function proxy(request: NextRequest) {
 
     const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
     const requestedPath = request.nextUrl.pathname;
+    const isJoinPath = requestedPath === '/join' || requestedPath.startsWith('/join/');
     const isPublicMarketingPath =
       PUBLIC_MARKETING_PATHS.has(requestedPath) ||
       (requestedPath === '/contact' && subdomain === null && !whiteLabelPortal);
@@ -199,6 +201,11 @@ export async function proxy(request: NextRequest) {
     const isPublicCustomerJoin =
       (subdomain === 'my' || whiteLabelPortal) &&
       (requestedPath === '/join' || requestedPath.startsWith('/join/'));
+
+    const onCustomerPortalHost = subdomain === 'my' || whiteLabelPortal != null;
+    if (isJoinPath && !onCustomerPortalHost) {
+      return NextResponse.redirect(customerPortalJoinRedirectUrl(request.nextUrl, apex));
+    }
 
     const baseClassification = whiteLabelPortal
       ? { kind: 'customer' as const, tenantSlug: whiteLabelPortal.tenantSlug }
