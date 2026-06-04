@@ -8,7 +8,10 @@ import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
-import { applyStoredReferralAttribution } from '@/lib/referrals/referralCookie';
+import {
+  applyStoredReferralAttribution,
+  clearReferralCookie,
+} from '@/lib/referrals/referralCookie';
 
 const TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -64,10 +67,13 @@ async function tryApplyReferralAttributionForInvite(
   customerId: string,
 ): Promise<void> {
   try {
-    await applyStoredReferralAttribution(admin, {
+    const result = await applyStoredReferralAttribution(admin, {
       tenantId,
       refereeCustomerId: customerId,
     });
+    if (result.applied || result.skipped) {
+      await clearReferralCookie();
+    }
   } catch (error) {
     console.error('[complete-invite] referral attribution failed:', error);
   }
