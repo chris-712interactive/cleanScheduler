@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCreateQuotePath,
   consultationNeedsStaffAction,
   resolveConsultationStatusFromVisits,
   type ConsultationVisitSummary,
@@ -43,5 +44,14 @@ describe('consultationNeedsStaffAction', () => {
     expect(consultationNeedsStaffAction('scheduled')).toBe(false);
     expect(consultationNeedsStaffAction('completed')).toBe(false);
     expect(consultationNeedsStaffAction('not_required')).toBe(false);
+  });
+});
+
+describe('buildCreateQuotePath', () => {
+  it('builds a new quote URL with optional property', () => {
+    expect(buildCreateQuotePath('cust-1')).toBe('/quotes/new?customer_id=cust-1');
+    expect(buildCreateQuotePath('cust-1', 'prop-1')).toBe(
+      '/quotes/new?customer_id=cust-1&property_id=prop-1',
+    );
   });
 });

@@ -56,12 +56,17 @@ export function QuoteCreateWizard({
   customerPropertyGroups,
   jobTypeCatalog = [],
   autoScheduleEnabled = false,
+  defaults,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
   customerPropertyGroups: CustomerPropertyGroup[];
   jobTypeCatalog?: JobTypeCatalogEntry[];
   autoScheduleEnabled?: boolean;
+  defaults?: {
+    customerId?: string;
+    propertyId?: string;
+  };
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
@@ -93,10 +98,12 @@ export function QuoteCreateWizard({
   }, [step]);
 
   const [customerSource, setCustomerSource] = useState<'existing' | 'new'>('existing');
-  const [propertySource, setPropertySource] = useState<'existing' | 'new'>('existing');
-  const [customerId, setCustomerId] = useState('');
+  const [propertySource, setPropertySource] = useState<'existing' | 'new'>(
+    defaults?.propertyId ? 'existing' : 'existing',
+  );
+  const [customerId, setCustomerId] = useState(defaults?.customerId ?? '');
   const [title, setTitle] = useState('');
-  const [propertyId, setPropertyId] = useState('');
+  const [propertyId, setPropertyId] = useState(defaults?.propertyId ?? '');
   const saveIntentRef = useRef<'draft' | 'send'>('draft');
   const saveIntentInputRef = useRef<HTMLInputElement>(null);
   const [pendingIntent, setPendingIntent] = useState<'draft' | 'send' | null>(null);

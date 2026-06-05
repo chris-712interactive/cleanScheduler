@@ -1,5 +1,6 @@
 'use server';
 
+import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -21,6 +22,8 @@ import {
 import { featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { saveVisitProofPhotosFromForm } from '@/lib/visits/visitProofPhotos';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
+import { buildCreateQuotePath } from '@/lib/tenant/customerConsultation';
+import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -36,7 +39,7 @@ async function loadVisitForActor(
   const { data: visit, error } = await admin
     .from('tenant_scheduled_visits')
     .select(
-      'id, status, checked_in_at, checked_in_by_user_id, customer_id, quote_id, expected_amount_cents, title, visit_purpose',
+      'id, status, checked_in_at, checked_in_by_user_id, customer_id, property_id, quote_id, expected_amount_cents, title, visit_purpose',
     )
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
@@ -281,6 +284,12 @@ export async function completeVisitWithPaymentAction(
   };
 
   if (consultationComplete) {
+    if (!isFieldEmployeeRole(actorRole)) {
+      revalidateVisitPaths(visitId);
+      revalidatePath('/quotes/new', 'page');
+      revalidatePath('/customers', 'page');
+      redirect(buildCreateQuotePath(loaded.visit.customer_id, loaded.visit.property_id ?? null));
+    }
     return { success: 'Consultation marked complete.', visitPatch };
   }
 

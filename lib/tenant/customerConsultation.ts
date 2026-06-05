@@ -114,6 +114,12 @@ export function buildScheduleConsultationPath(
   return `/schedule/new?${params.toString()}`;
 }
 
+export function buildCreateQuotePath(customerId: string, propertyId?: string | null): string {
+  const params = new URLSearchParams({ customer_id: customerId });
+  if (propertyId) params.set('property_id', propertyId);
+  return `/quotes/new?${params.toString()}`;
+}
+
 export async function assertCustomerEligibleForQuoteSend(
   admin: Admin,
   tenantId: string,

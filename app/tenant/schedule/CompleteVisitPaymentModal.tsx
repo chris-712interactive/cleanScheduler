@@ -211,6 +211,9 @@ export function CompleteVisitPaymentModal({
               <p className={styles.fieldHint}>
                 Mark this consultation complete when the walkthrough is finished. No payment or
                 invoice is collected for consultations.
+                {isFieldEmployee
+                  ? ' Your office can create a quote once this is marked complete.'
+                  : " You'll open a new quote for this customer next."}
               </p>
               {state.error ? (
                 <p className={styles.error} role="alert">
