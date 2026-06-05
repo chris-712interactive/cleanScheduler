@@ -6,7 +6,7 @@ import { captureReferralFromRequest } from '@/lib/referrals/referralCookie';
 import { loadReferralJoinLanding } from '@/lib/referrals/loadReferralJoinLanding';
 import { getPortalContext } from '@/lib/portal';
 import { getCustomerPortalOriginFromRequestHost } from '@/lib/portal/customerPortalOrigin';
-import { ReferralJoinForm } from './ReferralJoinForm';
+import { ReferralJoinClient } from './ReferralJoinClient';
 import styles from './join.module.scss';
 
 export const metadata = {
@@ -79,7 +79,7 @@ export default async function ReferralJoinPage({ searchParams }: PageProps) {
   return (
     <Container size="sm">
       <Card title={landing.shareHeadline} description={`Join ${landing.tenantName}`}>
-        <ReferralJoinForm landing={landing} signInUrl={signInUrl} />
+        <ReferralJoinClient landing={landing} signInUrl={signInUrl} />
       </Card>
     </Container>
   );
