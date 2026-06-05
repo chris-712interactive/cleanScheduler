@@ -117,8 +117,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       email: null,
       phone: null,
       addressLine: null,
-      consultationLabel:
-        row.status === 'needs_scheduling' ? 'Needs consultation' : 'Consultation scheduled',
+      consultationLabel: 'Needs consultation',
     }));
     totalCount = directoryRows.length;
     statusCounts = { all: totalCount, active: totalCount, inactive: 0 };

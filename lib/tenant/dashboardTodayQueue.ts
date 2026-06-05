@@ -106,8 +106,8 @@ export async function getDashboardTodayQueue(
   if (consultationActionCount > 0) {
     items.push({
       id: 'consultations',
-      label: `${consultationActionCount} customer${consultationActionCount === 1 ? '' : 's'} need consultation`,
-      detail: 'Schedule or complete a consultation before sending quotes',
+      label: `${consultationActionCount} customer${consultationActionCount === 1 ? '' : 's'} need consultation scheduled`,
+      detail: 'Schedule a consultation before sending quotes',
       href: CUSTOMERS_NEEDING_CONSULTATION_HREF,
       tone: 'warn',
     });

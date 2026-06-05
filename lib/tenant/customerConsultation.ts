@@ -154,7 +154,7 @@ export async function assertCustomerEligibleForQuoteSend(
 }
 
 export function consultationNeedsStaffAction(status: ConsultationStatus): boolean {
-  return status === 'needs_scheduling' || status === 'scheduled';
+  return status === 'needs_scheduling';
 }
 
 export async function countCustomersNeedingConsultationAction(
@@ -181,15 +181,26 @@ export async function countCustomersNeedingConsultationAction(
     .neq('status', 'cancelled')
     .in('customer_id', customerIds);
 
-  const completed = new Set<string>();
+  const visitsByCustomer = new Map<string, ConsultationVisitSummary[]>();
   for (const visit of visits ?? []) {
-    if (visit.status === 'completed') completed.add(visit.customer_id);
+    const list = visitsByCustomer.get(visit.customer_id) ?? [];
+    list.push({
+      id: '',
+      startsAt: '',
+      endsAt: '',
+      status: visit.status,
+      title: '',
+    });
+    visitsByCustomer.set(visit.customer_id, list);
   }
 
   let count = 0;
   for (const customerId of customerIds) {
-    if (completed.has(customerId)) continue;
-    count += 1;
+    const status = resolveConsultationStatusFromVisits(
+      true,
+      visitsByCustomer.get(customerId) ?? [],
+    );
+    if (consultationNeedsStaffAction(status)) count += 1;
   }
   return count;
 }
