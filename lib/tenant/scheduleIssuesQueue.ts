@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import { visitHasBillableAmount } from '@/lib/billing/resolveVisitExpectedAmount';
+import { visitIsMissingJobPrice } from '@/lib/billing/resolveVisitExpectedAmount';
 import { visitTimeRangesOverlap } from '@/lib/schedule/visitAssigneeConflicts';
 import {
   customerHasAnyNameParts,
@@ -39,6 +39,7 @@ type VisitRow = {
   title: string;
   starts_at: string;
   ends_at: string;
+  visit_purpose: Database['public']['Enums']['scheduled_visit_purpose'];
   staffing_status: Database['public']['Enums']['visit_staffing_status'];
   expected_amount_cents: number | null;
   tenant_quotes: { amount_cents: number | null } | null;
@@ -107,6 +108,7 @@ export async function listScheduleIssues(
       title,
       starts_at,
       ends_at,
+      visit_purpose,
       staffing_status,
       expected_amount_cents,
       tenant_quotes ( amount_cents ),
@@ -156,7 +158,8 @@ export async function listScheduleIssues(
       issues.push('schedule_conflict');
     }
     if (
-      !visitHasBillableAmount({
+      visitIsMissingJobPrice({
+        visitPurpose: row.visit_purpose,
         expectedAmountCents: row.expected_amount_cents,
         quoteAmountCents: row.tenant_quotes?.amount_cents ?? null,
       })
