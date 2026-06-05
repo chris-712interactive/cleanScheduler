@@ -1220,6 +1220,7 @@ export type Database = {
           sms_notify_invoice_overdue: boolean;
           check_reminder_hold_days: number;
           check_hold_through_deposit: boolean;
+          require_consultation_before_quote: boolean;
           messaging_channels: string[];
           created_at: string;
           updated_at: string;
@@ -1240,6 +1241,7 @@ export type Database = {
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
+          require_consultation_before_quote?: boolean;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
@@ -1260,6 +1262,7 @@ export type Database = {
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
+          require_consultation_before_quote?: boolean;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
@@ -2533,6 +2536,7 @@ export type Database = {
           starts_at: string;
           ends_at: string;
           status: 'scheduled' | 'completed' | 'cancelled';
+          visit_purpose: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status: Database['public']['Enums']['visit_staffing_status'];
           notes: string | null;
           recurring_rule_id: string | null;
@@ -2561,6 +2565,7 @@ export type Database = {
           starts_at: string;
           ends_at: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
+          visit_purpose?: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           recurring_rule_id?: string | null;
@@ -2589,6 +2594,7 @@ export type Database = {
           starts_at?: string;
           ends_at?: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
+          visit_purpose?: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           recurring_rule_id?: string | null;
@@ -3801,6 +3807,7 @@ export type Database = {
       marketing_inquiry_status: 'new' | 'contacted' | 'closed';
       quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';
       accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
+      scheduled_visit_purpose: 'service' | 'consultation';
       tenant_invoice_expectation: 'prepay' | 'pay_after_service';
       tenant_invoice_payment_recorded_via: 'manual' | 'stripe_checkout';
       tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';

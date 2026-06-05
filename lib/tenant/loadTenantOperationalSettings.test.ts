@@ -10,6 +10,7 @@ const baseOps: TenantOperationalSettingsSnapshot = {
   acceptedQuoteScheduleMode: 'prompt_staff',
   invoiceExpectation: 'pay_after_service',
   allowedCustomerPaymentMethods: ['check', 'zelle', 'card'],
+  requireConsultationBeforeQuote: true,
 };
 
 describe('parsePreferredPaymentMethod', () => {

@@ -26,11 +26,13 @@ import {
 } from '@/lib/referrals/referralCookie';
 import { loadCustomerWalletSummariesForLinks } from '@/lib/promotions/loadCustomerWalletPortal';
 import { CustomerWalletBalanceCard } from './CustomerWalletBalanceCard';
+import { loadCustomerPortalConsultationView } from '@/lib/customer/loadCustomerPortalConsultation';
 import {
   formatNextAppointmentWhen,
   formatUpcomingVisitDate,
   formatUpcomingVisitTimeLine,
   formatVisitDuration,
+  formatVisitWhenRange,
 } from '@/lib/datetime/formatInTimeZone';
 import styles from './dashboard.module.scss';
 
@@ -149,6 +151,14 @@ export default async function CustomerHomePage({
       console.error('[customer-home] referral attribution failed:', error);
     }
   }
+
+  const consultationView = referralLink
+    ? await loadCustomerPortalConsultationView(
+        admin,
+        referralLink.tenantId,
+        referralLink.customerId,
+      )
+    : null;
 
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
@@ -282,6 +292,39 @@ export default async function CustomerHomePage({
 
       <div className={styles.dashboardGrid}>
         <div className={styles.mainColumn}>
+          {consultationView ? (
+            <section className={styles.card}>
+              <div className={styles.cardBody}>
+                <p className={styles.eyebrow}>Consultation</p>
+                {consultationView.status === 'needs_scheduling' ? (
+                  <>
+                    <h2 className={styles.cardTitle}>Consultation coming up</h2>
+                    <p className={styles.emptyText}>
+                      Your provider will schedule a consultation walkthrough before quoting your
+                      service. We will notify you when it is booked.
+                    </p>
+                  </>
+                ) : consultationView.nextConsultation ? (
+                  <>
+                    <h2 className={styles.cardTitle}>Consultation scheduled</h2>
+                    <p className={styles.nextWhen}>
+                      {formatVisitWhenRange(
+                        consultationView.nextConsultation.startsAt,
+                        consultationView.nextConsultation.endsAt,
+                        consultationView.tenantTimezone,
+                      )}
+                    </p>
+                    {consultationView.nextConsultation.siteLine ? (
+                      <p className={styles.nextMeta}>
+                        {consultationView.nextConsultation.siteLine}
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
           <section className={`${styles.card} ${styles.nextCard}`}>
             <div className={styles.cardBody}>
               <p className={styles.eyebrow}>Next appointment</p>

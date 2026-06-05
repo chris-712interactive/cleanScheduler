@@ -70,6 +70,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   const defaultQuoteId = firstParam(sp.quote_id)?.trim() ?? '';
   const defaultPropertyId = firstParam(sp.property_id)?.trim() ?? '';
   const defaultTitle = firstParam(sp.title)?.trim() ?? '';
+  const isConsultation = firstParam(sp.purpose)?.trim() === 'consultation';
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule/new');
@@ -158,8 +159,12 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   return (
     <>
       <PageHeader
-        title="New appointment"
-        description="Pick a customer, optional site, and time window. You return to the calendar when you save."
+        title={isConsultation ? 'Schedule consultation' : 'New appointment'}
+        description={
+          isConsultation
+            ? 'Book a walkthrough or site visit before quoting this customer.'
+            : 'Pick a customer, optional site, and time window. You return to the calendar when you save.'
+        }
         actions={
           <Link href="/schedule" className={styles.backToSchedule}>
             ← Back to schedule
@@ -168,8 +173,12 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
       />
 
       <Card
-        title="Appointment details"
-        description="Required fields are marked by the browser when you submit."
+        title={isConsultation ? 'Consultation details' : 'Appointment details'}
+        description={
+          isConsultation
+            ? 'Consultations are separate from cleaning visits and do not require a job price.'
+            : 'Required fields are marked by the browser when you submit.'
+        }
       >
         <ScheduleVisitForm
           tenantSlug={membership.tenantSlug}
@@ -177,11 +186,13 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
           customerPropertyGroups={customerPropertyGroups}
           quoteOptions={quoteOptions}
           employeeOptions={employeeOptions}
+          isConsultation={isConsultation}
           defaults={{
             customerId: defaultCustomerId,
-            quoteId: defaultQuoteId,
+            quoteId: isConsultation ? undefined : defaultQuoteId,
             propertyId: defaultPropertyId,
-            title: defaultTitle,
+            title: defaultTitle || (isConsultation ? 'Consultation' : undefined),
+            purpose: isConsultation ? 'consultation' : 'service',
           }}
         />
       </Card>

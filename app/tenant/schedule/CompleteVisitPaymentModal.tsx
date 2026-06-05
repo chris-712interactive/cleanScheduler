@@ -56,6 +56,7 @@ export function CompleteVisitPaymentModal({
   canAttachProofPhotos,
   proofPhotosSharedWithCustomers,
   isFieldEmployee = false,
+  isConsultation = false,
   onVisitPatch,
 }: {
   tenantSlug: string;
@@ -66,6 +67,7 @@ export function CompleteVisitPaymentModal({
   canAttachProofPhotos: boolean;
   proofPhotosSharedWithCustomers: boolean;
   isFieldEmployee?: boolean;
+  isConsultation?: boolean;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -191,206 +193,239 @@ export function CompleteVisitPaymentModal({
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger asChild>
         <Button type="button" variant="secondary" className={styles.completeTrigger}>
-          Complete job
+          {isConsultation ? 'Complete consultation' : 'Complete job'}
         </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className={styles.overlay} />
         <Dialog.Content className={styles.content} aria-describedby={undefined}>
-          <Dialog.Title className={styles.title}>Complete job</Dialog.Title>
+          <Dialog.Title className={styles.title}>
+            {isConsultation ? 'Complete consultation' : 'Complete job'}
+          </Dialog.Title>
 
-          <div className={styles.stepHeader}>
-            <p className={styles.stepIndicator}>
-              Step {stepIndex + 1} of {totalSteps}
-            </p>
-            <p className={styles.stepTitle}>{STEP_LABELS[currentStep]}</p>
-          </div>
-
-          {canAttachProofPhotos ? (
-            <ProofPhotoCapture
-              photos={proofPhotos}
-              onPhotosChange={setProofPhotos}
-              sharedWithCustomers={proofPhotosSharedWithCustomers}
-              disabled={pending}
-            />
-          ) : null}
-
-          {defaultAmountDollars ? (
-            <p className={styles.preferenceHint}>
-              Job amount: <strong>${defaultAmountDollars}</strong>
-              {isFieldEmployee ? ' — set by your office.' : null}
-            </p>
-          ) : null}
-
-          {preferredPaymentMethod && stepIndex === 0 ? (
-            <p className={styles.preferenceHint}>
-              Customer billing preference: <strong>{preferredLabel}</strong>
-              {electronicHint ? ' — expect to invoice online after service.' : null}
-              {inPersonHint ? ' — usually pays on site with cash or check.' : null}
-            </p>
-          ) : null}
-
-          <form action={formAction} className={styles.form} onSubmit={handleSubmit}>
-            {currentStep === 'collected' ? (
-              <fieldset className={styles.fieldset}>
-                <legend className={styles.legend}>
-                  Did you collect payment from the customer?
-                </legend>
-                <div className={styles.choiceRow}>
-                  <button
-                    type="button"
-                    className={collected === 'yes' ? styles.choiceActive : styles.choice}
-                    onClick={() => {
-                      setCollected('yes');
-                      setOnSiteMethod(null);
-                      setStepError(null);
-                    }}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={collected === 'no' ? styles.choiceActive : styles.choice}
-                    onClick={() => {
-                      setCollected('no');
-                      setOnSiteMethod(null);
-                      setStepError(null);
-                    }}
-                  >
-                    No
-                  </button>
-                </div>
-              </fieldset>
-            ) : null}
-
-            {currentStep === 'payment-method' ? (
-              <fieldset className={styles.fieldset}>
-                <legend className={styles.legend}>How did the customer pay?</legend>
-                <p className={styles.fieldHint}>
-                  Job amount: <strong>${defaultAmountDollars}</strong>
-                </p>
-                <div className={styles.choiceRow}>
-                  <button
-                    type="button"
-                    className={onSiteMethod === 'cash' ? styles.choiceActive : styles.choice}
-                    onClick={() => {
-                      setOnSiteMethod('cash');
-                      setStepError(null);
-                    }}
-                  >
-                    Cash
-                  </button>
-                  <button
-                    type="button"
-                    className={onSiteMethod === 'check' ? styles.choiceActive : styles.choice}
-                    onClick={() => {
-                      setOnSiteMethod('check');
-                      setCheckAmountDollars(defaultAmountDollars);
-                      setStepError(null);
-                    }}
-                  >
-                    Check
-                  </button>
-                </div>
-              </fieldset>
-            ) : null}
-
-            {currentStep === 'check-details' ? (
-              <div className={styles.stepFields}>
-                <p className={styles.fieldHint}>
-                  Job amount: <strong>${defaultAmountDollars}</strong> — confirm the amount on the
-                  check matches.
-                </p>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="check_number_input">
-                    Check number
-                  </label>
-                  <input
-                    id="check_number_input"
-                    className={styles.input}
-                    value={checkNumber}
-                    onChange={(e) => setCheckNumber(e.target.value)}
-                    autoComplete="off"
-                    placeholder="1234"
-                    autoFocus
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="check_amount_dollars">
-                    Check amount (USD)
-                  </label>
-                  <input
-                    id="check_amount_dollars"
-                    type="number"
-                    className={styles.input}
-                    min="0"
-                    step="0.01"
-                    value={checkAmountDollars}
-                    readOnly
-                    tabIndex={-1}
-                    aria-readonly="true"
-                  />
-                  <p className={styles.fieldHint}>
-                    Amount comes from the job price set by your office — not entered at close-out.
-                  </p>
-                </div>
-              </div>
-            ) : null}
-
-            {currentStep === 'send-invoice' ? (
-              <div className={styles.reviewBlock}>
-                <p className={styles.reviewLine}>
-                  Amount to invoice: <strong>${defaultAmountDollars}</strong>
-                </p>
-                <p className={styles.invoiceHint}>
-                  An invoice will be emailed immediately so the customer can pay online via Stripe.
-                </p>
-              </div>
-            ) : null}
-
-            {stepError ? (
-              <p className={styles.error} role="alert">
-                {stepError}
+          {isConsultation ? (
+            <form action={formAction} className={styles.form}>
+              <input type="hidden" name="tenant_slug" value={tenantSlug} />
+              <input type="hidden" name="visit_id" value={visitId} />
+              <input type="hidden" name="payment_collected" value="no" />
+              <p className={styles.fieldHint}>
+                Mark this consultation complete when the walkthrough is finished. No payment or
+                invoice is collected for consultations.
               </p>
-            ) : null}
-            {state.error ? (
-              <p className={styles.error} role="alert">
-                {state.error}
-              </p>
-            ) : null}
-
-            <div className={styles.actions}>
-              {stepIndex > 0 ? (
-                <Button type="button" variant="ghost" disabled={pending} onClick={goBack}>
-                  Back
-                </Button>
-              ) : (
+              {state.error ? (
+                <p className={styles.error} role="alert">
+                  {state.error}
+                </p>
+              ) : null}
+              <div className={styles.actions}>
                 <Dialog.Close asChild>
                   <Button type="button" variant="ghost" disabled={pending}>
                     Cancel
                   </Button>
                 </Dialog.Close>
-              )}
-              {isLastStep ? (
-                <Button
-                  type="submit"
-                  variant="primary"
+                <Button type="submit" variant="primary" disabled={pending}>
+                  {pending ? 'Saving…' : 'Mark complete'}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <div className={styles.stepHeader}>
+                <p className={styles.stepIndicator}>
+                  Step {stepIndex + 1} of {totalSteps}
+                </p>
+                <p className={styles.stepTitle}>{STEP_LABELS[currentStep]}</p>
+              </div>
+
+              {canAttachProofPhotos ? (
+                <ProofPhotoCapture
+                  photos={proofPhotos}
+                  onPhotosChange={setProofPhotos}
+                  sharedWithCustomers={proofPhotosSharedWithCustomers}
                   disabled={pending}
-                  onClick={() => setStepError(null)}
-                >
-                  {pending
-                    ? proofPhotos.length > 0
-                      ? 'Uploading photos…'
-                      : 'Completing…'
-                    : 'Mark complete'}
-                </Button>
-              ) : (
-                <Button type="button" variant="primary" onClick={goNext}>
-                  Continue
-                </Button>
-              )}
-            </div>
-          </form>
+                />
+              ) : null}
+
+              {defaultAmountDollars ? (
+                <p className={styles.preferenceHint}>
+                  Job amount: <strong>${defaultAmountDollars}</strong>
+                  {isFieldEmployee ? ' — set by your office.' : null}
+                </p>
+              ) : null}
+
+              {preferredPaymentMethod && stepIndex === 0 ? (
+                <p className={styles.preferenceHint}>
+                  Customer billing preference: <strong>{preferredLabel}</strong>
+                  {electronicHint ? ' — expect to invoice online after service.' : null}
+                  {inPersonHint ? ' — usually pays on site with cash or check.' : null}
+                </p>
+              ) : null}
+
+              <form action={formAction} className={styles.form} onSubmit={handleSubmit}>
+                {currentStep === 'collected' ? (
+                  <fieldset className={styles.fieldset}>
+                    <legend className={styles.legend}>
+                      Did you collect payment from the customer?
+                    </legend>
+                    <div className={styles.choiceRow}>
+                      <button
+                        type="button"
+                        className={collected === 'yes' ? styles.choiceActive : styles.choice}
+                        onClick={() => {
+                          setCollected('yes');
+                          setOnSiteMethod(null);
+                          setStepError(null);
+                        }}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        className={collected === 'no' ? styles.choiceActive : styles.choice}
+                        onClick={() => {
+                          setCollected('no');
+                          setOnSiteMethod(null);
+                          setStepError(null);
+                        }}
+                      >
+                        No
+                      </button>
+                    </div>
+                  </fieldset>
+                ) : null}
+
+                {currentStep === 'payment-method' ? (
+                  <fieldset className={styles.fieldset}>
+                    <legend className={styles.legend}>How did the customer pay?</legend>
+                    <p className={styles.fieldHint}>
+                      Job amount: <strong>${defaultAmountDollars}</strong>
+                    </p>
+                    <div className={styles.choiceRow}>
+                      <button
+                        type="button"
+                        className={onSiteMethod === 'cash' ? styles.choiceActive : styles.choice}
+                        onClick={() => {
+                          setOnSiteMethod('cash');
+                          setStepError(null);
+                        }}
+                      >
+                        Cash
+                      </button>
+                      <button
+                        type="button"
+                        className={onSiteMethod === 'check' ? styles.choiceActive : styles.choice}
+                        onClick={() => {
+                          setOnSiteMethod('check');
+                          setCheckAmountDollars(defaultAmountDollars);
+                          setStepError(null);
+                        }}
+                      >
+                        Check
+                      </button>
+                    </div>
+                  </fieldset>
+                ) : null}
+
+                {currentStep === 'check-details' ? (
+                  <div className={styles.stepFields}>
+                    <p className={styles.fieldHint}>
+                      Job amount: <strong>${defaultAmountDollars}</strong> — confirm the amount on
+                      the check matches.
+                    </p>
+                    <div className={styles.field}>
+                      <label className={styles.label} htmlFor="check_number_input">
+                        Check number
+                      </label>
+                      <input
+                        id="check_number_input"
+                        className={styles.input}
+                        value={checkNumber}
+                        onChange={(e) => setCheckNumber(e.target.value)}
+                        autoComplete="off"
+                        placeholder="1234"
+                        autoFocus
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.label} htmlFor="check_amount_dollars">
+                        Check amount (USD)
+                      </label>
+                      <input
+                        id="check_amount_dollars"
+                        type="number"
+                        className={styles.input}
+                        min="0"
+                        step="0.01"
+                        value={checkAmountDollars}
+                        readOnly
+                        tabIndex={-1}
+                        aria-readonly="true"
+                      />
+                      <p className={styles.fieldHint}>
+                        Amount comes from the job price set by your office — not entered at
+                        close-out.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {currentStep === 'send-invoice' ? (
+                  <div className={styles.reviewBlock}>
+                    <p className={styles.reviewLine}>
+                      Amount to invoice: <strong>${defaultAmountDollars}</strong>
+                    </p>
+                    <p className={styles.invoiceHint}>
+                      An invoice will be emailed immediately so the customer can pay online via
+                      Stripe.
+                    </p>
+                  </div>
+                ) : null}
+
+                {stepError ? (
+                  <p className={styles.error} role="alert">
+                    {stepError}
+                  </p>
+                ) : null}
+                {state.error ? (
+                  <p className={styles.error} role="alert">
+                    {state.error}
+                  </p>
+                ) : null}
+
+                <div className={styles.actions}>
+                  {stepIndex > 0 ? (
+                    <Button type="button" variant="ghost" disabled={pending} onClick={goBack}>
+                      Back
+                    </Button>
+                  ) : (
+                    <Dialog.Close asChild>
+                      <Button type="button" variant="ghost" disabled={pending}>
+                        Cancel
+                      </Button>
+                    </Dialog.Close>
+                  )}
+                  {isLastStep ? (
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={pending}
+                      onClick={() => setStepError(null)}
+                    >
+                      {pending
+                        ? proofPhotos.length > 0
+                          ? 'Uploading photos…'
+                          : 'Completing…'
+                        : 'Mark complete'}
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="primary" onClick={goNext}>
+                      Continue
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -209,6 +209,23 @@ export function OperationalSettingsForm({
         </header>
 
         <div>
+          <p className={styles.subsectionTitle}>Before sending quotes</p>
+          <label className={styles.paymentToggle}>
+            <input
+              type="checkbox"
+              name="require_consultation_before_quote"
+              defaultChecked={snapshot.require_consultation_before_quote}
+              disabled={readOnly}
+            />
+            <span>Require a completed consultation before sending quotes</span>
+          </label>
+          <p className={styles.technicalNote}>
+            When enabled, new customers need a completed consultation visit on the schedule before
+            you can send them a quote. Staff can still prepare draft quotes while waiting.
+          </p>
+        </div>
+
+        <div>
           <p className={styles.subsectionTitle}>After a quote is accepted</p>
           <div className={styles.choiceGrid}>
             {WORKFLOW_CHOICES.map((choice) => (

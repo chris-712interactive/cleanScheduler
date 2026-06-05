@@ -26,6 +26,7 @@ export function ScheduleVisitForm({
   quoteOptions,
   employeeOptions,
   defaults,
+  isConsultation = false,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -37,7 +38,9 @@ export function ScheduleVisitForm({
     propertyId?: string;
     quoteId?: string;
     title?: string;
+    purpose?: 'service' | 'consultation';
   };
+  isConsultation?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
 
@@ -103,6 +106,11 @@ export function ScheduleVisitForm({
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input
         type="hidden"
+        name="visit_purpose"
+        value={isConsultation ? 'consultation' : 'service'}
+      />
+      <input
+        type="hidden"
         name="client_timezone_offset"
         value={String(new Date().getTimezoneOffset())}
       />
@@ -128,7 +136,7 @@ export function ScheduleVisitForm({
       ) : null}
       {state.success ? (
         <p className={styles.success} role="status">
-          Visit scheduled.
+          {isConsultation ? 'Consultation scheduled.' : 'Visit scheduled.'}
         </p>
       ) : null}
 
@@ -175,6 +183,7 @@ export function ScheduleVisitForm({
             name="quote_id"
             className={styles.select}
             defaultValue={defaults?.quoteId ?? ''}
+            disabled={isConsultation}
           >
             <option value="">— None —</option>
             {quoteOptions.map((q) => (
@@ -186,24 +195,26 @@ export function ScheduleVisitForm({
         </div>
       </div>
 
-      <div className={styles.formGridTwo}>
-        <div className={styles.formField}>
-          <label className={styles.label} htmlFor="visit_job_price">
-            Job price (USD)
-          </label>
-          <input
-            id="visit_job_price"
-            name="job_price_dollars"
-            className={styles.input}
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="150.00"
-          />
-          <p className={styles.crewHint}>{OFFICE_SET_PRICE_HINT}</p>
+      {isConsultation ? null : (
+        <div className={styles.formGridTwo}>
+          <div className={styles.formField}>
+            <label className={styles.label} htmlFor="visit_job_price">
+              Job price (USD)
+            </label>
+            <input
+              id="visit_job_price"
+              name="job_price_dollars"
+              className={styles.input}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="150.00"
+            />
+            <p className={styles.crewHint}>{OFFICE_SET_PRICE_HINT}</p>
+          </div>
+          <div className={styles.formField} aria-hidden />
         </div>
-        <div className={styles.formField} aria-hidden />
-      </div>
+      )}
 
       <div className={styles.formGridTwo}>
         <div className={styles.formField}>
@@ -214,7 +225,7 @@ export function ScheduleVisitForm({
             id="visit_title"
             name="title"
             className={styles.input}
-            defaultValue={defaults?.title?.trim() || 'Visit'}
+            defaultValue={defaults?.title?.trim() || (isConsultation ? 'Consultation' : 'Visit')}
           />
         </div>
         <div className={styles.formField}>
