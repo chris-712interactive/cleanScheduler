@@ -24,6 +24,11 @@ import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
 import { recordRecurringOccurrenceSkip } from '@/lib/schedule/recurringOccurrenceSkips';
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
+import {
+  addConsultationDurationToStartIso,
+  CONSULTATION_VISIT_TITLE,
+  loadConsultationDurationMinutes,
+} from '@/lib/tenant/consultationDuration';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 
@@ -122,25 +127,32 @@ export async function createScheduledVisit(
   const purposeRaw = String(formData.get('visit_purpose') ?? 'service').trim();
   const visitPurpose: Database['public']['Enums']['scheduled_visit_purpose'] =
     purposeRaw === 'consultation' ? 'consultation' : 'service';
-  const title =
-    String(formData.get('title') ?? '').trim() ||
-    (visitPurpose === 'consultation' ? 'Consultation' : 'Visit');
+  const titleRaw = String(formData.get('title') ?? '').trim();
   const startsRaw = String(formData.get('starts_at') ?? '').trim();
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
-  const notes = String(formData.get('notes') ?? '').trim();
+  const notesRaw = String(formData.get('notes') ?? '').trim();
   const jobPriceDollars = String(formData.get('job_price_dollars') ?? '').trim();
   const statusRaw = String(formData.get('status') ?? 'scheduled').trim();
 
-  if (!slug || !customerId || !startsRaw || !endsRaw) {
-    return { error: 'Workspace, customer, start, and end times are required.' };
+  if (!slug || !customerId || !startsRaw) {
+    return { error: 'Workspace, customer, and start time are required.' };
   }
-
-  const status = VISIT_STATUSES.has(statusRaw as Database['public']['Enums']['visit_status'])
-    ? (statusRaw as Database['public']['Enums']['visit_status'])
-    : 'scheduled';
 
   const membership = await requireTenantPortalAccess(slug, '/schedule/new');
   const admin = createAdminClient();
+
+  const title = visitPurpose === 'consultation' ? CONSULTATION_VISIT_TITLE : titleRaw || 'Visit';
+  const notes = visitPurpose === 'consultation' ? '' : notesRaw;
+  const status =
+    visitPurpose === 'consultation'
+      ? 'scheduled'
+      : VISIT_STATUSES.has(statusRaw as Database['public']['Enums']['visit_status'])
+        ? (statusRaw as Database['public']['Enums']['visit_status'])
+        : 'scheduled';
+
+  if (visitPurpose !== 'consultation' && !endsRaw) {
+    return { error: 'End time is required.' };
+  }
 
   if (!(await assertCustomer(admin, membership.tenantId, customerId))) {
     return { error: 'Customer not found in this workspace.' };
@@ -155,10 +167,11 @@ export async function createScheduledVisit(
   }
 
   let quoteId: string | null = null;
-  if (quoteRaw) {
-    if (visitPurpose === 'consultation') {
+  if (visitPurpose === 'consultation') {
+    if (quoteRaw) {
       return { error: 'Consultation visits cannot be linked to a quote.' };
     }
+  } else if (quoteRaw) {
     if (!(await assertQuote(admin, membership.tenantId, quoteRaw))) {
       return { error: 'Quote not found in this workspace.' };
     }
@@ -167,10 +180,22 @@ export async function createScheduledVisit(
 
   const tenantTimezone = await loadTenantTimezone(admin, membership.tenantId);
   const startsAt = parseTenantDatetimeLocalToIso(startsRaw, tenantTimezone);
-  const endsAt = parseTenantDatetimeLocalToIso(endsRaw, tenantTimezone);
-  if (!startsAt || !endsAt) {
-    return { error: 'Invalid start or end time.' };
+  if (!startsAt) {
+    return { error: 'Invalid start time.' };
   }
+
+  let endsAt: string;
+  if (visitPurpose === 'consultation') {
+    const durationMinutes = await loadConsultationDurationMinutes(admin, membership.tenantId);
+    endsAt = addConsultationDurationToStartIso(startsAt, durationMinutes);
+  } else {
+    const parsedEndsAt = parseTenantDatetimeLocalToIso(endsRaw, tenantTimezone);
+    if (!parsedEndsAt) {
+      return { error: 'Invalid end time.' };
+    }
+    endsAt = parsedEndsAt;
+  }
+
   if (new Date(endsAt) < new Date(startsAt)) {
     return { error: 'End time must be after start time.' };
   }
@@ -345,8 +370,8 @@ export async function updateScheduledVisitTimes(
   const startsRaw = String(formData.get('starts_at') ?? '').trim();
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
 
-  if (!slug || !visitId || !startsRaw || !endsRaw) {
-    return { error: 'Workspace, visit, start, and end times are required.' };
+  if (!slug || !visitId || !startsRaw) {
+    return { error: 'Workspace, visit, and start time are required.' };
   }
 
   const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
@@ -354,7 +379,7 @@ export async function updateScheduledVisitTimes(
 
   const { data: visit, error: vErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status, checked_in_at')
+    .select('id, status, checked_in_at, visit_purpose')
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -376,10 +401,22 @@ export async function updateScheduledVisitTimes(
 
   const tenantTimezone = await loadTenantTimezone(admin, membership.tenantId);
   const startsAt = parseTenantDatetimeLocalToIso(startsRaw, tenantTimezone);
-  const endsAt = parseTenantDatetimeLocalToIso(endsRaw, tenantTimezone);
-  if (!startsAt || !endsAt) {
-    return { error: 'Invalid start or end time.' };
+  if (!startsAt) {
+    return { error: 'Invalid start time.' };
   }
+
+  let endsAt: string;
+  if (visit.visit_purpose === 'consultation') {
+    const durationMinutes = await loadConsultationDurationMinutes(admin, membership.tenantId);
+    endsAt = addConsultationDurationToStartIso(startsAt, durationMinutes);
+  } else {
+    const parsedEndsAt = parseTenantDatetimeLocalToIso(endsRaw, tenantTimezone);
+    if (!parsedEndsAt) {
+      return { error: 'Invalid end time.' };
+    }
+    endsAt = parsedEndsAt;
+  }
+
   if (new Date(endsAt) <= new Date(startsAt)) {
     return { error: 'End time must be after start time.' };
   }

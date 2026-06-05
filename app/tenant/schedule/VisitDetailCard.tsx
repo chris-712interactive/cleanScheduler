@@ -199,6 +199,7 @@ export function VisitDetailCard({
               durationSourceLabel={visit.durationSourceLabel}
               currentAssigneeUserIds={visit.assigneeUserIds}
               employeeOptions={employeeOptions}
+              isConsultation={isConsultation}
               onVisitPatch={onVisitPatch}
             />
           ) : null}

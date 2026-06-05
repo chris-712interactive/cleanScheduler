@@ -10,6 +10,8 @@ import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import type { QuoteCustomerOption } from '@/app/tenant/quotes/QuoteCreateForm';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
+import { createAdminClient } from '@/lib/supabase/server';
+import { loadConsultationDurationMinutes } from '@/lib/tenant/consultationDuration';
 import { ScheduleVisitForm } from '../ScheduleVisitForm';
 import styles from '../schedule.module.scss';
 
@@ -76,12 +78,14 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule/new');
 
   const supabase = createTenantPortalDbClient();
+  const admin = createAdminClient();
 
-  const [customersRes, propertiesRes, quotesRes] = await Promise.all([
-    supabase
-      .from('customers')
-      .select(
-        `
+  const [customersRes, propertiesRes, quotesRes, tenantRowRes, consultationDurationMinutes] =
+    await Promise.all([
+      supabase
+        .from('customers')
+        .select(
+          `
         id,
         customer_identities (
           first_name,
@@ -89,27 +93,33 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
           full_name
         )
       `,
-      )
-      .eq('tenant_id', membership.tenantId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .overrideTypes<CustomerPickRow[], { merge: false }>(),
-    supabase
-      .from('tenant_customer_properties')
-      .select(
-        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
-      )
-      .eq('tenant_id', membership.tenantId)
-      .order('is_primary', { ascending: false })
-      .overrideTypes<PropertyPickRow[], { merge: false }>(),
-    supabase
-      .from('tenant_quotes')
-      .select('id, title, amount_cents')
-      .eq('tenant_id', membership.tenantId)
-      .order('created_at', { ascending: false })
-      .limit(40)
-      .overrideTypes<QuotePickRow[], { merge: false }>(),
-  ]);
+        )
+        .eq('tenant_id', membership.tenantId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .overrideTypes<CustomerPickRow[], { merge: false }>(),
+      supabase
+        .from('tenant_customer_properties')
+        .select(
+          'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+        )
+        .eq('tenant_id', membership.tenantId)
+        .order('is_primary', { ascending: false })
+        .overrideTypes<PropertyPickRow[], { merge: false }>(),
+      isConsultation
+        ? Promise.resolve({ data: [] as QuotePickRow[], error: null })
+        : supabase
+            .from('tenant_quotes')
+            .select('id, title, amount_cents')
+            .eq('tenant_id', membership.tenantId)
+            .order('created_at', { ascending: false })
+            .limit(40)
+            .overrideTypes<QuotePickRow[], { merge: false }>(),
+      supabase.from('tenants').select('timezone').eq('id', membership.tenantId).maybeSingle(),
+      isConsultation
+        ? loadConsultationDurationMinutes(admin, membership.tenantId)
+        : Promise.resolve(60),
+    ]);
 
   const membersRes = await supabase
     .from('tenant_memberships')
@@ -132,6 +142,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   const customerRows = customersRes.data ?? [];
   const propertyRows = propertiesRes.data ?? [];
   const quoteRows = quotesRes.data ?? [];
+  const tenantTimezone = tenantRowRes.data?.timezone ?? 'America/New_York';
 
   const customerOptions: QuoteCustomerOption[] = customerRows.map((r) => ({
     id: r.id,
@@ -182,11 +193,13 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
       >
         <ScheduleVisitForm
           tenantSlug={membership.tenantSlug}
+          tenantTimezone={tenantTimezone}
           customerOptions={customerOptions}
           customerPropertyGroups={customerPropertyGroups}
           quoteOptions={quoteOptions}
           employeeOptions={employeeOptions}
           isConsultation={isConsultation}
+          consultationDurationMinutes={consultationDurationMinutes}
           defaults={{
             customerId: defaultCustomerId,
             quoteId: isConsultation ? undefined : defaultQuoteId,
