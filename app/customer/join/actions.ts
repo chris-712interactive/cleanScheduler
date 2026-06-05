@@ -10,6 +10,7 @@ import {
   type ReferralJoinPrefill,
 } from '@/lib/referrals/referralRefereeOnboarding';
 import { clearReferralCookie } from '@/lib/referrals/referralCookie';
+import { draftFromFormData, type ReferralSignupDraft } from '@/lib/referrals/referralSignupDraft';
 
 export type ReferralJoinActionState = {
   error?: string;
@@ -17,6 +18,7 @@ export type ReferralJoinActionState = {
   mode?: 'new' | 'existing';
   email?: string;
   prefill?: ReferralJoinPrefill;
+  draft?: ReferralSignupDraft;
   duplicateAccount?: boolean;
 };
 
@@ -75,24 +77,43 @@ export async function signupReferralRefereeAction(
     .toLowerCase();
   const existingCustomerId = String(formData.get('existing_customer_id') ?? '').trim() || null;
   const existingIdentityId = String(formData.get('existing_identity_id') ?? '').trim() || null;
-  const password = String(formData.get('password') ?? '');
-  const confirm = String(formData.get('confirm_password') ?? '');
+  const draft = draftFromFormData(formData);
+  const password = draft.password;
+  const confirm = draft.confirmPassword;
 
   if (!rawCode || !tenantId || !email) {
     return { error: 'Your session expired. Start again from your referral link.' };
   }
 
   if (!password || password.length < 8) {
-    return { error: 'Password must be at least 8 characters.' };
+    return {
+      error: 'Password must be at least 8 characters.',
+      step: 'signup',
+      mode: existingCustomerId ? 'existing' : 'new',
+      email,
+      draft,
+    };
   }
   if (password !== confirm) {
-    return { error: 'Passwords do not match.' };
+    return {
+      error: 'Passwords do not match.',
+      step: 'signup',
+      mode: existingCustomerId ? 'existing' : 'new',
+      email,
+      draft,
+    };
   }
 
-  const smsOptIn = formData.get('sms_opt_in') === 'on';
-  const phone = String(formData.get('phone') ?? '').trim();
+  const smsOptIn = draft.smsOptIn;
+  const phone = draft.phone;
   if (smsOptIn && !phone) {
-    return { error: 'Enter a phone number to opt in to SMS.' };
+    return {
+      error: 'Enter a phone number to opt in to SMS.',
+      step: 'signup',
+      mode: existingCustomerId ? 'existing' : 'new',
+      email,
+      draft,
+    };
   }
 
   const admin = createAdminClient();
@@ -100,17 +121,17 @@ export async function signupReferralRefereeAction(
     tenantId,
     referralCode: rawCode,
     email,
-    firstName: String(formData.get('first_name') ?? '').trim(),
-    lastName: String(formData.get('last_name') ?? '').trim(),
+    firstName: draft.firstName,
+    lastName: draft.lastName,
     phone,
-    serviceAddressLine1: String(formData.get('service_address_line1') ?? '').trim(),
-    serviceAddressLine2: String(formData.get('service_address_line2') ?? '').trim(),
-    serviceCity: String(formData.get('service_city') ?? '').trim(),
-    serviceState: String(formData.get('service_state') ?? '').trim(),
-    servicePostalCode: String(formData.get('service_postal_code') ?? '').trim(),
+    serviceAddressLine1: draft.serviceAddressLine1,
+    serviceAddressLine2: draft.serviceAddressLine2,
+    serviceCity: draft.serviceCity,
+    serviceState: draft.serviceState,
+    servicePostalCode: draft.servicePostalCode,
     password,
     smsOptIn,
-    marketingEmailOptIn: formData.get('marketing_email_opt_in') === 'on',
+    marketingEmailOptIn: draft.marketingEmailOptIn,
     existingCustomerId,
     existingIdentityId,
   });
@@ -122,6 +143,7 @@ export async function signupReferralRefereeAction(
       step: 'signup',
       mode: existingCustomerId ? 'existing' : 'new',
       email,
+      draft,
     };
   }
 

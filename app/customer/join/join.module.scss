@@ -82,3 +82,76 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
+
+.stepNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.stepNavItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.stepNavItemActive {
+  border-color: var(--color-primary-600);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-primary-600) 8%, transparent);
+}
+
+.stepNavItemComplete {
+  color: var(--color-text);
+}
+
+.stepNavBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.stepNavItemActive .stepNavBadge,
+.stepNavItemComplete .stepNavBadge {
+  background: var(--color-primary-600);
+  color: var(--color-text-on-brand);
+}
+
+.stepNavLabel {
+  font-weight: 600;
+}
+
+.stepPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stepTitle {
+  margin: 0;
+  font-size: var(--font-size-base);
+}
+
+.stepActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.fieldError {
+  margin: calc(var(--space-1) * -1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
