@@ -202,7 +202,7 @@ export async function createScheduledVisit(
 
   const pricing =
     visitPurpose === 'consultation'
-      ? { expectedAmountCents: null as number | null }
+      ? { expectedAmountCents: 0 }
       : await resolveScheduleJobPriceCents(admin, {
           tenantId: membership.tenantId,
           quoteId,
