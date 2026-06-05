@@ -20,6 +20,8 @@ import { RecurringBillingPanel } from '../RecurringBillingPanel';
 import { CustomerActivityPanel } from '../CustomerActivityPanel';
 import { CustomerWalletPanel } from '../CustomerWalletPanel';
 import { CustomerReferralAttributionPanel } from '../CustomerReferralAttributionPanel';
+import { CustomerConsultationBanner } from '../CustomerConsultationBanner';
+import { resolveCustomerConsultationStatus } from '@/lib/tenant/customerConsultation';
 import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
 import { loadCustomerReferralAttributionView } from '@/lib/referrals/loadCustomerReferralAttribution';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
@@ -61,6 +63,14 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const referralAttribution = referralsEnabled
     ? await loadCustomerReferralAttributionView(admin, membership.tenantId, id)
     : { asReferee: null, asReferrer: { pendingCount: 0, qualifiedCount: 0 } };
+
+  const { data: tenantRow } = await admin
+    .from('tenants')
+    .select('timezone')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
+  const consultation = await resolveCustomerConsultationStatus(admin, membership.tenantId, id);
 
   const supabase = createTenantPortalDbClient();
   const { data: row, error } = await supabase
@@ -166,6 +176,22 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
           Stripe will cancel this subscription at the end of the current billing period.
         </p>
       ) : null}
+
+      <CustomerConsultationBanner
+        status={consultation.status}
+        customerId={id}
+        primaryPropertyId={primary?.id ?? null}
+        tenantTimezone={tenantTimezone}
+        nextConsultation={
+          consultation.nextConsultation
+            ? {
+                id: consultation.nextConsultation.id,
+                startsAt: consultation.nextConsultation.startsAt,
+                endsAt: consultation.nextConsultation.endsAt,
+              }
+            : null
+        }
+      />
 
       <Stack gap={6}>
         <Card

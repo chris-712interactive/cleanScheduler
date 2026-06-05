@@ -4,6 +4,10 @@ import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingIn
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import { countPendingTimeOffRequests } from '@/lib/tenant/pendingTimeOffCount';
 import { countScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
+import {
+  countCustomersNeedingConsultationAction,
+  CUSTOMERS_NEEDING_CONSULTATION_HREF,
+} from '@/lib/tenant/customerConsultation';
 import { countScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 
@@ -26,6 +30,7 @@ export interface DashboardTodayQueue {
   scheduleRenewalCount: number;
   pendingTimeOffCount: number;
   scheduleIssueCount: number;
+  consultationActionCount: number;
   items: DashboardTodayQueueItem[];
 }
 
@@ -43,6 +48,7 @@ export async function getDashboardTodayQueue(
     scheduleRenewalCount,
     pendingTimeOffCount,
     scheduleIssueCount,
+    consultationActionCount,
   ] = await Promise.all([
     countPendingRescheduleRequests(db, tenantId),
     getTenantTodaysJobsSummary(db, tenantId),
@@ -68,6 +74,7 @@ export async function getDashboardTodayQueue(
     countScheduleRenewalReminders(db, tenantId),
     countPendingTimeOffRequests(db, tenantId),
     countScheduleIssues(db, tenantId),
+    countCustomersNeedingConsultationAction(db, tenantId),
   ]);
 
   const awaitingReceiptCount = awaitingReceiptRes.count ?? 0;
@@ -92,6 +99,16 @@ export async function getDashboardTodayQueue(
       label: `${pendingTimeOffCount} time off request${pendingTimeOffCount === 1 ? '' : 's'}`,
       detail: 'Team members waiting on approval',
       href: '/schedule/time-off-requests',
+      tone: 'warn',
+    });
+  }
+
+  if (consultationActionCount > 0) {
+    items.push({
+      id: 'consultations',
+      label: `${consultationActionCount} customer${consultationActionCount === 1 ? '' : 's'} need consultation`,
+      detail: 'Schedule or complete a consultation before sending quotes',
+      href: CUSTOMERS_NEEDING_CONSULTATION_HREF,
       tone: 'warn',
     });
   }
@@ -188,6 +205,7 @@ export async function getDashboardTodayQueue(
     scheduleRenewalCount,
     pendingTimeOffCount,
     scheduleIssueCount,
+    consultationActionCount,
     items,
   };
 }

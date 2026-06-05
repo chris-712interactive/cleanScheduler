@@ -20,5 +20,6 @@ export type OperationalSettingsFormSnapshot = {
   sms_notify_invoice_overdue: boolean;
   check_reminder_hold_days: number;
   check_hold_through_deposit: boolean;
+  require_consultation_before_quote: boolean;
   messaging_channels: MessagingChannel[];
 };

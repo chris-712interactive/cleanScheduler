@@ -81,6 +81,7 @@ export async function updateTenantOperationalSettings(
     sms_notify_invoice_overdue: smsAllowed ? notify.sms_notify_invoice_overdue : false,
     check_reminder_hold_days: checkReminderHoldDays,
     check_hold_through_deposit: checkHoldThroughDeposit,
+    require_consultation_before_quote: formData.get('require_consultation_before_quote') === 'on',
     messaging_channels: messagingChannels,
   };
 
@@ -110,6 +111,7 @@ export async function updateTenantOperationalSettings(
     sms_notify_invoice_overdue: row.sms_notify_invoice_overdue ?? false,
     check_reminder_hold_days: checkReminderHoldDays,
     check_hold_through_deposit: checkHoldThroughDeposit,
+    require_consultation_before_quote: row.require_consultation_before_quote ?? true,
     messaging_channels: messagingChannels,
   };
 

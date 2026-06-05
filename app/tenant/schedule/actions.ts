@@ -119,7 +119,12 @@ export async function createScheduledVisit(
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const propertyRaw = String(formData.get('property_id') ?? '').trim();
   const quoteRaw = String(formData.get('quote_id') ?? '').trim();
-  const title = String(formData.get('title') ?? '').trim() || 'Visit';
+  const purposeRaw = String(formData.get('visit_purpose') ?? 'service').trim();
+  const visitPurpose: Database['public']['Enums']['scheduled_visit_purpose'] =
+    purposeRaw === 'consultation' ? 'consultation' : 'service';
+  const title =
+    String(formData.get('title') ?? '').trim() ||
+    (visitPurpose === 'consultation' ? 'Consultation' : 'Visit');
   const startsRaw = String(formData.get('starts_at') ?? '').trim();
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
   const notes = String(formData.get('notes') ?? '').trim();
@@ -151,6 +156,9 @@ export async function createScheduledVisit(
 
   let quoteId: string | null = null;
   if (quoteRaw) {
+    if (visitPurpose === 'consultation') {
+      return { error: 'Consultation visits cannot be linked to a quote.' };
+    }
     if (!(await assertQuote(admin, membership.tenantId, quoteRaw))) {
       return { error: 'Quote not found in this workspace.' };
     }
@@ -167,11 +175,14 @@ export async function createScheduledVisit(
     return { error: 'End time must be after start time.' };
   }
 
-  const pricing = await resolveScheduleJobPriceCents(admin, {
-    tenantId: membership.tenantId,
-    quoteId,
-    jobPriceDollars,
-  });
+  const pricing =
+    visitPurpose === 'consultation'
+      ? { expectedAmountCents: null as number | null }
+      : await resolveScheduleJobPriceCents(admin, {
+          tenantId: membership.tenantId,
+          quoteId,
+          jobPriceDollars,
+        });
   if ('error' in pricing) {
     return { error: pricing.error };
   }
@@ -187,6 +198,7 @@ export async function createScheduledVisit(
       quote_id: quoteId,
       expected_amount_cents: pricing.expectedAmountCents,
       title,
+      visit_purpose: visitPurpose,
       starts_at: startsAt,
       ends_at: endsAt,
       status,

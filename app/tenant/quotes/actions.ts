@@ -25,6 +25,7 @@ import {
   type QuotePropertySnapshot,
 } from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { assertCustomerEligibleForQuoteSend } from '@/lib/tenant/customerConsultation';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
@@ -116,6 +117,17 @@ export async function moveTenantQuoteStatus(
       error:
         'Quotes can only be marked accepted from the customer portal after the customer signs. Share the quote as Sent and ask them to accept there.',
     };
+  }
+
+  if (nextStatus === 'sent' && existing.customer_id) {
+    const consultationGate = await assertCustomerEligibleForQuoteSend(
+      admin,
+      membership.tenantId,
+      existing.customer_id as string,
+    );
+    if (!consultationGate.ok) {
+      return { ok: false, error: consultationGate.error };
+    }
   }
 
   const upd = await admin
@@ -457,6 +469,14 @@ export async function createTenantQuote(
     if (!validUntilRaw.trim()) {
       return { error: 'Set a valid-until date before sending to the customer.' };
     }
+    const consultationGate = await assertCustomerEligibleForQuoteSend(
+      admin,
+      membership.tenantId,
+      customerId,
+    );
+    if (!consultationGate.ok) {
+      return { error: consultationGate.error };
+    }
   }
 
   const pricing = parseQuoteHeaderPricingFromForm(formData);
@@ -706,6 +726,17 @@ export async function updateTenantQuote(
   const amountCents = priced.amountCents;
   const quoteDiscountKind = priced.promotionFields.quote_discount_kind;
   const quoteDiscountValue = priced.promotionFields.quote_discount_value;
+
+  if (status === 'sent' && priorStatus !== 'sent') {
+    const consultationGate = await assertCustomerEligibleForQuoteSend(
+      admin,
+      membership.tenantId,
+      customerId,
+    );
+    if (!consultationGate.ok) {
+      return { error: consultationGate.error };
+    }
+  }
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
