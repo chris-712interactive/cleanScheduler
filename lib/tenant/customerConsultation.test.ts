@@ -38,9 +38,9 @@ describe('resolveConsultationStatusFromVisits', () => {
 });
 
 describe('consultationNeedsStaffAction', () => {
-  it('flags scheduling and scheduled states', () => {
+  it('flags only customers who still need a consultation scheduled', () => {
     expect(consultationNeedsStaffAction('needs_scheduling')).toBe(true);
-    expect(consultationNeedsStaffAction('scheduled')).toBe(true);
+    expect(consultationNeedsStaffAction('scheduled')).toBe(false);
     expect(consultationNeedsStaffAction('completed')).toBe(false);
     expect(consultationNeedsStaffAction('not_required')).toBe(false);
   });
