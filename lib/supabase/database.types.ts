@@ -1221,6 +1221,7 @@ export type Database = {
           check_reminder_hold_days: number;
           check_hold_through_deposit: boolean;
           require_consultation_before_quote: boolean;
+          consultation_duration_minutes: number;
           messaging_channels: string[];
           created_at: string;
           updated_at: string;
@@ -1242,6 +1243,7 @@ export type Database = {
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;
+          consultation_duration_minutes?: number;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
@@ -1263,6 +1265,7 @@ export type Database = {
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;
+          consultation_duration_minutes?: number;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;

@@ -154,7 +154,10 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       : null;
   const durationHours = durationResolution?.durationHours ?? DEFAULT_VISIT_DURATION_HOURS;
   const durationSourceLabel =
-    durationResolution?.sourceLabel ?? `Default (${DEFAULT_VISIT_DURATION_HOURS} hr)`;
+    durationResolution?.sourceLabel ??
+    (row.visit_purpose === 'consultation'
+      ? 'Consultation default'
+      : `Default (${DEFAULT_VISIT_DURATION_HOURS} hr)`);
 
   let employeeOptions: { id: string; label: string }[] = [];
   if (!isFieldEmployee) {

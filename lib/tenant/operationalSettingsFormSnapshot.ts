@@ -21,5 +21,6 @@ export type OperationalSettingsFormSnapshot = {
   check_reminder_hold_days: number;
   check_hold_through_deposit: boolean;
   require_consultation_before_quote: boolean;
+  consultation_duration_minutes: number;
   messaging_channels: MessagingChannel[];
 };

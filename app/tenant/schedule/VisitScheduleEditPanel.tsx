@@ -140,6 +140,7 @@ export function VisitScheduleEditPanel({
   durationSourceLabel,
   currentAssigneeUserIds,
   employeeOptions,
+  isConsultation = false,
   onVisitPatch,
 }: {
   tenantSlug: string;
@@ -151,6 +152,7 @@ export function VisitScheduleEditPanel({
   durationSourceLabel: string;
   currentAssigneeUserIds: string[];
   employeeOptions: EmployeeOption[];
+  isConsultation?: boolean;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [timeState, timeAction, timePending] = useActionState(updateScheduledVisitTimes, initial);
@@ -230,12 +232,12 @@ export function VisitScheduleEditPanel({
   const handleStartChange = useCallback(
     (value: string) => {
       setStartsLocal(value);
-      if (!endManuallyEdited) {
+      if (isConsultation || !endManuallyEdited) {
         const shifted = shiftEndFromStartAndDuration(value, durationHours, tenantTimezone);
         if (shifted) setEndsLocal(shifted);
       }
     },
-    [durationHours, endManuallyEdited, tenantTimezone],
+    [durationHours, endManuallyEdited, isConsultation, tenantTimezone],
   );
 
   const applySuggestion = useCallback(
@@ -267,14 +269,18 @@ export function VisitScheduleEditPanel({
     <div className={styles.visitScheduleEditPanel}>
       <div className={styles.visitScheduleEditHeader}>
         <div>
-          <p className={styles.visitRescheduleTitle}>Schedule</p>
+          <p className={styles.visitRescheduleTitle}>
+            {isConsultation ? 'Consultation schedule' : 'Schedule'}
+          </p>
           <p className={styles.visitRescheduleHint} title={durationSourceLabel}>
-            {durationHours} hr job · end time auto-fills from start
+            {isConsultation
+              ? `${durationSourceLabel} · end time auto-fills from start`
+              : `${durationHours} hr job · end time auto-fills from start`}
           </p>
         </div>
       </div>
 
-      {showSuggestions ? (
+      {showSuggestions && !isConsultation ? (
         <SuggestionList suggestions={preview.data!.suggestions} onApply={applySuggestion} />
       ) : null}
 
@@ -338,7 +344,7 @@ export function VisitScheduleEditPanel({
           <div className={styles.visitRescheduleGrid}>
             <div className={styles.formField}>
               <label className={styles.label} htmlFor="visit_edit_starts_at">
-                Start
+                {isConsultation ? 'Start date & time' : 'Start'}
               </label>
               <input
                 id="visit_edit_starts_at"
@@ -350,23 +356,32 @@ export function VisitScheduleEditPanel({
                 required
               />
             </div>
-            <div className={styles.formField}>
-              <label className={styles.label} htmlFor="visit_edit_ends_at">
-                End
-              </label>
-              <input
-                id="visit_edit_ends_at"
-                name="ends_at"
-                type="datetime-local"
-                className={styles.input}
-                value={endsLocal}
-                onChange={(e) => {
-                  setEndManuallyEdited(true);
-                  setEndsLocal(e.target.value);
-                }}
-                required
-              />
-            </div>
+            {isConsultation ? (
+              <>
+                <input type="hidden" name="ends_at" value={endsLocal} />
+                <p className={styles.crewHint}>
+                  Ends automatically based on your consultation length setting.
+                </p>
+              </>
+            ) : (
+              <div className={styles.formField}>
+                <label className={styles.label} htmlFor="visit_edit_ends_at">
+                  End
+                </label>
+                <input
+                  id="visit_edit_ends_at"
+                  name="ends_at"
+                  type="datetime-local"
+                  className={styles.input}
+                  value={endsLocal}
+                  onChange={(e) => {
+                    setEndManuallyEdited(true);
+                    setEndsLocal(e.target.value);
+                  }}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className={styles.visitRescheduleActions}>
@@ -389,7 +404,9 @@ export function VisitScheduleEditPanel({
             <input type="hidden" name="confirm_unavailable" value="true" />
           ) : null}
 
-          <h3 className={styles.visitScheduleSectionTitle}>Crew</h3>
+          <h3 className={styles.visitScheduleSectionTitle}>
+            {isConsultation ? 'Consultant' : 'Crew'}
+          </h3>
 
           {crewState.error ? (
             <p className={styles.error} role="alert">
@@ -424,7 +441,7 @@ export function VisitScheduleEditPanel({
           />
 
           <fieldset className={`${styles.crewFieldset} ${styles.crewFieldsetCompact}`}>
-            <legend className={styles.crewLegend}>Crew</legend>
+            <legend className={styles.crewLegend}>{isConsultation ? 'Consultant' : 'Crew'}</legend>
             <input
               className={styles.crewSearch}
               type="search"

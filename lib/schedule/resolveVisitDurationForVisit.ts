@@ -7,6 +7,11 @@ import {
 } from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { DEFAULT_VISIT_DURATION_HOURS } from '@/lib/schedule/visitDuration';
+import {
+  consultationDurationMinutesToHours,
+  formatConsultationDurationLabel,
+  loadConsultationDurationMinutes,
+} from '@/lib/tenant/consultationDuration';
 
 type Admin = SupabaseClient<Database>;
 
@@ -27,6 +32,7 @@ export async function resolveVisitDurationForVisit(
       id,
       title,
       quote_id,
+      visit_purpose,
       quote_line_item_id,
       tenant_quotes (
         job_type,
@@ -39,6 +45,15 @@ export async function resolveVisitDurationForVisit(
     .maybeSingle();
 
   if (error || !visit) return null;
+
+  if (visit.visit_purpose === 'consultation') {
+    const durationMinutes = await loadConsultationDurationMinutes(admin, tenantId);
+    const durationHours = consultationDurationMinutesToHours(durationMinutes);
+    return {
+      durationHours,
+      sourceLabel: `Consultation default (${formatConsultationDurationLabel(durationMinutes)})`,
+    };
+  }
 
   let lineEstimatedHours: number | null = null;
   let lineServiceLabel: string | null = null;
