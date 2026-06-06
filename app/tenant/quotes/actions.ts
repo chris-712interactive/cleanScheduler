@@ -6,7 +6,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import type { Database } from '@/lib/supabase/database.types';
-import { parseQuoteLineItemsFromForm } from '@/lib/tenant/quoteLineItemsForm';
+import {
+  parseQuoteLineItemsFromForm,
+  type ParsedQuoteLineItem,
+} from '@/lib/tenant/quoteLineItemsForm';
 import {
   parseDiscountDollarsToCents,
   parseDiscountPercentToBps,
@@ -18,7 +21,7 @@ import {
   createTenantCustomerInlineForQuote,
   createTenantPropertyInlineForQuote,
 } from '@/lib/tenant/createTenantCustomerInline';
-import type { ParsedQuoteLineItem } from '@/lib/tenant/quoteLineItemsForm';
+import { enrichParsedQuoteLines } from '@/lib/tenant/enrichQuoteLineItems';
 import {
   parseCustomerPropertyKind,
   parseQuoteWizardStructuredFromForm,
@@ -282,6 +285,7 @@ function linePayloadFromParsed(lines: ParsedQuoteLineItem[]) {
   return lines.map((l) => ({
     sort_order: l.sort_order,
     service_label: l.service_label,
+    display_title: l.display_title,
     frequency: l.frequency,
     frequency_detail: l.frequency_detail,
     amount_cents: l.amount_cents,
@@ -462,8 +466,19 @@ export async function createTenantQuote(
     return { error: parsedLines.error };
   }
 
+  const enrichedLines = await enrichParsedQuoteLines(
+    admin,
+    membership.tenantId,
+    structured.jobType ?? inlinePropertyKind,
+    parsedLines.lines,
+  );
+  if ('error' in enrichedLines) {
+    return { error: enrichedLines.error };
+  }
+  const quoteLines = enrichedLines.lines;
+
   if (initialStatus === 'sent') {
-    if (parsedLines.lines.length === 0) {
+    if (quoteLines.length === 0) {
       return { error: 'Add at least one priced service line before sending to the customer.' };
     }
     if (!validUntilRaw.trim()) {
@@ -489,12 +504,12 @@ export async function createTenantQuote(
 
   const headerParsed = parseOptionalDollarsToCents(amountRaw);
   if (!headerParsed.ok) return { error: headerParsed.error };
-  const headerSubtotal = parsedLines.lines.length > 0 ? null : headerParsed.cents;
+  const headerSubtotal = quoteLines.length > 0 ? null : headerParsed.cents;
 
   const priced = await computeQuotePricingWithPromotions(admin, {
     tenantId: membership.tenantId,
     customerId,
-    lines: parsedLines.lines.map((l) => ({
+    lines: quoteLines.map((l) => ({
       amount_cents: l.amount_cents,
       line_discount_kind: l.line_discount_kind,
       line_discount_value: l.line_discount_value,
@@ -515,7 +530,7 @@ export async function createTenantQuote(
   const quoteDiscountKind = priced.promotionFields.quote_discount_kind;
   const quoteDiscountValue = priced.promotionFields.quote_discount_value;
 
-  const linePayload = linePayloadFromParsed(parsedLines.lines);
+  const linePayload = linePayloadFromParsed(quoteLines);
 
   await syncPropertyFactsFromSnapshot(
     admin,
@@ -692,6 +707,20 @@ export async function updateTenantQuote(
     return { error: parsedLines.error };
   }
 
+  const fromWizard = formData.has('scope_template_id');
+  const structured = fromWizard ? parseQuoteWizardStructuredFromForm(formData) : null;
+
+  const enrichedLines = await enrichParsedQuoteLines(
+    admin,
+    membership.tenantId,
+    structured?.jobType ?? (existing.job_type as CustomerPropertyKind | null),
+    parsedLines.lines,
+  );
+  if ('error' in enrichedLines) {
+    return { error: enrichedLines.error };
+  }
+  const quoteLines = enrichedLines.lines;
+
   const pricing = parseQuoteHeaderPricingFromForm(formData);
   if (!pricing.ok) return { error: pricing.error };
 
@@ -700,13 +729,13 @@ export async function updateTenantQuote(
 
   const headerParsed = parseOptionalDollarsToCents(amountRaw);
   if (!headerParsed.ok) return { error: headerParsed.error };
-  const headerSubtotal = parsedLines.lines.length > 0 ? null : headerParsed.cents;
+  const headerSubtotal = quoteLines.length > 0 ? null : headerParsed.cents;
 
   const priced = await computeQuotePricingWithPromotions(admin, {
     tenantId: membership.tenantId,
     customerId,
     quoteId,
-    lines: parsedLines.lines.map((l) => ({
+    lines: quoteLines.map((l) => ({
       amount_cents: l.amount_cents,
       line_discount_kind: l.line_discount_kind,
       line_discount_value: l.line_discount_value,
@@ -740,10 +769,7 @@ export async function updateTenantQuote(
 
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
-  const linePayload = linePayloadFromParsed(parsedLines.lines);
-
-  const fromWizard = formData.has('scope_template_id');
-  const structured = fromWizard ? parseQuoteWizardStructuredFromForm(formData) : null;
+  const linePayload = linePayloadFromParsed(quoteLines);
 
   const rpc = await admin.rpc('tenant_quote_save_with_line_items', {
     p_quote_id: quoteId,

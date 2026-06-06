@@ -9,6 +9,7 @@ export type QuoteEditLineItem = Pick<
   | 'id'
   | 'sort_order'
   | 'service_label'
+  | 'display_title'
   | 'frequency'
   | 'frequency_detail'
   | 'amount_cents'
@@ -73,6 +74,7 @@ export async function loadQuoteEditSnapshot(
         id,
         sort_order,
         service_label,
+        display_title,
         frequency,
         frequency_detail,
         amount_cents,

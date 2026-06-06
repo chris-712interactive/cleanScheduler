@@ -262,6 +262,41 @@ export function OperationalSettingsForm({
               </label>
             ))}
           </div>
+          {snapshot.accepted_quote_schedule_mode === 'auto_schedule' ? (
+            <div>
+              <label className={styles.paymentToggle}>
+                <input
+                  type="checkbox"
+                  name="recurring_starts_after_initial"
+                  defaultChecked={snapshot.recurring_starts_after_initial}
+                  disabled={readOnly}
+                />
+                <span>Start recurring visits one full cadence after initial / one-time work</span>
+              </label>
+              <p className={styles.technicalNote}>
+                When a quote includes both a deep clean and ongoing service, the first recurring
+                visit is scheduled at least one week (or biweekly/monthly interval) after the last
+                initial visit — not the same day.
+              </p>
+              <label className={styles.paymentToggle}>
+                <input
+                  type="checkbox"
+                  name="allow_same_day_initial_recurring"
+                  defaultChecked={snapshot.allow_same_day_initial_recurring}
+                  disabled={readOnly}
+                />
+                <span>Allow recurring and initial visits on the same day</span>
+              </label>
+              <p className={styles.technicalNote}>
+                Off by default. Turn on only if you intentionally book both on the same day.
+              </p>
+            </div>
+          ) : (
+            <>
+              <input type="hidden" name="recurring_starts_after_initial" value="off" readOnly />
+              <input type="hidden" name="allow_same_day_initial_recurring" value="off" readOnly />
+            </>
+          )}
         </div>
 
         <div>
