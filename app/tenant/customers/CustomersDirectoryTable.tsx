@@ -8,6 +8,7 @@ export type CustomerDirectoryRow = {
   email: string | null;
   phone: string | null;
   addressLine: string | null;
+  consultationLabel?: string | null;
 };
 
 export function CustomersDirectoryTable({ rows }: { rows: CustomerDirectoryRow[] }) {

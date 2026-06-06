@@ -76,6 +76,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       completion_invoice_id,
       quote_id,
       expected_amount_cents,
+      visit_purpose,
       customers (
         customer_identities (
           first_name,
@@ -153,7 +154,10 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       : null;
   const durationHours = durationResolution?.durationHours ?? DEFAULT_VISIT_DURATION_HOURS;
   const durationSourceLabel =
-    durationResolution?.sourceLabel ?? `Default (${DEFAULT_VISIT_DURATION_HOURS} hr)`;
+    durationResolution?.sourceLabel ??
+    (row.visit_purpose === 'consultation'
+      ? 'Consultation default'
+      : `Default (${DEFAULT_VISIT_DURATION_HOURS} hr)`);
 
   let employeeOptions: { id: string; label: string }[] = [];
   if (!isFieldEmployee) {
@@ -191,7 +195,11 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
         </Link>
         <div className={styles.visitPageTitles}>
           <h1 className={styles.visitPageTitle}>{customerName}</h1>
-          <p className={styles.visitPageSubtitle}>{row.title || 'Cleaning visit'}</p>
+          <p className={styles.visitPageSubtitle}>
+            {row.visit_purpose === 'consultation'
+              ? 'Consultation visit'
+              : row.title || 'Cleaning visit'}
+          </p>
         </div>
       </header>
 
@@ -202,7 +210,9 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           visitId,
           tenantSlug: membership.tenantSlug,
           tenantTimezone,
-          title: row.title || 'Cleaning visit',
+          title:
+            row.title || (row.visit_purpose === 'consultation' ? 'Consultation' : 'Cleaning visit'),
+          visitPurpose: row.visit_purpose ?? 'service',
           customerName,
           customerPhone,
           customerEmail,

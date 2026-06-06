@@ -10,6 +10,8 @@ import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import type { QuoteCustomerOption } from '@/app/tenant/quotes/QuoteCreateForm';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
+import { createAdminClient } from '@/lib/supabase/server';
+import { loadConsultationDurationMinutes } from '@/lib/tenant/consultationDuration';
 import { ScheduleVisitForm } from '../ScheduleVisitForm';
 import styles from '../schedule.module.scss';
 
@@ -70,17 +72,20 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   const defaultQuoteId = firstParam(sp.quote_id)?.trim() ?? '';
   const defaultPropertyId = firstParam(sp.property_id)?.trim() ?? '';
   const defaultTitle = firstParam(sp.title)?.trim() ?? '';
+  const isConsultation = firstParam(sp.purpose)?.trim() === 'consultation';
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule/new');
 
   const supabase = createTenantPortalDbClient();
+  const admin = createAdminClient();
 
-  const [customersRes, propertiesRes, quotesRes] = await Promise.all([
-    supabase
-      .from('customers')
-      .select(
-        `
+  const [customersRes, propertiesRes, quotesRes, tenantRowRes, consultationDurationMinutes] =
+    await Promise.all([
+      supabase
+        .from('customers')
+        .select(
+          `
         id,
         customer_identities (
           first_name,
@@ -88,27 +93,33 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
           full_name
         )
       `,
-      )
-      .eq('tenant_id', membership.tenantId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .overrideTypes<CustomerPickRow[], { merge: false }>(),
-    supabase
-      .from('tenant_customer_properties')
-      .select(
-        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
-      )
-      .eq('tenant_id', membership.tenantId)
-      .order('is_primary', { ascending: false })
-      .overrideTypes<PropertyPickRow[], { merge: false }>(),
-    supabase
-      .from('tenant_quotes')
-      .select('id, title, amount_cents')
-      .eq('tenant_id', membership.tenantId)
-      .order('created_at', { ascending: false })
-      .limit(40)
-      .overrideTypes<QuotePickRow[], { merge: false }>(),
-  ]);
+        )
+        .eq('tenant_id', membership.tenantId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .overrideTypes<CustomerPickRow[], { merge: false }>(),
+      supabase
+        .from('tenant_customer_properties')
+        .select(
+          'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+        )
+        .eq('tenant_id', membership.tenantId)
+        .order('is_primary', { ascending: false })
+        .overrideTypes<PropertyPickRow[], { merge: false }>(),
+      isConsultation
+        ? Promise.resolve({ data: [] as QuotePickRow[], error: null })
+        : supabase
+            .from('tenant_quotes')
+            .select('id, title, amount_cents')
+            .eq('tenant_id', membership.tenantId)
+            .order('created_at', { ascending: false })
+            .limit(40)
+            .overrideTypes<QuotePickRow[], { merge: false }>(),
+      supabase.from('tenants').select('timezone').eq('id', membership.tenantId).maybeSingle(),
+      isConsultation
+        ? loadConsultationDurationMinutes(admin, membership.tenantId)
+        : Promise.resolve(60),
+    ]);
 
   const membersRes = await supabase
     .from('tenant_memberships')
@@ -131,6 +142,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   const customerRows = customersRes.data ?? [];
   const propertyRows = propertiesRes.data ?? [];
   const quoteRows = quotesRes.data ?? [];
+  const tenantTimezone = tenantRowRes.data?.timezone ?? 'America/New_York';
 
   const customerOptions: QuoteCustomerOption[] = customerRows.map((r) => ({
     id: r.id,
@@ -158,8 +170,12 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   return (
     <>
       <PageHeader
-        title="New appointment"
-        description="Pick a customer, optional site, and time window. You return to the calendar when you save."
+        title={isConsultation ? 'Schedule consultation' : 'New appointment'}
+        description={
+          isConsultation
+            ? 'Book a walkthrough or site visit before quoting this customer.'
+            : 'Pick a customer, optional site, and time window. You return to the calendar when you save.'
+        }
         actions={
           <Link href="/schedule" className={styles.backToSchedule}>
             ← Back to schedule
@@ -168,20 +184,28 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
       />
 
       <Card
-        title="Appointment details"
-        description="Required fields are marked by the browser when you submit."
+        title={isConsultation ? 'Consultation details' : 'Appointment details'}
+        description={
+          isConsultation
+            ? 'Consultations are separate from cleaning visits and do not require a job price.'
+            : 'Required fields are marked by the browser when you submit.'
+        }
       >
         <ScheduleVisitForm
           tenantSlug={membership.tenantSlug}
+          tenantTimezone={tenantTimezone}
           customerOptions={customerOptions}
           customerPropertyGroups={customerPropertyGroups}
           quoteOptions={quoteOptions}
           employeeOptions={employeeOptions}
+          isConsultation={isConsultation}
+          consultationDurationMinutes={consultationDurationMinutes}
           defaults={{
             customerId: defaultCustomerId,
-            quoteId: defaultQuoteId,
+            quoteId: isConsultation ? undefined : defaultQuoteId,
             propertyId: defaultPropertyId,
-            title: defaultTitle,
+            title: defaultTitle || (isConsultation ? 'Consultation' : undefined),
+            purpose: isConsultation ? 'consultation' : 'service',
           }}
         />
       </Card>

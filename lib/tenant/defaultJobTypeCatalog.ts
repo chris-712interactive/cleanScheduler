@@ -1,12 +1,15 @@
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 
+export type ServiceTemplateScheduleRole = 'initial' | 'recurring' | 'standard';
+
 export type DefaultJobTypeDefinition = {
   serviceLabel: string;
   /** Display name in settings (usually matches service label). */
   name: string;
   hoursByPropertyKind: Partial<Record<CustomerPropertyKind, number>>;
   sortOrder: number;
+  scheduleRole: ServiceTemplateScheduleRole;
 };
 
 /** Built-in job types seeded for every tenant; durations are editable in settings. */
@@ -15,6 +18,7 @@ export const DEFAULT_JOB_TYPE_CATALOG: DefaultJobTypeDefinition[] = [
     serviceLabel: 'Deep cleaning',
     name: 'Deep cleaning',
     sortOrder: 0,
+    scheduleRole: 'initial',
     hoursByPropertyKind: {
       residential: 4,
       commercial: 6,
@@ -26,6 +30,7 @@ export const DEFAULT_JOB_TYPE_CATALOG: DefaultJobTypeDefinition[] = [
     serviceLabel: 'Standard cleaning',
     name: 'Standard cleaning',
     sortOrder: 1,
+    scheduleRole: 'recurring',
     hoursByPropertyKind: {
       residential: 2,
       commercial: 3,
@@ -37,6 +42,7 @@ export const DEFAULT_JOB_TYPE_CATALOG: DefaultJobTypeDefinition[] = [
     serviceLabel: 'Move-out deep clean',
     name: 'Move-out deep clean',
     sortOrder: 2,
+    scheduleRole: 'initial',
     hoursByPropertyKind: {
       residential: 5,
       commercial: 8,
@@ -48,6 +54,7 @@ export const DEFAULT_JOB_TYPE_CATALOG: DefaultJobTypeDefinition[] = [
     serviceLabel: 'Initial / first clean',
     name: 'Initial / first clean',
     sortOrder: 3,
+    scheduleRole: 'initial',
     hoursByPropertyKind: {
       residential: 3,
       commercial: 4,

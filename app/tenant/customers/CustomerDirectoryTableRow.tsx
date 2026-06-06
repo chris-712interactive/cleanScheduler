@@ -83,9 +83,14 @@ export function CustomerDirectoryTableRow({ row }: { row: CustomerDirectoryRow }
         )}
       </td>
       <td>
-        <StatusPill tone={customerListStatusTone(row.status)}>
-          {customerListStatusLabel(row.status)}
-        </StatusPill>
+        <div className={styles.statusCell}>
+          <StatusPill tone={customerListStatusTone(row.status)}>
+            {customerListStatusLabel(row.status)}
+          </StatusPill>
+          {row.consultationLabel ? (
+            <StatusPill tone="warning">{row.consultationLabel}</StatusPill>
+          ) : null}
+        </div>
       </td>
     </tr>
   );

@@ -19,6 +19,7 @@ import {
 import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
 import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
 import { normalizeMessagingChannelsFromDb } from '@/lib/sms/sentMessagingChannels';
+import { DEFAULT_CONSULTATION_DURATION_MINUTES } from '@/lib/tenant/consultationDuration';
 import { OperationalSettingsForm } from '../OperationalSettingsForm';
 import styles from './operations-settings.module.scss';
 
@@ -53,7 +54,7 @@ export default async function TenantOperationsSettingsPage() {
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days, check_hold_through_deposit, messaging_channels',
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels',
     )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -76,6 +77,11 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_invoice_overdue: opsRow.sms_notify_invoice_overdue,
         check_reminder_hold_days: opsRow.check_reminder_hold_days,
         check_hold_through_deposit: opsRow.check_hold_through_deposit,
+        require_consultation_before_quote: opsRow.require_consultation_before_quote,
+        consultation_duration_minutes:
+          opsRow.consultation_duration_minutes ?? DEFAULT_CONSULTATION_DURATION_MINUTES,
+        recurring_starts_after_initial: opsRow.recurring_starts_after_initial ?? true,
+        allow_same_day_initial_recurring: opsRow.allow_same_day_initial_recurring ?? false,
         messaging_channels: normalizeMessagingChannelsFromDb(opsRow.messaging_channels),
       }
     : {
@@ -93,6 +99,10 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_invoice_overdue: false,
         check_reminder_hold_days: 7,
         check_hold_through_deposit: false,
+        require_consultation_before_quote: true,
+        consultation_duration_minutes: DEFAULT_CONSULTATION_DURATION_MINUTES,
+        recurring_starts_after_initial: true,
+        allow_same_day_initial_recurring: false,
         messaging_channels: normalizeMessagingChannelsFromDb(undefined),
       };
 

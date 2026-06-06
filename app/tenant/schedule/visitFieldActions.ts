@@ -1,5 +1,6 @@
 'use server';
 
+import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -21,6 +22,8 @@ import {
 import { featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { saveVisitProofPhotosFromForm } from '@/lib/visits/visitProofPhotos';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
+import { buildCreateQuotePath } from '@/lib/tenant/customerConsultation';
+import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -36,7 +39,7 @@ async function loadVisitForActor(
   const { data: visit, error } = await admin
     .from('tenant_scheduled_visits')
     .select(
-      'id, status, checked_in_at, checked_in_by_user_id, customer_id, quote_id, expected_amount_cents, title',
+      'id, status, checked_in_at, checked_in_by_user_id, customer_id, property_id, quote_id, expected_amount_cents, title, visit_purpose',
     )
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
@@ -165,27 +168,42 @@ export async function completeVisitWithPaymentAction(
     return { error: 'You cannot complete this visit.' };
   }
 
-  const billing = await applyVisitCompletionBilling(admin, {
-    tenantId: membership.tenantId,
-    tenantSlug: membership.tenantSlug,
-    visitId,
-    customerId: loaded.visit.customer_id,
-    quoteId: loaded.visit.quote_id,
-    expectedAmountCents: loaded.visit.expected_amount_cents,
-    visitTitle: loaded.visit.title,
-    actorRole,
-    actorUserId: auth.user.id,
-    billing: {
-      paymentCollected,
-      collectedMethod,
-      checkNumber: checkNumber || undefined,
-      amountDollars,
-    },
-  });
+  const billing =
+    loaded.visit.visit_purpose === 'consultation'
+      ? {
+          amountCents: null as number | null,
+          invoiceId: null as string | null,
+          emailed: false,
+        }
+      : await applyVisitCompletionBilling(admin, {
+          tenantId: membership.tenantId,
+          tenantSlug: membership.tenantSlug,
+          visitId,
+          customerId: loaded.visit.customer_id,
+          quoteId: loaded.visit.quote_id,
+          expectedAmountCents: loaded.visit.expected_amount_cents,
+          visitTitle: loaded.visit.title,
+          actorRole,
+          actorUserId: auth.user.id,
+          billing: {
+            paymentCollected,
+            collectedMethod,
+            checkNumber: checkNumber || undefined,
+            amountDollars,
+          },
+        });
 
   if ('error' in billing) {
     return { error: billing.error };
   }
+
+  const consultationComplete = loaded.visit.visit_purpose === 'consultation';
+  const effectivePaymentCollected = consultationComplete ? false : paymentCollected;
+  const effectiveCollectedMethod = consultationComplete
+    ? null
+    : paymentCollected
+      ? (collectedMethod ?? null)
+      : null;
 
   const now = new Date().toISOString();
   const patch: Database['public']['Tables']['tenant_scheduled_visits']['Update'] = {
@@ -193,11 +211,13 @@ export async function completeVisitWithPaymentAction(
     completed_at: now,
     completed_by_user_id: auth.user.id,
     updated_at: now,
-    completion_payment_collected: paymentCollected,
-    completion_collected_method: paymentCollected ? (collectedMethod ?? null) : null,
+    completion_payment_collected: effectivePaymentCollected,
+    completion_collected_method: effectiveCollectedMethod,
     completion_check_number:
-      paymentCollected && collectedMethod === 'check' ? checkNumber || null : null,
-    completion_collected_amount_cents: paymentCollected ? billing.amountCents : null,
+      effectivePaymentCollected && effectiveCollectedMethod === 'check'
+        ? checkNumber || null
+        : null,
+    completion_collected_amount_cents: effectivePaymentCollected ? billing.amountCents : null,
     completion_invoice_id: billing.invoiceId,
     ...(!loaded.visit.checked_in_at
       ? { checked_in_at: now, checked_in_by_user_id: auth.user.id }
@@ -253,15 +273,27 @@ export async function completeVisitWithPaymentAction(
     status: 'completed',
     checkedInAt: loaded.visit.checked_in_at ?? now,
     completedAt: now,
-    completionPaymentCollected: paymentCollected,
-    completionCollectedMethod: paymentCollected ? (collectedMethod ?? null) : null,
-    completionCollectedAmountCents: paymentCollected ? billing.amountCents : null,
+    completionPaymentCollected: effectivePaymentCollected,
+    completionCollectedMethod: effectiveCollectedMethod,
+    completionCollectedAmountCents: effectivePaymentCollected ? billing.amountCents : null,
     completionCheckNumber:
-      paymentCollected && collectedMethod === 'check' ? checkNumber || null : null,
+      effectivePaymentCollected && effectiveCollectedMethod === 'check'
+        ? checkNumber || null
+        : null,
     completionInvoiceId: billing.invoiceId,
   };
 
-  if (billing.emailed) {
+  if (consultationComplete) {
+    if (!isFieldEmployeeRole(actorRole)) {
+      revalidateVisitPaths(visitId);
+      revalidatePath('/quotes/new', 'page');
+      revalidatePath('/customers', 'page');
+      redirect(buildCreateQuotePath(loaded.visit.customer_id, loaded.visit.property_id ?? null));
+    }
+    return { success: 'Consultation marked complete.', visitPatch };
+  }
+
+  if ('emailed' in billing && billing.emailed) {
     return {
       success: 'Job marked complete. Invoice emailed to the customer.',
       visitPatch,

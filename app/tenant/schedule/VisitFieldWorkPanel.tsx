@@ -28,6 +28,7 @@ export function VisitFieldWorkPanel({
   proofPhotosSharedWithCustomers,
   isFieldEmployee = false,
   hasBillableAmount = true,
+  isConsultation = false,
   onVisitPatch,
   compact = false,
 }: {
@@ -43,6 +44,7 @@ export function VisitFieldWorkPanel({
   proofPhotosSharedWithCustomers: boolean;
   isFieldEmployee?: boolean;
   hasBillableAmount?: boolean;
+  isConsultation?: boolean;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
   compact?: boolean;
 }) {
@@ -90,6 +92,7 @@ export function VisitFieldWorkPanel({
               canAttachProofPhotos={canAttachProofPhotos}
               proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
               isFieldEmployee={isFieldEmployee}
+              isConsultation={isConsultation}
               onVisitPatch={onVisitPatch}
             />
           ) : null}
@@ -160,6 +163,7 @@ export function VisitFieldWorkPanel({
             canAttachProofPhotos={canAttachProofPhotos}
             proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
             isFieldEmployee={isFieldEmployee}
+            isConsultation={isConsultation}
             onVisitPatch={onVisitPatch}
           />
         </div>

@@ -28,6 +28,19 @@ export function visitHasBillableAmount(params: {
   return resolveExpectedAmountCentsSync(params) != null;
 }
 
+/** Service visits need a positive price; consultations are non-billable by default ($0). */
+export function visitIsMissingJobPrice(params: {
+  visitPurpose?: Database['public']['Enums']['scheduled_visit_purpose'] | null;
+  expectedAmountCents?: number | null;
+  quoteAmountCents?: number | null;
+}): boolean {
+  if (params.visitPurpose === 'consultation') return false;
+  return !visitHasBillableAmount({
+    expectedAmountCents: params.expectedAmountCents,
+    quoteAmountCents: params.quoteAmountCents,
+  });
+}
+
 export async function fetchQuoteAmountCents(
   admin: Admin,
   tenantId: string,

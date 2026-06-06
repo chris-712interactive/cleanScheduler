@@ -209,6 +209,42 @@ export function OperationalSettingsForm({
         </header>
 
         <div>
+          <p className={styles.subsectionTitle}>Before sending quotes</p>
+          <label className={styles.paymentToggle}>
+            <input
+              type="checkbox"
+              name="require_consultation_before_quote"
+              defaultChecked={snapshot.require_consultation_before_quote}
+              disabled={readOnly}
+            />
+            <span>Require a completed consultation before sending quotes</span>
+          </label>
+          <p className={styles.technicalNote}>
+            When enabled, new customers need a completed consultation visit on the schedule before
+            you can send them a quote. Staff can still prepare draft quotes while waiting.
+          </p>
+          <div className={styles.inlineFieldRow}>
+            <label className={styles.numberField}>
+              <span className={styles.numberLabel}>Typical consultation length (minutes)</span>
+              <input
+                id="consultation_duration_minutes"
+                name="consultation_duration_minutes"
+                type="number"
+                min={15}
+                max={480}
+                step={15}
+                className={styles.numberInput}
+                defaultValue={snapshot.consultation_duration_minutes}
+                disabled={readOnly}
+              />
+            </label>
+          </div>
+          <p className={styles.technicalNote}>
+            Used to set the end time when scheduling consultations. Allowed range is 15–480 minutes.
+          </p>
+        </div>
+
+        <div>
           <p className={styles.subsectionTitle}>After a quote is accepted</p>
           <div className={styles.choiceGrid}>
             {WORKFLOW_CHOICES.map((choice) => (
@@ -226,6 +262,41 @@ export function OperationalSettingsForm({
               </label>
             ))}
           </div>
+          {snapshot.accepted_quote_schedule_mode === 'auto_schedule' ? (
+            <div>
+              <label className={styles.paymentToggle}>
+                <input
+                  type="checkbox"
+                  name="recurring_starts_after_initial"
+                  defaultChecked={snapshot.recurring_starts_after_initial}
+                  disabled={readOnly}
+                />
+                <span>Start recurring visits one full cadence after initial / one-time work</span>
+              </label>
+              <p className={styles.technicalNote}>
+                When a quote includes both a deep clean and ongoing service, the first recurring
+                visit is scheduled at least one week (or biweekly/monthly interval) after the last
+                initial visit — not the same day.
+              </p>
+              <label className={styles.paymentToggle}>
+                <input
+                  type="checkbox"
+                  name="allow_same_day_initial_recurring"
+                  defaultChecked={snapshot.allow_same_day_initial_recurring}
+                  disabled={readOnly}
+                />
+                <span>Allow recurring and initial visits on the same day</span>
+              </label>
+              <p className={styles.technicalNote}>
+                Off by default. Turn on only if you intentionally book both on the same day.
+              </p>
+            </div>
+          ) : (
+            <>
+              <input type="hidden" name="recurring_starts_after_initial" value="off" readOnly />
+              <input type="hidden" name="allow_same_day_initial_recurring" value="off" readOnly />
+            </>
+          )}
         </div>
 
         <div>

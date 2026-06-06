@@ -1220,6 +1220,10 @@ export type Database = {
           sms_notify_invoice_overdue: boolean;
           check_reminder_hold_days: number;
           check_hold_through_deposit: boolean;
+          require_consultation_before_quote: boolean;
+          consultation_duration_minutes: number;
+          recurring_starts_after_initial: boolean;
+          allow_same_day_initial_recurring: boolean;
           messaging_channels: string[];
           created_at: string;
           updated_at: string;
@@ -1240,6 +1244,10 @@ export type Database = {
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
+          require_consultation_before_quote?: boolean;
+          consultation_duration_minutes?: number;
+          recurring_starts_after_initial?: boolean;
+          allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
@@ -1260,6 +1268,10 @@ export type Database = {
           sms_notify_invoice_overdue?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
+          require_consultation_before_quote?: boolean;
+          consultation_duration_minutes?: number;
+          recurring_starts_after_initial?: boolean;
+          allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
@@ -2000,6 +2012,7 @@ export type Database = {
           tenant_id: string;
           sort_order: number;
           service_label: string;
+          display_title: string | null;
           frequency: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail: string | null;
           amount_cents: number;
@@ -2019,6 +2032,7 @@ export type Database = {
           tenant_id?: string;
           sort_order?: number;
           service_label: string;
+          display_title?: string | null;
           frequency?: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail?: string | null;
           amount_cents: number;
@@ -2038,6 +2052,7 @@ export type Database = {
           tenant_id?: string;
           sort_order?: number;
           service_label?: string;
+          display_title?: string | null;
           frequency?: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail?: string | null;
           amount_cents?: number;
@@ -2087,6 +2102,7 @@ export type Database = {
           sort_order: number;
           is_active: boolean;
           is_system_default: boolean;
+          schedule_role: Database['public']['Enums']['service_template_schedule_role'];
           created_at: string;
           updated_at: string;
         };
@@ -2108,6 +2124,7 @@ export type Database = {
           sort_order?: number;
           is_active?: boolean;
           is_system_default?: boolean;
+          schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
           created_at?: string;
           updated_at?: string;
         };
@@ -2129,6 +2146,7 @@ export type Database = {
           sort_order?: number;
           is_active?: boolean;
           is_system_default?: boolean;
+          schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
           created_at?: string;
           updated_at?: string;
         };
@@ -2533,6 +2551,7 @@ export type Database = {
           starts_at: string;
           ends_at: string;
           status: 'scheduled' | 'completed' | 'cancelled';
+          visit_purpose: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status: Database['public']['Enums']['visit_staffing_status'];
           notes: string | null;
           recurring_rule_id: string | null;
@@ -2561,6 +2580,7 @@ export type Database = {
           starts_at: string;
           ends_at: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
+          visit_purpose?: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           recurring_rule_id?: string | null;
@@ -2589,6 +2609,7 @@ export type Database = {
           starts_at?: string;
           ends_at?: string;
           status?: 'scheduled' | 'completed' | 'cancelled';
+          visit_purpose?: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           recurring_rule_id?: string | null;
@@ -3791,6 +3812,7 @@ export type Database = {
       quote_line_discount_kind: 'none' | 'percent' | 'fixed_cents';
       quote_line_pricing_method: 'flat' | 'hourly' | 'per_sqft';
       tenant_service_template_kind: 'service_line' | 'scope_template' | 'addon';
+      service_template_schedule_role: 'initial' | 'recurring' | 'standard';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       visit_staffing_status: 'assigned' | 'needs_staffing' | 'override_confirmed';
@@ -3801,6 +3823,7 @@ export type Database = {
       marketing_inquiry_status: 'new' | 'contacted' | 'closed';
       quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';
       accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
+      scheduled_visit_purpose: 'service' | 'consultation';
       tenant_invoice_expectation: 'prepay' | 'pay_after_service';
       tenant_invoice_payment_recorded_via: 'manual' | 'stripe_checkout';
       tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';

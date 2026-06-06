@@ -23,6 +23,7 @@ import styles from './quotes.module.scss';
 export type QuoteLineItemDraft = {
   key: string;
   service_label: string;
+  display_title: string;
   service_template_id: string;
   frequency: QuoteLineFrequency;
   frequency_detail: string;
@@ -40,6 +41,7 @@ type QuoteLineItemRow = Pick<
   | 'id'
   | 'sort_order'
   | 'service_label'
+  | 'display_title'
   | 'frequency'
   | 'frequency_detail'
   | 'amount_cents'
@@ -65,6 +67,7 @@ export function createEmptyQuoteLineDraft(): QuoteLineItemDraft {
         ? crypto.randomUUID()
         : `row_${Math.random()}`,
     service_label: '',
+    display_title: '',
     service_template_id: '',
     frequency: 'one_time',
     frequency_detail: '',
@@ -88,6 +91,7 @@ export function draftsFromQuoteLineRows(
     .map((l) => ({
       key: l.id,
       service_label: l.service_label,
+      display_title: l.display_title ?? '',
       service_template_id: l.service_template_id ?? '',
       frequency: l.frequency,
       frequency_detail: l.frequency_detail ?? '',
@@ -268,7 +272,44 @@ function AutoScheduleFields({
   );
 }
 
-function LineItemFields({
+function catalogEntriesForProperty(
+  catalog: JobTypeCatalogEntry[],
+  propertyKind?: CustomerPropertyKind | null,
+): JobTypeCatalogEntry[] {
+  return catalog
+    .filter((entry) => !propertyKind || entry.job_type === propertyKind)
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+}
+
+function resolvedQuoteLineServiceLabel(
+  row: QuoteLineItemDraft,
+  catalog: JobTypeCatalogEntry[],
+  propertyKind?: CustomerPropertyKind | null,
+): string {
+  const customTitle = row.display_title.trim();
+  if (customTitle) return customTitle;
+  const entry = findCatalogEntry(catalog, {
+    serviceTemplateId: row.service_template_id || null,
+    propertyKind,
+  });
+  return entry?.service_label ?? entry?.name ?? row.service_label.trim();
+}
+
+function lineCardTitle(
+  row: QuoteLineItemDraft,
+  catalog: JobTypeCatalogEntry[],
+  propertyKind?: CustomerPropertyKind | null,
+): string {
+  const customTitle = row.display_title.trim();
+  if (customTitle) return customTitle;
+  const entry = findCatalogEntry(catalog, {
+    serviceTemplateId: row.service_template_id || null,
+    propertyKind,
+  });
+  return (entry?.name ?? entry?.service_label ?? row.service_label.trim()) || 'Service line';
+}
+
+function JobTypeFields({
   row,
   updateRow,
   layout,
@@ -281,50 +322,79 @@ function LineItemFields({
   catalog: JobTypeCatalogEntry[];
   propertyKind?: CustomerPropertyKind | null;
 }) {
-  const serviceSuggestions = [
-    ...new Set(
-      catalog
-        .filter((entry) => !propertyKind || entry.job_type === propertyKind)
-        .map((entry) => entry.service_label),
-    ),
-  ].sort();
+  const jobTypes = catalogEntriesForProperty(catalog, propertyKind);
+  const hiddenServiceLabel = resolvedQuoteLineServiceLabel(row, catalog, propertyKind);
 
-  const syncCatalogMatch = (serviceLabel: string) => {
-    const entry = findCatalogEntry(catalog, { serviceLabel, propertyKind });
-    return {
-      service_template_id: entry?.id ?? '',
-    };
-  };
+  const jobTypeSelect = (
+    <select
+      id={layout === 'cards' ? `line_job_type_${row.key}` : undefined}
+      name="line_service_template_id"
+      className={styles.select}
+      required
+      value={row.service_template_id}
+      onChange={(e) => {
+        const service_template_id = e.target.value;
+        const entry = findCatalogEntry(catalog, {
+          serviceTemplateId: service_template_id,
+          propertyKind,
+        });
+        updateRow(row.key, {
+          service_template_id,
+          service_label: entry?.service_label ?? entry?.name ?? '',
+        });
+      }}
+      aria-label="Job type"
+    >
+      <option value="">Select job type…</option>
+      {jobTypes.map((entry) => (
+        <option key={entry.id} value={entry.id}>
+          {entry.name}
+        </option>
+      ))}
+    </select>
+  );
+
+  const displayTitleInput = (
+    <input
+      id={`line_display_title_${row.key}`}
+      name="line_display_title"
+      className={styles.input}
+      placeholder={layout === 'grid' ? 'Optional' : 'Optional custom title on the quote'}
+      value={row.display_title}
+      onChange={(e) => updateRow(row.key, { display_title: e.target.value })}
+      aria-label="Title on quote (optional)"
+    />
+  );
+
+  const displayTitleField =
+    layout === 'cards' ? (
+      <>
+        <label className={styles.label} htmlFor={`line_display_title_${row.key}`}>
+          Title on quote (optional)
+        </label>
+        {displayTitleInput}
+      </>
+    ) : (
+      displayTitleInput
+    );
+
+  const hiddenService = (
+    <input type="hidden" name="line_service" value={hiddenServiceLabel} readOnly />
+  );
 
   if (layout === 'cards') {
     return (
       <div className={styles.lineItemCardFields}>
-        <label className={styles.label} htmlFor={`line_service_${row.key}`}>
-          Service
+        <label className={styles.label} htmlFor={`line_job_type_${row.key}`}>
+          Job type
         </label>
-        <input
-          id={`line_service_${row.key}`}
-          name="line_service"
-          className={styles.input}
-          list={`line_service_suggestions_${row.key}`}
-          placeholder="e.g. Deep cleaning"
-          value={row.service_label}
-          onChange={(e) => {
-            const service_label = e.target.value;
-            updateRow(row.key, { service_label, ...syncCatalogMatch(service_label) });
-          }}
-        />
-        <datalist id={`line_service_suggestions_${row.key}`}>
-          {serviceSuggestions.map((label) => (
-            <option key={label} value={label} />
-          ))}
-        </datalist>
-        <input
-          type="hidden"
-          name="line_service_template_id"
-          value={row.service_template_id}
-          readOnly
-        />
+        {jobTypeSelect}
+        {displayTitleField}
+        {hiddenService}
+        <p className={styles.lineItemAutoScheduleHint}>
+          The schedule uses the job type name. Add a custom title only if you want different wording
+          on the quote.
+        </p>
         <div className={styles.lineItemCardGrid}>
           <div>
             <label className={styles.label} htmlFor={`line_frequency_${row.key}`}>
@@ -471,29 +541,9 @@ function LineItemFields({
 
   return (
     <>
-      <input
-        name="line_service"
-        className={styles.input}
-        list={`line_service_suggestions_${row.key}`}
-        placeholder="e.g. Deep cleaning"
-        value={row.service_label}
-        onChange={(e) => {
-          const service_label = e.target.value;
-          updateRow(row.key, { service_label, ...syncCatalogMatch(service_label) });
-        }}
-        aria-label="Service name"
-      />
-      <datalist id={`line_service_suggestions_${row.key}`}>
-        {serviceSuggestions.map((label) => (
-          <option key={label} value={label} />
-        ))}
-      </datalist>
-      <input
-        type="hidden"
-        name="line_service_template_id"
-        value={row.service_template_id}
-        readOnly
-      />
+      {jobTypeSelect}
+      {displayTitleField}
+      {hiddenService}
       <select
         name="line_frequency"
         className={styles.select}
@@ -661,9 +711,8 @@ export function QuoteLineItemsEditor({
         <>
           <legend className={styles.lineItemsLegend}>Services &amp; pricing</legend>
           <p className={styles.lineItemsIntro}>
-            Add one row per priced service. Cadence describes how often that price applies. Line
-            discounts reduce that row&apos;s amount before the quote subtotal. Flag lines to
-            auto-schedule when the customer accepts.
+            Add one row per priced service. Pick a job type from your catalog, optionally customize
+            the title on the quote, and flag lines to auto-schedule when the customer accepts.
           </p>
         </>
       ) : null}
@@ -671,7 +720,8 @@ export function QuoteLineItemsEditor({
       {layout === 'grid' ? (
         <>
           <div className={styles.lineItemsHeaderRow} aria-hidden="true">
-            <span className={styles.lineItemsHeaderCell}>Service</span>
+            <span className={styles.lineItemsHeaderCell}>Job type</span>
+            <span className={styles.lineItemsHeaderCell}>Quote title</span>
             <span className={styles.lineItemsHeaderCell}>Cadence</span>
             <span className={styles.lineItemsHeaderCell}>Cadence detail</span>
             <span className={styles.lineItemsHeaderCell}>List ($)</span>
@@ -683,7 +733,7 @@ export function QuoteLineItemsEditor({
             {rows.map((row) => (
               <div key={row.key} className={styles.lineItemRowGroup}>
                 <div className={styles.lineItemRow}>
-                  <LineItemFields
+                  <JobTypeFields
                     row={row}
                     updateRow={updateRow}
                     layout="grid"
@@ -720,7 +770,7 @@ export function QuoteLineItemsEditor({
           {rows.map((row) => (
             <div key={row.key} className={styles.lineItemCard}>
               <div className={styles.lineItemCardHeader}>
-                <strong>{row.service_label.trim() || 'Service line'}</strong>
+                <strong>{lineCardTitle(row, jobTypeCatalog, quotePropertyKind)}</strong>
                 <button
                   type="button"
                   className={styles.lineItemIconButton}
@@ -730,7 +780,7 @@ export function QuoteLineItemsEditor({
                   <Trash2 size={18} aria-hidden />
                 </button>
               </div>
-              <LineItemFields
+              <JobTypeFields
                 row={row}
                 updateRow={updateRow}
                 layout="cards"

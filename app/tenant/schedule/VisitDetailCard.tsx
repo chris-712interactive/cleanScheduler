@@ -96,6 +96,7 @@ export type VisitDetailSnapshot = {
   completionCollectedAmountCents: number | null;
   completionCheckNumber: string | null;
   completionInvoiceId: string | null;
+  visitPurpose: 'service' | 'consultation';
 };
 
 export function VisitDetailCard({
@@ -122,10 +123,14 @@ export function VisitDetailCard({
     [visit.expectedAmountCents, visit.quoteAmountCents],
   );
 
-  const hasBillableAmount = visitHasBillableAmount({
-    expectedAmountCents: visit.expectedAmountCents,
-    quoteAmountCents: visit.quoteAmountCents,
-  });
+  const isConsultation = visit.visitPurpose === 'consultation';
+
+  const hasBillableAmount =
+    isConsultation ||
+    visitHasBillableAmount({
+      expectedAmountCents: visit.expectedAmountCents,
+      quoteAmountCents: visit.quoteAmountCents,
+    });
 
   const fieldParams = {
     status: visit.status,
@@ -144,9 +149,11 @@ export function VisitDetailCard({
   const showFieldWork = showCheckIn || showComplete;
   const durationLabel = formatVisitDuration(visit.startsAt, visit.endsAt);
   const whenLabel = formatVisitWhenRange(visit.startsAt, visit.endsAt, visit.tenantTimezone);
-  const priceLabel = hasBillableAmount
-    ? `$${formatCentsAsDollars(defaultAmountCents ?? 0)}`
-    : 'Price needed';
+  const priceLabel = isConsultation
+    ? 'Consultation'
+    : hasBillableAmount
+      ? `$${formatCentsAsDollars(defaultAmountCents ?? 0)}`
+      : 'Price needed';
 
   return (
     <div className={styles.workspace}>
@@ -192,6 +199,7 @@ export function VisitDetailCard({
               durationSourceLabel={visit.durationSourceLabel}
               currentAssigneeUserIds={visit.assigneeUserIds}
               employeeOptions={employeeOptions}
+              isConsultation={isConsultation}
               onVisitPatch={onVisitPatch}
             />
           ) : null}
@@ -214,6 +222,7 @@ export function VisitDetailCard({
                 proofPhotosSharedWithCustomers={visit.proofPhotosSharedWithCustomers}
                 isFieldEmployee={visit.isFieldEmployee}
                 hasBillableAmount={hasBillableAmount}
+                isConsultation={isConsultation}
                 onVisitPatch={onVisitPatch}
                 compact
               />

@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
@@ -17,6 +17,7 @@ import {
   parseCustomerDirectoryPage,
 } from '@/lib/tenant/customerDirectoryPaging';
 import { fetchCustomerDirectoryPage } from '@/lib/tenant/customerDirectoryFetch';
+import { loadCustomersNeedingConsultation } from '@/lib/tenant/customerConsultation';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { primaryCustomerAddressLine } from '@/lib/tenant/customerListDisplay';
 import { CustomerDirectoryPagination } from './CustomerDirectoryPagination';
@@ -28,7 +29,7 @@ import styles from './customers.module.scss';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string; consultation?: string }>;
 }
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -90,52 +91,86 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
   const q = parseCustomerDirectoryQuery(sp?.q);
   const statusFilter = parseCustomerDirectoryStatus(sp?.status);
   const requestedPage = parseCustomerDirectoryPage(firstParam(sp?.page));
-  const filtersActive = q.length > 0 || statusFilter !== 'all';
+  const consultationFilter = firstParam(sp?.consultation)?.trim() === 'needs_action';
+  const filtersActive = q.length > 0 || statusFilter !== 'all' || consultationFilter;
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/customers');
 
-  const supabase = createTenantPortalDbClient();
-  const result = await fetchCustomerDirectoryPage(supabase, {
-    tenantId: membership.tenantId,
-    q,
-    statusFilter,
-    page: requestedPage,
-  });
+  let directoryRows: CustomerDirectoryRow[] = [];
+  let totalCount = 0;
+  let statusCounts = { all: 0, active: 0, inactive: 0 };
+  let safePage = requestedPage;
+  let showEmptyWorkspace = false;
 
-  if (!result.ok) {
-    return (
-      <>
-        <PageHeader
-          title="Customers"
-          titleHint="Residential and commercial accounts you serve under this workspace."
-          actions={
-            <Button
-              variant="primary"
-              as="a"
-              href="/customers/new"
-              iconLeft={<Plus size={18} aria-hidden />}
-            >
-              Add customer
-            </Button>
-          }
-        />
-        <div className={styles.errorPanel}>
-          <p className={styles.empty} role="alert">
-            {result.phase === 'search' ? 'Search error' : 'Could not load customers'} (
-            {result.message}).
-          </p>
-        </div>
-      </>
+  if (consultationFilter) {
+    const admin = createAdminClient();
+    const consultationRows = await loadCustomersNeedingConsultation(
+      admin,
+      membership.tenantId,
+      200,
     );
+    directoryRows = consultationRows.map((row) => ({
+      id: row.customerId,
+      status: 'active',
+      name: row.displayName,
+      email: null,
+      phone: null,
+      addressLine: null,
+      consultationLabel: 'Needs consultation',
+    }));
+    totalCount = directoryRows.length;
+    statusCounts = { all: totalCount, active: totalCount, inactive: 0 };
+    safePage = 1;
+    showEmptyWorkspace = false;
+  } else {
+    const supabase = createTenantPortalDbClient();
+    const result = await fetchCustomerDirectoryPage(supabase, {
+      tenantId: membership.tenantId,
+      q,
+      statusFilter,
+      page: requestedPage,
+    });
+
+    if (!result.ok) {
+      return (
+        <>
+          <PageHeader
+            title="Customers"
+            titleHint="Residential and commercial accounts you serve under this workspace."
+            actions={
+              <Button
+                variant="primary"
+                as="a"
+                href="/customers/new"
+                iconLeft={<Plus size={18} aria-hidden />}
+              >
+                Add customer
+              </Button>
+            }
+          />
+          <div className={styles.errorPanel}>
+            <p className={styles.empty} role="alert">
+              {result.phase === 'search' ? 'Search error' : 'Could not load customers'} (
+              {result.message}).
+            </p>
+          </div>
+        </>
+      );
+    }
+
+    totalCount = result.totalCount;
+    statusCounts = result.statusCounts;
+    safePage = result.page;
+    directoryRows = result.rows.map(toDirectoryRow);
+    showEmptyWorkspace = statusCounts.all === 0 && !filtersActive;
   }
 
-  const { rows, totalCount, statusCounts, page: safePage } = result;
   const totalPages = Math.max(1, Math.ceil(totalCount / CUSTOMER_DIRECTORY_PAGE_SIZE));
   const start = totalCount === 0 ? 0 : (safePage - 1) * CUSTOMER_DIRECTORY_PAGE_SIZE;
-  const directoryRows = rows.map(toDirectoryRow);
-  const pageRows = directoryRows;
-  const showEmptyWorkspace = statusCounts.all === 0 && !filtersActive;
+  const pageRows = consultationFilter
+    ? directoryRows
+    : directoryRows.slice(start, start + CUSTOMER_DIRECTORY_PAGE_SIZE);
 
   return (
     <>
@@ -169,6 +204,14 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
           <div className={styles.panelToolbar}>
             <CustomerDirectorySearchForm q={q} status={statusFilter} />
             <nav className={styles.panelTabs} aria-label="Customer filters">
+              <Link
+                href="/customers?consultation=needs_action"
+                className={styles.panelTab}
+                data-active={consultationFilter || undefined}
+                aria-current={consultationFilter ? 'page' : undefined}
+              >
+                Needs consultation
+              </Link>
               {TAB_LINKS.map((tab) => (
                 <Link
                   key={tab.key}

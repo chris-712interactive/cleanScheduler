@@ -55,7 +55,20 @@ function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyG
   return Array.from(map.entries()).map(([customerId, options]) => ({ customerId, options }));
 }
 
-export default async function TenantQuoteNewPage() {
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const defaultCustomerId = firstParam(sp.customer_id)?.trim() ?? '';
+  const defaultPropertyId = firstParam(sp.property_id)?.trim() ?? '';
+
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/quotes/new');
 
@@ -125,6 +138,10 @@ export default async function TenantQuoteNewPage() {
           customerPropertyGroups={customerPropertyGroups}
           jobTypeCatalog={jobTypeCatalog}
           autoScheduleEnabled={autoScheduleEnabled}
+          defaults={{
+            customerId: defaultCustomerId,
+            propertyId: defaultPropertyId,
+          }}
         />
       </Stack>
     </>

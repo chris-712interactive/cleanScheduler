@@ -12,12 +12,18 @@ export interface TenantOperationalSettingsSnapshot {
   acceptedQuoteScheduleMode: AcceptedQuoteScheduleMode;
   invoiceExpectation: TenantInvoiceExpectation;
   allowedCustomerPaymentMethods: TenantPaymentMethod[];
+  requireConsultationBeforeQuote: boolean;
+  recurringStartsAfterInitial: boolean;
+  allowSameDayInitialRecurring: boolean;
 }
 
 const DEFAULTS: TenantOperationalSettingsSnapshot = {
   acceptedQuoteScheduleMode: 'prompt_staff',
   invoiceExpectation: 'pay_after_service',
   allowedCustomerPaymentMethods: normalizePaymentMethodsFromDb(undefined),
+  requireConsultationBeforeQuote: true,
+  recurringStartsAfterInitial: true,
+  allowSameDayInitialRecurring: false,
 };
 
 export async function loadTenantOperationalSettings(
@@ -26,7 +32,9 @@ export async function loadTenantOperationalSettings(
 ): Promise<TenantOperationalSettingsSnapshot> {
   const { data, error } = await admin
     .from('tenant_operational_settings')
-    .select('accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods')
+    .select(
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, require_consultation_before_quote, recurring_starts_after_initial, allow_same_day_initial_recurring',
+    )
     .eq('tenant_id', tenantId)
     .maybeSingle();
 
@@ -38,6 +46,9 @@ export async function loadTenantOperationalSettings(
     allowedCustomerPaymentMethods: normalizePaymentMethodsFromDb(
       data.allowed_customer_payment_methods,
     ),
+    requireConsultationBeforeQuote: data.require_consultation_before_quote ?? true,
+    recurringStartsAfterInitial: data.recurring_starts_after_initial ?? true,
+    allowSameDayInitialRecurring: data.allow_same_day_initial_recurring ?? false,
   };
 }
 
