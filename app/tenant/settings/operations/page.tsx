@@ -54,7 +54,7 @@ export default async function TenantOperationsSettingsPage() {
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, messaging_channels',
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels',
     )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -80,6 +80,8 @@ export default async function TenantOperationsSettingsPage() {
         require_consultation_before_quote: opsRow.require_consultation_before_quote,
         consultation_duration_minutes:
           opsRow.consultation_duration_minutes ?? DEFAULT_CONSULTATION_DURATION_MINUTES,
+        recurring_starts_after_initial: opsRow.recurring_starts_after_initial ?? true,
+        allow_same_day_initial_recurring: opsRow.allow_same_day_initial_recurring ?? false,
         messaging_channels: normalizeMessagingChannelsFromDb(opsRow.messaging_channels),
       }
     : {
@@ -99,6 +101,8 @@ export default async function TenantOperationsSettingsPage() {
         check_hold_through_deposit: false,
         require_consultation_before_quote: true,
         consultation_duration_minutes: DEFAULT_CONSULTATION_DURATION_MINUTES,
+        recurring_starts_after_initial: true,
+        allow_same_day_initial_recurring: false,
         messaging_channels: normalizeMessagingChannelsFromDb(undefined),
       };
 

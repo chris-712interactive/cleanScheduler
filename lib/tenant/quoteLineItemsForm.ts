@@ -19,6 +19,7 @@ export type QuoteLinePricingMethod = Database['public']['Enums']['quote_line_pri
 export interface ParsedQuoteLineItem {
   sort_order: number;
   service_label: string;
+  display_title: string | null;
   frequency: QuoteLineFrequency;
   frequency_detail: string | null;
   amount_cents: number;
@@ -65,6 +66,7 @@ export function parseQuoteLineItemsFromForm(
     .getAll('line_auto_schedule_visit_count')
     .map((v) => String(v));
   const serviceTemplateIds = formData.getAll('line_service_template_id').map((v) => String(v));
+  const displayTitles = formData.getAll('line_display_title').map((v) => String(v));
 
   const n = Math.max(
     services.length,
@@ -78,6 +80,7 @@ export function parseQuoteLineItemsFromForm(
     autoScheduleFlags.length,
     autoScheduleVisitCounts.length,
     serviceTemplateIds.length,
+    displayTitles.length,
   );
   const lines: ParsedQuoteLineItem[] = [];
 
@@ -93,12 +96,19 @@ export function parseQuoteLineItemsFromForm(
     const auto_schedule_on_accept = parseAutoScheduleFlag(autoScheduleFlags[i] ?? '');
     const frequencyForCount = frequency;
 
+    const service_template_id = (serviceTemplateIds[i] ?? '').trim() || null;
+    const display_title = (displayTitles[i] ?? '').trim() || null;
+
     const rowBlank =
-      !service_label && !amountRaw.trim() && line_discount_kind === 'none' && !discInputRaw.trim();
+      !service_label &&
+      !service_template_id &&
+      !amountRaw.trim() &&
+      line_discount_kind === 'none' &&
+      !discInputRaw.trim();
     if (rowBlank) continue;
 
-    if (!service_label) {
-      return { ok: false, error: 'Each service line needs a service name / type.' };
+    if (!service_template_id && !service_label) {
+      return { ok: false, error: 'Select a job type for each service line.' };
     }
 
     if (frequency === 'custom' && !frequency_detail_raw) {
@@ -145,7 +155,8 @@ export function parseQuoteLineItemsFromForm(
 
     lines.push({
       sort_order: lines.length,
-      service_label,
+      service_label: service_label || 'Pending',
+      display_title,
       frequency,
       frequency_detail: frequency_detail_raw ? frequency_detail_raw : null,
       amount_cents: parsed.cents,

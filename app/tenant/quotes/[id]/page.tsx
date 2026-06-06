@@ -120,6 +120,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           id,
           sort_order,
           service_label,
+          display_title,
           frequency,
           frequency_detail,
           amount_cents,

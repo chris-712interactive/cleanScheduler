@@ -22,5 +22,7 @@ export type OperationalSettingsFormSnapshot = {
   check_hold_through_deposit: boolean;
   require_consultation_before_quote: boolean;
   consultation_duration_minutes: number;
+  recurring_starts_after_initial: boolean;
+  allow_same_day_initial_recurring: boolean;
   messaging_channels: MessagingChannel[];
 };

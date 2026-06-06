@@ -1222,6 +1222,8 @@ export type Database = {
           check_hold_through_deposit: boolean;
           require_consultation_before_quote: boolean;
           consultation_duration_minutes: number;
+          recurring_starts_after_initial: boolean;
+          allow_same_day_initial_recurring: boolean;
           messaging_channels: string[];
           created_at: string;
           updated_at: string;
@@ -1244,6 +1246,8 @@ export type Database = {
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;
           consultation_duration_minutes?: number;
+          recurring_starts_after_initial?: boolean;
+          allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
@@ -1266,6 +1270,8 @@ export type Database = {
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;
           consultation_duration_minutes?: number;
+          recurring_starts_after_initial?: boolean;
+          allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           created_at?: string;
           updated_at?: string;
@@ -2006,6 +2012,7 @@ export type Database = {
           tenant_id: string;
           sort_order: number;
           service_label: string;
+          display_title: string | null;
           frequency: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail: string | null;
           amount_cents: number;
@@ -2025,6 +2032,7 @@ export type Database = {
           tenant_id?: string;
           sort_order?: number;
           service_label: string;
+          display_title?: string | null;
           frequency?: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail?: string | null;
           amount_cents: number;
@@ -2044,6 +2052,7 @@ export type Database = {
           tenant_id?: string;
           sort_order?: number;
           service_label?: string;
+          display_title?: string | null;
           frequency?: Database['public']['Enums']['quote_line_frequency'];
           frequency_detail?: string | null;
           amount_cents?: number;
@@ -2093,6 +2102,7 @@ export type Database = {
           sort_order: number;
           is_active: boolean;
           is_system_default: boolean;
+          schedule_role: Database['public']['Enums']['service_template_schedule_role'];
           created_at: string;
           updated_at: string;
         };
@@ -2114,6 +2124,7 @@ export type Database = {
           sort_order?: number;
           is_active?: boolean;
           is_system_default?: boolean;
+          schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
           created_at?: string;
           updated_at?: string;
         };
@@ -2135,6 +2146,7 @@ export type Database = {
           sort_order?: number;
           is_active?: boolean;
           is_system_default?: boolean;
+          schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
           created_at?: string;
           updated_at?: string;
         };
@@ -3800,6 +3812,7 @@ export type Database = {
       quote_line_discount_kind: 'none' | 'percent' | 'fixed_cents';
       quote_line_pricing_method: 'flat' | 'hourly' | 'per_sqft';
       tenant_service_template_kind: 'service_line' | 'scope_template' | 'addon';
+      service_template_schedule_role: 'initial' | 'recurring' | 'standard';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       visit_staffing_status: 'assigned' | 'needs_staffing' | 'override_confirmed';

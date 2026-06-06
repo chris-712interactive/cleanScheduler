@@ -40,6 +40,7 @@ export type QuoteDetailEmbedRow = Tables<'tenant_quotes'> & {
         | 'id'
         | 'sort_order'
         | 'service_label'
+        | 'display_title'
         | 'frequency'
         | 'frequency_detail'
         | 'amount_cents'

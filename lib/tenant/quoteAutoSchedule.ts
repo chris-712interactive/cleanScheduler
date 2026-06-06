@@ -13,9 +13,19 @@ import {
   findCatalogEntry,
   loadJobTypeCatalog,
   resolveVisitDurationHours,
+  type JobTypeCatalogEntry,
 } from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
+import {
+  avoidSameDayRecurringStart,
+  maxIsoTimestamp,
+  partitionAutoScheduleLines,
+  resolveRecurringFirstVisitNotBefore,
+  resolveScheduleVisitTitle,
+  type QuoteAutoScheduleLine,
+  type QuoteAutoScheduleSettings,
+} from '@/lib/tenant/quoteAutoSchedulePlan';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type Admin = SupabaseClient<Database>;
@@ -47,6 +57,17 @@ export interface AutoScheduleVisitResult {
   alreadyScheduled?: boolean;
 }
 
+type ScheduleContext = {
+  admin: Admin;
+  input: AutoScheduleVisitInput;
+  quotePropertyId: string | null;
+  propertyKind: CustomerPropertyKind | null;
+  business: ReturnType<typeof tenantBusinessSnapshotFromRow>;
+  catalog: JobTypeCatalogEntry[];
+  catalogById: Map<string, JobTypeCatalogEntry>;
+  scheduleSettings: QuoteAutoScheduleSettings;
+};
+
 /**
  * Creates scheduled visits for flagged quote line items when the tenant uses
  * auto-scheduling. Idempotent per (quote_line_item_id, auto_schedule_sequence).
@@ -59,17 +80,18 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
     return { skippedReason: 'missing_customer' };
   }
 
-  const [{ data: quoteRow }, lineItemsRes, { data: tenantRow }] = await Promise.all([
-    admin
-      .from('tenant_quotes')
-      .select('property_id, job_type')
-      .eq('id', input.quoteId)
-      .eq('tenant_id', input.tenantId)
-      .maybeSingle(),
-    admin
-      .from('tenant_quote_line_items')
-      .select(
-        `
+  const [{ data: quoteRow }, lineItemsRes, { data: tenantRow }, { data: opsRow }] =
+    await Promise.all([
+      admin
+        .from('tenant_quotes')
+        .select('property_id, job_type')
+        .eq('id', input.quoteId)
+        .eq('tenant_id', input.tenantId)
+        .maybeSingle(),
+      admin
+        .from('tenant_quote_line_items')
+        .select(
+          `
         id,
         sort_order,
         service_label,
@@ -82,17 +104,22 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
         estimated_hours,
         service_template_id
       `,
-      )
-      .eq('quote_id', input.quoteId)
-      .order('sort_order'),
-    admin
-      .from('tenants')
-      .select(
-        'timezone, work_week_days, work_day_start, work_day_end, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
-      )
-      .eq('id', input.tenantId)
-      .maybeSingle(),
-  ]);
+        )
+        .eq('quote_id', input.quoteId)
+        .order('sort_order'),
+      admin
+        .from('tenants')
+        .select(
+          'timezone, work_week_days, work_day_start, work_day_end, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
+        )
+        .eq('id', input.tenantId)
+        .maybeSingle(),
+      admin
+        .from('tenant_operational_settings')
+        .select('recurring_starts_after_initial, allow_same_day_initial_recurring')
+        .eq('tenant_id', input.tenantId)
+        .maybeSingle(),
+    ]);
 
   if (lineItemsRes.error) {
     console.error('[quoteAutoSchedule] line items load failed:', lineItemsRes.error.message);
@@ -125,6 +152,7 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
     propertyKind,
     activeOnly: true,
   });
+  const catalogById = new Map(catalog.map((entry) => [entry.id, entry]));
 
   const business = tenantBusinessSnapshotFromRow({
     name: tenantRow.name,
@@ -143,125 +171,83 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
     work_day_end: tenantRow.work_day_end,
   });
 
+  const scheduleSettings: QuoteAutoScheduleSettings = {
+    recurringStartsAfterInitial: opsRow?.recurring_starts_after_initial ?? true,
+    allowSameDayInitialRecurring: opsRow?.allow_same_day_initial_recurring ?? false,
+  };
+
+  const ctx: ScheduleContext = {
+    admin,
+    input,
+    quotePropertyId: quoteRow?.property_id ?? null,
+    propertyKind,
+    business,
+    catalog,
+    catalogById,
+    scheduleSettings,
+  };
+
   const visitIds: string[] = [];
   let createdCount = 0;
+  let anchorStartIso: string | null = null;
 
-  for (const [lineIndex, line] of flaggedLines.entries()) {
-    const visitCount = resolveAutoScheduleVisitCount(
-      line.frequency,
-      line.auto_schedule_visit_count,
-    );
-    const lineAmountCents = positiveAmountCents(
-      effectiveLineSubtotalCents({
-        amount_cents: line.amount_cents,
-        line_discount_kind: line.line_discount_kind,
-        line_discount_value: line.line_discount_value,
-      }),
-    );
+  const toScheduleLine = (line: FlaggedLine): QuoteAutoScheduleLine => ({
+    id: line.id,
+    sort_order: line.sort_order,
+    service_label: line.service_label,
+    display_title: null,
+    frequency: line.frequency,
+    service_template_id: line.service_template_id,
+  });
 
-    const catalogEntry = findCatalogEntry(catalog, {
-      serviceTemplateId: line.service_template_id,
-      serviceLabel: line.service_label,
-      propertyKind,
-    });
-    const durationHours = resolveVisitDurationHours({
-      lineEstimatedHours: line.estimated_hours,
-      catalogEntry,
-    });
+  if (scheduleSettings.recurringStartsAfterInitial) {
+    const scheduleLines = flaggedLines.map(toScheduleLine);
+    const { initialLines, recurringLines } = partitionAutoScheduleLines(scheduleLines, catalogById);
 
-    const baseWindow = computeNextWorkDayVisitWindow({
-      timezone: business.timezone,
-      workWeekDays: business.workWeekDays,
-      workDayStart: business.workDayStart,
-      workDayEnd: business.workDayEnd,
-      startAfterDays: lineIndex,
-      durationHours,
-    });
-
-    for (let sequence = 0; sequence < visitCount; sequence += 1) {
-      const autoScheduleSequence = sequence + 1;
-
-      const { data: existingVisit } = await admin
-        .from('tenant_scheduled_visits')
-        .select('id')
-        .eq('quote_line_item_id', line.id)
-        .eq('auto_schedule_sequence', autoScheduleSequence)
-        .maybeSingle();
-
-      if (existingVisit?.id) {
-        visitIds.push(existingVisit.id);
-        continue;
-      }
-
-      const anchorWindow = offsetVisitWindowByFrequency(
-        { startsAt: baseWindow.startsAt, endsAt: baseWindow.endsAt },
-        sequence,
-        line.frequency,
-      );
-
-      const searchNotBefore = new Date(
-        Math.max(Date.now(), new Date(anchorWindow.startsAt).getTime() - 24 * 3_600_000),
-      );
-
-      const staffed = await findStaffedVisitWindow(admin, {
-        tenantId: input.tenantId,
-        timezone: business.timezone,
-        workWeekDays: business.workWeekDays,
-        workDayStart: business.workDayStart,
-        workDayEnd: business.workDayEnd,
-        durationHours,
-        startAfterDays: sequence === 0 ? lineIndex : 0,
-        searchNotBefore,
+    for (const [lineIndex, line] of initialLines.entries()) {
+      const flagged = flaggedLines.find((row) => row.id === line.id);
+      if (!flagged) continue;
+      const result = await scheduleFlaggedLineVisits(ctx, flagged, {
+        lineIndex,
+        recurringNotBeforeIso: null,
+        visitIds,
       });
-
-      const window = staffed
-        ? { startsAt: staffed.startsAt, endsAt: staffed.endsAt }
-        : anchorWindow;
-      const assigneeUserId = staffed?.assigneeUserId ?? null;
-      const staffingStatus = assigneeUserId ? 'assigned' : 'needs_staffing';
-
-      const visitTitle = line.service_label.trim() || input.quoteTitle.trim() || 'Visit';
-      const sequenceNote =
-        visitCount > 1 && isRecurringQuoteLineFrequency(line.frequency)
-          ? ` (${autoScheduleSequence} of ${visitCount})`
-          : '';
-
-      const { data: created, error } = await admin
-        .from('tenant_scheduled_visits')
-        .insert({
-          tenant_id: input.tenantId,
-          customer_id: input.customerId,
-          property_id: quoteRow?.property_id ?? null,
-          quote_id: input.quoteId,
-          quote_line_item_id: line.id,
-          auto_schedule_sequence: autoScheduleSequence,
-          title: `${visitTitle}${sequenceNote}`.slice(0, 200),
-          starts_at: window.startsAt,
-          ends_at: window.endsAt,
-          status: 'scheduled',
-          staffing_status: staffingStatus,
-          expected_amount_cents: lineAmountCents,
-          notes: assigneeUserId
-            ? 'Scheduled automatically when the customer accepted this quote.'
-            : 'Scheduled automatically — no crew slot was found in the next 28 days that matches business and employee availability. Assign someone from the schedule.',
-        })
-        .select('id')
-        .single();
-
-      if (error || !created) {
-        console.error('[quoteAutoSchedule] visit create failed:', error?.message);
-        continue;
+      createdCount += result.createdCount;
+      if (result.latestVisitStartIso) {
+        anchorStartIso = maxIsoTimestamp(anchorStartIso, result.latestVisitStartIso);
       }
+    }
 
-      if (assigneeUserId) {
-        await admin.from('tenant_scheduled_visit_assignees').insert({
-          visit_id: created.id,
-          user_id: assigneeUserId,
-        });
+    for (const [lineIndex, line] of recurringLines.entries()) {
+      const flagged = flaggedLines.find((row) => row.id === line.id);
+      if (!flagged) continue;
+      let recurringNotBeforeIso = resolveRecurringFirstVisitNotBefore(
+        anchorStartIso,
+        flagged.frequency,
+        scheduleSettings,
+      );
+      if (recurringNotBeforeIso) {
+        recurringNotBeforeIso = avoidSameDayRecurringStart(
+          anchorStartIso,
+          recurringNotBeforeIso,
+          scheduleSettings,
+        );
       }
-
-      visitIds.push(created.id);
-      createdCount += 1;
+      const result = await scheduleFlaggedLineVisits(ctx, flagged, {
+        lineIndex,
+        recurringNotBeforeIso,
+        visitIds,
+      });
+      createdCount += result.createdCount;
+    }
+  } else {
+    for (const [lineIndex, line] of flaggedLines.entries()) {
+      const result = await scheduleFlaggedLineVisits(ctx, line, {
+        lineIndex,
+        recurringNotBeforeIso: null,
+        visitIds,
+      });
+      createdCount += result.createdCount;
     }
   }
 
@@ -274,4 +260,142 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
     createdCount,
     alreadyScheduled: createdCount === 0,
   };
+}
+
+async function scheduleFlaggedLineVisits(
+  ctx: ScheduleContext,
+  line: FlaggedLine,
+  options: {
+    lineIndex: number;
+    recurringNotBeforeIso: string | null;
+    visitIds: string[];
+  },
+): Promise<{ createdCount: number; latestVisitStartIso: string | null }> {
+  const visitCount = resolveAutoScheduleVisitCount(line.frequency, line.auto_schedule_visit_count);
+  const lineAmountCents = positiveAmountCents(
+    effectiveLineSubtotalCents({
+      amount_cents: line.amount_cents,
+      line_discount_kind: line.line_discount_kind,
+      line_discount_value: line.line_discount_value,
+    }),
+  );
+
+  const catalogEntry = findCatalogEntry(ctx.catalog, {
+    serviceTemplateId: line.service_template_id,
+    serviceLabel: line.service_label,
+    propertyKind: ctx.propertyKind,
+  });
+  const durationHours = resolveVisitDurationHours({
+    lineEstimatedHours: line.estimated_hours,
+    catalogEntry,
+  });
+
+  const baseWindow = computeNextWorkDayVisitWindow({
+    timezone: ctx.business.timezone,
+    workWeekDays: ctx.business.workWeekDays,
+    workDayStart: ctx.business.workDayStart,
+    workDayEnd: ctx.business.workDayEnd,
+    startAfterDays: options.lineIndex,
+    durationHours,
+  });
+
+  let createdCount = 0;
+  let latestVisitStartIso: string | null = null;
+
+  for (let sequence = 0; sequence < visitCount; sequence += 1) {
+    const autoScheduleSequence = sequence + 1;
+
+    const { data: existingVisit } = await ctx.admin
+      .from('tenant_scheduled_visits')
+      .select('id, starts_at')
+      .eq('quote_line_item_id', line.id)
+      .eq('auto_schedule_sequence', autoScheduleSequence)
+      .maybeSingle();
+
+    if (existingVisit?.id) {
+      options.visitIds.push(existingVisit.id);
+      latestVisitStartIso = maxIsoTimestamp(latestVisitStartIso, existingVisit.starts_at);
+      continue;
+    }
+
+    const anchorWindow = offsetVisitWindowByFrequency(
+      { startsAt: baseWindow.startsAt, endsAt: baseWindow.endsAt },
+      sequence,
+      line.frequency,
+    );
+
+    const recurringFloor =
+      sequence === 0 && options.recurringNotBeforeIso
+        ? new Date(options.recurringNotBeforeIso).getTime()
+        : null;
+
+    const searchNotBefore = new Date(
+      Math.max(
+        Date.now(),
+        recurringFloor ?? new Date(anchorWindow.startsAt).getTime() - 24 * 3_600_000,
+      ),
+    );
+
+    const staffed = await findStaffedVisitWindow(ctx.admin, {
+      tenantId: ctx.input.tenantId,
+      timezone: ctx.business.timezone,
+      workWeekDays: ctx.business.workWeekDays,
+      workDayStart: ctx.business.workDayStart,
+      workDayEnd: ctx.business.workDayEnd,
+      durationHours,
+      startAfterDays: sequence === 0 ? options.lineIndex : 0,
+      searchNotBefore,
+    });
+
+    const window = staffed ? { startsAt: staffed.startsAt, endsAt: staffed.endsAt } : anchorWindow;
+    const assigneeUserId = staffed?.assigneeUserId ?? null;
+    const staffingStatus = assigneeUserId ? 'assigned' : 'needs_staffing';
+
+    const visitTitle =
+      resolveScheduleVisitTitle(line, catalogEntry) || ctx.input.quoteTitle.trim() || 'Visit';
+    const sequenceNote =
+      visitCount > 1 && isRecurringQuoteLineFrequency(line.frequency)
+        ? ` (${autoScheduleSequence} of ${visitCount})`
+        : '';
+
+    const { data: created, error } = await ctx.admin
+      .from('tenant_scheduled_visits')
+      .insert({
+        tenant_id: ctx.input.tenantId,
+        customer_id: ctx.input.customerId,
+        property_id: ctx.quotePropertyId,
+        quote_id: ctx.input.quoteId,
+        quote_line_item_id: line.id,
+        auto_schedule_sequence: autoScheduleSequence,
+        title: `${visitTitle}${sequenceNote}`.slice(0, 200),
+        starts_at: window.startsAt,
+        ends_at: window.endsAt,
+        status: 'scheduled',
+        staffing_status: staffingStatus,
+        expected_amount_cents: lineAmountCents,
+        notes: assigneeUserId
+          ? 'Scheduled automatically when the customer accepted this quote.'
+          : 'Scheduled automatically — no crew slot was found in the next 28 days that matches business and employee availability. Assign someone from the schedule.',
+      })
+      .select('id')
+      .single();
+
+    if (error || !created) {
+      console.error('[quoteAutoSchedule] visit create failed:', error?.message);
+      continue;
+    }
+
+    if (assigneeUserId) {
+      await ctx.admin.from('tenant_scheduled_visit_assignees').insert({
+        visit_id: created.id,
+        user_id: assigneeUserId,
+      });
+    }
+
+    options.visitIds.push(created.id);
+    createdCount += 1;
+    latestVisitStartIso = maxIsoTimestamp(latestVisitStartIso, window.startsAt);
+  }
+
+  return { createdCount, latestVisitStartIso };
 }

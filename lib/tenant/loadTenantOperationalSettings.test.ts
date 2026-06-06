@@ -11,6 +11,8 @@ const baseOps: TenantOperationalSettingsSnapshot = {
   invoiceExpectation: 'pay_after_service',
   allowedCustomerPaymentMethods: ['check', 'zelle', 'card'],
   requireConsultationBeforeQuote: true,
+  recurringStartsAfterInitial: true,
+  allowSameDayInitialRecurring: false,
 };
 
 describe('parsePreferredPaymentMethod', () => {
