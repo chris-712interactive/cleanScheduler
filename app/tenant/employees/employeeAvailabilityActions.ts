@@ -9,7 +9,7 @@ import {
   parseMemberAvailabilityDaysFromForm,
   validateMemberDayWindows,
 } from '@/lib/tenant/memberAvailabilityDays';
-import { canEditTeamMember } from '@/lib/tenant/employeePermissions';
+import { canEditMemberAvailability } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
 
 export interface MemberAvailabilityActionState {
@@ -32,9 +32,13 @@ export async function updateMemberAvailabilityAction(
     return { error: 'Missing workspace or team member.' };
   }
 
-  const membership = await requireTenantPortalAccess(slug, `/employees/${targetUserId}`);
   const auth = await getAuthContext();
   if (!auth) return { error: 'Not signed in.' };
+
+  const membership = await requireTenantPortalAccess(
+    slug,
+    auth.user.id === targetUserId ? '/settings/account' : `/employees/${targetUserId}`,
+  );
 
   const admin = createAdminClient();
   const { data: memberRow } = await admin
@@ -47,7 +51,7 @@ export async function updateMemberAvailabilityAction(
   if (!memberRow) return { error: 'Team member not found.' };
 
   if (
-    !canEditTeamMember({
+    !canEditMemberAvailability({
       actor: membership.role as TenantRole,
       actorUserId: auth.user.id,
       targetUserId,
@@ -97,6 +101,7 @@ export async function updateMemberAvailabilityAction(
   }
 
   revalidatePath(`/employees/${targetUserId}`);
+  revalidatePath('/settings/account');
   revalidatePath('/schedule');
 
   return {

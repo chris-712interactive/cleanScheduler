@@ -48,7 +48,7 @@ export default async function TenantRolesSettingsPage({ searchParams }: PageProp
     <>
       <PageHeader
         title="Roles & permissions"
-        titleHint="Built-in and custom workspace roles with granular permissions."
+        titleHint="Control who can view or change each part of your workspace."
         backHref="/settings"
         backLabel="Settings"
         actions={

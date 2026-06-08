@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
+import { Stack } from '@/components/layout/Stack';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
@@ -17,6 +17,7 @@ import { EmployeeAvailabilityForm } from '../EmployeeAvailabilityForm';
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
+import styles from '../employeeEdit.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -128,39 +129,69 @@ export default async function TenantEmployeeEditPage({ params }: PageProps) {
     work_day_end: tenantRow?.work_day_end ?? null,
   });
 
+  const showAccess = (canChangeRole || canToggleActive) && targetRole !== 'owner';
+
   return (
     <>
       <PageHeader
         title={displayName}
-        titleHint="Manage profile, photo, and workspace access for this teammate."
+        titleHint="Profile, workspace access, and scheduling availability."
         backHref="/employees"
         backLabel="Team"
       />
-      <Card title="Member details">
-        <EmployeeMemberEditForm
-          tenantSlug={membership.tenantSlug}
-          targetUserId={targetUserId}
-          displayName={displayName}
-          avatarUrl={profile?.avatar_url ?? null}
-          email={email}
-          role={targetRole}
-          isActive={memberRow.is_active}
-          roleOptions={roleOptions}
-          canChangeRole={canChangeRole}
-          canToggleActive={canToggleActive}
-        />
-      </Card>
-      <Card
-        title="Work availability"
-        description="Set hours per weekday for auto-scheduling and crew assignment."
-      >
-        <EmployeeAvailabilityForm
-          tenantSlug={membership.tenantSlug}
-          targetUserId={targetUserId}
-          profile={memberProfile}
-          tenantDefaults={tenantDefaults}
-        />
-      </Card>
+
+      <Stack gap={5}>
+        <nav className={styles.sectionNav} aria-label="Member sections">
+          <a className={styles.sectionNavLink} href="#member-profile">
+            Profile
+          </a>
+          {showAccess ? (
+            <a className={styles.sectionNavLink} href="#member-access">
+              Access
+            </a>
+          ) : null}
+          <a className={styles.sectionNavLink} href="#member-schedule">
+            Schedule
+          </a>
+        </nav>
+
+        <div className={styles.detailLayout}>
+          <EmployeeMemberEditForm
+            tenantSlug={membership.tenantSlug}
+            targetUserId={targetUserId}
+            displayName={displayName}
+            avatarUrl={profile?.avatar_url ?? null}
+            email={email}
+            role={targetRole}
+            isActive={memberRow.is_active}
+            roleOptions={roleOptions}
+            canChangeRole={canChangeRole}
+            canToggleActive={canToggleActive}
+          />
+
+          <section
+            id="member-schedule"
+            className={styles.availabilityPanel}
+            aria-labelledby="schedule-heading"
+          >
+            <header className={styles.panelHeader}>
+              <h3 id="schedule-heading" className={styles.panelTitle}>
+                Work availability
+              </h3>
+              <p className={styles.panelLead}>
+                Hours used for auto-scheduling and crew assignment. Overrides the business default
+                when customized.
+              </p>
+            </header>
+            <EmployeeAvailabilityForm
+              tenantSlug={membership.tenantSlug}
+              targetUserId={targetUserId}
+              profile={memberProfile}
+              tenantDefaults={tenantDefaults}
+            />
+          </section>
+        </div>
+      </Stack>
     </>
   );
 }

@@ -16,6 +16,7 @@ import {
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
 import type { TenantRole } from '@/lib/auth/types';
+import { assertTeamRecoveryAccessRemains } from '@/lib/tenant/workspaceAdminGuards';
 
 const SYSTEM_SLUGS = new Set(['owner', 'admin', 'employee', 'viewer']);
 const BASE_ROLES = new Set<TenantRole>(['admin', 'employee', 'viewer']);
@@ -179,10 +180,22 @@ export async function updateTenantRoleAction(formData: FormData): Promise<void> 
     redirect(returnToWithError(returnTo, 'update'));
   }
 
-  await admin.from('tenant_role_permissions').delete().eq('role_id', roleId);
-
   const keys =
     permissionKeys.length > 0 ? permissionKeys : existing.is_system ? [] : [...PERMISSION_KEYS];
+
+  if (keys.length > 0) {
+    const recoveryError = await assertTeamRecoveryAccessRemains(
+      admin,
+      membership.tenantId,
+      roleId,
+      keys,
+    );
+    if (recoveryError) {
+      redirect(returnToWithError(returnTo, 'recovery'));
+    }
+  }
+
+  await admin.from('tenant_role_permissions').delete().eq('role_id', roleId);
 
   if (keys.length > 0) {
     await admin.from('tenant_role_permissions').insert(

@@ -79,6 +79,24 @@ export function canEditTeamMember(params: {
   return true;
 }
 
+/** Roles that can appear on the schedule as assignable crew (including the signed-in owner). */
+export function canBeScheduledAsCrew(role: TenantRole): boolean {
+  return role === 'owner' || role === 'admin' || role === 'employee';
+}
+
+/** Edit work availability for scheduling — self-service or via team management. */
+export function canEditMemberAvailability(params: {
+  actor: TenantRole;
+  actorUserId: string;
+  targetUserId: string;
+  targetRole: TenantRole;
+}): boolean {
+  if (params.actorUserId === params.targetUserId && canBeScheduledAsCrew(params.targetRole)) {
+    return true;
+  }
+  return canEditTeamMember(params);
+}
+
 export function roleOptionsForMemberEditor(
   actor: TenantRole,
 ): { value: Exclude<TenantRole, 'owner'>; label: string }[] {

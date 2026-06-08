@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useActionState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
   uploadOwnAvatarAction,
@@ -13,38 +14,59 @@ import styles from './account-settings.module.scss';
 
 const initial: ProfileActionState = {};
 
-function AvatarUploadControl({
+function ActionFeedback({ state }: { state: ProfileActionState }) {
+  if (state.error) {
+    return (
+      <p className={styles.feedback} data-tone="error" role="alert">
+        {state.error}
+      </p>
+    );
+  }
+  if (state.success) {
+    return (
+      <p className={styles.feedback} data-tone="success" role="status">
+        {state.success}
+      </p>
+    );
+  }
+  return null;
+}
+
+export function AccountIdentityHero({
   tenantSlug,
+  displayName,
+  email,
+  roleLabel,
+  tenantName,
   avatarUrl,
   initials,
 }: {
   tenantSlug: string;
+  displayName: string;
+  email: string;
+  roleLabel: string;
+  tenantName: string;
   avatarUrl: string | null;
   initials: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(uploadOwnAvatarAction, initial);
 
-  function handleFileChange() {
-    formRef.current?.requestSubmit();
-  }
-
   return (
-    <div className={styles.avatarControl}>
-      <form ref={formRef} action={formAction} className={styles.avatarForm}>
+    <header className={styles.accountHero} aria-label="Your account">
+      <form
+        ref={formRef}
+        action={formAction}
+        className={styles.avatarControl}
+        aria-label="Profile photo"
+      >
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         {avatarUrl ? (
-          <Image
-            src={avatarUrl}
-            alt=""
-            width={72}
-            height={72}
-            className={styles.profileAvatarImage}
-          />
+          <Image src={avatarUrl} alt="" width={80} height={80} className={styles.avatarImage} />
         ) : (
-          <div className={styles.profileAvatarPlaceholder} aria-hidden>
+          <span className={styles.avatarFallback} aria-hidden>
             {initials}
-          </div>
+          </span>
         )}
         <label className={styles.avatarChangeLabel}>
           <input
@@ -53,126 +75,94 @@ function AvatarUploadControl({
             accept="image/jpeg,image/png,image/webp,image/gif"
             className={styles.hiddenFileInput}
             disabled={pending}
-            onChange={handleFileChange}
+            onChange={() => formRef.current?.requestSubmit()}
           />
           {pending ? 'Uploading…' : 'Change photo'}
         </label>
+        <ActionFeedback state={state} />
       </form>
-      {state.error ? (
-        <p className={styles.inlineFeedback} data-tone="error" role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.inlineFeedback} data-tone="success" role="status">
-          {state.success}
-        </p>
-      ) : null}
-    </div>
+
+      <div className={styles.heroIdentity}>
+        <h2 className={styles.heroName}>{displayName}</h2>
+        {email ? <p className={styles.heroEmail}>{email}</p> : null}
+        <div className={styles.heroMeta}>
+          <StatusPill tone="brand">{roleLabel}</StatusPill>
+          <span className={styles.workspaceChip}>{tenantName}</span>
+        </div>
+      </div>
+    </header>
   );
 }
 
-export function AccountPreferencesPanel({
+export function AccountProfilePanel({
   tenantSlug,
   firstName,
   lastName,
-  avatarUrl,
-  initials,
-  email,
-  roleLabel,
 }: {
   tenantSlug: string;
   firstName: string;
   lastName: string;
-  avatarUrl: string | null;
-  initials: string;
-  email: string;
-  roleLabel: string;
 }) {
   const [nameState, nameAction, namePending] = useActionState(updateOwnDisplayNameAction, initial);
 
   return (
-    <section
-      id="account-profile"
-      className={styles.settingsSection}
-      aria-labelledby="profile-heading"
-    >
-      <header className={styles.sectionHeader}>
-        <h2 id="profile-heading" className={styles.sectionTitle}>
-          Profile & appearance
-        </h2>
-        <p className={styles.sectionLead}>
-          {email ? (
-            <>
-              Signed in as <strong>{email}</strong> · {roleLabel}
-            </>
-          ) : (
-            <>How teammates see you in this workspace.</>
-          )}
-        </p>
+    <section id="account-profile" className={styles.panel} aria-labelledby="profile-heading">
+      <header className={styles.panelHeader}>
+        <h3 id="profile-heading" className={styles.panelTitle}>
+          Profile
+        </h3>
+        <p className={styles.panelLead}>Name shown to teammates on the schedule and team directory.</p>
       </header>
-
-      <div className={styles.profileCard}>
-        <div className={styles.profileMain}>
-          <AvatarUploadControl tenantSlug={tenantSlug} avatarUrl={avatarUrl} initials={initials} />
-
-          <form action={nameAction} className={styles.nameForm}>
-            <input type="hidden" name="tenant_slug" value={tenantSlug} />
-            <div className={styles.nameRow}>
-              <label className={styles.profileField} htmlFor="first_name">
-                <span className={styles.fieldLabel}>First name</span>
-                <input
-                  id="first_name"
-                  name="first_name"
-                  type="text"
-                  className={styles.textInput}
-                  defaultValue={firstName}
-                  maxLength={60}
-                  autoComplete="given-name"
-                  required
-                />
-              </label>
-              <label className={styles.profileField} htmlFor="last_name">
-                <span className={styles.fieldLabel}>Last name</span>
-                <input
-                  id="last_name"
-                  name="last_name"
-                  type="text"
-                  className={styles.textInput}
-                  defaultValue={lastName}
-                  maxLength={60}
-                  autoComplete="family-name"
-                />
-              </label>
-            </div>
-            <div className={styles.nameFormActions}>
-              <Button type="submit" variant="primary" disabled={namePending}>
-                {namePending ? 'Saving…' : 'Save name'}
-              </Button>
-              {nameState.error ? (
-                <p className={styles.inlineFeedback} data-tone="error" role="alert">
-                  {nameState.error}
-                </p>
-              ) : null}
-              {nameState.success ? (
-                <p className={styles.inlineFeedback} data-tone="success" role="status">
-                  {nameState.success}
-                </p>
-              ) : null}
-            </div>
-          </form>
+      <form action={nameAction} className={styles.profileForm}>
+        <input type="hidden" name="tenant_slug" value={tenantSlug} />
+        <div className={styles.nameFields}>
+          <label className={styles.fieldLabel} htmlFor="first_name">
+            First name
+            <input
+              id="first_name"
+              name="first_name"
+              type="text"
+              className={styles.textInput}
+              defaultValue={firstName}
+              maxLength={60}
+              autoComplete="given-name"
+              required
+            />
+          </label>
+          <label className={styles.fieldLabel} htmlFor="last_name">
+            Last name
+            <input
+              id="last_name"
+              name="last_name"
+              type="text"
+              className={styles.textInput}
+              defaultValue={lastName}
+              maxLength={60}
+              autoComplete="family-name"
+            />
+          </label>
         </div>
-
-        <div className={styles.profileDivider} aria-hidden />
-
-        <div className={styles.themeRow}>
-          <div className={styles.themeCopy}>
-            <p className={styles.themeTitle}>Theme</p>
-            <p className={styles.themeHint}>Light, dark, or match your device.</p>
-          </div>
-          <ThemeToggle />
+        <div className={styles.formActions}>
+          <Button type="submit" variant="primary" disabled={namePending}>
+            {namePending ? 'Saving…' : 'Save name'}
+          </Button>
+          <ActionFeedback state={nameState} />
         </div>
-      </div>
+      </form>
+    </section>
+  );
+}
+
+export function AccountAppearancePanel() {
+  return (
+    <section id="account-appearance" className={styles.panel} aria-labelledby="appearance-heading">
+      <header className={styles.panelHeader}>
+        <h3 id="appearance-heading" className={styles.panelTitle}>
+          Appearance
+        </h3>
+        <p className={styles.panelLead}>Light, dark, or match your device.</p>
+      </header>
+      <ThemeToggle />
     </section>
   );
 }
