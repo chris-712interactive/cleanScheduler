@@ -197,7 +197,11 @@ export default async function TenantAccountSettingsPage() {
               ) : null}
             </section>
 
-            <section id="account-session" className={styles.panel} aria-labelledby="session-heading">
+            <section
+              id="account-session"
+              className={styles.panel}
+              aria-labelledby="session-heading"
+            >
               <header className={styles.panelHeader}>
                 <h3 id="session-heading" className={styles.panelTitle}>
                   Session

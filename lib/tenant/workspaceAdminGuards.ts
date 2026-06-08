@@ -1,8 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  isPermissionKey,
-  type PermissionKey,
-} from '@/lib/tenant/permissionCatalog';
+import { isPermissionKey, type PermissionKey } from '@/lib/tenant/permissionCatalog';
 import type { TenantRole } from '@/lib/auth/types';
 import type { Database } from '@/lib/supabase/database.types';
 

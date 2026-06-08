@@ -138,7 +138,9 @@ export function EmployeeMemberEditForm({
           <h3 id="profile-heading" className={styles.panelTitle}>
             Profile
           </h3>
-          <p className={styles.panelLead}>Name shown on the schedule, quotes, and team directory.</p>
+          <p className={styles.panelLead}>
+            Name shown on the schedule, quotes, and team directory.
+          </p>
         </header>
         <form action={nameAction} className={styles.inlineForm}>
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -180,7 +182,12 @@ export function EmployeeMemberEditForm({
                 <input type="hidden" name="target_user_id" value={targetUserId} />
                 <label className={styles.fieldLabel} htmlFor="next_role">
                   Permission level
-                  <select id="next_role" name="next_role" className={styles.select} defaultValue={role}>
+                  <select
+                    id="next_role"
+                    name="next_role"
+                    className={styles.select}
+                    defaultValue={role}
+                  >
                     {roleOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -193,7 +200,9 @@ export function EmployeeMemberEditForm({
                 </Button>
               </form>
               {ROLE_HINTS[role as Exclude<TenantRole, 'owner'>] ? (
-                <p className={styles.fieldHint}>{ROLE_HINTS[role as Exclude<TenantRole, 'owner'>]}</p>
+                <p className={styles.fieldHint}>
+                  {ROLE_HINTS[role as Exclude<TenantRole, 'owner'>]}
+                </p>
               ) : null}
               <ActionFeedback state={roleState} />
             </>

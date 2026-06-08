@@ -180,7 +180,9 @@ function PermissionAreaCard({
                     type="checkbox"
                     checked={selected.has(capability.key)}
                     onChange={(event) =>
-                      onChange(togglePermissionCapability(capability, event.target.checked, selected))
+                      onChange(
+                        togglePermissionCapability(capability, event.target.checked, selected),
+                      )
                     }
                     disabled={disabled}
                   />
@@ -400,7 +402,11 @@ export function TenantRolesSettingsPanel({
                               <input type="hidden" name="tenant_slug" value={tenantSlug} />
                               <input type="hidden" name="return_to" value="/settings/roles" />
                               <input type="hidden" name="role_id" value={role.id} />
-                              <Button type="submit" variant="danger" disabled={role.memberCount > 0}>
+                              <Button
+                                type="submit"
+                                variant="danger"
+                                disabled={role.memberCount > 0}
+                              >
                                 Delete
                               </Button>
                             </form>
@@ -446,7 +452,12 @@ export function TenantRolesSettingsPanel({
                 </label>
                 <label className={styles.fieldLabel}>
                   Description
-                  <textarea className={styles.textArea} name="description" rows={2} maxLength={400} />
+                  <textarea
+                    className={styles.textArea}
+                    name="description"
+                    rows={2}
+                    maxLength={400}
+                  />
                 </label>
                 <label className={styles.fieldLabel}>
                   Base template

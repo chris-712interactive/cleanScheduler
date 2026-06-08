@@ -111,7 +111,9 @@ export function AccountProfilePanel({
         <h3 id="profile-heading" className={styles.panelTitle}>
           Profile
         </h3>
-        <p className={styles.panelLead}>Name shown to teammates on the schedule and team directory.</p>
+        <p className={styles.panelLead}>
+          Name shown to teammates on the schedule and team directory.
+        </p>
       </header>
       <form action={nameAction} className={styles.profileForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />

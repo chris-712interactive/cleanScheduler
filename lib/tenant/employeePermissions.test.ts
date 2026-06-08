@@ -47,12 +47,14 @@ describe('canEditMemberAvailability', () => {
         targetUserId: 'employee-1',
         targetRole: 'employee',
       }),
-    ).toBe(canEditTeamMember({
-      actor: 'admin',
-      actorUserId: 'admin-1',
-      targetUserId: 'employee-1',
-      targetRole: 'employee',
-    }));
+    ).toBe(
+      canEditTeamMember({
+        actor: 'admin',
+        actorUserId: 'admin-1',
+        targetUserId: 'employee-1',
+        targetRole: 'employee',
+      }),
+    );
   });
 });
 

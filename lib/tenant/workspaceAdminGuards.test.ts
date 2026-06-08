@@ -84,12 +84,9 @@ describe('assertTeamRecoveryAccessRemains', () => {
       }),
     };
 
-    const message = await assertTeamRecoveryAccessRemains(
-      admin as never,
-      'tenant-1',
-      adminRoleId,
-      ['quotes.view'],
-    );
+    const message = await assertTeamRecoveryAccessRemains(admin as never, 'tenant-1', adminRoleId, [
+      'quotes.view',
+    ]);
     expect(message).toMatch(/team management access/);
   });
 });
