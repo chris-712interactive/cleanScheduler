@@ -8,6 +8,11 @@ import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
+import {
+  assertPermission,
+  permissionDeniedMessage,
+  resolveMembershipPermissions,
+} from '@/lib/tenant/resolveMembershipPermissions';
 import type { Database } from '@/lib/supabase/database.types';
 
 type InvoiceStatus = Database['public']['Enums']['tenant_invoice_status'];
@@ -77,9 +82,15 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/invoices');
   const invoiceId = String(formData.get('invoice_id') ?? '').trim();
-  const roleErr = tenantRoleError(membership.role, 'employee');
-  if (roleErr) {
-    redirect(`/billing/invoices/${invoiceId || 'unknown'}?error=${encodeURIComponent(roleErr)}`);
+
+  const admin = createAdminClient();
+  const permissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(permissions, 'billing.manage');
+  } catch (error) {
+    redirect(
+      `/billing/invoices/${invoiceId || 'unknown'}?error=${encodeURIComponent(permissionDeniedMessage(error) ?? 'Forbidden')}`,
+    );
   }
 
   const amountCents = parseCentsFromDollars(String(formData.get('amount_dollars') ?? ''));
@@ -101,7 +112,6 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
     redirect(`/billing/invoices/${invoiceId}?error=invalid`);
   }
 
-  const admin = createAdminClient();
   const { data: inv, error: invErr } = await admin
     .from('tenant_invoices')
     .select('id, tenant_id, status, amount_cents, amount_paid_cents')

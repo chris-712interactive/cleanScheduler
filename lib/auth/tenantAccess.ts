@@ -19,6 +19,7 @@ export interface TenantMembership {
   tenantSlug: string;
   tenantName: string;
   role: TenantRole;
+  roleId: string | null;
 }
 
 export interface TenantPortalAccessOptions {
@@ -43,6 +44,7 @@ async function lookupMembership(
       `
       tenant_id,
       role,
+      role_id,
       tenants:tenants!inner (
         id,
         slug,
@@ -64,6 +66,7 @@ async function lookupMembership(
     tenantSlug: data.tenants.slug,
     tenantName: data.tenants.name,
     role: data.role,
+    roleId: data.role_id ?? null,
   };
 }
 
@@ -202,6 +205,7 @@ export async function requireTenantPortalAccess(
         tenantSlug: tenant.slug,
         tenantName: tenant.name,
         role: 'admin',
+        roleId: null,
       };
     }
     redirect('/access-denied?reason=unknown_tenant');

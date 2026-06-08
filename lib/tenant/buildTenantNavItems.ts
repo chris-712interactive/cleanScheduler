@@ -1,10 +1,12 @@
 import type { NavItem } from '@/components/portal/types';
 import type { TenantRole } from '@/lib/auth/types';
+import type { PermissionKey } from '@/lib/tenant/permissionCatalog';
 import {
   buildFieldEmployeeBottomNavItems,
   buildFieldEmployeeNavItems,
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
+import { hasPermission } from '@/lib/tenant/resolveMembershipPermissions';
 
 const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
@@ -20,6 +22,7 @@ const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Employees', href: '/employees', icon: 'work' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },
   { label: 'Reports', href: '/reports', icon: 'reports' },
+  { label: 'Accounting', href: '/accounting', icon: 'accounting' },
 ];
 
 const TENANT_BOTTOM_NAV: NavItem[] = [
@@ -29,8 +32,31 @@ const TENANT_BOTTOM_NAV: NavItem[] = [
   { label: 'Billing', href: '/billing', icon: 'billing' },
 ];
 
+const NAV_ITEM_PERMISSION: Partial<Record<string, PermissionKey>> = {
+  '/quotes': 'quotes.view',
+  '/customers': 'customers.view',
+  '/messages': 'messages.view',
+  '/schedule': 'schedule.view',
+  '/schedule/reschedule-requests': 'schedule.manage',
+  '/employees': 'team.view',
+  '/campaigns': 'campaigns.view',
+  '/reports': 'reports.view',
+  '/accounting': 'billing.view',
+};
+
+function navItemAllowed(
+  item: NavItem,
+  permissions: ReadonlySet<PermissionKey> | undefined,
+): boolean {
+  if (!permissions) return true;
+  const required = NAV_ITEM_PERMISSION[item.href];
+  if (!required) return true;
+  return hasPermission(permissions, required);
+}
+
 export function buildTenantNavItems(params: {
   role: TenantRole;
+  permissions?: ReadonlySet<PermissionKey>;
   subscriptionLocked: boolean;
   billingNavItem: NavItem;
   settingsNavItem: NavItem;
@@ -43,6 +69,7 @@ export function buildTenantNavItems(params: {
 }): NavItem[] {
   const {
     role,
+    permissions,
     subscriptionLocked,
     billingNavItem,
     settingsNavItem,
@@ -68,14 +95,35 @@ export function buildTenantNavItems(params: {
         ...(gettingStartedNavItem ? [gettingStartedNavItem] : []),
         ...NAV_ITEMS_BASE.slice(1, 7),
         billingNavItem,
-        ...NAV_ITEMS_BASE.slice(7).filter(
-          (item) => item.href !== '/campaigns' || campaignsNavEnabled,
-        ),
+        ...NAV_ITEMS_BASE.slice(7).filter((item) => {
+          if (item.href === '/campaigns' && !campaignsNavEnabled) return false;
+          if (item.href === '/accounting') {
+            if (permissions) return hasPermission(permissions, 'billing.view');
+            return role === 'owner' || role === 'admin';
+          }
+          return true;
+        }),
         ...(referralsNavEnabled
           ? [{ label: 'Referrals', href: '/referrals', icon: 'referrals' as const }]
           : []),
         settingsNavItem,
-      ];
+      ].filter((item) => {
+        if (
+          item.href === '/billing' &&
+          permissions &&
+          !hasPermission(permissions, 'billing.view')
+        ) {
+          return false;
+        }
+        if (
+          item.href === '/settings' &&
+          permissions &&
+          !hasPermission(permissions, 'settings.view')
+        ) {
+          return false;
+        }
+        return navItemAllowed(item, permissions);
+      });
 
   return navItems.map((item) => {
     if (item.href === '/schedule/reschedule-requests' && pendingRescheduleCount > 0) {

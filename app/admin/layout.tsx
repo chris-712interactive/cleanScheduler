@@ -10,10 +10,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
   { label: 'Inquiries', href: '/inquiries', icon: 'inquiries' },
   { label: 'Tenants', href: '/tenants', icon: 'tenants' },
-  { label: 'Customers', href: '/customers', icon: 'customersGlobal' },
-  { label: 'Billing', href: '/billing', icon: 'billing' },
-  { label: 'Reports', href: '/reports', icon: 'reports' },
-  { label: 'Activity', href: '/activity', icon: 'activity' },
+  { label: 'Accounting', href: '/accounting', icon: 'accounting' },
+  { label: 'Customer Service', href: '/support', icon: 'messages' },
   { label: 'Audit log', href: '/audit', icon: 'audit' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
 ];

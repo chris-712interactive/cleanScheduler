@@ -2,22 +2,18 @@
 
 **Saved:** 2026-06-08 — revisit after Plaid production readiness.
 
-This is a working priority list distilled from `.cursor/docs/plan/implementation-plan.md` and product docs. Not a commitment order.
+## Recently shipped (Bucket B — Phase 2)
 
-## Recently shipped
-
-- **Two-way customer support messaging v1 + v1.1** (PR #115) — tenant `/messages` inbox, customer thread replies, awaiting-reply nav badge, staff email on customer message (`0072`). See `docs/product/customer-support-messaging.md`.
-- **Customer help hub articles** — `/help/customers/message-your-provider`, `/help/customers/manage-appointments`, `/help/customers/pay-invoices`.
-- **Service type `schedule_role` UI** — editable at `/settings/services` (initial / recurring / standard).
-- **Quote auto-schedule on accept** — when tenant ops mode is `auto_schedule` and line items opt in (`lib/tenant/quoteAutoSchedule.ts`, migrations through **0071**).
+- **Platform support ticketing** (0073) — founder `/support`, tenant `/settings/support`. See `docs/product/platform-support-tickets.md`.
+- **Custom quote pipeline stages** (0074) — Pro+ Kanban customization at `/settings/quotes-pipeline`. See `docs/product/quote-pipeline-stages.md`.
+- **Custom roles + permissions** (0075) — `/settings/roles` CRUD with permission matrix (Business+). See `docs/product/custom-roles-permissions.md`.
+- **Accounting MVP** — founder `/accounting`, tenant `/accounting`. See `docs/product/founder-accounting.md`.
 
 ## Explicitly pending (Phase 2/3)
 
-- Support ticketing (`phase2Tickets`)
-- Customizable Quotes Kanban + custom roles UI (`phase2KanbanRoles`)
-- Accounting module — tenant + founder (`phase2Accounting`)
 - Masquerade polish — consent flow, per-action audit UI (`phase3MasqueradePolish`)
 - PWA / offline field schedule (`phase3Pwa`)
+- Customer email when provider replies (messaging follow-up)
 
 ## In progress / high-value gaps
 
@@ -29,15 +25,8 @@ This is a working priority list distilled from `.cursor/docs/plan/implementation
 - Playwright smoke in CI; Sentry release + sourcemaps
 - Campaign **scheduled sends** cron
 - Plaid prod keys + bank reports when link active ← **current focus**
-- Founder admin onboarding / masquerade polish
-- Customer email when provider replies (messaging follow-up)
+- Founder email on new platform support ticket
 
 ## Latency plan (separate track)
 
 Phases 0–4 **code-complete**. Remaining: fill `docs/performance/phase-0-baselines.md` on staging after Phase 4 release.
-
-## Product doc backlogs
-
-- `docs/product/quotes-line-items.md` — expiry job, transactional create RPC, notifications
-- `docs/product/tenant-reports.md` — masquerade export verification, Connect empty states
-- `docs/product/customer-support-messaging.md` — customer email on provider reply (future)

@@ -98,3 +98,148 @@ export function formatPlatformMrrLabel(mrrCents: number): string {
   if (mrrCents <= 0) return '$0';
   return `$${(mrrCents / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
+
+export interface PlatformTenantSubscriptionRow {
+  tenantSlug: string;
+  tenantName: string;
+  isActive: boolean;
+  status: string;
+  platformPlan: PlatformPlanTier | null;
+  platformPlanLabel: string | null;
+  billingInterval: 'month' | 'year' | null;
+  monthlyRecurringCents: number;
+  estimatedYtdCents: number;
+  stripeSubscriptionId: string | null;
+  trialEndsAt: string | null;
+  activatedAt: string | null;
+}
+
+export interface PlatformAccountingSummary {
+  estimatedMrrCents: number;
+  activePaidSubscriptions: number;
+  estimatedRevenueYtdCents: number;
+  tenantSubscriptions: PlatformTenantSubscriptionRow[];
+}
+
+const MS_PER_MONTH = 30.4375 * 24 * 60 * 60 * 1000;
+
+function yearStartUtc(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+}
+
+/** Estimated platform revenue YTD from active subscriptions and activation dates. */
+function estimateYtdCentsForAccount(row: {
+  status: string;
+  activated_at: string | null;
+  created_at: string;
+  monthlyRecurringCents: number;
+}): number {
+  if (row.monthlyRecurringCents <= 0 || row.status !== 'active') return 0;
+
+  const yearStart = yearStartUtc();
+  const activated = row.activated_at ? new Date(row.activated_at) : null;
+  const effectiveStart = activated && activated > yearStart ? activated : (activated ?? yearStart);
+  const now = Date.now();
+  if (effectiveStart.getTime() > now) return 0;
+
+  const months = (now - effectiveStart.getTime()) / MS_PER_MONTH;
+  return Math.round(row.monthlyRecurringCents * months);
+}
+
+function normalizeBillingAccount<T>(raw: T | T[] | null | undefined): T | null {
+  if (raw == null) return null;
+  return Array.isArray(raw) ? (raw[0] ?? null) : raw;
+}
+
+/**
+ * Founder accounting aggregates: MRR, estimated revenue YTD, and per-tenant subscriptions.
+ */
+export async function getPlatformAccountingSummary(): Promise<PlatformAccountingSummary> {
+  const db = createAdminClient();
+
+  const { data, error } = await db
+    .from('tenants')
+    .select(
+      `
+      slug,
+      name,
+      is_active,
+      tenant_billing_accounts (
+        status,
+        platform_plan,
+        billing_interval,
+        stripe_subscription_id,
+        trial_ends_at,
+        activated_at,
+        created_at
+      )
+    `,
+    )
+    .order('slug', { ascending: true });
+
+  if (error || !data) {
+    return {
+      estimatedMrrCents: 0,
+      activePaidSubscriptions: 0,
+      estimatedRevenueYtdCents: 0,
+      tenantSubscriptions: [],
+    };
+  }
+
+  let estimatedMrrCents = 0;
+  let activePaidSubscriptions = 0;
+  let estimatedRevenueYtdCents = 0;
+  const tenantSubscriptions: PlatformTenantSubscriptionRow[] = [];
+
+  for (const tenant of data) {
+    const billing = normalizeBillingAccount(tenant.tenant_billing_accounts);
+    const tier = parsePlatformPlanTier(billing?.platform_plan) as PlatformPlanTier | null;
+    const monthlyRecurringCents = billing
+      ? monthlyRecurringCentsForAccount({
+          status: billing.status,
+          platform_plan: tier,
+          billing_interval: billing.billing_interval,
+        })
+      : 0;
+
+    if (monthlyRecurringCents > 0) {
+      estimatedMrrCents += monthlyRecurringCents;
+      activePaidSubscriptions += 1;
+    }
+
+    const estimatedYtdCents = billing
+      ? estimateYtdCentsForAccount({
+          status: billing.status,
+          activated_at: billing.activated_at,
+          created_at: billing.created_at,
+          monthlyRecurringCents,
+        })
+      : 0;
+    estimatedRevenueYtdCents += estimatedYtdCents;
+
+    tenantSubscriptions.push({
+      tenantSlug: tenant.slug,
+      tenantName: tenant.name,
+      isActive: tenant.is_active,
+      status: billing?.status ?? 'none',
+      platformPlan: tier,
+      platformPlanLabel: tier ? PLATFORM_TIER_ENTITLEMENTS[tier].displayName : null,
+      billingInterval: billing?.billing_interval ?? null,
+      monthlyRecurringCents,
+      estimatedYtdCents,
+      stripeSubscriptionId: billing?.stripe_subscription_id ?? null,
+      trialEndsAt: billing?.trial_ends_at ?? null,
+      activatedAt: billing?.activated_at ?? null,
+    });
+  }
+
+  tenantSubscriptions.sort((a, b) => b.monthlyRecurringCents - a.monthlyRecurringCents);
+
+  return {
+    estimatedMrrCents,
+    activePaidSubscriptions,
+    estimatedRevenueYtdCents,
+    tenantSubscriptions,
+  };
+}

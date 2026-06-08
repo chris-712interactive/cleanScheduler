@@ -8,6 +8,7 @@ import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/se
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
+import { loadTenantQuotePipelineStages } from '@/lib/tenant/quotePipelineStages';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import nextDynamic from 'next/dynamic';
 import { PortalRouteLoading } from '@/components/portal/PortalRouteLoading';
@@ -65,6 +66,7 @@ export default async function TenantQuotesPage({
         version_number,
         is_locked,
         superseded_by_quote_id,
+        pipeline_stage_id,
         customers (
           customer_identities (
             first_name,
@@ -108,6 +110,7 @@ export default async function TenantQuotesPage({
 
   const admin = createAdminClient();
   const ops = await loadTenantOperationalSettings(admin, membership.tenantId);
+  const pipelineStages = await loadTenantQuotePipelineStages(admin, membership.tenantId);
   const needsSchedulingQuoteIds =
     ops.acceptedQuoteScheduleMode === 'prompt_staff'
       ? new Set(
@@ -212,6 +215,7 @@ export default async function TenantQuotesPage({
             <QuotesBoard
               tenantSlug={membership.tenantSlug}
               quotes={activeQuotes}
+              stages={pipelineStages}
               needsSchedulingQuoteIds={needsSchedulingQuoteIds}
             />
           </>
