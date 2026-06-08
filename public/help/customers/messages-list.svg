@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
   <title id="title">Customer portal Messages list</title>
   <desc id="desc">Wireframe of a messages inbox with navigation and thread list</desc>
@@ -14,8 +15,8 @@
   <text x="548" y="63" fill="#ffffff" font-family="system-ui,sans-serif" font-size="14" font-weight="600">New message</text>
   <rect x="200" y="88" width="480" height="72" rx="10" fill="#f7fcfb" stroke="#d7e8e6"/>
   <text x="216" y="118" fill="#00353a" font-family="system-ui,sans-serif" font-size="15" font-weight="600">Reschedule question</text>
-  <text x="216" y="142" fill="#2c7a7a" font-family="system-ui,sans-serif" font-size="13">Acme Cleaning · You: Can we move Thursday&</text>
+  <text x="216" y="142" fill="#2c7a7a" font-family="system-ui,sans-serif" font-size="13">Acme Cleaning - You: Can we move Thursday...</text>
   <rect x="200" y="172" width="480" height="72" rx="10" fill="#ffffff" stroke="#d7e8e6"/>
   <text x="216" y="202" fill="#00353a" font-family="system-ui,sans-serif" font-size="15" font-weight="600">Invoice copy request</text>
-  <text x="216" y="226" fill="#2c7a7a" font-family="system-ui,sans-serif" font-size="13">Acme Cleaning · Closed</text>
+  <text x="216" y="226" fill="#2c7a7a" font-family="system-ui,sans-serif" font-size="13">Acme Cleaning - Closed</text>
 </svg>
