@@ -18,7 +18,8 @@ This is a working priority list distilled from `.cursor/docs/plan/implementation
 
 ## In progress / high-value gaps
 
-- **`auto_schedule`** on quote accept (setting exists; visit creation not wired)
+- **Service type `schedule_role` in Settings** — editable at `/settings/services` (initial / recurring / standard)
+- Public help: **`/help/customers/message-your-provider`**
 - Platform **`plans` / `plan_features` / `tenant_addons`** DB catalog + add-on checkout
 - Setup Intent / saved PM UX beyond Stripe portal
 - Consolidated **cross-tenant customer billing rollup**
@@ -37,4 +38,4 @@ Phases 0–4 **code-complete**. Remaining: fill `docs/performance/phase-0-baseli
 
 - `docs/product/quotes-line-items.md` — expiry job, transactional create RPC, notifications
 - `docs/product/tenant-reports.md` — masquerade export verification, Connect empty states
-- `docs/product/customer-support-messaging.md` — public help article (screenshots)
+- `docs/product/customer-support-messaging.md` — customer email on provider reply (future)

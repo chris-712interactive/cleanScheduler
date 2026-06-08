@@ -10,8 +10,10 @@ import {
   createCustomServiceTypeAction,
   deleteCustomServiceTypeAction,
   updateServiceTypeDurationAction,
+  updateServiceTypeScheduleRoleAction,
   type ServiceTypeActionState,
 } from './actions';
+import { SCHEDULE_ROLE_LABEL, SCHEDULE_ROLE_OPTIONS } from '@/lib/tenant/scheduleRoleLabels';
 import styles from './services-settings.module.scss';
 
 const initialState: ServiceTypeActionState = {};
@@ -59,6 +61,57 @@ function DurationEditor({
   );
 }
 
+function ScheduleRoleEditor({
+  tenantSlug,
+  entry,
+  canEdit,
+}: {
+  tenantSlug: string;
+  entry: JobTypeCatalogEntry;
+  canEdit: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(
+    updateServiceTypeScheduleRoleAction,
+    initialState,
+  );
+
+  if (!canEdit) {
+    return <span>{SCHEDULE_ROLE_LABEL[entry.schedule_role]}</span>;
+  }
+
+  return (
+    <form action={formAction} className={styles.scheduleRoleForm}>
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="template_id" value={entry.id} />
+      <label className={styles.srOnly} htmlFor={`schedule_role_${entry.id}`}>
+        Schedule role for {entry.service_label}
+      </label>
+      <select
+        id={`schedule_role_${entry.id}`}
+        className={styles.scheduleRoleSelect}
+        name="schedule_role"
+        defaultValue={entry.schedule_role}
+        disabled={pending}
+        aria-label={`Schedule role for ${entry.service_label}`}
+      >
+        {SCHEDULE_ROLE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+        Save
+      </Button>
+      {state.error ? (
+        <span className={styles.bannerError} role="alert">
+          {state.error}
+        </span>
+      ) : null}
+    </form>
+  );
+}
+
 export function ServiceTypesPanel({
   tenantSlug,
   canEdit,
@@ -89,9 +142,10 @@ export function ServiceTypesPanel({
       <header className={styles.hero}>
         <h2 className={styles.heroTitle}>Default visit durations by job type</h2>
         <p className={styles.heroLead}>
-          These defaults feed auto-scheduling and crew availability. When you flag a quote line for
-          auto-schedule, the visit block uses the default for that service and property type unless
-          you override the duration on the line.
+          These defaults feed auto-scheduling and crew availability. When you flag quote lines for
+          auto-schedule, visit duration comes from here. Schedule role tells the app whether a job
+          type is an initial visit, recurring visit, or standard when quotes are accepted with
+          automatic scheduling enabled in Operations.
         </p>
       </header>
 
@@ -100,6 +154,10 @@ export function ServiceTypesPanel({
         return (
           <section key={serviceLabel}>
             <h3 className={styles.groupTitle}>{serviceLabel}</h3>
+            <p className={styles.groupHint}>
+              Set duration and schedule role per property type. Initial and recurring roles control
+              how accepted quotes create the first visit vs ongoing cadence.
+            </p>
             <ul className={styles.itemList}>
               {rows.map((entry) => (
                 <li key={entry.id} className={styles.itemCard}>
@@ -116,7 +174,14 @@ export function ServiceTypesPanel({
                     </p>
                   </div>
                   <div className={styles.itemActions}>
-                    <DurationEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+                    <div className={styles.editorGroup}>
+                      <span className={styles.editorLabel}>Duration</span>
+                      <DurationEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+                    </div>
+                    <div className={styles.editorGroup}>
+                      <span className={styles.editorLabel}>Schedule role</span>
+                      <ScheduleRoleEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+                    </div>
                     {canEdit && customTypesEnabled && !entry.is_system_default ? (
                       <form action={deleteCustomServiceTypeAction}>
                         <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -180,6 +245,24 @@ export function ServiceTypesPanel({
                   required
                   disabled={createPending}
                 />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Schedule role</span>
+                <select
+                  className={styles.selectInput}
+                  name="schedule_role"
+                  defaultValue="standard"
+                  disabled={createPending}
+                >
+                  {SCHEDULE_ROLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.fieldHint}>
+                  Initial and recurring roles apply when automatic scheduling is on.
+                </span>
               </label>
               <div className={styles.field}>
                 <Button type="submit" disabled={createPending}>
