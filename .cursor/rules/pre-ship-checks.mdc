@@ -25,3 +25,5 @@ npm run build
 If `npm run format` modifies files, include those changes in the PR branch before pushing.
 
 Do not skip `format` or `lint:styles` even when the diff looks TypeScript-only — SCSS and other formatted files may still need updates.
+
+Once all of the checks and formatting passes, please update implementation documents, customer facing documents and developer facing documents with all updated, completed work.
