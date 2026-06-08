@@ -29,11 +29,18 @@ export type SeoMarketingPage = {
   changeFrequency: 'weekly' | 'monthly' | 'yearly';
 };
 
+export type HelpGuideFigure = {
+  src: string;
+  alt: string;
+  caption?: string;
+};
+
 export type HelpGuideSection = {
   title: string;
   paragraphs: string[];
   bullets?: string[];
   tip?: string;
+  figures?: HelpGuideFigure[];
 };
 
 export type HelpGuideArticle = {

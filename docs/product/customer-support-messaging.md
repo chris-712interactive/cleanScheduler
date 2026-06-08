@@ -47,4 +47,4 @@ Access helper: `lib/tenant/supportMessagingAccess.ts` → `canReplyToSupportThre
 
 ## Follow-ups (backlog)
 
-- Public help article under `/help/customers` (screenshots)
+- Customer email when provider replies (staff email shipped in v1.1)
