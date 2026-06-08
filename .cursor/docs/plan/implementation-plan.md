@@ -1,6 +1,6 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-06-01** — **v1.0.0 shipped to PROD**; **release/1.1.0** in progress (quote ops wiring, Resend webhook verify, RLS smoke). See `docs/release/1.1.0.md`.
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-06-08** — **v1.0.0 shipped to PROD**; **release/1.1.0** in progress (quote ops wiring, Resend webhook verify, RLS smoke). See `docs/release/1.1.0.md`.
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
@@ -33,7 +33,7 @@ todos:
     content: "Core shipped in `0001` + CRM/property/portal migrations (`0010`\u2013`0014`, etc.): `customer_identities`, `customers`, links, portal invites, tenant customer profiles/properties. **Gap:** pgsodium/Vault column encryption for PII not present in migrations yet; invite/claim flows exist but encryption story is still TODO."
     status: in_progress
   - id: schedulingQuotes
-    content: "Shipped: tenant quotes + scheduled visits through **0021** (Kanban, line items, tax/discount, e-sign, notifications, expiry cron). **1.1.0:** wire `tenant_operational_settings` into acceptance (payment methods, prepay invoice, prompt-staff queue). **Still TODO:** `auto_schedule` visit creation; quote-derived auto-schedule on accept."
+    content: "Shipped: tenant quotes + scheduled visits through **0021** (Kanban, line items, tax/discount, e-sign, notifications, expiry cron). **1.1.0:** wire `tenant_operational_settings` into acceptance (payment methods, prepay invoice, prompt-staff queue). **Auto-schedule on accept** shipped when ops mode is `auto_schedule` + line-item flags (`quoteAutoSchedule`, job catalog **0071**)."
     status: in_progress
   - id: billingPlans
     content: "Shipped **0023–0025** + **0053** (Stripe invoice mirror). Connect, service plans, recurring rules, signed payments, mirrors. **Still missing:** DB catalog `plans`/`plan_features`/`tenant_addons`; `tenant_addons` checkout; Setup Intent UX."
@@ -69,7 +69,7 @@ todos:
     content: "Shipped: CSV/OFX bank statement import on `/billing/bank-connection` as Plaid fallback."
     status: completed
   - id: messagingAuditInquiries
-    content: "Shipped v1 (PR #115): `customer_support_threads` + `customer_support_messages` with two-way portal messaging — tenant `/messages` inbox (split-pane, reply/close/reopen, nav badge) and customer thread replies. **Still missing:** email/SMS notifications on new messages; generic `conversations` product; `support_tickets` deferred to Phase 2 todo `phase2Tickets`."
+    content: "Shipped v1 + v1.1 (PR #115): `customer_support_threads` + `customer_support_messages` — tenant `/messages` inbox (split-pane, reply/close/reopen, awaiting-reply nav badge), customer thread replies, staff email on customer message (`0072`). Public help at `/help/customers/message-your-provider`. **Still missing:** customer email on provider reply; SMS two-way inbox; generic `conversations` product; `support_tickets` → Phase 2 `phase2Tickets`."
     status: in_progress
   - id: rlsTestSuite
     content: "Partial: `supabase/tests/rls/tenant_isolation.sql` smoke checks + `npm run check:rls-smoke`. **1.1.0** expands policy coverage. Still missing: pg_tap fixtures, CI integration with ephemeral DB, masquerade scoping tests."
@@ -81,7 +81,7 @@ todos:
     content: "Shipped: platform + Connect webhooks in `app/api/webhooks/stripe/route.ts` — checkout, subscriptions, account.updated, refunds/disputes/payouts, **Connect invoice.* mirror** (`0053`). **Still missing:** inquiry/trial lifecycle automation."
     status: in_progress
   - id: tenantPortalMvp
-    content: "Shipped: full tenant surface including dashboard KPIs, owner onboarding checklist, campaigns, bank connection, API/webhooks, white-label domains, **Messages inbox** (two-way customer support threads). **Gaps:** deeper KPI analytics; `auto_schedule` on quote accept."
+    content: "Shipped: full tenant surface including dashboard KPIs, owner onboarding checklist, campaigns, bank connection, API/webhooks, white-label domains, **Messages inbox** (two-way customer support threads + staff email), **service type schedule_role** at `/settings/services`. **Gaps:** deeper KPI analytics."
     status: in_progress
   - id: customerPortalMvp
     content: "Shipped: invoices, subscriptions, quotes (e-sign), messages (**two-way** thread replies on open conversations), **reschedule requests**, SMS opt-in, portal domains. **Gap:** consolidated cross-tenant billing rollups."
@@ -484,7 +484,7 @@ This section reconciles the YAML todos at the top of this file with the current 
 | `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                                                                                                                                         |
 | `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                                                                                                                               |
 | `billingPlans` as monolithic 0004             | **Partial:** tenant↔customer money path is **`0023`–`0025`** (Connect + `service_plans` / `customer_subscriptions` + recurring rules + signed payments + mirrors). Still missing **platform** catalog `plans` / `plan_features` / `tenant_addons` (§15) and Stripe **hosted** `invoice.*` sync (§17). |
-| `messagingAuditInquiries` as 0005             | **0013** + PR #115: inquiries, audit, two-way support threads/messages in tenant + customer portals. Not full “conversations” product or Phase 2 tickets.                                                                                                                                             |
+| `messagingAuditInquiries` as 0005             | **0013** + PR #115: inquiries, audit, two-way support threads/messages in tenant + customer portals; v1.1 staff email (**0072**); public help articles. Not full “conversations” product or Phase 2 tickets.                                                                                          |
 | `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                                                                                                                               |
 
 ### Prioritized next slices (execute in roughly this order for trial-to-revenue)

@@ -43,18 +43,6 @@ export const HELP_HUB_CATEGORIES: HelpCategory[] = [
         hrefLabel: 'Read guide',
         badges: [{ label: 'How-to' }],
       })),
-      {
-        title: 'Manage appointments',
-        description: 'View upcoming jobs and request reschedules from your schedule.',
-        comingSoon: true,
-        badges: [{ label: 'Coming soon' }],
-      },
-      {
-        title: 'Pay invoices',
-        description: 'Open invoices, review line items, and complete payment.',
-        comingSoon: true,
-        badges: [{ label: 'Coming soon' }],
-      },
     ],
   },
   {

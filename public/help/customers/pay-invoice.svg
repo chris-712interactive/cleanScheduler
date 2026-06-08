@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
+  <title id="title">Customer portal invoice payment</title>
+  <desc id="desc">Wireframe of invoice detail with pay button</desc>
+  <rect width="720" height="420" fill="#f0faf9"/>
+  <rect x="40" y="24" width="640" height="372" rx="16" fill="#ffffff" stroke="#d7e8e6"/>
+  <text x="64" y="58" fill="#00796b" font-family="system-ui,sans-serif" font-size="14" font-weight="600">&lt;- All invoices</text>
+  <text x="64" y="92" fill="#00353a" font-family="system-ui,sans-serif" font-size="22" font-weight="700">June cleaning invoice</text>
+  <text x="64" y="116" fill="#2c7a7a" font-family="system-ui,sans-serif" font-size="13">Acme Cleaning - Open</text>
+  <rect x="64" y="140" width="592" height="120" rx="10" fill="#f7fcfb" stroke="#d7e8e6"/>
+  <text x="80" y="172" fill="#00353a" font-family="system-ui,sans-serif" font-size="14">Invoice total: $185.00</text>
+  <text x="80" y="196" fill="#00353a" font-family="system-ui,sans-serif" font-size="14">Paid: $0.00</text>
+  <text x="80" y="228" fill="#00353a" font-family="system-ui,sans-serif" font-size="15" font-weight="700">Balance due: $185.00</text>
+  <rect x="64" y="280" width="180" height="40" rx="8" fill="#00a896"/>
+  <text x="92" y="305" fill="#ffffff" font-family="system-ui,sans-serif" font-size="14" font-weight="600">Pay with card</text>
+</svg>

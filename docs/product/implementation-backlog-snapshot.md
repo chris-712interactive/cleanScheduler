@@ -1,12 +1,15 @@
 # Implementation backlog snapshot
 
-**Saved:** 2026-06-01 — revisit after Plaid production readiness.
+**Saved:** 2026-06-08 — revisit after Plaid production readiness.
 
 This is a working priority list distilled from `.cursor/docs/plan/implementation-plan.md` and product docs. Not a commitment order.
 
 ## Recently shipped
 
-- **Two-way customer support messaging** (PR #115) — tenant `/messages` inbox, customer thread replies, nav badge. See `docs/product/customer-support-messaging.md`.
+- **Two-way customer support messaging v1 + v1.1** (PR #115) — tenant `/messages` inbox, customer thread replies, awaiting-reply nav badge, staff email on customer message (`0072`). See `docs/product/customer-support-messaging.md`.
+- **Customer help hub articles** — `/help/customers/message-your-provider`, `/help/customers/manage-appointments`, `/help/customers/pay-invoices`.
+- **Service type `schedule_role` UI** — editable at `/settings/services` (initial / recurring / standard).
+- **Quote auto-schedule on accept** — when tenant ops mode is `auto_schedule` and line items opt in (`lib/tenant/quoteAutoSchedule.ts`, migrations through **0071**).
 
 ## Explicitly pending (Phase 2/3)
 
@@ -18,8 +21,6 @@ This is a working priority list distilled from `.cursor/docs/plan/implementation
 
 ## In progress / high-value gaps
 
-- **Service type `schedule_role` in Settings** — editable at `/settings/services` (initial / recurring / standard)
-- Public help: **`/help/customers/message-your-provider`**
 - Platform **`plans` / `plan_features` / `tenant_addons`** DB catalog + add-on checkout
 - Setup Intent / saved PM UX beyond Stripe portal
 - Consolidated **cross-tenant customer billing rollup**
@@ -29,6 +30,7 @@ This is a working priority list distilled from `.cursor/docs/plan/implementation
 - Campaign **scheduled sends** cron
 - Plaid prod keys + bank reports when link active ← **current focus**
 - Founder admin onboarding / masquerade polish
+- Customer email when provider replies (messaging follow-up)
 
 ## Latency plan (separate track)
 
