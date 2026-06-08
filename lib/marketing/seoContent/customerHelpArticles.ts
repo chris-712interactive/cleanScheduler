@@ -12,7 +12,7 @@ export const CUSTOMER_HELP_ARTICLES: HelpGuideArticle[] = [
   {
     slug: 'message-your-provider',
     path: '/help/customers/message-your-provider',
-    title: 'Message your cleaning provider',
+    title: 'Message your provider',
     description:
       'Start a conversation, follow up on open threads, and know what to expect when you contact your provider from the customer portal.',
     sections: [
