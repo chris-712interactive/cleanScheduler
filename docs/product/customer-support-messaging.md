@@ -14,6 +14,8 @@ Two-way in-app messaging between customers and tenant staff. Uses the **`0013`**
 
 **v1.1 (PR #115 follow-up):** email staff when a customer sends or replies (`email_notify_customer_message` in Operations settings, default on); nav badge counts threads awaiting reply.
 
+**Public help:** [`/help/customers/message-your-provider`](/help/customers/message-your-provider) (hub: [`/help/customers`](/help/customers)).
+
 ## Roles (tenant)
 
 | Role     | View inbox | Reply | Close / reopen |

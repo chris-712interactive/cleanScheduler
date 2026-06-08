@@ -59,9 +59,10 @@ The messages view is where staff read and reply to customer support conversation
 - Filters: Open / Closed / All
 - Staff can reply, close, and reopen threads
 - Viewers can read but not reply or change thread status
-- Sidebar nav shows a badge with the count of open threads
+- Sidebar nav shows a badge with the count of **open threads awaiting staff reply**
+- Operations settings toggle: email staff when a customer sends or replies (default on; migration **0072**)
 
-**Implementation note (2026-06-01):** Shipped at **`/messages`**. Schema: `customer_support_threads` + `customer_support_messages` (migration **0013**). No email/SMS notification on new messages in v1.
+**Implementation note (2026-06-08):** Shipped at **`/messages`**. Schema: `customer_support_threads` + `customer_support_messages` (migration **0013**). Staff email notifications shipped in v1.1. Public customer guide: **`/help/customers/message-your-provider`**. No SMS two-way inbox (sent.dm remains transactional only).
 
 ## Schedule
 
@@ -131,6 +132,11 @@ The settings tab will look different depending on the type of user and will be i
     - This is where the super admin can update the business' credit card information as well as manage their subscription for this section.
   - Business Info
     - This will be where they can update the business' information including address, phone number and email address.
+  - Services
+    - Service types / job catalog with **schedule role** (initial, recurring, standard) for quote auto-scheduling heuristics.
+
+**Implementation note (2026-06-08):** **`/settings/services`** — owners edit service types including **schedule role** per catalog entry.
+
 - Admins
   - Personal Settings
     - Light Mode/Dark Mode

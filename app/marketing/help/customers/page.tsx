@@ -53,24 +53,6 @@ export default function CustomerHelpPage() {
                 <p className={styles.cardLinkText}>Read guide</p>
               </Link>
             ))}
-
-            <article className={styles.card}>
-              <h3>Manage appointments</h3>
-              <p>View upcoming jobs and request reschedules from your schedule.</p>
-              <div className={styles.badgeRow}>
-                <span className={styles.badge}>Coming soon</span>
-              </div>
-              <p className={styles.cardLinkText}>Article coming soon</p>
-            </article>
-
-            <article className={styles.card}>
-              <h3>Pay invoices</h3>
-              <p>Open invoices, review line items, and complete payment.</p>
-              <div className={styles.badgeRow}>
-                <span className={styles.badge}>Coming soon</span>
-              </div>
-              <p className={styles.cardLinkText}>Article coming soon</p>
-            </article>
           </div>
         </section>
       </Container>
