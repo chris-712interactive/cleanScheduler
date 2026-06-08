@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Container';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { HelpGuideFigure } from '@/components/marketing/HelpGuideFigure';
 import { buildFaqJsonLd } from '@/lib/marketing/faqJsonLd';
 import type { HelpGuideArticle } from '@/lib/marketing/seoContent/types';
 import styles from './HelpGuideArticle.module.scss';
@@ -65,19 +65,7 @@ export function HelpGuideArticle({
                   </ul>
                 ) : null}
                 {section.figures?.map((figure) => (
-                  <figure key={figure.src} className={styles.figure}>
-                    <Image
-                      src={figure.src}
-                      alt={figure.alt}
-                      width={720}
-                      height={420}
-                      unoptimized
-                      className={styles.figureImage}
-                    />
-                    {figure.caption ? (
-                      <figcaption className={styles.figureCaption}>{figure.caption}</figcaption>
-                    ) : null}
-                  </figure>
+                  <HelpGuideFigure key={figure.src} figure={figure} />
                 ))}
                 {section.tip ? <p className={styles.tip}>{section.tip}</p> : null}
               </section>
