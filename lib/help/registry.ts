@@ -33,8 +33,13 @@ export const HELP_HUB_CATEGORIES: HelpCategory[] = [
         badges: [{ label: 'Public' }, { label: 'How-to' }],
       },
       {
+        title: 'Message your provider',
+        description: 'Start a conversation or reply on open threads from the Messages area in your portal.',
+        badges: [{ label: 'How-to' }],
+      },
+      {
         title: 'Manage appointments',
-        description: 'View upcoming jobs, request reschedules, and message your provider.',
+        description: 'View upcoming jobs and request reschedules from your schedule.',
         comingSoon: true,
         badges: [{ label: 'Coming soon' }],
       },

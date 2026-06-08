@@ -15,6 +15,7 @@ For each tenant, there should be 3 basic user types:
 - Dashboard
 - Quotes
 - Customers
+- Messages
 - Schedule
 - Employees
 - Email Campaign (if tenant has that in their subscription)
@@ -46,6 +47,21 @@ The cards for each request shoudl be able to be drag and drop between these diff
 ## Customers
 
 The customers view should be a card list of customers in alphanumeric order with the ability to do a text search at the top fo the page to reduce the number of options to choose from on the screen. Once you find the customer you are looking for you can click on their card and bring up a brand new view that goes into all of the details we have saved about the customer. This page should be viewable by Super Admins and Administrators with the designated permissions.
+
+**Implementation note (2026-06-01):** Customer detail includes a **Messages** link that filters the inbox to that customer's open threads. See **Messages** below.
+
+## Messages
+
+The messages view is where staff read and reply to customer support conversations from the customer portal. It should prioritize screen space for reading and replying.
+
+- Split-pane inbox on desktop: thread list + active conversation
+- Mobile: thread list by default; selecting a thread opens the conversation full-screen
+- Filters: Open / Closed / All
+- Staff can reply, close, and reopen threads
+- Viewers can read but not reply or change thread status
+- Sidebar nav shows a badge with the count of open threads
+
+**Implementation note (2026-06-01):** Shipped at **`/messages`**. Schema: `customer_support_threads` + `customer_support_messages` (migration **0013**). No email/SMS notification on new messages in v1.
 
 ## Schedule
 

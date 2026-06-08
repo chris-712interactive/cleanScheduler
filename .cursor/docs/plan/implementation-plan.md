@@ -1,6 +1,6 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-28** — **v1.0.0 shipped to PROD**; **release/1.1.0** in progress (quote ops wiring, Resend webhook verify, RLS smoke). See `docs/release/1.1.0.md`.
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-06-01** — **v1.0.0 shipped to PROD**; **release/1.1.0** in progress (quote ops wiring, Resend webhook verify, RLS smoke). See `docs/release/1.1.0.md`.
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
@@ -69,7 +69,7 @@ todos:
     content: "Shipped: CSV/OFX bank statement import on `/billing/bank-connection` as Plaid fallback."
     status: completed
   - id: messagingAuditInquiries
-    content: "Partial in `0013`: `marketing_inquiries`, masquerade + `audit_log`, `customer_support_threads` + `customer_support_messages` (MVP messaging), customer invoice read policies. **Gap vs plan:** no generic `conversations`/`messages` product threading; `support_tickets` deferred to Phase 2 todo `phase2Tickets`."
+    content: "Shipped v1 (PR #115): `customer_support_threads` + `customer_support_messages` with two-way portal messaging — tenant `/messages` inbox (split-pane, reply/close/reopen, nav badge) and customer thread replies. **Still missing:** email/SMS notifications on new messages; generic `conversations` product; `support_tickets` deferred to Phase 2 todo `phase2Tickets`."
     status: in_progress
   - id: rlsTestSuite
     content: "Partial: `supabase/tests/rls/tenant_isolation.sql` smoke checks + `npm run check:rls-smoke`. **1.1.0** expands policy coverage. Still missing: pg_tap fixtures, CI integration with ephemeral DB, masquerade scoping tests."
@@ -81,10 +81,10 @@ todos:
     content: "Shipped: platform + Connect webhooks in `app/api/webhooks/stripe/route.ts` — checkout, subscriptions, account.updated, refunds/disputes/payouts, **Connect invoice.* mirror** (`0053`). **Still missing:** inquiry/trial lifecycle automation."
     status: in_progress
   - id: tenantPortalMvp
-    content: "Shipped: full tenant surface including dashboard KPIs, owner onboarding checklist, campaigns, bank connection, API/webhooks, white-label domains. **Gaps:** deeper KPI analytics; `auto_schedule` on quote accept."
+    content: "Shipped: full tenant surface including dashboard KPIs, owner onboarding checklist, campaigns, bank connection, API/webhooks, white-label domains, **Messages inbox** (two-way customer support threads). **Gaps:** deeper KPI analytics; `auto_schedule` on quote accept."
     status: in_progress
   - id: customerPortalMvp
-    content: "Shipped: invoices, subscriptions, quotes (e-sign), messages, **reschedule requests**, SMS opt-in, portal domains. **Gap:** consolidated cross-tenant billing rollups."
+    content: "Shipped: invoices, subscriptions, quotes (e-sign), messages (**two-way** thread replies on open conversations), **reschedule requests**, SMS opt-in, portal domains. **Gap:** consolidated cross-tenant billing rollups."
     status: in_progress
   - id: founderAdminMvp
     content: "Shipped: tenants, inquiries, audit log, masquerade, platform dashboard stats (`getPlatformDashboardStats`). **Gaps:** manual onboarding polish, masquerade timer/consent UX."
@@ -446,7 +446,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - **Manual Zelle recording (Concern #1)**: "Record Zelle payment" form with confirmation number, optional screenshot upload, and notes. Plaid auto-reconcile arrives in Phase 2.
 - **Reminder cron with check holds (Concern #2)**: tenant-configurable hold days per check status; reminders suppressed during holds.
 - **Reports module v1 (Concern #4)** — see [`docs/product/tenant-reports.md`](../../../docs/product/tenant-reports.md): Phase 1 core reports on all tiers; Pro analytics bundle (`advancedAnalytics`); Payment audits workflow stays under `/billing/payment-audits`.
-- Customer portal: Dashboard, Schedule (read + reschedule-request), Billing (view + pay outstanding), Messages (basic 1:1), Settings.
+- Customer portal: Dashboard, Schedule (read + reschedule-request), Billing (view + pay outstanding), Messages (two-way support threads), Settings.
 - Founder admin: Dashboard (key metrics), Inquiries (list + filters + manual status), Customers/Tenants (list + detail + manual onboard), Settings (skeleton), basic masquerade with audit log.
 - Foundation: subdomain routing, Supabase Auth, RLS everywhere, pgsodium for encrypted columns, Stripe + Stripe Connect + webhooks, **Resend** transactional email.
 - **Pricing & gating infrastructure (section 15)**: `plans` + `plan_features` + `tenant_addons` + `tenant_usage_snapshots` schema seeded with the three strawman plans (Starter / Pro / Business) at placeholder prices; server-side `requireFeature` + `checkLimit` utilities; soft-stop `UpgradeOrAddOnModal` UI with the 80%/95%/100% utilization warnings; nightly usage-rollup cron. Final tier prices remain TBD until the pre-launch pricing review — flipping prices is a one-line data change.
@@ -484,7 +484,7 @@ This section reconciles the YAML todos at the top of this file with the current 
 | `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                                                                                                                                         |
 | `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                                                                                                                               |
 | `billingPlans` as monolithic 0004             | **Partial:** tenant↔customer money path is **`0023`–`0025`** (Connect + `service_plans` / `customer_subscriptions` + recurring rules + signed payments + mirrors). Still missing **platform** catalog `plans` / `plan_features` / `tenant_addons` (§15) and Stripe **hosted** `invoice.*` sync (§17). |
-| `messagingAuditInquiries` as 0005             | **0013** covers inquiries, audit, support threads/messages; not full “conversations” product.                                                                                                                                                                                                         |
+| `messagingAuditInquiries` as 0005             | **0013** + PR #115: inquiries, audit, two-way support threads/messages in tenant + customer portals. Not full “conversations” product or Phase 2 tickets.                                                                                                                                             |
 | `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                                                                                                                               |
 
 ### Prioritized next slices (execute in roughly this order for trial-to-revenue)
@@ -1273,7 +1273,7 @@ The shell renders, in order:
 The shell is identical across all three portals. The only differences are the sidebar items and the identity chip.
 
 - **Founder Admin** (`admin.cleanscheduler.com`): Dashboard / Inquiries / Customers (= tenants) / Integrations / Customer Service / Accounting / Settings. Identity chip: `[Founder]` badge.
-- **Tenant Portal** (`{slug}.cleanscheduler.com`): Dashboard / Quotes / Customers / Schedule / Employees / Email Campaign (plan-gated, hidden if not in plan) / Billing / Settings. Identity chip: `[Tenant: Acme Cleaning]`.
+- **Tenant Portal** (`{slug}.cleanscheduler.com`): Dashboard / Quotes / Customers / **Messages** / Schedule / Employees / Email Campaign (plan-gated, hidden if not in plan) / Billing / Settings. Identity chip: `[Tenant: Acme Cleaning]`.
 - **Customer Portal** (`my.cleanscheduler.com`): Dashboard / Schedule / Billing / Messages / Settings. Identity chip: `[Switch tenant ▾]` only when linked to multiple tenants.
 
 ### 18.6 UI primitives engineers compose from (no invention)
