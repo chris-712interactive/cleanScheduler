@@ -10,6 +10,7 @@ const NAV_ITEMS_BASE: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
   { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Customers', href: '/customers', icon: 'customers' },
+  { label: 'Messages', href: '/messages', icon: 'messages' },
   { label: 'Schedule', href: '/schedule', icon: 'schedule' },
   {
     label: 'Reschedule requests',
@@ -36,6 +37,7 @@ export function buildTenantNavItems(params: {
   campaignsNavEnabled: boolean;
   referralsNavEnabled: boolean;
   pendingRescheduleCount: number;
+  openSupportThreadCount: number;
   pendingReferralCount: number;
   gettingStartedNavItem?: NavItem | null;
 }): NavItem[] {
@@ -47,6 +49,7 @@ export function buildTenantNavItems(params: {
     campaignsNavEnabled,
     referralsNavEnabled,
     pendingRescheduleCount,
+    openSupportThreadCount,
     pendingReferralCount,
     gettingStartedNavItem,
   } = params;
@@ -63,9 +66,9 @@ export function buildTenantNavItems(params: {
     : [
         ...NAV_ITEMS_BASE.slice(0, 1),
         ...(gettingStartedNavItem ? [gettingStartedNavItem] : []),
-        ...NAV_ITEMS_BASE.slice(1, 6),
+        ...NAV_ITEMS_BASE.slice(1, 7),
         billingNavItem,
-        ...NAV_ITEMS_BASE.slice(6).filter(
+        ...NAV_ITEMS_BASE.slice(7).filter(
           (item) => item.href !== '/campaigns' || campaignsNavEnabled,
         ),
         ...(referralsNavEnabled
@@ -77,6 +80,10 @@ export function buildTenantNavItems(params: {
   return navItems.map((item) => {
     if (item.href === '/schedule/reschedule-requests' && pendingRescheduleCount > 0) {
       const badge = pendingRescheduleCount > 99 ? '99+' : pendingRescheduleCount;
+      return { ...item, badge };
+    }
+    if (item.href === '/messages' && openSupportThreadCount > 0) {
+      const badge = openSupportThreadCount > 99 ? '99+' : openSupportThreadCount;
       return { ...item, badge };
     }
     if (item.href === '/referrals' && pendingReferralCount > 0) {

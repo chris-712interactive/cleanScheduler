@@ -1,8 +1,12 @@
 # Implementation backlog snapshot
 
-**Saved:** 2026-05-28 — revisit after Plaid production readiness.
+**Saved:** 2026-06-01 — revisit after Plaid production readiness.
 
 This is a working priority list distilled from `.cursor/docs/plan/implementation-plan.md` and product docs. Not a commitment order.
+
+## Recently shipped
+
+- **Two-way customer support messaging** (PR #115) — tenant `/messages` inbox, customer thread replies, nav badge. See `docs/product/customer-support-messaging.md`.
 
 ## Explicitly pending (Phase 2/3)
 
@@ -33,3 +37,4 @@ Phases 0–4 **code-complete**. Remaining: fill `docs/performance/phase-0-baseli
 
 - `docs/product/quotes-line-items.md` — expiry job, transactional create RPC, notifications
 - `docs/product/tenant-reports.md` — masquerade export verification, Connect empty states
+- `docs/product/customer-support-messaging.md` — public help article (screenshots)

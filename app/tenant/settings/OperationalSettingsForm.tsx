@@ -127,6 +127,7 @@ export function OperationalSettingsForm({
     if (snapshot.email_notify_quote_accepted) count += 1;
     if (snapshot.email_notify_quote_declined) count += 1;
     if (snapshot.email_notify_invoice_overdue) count += 1;
+    if (snapshot.email_notify_customer_message) count += 1;
     return count;
   }, [snapshot]);
 
@@ -490,6 +491,44 @@ export function OperationalSettingsForm({
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div>
+          <p className={styles.subsectionTitle}>Customer portal messages</p>
+          <div className={styles.notificationTableWrap}>
+            <table className={styles.notificationTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Event</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Customer sends or replies in Messages</th>
+                  <td>
+                    <label className={styles.notifyToggle}>
+                      <input
+                        type="checkbox"
+                        name="email_notify_customer_message"
+                        defaultChecked={snapshot.email_notify_customer_message}
+                        disabled={readOnly}
+                      />
+                      On
+                    </label>
+                  </td>
+                  <td>
+                    <span className={styles.notifyUnavailable}>Not available</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className={styles.technicalNote}>
+            Email goes to your owner or company address on file. The sidebar badge counts open
+            conversations waiting for your reply.
+          </p>
         </div>
 
         <div>
