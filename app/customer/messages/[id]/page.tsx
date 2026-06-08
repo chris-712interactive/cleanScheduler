@@ -1,76 +1,109 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { PageHeader } from '@/components/portal/PageHeader';
-import { Card } from '@/components/ui/Card';
-import { Stack } from '@/components/layout/Stack';
+import { notFound, redirect } from 'next/navigation';
+import { SupportMessageTranscript } from '@/components/messaging/SupportMessageTranscript';
+import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
+import { loadCustomerSupportThreadDetail } from '@/lib/tenant/loadSupportThreadDetail';
 import { createAdminClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+import { replyToCustomerSupportThreadAction } from '../actions';
 import styles from '../messages.module.scss';
 
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-type MessageRow = {
-  id: string;
-  body: string;
-  is_from_customer: boolean;
-  created_at: string;
-  author_user_id: string | null;
-};
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
 
-export default async function CustomerMessageThreadPage({ params }: PageProps) {
+function errorMessage(code: string | undefined): string | null {
+  switch (code) {
+    case 'empty':
+      return 'Enter a message before sending.';
+    case 'closed':
+      return 'This conversation is closed. Start a new message if you need more help.';
+    case 'send':
+      return 'Could not send your message. Try again.';
+    default:
+      return null;
+  }
+}
+
+export default async function CustomerMessageThreadPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const sp = await searchParams;
   const auth = await requirePortalAccess('customer', `/messages/${id}`);
   const ctx = await getCustomerPortalContext(auth.user.id);
   if (!ctx) redirect('/access-denied?reason=no_customer_profile');
 
   const admin = createAdminClient();
-  const { data: thread, error: tErr } = await admin
-    .from('customer_support_threads')
-    .select('id, subject, tenant_id, customer_id, tenants:tenants!inner(name)')
-    .eq('id', id)
-    .maybeSingle();
+  const thread = await loadCustomerSupportThreadDetail(admin, id, ctx.customerIds);
+  if (!thread) notFound();
 
-  if (tErr || !thread || !ctx.customerIds.includes(thread.customer_id)) {
-    notFound();
-  }
+  const error = errorMessage(firstParam(sp.error));
+  const isOpen = thread.status === 'open';
 
-  const { data: messages, error: mErr } = await admin
-    .from('customer_support_messages')
-    .select('*')
-    .eq('thread_id', id)
-    .order('created_at', { ascending: true });
-
-  const tenantName = (thread.tenants as { name: string } | null)?.name ?? 'Provider';
-  const list = (messages ?? []) as MessageRow[];
+  const transcript = thread.messages.map((message) => ({
+    id: message.id,
+    body: message.body,
+    created_at: message.created_at,
+    is_from_customer: message.is_from_customer,
+    senderLabel: message.is_from_customer ? 'You' : thread.tenantName,
+  }));
 
   return (
-    <>
-      <PageHeader title={thread.subject} description={tenantName} />
+    <div className={styles.threadPage}>
+      <div className={styles.threadHeader}>
+        <Link href="/messages" className={styles.backLink}>
+          ← All messages
+        </Link>
+        <div>
+          <h1 className={styles.threadTitle}>{thread.subject}</h1>
+          <p className={styles.muted}>{thread.tenantName}</p>
+        </div>
+      </div>
 
-      <p className={styles.muted} style={{ marginBottom: 'var(--space-4)' }}>
-        <Link href="/messages">← All messages</Link>
-      </p>
+      {error ? (
+        <p className={styles.bannerErr} role="alert">
+          {error}
+        </p>
+      ) : null}
 
-      {mErr ? (
-        <Card title="Could not load messages">
-          <p className={styles.muted}>{mErr.message}</p>
-        </Card>
-      ) : (
-        <Stack gap={3}>
-          {list.map((m) => (
-            <Card key={m.id} title={m.is_from_customer ? 'You' : tenantName}>
-              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.body}</p>
-              <p className={styles.muted}>{new Date(m.created_at).toLocaleString()}</p>
-            </Card>
-          ))}
-        </Stack>
-      )}
-    </>
+      <div className={styles.threadPanel}>
+        <SupportMessageTranscript messages={transcript} customerSide />
+
+        {isOpen ? (
+          <form action={replyToCustomerSupportThreadAction} className={styles.replyForm}>
+            <input type="hidden" name="thread_id" value={thread.id} />
+            <label htmlFor="customer_reply_body" className={styles.srOnly}>
+              Reply
+            </label>
+            <textarea
+              id="customer_reply_body"
+              name="body"
+              required
+              className={styles.textarea}
+              placeholder="Write a reply…"
+              rows={3}
+            />
+            <div className={styles.replyActions}>
+              <Button type="submit" variant="primary" size="sm">
+                Send
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <p className={styles.closedNote}>
+            This conversation is closed. <Link href="/messages">Start a new message</Link> if you
+            need more help.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

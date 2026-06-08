@@ -5,6 +5,7 @@ import {
   loadOwnerOnboardingNavContext,
   type OwnerOnboardingNavContext,
 } from '@/lib/tenant/loadOwnerOnboardingNavContext';
+import { countOpenSupportThreads } from '@/lib/tenant/openSupportThreadCount';
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import type { TenantRole } from '@/lib/auth/types';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
@@ -15,6 +16,17 @@ import {
   tenantOnboardingTag,
   tenantUsageTag,
 } from '@/lib/portal/cacheTags';
+
+export async function getCachedOpenSupportThreadCount(tenantId: string): Promise<number> {
+  return unstable_cache(
+    async () => {
+      const supabase = createTenantPortalDbClient();
+      return countOpenSupportThreads(supabase, tenantId);
+    },
+    ['tenant-open-support-threads', tenantId],
+    { tags: [tenantNavBadgesTag(tenantId)], revalidate: 60 },
+  )();
+}
 
 export async function getCachedPendingRescheduleCount(tenantId: string): Promise<number> {
   return unstable_cache(

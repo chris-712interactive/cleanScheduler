@@ -4,6 +4,7 @@ import type { TenantRole } from '@/lib/auth/types';
 import { isFeatureEnabled } from '@/lib/billing/entitlements';
 import {
   getCachedOwnerOnboardingNavContext,
+  getCachedOpenSupportThreadCount,
   getCachedPendingRescheduleCount,
 } from '@/lib/portal/cachedNavChrome';
 import { getTenantEntitlementPlan } from '@/lib/portal/requestContext';
@@ -37,19 +38,21 @@ export const loadTenantNavItemsForShell = cache(
     const connectStatus = billingSnapshot.connectStatus;
 
     const admin = createAdminClient();
-    const [pendingRescheduleCount, planTier, onboarding, referralsEnabled] = await Promise.all([
-      getCachedPendingRescheduleCount(tenantId),
-      getTenantEntitlementPlan(tenantId),
-      subscriptionLocked
-        ? Promise.resolve({ gettingStartedNavItem: null, coreSetupComplete: true })
-        : getCachedOwnerOnboardingNavContext({
-            tenantId,
-            tenantSlug,
-            role,
-            connectStatus,
-          }),
-      tenantReferralsNavEnabled(admin, tenantId),
-    ]);
+    const [pendingRescheduleCount, openSupportThreadCount, planTier, onboarding, referralsEnabled] =
+      await Promise.all([
+        getCachedPendingRescheduleCount(tenantId),
+        getCachedOpenSupportThreadCount(tenantId),
+        getTenantEntitlementPlan(tenantId),
+        subscriptionLocked
+          ? Promise.resolve({ gettingStartedNavItem: null, coreSetupComplete: true })
+          : getCachedOwnerOnboardingNavContext({
+              tenantId,
+              tenantSlug,
+              role,
+              connectStatus,
+            }),
+        tenantReferralsNavEnabled(admin, tenantId),
+      ]);
 
     const pendingReferralCount = referralsEnabled
       ? await countPendingReferralAttributions(admin, tenantId)
@@ -63,6 +66,7 @@ export const loadTenantNavItemsForShell = cache(
       campaignsNavEnabled: isFeatureEnabled(planTier, 'campaigns'),
       referralsNavEnabled: referralsEnabled,
       pendingRescheduleCount,
+      openSupportThreadCount,
       pendingReferralCount,
       gettingStartedNavItem: onboarding.gettingStartedNavItem,
     });
