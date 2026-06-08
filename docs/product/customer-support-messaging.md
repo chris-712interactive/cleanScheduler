@@ -10,7 +10,9 @@ Two-way in-app messaging between customers and tenant staff. Uses the **`0013`**
 | Tenant portal   | `/messages`                   | Split-pane inbox, reply, close/reopen, filters (open/closed/all) |
 | Customer detail | `/customers/[id]`             | **Messages (N)** link → `/messages?customer=<id>&filter=open`    |
 
-**Not in v1:** founder-admin ticketing (`phase2Tickets`); SMS two-way inbox (`phase2Twilio` cancelled — sent.dm is transactional only).
+**Not in v1:** SMS two-way inbox (`phase2Twilio` cancelled — sent.dm is transactional only).
+
+**Shipped (Phase 2, 0073):** platform support tickets — founder `/support`, tenant `/settings/support`. Separate from customer `/messages` threads. See `docs/product/platform-support-tickets.md`.
 
 **v1.1 (PR #115 follow-up):** email staff when a customer sends or replies (`email_notify_customer_message` in Operations settings, default on); nav badge counts threads awaiting reply.
 

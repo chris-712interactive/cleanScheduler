@@ -2,7 +2,7 @@
 
 **Status:** Shipped (Bucket B3, migration `0075_tenant_custom_roles.sql`)
 
-Business+ workspaces (`rolePermissions` entitlement) can define custom roles with granular permission checkboxes at `/settings/roles`.
+Business+ workspaces (`rolePermissions` entitlement) can define custom roles at `/settings/roles`. The UI groups permissions into product areas (Quotes, Billing, Team, etc.) with plain-language summaries — not raw keys like `quotes.manage`.
 
 ## Data model
 
@@ -28,6 +28,7 @@ Resolve grants with:
 ## UI and actions
 
 - Settings: `app/tenant/settings/roles/` — list, create, edit, delete custom roles
+- Permission areas: `lib/tenant/permissionAreas.ts` — browse summaries + edit presets per area
 - Server actions: `app/tenant/settings/roles/actions.ts` (gated by `team.manage_roles`)
 
 ## Enforcement (MVP)

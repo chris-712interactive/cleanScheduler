@@ -24,6 +24,7 @@ import {
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
 import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
+import { assertActiveAdministratorRemains } from '@/lib/tenant/workspaceAdminGuards';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
   AVATAR_MAX_UPLOAD_BYTES,
@@ -204,6 +205,16 @@ export async function updateTenantMemberRoleAction(
     }
   }
 
+  if (targetCurrentRole === 'admin' && nextRole !== 'admin') {
+    const lastAdminError = await assertActiveAdministratorRemains(
+      admin,
+      membership.tenantId,
+      targetUserId,
+      targetCurrentRole,
+    );
+    if (lastAdminError) return { error: lastAdminError };
+  }
+
   const { error: upErr } = await admin
     .from('tenant_memberships')
     .update({ role: nextRole, updated_at: new Date().toISOString() })
@@ -308,7 +319,9 @@ export async function setTenantMemberActiveAction(
     }
   }
 
-  if (!isActive && (targetRow.role as TenantRole) === 'owner') {
+  const targetRole = targetRow.role as TenantRole;
+
+  if (!isActive && targetRole === 'owner') {
     const { count, error: cErr } = await admin
       .from('tenant_memberships')
       .select('id', { count: 'exact', head: true })
@@ -319,6 +332,16 @@ export async function setTenantMemberActiveAction(
     if ((count ?? 0) < 2) {
       return { error: 'Cannot deactivate the only owner.' };
     }
+  }
+
+  if (!isActive) {
+    const lastAdminError = await assertActiveAdministratorRemains(
+      admin,
+      membership.tenantId,
+      targetUserId,
+      targetRole,
+    );
+    if (lastAdminError) return { error: lastAdminError };
   }
 
   const { error: upErr } = await admin
