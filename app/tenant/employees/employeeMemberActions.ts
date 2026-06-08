@@ -18,6 +18,11 @@ import {
 } from '@/lib/billing/teamSeats';
 import { assertFeatureEnabledForTier } from '@/lib/billing/tenantFeatureGate';
 import { recordPlatformAuditEvent } from '@/lib/audit/recordPlatformAuditEvent';
+import {
+  assertPermission,
+  permissionDeniedMessage,
+  resolveMembershipPermissions,
+} from '@/lib/tenant/resolveMembershipPermissions';
 import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
@@ -70,6 +75,14 @@ export async function updateTeamMemberDisplayNameAction(
   if (!auth) return { error: 'Not signed in.' };
 
   const admin = createAdminClient();
+  const actorPermissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(actorPermissions, 'team.manage_members');
+  } catch (error) {
+    const message = permissionDeniedMessage(error);
+    return { error: message ?? 'You cannot edit this member.' };
+  }
+
   const { data: targetRow, error: tErr } = await admin
     .from('tenant_memberships')
     .select('role')
@@ -126,6 +139,14 @@ export async function updateTenantMemberRoleAction(
   if (!auth) return { error: 'Not signed in.' };
 
   const admin = createAdminClient();
+  const actorPermissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(actorPermissions, 'team.manage_members');
+  } catch (error) {
+    const message = permissionDeniedMessage(error);
+    return { error: message ?? 'You cannot assign that role change.' };
+  }
+
   const { data: targetRow, error: tErr } = await admin
     .from('tenant_memberships')
     .select('role')
@@ -242,6 +263,14 @@ export async function setTenantMemberActiveAction(
   if (!auth) return { error: 'Not signed in.' };
 
   const admin = createAdminClient();
+  const actorPermissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(actorPermissions, 'team.manage_members');
+  } catch (error) {
+    const message = permissionDeniedMessage(error);
+    return { error: message ?? 'You cannot change activation for this member.' };
+  }
+
   const { data: targetRow, error: tErr } = await admin
     .from('tenant_memberships')
     .select('role, is_active')
@@ -341,11 +370,15 @@ export async function uploadTeamMemberAvatarAction(
   const auth = await getAuthContext();
   if (!auth) return { error: 'Not signed in.' };
 
-  if (membership.role !== 'owner' && membership.role !== 'admin') {
-    return { error: 'Only owners and admins can update another member’s photo.' };
+  const admin = createAdminClient();
+  const actorPermissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(actorPermissions, 'team.manage_members');
+  } catch (error) {
+    const message = permissionDeniedMessage(error);
+    return { error: message ?? 'You cannot update this member’s photo.' };
   }
 
-  const admin = createAdminClient();
   if (!(await assertTargetInTenant(admin, membership.tenantId, targetUserId))) {
     return { error: 'Member not in this workspace.' };
   }

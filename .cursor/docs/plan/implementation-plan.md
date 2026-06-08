@@ -99,14 +99,14 @@ todos:
     content: "Deferred — **sent.dm** shipped for transactional SMS (**0039**, **0054**, **0055**). Full two-way SMS inbox in Messages not built."
     status: cancelled
   - id: phase2Tickets
-    content: "Phase 2: Customer Service ticketing in founder admin + tenant-side ticket creation."
-    status: pending
+    content: "Shipped (0073): platform support tickets — founder `/support` inbox, tenant `/settings/support` ticket creation. See `docs/product/platform-support-tickets.md`."
+    status: completed
   - id: phase2KanbanRoles
-    content: "Phase 2: customizable Quotes Kanban (rename/reorder/hide) and custom Roles UI in tenant Settings."
-    status: pending
+    content: "Shipped: customizable quote pipeline stages (0074, Pro `kanbanCustomization`) + custom roles UI with permission matrix (0075, Business+ `rolePermissions`)."
+    status: completed
   - id: phase2Accounting
-    content: "Phase 2: tenant Accounting view + founder Accounting (MRR, revenue YTD, CSV exports)."
-    status: pending
+    content: "Shipped: founder `/accounting` (MRR, estimated revenue YTD, CSV) + tenant `/accounting` summary. See `docs/product/founder-accounting.md`."
+    status: completed
   - id: phase3Campaigns
     content: "Shipped MVP: `/campaigns` list/create/detail/send, audience presets, Resend batch + webhook metrics, opt-in/suppressions (**0033**). **Still missing:** scheduled sends (V1.1 cron)."
     status: in_progress

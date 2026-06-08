@@ -17,9 +17,10 @@ import { Check } from 'lucide-react';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { getQuoteBoardCardDisplay } from '@/lib/tenant/quoteBoardCardDisplay';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
-import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
-import { columnDroppableId, QUOTE_BOARD_COLUMN_ORDER } from '@/lib/tenant/quoteBoardColumns';
-import { moveTenantQuoteStatus } from './actions';
+import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
+import type { QuotePipelineStage } from '@/lib/tenant/quotePipelineStages';
+import { isAcceptedSystemStage, stageDroppableId } from '@/lib/tenant/quotePipelineStages';
+import { moveTenantQuoteToStage } from './actions';
 import {
   PORTAL_INTERACTION_FLOWS,
   endPortalInteraction,
@@ -31,20 +32,22 @@ function sortInColumn(a: QuoteListEmbedRow, b: QuoteListEmbedRow): number {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
 
-function groupQuotesByStatus(
+function groupQuotesByStage(
   quotes: QuoteListEmbedRow[],
-): Record<QuoteStatus, QuoteListEmbedRow[]> {
-  const map = {} as Record<QuoteStatus, QuoteListEmbedRow[]>;
-  for (const s of QUOTE_BOARD_COLUMN_ORDER) {
-    map[s] = [];
+  stages: QuotePipelineStage[],
+): Record<string, QuoteListEmbedRow[]> {
+  const map: Record<string, QuoteListEmbedRow[]> = {};
+  for (const stage of stages) {
+    map[stage.id] = [];
   }
+  const fallbackStageId = stages[0]?.id;
   for (const q of quotes) {
-    const s = q.status as QuoteStatus;
-    if (map[s]) map[s].push(q);
-    else map.draft.push(q);
+    const key =
+      q.pipeline_stage_id && map[q.pipeline_stage_id] ? q.pipeline_stage_id : fallbackStageId;
+    if (key && map[key]) map[key].push(q);
   }
-  for (const s of QUOTE_BOARD_COLUMN_ORDER) {
-    map[s].sort(sortInColumn);
+  for (const stage of stages) {
+    map[stage.id]?.sort(sortInColumn);
   }
   return map;
 }
@@ -130,11 +133,11 @@ function BoardQuoteCardFace({
   );
 }
 
-function BoardColumnHeader({ status, count }: { status: QuoteStatus; count: number }) {
+function BoardColumnHeader({ title, count }: { title: string; count: number }) {
   return (
     <header className={styles.boardColumnHeader}>
       <div className={styles.boardColumnTitleRow}>
-        <h3 className={styles.boardColumnTitle}>{QUOTE_STATUS_LABEL[status]}</h3>
+        <h3 className={styles.boardColumnTitle}>{title}</h3>
         <span className={styles.boardColumnCount}>{count}</span>
       </div>
     </header>
@@ -176,20 +179,20 @@ function DraggableQuoteCard({
 }
 
 function BoardColumn({
-  status,
+  stage,
   quotes,
   pendingQuoteId,
   needsSchedulingQuoteIds,
 }: {
-  status: QuoteStatus;
+  stage: QuotePipelineStage;
   quotes: QuoteListEmbedRow[];
   pendingQuoteId: string | null;
   needsSchedulingQuoteIds: Set<string>;
 }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: columnDroppableId(status),
-    data: { type: 'column', status },
-    disabled: status === 'accepted',
+    id: stageDroppableId(stage.id),
+    data: { type: 'column', stageId: stage.id },
+    disabled: isAcceptedSystemStage(stage),
   });
 
   return (
@@ -198,9 +201,9 @@ function BoardColumn({
       className={[styles.boardColumn, isOver ? styles.boardColumnOver : '']
         .filter(Boolean)
         .join(' ')}
-      aria-label={`${QUOTE_STATUS_LABEL[status]} quotes`}
+      aria-label={`${stage.name} quotes`}
     >
-      <BoardColumnHeader status={status} count={quotes.length} />
+      <BoardColumnHeader title={stage.name} count={quotes.length} />
       <div className={styles.boardColumnBody}>
         {quotes.length === 0 ? (
           <p className={styles.boardColumnEmpty}>Drop quotes here</p>
@@ -220,21 +223,23 @@ function BoardColumn({
 }
 
 function MobileColumn({
-  status,
+  stage,
   quotes,
   onMobileMove,
   pendingQuoteId,
   needsSchedulingQuoteIds,
+  stages,
 }: {
-  status: QuoteStatus;
+  stage: QuotePipelineStage;
   quotes: QuoteListEmbedRow[];
-  onMobileMove: (quoteId: string, next: QuoteStatus) => void;
+  onMobileMove: (quoteId: string, stageId: string) => void;
   pendingQuoteId: string | null;
   needsSchedulingQuoteIds: Set<string>;
+  stages: QuotePipelineStage[];
 }) {
   return (
-    <section className={styles.boardColumn} aria-label={`${QUOTE_STATUS_LABEL[status]} quotes`}>
-      <BoardColumnHeader status={status} count={quotes.length} />
+    <section className={styles.boardColumn} aria-label={`${stage.name} quotes`}>
+      <BoardColumnHeader title={stage.name} count={quotes.length} />
       <div className={styles.boardColumnBody}>
         {quotes.length === 0 ? (
           <p className={styles.boardColumnEmpty}>No quotes</p>
@@ -246,6 +251,7 @@ function MobileColumn({
               onMobileMove={onMobileMove}
               pending={pendingQuoteId === q.id}
               needsScheduling={needsSchedulingQuoteIds.has(q.id)}
+              stages={stages}
             />
           ))
         )}
@@ -259,11 +265,13 @@ function MobileQuoteCard({
   onMobileMove,
   pending,
   needsScheduling,
+  stages,
 }: {
   quote: QuoteListEmbedRow;
-  onMobileMove: (quoteId: string, next: QuoteStatus) => void;
+  onMobileMove: (quoteId: string, stageId: string) => void;
   pending: boolean;
   needsScheduling?: boolean;
+  stages: QuotePipelineStage[];
 }) {
   return (
     <article
@@ -279,16 +287,16 @@ function MobileQuoteCard({
         <select
           id={`move_${quote.id}`}
           className={styles.boardCardMoveSelect}
-          value={quote.status}
+          value={quote.pipeline_stage_id ?? ''}
           disabled={pending}
           onChange={(e) => {
-            const v = e.target.value as QuoteStatus;
-            if (v !== quote.status) onMobileMove(quote.id, v);
+            const v = e.target.value;
+            if (v && v !== quote.pipeline_stage_id) onMobileMove(quote.id, v);
           }}
         >
-          {QUOTE_BOARD_COLUMN_ORDER.map((s) => (
-            <option key={s} value={s} disabled={s === 'accepted'}>
-              {QUOTE_STATUS_LABEL[s]}
+          {stages.map((s) => (
+            <option key={s.id} value={s.id} disabled={isAcceptedSystemStage(s)}>
+              {s.name}
             </option>
           ))}
         </select>
@@ -300,10 +308,12 @@ function MobileQuoteCard({
 export function QuotesBoard({
   tenantSlug,
   quotes,
+  stages,
   needsSchedulingQuoteIds,
 }: {
   tenantSlug: string;
   quotes: QuoteListEmbedRow[];
+  stages: QuotePipelineStage[];
   needsSchedulingQuoteIds: Set<string>;
 }) {
   const [localQuotes, setLocalQuotes] = useState(quotes);
@@ -333,41 +343,37 @@ export function QuotesBoard({
     return () => mq.removeEventListener('change', apply);
   }, []);
 
-  const grouped = useMemo(() => groupQuotesByStatus(localQuotes), [localQuotes]);
+  const grouped = useMemo(() => groupQuotesByStage(localQuotes, stages), [localQuotes, stages]);
   const quoteById = useMemo(() => new Map(localQuotes.map((q) => [q.id, q])), [localQuotes]);
+  const stageById = useMemo(() => new Map(stages.map((s) => [s.id, s])), [stages]);
 
   const runMove = useCallback(
-    (quoteId: string, nextStatus: QuoteStatus) => {
-      const current = quoteById.get(quoteId)?.status as QuoteStatus | undefined;
-      if (current === nextStatus) return;
+    (quoteId: string, stageId: string) => {
+      const targetStage = stageById.get(stageId);
+      const current = quoteById.get(quoteId);
+      if (!targetStage || !current) return;
+      if (current.pipeline_stage_id === stageId) return;
+
+      if (isAcceptedSystemStage(targetStage)) {
+        setBoardError('Accepted is only available when the customer signs in the customer portal.');
+        return;
+      }
 
       setBoardError(null);
       setPendingQuoteId(quoteId);
       const previousQuotes = localQuotes;
 
       setLocalQuotes((prev) =>
-        prev.map((q) => (q.id === quoteId ? { ...q, status: nextStatus } : q)),
+        prev.map((q) => (q.id === quoteId ? { ...q, pipeline_stage_id: stageId } : q)),
       );
 
       startPortalInteraction(PORTAL_INTERACTION_FLOWS.quotesBoardDrag, {
         quoteId,
-        nextStatus,
+        stageId,
       });
 
       startTransition(async () => {
-        if (nextStatus === 'accepted') {
-          setLocalQuotes(previousQuotes);
-          setPendingQuoteId(null);
-          endPortalInteraction(PORTAL_INTERACTION_FLOWS.quotesBoardDrag, {
-            ok: false,
-            reason: 'accepted_requires_portal',
-          });
-          setBoardError(
-            'Accepted is only available when the customer signs in the customer portal.',
-          );
-          return;
-        }
-        const res = await moveTenantQuoteStatus(tenantSlug, quoteId, nextStatus);
+        const res = await moveTenantQuoteToStage(tenantSlug, quoteId, stageId);
         setPendingQuoteId(null);
         endPortalInteraction(PORTAL_INTERACTION_FLOWS.quotesBoardDrag, { ok: res.ok });
         if (!res.ok) {
@@ -378,7 +384,7 @@ export function QuotesBoard({
         setBoardError(null);
       });
     },
-    [localQuotes, quoteById, tenantSlug],
+    [localQuotes, quoteById, stageById, tenantSlug],
   );
 
   const onDragEndInternal = useCallback(
@@ -391,16 +397,16 @@ export function QuotesBoard({
       if (!activeQuote) return;
 
       const overId = String(over.id);
-      let targetStatus: QuoteStatus | null = null;
-      if (overId.startsWith('column-')) {
-        targetStatus = overId.replace('column-', '') as QuoteStatus;
+      let targetStageId: string | null = null;
+      if (overId.startsWith('stage-')) {
+        targetStageId = overId.replace('stage-', '');
       } else {
         const overQuote = quoteById.get(overId);
-        targetStatus = (overQuote?.status as QuoteStatus) ?? null;
+        targetStageId = overQuote?.pipeline_stage_id ?? null;
       }
 
-      if (!targetStatus || targetStatus === activeQuote.status) return;
-      runMove(quoteId, targetStatus);
+      if (!targetStageId || targetStageId === activeQuote.pipeline_stage_id) return;
+      runMove(quoteId, targetStageId);
     },
     [quoteById, runMove],
   );
@@ -415,21 +421,22 @@ export function QuotesBoard({
 
   const narrow = narrowReady && isNarrow;
 
-  const columns = QUOTE_BOARD_COLUMN_ORDER.map((status) =>
+  const columns = stages.map((stage) =>
     narrow ? (
       <MobileColumn
-        key={status}
-        status={status}
-        quotes={grouped[status]}
+        key={stage.id}
+        stage={stage}
+        quotes={grouped[stage.id] ?? []}
         onMobileMove={runMove}
         pendingQuoteId={pendingQuoteId}
         needsSchedulingQuoteIds={needsSchedulingQuoteIds}
+        stages={stages}
       />
     ) : (
       <BoardColumn
-        key={status}
-        status={status}
-        quotes={grouped[status]}
+        key={stage.id}
+        stage={stage}
+        quotes={grouped[stage.id] ?? []}
         pendingQuoteId={pendingQuoteId}
         needsSchedulingQuoteIds={needsSchedulingQuoteIds}
       />

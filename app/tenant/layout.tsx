@@ -108,6 +108,7 @@ export default async function TenantLayout({ children }: { children: React.React
       tenantId: membership.tenantId,
       tenantSlug: slug,
       role: membership.role,
+      roleId: membership.roleId,
       billingSnapshot,
     };
 

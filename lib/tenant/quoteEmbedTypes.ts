@@ -15,6 +15,7 @@ export type QuoteListEmbedRow = Pick<
   | 'version_number'
   | 'is_locked'
   | 'superseded_by_quote_id'
+  | 'pipeline_stage_id'
 > & {
   customers: {
     customer_identities: Pick<

@@ -19,9 +19,13 @@ import { isResendConfigured, sendEmployeeInviteEmail } from '@/lib/email/resend'
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
   allowedInviteRolesForActor,
-  canManageTeamInvitesAndRoles,
   parseTenantRoleForInvite,
 } from '@/lib/tenant/employeePermissions';
+import {
+  assertPermission,
+  permissionDeniedMessage,
+  resolveMembershipPermissions,
+} from '@/lib/tenant/resolveMembershipPermissions';
 import type { TenantRole } from '@/lib/auth/types';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -65,14 +69,18 @@ export async function sendEmployeeInviteAction(
   }
 
   const membership = await requireTenantPortalAccess(slug, '/employees/new');
-  if (!canManageTeamInvitesAndRoles(membership.role)) {
-    return { error: 'Only workspace owners and admins can invite team members.' };
+  const admin = createAdminClient();
+  const actorPermissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(actorPermissions, 'team.invite');
+  } catch (error) {
+    const message = permissionDeniedMessage(error);
+    return { error: message ?? 'You cannot invite team members.' };
   }
   if (!allowedInviteRolesForActor(membership.role).includes(invitedRole)) {
     return { error: 'You cannot assign that role.' };
   }
 
-  const admin = createAdminClient();
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
 
   if (invitedRole === 'admin' || invitedRole === 'viewer') {
@@ -293,11 +301,15 @@ export async function resendEmployeeInviteAction(
   }
 
   const membership = await requireTenantPortalAccess(slug, '/employees');
-  if (!canManageTeamInvitesAndRoles(membership.role)) {
-    return { error: 'Only workspace owners and admins can manage invites.' };
+  const admin = createAdminClient();
+  const actorPermissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(actorPermissions, 'team.invite');
+  } catch (error) {
+    const message = permissionDeniedMessage(error);
+    return { error: message ?? 'You cannot manage invites.' };
   }
 
-  const admin = createAdminClient();
   const result = await sendInviteEmailForToken(admin, membership.tenantId, token);
   if (result.success) {
     revalidatePath('/employees');
@@ -319,11 +331,15 @@ export async function revokeEmployeeInviteAction(
   }
 
   const membership = await requireTenantPortalAccess(slug, '/employees');
-  if (!canManageTeamInvitesAndRoles(membership.role)) {
-    return { error: 'Only workspace owners and admins can manage invites.' };
+  const admin = createAdminClient();
+  const actorPermissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(actorPermissions, 'team.invite');
+  } catch (error) {
+    const message = permissionDeniedMessage(error);
+    return { error: message ?? 'You cannot manage invites.' };
   }
 
-  const admin = createAdminClient();
   const { error } = await admin
     .from('employee_invites')
     .delete()

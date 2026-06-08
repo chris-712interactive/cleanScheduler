@@ -18,11 +18,13 @@ import {
   tenantReferralsNavEnabled,
 } from '@/lib/referrals/tenantReferralsNav';
 import { createAdminClient } from '@/lib/supabase/server';
+import { resolveMembershipPermissions } from '@/lib/tenant/resolveMembershipPermissions';
 
 export interface TenantNavShellParams {
   tenantId: string;
   tenantSlug: string;
   role: TenantRole;
+  roleId?: string | null;
   billingSnapshot: TenantBillingSnapshot;
 }
 
@@ -32,6 +34,7 @@ export const loadTenantNavItemsForShell = cache(
     tenantId,
     tenantSlug,
     role,
+    roleId = null,
     billingSnapshot,
   }: TenantNavShellParams): Promise<NavItem[]> => {
     const subscriptionLocked = needsSubscriptionPurchase(billingSnapshot.subscriptionAccess);
@@ -58,8 +61,15 @@ export const loadTenantNavItemsForShell = cache(
       ? await countPendingReferralAttributions(admin, tenantId)
       : 0;
 
+    const permissions = await resolveMembershipPermissions(admin, {
+      tenantId,
+      role,
+      roleId,
+    });
+
     return buildTenantNavItems({
       role,
+      permissions,
       subscriptionLocked,
       billingNavItem: buildTenantBillingNavItem(),
       settingsNavItem: buildTenantSettingsNavItem(),

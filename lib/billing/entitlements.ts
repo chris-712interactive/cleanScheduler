@@ -24,7 +24,8 @@ export type EntitlementFeature =
   | 'proofOfServicePortalShare'
   | 'customServiceTypes'
   | 'customerPromotions'
-  | 'customerReferralProgram';
+  | 'customerReferralProgram'
+  | 'kanbanCustomization';
 
 export type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -84,6 +85,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customServiceTypes: false,
       customerPromotions: false,
       customerReferralProgram: false,
+      kanbanCustomization: false,
     },
     limits: {
       includedOfficeSeats: 1,
@@ -124,6 +126,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customServiceTypes: false,
       customerPromotions: true,
       customerReferralProgram: true,
+      kanbanCustomization: false,
     },
     limits: {
       includedOfficeSeats: 2,
@@ -164,6 +167,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customServiceTypes: true,
       customerPromotions: true,
       customerReferralProgram: true,
+      kanbanCustomization: true,
     },
     limits: {
       includedOfficeSeats: 10,
@@ -210,6 +214,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     customServiceTypes: false,
     customerPromotions: true,
     customerReferralProgram: true,
+    kanbanCustomization: true,
   },
   limits: {
     includedOfficeSeats: 2,

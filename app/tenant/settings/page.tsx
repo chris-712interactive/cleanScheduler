@@ -6,6 +6,7 @@ import {
   Cable,
   ClipboardList,
   Globe,
+  LifeBuoy,
   MapPin,
   Percent,
   Shield,
@@ -55,6 +56,12 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Operations',
         description: 'Quotes, scheduling defaults, payments, and notifications.',
         icon: SlidersHorizontal,
+      },
+      {
+        href: '/settings/quotes-pipeline',
+        label: 'Quotes pipeline',
+        description: 'Customize Kanban columns on your quotes board (Pro).',
+        icon: ClipboardList,
       },
       {
         href: '/settings/services',
@@ -127,6 +134,12 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Roles & permissions',
         description: 'Understand workspace roles and what each can access.',
         icon: Shield,
+      },
+      {
+        href: '/settings/support',
+        label: 'Contact support',
+        description: 'Open tickets with Clean Scheduler about billing or technical issues.',
+        icon: LifeBuoy,
       },
     ],
   },

@@ -123,3 +123,120 @@
 .lockedLead {
   @include layout.section-lead;
 }
+
+.statusOk {
+  margin: 0;
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+}
+
+.statusErr {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.roleForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.textInput,
+.textArea,
+.selectInput {
+  font: inherit;
+  font-weight: 400;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.roleFormActions,
+.roleCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.systemBadge,
+.customBadge {
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+}
+
+.systemBadge {
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.customBadge {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.permissionGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.permissionGroup {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.permissionGroupTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.permissionCheckboxList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.permissionCheckboxLabel {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.permissionCheckboxText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.permissionCheckboxHint {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.mutedListItem {
+  color: var(--color-text-muted);
+}
