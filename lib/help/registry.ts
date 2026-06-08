@@ -34,7 +34,8 @@ export const HELP_HUB_CATEGORIES: HelpCategory[] = [
       },
       {
         title: 'Message your provider',
-        description: 'Start a conversation or reply on open threads from the Messages area in your portal.',
+        description:
+          'Start a conversation or reply on open threads from the Messages area in your portal.',
         badges: [{ label: 'How-to' }],
       },
       {

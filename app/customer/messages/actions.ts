@@ -6,6 +6,13 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { tenantNavBadgesTag } from '@/lib/portal/cacheTags';
+import { sendCustomerSupportMessageNotification } from '@/lib/tenant/supportMessageNotifications';
+
+function revalidateSupportMessaging(tenantId: string, threadId: string) {
+  revalidatePath('/messages');
+  revalidatePath(`/messages/${threadId}`);
+  revalidateTag(tenantNavBadgesTag(tenantId), 'max');
+}
 
 export async function createCustomerSupportThreadAction(formData: FormData): Promise<void> {
   const auth = await requirePortalAccess('customer', '/messages');
@@ -50,7 +57,15 @@ export async function createCustomerSupportThreadAction(formData: FormData): Pro
     redirect('/messages?error=1');
   }
 
-  revalidatePath('/messages');
+  await sendCustomerSupportMessageNotification(supabase, 'thread_created', {
+    tenantId: link.tenantId,
+    threadId: thread.id,
+    customerId,
+    subject,
+    body,
+  });
+
+  revalidateSupportMessaging(link.tenantId, thread.id);
   redirect(`/messages/${thread.id}`);
 }
 
@@ -68,7 +83,7 @@ export async function replyToCustomerSupportThreadAction(formData: FormData): Pr
   const supabase = createAdminClient();
   const { data: thread, error: threadError } = await supabase
     .from('customer_support_threads')
-    .select('id, customer_id, status')
+    .select('id, customer_id, status, tenant_id, subject')
     .eq('id', threadId)
     .maybeSingle();
 
@@ -91,17 +106,14 @@ export async function replyToCustomerSupportThreadAction(formData: FormData): Pr
     redirect(`/messages/${threadId}?error=send`);
   }
 
-  const { data: threadTenant } = await supabase
-    .from('customer_support_threads')
-    .select('tenant_id')
-    .eq('id', threadId)
-    .maybeSingle();
+  await sendCustomerSupportMessageNotification(supabase, 'customer_reply', {
+    tenantId: thread.tenant_id,
+    threadId,
+    customerId: thread.customer_id,
+    subject: thread.subject,
+    body,
+  });
 
-  revalidatePath('/messages');
-  revalidatePath(`/messages/${threadId}`);
-  if (threadTenant?.tenant_id) {
-    revalidateTag(tenantNavBadgesTag(threadTenant.tenant_id), 'max');
-    revalidatePath('/messages', 'page');
-  }
+  revalidateSupportMessaging(thread.tenant_id, threadId);
   redirect(`/messages/${threadId}`);
 }

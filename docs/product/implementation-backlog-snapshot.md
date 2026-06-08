@@ -37,4 +37,4 @@ Phases 0–4 **code-complete**. Remaining: fill `docs/performance/phase-0-baseli
 
 - `docs/product/quotes-line-items.md` — expiry job, transactional create RPC, notifications
 - `docs/product/tenant-reports.md` — masquerade export verification, Connect empty states
-- `docs/product/customer-support-messaging.md` — email/SMS notifications on new messages (v1.1)
+- `docs/product/customer-support-messaging.md` — public help article (screenshots)

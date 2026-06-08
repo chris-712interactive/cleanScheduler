@@ -84,6 +84,7 @@ export function parseQuoteNotifyFromForm(formData: FormData) {
     sms_notify_visit_reminder: formData.get('sms_notify_visit_reminder') === 'on',
     email_notify_invoice_overdue: formData.get('email_notify_invoice_overdue') === 'on',
     sms_notify_invoice_overdue: formData.get('sms_notify_invoice_overdue') === 'on',
+    email_notify_customer_message: formData.get('email_notify_customer_message') === 'on',
   };
 }
 
