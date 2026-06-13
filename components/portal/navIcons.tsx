@@ -1,5 +1,6 @@
 import {
   Activity,
+  BookOpen,
   Building2,
   Calendar,
   CalendarClock,
@@ -24,6 +25,7 @@ import {
 
 export const navIcons: Record<string, LucideIcon> = {
   activity: Activity,
+  accounting: BookOpen,
   billing: CreditCard,
   campaigns: Mail,
   customers: UsersRound,

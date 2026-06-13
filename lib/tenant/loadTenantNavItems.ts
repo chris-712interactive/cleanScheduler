@@ -4,6 +4,7 @@ import type { TenantRole } from '@/lib/auth/types';
 import { isFeatureEnabled } from '@/lib/billing/entitlements';
 import {
   getCachedOwnerOnboardingNavContext,
+  getCachedOpenSupportThreadCount,
   getCachedPendingRescheduleCount,
 } from '@/lib/portal/cachedNavChrome';
 import { getTenantEntitlementPlan } from '@/lib/portal/requestContext';
@@ -17,11 +18,13 @@ import {
   tenantReferralsNavEnabled,
 } from '@/lib/referrals/tenantReferralsNav';
 import { createAdminClient } from '@/lib/supabase/server';
+import { resolveMembershipPermissions } from '@/lib/tenant/resolveMembershipPermissions';
 
 export interface TenantNavShellParams {
   tenantId: string;
   tenantSlug: string;
   role: TenantRole;
+  roleId?: string | null;
   billingSnapshot: TenantBillingSnapshot;
 }
 
@@ -31,38 +34,49 @@ export const loadTenantNavItemsForShell = cache(
     tenantId,
     tenantSlug,
     role,
+    roleId = null,
     billingSnapshot,
   }: TenantNavShellParams): Promise<NavItem[]> => {
     const subscriptionLocked = needsSubscriptionPurchase(billingSnapshot.subscriptionAccess);
     const connectStatus = billingSnapshot.connectStatus;
 
     const admin = createAdminClient();
-    const [pendingRescheduleCount, planTier, onboarding, referralsEnabled] = await Promise.all([
-      getCachedPendingRescheduleCount(tenantId),
-      getTenantEntitlementPlan(tenantId),
-      subscriptionLocked
-        ? Promise.resolve({ gettingStartedNavItem: null, coreSetupComplete: true })
-        : getCachedOwnerOnboardingNavContext({
-            tenantId,
-            tenantSlug,
-            role,
-            connectStatus,
-          }),
-      tenantReferralsNavEnabled(admin, tenantId),
-    ]);
+    const [pendingRescheduleCount, openSupportThreadCount, planTier, onboarding, referralsEnabled] =
+      await Promise.all([
+        getCachedPendingRescheduleCount(tenantId),
+        getCachedOpenSupportThreadCount(tenantId),
+        getTenantEntitlementPlan(tenantId),
+        subscriptionLocked
+          ? Promise.resolve({ gettingStartedNavItem: null, coreSetupComplete: true })
+          : getCachedOwnerOnboardingNavContext({
+              tenantId,
+              tenantSlug,
+              role,
+              connectStatus,
+            }),
+        tenantReferralsNavEnabled(admin, tenantId),
+      ]);
 
     const pendingReferralCount = referralsEnabled
       ? await countPendingReferralAttributions(admin, tenantId)
       : 0;
 
+    const permissions = await resolveMembershipPermissions(admin, {
+      tenantId,
+      role,
+      roleId,
+    });
+
     return buildTenantNavItems({
       role,
+      permissions,
       subscriptionLocked,
       billingNavItem: buildTenantBillingNavItem(),
       settingsNavItem: buildTenantSettingsNavItem(),
       campaignsNavEnabled: isFeatureEnabled(planTier, 'campaigns'),
       referralsNavEnabled: referralsEnabled,
       pendingRescheduleCount,
+      openSupportThreadCount,
       pendingReferralCount,
       gettingStartedNavItem: onboarding.gettingStartedNavItem,
     });

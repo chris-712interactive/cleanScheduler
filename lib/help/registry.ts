@@ -1,5 +1,9 @@
 import type { HelpArticleEntry, HelpCategory } from './types';
 import { CLEANING_BUSINESS_ARTICLES, CLEANING_BUSINESS_HUB } from '@/lib/marketing/seoContent';
+import {
+  CUSTOMER_HELP_ARTICLES,
+  CUSTOMER_HELP_HUB,
+} from '@/lib/marketing/seoContent/customerHelpArticles';
 
 export const HELP_HUB_CATEGORIES: HelpCategory[] = [
   {
@@ -18,12 +22,12 @@ export const HELP_HUB_CATEGORIES: HelpCategory[] = [
     })),
   },
   {
-    slug: 'customers',
-    path: '/help/customers',
-    title: 'For Customers',
-    description: 'Guides for homeowners and customer portal users.',
+    slug: CUSTOMER_HELP_HUB.slug,
+    path: CUSTOMER_HELP_HUB.path,
+    title: CUSTOMER_HELP_HUB.title,
+    description: CUSTOMER_HELP_HUB.description,
     audience: 'customers',
-    sectionTitle: 'Top tasks',
+    sectionTitle: CUSTOMER_HELP_HUB.sectionTitle,
     cards: [
       {
         title: 'Get started with your portal',
@@ -32,18 +36,13 @@ export const HELP_HUB_CATEGORIES: HelpCategory[] = [
         hrefLabel: 'SMS opt-in and compliance details',
         badges: [{ label: 'Public' }, { label: 'How-to' }],
       },
-      {
-        title: 'Manage appointments',
-        description: 'View upcoming jobs, request reschedules, and message your provider.',
-        comingSoon: true,
-        badges: [{ label: 'Coming soon' }],
-      },
-      {
-        title: 'Pay invoices',
-        description: 'Open invoices, review line items, and complete payment.',
-        comingSoon: true,
-        badges: [{ label: 'Coming soon' }],
-      },
+      ...CUSTOMER_HELP_ARTICLES.map((article) => ({
+        title: article.title,
+        description: article.description,
+        href: article.path,
+        hrefLabel: 'Read guide',
+        badges: [{ label: 'How-to' }],
+      })),
     ],
   },
   {
@@ -164,6 +163,13 @@ export const HELP_ARTICLES: HelpArticleEntry[] = [
     changeFrequency: 'monthly',
   },
   ...CLEANING_BUSINESS_ARTICLES.map((article) => ({
+    path: article.path,
+    title: article.title,
+    description: article.description,
+    priority: article.sitemapPriority,
+    changeFrequency: article.changeFrequency,
+  })),
+  ...CUSTOMER_HELP_ARTICLES.map((article) => ({
     path: article.path,
     title: article.title,
     description: article.description,

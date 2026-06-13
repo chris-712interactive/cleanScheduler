@@ -1,3 +1,4 @@
+@use 'mixins/a11y' as a11y;
 @use 'mixins/breakpoints' as mq;
 @use 'mixins/tenant-settings-layout' as layout;
 
@@ -49,11 +50,11 @@
   @include layout.section-lead;
 }
 
-.rolesGrid {
+.rolesList {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
 
-  @include mq.up(md) {
+  @include mq.up(lg) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -61,18 +62,43 @@
 .roleCard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-bg-subtle);
   scroll-margin-top: var(--space-4);
 }
 
+.roleCardEditing {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  background: var(--color-bg);
+
+  @include mq.up(lg) {
+    grid-column: 1 / -1;
+  }
+}
+
 .roleCardHeader {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+}
+
+.roleCardTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.roleCardBody {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
 }
 
 .roleCardTitle {
@@ -84,21 +110,225 @@
 
 .roleCardSummary {
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.roleFormFields {
+  display: grid;
+  gap: var(--space-3);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.accessSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.accessSectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.accessSectionTitle {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.accessSectionLead {
+  margin: 0;
+  font-size: var(--font-size-xs);
   line-height: 1.45;
   color: var(--color-text-muted);
 }
 
-.rolePermissionList {
+.accessSummaryEmpty {
   margin: 0;
-  padding-left: var(--space-4);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
 
-  li + li {
-    margin-top: var(--space-1);
+.accessSummaryPanel {
+  display: grid;
+  gap: var(--space-3);
+
+  @include mq.up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.accessSummaryColumn {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.accessSummaryRow {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 42%) minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0.2rem 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+
+  & + & {
+    border-top: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
+  }
+}
+
+.accessSummaryArea {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.accessEditor {
+  display: grid;
+  gap: var(--space-2);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.accessAreaCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.accessLevelBadge {
+  display: inline-block;
+  width: fit-content;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+
+  &[data-level='full'] {
+    color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+
+  &[data-level='partial'] {
+    color: var(--color-text);
+  }
+
+  &[data-level='none'] {
+    color: var(--color-text-muted);
+  }
+}
+
+.accessAreaHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.accessAreaTitle {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  min-width: 0;
+}
+
+.accessPresetFieldset,
+.accessCapabilityFieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.accessPresetSegment {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-muted);
+}
+
+.accessPresetSegmentOption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard);
+
+  &:focus-within {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &[data-selected] {
+    color: var(--color-text);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xs);
+  }
+}
+
+.accessPresetInput {
+  @include a11y.visually-hidden;
+}
+
+.accessCapabilityList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.accessCapabilityLabel {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.srOnly {
+  @include a11y.visually-hidden;
 }
 
 .footnote {
@@ -122,4 +352,80 @@
 
 .lockedLead {
   @include layout.section-lead;
+}
+
+.statusOk {
+  margin: 0;
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+}
+
+.statusErr {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.roleForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.textInput,
+.textArea,
+.selectInput {
+  font: inherit;
+  font-weight: 400;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.roleFormActions,
+.roleCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.systemBadge,
+.customBadge {
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+}
+
+.systemBadge {
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.customBadge {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+// Locked-tier overview (page.tsx when rolePermissions disabled)
+.rolesGrid {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

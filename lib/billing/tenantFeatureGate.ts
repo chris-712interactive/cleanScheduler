@@ -31,6 +31,7 @@ const FEATURE_MINIMUM_TIER: Record<EntitlementFeature, PlatformPlanTier> = {
   customServiceTypes: 'pro',
   customerPromotions: 'business',
   customerReferralProgram: 'business',
+  kanbanCustomization: 'pro',
 };
 
 export function minimumTierForFeature(feature: EntitlementFeature): PlatformPlanTier {

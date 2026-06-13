@@ -18,6 +18,7 @@ export type OperationalSettingsFormSnapshot = {
   sms_notify_visit_reminder: boolean;
   email_notify_invoice_overdue: boolean;
   sms_notify_invoice_overdue: boolean;
+  email_notify_customer_message: boolean;
   check_reminder_hold_days: number;
   check_hold_through_deposit: boolean;
   require_consultation_before_quote: boolean;

@@ -12,6 +12,18 @@ export type SeoPageSection = {
   link?: SeoContentLink;
 };
 
+export type SeoComparisonRow = {
+  feature: string;
+  cleanScheduler: string;
+  competitor: string;
+};
+
+export type SeoComparisonTable = {
+  competitorName: string;
+  lastVerified: string;
+  rows: SeoComparisonRow[];
+};
+
 export type SeoMarketingPage = {
   slug: string;
   path: string;
@@ -21,6 +33,7 @@ export type SeoMarketingPage = {
   headline: string;
   lead: string;
   sections: SeoPageSection[];
+  comparisonTable?: SeoComparisonTable;
   faq: MarketingFaqItem[];
   relatedLinks: SeoContentLink[];
   ctaTitle?: string;
@@ -29,11 +42,18 @@ export type SeoMarketingPage = {
   changeFrequency: 'weekly' | 'monthly' | 'yearly';
 };
 
+export type HelpGuideFigure = {
+  src: string;
+  alt: string;
+  caption?: string;
+};
+
 export type HelpGuideSection = {
   title: string;
   paragraphs: string[];
   bullets?: string[];
   tip?: string;
+  figures?: HelpGuideFigure[];
 };
 
 export type HelpGuideArticle = {

@@ -17,6 +17,7 @@ import { applyQuoteAcceptanceFollowUp } from '@/lib/tenant/quoteAcceptanceFollow
 import { applyCustomerQuotePromotions } from '@/lib/promotions/applyCustomerQuotePromotions';
 import { finalizeQuotePromotionsOnAccept } from '@/lib/promotions/quotePromotions';
 import type { Database } from '@/lib/supabase/database.types';
+import { applyQuoteStatusAndStage } from '@/lib/tenant/quotePipelineStages';
 
 import type { CustomerQuoteResponsePatch } from '@/lib/tenant/customerQuoteResponsePatch';
 
@@ -193,17 +194,13 @@ export async function respondToCustomerQuote(
   }
 
   const nextStatus = decision === 'accept' ? 'accepted' : 'declined';
-  const upd = await admin
-    .from('tenant_quotes')
-    .update({ status: nextStatus })
-    .eq('id', quoteId)
-    .eq('tenant_id', quote.tenant_id);
+  const upd = await applyQuoteStatusAndStage(admin, quote.tenant_id as string, quoteId, nextStatus);
 
   if (upd.error) {
     if (decision === 'accept') {
       await admin.from('tenant_quote_acceptance_e_signatures').delete().eq('quote_id', quoteId);
     }
-    const msg = upd.error.message ?? '';
+    const msg = upd.error ?? '';
     if (msg.includes('QUOTE_ACCEPT_REQUIRES_ESIGNATURE')) {
       return { error: 'Signature could not be recorded. Please try again.' };
     }

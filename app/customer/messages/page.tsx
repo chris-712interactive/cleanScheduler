@@ -113,7 +113,7 @@ export default async function CustomerMessagesPage({ searchParams }: PageProps) 
       ) : !list.length ? (
         <EmptyState
           title="No threads yet"
-          description="Your providers will see new messages in their workspace."
+          description="When you message a provider, the conversation appears here."
         />
       ) : (
         <Stack gap={3}>

@@ -1,6 +1,6 @@
 ---
 name: cleanScheduler implementation plan
-overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-05-28** — **v1.0.0 shipped to PROD**; **release/1.1.0** in progress (quote ops wiring, Resend webhook verify, RLS smoke). See `docs/release/1.1.0.md`.
+overview: Build cleanScheduler as a single Next.js (App Router) app on Supabase, using subdomain-based multi-tenancy with Postgres RLS, a global customer-identity model that links one customer to many tenants, and pgsodium column-level encryption for tenant-stored PII. Ship a lean MVP that closes the 7-day-trial-to-revenue loop first, then layer in campaigns, ticketing, accounting polish, and customer-service tooling. **Todo YAML last reconciled to the repo: 2026-06-01** — **v1.0.0 shipped to PROD**; **release/1.1.0** in progress; **Bucket B Phase 2** code-complete on `feat/bucket-b-phase2` (0073–0075). Handoff snapshot — `docs/product/implementation-status-summary.md`.
 todos:
   - id: scaffoldRepo
     content: Bootstrap Next.js 15 (App Router, TS, SCSS Modules + design-token system, Radix UI primitives, modern-normalize, stylelint), set up Vercel project with wildcard domain, and create route groups for marketing, admin, tenant, customer.
@@ -27,13 +27,13 @@ todos:
     content: Implement middleware that resolves subdomain -> tenant context, gates routes by app_role/tenant_role, and supports admin + my + tenant slugs with reserved-name guard.
     status: completed
   - id: authProfilesTenants
-    content: "Baseline shipped in `0001_initial_auth_multitenant.sql` + onboarding flows: `user_profiles`, `tenants`, `tenant_memberships`, `app_role`/`tenant_role` enums, RLS helpers reading JWT `app_metadata` (claims set from app code \u2014 not a SQL auth hook file). **Gap vs original plan:** no separate `roles` / `permissions` / `role_permission` tables or seeded permission-key matrix; fine-grained `requirePermission()` remains app-level."
+    content: "Baseline shipped in `0001` + onboarding. **0075:** `tenant_roles`, `tenant_role_permissions`, `tenant_memberships.role_id` with system-role seed + backfill; app resolves grants via `resolveMembershipPermissions`. JWT still carries `base_role` enum for RLS; fine-grained checks in server actions. **Still missing:** pgsodium/Vault; RLS policies keyed on individual permission keys."
     status: in_progress
   - id: customerModel
     content: "Core shipped in `0001` + CRM/property/portal migrations (`0010`\u2013`0014`, etc.): `customer_identities`, `customers`, links, portal invites, tenant customer profiles/properties. **Gap:** pgsodium/Vault column encryption for PII not present in migrations yet; invite/claim flows exist but encryption story is still TODO."
     status: in_progress
   - id: schedulingQuotes
-    content: "Shipped: tenant quotes + scheduled visits through **0021** (Kanban, line items, tax/discount, e-sign, notifications, expiry cron). **1.1.0:** wire `tenant_operational_settings` into acceptance (payment methods, prepay invoice, prompt-staff queue). **Still TODO:** `auto_schedule` visit creation; quote-derived auto-schedule on accept."
+    content: "Shipped: tenant quotes + scheduled visits through **0021** (Kanban, line items, tax/discount, e-sign, notifications, expiry cron). **1.1.0:** wire `tenant_operational_settings` into acceptance (payment methods, prepay invoice, prompt-staff queue). **Auto-schedule on accept** shipped when ops mode is `auto_schedule` + line-item flags (`quoteAutoSchedule`, job catalog **0071**)."
     status: in_progress
   - id: billingPlans
     content: "Shipped **0023–0025** + **0053** (Stripe invoice mirror). Connect, service plans, recurring rules, signed payments, mirrors. **Still missing:** DB catalog `plans`/`plan_features`/`tenant_addons`; `tenant_addons` checkout; Setup Intent UX."
@@ -69,7 +69,7 @@ todos:
     content: "Shipped: CSV/OFX bank statement import on `/billing/bank-connection` as Plaid fallback."
     status: completed
   - id: messagingAuditInquiries
-    content: "Partial in `0013`: `marketing_inquiries`, masquerade + `audit_log`, `customer_support_threads` + `customer_support_messages` (MVP messaging), customer invoice read policies. **Gap vs plan:** no generic `conversations`/`messages` product threading; `support_tickets` deferred to Phase 2 todo `phase2Tickets`."
+    content: "Shipped v1 + v1.1 (PR #115): tenant/customer `/messages` two-way threads, staff email on customer message (`0072`). **0073:** platform support tickets (founder `/support`, tenant `/settings/support`) — separate from customer threads. Public help at `/help/customers/message-your-provider`. **Still missing:** customer email on provider reply; SMS two-way inbox; generic `conversations` product; founder email on new platform ticket."
     status: in_progress
   - id: rlsTestSuite
     content: "Partial: `supabase/tests/rls/tenant_isolation.sql` smoke checks + `npm run check:rls-smoke`. **1.1.0** expands policy coverage. Still missing: pg_tap fixtures, CI integration with ephemeral DB, masquerade scoping tests."
@@ -81,13 +81,13 @@ todos:
     content: "Shipped: platform + Connect webhooks in `app/api/webhooks/stripe/route.ts` — checkout, subscriptions, account.updated, refunds/disputes/payouts, **Connect invoice.* mirror** (`0053`). **Still missing:** inquiry/trial lifecycle automation."
     status: in_progress
   - id: tenantPortalMvp
-    content: "Shipped: full tenant surface including dashboard KPIs, owner onboarding checklist, campaigns, bank connection, API/webhooks, white-label domains. **Gaps:** deeper KPI analytics; `auto_schedule` on quote accept."
+    content: "Shipped: full tenant surface including dashboard KPIs, owner onboarding checklist, campaigns, bank connection, API/webhooks, white-label domains, **Messages inbox** (two-way customer support threads + staff email), **service type schedule_role** at `/settings/services`. **Gaps:** deeper KPI analytics."
     status: in_progress
   - id: customerPortalMvp
-    content: "Shipped: invoices, subscriptions, quotes (e-sign), messages, **reschedule requests**, SMS opt-in, portal domains. **Gap:** consolidated cross-tenant billing rollups."
+    content: "Shipped: invoices, subscriptions, quotes (e-sign), messages (**two-way** thread replies on open conversations), **reschedule requests**, SMS opt-in, portal domains. **Gap:** consolidated cross-tenant billing rollups."
     status: in_progress
   - id: founderAdminMvp
-    content: "Shipped: tenants, inquiries, audit log, masquerade, platform dashboard stats (`getPlatformDashboardStats`). **Gaps:** manual onboarding polish, masquerade timer/consent UX."
+    content: "Shipped: tenants, inquiries, audit log, masquerade, platform dashboard stats, **platform support inbox** (`/support`, 0073), **founder accounting** (`/accounting`). **Gaps:** manual onboarding polish, masquerade timer/consent UX, founder email on new support ticket."
     status: in_progress
   - id: transactionalEmail
     content: "Shipped: Resend for quotes, invites, tenant invoice email, dispute notices. **1.1.0:** Resend webhook signature verification."
@@ -99,14 +99,14 @@ todos:
     content: "Deferred — **sent.dm** shipped for transactional SMS (**0039**, **0054**, **0055**). Full two-way SMS inbox in Messages not built."
     status: cancelled
   - id: phase2Tickets
-    content: "Phase 2: Customer Service ticketing in founder admin + tenant-side ticket creation."
-    status: pending
+    content: "Shipped (0073): platform support tickets — founder `/support` inbox, tenant `/settings/support` ticket creation. See `docs/product/platform-support-tickets.md`."
+    status: completed
   - id: phase2KanbanRoles
-    content: "Phase 2: customizable Quotes Kanban (rename/reorder/hide) and custom Roles UI in tenant Settings."
-    status: pending
+    content: "Shipped: customizable quote pipeline stages (0074, Pro `kanbanCustomization`) + custom roles (0075, Business+ `rolePermissions`). Roles UI groups grants by product area (`lib/tenant/permissionAreas.ts`) — summaries + preset access levels instead of raw permission keys."
+    status: completed
   - id: phase2Accounting
-    content: "Phase 2: tenant Accounting view + founder Accounting (MRR, revenue YTD, CSV exports)."
-    status: pending
+    content: "Shipped: founder `/accounting` (MRR, estimated revenue YTD, CSV) + tenant `/accounting` summary. See `docs/product/founder-accounting.md`."
+    status: completed
   - id: phase3Campaigns
     content: "Shipped MVP: `/campaigns` list/create/detail/send, audience presets, Resend batch + webhook metrics, opt-in/suppressions (**0033**). **Still missing:** scheduled sends (V1.1 cron)."
     status: in_progress
@@ -446,20 +446,21 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - **Manual Zelle recording (Concern #1)**: "Record Zelle payment" form with confirmation number, optional screenshot upload, and notes. Plaid auto-reconcile arrives in Phase 2.
 - **Reminder cron with check holds (Concern #2)**: tenant-configurable hold days per check status; reminders suppressed during holds.
 - **Reports module v1 (Concern #4)** — see [`docs/product/tenant-reports.md`](../../../docs/product/tenant-reports.md): Phase 1 core reports on all tiers; Pro analytics bundle (`advancedAnalytics`); Payment audits workflow stays under `/billing/payment-audits`.
-- Customer portal: Dashboard, Schedule (read + reschedule-request), Billing (view + pay outstanding), Messages (basic 1:1), Settings.
+- Customer portal: Dashboard, Schedule (read + reschedule-request), Billing (view + pay outstanding), Messages (two-way support threads), Settings.
 - Founder admin: Dashboard (key metrics), Inquiries (list + filters + manual status), Customers/Tenants (list + detail + manual onboard), Settings (skeleton), basic masquerade with audit log.
 - Foundation: subdomain routing, Supabase Auth, RLS everywhere, pgsodium for encrypted columns, Stripe + Stripe Connect + webhooks, **Resend** transactional email.
 - **Pricing & gating infrastructure (section 15)**: `plans` + `plan_features` + `tenant_addons` + `tenant_usage_snapshots` schema seeded with the three strawman plans (Starter / Pro / Business) at placeholder prices; server-side `requireFeature` + `checkLimit` utilities; soft-stop `UpgradeOrAddOnModal` UI with the 80%/95%/100% utilization warnings; nightly usage-rollup cron. Final tier prices remain TBD until the pre-launch pricing review — flipping prices is a one-line data change.
 
 **Phase 2 — Comms, Reconciliation & Ops**
 
-- **Plaid integration (Concern #1)**: tenant bank linking, daily transaction sync, Zelle/ACH match-suggestion queue with one-click confirmation.
+- **Plaid integration (Concern #1)**: tenant bank linking, daily transaction sync, Zelle/ACH match-suggestion queue with one-click confirmation. _(Code shipped; prod keys + bank reports remain.)_
 - **Advanced check workflow (Concern #2)**: per-status reminder hold overrides, bounced-check handling (auto-reopen invoice, optional bounce fee), bulk deposit slip view.
-- **Reports module polish (Concern #4)**: ADP / Gusto / QBO payroll CSV formats, compensation rules settings UI, payout-grouped reconciliation (`stripe_payout_id`), Plaid bank reports, Phase 3 year-end pack.
-- Twilio SMS in/out + Integrations admin assignments.
-- Customer Service ticketing (admin) + threaded support.
-- Customizable Quotes Kanban (rename, reorder, hide columns).
-- Custom roles UI in tenant Settings.
+- **Reports module polish (Concern #4)**: ADP / Gusto / QBO payroll CSV formats, compensation rules settings UI, payout-grouped reconciliation (`stripe_payout_id`), Plaid bank reports, Phase 3 year-end pack. _(Payroll + sales tax shipped.)_
+- ~~Twilio SMS in/out~~ — **cancelled**; sent.dm transactional SMS only.
+- ~~Customer Service ticketing (admin)~~ — **shipped** (`0073`, founder `/support` + tenant `/settings/support`).
+- ~~Customizable Quotes Kanban~~ — **shipped** (`0074`, `/settings/quotes-pipeline`, Pro `kanbanCustomization`).
+- ~~Custom roles UI~~ — **shipped** (`0075`, `/settings/roles`, area-based permission UX).
+- ~~Founder + tenant accounting MVP~~ — **shipped** (founder `/accounting`, tenant `/accounting`).
 - Trello-style schedule filters & employee-only view polish.
 
 **Phase 3 — Growth & Polish**
@@ -472,19 +473,19 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - Year-end tax summaries (1099 inputs by customer).
 - Advanced reporting (cohort analysis, customer LTV, churn).
 
-## 11.5 Status sync & remaining backlog (2026-05-12)
+## 11.5 Status sync & remaining backlog (2026-06-01)
 
-This section reconciles the YAML todos at the top of this file with the current repo. **Authoritative shipped state is always git + deployed migrations** (`supabase/migrations/0001` … latest).
+This section reconciles the YAML todos at the top of this file with the current repo. **Authoritative shipped state is always git + deployed migrations** (`supabase/migrations/0001` … latest). **Handoff snapshot:** [`docs/product/implementation-status-summary.md`](../../../docs/product/implementation-status-summary.md).
 
 ### What moved from “pending” to “in progress” (or completed) in this sync
 
 | Original YAML idea                            | Repo reality                                                                                                                                                                                                                                                                                          |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). No separate permissions catalog table yet.                                                                                                                              |
+| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). **0075** adds `tenant_roles` + `tenant_role_permissions` + app resolver; RLS still uses `base_role` enum.                                                               |
 | `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                                                                                                                                         |
 | `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                                                                                                                               |
 | `billingPlans` as monolithic 0004             | **Partial:** tenant↔customer money path is **`0023`–`0025`** (Connect + `service_plans` / `customer_subscriptions` + recurring rules + signed payments + mirrors). Still missing **platform** catalog `plans` / `plan_features` / `tenant_addons` (§15) and Stripe **hosted** `invoice.*` sync (§17). |
-| `messagingAuditInquiries` as 0005             | **0013** covers inquiries, audit, support threads/messages; not full “conversations” product.                                                                                                                                                                                                         |
+| `messagingAuditInquiries` as 0005             | **0013** + PR #115: inquiries, audit, two-way customer threads; v1.1 staff email (**0072**); **0073** platform support tickets (founder + tenant). Not full “conversations” product or SMS two-way inbox.                                                                                             |
 | `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                                                                                                                               |
 
 ### Prioritized next slices (execute in roughly this order for trial-to-revenue)
@@ -802,8 +803,8 @@ Three flat-priced tiers, monthly with optional annual prepay (default 17% off = 
 - Up to 10 users, up to 750 active customers.
 - **Customer recurring billing** (`service_plans` + `customer_subscriptions`).
 - **Recurring appointment rules** (RRULE-driven).
-- **Customizable Quotes Kanban** (Phase 2 feature; this gate becomes meaningful when that ships).
-- **Custom roles + permissions matrix** (Phase 2 feature, same).
+- **Customizable Quotes Kanban** — **shipped** (`0074`, `kanbanCustomization`).
+- **Custom roles + permissions** — **shipped** (`0075`, `rolePermissions`; Business tier).
 - **Advanced Reports**: Payment Reconciliation, Revenue by Service/Customer, basic Employee Performance & Compensation.
 - **Twilio SMS outbound** (Phase 2 feature; first 250 segments/mo included, then $0.04/segment).
 - Branded email sender (verified domain).
@@ -1273,7 +1274,7 @@ The shell renders, in order:
 The shell is identical across all three portals. The only differences are the sidebar items and the identity chip.
 
 - **Founder Admin** (`admin.cleanscheduler.com`): Dashboard / Inquiries / Customers (= tenants) / Integrations / Customer Service / Accounting / Settings. Identity chip: `[Founder]` badge.
-- **Tenant Portal** (`{slug}.cleanscheduler.com`): Dashboard / Quotes / Customers / Schedule / Employees / Email Campaign (plan-gated, hidden if not in plan) / Billing / Settings. Identity chip: `[Tenant: Acme Cleaning]`.
+- **Tenant Portal** (`{slug}.cleanscheduler.com`): Dashboard / Quotes / Customers / **Messages** / Schedule / Employees / Email Campaign (plan-gated, hidden if not in plan) / Billing / Settings. Identity chip: `[Tenant: Acme Cleaning]`.
 - **Customer Portal** (`my.cleanscheduler.com`): Dashboard / Schedule / Billing / Messages / Settings. Identity chip: `[Switch tenant ▾]` only when linked to multiple tenants.
 
 ### 18.6 UI primitives engineers compose from (no invention)

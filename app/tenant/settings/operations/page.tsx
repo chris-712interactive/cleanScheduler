@@ -54,7 +54,7 @@ export default async function TenantOperationsSettingsPage() {
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels',
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, email_notify_customer_message, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels',
     )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -75,6 +75,7 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_visit_reminder: opsRow.sms_notify_visit_reminder,
         email_notify_invoice_overdue: opsRow.email_notify_invoice_overdue,
         sms_notify_invoice_overdue: opsRow.sms_notify_invoice_overdue,
+        email_notify_customer_message: opsRow.email_notify_customer_message,
         check_reminder_hold_days: opsRow.check_reminder_hold_days,
         check_hold_through_deposit: opsRow.check_hold_through_deposit,
         require_consultation_before_quote: opsRow.require_consultation_before_quote,
@@ -97,6 +98,7 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_visit_reminder: false,
         email_notify_invoice_overdue: true,
         sms_notify_invoice_overdue: false,
+        email_notify_customer_message: true,
         check_reminder_hold_days: 7,
         check_hold_through_deposit: false,
         require_consultation_before_quote: true,

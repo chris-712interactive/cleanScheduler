@@ -412,6 +412,88 @@ export type Database = {
           },
         ];
       };
+      platform_support_messages: {
+        Row: {
+          id: string;
+          ticket_id: string;
+          author_user_id: string | null;
+          author_side: Database['public']['Enums']['platform_support_message_side'];
+          body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          ticket_id: string;
+          author_user_id?: string | null;
+          author_side: Database['public']['Enums']['platform_support_message_side'];
+          body: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          ticket_id?: string;
+          author_user_id?: string | null;
+          author_side?: Database['public']['Enums']['platform_support_message_side'];
+          body?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'platform_support_messages_ticket_id_fkey';
+            columns: ['ticket_id'];
+            isOneToOne: false;
+            referencedRelation: 'platform_support_tickets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      platform_support_tickets: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          subject: string;
+          status: Database['public']['Enums']['platform_support_ticket_status'];
+          category: Database['public']['Enums']['platform_support_ticket_category'];
+          created_by_user_id: string;
+          assigned_to_user_id: string | null;
+          created_at: string;
+          updated_at: string;
+          closed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          subject: string;
+          status?: Database['public']['Enums']['platform_support_ticket_status'];
+          category?: Database['public']['Enums']['platform_support_ticket_category'];
+          created_by_user_id: string;
+          assigned_to_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          closed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          subject?: string;
+          status?: Database['public']['Enums']['platform_support_ticket_status'];
+          category?: Database['public']['Enums']['platform_support_ticket_category'];
+          created_by_user_id?: string;
+          assigned_to_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          closed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'platform_support_tickets_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       customer_tenant_links: {
         Row: {
           id: string;
@@ -1045,6 +1127,7 @@ export type Database = {
           tenant_id: string;
           user_id: string;
           role: 'owner' | 'admin' | 'employee' | 'viewer';
+          role_id: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -1054,6 +1137,7 @@ export type Database = {
           tenant_id: string;
           user_id: string;
           role: 'owner' | 'admin' | 'employee' | 'viewer';
+          role_id?: string | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -1063,13 +1147,88 @@ export type Database = {
           tenant_id?: string;
           user_id?: string;
           role?: 'owner' | 'admin' | 'employee' | 'viewer';
+          role_id?: string | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
           {
+            foreignKeyName: 'tenant_memberships_role_id_fkey';
+            columns: ['role_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_roles';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'tenant_memberships_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_role_permissions: {
+        Row: {
+          role_id: string;
+          permission_key: string;
+        };
+        Insert: {
+          role_id: string;
+          permission_key: string;
+        };
+        Update: {
+          role_id?: string;
+          permission_key?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_role_permissions_role_id_fkey';
+            columns: ['role_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_roles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_roles: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          slug: string;
+          description: string | null;
+          base_role: 'owner' | 'admin' | 'employee' | 'viewer';
+          is_system: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          slug: string;
+          description?: string | null;
+          base_role: 'owner' | 'admin' | 'employee' | 'viewer';
+          is_system?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          slug?: string;
+          description?: string | null;
+          base_role?: 'owner' | 'admin' | 'employee' | 'viewer';
+          is_system?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_roles_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -1218,6 +1377,7 @@ export type Database = {
           sms_notify_visit_reminder: boolean;
           email_notify_invoice_overdue: boolean;
           sms_notify_invoice_overdue: boolean;
+          email_notify_customer_message: boolean;
           check_reminder_hold_days: number;
           check_hold_through_deposit: boolean;
           require_consultation_before_quote: boolean;
@@ -1242,6 +1402,7 @@ export type Database = {
           sms_notify_visit_reminder?: boolean;
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
+          email_notify_customer_message?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;
@@ -1266,6 +1427,7 @@ export type Database = {
           sms_notify_visit_reminder?: boolean;
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
+          email_notify_customer_message?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;
@@ -2160,6 +2322,53 @@ export type Database = {
           },
         ];
       };
+      tenant_quote_pipeline_stages: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          sort_order: number;
+          is_hidden: boolean;
+          is_system: boolean;
+          system_status: Database['public']['Enums']['quote_status'] | null;
+          on_enter_status: Database['public']['Enums']['quote_status'] | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          sort_order: number;
+          is_hidden?: boolean;
+          is_system?: boolean;
+          system_status?: Database['public']['Enums']['quote_status'] | null;
+          on_enter_status?: Database['public']['Enums']['quote_status'] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          sort_order?: number;
+          is_hidden?: boolean;
+          is_system?: boolean;
+          system_status?: Database['public']['Enums']['quote_status'] | null;
+          on_enter_status?: Database['public']['Enums']['quote_status'] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_quote_pipeline_stages_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_quotes: {
         Row: {
           id: string;
@@ -2190,6 +2399,7 @@ export type Database = {
           applied_promotion_id: string | null;
           applied_promo_code: string | null;
           wallet_credit_applied_cents: number;
+          pipeline_stage_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -2222,6 +2432,7 @@ export type Database = {
           applied_promotion_id?: string | null;
           applied_promo_code?: string | null;
           wallet_credit_applied_cents?: number;
+          pipeline_stage_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -2254,6 +2465,7 @@ export type Database = {
           applied_promotion_id?: string | null;
           applied_promo_code?: string | null;
           wallet_credit_applied_cents?: number;
+          pipeline_stage_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -3821,6 +4033,14 @@ export type Database = {
       tenant_invoice_source: 'manual' | 'checkout' | 'stripe_billing';
       tenant_payment_method: 'cash' | 'check' | 'zelle' | 'card' | 'ach' | 'other';
       marketing_inquiry_status: 'new' | 'contacted' | 'closed';
+      platform_support_message_side: 'tenant' | 'platform';
+      platform_support_ticket_category: 'billing' | 'technical' | 'account' | 'other';
+      platform_support_ticket_status:
+        | 'open'
+        | 'waiting_on_tenant'
+        | 'waiting_on_platform'
+        | 'resolved'
+        | 'closed';
       quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';
       accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
       scheduled_visit_purpose: 'service' | 'consultation';

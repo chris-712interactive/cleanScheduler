@@ -16,6 +16,11 @@ import {
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
 import { formatOfficeFieldSeatLine } from '@/lib/billing/teamSeats';
 import { startMasqueradeAction } from '@/lib/admin/masqueradeActions';
+import { loadPlatformSupportInbox } from '@/lib/admin/loadPlatformSupportInbox';
+import {
+  PLATFORM_SUPPORT_CATEGORY_LABEL,
+  PLATFORM_SUPPORT_STATUS_LABEL,
+} from '@/lib/admin/platformSupportLabels';
 import styles from '../tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -75,6 +80,12 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
 
   const portalUrl = `${getPublicOrigin(tenant.slug)}/`;
 
+  const supportTickets = await loadPlatformSupportInbox(admin, {
+    filter: 'all',
+    tenantId: tenant.id,
+  });
+  const recentSupportTickets = supportTickets.slice(0, 5);
+
   const billing = normalizeOne(tenant.tenant_billing_accounts);
   const onboarding = normalizeOne(tenant.tenant_onboarding_profiles);
 
@@ -124,6 +135,32 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
                 Enter tenant portal as support
               </Button>
             </form>
+          </Card>
+
+          <Card title="Platform support tickets">
+            {recentSupportTickets.length === 0 ? (
+              <p className={styles.empty}>No support tickets from this tenant.</p>
+            ) : (
+              <ul className={styles.list}>
+                {recentSupportTickets.map((ticket) => (
+                  <li key={ticket.id} className={styles.row}>
+                    <div>
+                      <Link href={`/support?ticket=${ticket.id}&tenant=${tenant.id}`}>
+                        {ticket.subject}
+                      </Link>
+                      <p className={styles.meta}>
+                        {PLATFORM_SUPPORT_STATUS_LABEL[ticket.status] ?? ticket.status}
+                        {' · '}
+                        {PLATFORM_SUPPORT_CATEGORY_LABEL[ticket.category] ?? ticket.category}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className={styles.backWrap}>
+              <Link href={`/support?tenant=${tenant.id}`}>View all tickets →</Link>
+            </p>
           </Card>
 
           <Card title="Workspace">

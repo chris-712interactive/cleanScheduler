@@ -73,6 +73,13 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const consultation = await resolveCustomerConsultationStatus(admin, membership.tenantId, id);
 
   const supabase = createTenantPortalDbClient();
+  const { count: openMessageCount } = await supabase
+    .from('customer_support_threads')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', membership.tenantId)
+    .eq('customer_id', id)
+    .eq('status', 'open');
+
   const { data: row, error } = await supabase
     .from('customers')
     .select(
@@ -149,9 +156,14 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
             : 'Contact details, primary service location, and workspace notes.'
         }
         actions={
-          <Link href="/customers" className={styles.backLink}>
-            ← All customers
-          </Link>
+          <div className={styles.headerActions}>
+            <Link href={`/messages?customer=${id}&filter=open`} className={styles.headerActionLink}>
+              Messages{(openMessageCount ?? 0) > 0 ? ` (${openMessageCount})` : ''}
+            </Link>
+            <Link href="/customers" className={styles.backLink}>
+              ← All customers
+            </Link>
+          </div>
         }
       />
 

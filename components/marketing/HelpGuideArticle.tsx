@@ -3,11 +3,26 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Container';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { HelpGuideFigure } from '@/components/marketing/HelpGuideFigure';
 import { buildFaqJsonLd } from '@/lib/marketing/faqJsonLd';
 import type { HelpGuideArticle } from '@/lib/marketing/seoContent/types';
 import styles from './HelpGuideArticle.module.scss';
 
-export function HelpGuideArticle({ article }: { article: HelpGuideArticle }) {
+const DEFAULT_HUB = {
+  backHref: '/help/cleaning-businesses',
+  backLabel: 'Guides for cleaning businesses',
+  breadcrumbLabel: 'Cleaning businesses',
+};
+
+export function HelpGuideArticle({
+  article,
+  hub = DEFAULT_HUB,
+  showTrialCta = true,
+}: {
+  article: HelpGuideArticle;
+  hub?: { backHref: string; backLabel: string; breadcrumbLabel: string };
+  showTrialCta?: boolean;
+}) {
   const faqJsonLd = article.faq.length > 0 ? buildFaqJsonLd(article.faq) : null;
 
   return (
@@ -24,11 +39,11 @@ export function HelpGuideArticle({ article }: { article: HelpGuideArticle }) {
           <PageHeader
             title={article.title}
             description={article.description}
-            backHref="/help/cleaning-businesses"
-            backLabel="Guides for cleaning businesses"
+            backHref={hub.backHref}
+            backLabel={hub.backLabel}
             breadcrumbs={[
               { label: 'Help', href: '/help' },
-              { label: 'Cleaning businesses', href: '/help/cleaning-businesses' },
+              { label: hub.breadcrumbLabel, href: hub.backHref },
               { label: article.title },
             ]}
           />
@@ -49,6 +64,9 @@ export function HelpGuideArticle({ article }: { article: HelpGuideArticle }) {
                     ))}
                   </ul>
                 ) : null}
+                {section.figures?.map((figure) => (
+                  <HelpGuideFigure key={figure.src} figure={figure} />
+                ))}
                 {section.tip ? <p className={styles.tip}>{section.tip}</p> : null}
               </section>
             ))}
@@ -83,14 +101,16 @@ export function HelpGuideArticle({ article }: { article: HelpGuideArticle }) {
             </nav>
           ) : null}
 
-          <div className={styles.cta}>
-            <p className={styles.ctaLead}>
-              Try these workflows in your workspace — free for 7 days.
-            </p>
-            <Button href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>
-              Start free trial
-            </Button>
-          </div>
+          {showTrialCta ? (
+            <div className={styles.cta}>
+              <p className={styles.ctaLead}>
+                Try these workflows in your workspace — free for 7 days.
+              </p>
+              <Button href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>
+                Start free trial
+              </Button>
+            </div>
+          ) : null}
         </Container>
       </main>
     </>

@@ -47,6 +47,19 @@ import {
   computeQuotePricingWithPromotions,
   saveQuotePromotionSideEffects,
 } from '@/lib/promotions/saveQuotePromotions';
+import {
+  applyQuotePipelineStageOnly,
+  applyQuoteStatusAndStage,
+  isAcceptedSystemStage,
+  loadTenantQuotePipelineStages,
+  resolvePipelineStageIdForStatus,
+  resolveStatusForStage,
+} from '@/lib/tenant/quotePipelineStages';
+import {
+  assertPermission,
+  permissionDeniedMessage,
+  resolveMembershipPermissions,
+} from '@/lib/tenant/resolveMembershipPermissions';
 
 export interface QuoteFormState {
   error?: string;
@@ -82,6 +95,15 @@ export async function moveTenantQuoteStatus(
 
   const membership = await requireTenantPortalAccess(slug, `/quotes/${quoteId}`);
   const admin = createAdminClient();
+  const permissions = await resolveMembershipPermissions(admin, membership);
+  try {
+    assertPermission(permissions, 'quotes.manage');
+  } catch (error) {
+    return {
+      ok: false,
+      error: permissionDeniedMessage(error) ?? 'You cannot change quote status.',
+    };
+  }
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
@@ -133,14 +155,10 @@ export async function moveTenantQuoteStatus(
     }
   }
 
-  const upd = await admin
-    .from('tenant_quotes')
-    .update({ status: nextStatus })
-    .eq('id', quoteId)
-    .eq('tenant_id', membership.tenantId);
+  const upd = await applyQuoteStatusAndStage(admin, membership.tenantId, quoteId, nextStatus);
 
   if (upd.error) {
-    return { ok: false, error: upd.error.message };
+    return { ok: false, error: upd.error };
   }
 
   if (nextStatus === 'sent' && existing.status !== 'sent') {
@@ -178,6 +196,96 @@ export async function moveTenantQuoteStatus(
     const customerId = existing.customer_id as string | undefined;
     if (customerId) invalidateCustomerQuoteBadge(customerId);
   }
+  return { ok: true };
+}
+
+export async function moveTenantQuoteToStage(
+  tenantSlug: string,
+  quoteId: string,
+  stageId: string,
+): Promise<MoveQuoteStatusResult> {
+  const slug = tenantSlug.trim().toLowerCase();
+  if (!slug || !quoteId || !stageId) {
+    return { ok: false, error: 'Missing workspace, quote, or stage.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/quotes/${quoteId}`);
+  const admin = createAdminClient();
+
+  const stages = await loadTenantQuotePipelineStages(admin, membership.tenantId, {
+    includeHidden: true,
+  });
+  const targetStage = stages.find((s) => s.id === stageId);
+  if (!targetStage) {
+    return { ok: false, error: 'Pipeline stage not found.' };
+  }
+
+  if (isAcceptedSystemStage(targetStage)) {
+    return {
+      ok: false,
+      error: 'Accepted is only available when the customer signs in the customer portal.',
+    };
+  }
+
+  const { data: existing, error: fetchError } = await admin
+    .from('tenant_quotes')
+    .select('id, status, is_locked, customer_id, pipeline_stage_id')
+    .eq('id', quoteId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (fetchError || !existing) {
+    return { ok: false, error: 'Quote not found in this workspace.' };
+  }
+
+  if (existing.pipeline_stage_id === stageId) {
+    return { ok: true };
+  }
+
+  if (existing.status === 'expired') {
+    return {
+      ok: false,
+      error:
+        'This quote has expired and cannot be changed. Create a new version from the quote thread if needed.',
+    };
+  }
+
+  if (existing.is_locked) {
+    return {
+      ok: false,
+      error:
+        'This quote was accepted and is frozen. Open it and use “Create new version” to change terms.',
+    };
+  }
+
+  const nextStatus = resolveStatusForStage(targetStage);
+
+  if (!nextStatus) {
+    const stageOnly = await applyQuotePipelineStageOnly(
+      admin,
+      membership.tenantId,
+      quoteId,
+      stageId,
+    );
+    if (stageOnly.error) return { ok: false, error: stageOnly.error };
+    revalidatePath('/tenant/quotes', 'page');
+    revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
+    return { ok: true };
+  }
+
+  const res = await moveTenantQuoteStatus(slug, quoteId, nextStatus);
+  if (!res.ok) return res;
+
+  if (!targetStage.system_status) {
+    const stageOnly = await applyQuotePipelineStageOnly(
+      admin,
+      membership.tenantId,
+      quoteId,
+      stageId,
+    );
+    if (stageOnly.error) return { ok: false, error: stageOnly.error };
+  }
+
   return { ok: true };
 }
 
@@ -587,6 +695,8 @@ export async function createTenantQuote(
     };
   }
 
+  await applyQuoteStatusAndStage(admin, membership.tenantId, newId, initialStatus);
+
   await saveQuotePromotionSideEffects(admin, {
     tenantId: membership.tenantId,
     quoteId: newId,
@@ -808,6 +918,8 @@ export async function updateTenantQuote(
     return { error: rpc.error.message };
   }
 
+  await applyQuoteStatusAndStage(admin, membership.tenantId, quoteId, status);
+
   await saveQuotePromotionSideEffects(admin, {
     tenantId: membership.tenantId,
     quoteId,
@@ -910,6 +1022,11 @@ export async function createTenantQuoteAmendment(
 
   const nextVersion = (topRow?.version_number ?? prior.version_number) + 1;
 
+  const draftStageId = await resolvePipelineStageIdForStatus(admin, membership.tenantId, 'draft');
+  if (!draftStageId) {
+    return { error: 'Quote pipeline is not configured for this workspace.' };
+  }
+
   const { data: inserted, error: insErr } = await admin
     .from('tenant_quotes')
     .insert({
@@ -918,6 +1035,7 @@ export async function createTenantQuoteAmendment(
       property_id: prior.property_id,
       title: prior.title,
       status: 'draft',
+      pipeline_stage_id: draftStageId,
       amount_cents: prior.amount_cents,
       currency: prior.currency,
       tax_mode: prior.tax_mode,

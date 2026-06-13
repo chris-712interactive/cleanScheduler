@@ -1,11 +1,15 @@
 import { ALL_SEO_MARKETING_PAGES, WHY_CLEANSCHEDULER_PAGE } from './marketingPages';
 import { CLEANING_BUSINESS_ARTICLES, CLEANING_BUSINESS_HUB } from './helpArticles';
+import { CUSTOMER_HELP_ARTICLES, CUSTOMER_HELP_HUB } from './customerHelpArticles';
 import type { SeoMarketingPage } from './types';
 
 export { ALL_SEO_MARKETING_PAGES, WHY_CLEANSCHEDULER_PAGE };
 export { CLEANING_BUSINESS_ARTICLES, CLEANING_BUSINESS_HUB };
+export { CUSTOMER_HELP_ARTICLES, CUSTOMER_HELP_HUB };
+export { COMPETITOR_COMPARE_PAGES } from './competitorComparePages';
 export * from './marketingPages';
 export * from './helpArticles';
+export * from './customerHelpArticles';
 export type * from './types';
 
 export function getAllPublicSeoPaths(): Array<{
@@ -31,7 +35,13 @@ export function getAllPublicSeoPaths(): Array<{
     changeFrequency: article.changeFrequency,
   }));
 
-  return [...marketing, helpHub, ...helpArticles];
+  const customerHelpArticles = CUSTOMER_HELP_ARTICLES.map((article) => ({
+    path: article.path,
+    priority: article.sitemapPriority,
+    changeFrequency: article.changeFrequency,
+  }));
+
+  return [...marketing, helpHub, ...helpArticles, ...customerHelpArticles];
 }
 
 export function buildPageMetadata(page: SeoMarketingPage) {

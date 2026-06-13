@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Button } from '@/components/ui/Button';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import type { MemberDayWindow, MemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
@@ -60,7 +61,7 @@ export function EmployeeAvailabilityForm({
     .join(', ')} · ${tenantDefaults.workDayStart}–${tenantDefaults.workDayEnd}`;
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <form onSubmit={handleSubmit} className={styles.availabilityForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="target_user_id" value={targetUserId} />
 
@@ -168,9 +169,9 @@ export function EmployeeAvailabilityForm({
         </>
       )}
 
-      <button type="submit" className={styles.saveButton} disabled={pending}>
+      <Button type="submit" variant="primary" disabled={pending}>
         {pending ? 'Saving…' : 'Save availability'}
-      </button>
+      </Button>
     </form>
   );
 }
