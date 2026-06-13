@@ -43,6 +43,44 @@ export function SeoMarketingPage({ page }: { page: SeoMarketingPageContent }) {
           </Container>
         </section>
 
+        {page.comparisonTable ? (
+          <section className={styles.comparisonSection} aria-labelledby="feature-comparison">
+            <Container size="lg">
+              <Stack gap={4}>
+                <Stack gap={2} align="center" as="div">
+                  <h2 id="feature-comparison" className={styles.comparisonTitle}>
+                    Feature comparison
+                  </h2>
+                  <p className={styles.comparisonLead}>
+                    Clean Scheduler vs {page.comparisonTable.competitorName}. Pricing and features
+                    last verified {page.comparisonTable.lastVerified}.
+                  </p>
+                </Stack>
+                <div className={styles.comparisonTableWrap}>
+                  <table className={styles.comparisonTable}>
+                    <thead>
+                      <tr>
+                        <th scope="col">Feature</th>
+                        <th scope="col">Clean Scheduler</th>
+                        <th scope="col">{page.comparisonTable.competitorName}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {page.comparisonTable.rows.map((row) => (
+                        <tr key={row.feature}>
+                          <th scope="row">{row.feature}</th>
+                          <td>{row.cleanScheduler}</td>
+                          <td>{row.competitor}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Stack>
+            </Container>
+          </section>
+        ) : null}
+
         <section className={styles.content}>
           <Container size="md">
             <div className={styles.sections}>

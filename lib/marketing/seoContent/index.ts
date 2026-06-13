@@ -6,6 +6,7 @@ import type { SeoMarketingPage } from './types';
 export { ALL_SEO_MARKETING_PAGES, WHY_CLEANSCHEDULER_PAGE };
 export { CLEANING_BUSINESS_ARTICLES, CLEANING_BUSINESS_HUB };
 export { CUSTOMER_HELP_ARTICLES, CUSTOMER_HELP_HUB };
+export { COMPETITOR_COMPARE_PAGES } from './competitorComparePages';
 export * from './marketingPages';
 export * from './helpArticles';
 export * from './customerHelpArticles';

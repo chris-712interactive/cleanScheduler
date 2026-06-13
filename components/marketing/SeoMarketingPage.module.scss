@@ -61,6 +61,72 @@
   gap: var(--space-3);
 }
 
+.comparisonSection {
+  padding: 0 0 var(--space-8);
+}
+
+.comparisonTitle {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.comparisonLead {
+  max-width: 52ch;
+  margin: 0 auto;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.comparisonTableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.comparisonTable {
+  width: 100%;
+  min-width: 40rem;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+
+  th,
+  td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  thead th {
+    background: var(--color-bg-subtle);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  tbody th {
+    font-weight: 600;
+    color: var(--color-text);
+    width: 28%;
+  }
+
+  tbody td {
+    color: var(--color-text-muted);
+    width: 36%;
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
 .content {
   padding: 0 0 var(--space-10);
 }
