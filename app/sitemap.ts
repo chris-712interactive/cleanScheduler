@@ -6,6 +6,7 @@ const MARKETING_PATHS = [
   { path: '/', priority: 1, changeFrequency: 'weekly' as const },
   { path: '/pricing', priority: 0.9, changeFrequency: 'weekly' as const },
   { path: '/start-trial', priority: 0.9, changeFrequency: 'monthly' as const },
+  { path: '/compare', priority: 0.75, changeFrequency: 'monthly' as const },
   { path: '/contact', priority: 0.7, changeFrequency: 'monthly' as const },
   { path: '/security', priority: 0.6, changeFrequency: 'monthly' as const },
   {

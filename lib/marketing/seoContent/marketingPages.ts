@@ -1,3 +1,4 @@
+import { COMPETITOR_COMPARE_PAGES } from './competitorComparePages';
 import type { SeoMarketingPage } from './types';
 
 export const FOR_PAGES: SeoMarketingPage[] = [
@@ -75,6 +76,8 @@ export const FOR_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
+      { href: '/compare/vs-zenmaid', label: 'vs ZenMaid' },
+      { href: '/compare/vs-launch27', label: 'vs Launch27' },
       { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning software' },
       { href: '/compare/spreadsheets-and-texts', label: 'Spreadsheets vs Clean Scheduler' },
       { href: '/pricing', label: 'View pricing' },
@@ -358,6 +361,8 @@ export const COMPARE_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
+      { href: '/compare/vs-jobber', label: 'vs Jobber' },
+      { href: '/compare/vs-zenmaid', label: 'vs ZenMaid' },
       {
         href: '/compare/vs-generic-field-service-software',
         label: 'vs generic field service tools',
@@ -415,6 +420,7 @@ export const COMPARE_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
+      { href: '/compare/vs-jobber', label: 'vs Jobber' },
       { href: '/compare/spreadsheets-and-texts', label: 'Spreadsheets vs software' },
       { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning' },
       { href: '/pricing', label: 'Pricing' },
@@ -422,6 +428,7 @@ export const COMPARE_PAGES: SeoMarketingPage[] = [
     sitemapPriority: 0.75,
     changeFrequency: 'monthly',
   },
+  ...COMPETITOR_COMPARE_PAGES,
 ];
 
 export const WHY_CLEANSCHEDULER_PAGE: SeoMarketingPage = {
@@ -482,6 +489,7 @@ export const WHY_CLEANSCHEDULER_PAGE: SeoMarketingPage = {
     },
   ],
   relatedLinks: [
+    { href: '/compare', label: 'Compare Clean Scheduler' },
     { href: '/for/residential-cleaning-companies', label: 'Residential cleaning' },
     { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning' },
     { href: '/pricing', label: 'Pricing' },
