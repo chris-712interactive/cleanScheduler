@@ -7,7 +7,9 @@ import { Stack } from '@/components/layout/Stack';
 import { FinalCta } from '@/components/marketing/FinalCta';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { MarketingNav } from '@/components/marketing/MarketingNav';
+import { buildCompareHubJsonLd } from '@/lib/marketing/seoJsonLd';
 import { COMPARE_PAGES } from '@/lib/marketing/seoContent';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '@/components/marketing/SeoMarketingPage.module.scss';
 
@@ -27,8 +29,18 @@ export const metadata: Metadata = {
 };
 
 export default function CompareHubPage() {
+  const compareHubJsonLd = buildCompareHubJsonLd(COMPARE_PAGES, getPublicOrigin(null), {
+    title: pageTitle,
+    description: pageDescription,
+  });
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(compareHubJsonLd) }}
+      />
+
       <MarketingNav />
 
       <main className={styles.main}>
