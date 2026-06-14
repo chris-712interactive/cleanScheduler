@@ -6,21 +6,20 @@ import { Stack } from '@/components/layout/Stack';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { MarketingNav } from '@/components/marketing/MarketingNav';
 import { FinalCta } from '@/components/marketing/FinalCta';
-import { buildFaqJsonLd } from '@/lib/marketing/faqJsonLd';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { buildSeoPageJsonLd } from '@/lib/marketing/seoJsonLd';
 import type { SeoMarketingPage as SeoMarketingPageContent } from '@/lib/marketing/seoContent/types';
 import styles from './SeoMarketingPage.module.scss';
 
 export function SeoMarketingPage({ page }: { page: SeoMarketingPageContent }) {
-  const faqJsonLd = page.faq.length > 0 ? buildFaqJsonLd(page.faq) : null;
+  const seoJsonLd = buildSeoPageJsonLd(page, getPublicOrigin(null));
 
   return (
     <>
-      {faqJsonLd ? (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      ) : null}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(seoJsonLd) }}
+      />
 
       <MarketingNav />
 
