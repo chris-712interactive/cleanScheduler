@@ -5,12 +5,12 @@ import { MarketingLogo } from '@/components/marketing/MarketingLogo';
 import styles from './MarketingNav.module.scss';
 
 const NAV_LINKS = [
-  { href: '/#features', label: 'Features' },
+  { href: '/for/commercial-cleaning-companies', label: 'Commercial' },
+  { href: '/features/scheduling-and-dispatch', label: 'Scheduling' },
+  { href: '/compare', label: 'Compare' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/#how-it-works', label: 'How it works' },
-  { href: '/help/faq', label: 'FAQ' },
   { href: '/help', label: 'Help' },
-  { href: '/security', label: 'Security' },
   { href: '/contact', label: 'Contact' },
 ] as const;
 

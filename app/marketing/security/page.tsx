@@ -5,13 +5,15 @@ import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { MarketingNav } from '@/components/marketing/MarketingNav';
 import { ThirdPartyServicesSection } from '@/components/marketing/ThirdPartyServicesSection';
 import { DataRetentionScheduleTable } from '@/components/marketing/DataRetentionScheduleTable';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../legal.module.scss';
 
-export const metadata = {
-  title: `Security & Trust · ${PRODUCT_NAME}`,
+export const metadata = buildMarketingPageMetadata({
+  path: '/security',
+  title: 'Security & Trust',
   description: `How ${PRODUCT_NAME} protects tenant and customer data — infrastructure, access controls, subprocessors, and retention.`,
-};
+});
 
 export default function SecurityPage() {
   return (

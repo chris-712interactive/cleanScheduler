@@ -9,6 +9,8 @@ const COMPETITOR_URLS: Record<string, string> = {
   Jobber: 'https://www.getjobber.com',
   ZenMaid: 'https://zenmaid.com',
   Launch27: 'https://www.launch27.com',
+  'Housecall Pro': 'https://www.housecallpro.com',
+  Swept: 'https://www.sweptsoftware.com',
 };
 
 type BreadcrumbItem = {
@@ -200,6 +202,99 @@ export function buildSeoPageJsonLd(page: SeoMarketingPage, origin: string): Json
   return {
     '@context': SCHEMA_CONTEXT,
     '@graph': graph,
+  };
+}
+
+type HomePageInput = {
+  title: string;
+  description: string;
+};
+
+/** Homepage structured data: Organization, WebSite, SoftwareApplication, FAQ. */
+export function buildHomePageJsonLd(
+  origin: string,
+  faq: MarketingFaqItem[],
+  page: HomePageInput,
+): JsonLdNode {
+  const pageUrl = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+  const pageId = `${pageUrl}/#webpage`;
+
+  const graph: JsonLdNode[] = [
+    buildOrganization(origin),
+    buildWebsite(origin),
+    buildCleanSchedulerSoftware(origin),
+    {
+      '@type': 'WebPage',
+      '@id': pageId,
+      url: `${pageUrl}/`,
+      name: page.title,
+      description: page.description,
+      inLanguage: 'en-US',
+      isPartOf: { '@id': `${origin}/#website` },
+      mainEntity: { '@id': `${origin}/#software` },
+    },
+  ];
+
+  if (faq.length > 0) {
+    graph.push(buildFaqPageNode(`${pageUrl}/`, faq));
+    const webPageNode = graph.find((node) => node['@id'] === pageId) as JsonLdNode;
+    webPageNode.hasPart = { '@id': `${pageUrl}/#faq` };
+  }
+
+  return {
+    '@context': SCHEMA_CONTEXT,
+    '@graph': graph,
+  };
+}
+
+type PricingTierOffer = {
+  tier: string;
+  displayName: string;
+  monthlyPriceUsd: number;
+};
+
+/** Pricing page structured data with tiered SoftwareApplication offers. */
+export function buildPricingPageJsonLd(origin: string, tiers: PricingTierOffer[]): JsonLdNode {
+  const pageUrl = absoluteUrl(origin, '/pricing');
+  const pageId = `${pageUrl}#webpage`;
+
+  return {
+    '@context': SCHEMA_CONTEXT,
+    '@graph': [
+      buildOrganization(origin),
+      buildWebsite(origin),
+      {
+        '@type': 'WebPage',
+        '@id': pageId,
+        url: pageUrl,
+        name: 'Clean Scheduler pricing',
+        description:
+          'Starter, Business, and Pro plans for residential and commercial cleaning businesses.',
+        inLanguage: 'en-US',
+        isPartOf: { '@id': `${origin}/#website` },
+        mainEntity: { '@id': `${pageUrl}#software` },
+      },
+      {
+        '@type': 'SoftwareApplication',
+        '@id': `${pageUrl}#software`,
+        name: PRODUCT_NAME,
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web browser',
+        url: origin,
+        offers: tiers.map((tier) => ({
+          '@type': 'Offer',
+          name: `${tier.displayName} plan`,
+          price: String(tier.monthlyPriceUsd),
+          priceCurrency: 'USD',
+          description: `${tier.displayName} — $${tier.monthlyPriceUsd}/month`,
+          url: pageUrl,
+        })),
+      },
+      buildBreadcrumbList(origin, pageUrl, [
+        { name: 'Home', path: '/' },
+        { name: 'Pricing', path: '/pricing' },
+      ]),
+    ],
   };
 }
 

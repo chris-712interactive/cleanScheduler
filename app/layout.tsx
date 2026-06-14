@@ -4,6 +4,7 @@ import '@/styles/globals.scss';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { themeScript } from '@/components/theme/themeScript';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { DEFAULT_OG_IMAGE } from '@/lib/marketing/marketingPageMetadata';
 import { PRODUCT_NAME } from '@/lib/legal/site';
 
 export const metadata: Metadata = {
@@ -15,6 +16,15 @@ export const metadata: Metadata = {
   description:
     'Multi-tenant scheduling, quoting, billing, and customer-service platform for residential and commercial cleaning businesses.',
   applicationName: PRODUCT_NAME,
+  openGraph: {
+    siteName: PRODUCT_NAME,
+    type: 'website',
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [DEFAULT_OG_IMAGE.url],
+  },
   manifest: '/favicon/manifest.json',
   icons: {
     icon: [

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { HelpGuideArticle } from '@/components/marketing/HelpGuideArticle';
+import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import { PRODUCT_NAME } from '@/lib/legal/site';
 import {
   CUSTOMER_HELP_ARTICLES,
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: article.description,
       type: 'article',
     },
+    ...NOINDEX_PAGE_METADATA,
   };
 }
 

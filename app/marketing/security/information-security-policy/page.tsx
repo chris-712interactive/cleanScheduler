@@ -4,6 +4,7 @@ import { Container } from '@/components/layout/Container';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { MarketingNav } from '@/components/marketing/MarketingNav';
 import { PolicySections } from '@/components/marketing/PolicySections';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import {
   INFORMATION_SECURITY_POLICY_SECTIONS,
   ISP_POLICY_OWNER,
@@ -12,10 +13,11 @@ import {
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../../legal.module.scss';
 
-export const metadata = {
-  title: `Information Security Policy · ${PRODUCT_NAME}`,
+export const metadata = buildMarketingPageMetadata({
+  path: '/security/information-security-policy',
+  title: 'Information Security Policy',
   description: `Formal information security policy for ${PRODUCT_NAME} — scope, encryption, vulnerability management, and incident response.`,
-};
+});
 
 export default function InformationSecurityPolicyPage() {
   return (

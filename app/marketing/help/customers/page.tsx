@@ -2,17 +2,21 @@ import Link from 'next/link';
 import { Container } from '@/components/layout/Container';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { buildHelpPageMetadata } from '@/lib/help/metadata';
+import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import {
   CUSTOMER_HELP_ARTICLES,
   CUSTOMER_HELP_HUB,
 } from '@/lib/marketing/seoContent/customerHelpArticles';
 import styles from '@/components/marketing/help/help.module.scss';
 
-export const metadata = buildHelpPageMetadata({
-  path: CUSTOMER_HELP_HUB.path,
-  title: CUSTOMER_HELP_HUB.title,
-  description: CUSTOMER_HELP_HUB.description,
-});
+export const metadata = {
+  ...buildHelpPageMetadata({
+    path: CUSTOMER_HELP_HUB.path,
+    title: CUSTOMER_HELP_HUB.title,
+    description: CUSTOMER_HELP_HUB.description,
+  }),
+  ...NOINDEX_PAGE_METADATA,
+};
 
 export default function CustomerHelpPage() {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Container } from '@/components/layout/Container';
@@ -6,10 +7,12 @@ import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { needsMfaChallenge } from '@/lib/auth/mfa';
 import { getAuthContext } from '@/lib/auth/session';
 import { MfaChallengeForm } from './MfaChallengeForm';
+import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import styles from '../sign-in.module.scss';
 
-export const metadata = {
-  title: 'Two-factor verification · Clean Scheduler',
+export const metadata: Metadata = {
+  ...NOINDEX_PAGE_METADATA,
+  title: 'Two-factor verification',
 };
 
 interface PageProps {

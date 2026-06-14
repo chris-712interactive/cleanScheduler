@@ -2,13 +2,15 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Container } from '@/components/layout/Container';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../legal.module.scss';
 
-export const metadata = {
-  title: `Terms of Service · ${PRODUCT_NAME}`,
+export const metadata = buildMarketingPageMetadata({
+  path: '/terms',
+  title: 'Terms of Service',
   description: `Terms governing use of the ${PRODUCT_NAME} platform, trials, and workspaces.`,
-};
+});
 
 export default function TermsOfServicePage() {
   return (

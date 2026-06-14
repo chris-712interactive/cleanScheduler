@@ -8,25 +8,20 @@ import { FinalCta } from '@/components/marketing/FinalCta';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { MarketingNav } from '@/components/marketing/MarketingNav';
 import { buildCompareHubJsonLd } from '@/lib/marketing/seoJsonLd';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { COMPARE_PAGES } from '@/lib/marketing/seoContent';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
-import { PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '@/components/marketing/SeoMarketingPage.module.scss';
 
 const pageTitle = 'Compare Clean Scheduler';
 const pageDescription =
-  'Honest comparisons of Clean Scheduler vs Jobber, ZenMaid, Launch27, spreadsheets, and generic field service tools for cleaning businesses.';
+  'Honest comparisons of Clean Scheduler vs Jobber, ZenMaid, Launch27, Housecall Pro, Swept, spreadsheets, and generic field service tools for cleaning businesses.';
 
-export const metadata: Metadata = {
-  title: `${pageTitle} | ${PRODUCT_NAME}`,
+export const metadata: Metadata = buildMarketingPageMetadata({
+  path: '/compare',
+  title: pageTitle,
   description: pageDescription,
-  alternates: { canonical: '/compare' },
-  openGraph: {
-    title: pageTitle,
-    description: pageDescription,
-    type: 'website',
-  },
-};
+});
 
 export default function CompareHubPage() {
   const compareHubJsonLd = buildCompareHubJsonLd(COMPARE_PAGES, getPublicOrigin(null), {
