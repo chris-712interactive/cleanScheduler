@@ -1,6 +1,7 @@
 import { ALL_SEO_MARKETING_PAGES, WHY_CLEANSCHEDULER_PAGE } from './marketingPages';
 import { CLEANING_BUSINESS_ARTICLES, CLEANING_BUSINESS_HUB } from './helpArticles';
 import { CUSTOMER_HELP_ARTICLES, CUSTOMER_HELP_HUB } from './customerHelpArticles';
+import { DEFAULT_OG_IMAGE } from '@/lib/marketing/marketingPageMetadata';
 import type { SeoMarketingPage } from './types';
 
 export { ALL_SEO_MARKETING_PAGES, WHY_CLEANSCHEDULER_PAGE };
@@ -35,13 +36,7 @@ export function getAllPublicSeoPaths(): Array<{
     changeFrequency: article.changeFrequency,
   }));
 
-  const customerHelpArticles = CUSTOMER_HELP_ARTICLES.map((article) => ({
-    path: article.path,
-    priority: article.sitemapPriority,
-    changeFrequency: article.changeFrequency,
-  }));
-
-  return [...marketing, helpHub, ...helpArticles, ...customerHelpArticles];
+  return [...marketing, helpHub, ...helpArticles];
 }
 
 export function buildPageMetadata(page: SeoMarketingPage) {
@@ -53,6 +48,13 @@ export function buildPageMetadata(page: SeoMarketingPage) {
       title: page.metaTitle,
       description: page.metaDescription,
       type: 'article' as const,
+      images: [DEFAULT_OG_IMAGE],
+    },
+    twitter: {
+      card: 'summary_large_image' as const,
+      title: page.metaTitle,
+      description: page.metaDescription,
+      images: [DEFAULT_OG_IMAGE.url],
     },
   };
 }

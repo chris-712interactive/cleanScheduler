@@ -145,6 +145,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
+      { href: '/compare/vs-housecall-pro', label: 'vs Housecall Pro' },
       { href: '/compare/vs-zenmaid', label: 'vs ZenMaid' },
       { href: '/compare/vs-launch27', label: 'vs Launch27' },
       {
@@ -467,6 +468,267 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
     ctaTitle: 'Run your next week of cleans in Clean Scheduler',
     ctaLead:
       'Try quotes, scheduling, and invoicing free for 7 days — then decide if it beats your current maid service platform.',
+    sitemapPriority: 0.8,
+    changeFrequency: 'monthly',
+  },
+  {
+    slug: 'vs-housecall-pro',
+    path: '/compare/vs-housecall-pro',
+    metaTitle: 'Clean Scheduler vs Housecall Pro for cleaning businesses',
+    metaDescription:
+      'Compare Clean Scheduler and Housecall Pro for residential and commercial cleaning companies. Features, pricing, pros and cons. 7-day free trial.',
+    eyebrow: 'Compare',
+    headline: 'Clean Scheduler vs Housecall Pro',
+    lead: 'Housecall Pro is a popular all-in-one platform for home service businesses. Here is how it compares to Clean Scheduler for cleaning companies that need quote-to-invoice workflows and bookkeeper-friendly AR.',
+    comparisonTable: {
+      competitorName: 'Housecall Pro',
+      lastVerified: PRICING_VERIFIED,
+      rows: [
+        {
+          feature: 'Built for',
+          cleanScheduler: 'Residential & commercial cleaning',
+          competitor: 'Home services (HVAC, plumbing, cleaning, etc.)',
+        },
+        {
+          feature: 'Starting price',
+          cleanScheduler: '$39/mo (Starter)',
+          competitor: '~$79/mo (Basic, 1 user)',
+        },
+        {
+          feature: 'Quote pipeline',
+          cleanScheduler: 'Line-item quotes → accepted job → first visit',
+          competitor: 'Estimates & proposals',
+        },
+        {
+          feature: 'Recurring scheduling',
+          cleanScheduler: 'Recurring visit rules separate from billing',
+          competitor: 'Recurring jobs & service plans',
+        },
+        {
+          feature: 'Customer portal',
+          cleanScheduler: 'Business+ (reschedule, pay invoices)',
+          competitor: 'Customer portal on higher tiers',
+        },
+        {
+          feature: 'Zelle / bank deposit matching',
+          cleanScheduler: 'Plaid reconciliation on Business+',
+          competitor: 'Not built in',
+        },
+        {
+          feature: 'Payroll export',
+          cleanScheduler: 'ADP, Gusto, QuickBooks layouts (Business+)',
+          competitor: 'Timesheets; limited payroll export',
+        },
+        {
+          feature: 'Commercial / janitorial',
+          cleanScheduler: 'Multi-property accounts & contract AR',
+          competitor: 'General field service; less janitorial depth',
+        },
+        {
+          feature: 'Free trial',
+          cleanScheduler: '7 days, no credit card',
+          competitor: '14-day trial',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: 'The short answer',
+        paragraphs: [
+          'Choose Housecall Pro if you want a mature home-services platform with strong consumer brand recognition, built-in marketing tools, and a large integration ecosystem.',
+          'Choose Clean Scheduler if you run a cleaning business that needs cleaning-specific quote pipelines, mixed residential and commercial books, and month-end AR with Zelle deposit matching.',
+        ],
+      },
+      {
+        title: 'Where Housecall Pro wins',
+        bullets: [
+          'Established brand in home services with extensive marketing features',
+          'Online booking and consumer-facing scheduling tools',
+          'Large user community and integration marketplace',
+          'Invoicing, payments, and dispatch in one familiar package',
+          'Strong mobile apps for field technicians',
+        ],
+      },
+      {
+        title: 'Where Clean Scheduler wins',
+        bullets: [
+          'Purpose-built for residential and commercial cleaning workflows',
+          'Lower entry price ($39/mo vs ~$79/mo Basic)',
+          'Bank deposit reconciliation for Zelle and ACH (Business+)',
+          'Month-end close: collections, payment audits, sales tax summary',
+          'Quote pipeline designed for cleaning scopes and add-ons',
+          '7-day free trial with no credit card required',
+        ],
+        link: { href: '/start-trial', label: 'Start a 7-day free trial' },
+      },
+      {
+        title: 'Pricing reality check',
+        paragraphs: [
+          `Pricing last verified ${PRICING_VERIFIED}. Housecall Pro Basic starts around $79/mo for one user; Essentials and Max tiers add automations, marketing, and more seats at higher price points.`,
+          'Clean Scheduler Starter is $39/mo; Business is $129/mo with customer portal, payroll export, and bank reconciliation; Pro is $299/mo with SMS and advanced analytics.',
+          'For solo and small cleaning teams, Clean Scheduler Starter is often half the entry cost of Housecall Pro Basic while including cleaning-specific month-end reports.',
+        ],
+        link: { href: '/pricing', label: 'View Clean Scheduler pricing' },
+      },
+    ],
+    faq: [
+      {
+        question: 'Is Housecall Pro good for commercial cleaning?',
+        answer:
+          'Housecall Pro works for general field service including some commercial work, but it lacks the janitorial-focused AR and multi-property account depth Clean Scheduler provides for contract operators.',
+      },
+      {
+        question: 'Which has better pricing for small cleaning teams?',
+        answer:
+          'Clean Scheduler Starter at $39/mo is typically less expensive than Housecall Pro Basic at ~$79/mo for comparable core scheduling and invoicing.',
+      },
+      {
+        question: 'Can I migrate from Housecall Pro to Clean Scheduler?',
+        answer:
+          'Yes. Import active customers, schedule the next two weeks of visits, and run new invoices from Clean Scheduler while finishing open AR in Housecall Pro.',
+      },
+    ],
+    relatedLinks: [
+      { href: '/compare/vs-jobber', label: 'vs Jobber' },
+      { href: '/compare/vs-swept', label: 'vs Swept' },
+      { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning software' },
+      { href: '/pricing', label: 'Pricing' },
+    ],
+    ctaTitle: 'Try Clean Scheduler alongside Housecall Pro',
+    ctaLead:
+      'Run a parallel 7-day trial on your next quotes and recurring visits — no credit card required.',
+    sitemapPriority: 0.8,
+    changeFrequency: 'monthly',
+  },
+  {
+    slug: 'vs-swept',
+    path: '/compare/vs-swept',
+    metaTitle: 'Clean Scheduler vs Swept for commercial cleaning',
+    metaDescription:
+      'Compare Clean Scheduler and Swept for janitorial and commercial cleaning companies. Scheduling, inspections, AR, and when each platform fits. Free trial.',
+    eyebrow: 'Compare',
+    headline: 'Clean Scheduler vs Swept',
+    lead: 'Swept is built for commercial janitorial operators with inspections and quality control. Clean Scheduler covers commercial and residential with deeper quote-to-invoice and bookkeeper workflows. Here is how they compare.',
+    comparisonTable: {
+      competitorName: 'Swept',
+      lastVerified: PRICING_VERIFIED,
+      rows: [
+        {
+          feature: 'Primary focus',
+          cleanScheduler: 'Residential & commercial cleaning',
+          competitor: 'Commercial janitorial & inspections',
+        },
+        {
+          feature: 'Residential maid services',
+          cleanScheduler: 'Core use case',
+          competitor: 'Not a primary focus',
+        },
+        {
+          feature: 'Starting price',
+          cleanScheduler: '$39/mo (Starter)',
+          competitor: 'Custom pricing (per contract/site)',
+        },
+        {
+          feature: 'Quality inspections',
+          cleanScheduler: 'Proof-of-service photos (Business+)',
+          competitor: 'Core product — inspection checklists',
+        },
+        {
+          feature: 'Quote pipeline',
+          cleanScheduler: 'Full quote stages with line items',
+          competitor: 'Contract-focused onboarding',
+        },
+        {
+          feature: 'Invoicing & AR',
+          cleanScheduler: 'Invoices, collections, deposit matching',
+          competitor: 'Billing & contract management',
+        },
+        {
+          feature: 'Payroll export',
+          cleanScheduler: 'ADP, Gusto, QuickBooks (Business+)',
+          competitor: 'Time tracking; payroll integrations vary',
+        },
+        {
+          feature: 'Mixed books',
+          cleanScheduler: 'Residential + commercial in one workspace',
+          competitor: 'Commercial-first',
+        },
+        {
+          feature: 'Free trial',
+          cleanScheduler: '7 days, no credit card',
+          competitor: 'Demo-based sales',
+        },
+      ],
+    },
+    sections: [
+      {
+        title: 'The short answer',
+        paragraphs: [
+          'Choose Swept if you are a commercial-only janitorial company that prioritizes inspection checklists, quality audits, and contract compliance tracking above all else.',
+          'Choose Clean Scheduler if you run mixed residential and commercial books and need quote pipelines, customer portals, Zelle deposit matching, and month-end close reports in one workspace.',
+        ],
+      },
+      {
+        title: 'Where Swept wins',
+        bullets: [
+          'Purpose-built inspection and quality-control workflows for janitorial contracts',
+          'Strong fit for multi-site commercial operators focused on compliance',
+          'Contract-centric onboarding and site management',
+          'Designed for franchise and large janitorial organizations',
+          'Client communication tools tuned for B2B facility managers',
+        ],
+      },
+      {
+        title: 'Where Clean Scheduler wins',
+        bullets: [
+          'Residential and commercial cleaning in one workspace',
+          'Transparent self-serve pricing from $39/mo',
+          'Quote pipeline with line items for new commercial scopes',
+          'Bank deposit matching for Zelle and ACH payments',
+          'Payroll export, payment audits, and sales tax summary for bookkeepers',
+          '7-day free trial without a sales demo',
+        ],
+        link: { href: '/start-trial', label: 'Start a 7-day free trial' },
+      },
+      {
+        title: 'Pricing reality check',
+        paragraphs: [
+          `Pricing last verified ${PRICING_VERIFIED}. Swept typically uses custom contract-based pricing for commercial operators — contact their sales team for quotes.`,
+          'Clean Scheduler publishes transparent tiers: Starter $39/mo, Business $129/mo, Pro $299/mo. Solo operators and growing teams can start immediately without a sales cycle.',
+          'If you need inspections above all else, Swept may justify custom pricing. If you need AR, mixed books, and self-serve onboarding, Clean Scheduler is faster to try.',
+        ],
+        link: { href: '/pricing', label: 'View Clean Scheduler pricing' },
+      },
+    ],
+    faq: [
+      {
+        question: 'Does Clean Scheduler have janitorial inspection checklists like Swept?',
+        answer:
+          'Clean Scheduler offers proof-of-service photos on Business+ but does not match Swept’s depth of inspection audit workflows. If inspections are your primary product requirement, evaluate Swept alongside Clean Scheduler.',
+      },
+      {
+        question: 'Can Clean Scheduler handle large commercial contracts?',
+        answer:
+          'Yes. Multi-property accounts, recurring visit rules per site, collections reports, and net-term invoicing support janitorial operators growing into commercial work.',
+      },
+      {
+        question: 'Which is better for a company with both homes and offices?',
+        answer:
+          'Clean Scheduler. Swept is commercial-first. Mixed residential and commercial books are a core Clean Scheduler use case.',
+      },
+    ],
+    relatedLinks: [
+      { href: '/compare/vs-housecall-pro', label: 'vs Housecall Pro' },
+      { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning scheduling' },
+      {
+        href: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
+        label: 'How to get commercial cleaning accounts',
+      },
+      { href: '/pricing', label: 'Pricing' },
+    ],
+    ctaTitle: 'Run commercial and residential accounts in one workspace',
+    ctaLead:
+      'Start a 7-day free trial and schedule your next janitorial route alongside residential homes.',
     sitemapPriority: 0.8,
     changeFrequency: 'monthly',
   },

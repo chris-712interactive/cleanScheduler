@@ -13,7 +13,7 @@ import { PricingTable } from '@/components/marketing/PricingTable';
 import { SocialProof } from '@/components/marketing/SocialProof';
 import { ThreePortals } from '@/components/marketing/ThreePortals';
 import { getPlatformPricingDisplay } from '@/lib/billing/platformPricing';
-import { buildFaqJsonLd } from '@/lib/marketing/faqJsonLd';
+import { buildHomePageJsonLd } from '@/lib/marketing/seoJsonLd';
 import {
   MARKETING_FAQ,
   MARKETING_FEATURE_SHOWCASES,
@@ -24,6 +24,7 @@ import {
   MARKETING_THREE_PORTALS,
 } from '@/lib/marketing/homepageContent';
 import { PRODUCT_NAME } from '@/lib/legal/site';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import styles from './landing.module.scss';
 
 const pageTitle = 'Run your cleaning business from one console';
@@ -60,13 +61,16 @@ export const metadata: Metadata = {
 
 export default async function MarketingHome() {
   const tiers = await getPlatformPricingDisplay();
-  const faqJsonLd = buildFaqJsonLd(MARKETING_FAQ);
+  const homeJsonLd = buildHomePageJsonLd(getPublicOrigin(null), MARKETING_FAQ, {
+    title: pageTitle,
+    description: pageDescription,
+  });
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd) }}
       />
 
       <MarketingNav />

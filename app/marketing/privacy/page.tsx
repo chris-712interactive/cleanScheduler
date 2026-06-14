@@ -3,13 +3,15 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Container } from '@/components/layout/Container';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { ThirdPartyServicesSection } from '@/components/marketing/ThirdPartyServicesSection';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../legal.module.scss';
 
-export const metadata = {
-  title: `Privacy Policy · ${PRODUCT_NAME}`,
+export const metadata = buildMarketingPageMetadata({
+  path: '/privacy',
+  title: 'Privacy Policy',
   description: `How ${PRODUCT_NAME} collects, uses, and shares information, including third-party service providers.`,
-};
+});
 
 export default function PrivacyPolicyPage() {
   return (

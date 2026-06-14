@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
@@ -6,7 +7,13 @@ import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { getAuthContext } from '@/lib/auth/session';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { SignInForm } from './SignInForm';
+import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import styles from './sign-in.module.scss';
+
+export const metadata: Metadata = {
+  ...NOINDEX_PAGE_METADATA,
+  title: 'Sign in',
+};
 
 interface SignInPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

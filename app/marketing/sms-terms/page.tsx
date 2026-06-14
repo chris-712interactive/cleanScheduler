@@ -2,13 +2,15 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Container } from '@/components/layout/Container';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../legal.module.scss';
 
-export const metadata = {
-  title: `SMS Terms & Conditions · ${PRODUCT_NAME}`,
+export const metadata = buildMarketingPageMetadata({
+  path: '/sms-terms',
+  title: 'SMS Terms & Conditions',
   description: `SMS messaging terms for ${PRODUCT_NAME} account and booking notifications.`,
-};
+});
 
 export default function SmsTermsPage() {
   return (

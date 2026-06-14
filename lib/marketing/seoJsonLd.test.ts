@@ -4,6 +4,8 @@ import { COMPARE_PAGES } from '@/lib/marketing/seoContent/marketingPages';
 import {
   buildCompareHubJsonLd,
   buildHelpGuideJsonLd,
+  buildHomePageJsonLd,
+  buildPricingPageJsonLd,
   buildSeoPageJsonLd,
 } from '@/lib/marketing/seoJsonLd';
 
@@ -53,6 +55,35 @@ describe('buildSeoPageJsonLd', () => {
       graph.some((node) => node['@id'] === `${ORIGIN}/compare/spreadsheets-and-texts#competitor`),
     ).toBe(false);
     expect(graph.some((node) => node['@type'] === 'SoftwareApplication')).toBe(true);
+  });
+});
+
+describe('buildHomePageJsonLd', () => {
+  it('includes Organization, WebSite, and SoftwareApplication', () => {
+    const jsonLd = buildHomePageJsonLd(ORIGIN, [{ question: 'Q?', answer: 'A.' }], {
+      title: 'Home',
+      description: 'Cleaning software.',
+    });
+    const graph = graphNodes(jsonLd);
+
+    expect(graph.some((node) => node['@type'] === 'Organization')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'WebSite')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'SoftwareApplication')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'FAQPage')).toBe(true);
+  });
+});
+
+describe('buildPricingPageJsonLd', () => {
+  it('includes tiered offers', () => {
+    const jsonLd = buildPricingPageJsonLd(ORIGIN, [
+      { tier: 'starter', displayName: 'Starter', monthlyPriceUsd: 39 },
+      { tier: 'business', displayName: 'Business', monthlyPriceUsd: 129 },
+    ]);
+    const software = nodeById(jsonLd, `${ORIGIN}/pricing#software`);
+    const offers = software?.offers as Array<Record<string, unknown>>;
+
+    expect(offers).toHaveLength(2);
+    expect(offers[0]?.price).toBe('39');
   });
 });
 

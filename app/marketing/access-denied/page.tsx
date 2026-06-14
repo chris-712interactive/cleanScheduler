@@ -1,10 +1,13 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
+import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import { getPortalContext } from '@/lib/portal';
 import { getAuthContext } from '@/lib/auth/session';
 import { signOut } from '@/lib/auth/signOutAction';
 import styles from './access-denied.module.scss';
+
+export const metadata = NOINDEX_PAGE_METADATA;
 
 interface AccessDeniedPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

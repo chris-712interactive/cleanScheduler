@@ -4,12 +4,16 @@ import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Container';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { submitMarketingInquiryAction } from './actions';
 import styles from './contact.module.scss';
 
-export const metadata = {
-  title: 'Contact sales · Clean Scheduler',
-};
+export const metadata = buildMarketingPageMetadata({
+  path: '/contact',
+  title: 'Contact sales',
+  description:
+    'Talk to the Clean Scheduler team about pricing, onboarding, or whether the platform fits your residential or commercial cleaning business.',
+});
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

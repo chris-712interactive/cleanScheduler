@@ -23,7 +23,6 @@ const MARKETING_PATHS = [
   { path: '/sms-terms', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/terms', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/data-retention', priority: 0.4, changeFrequency: 'yearly' as const },
-  { path: '/sign-in', priority: 0.3, changeFrequency: 'yearly' as const },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -34,7 +33,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const helpPaths = [
     { path: '/help', priority: 0.5, changeFrequency: 'monthly' as const },
-    { path: '/help/customers', priority: 0.4, changeFrequency: 'monthly' as const },
     { path: '/help/developers', priority: 0.4, changeFrequency: 'monthly' as const },
     { path: '/help/compliance', priority: 0.4, changeFrequency: 'monthly' as const },
     { path: '/help/faq', priority: 0.5, changeFrequency: 'monthly' as const },

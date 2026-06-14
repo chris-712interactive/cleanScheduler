@@ -1,12 +1,15 @@
+import type { Metadata } from 'next';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthContext } from '@/lib/auth/session';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import { CompleteEmployeeInviteForms } from './CompleteEmployeeInviteForms';
 import styles from './complete-employee-invite.module.scss';
 
-export const metadata = {
+export const metadata: Metadata = {
+  ...NOINDEX_PAGE_METADATA,
   title: 'Accept team invite',
 };
 

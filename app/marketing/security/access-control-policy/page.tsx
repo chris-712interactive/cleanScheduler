@@ -4,6 +4,7 @@ import { Container } from '@/components/layout/Container';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { MarketingNav } from '@/components/marketing/MarketingNav';
 import { PolicySections } from '@/components/marketing/PolicySections';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import {
   ACCESS_CONTROL_POLICY_SECTIONS,
   ACP_POLICY_OWNER,
@@ -14,10 +15,11 @@ import {
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../../legal.module.scss';
 
-export const metadata = {
-  title: `Access Control Policy · ${PRODUCT_NAME}`,
+export const metadata = buildMarketingPageMetadata({
+  path: '/security/access-control-policy',
+  title: 'Access Control Policy',
   description: `Access control policy for ${PRODUCT_NAME} — authentication, authorization, provisioning, and role definitions.`,
-};
+});
 
 export default function AccessControlPolicyPage() {
   const sectionsBeforeMatrix = ACCESS_CONTROL_POLICY_SECTIONS.filter((s) => s.id !== 'matrix');
