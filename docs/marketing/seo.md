@@ -35,13 +35,13 @@ Developer reference for public-site search optimization on cleanscheduler.com.
 
 ## JSON-LD by page type
 
-| Page | Builder |
-|------|---------|
-| Homepage | `buildHomePageJsonLd` — Organization, WebSite, SoftwareApplication, FAQPage |
-| Pricing | `buildPricingPageJsonLd` — tiered SoftwareApplication offers |
-| Compare hub | `buildCompareHubJsonLd` — ItemList of comparison pages |
+| Page                          | Builder                                                                          |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| Homepage                      | `buildHomePageJsonLd` — Organization, WebSite, SoftwareApplication, FAQPage      |
+| Pricing                       | `buildPricingPageJsonLd` — tiered SoftwareApplication offers                     |
+| Compare hub                   | `buildCompareHubJsonLd` — ItemList of comparison pages                           |
 | Compare / feature / for pages | `buildSeoPageJsonLd` — WebPage, Article, competitor SoftwareApplication entities |
-| Help guides | `buildHelpGuideJsonLd` — Article graph with breadcrumbs |
+| Help guides                   | `buildHelpGuideJsonLd` — Article graph with breadcrumbs                          |
 
 Tests: `lib/marketing/seoJsonLd.test.ts`.
 
