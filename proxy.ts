@@ -178,6 +178,15 @@ async function resolveUser(request: NextRequest): Promise<{
   return { userId: data.user?.id ?? null, cookiesToSet };
 }
 
+/** Marketing canonical host is apex (`cleanscheduler.com`), not `www`. */
+function buildApexRedirectUrl(request: NextRequest, apex: string): URL {
+  const redirectUrl = request.nextUrl.clone();
+  const [hostname, port] = apex.split(':');
+  redirectUrl.hostname = hostname!.toLowerCase();
+  redirectUrl.port = port ?? '';
+  return redirectUrl;
+}
+
 export async function proxy(request: NextRequest) {
   const endProxy = debugPerfStart('proxy.request', request.nextUrl.pathname);
 
@@ -191,6 +200,12 @@ export async function proxy(request: NextRequest) {
       : null;
 
     const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
+
+    // Consolidate www -> apex for SEO (canonical tags point at apex only).
+    if (isOurApexHost && subdomain === 'www') {
+      return NextResponse.redirect(buildApexRedirectUrl(request, apex), 308);
+    }
+
     const requestedPath = request.nextUrl.pathname;
     const isJoinPath = requestedPath === '/join' || requestedPath.startsWith('/join/');
     const isPublicMarketingPath =
