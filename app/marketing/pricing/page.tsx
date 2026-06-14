@@ -8,20 +8,39 @@ import { MarketingNav } from '@/components/marketing/MarketingNav';
 import { PricingComparisonMatrix } from '@/components/marketing/PricingComparisonMatrix';
 import { PricingTable } from '@/components/marketing/PricingTable';
 import { getPlatformPricingDisplay } from '@/lib/billing/platformPricing';
-import { PRODUCT_NAME } from '@/lib/legal/site';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
+import { buildPricingPageJsonLd } from '@/lib/marketing/seoJsonLd';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import styles from './pricing.module.scss';
 
-export const metadata: Metadata = {
-  title: `Pricing | ${PRODUCT_NAME}`,
-  description:
-    'Simple pricing for residential and commercial cleaning businesses. Starter, Business, and Pro plans with a 7-day free trial.',
-};
+const pageTitle = 'Pricing for cleaning businesses';
+const pageDescription =
+  'Simple pricing for residential and commercial cleaning businesses. Starter, Business, and Pro plans with a 7-day free trial — no credit card required.';
+
+export const metadata: Metadata = buildMarketingPageMetadata({
+  path: '/pricing',
+  title: pageTitle,
+  description: pageDescription,
+});
 
 export default async function PricingPage() {
   const tiers = await getPlatformPricingDisplay();
+  const pricingJsonLd = buildPricingPageJsonLd(
+    getPublicOrigin(null),
+    tiers.map((tier) => ({
+      tier: tier.tier,
+      displayName: tier.displayName,
+      monthlyPriceUsd: tier.monthlyPriceUsd,
+    })),
+  );
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingJsonLd) }}
+      />
+
       <MarketingNav />
 
       <main className={styles.main}>

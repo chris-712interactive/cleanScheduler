@@ -3,14 +3,16 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Container } from '@/components/layout/Container';
 import { DataRetentionScheduleTable } from '@/components/marketing/DataRetentionScheduleTable';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
+import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { ACTIVE_THIRD_PARTY_SERVICES } from '@/lib/legal/thirdPartyServices';
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from '../legal.module.scss';
 
-export const metadata = {
-  title: `Data Retention & Disposal · ${PRODUCT_NAME}`,
+export const metadata = buildMarketingPageMetadata({
+  path: '/data-retention',
+  title: 'Data Retention & Disposal',
   description: `How ${PRODUCT_NAME} retains, archives, and disposes of data across workspaces and third-party providers.`,
-};
+});
 
 export default function DataRetentionPolicyPage() {
   return (

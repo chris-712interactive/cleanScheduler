@@ -253,6 +253,26 @@ export const MARKETING_FAQ: MarketingFaqItem[] = [
   },
 ];
 
+/** Extended FAQ for /help/faq — includes homepage questions plus help-center-specific answers. */
+export const HELP_CENTER_FAQ: MarketingFaqItem[] = [
+  ...MARKETING_FAQ,
+  {
+    question: 'Where can I find guides for cleaning business owners?',
+    answer:
+      'Visit our Guides for cleaning businesses for walkthroughs on pricing jobs, recurring schedules, getting paid, month-end close, and winning commercial accounts.',
+  },
+  {
+    question: 'How does Clean Scheduler compare to other cleaning software?',
+    answer:
+      'See our comparison hub for honest reviews against Jobber, ZenMaid, Launch27, Housecall Pro, and Swept — including when a competitor may still be the better fit.',
+  },
+  {
+    question: 'Is there a customer portal for my clients?',
+    answer:
+      'Yes on Business and Pro plans. Clients can view visits, pay invoices, and request reschedules online. See the customer portal guide for setup steps.',
+  },
+];
+
 export const MARKETING_SOCIAL_PROOF = {
   headline: 'Built for cleaning teams who need one system — not five',
   highlights: [
