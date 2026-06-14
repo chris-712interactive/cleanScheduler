@@ -88,24 +88,13 @@ export const FOR_PAGES: SeoMarketingPage[] = [
   {
     slug: 'commercial-cleaning-companies',
     path: '/for/commercial-cleaning-companies',
-    metaTitle: 'Commercial cleaning & janitorial software',
+    metaTitle: 'Commercial cleaning scheduling software',
     metaDescription:
-      'Scheduling, quotes, invoicing, and AR for commercial cleaning and janitorial companies. Multi-site accounts and month-end reports. 7-day free trial.',
+      'Commercial cleaning scheduling software for janitorial teams: multi-site crew routes, recurring visit rules, quotes, invoicing, and AR. 7-day free trial.',
     eyebrow: 'Commercial cleaning',
-    headline: 'Run commercial and janitorial accounts from one console',
-    lead: 'Manage multi-site contracts, recurring crews, and accounts receivable without losing visibility across locations or billing contacts.',
+    headline: 'Commercial cleaning scheduling software for janitorial teams',
+    lead: 'Schedule crews across multi-site contracts, assign recurring janitorial routes, and keep accounts receivable visible — without losing context across locations or billing contacts.',
     sections: [
-      {
-        title: 'Structure complex accounts',
-        paragraphs: [
-          'Commercial work often means multiple properties under one billing contact. Keep customer records, service locations, and visit history organized so your office team answers questions in seconds — not after searching inboxes.',
-        ],
-        bullets: [
-          'Customer directory with property addresses',
-          'Quotes with detailed line items per scope',
-          'Visit history and proof-of-service photos on Business+',
-        ],
-      },
       {
         title: 'Schedule crews across sites',
         paragraphs: [
@@ -117,8 +106,23 @@ export const FOR_PAGES: SeoMarketingPage[] = [
           'Field check-in and visit completion workflow',
         ],
         link: {
-          href: '/help/cleaning-businesses/recurring-cleaning-schedule',
-          label: 'Set up recurring cleaning schedules',
+          href: '/features/scheduling-and-dispatch',
+          label: 'Commercial cleaning scheduling software',
+        },
+      },
+      {
+        title: 'Structure complex accounts',
+        paragraphs: [
+          'Commercial work often means multiple properties under one billing contact. Keep customer records, service locations, and visit history organized so your office team answers questions in seconds — not after searching inboxes.',
+        ],
+        bullets: [
+          'Customer directory with property addresses',
+          'Quotes with detailed line items per scope',
+          'Visit history and proof-of-service photos on Business+',
+        ],
+        link: {
+          href: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
+          label: 'How to get commercial cleaning accounts',
         },
       },
       {
@@ -139,6 +143,11 @@ export const FOR_PAGES: SeoMarketingPage[] = [
     ],
     faq: [
       {
+        question: 'What is the best scheduling software for commercial cleaning companies?',
+        answer:
+          'The best fit depends on your team size and billing workflow. Clean Scheduler is built for janitorial operators who need recurring crew scheduling, multi-property accounts, and bookkeeper-friendly AR — not generic field service dispatch. Try the 7-day free trial on your next commercial route.',
+      },
+      {
         question: 'Can we manage both commercial and residential clients?',
         answer:
           'Yes. Clean Scheduler supports mixed books — use customer tags and property records to keep account types clear in reports.',
@@ -155,6 +164,11 @@ export const FOR_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
+      { href: '/features/scheduling-and-dispatch', label: 'Cleaning schedule software' },
+      {
+        href: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
+        label: 'How to get commercial cleaning accounts',
+      },
       { href: '/for/residential-cleaning-companies', label: 'Residential cleaning software' },
       { href: '/features/invoicing-and-payments', label: 'Invoicing & payments' },
       { href: '/pricing', label: 'View pricing' },
@@ -168,12 +182,12 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
   {
     slug: 'scheduling-and-dispatch',
     path: '/features/scheduling-and-dispatch',
-    metaTitle: 'Cleaning company scheduling software',
+    metaTitle: 'Cleaning schedule software for cleaning businesses',
     metaDescription:
-      'Route-aware scheduling for cleaning businesses: recurring visits, crew assignment, customer reschedule requests, and mobile field views. Try free for 7 days.',
+      'Cleaning schedule software with recurring visit scheduling, crew assignment, customer reschedule requests, and mobile field views. Try free for 7 days.',
     eyebrow: 'Scheduling',
-    headline: 'Scheduling and dispatch built for cleaning crews',
-    lead: 'Plan recurring routes, assign employees, and handle customer schedule changes — without double-booking your team or losing context in text threads.',
+    headline: 'Cleaning schedule software built for recurring routes',
+    lead: 'Plan recurring routes, assign employees, and handle customer schedule changes — without double-booking your team or rebuilding the calendar every week.',
     sections: [
       {
         title: 'Calendar views your office actually uses',
@@ -185,6 +199,25 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
           'Recurring visit rules separate from billing',
           'Conflict visibility when assigning crews',
         ],
+        link: {
+          href: '/help/cleaning-businesses/recurring-cleaning-schedule',
+          label: 'Set up recurring cleaning schedules',
+        },
+      },
+      {
+        title: 'Commercial cleaning routes and multi-site crews',
+        paragraphs: [
+          'Janitorial contracts need recurring rules across multiple properties under one billing contact. Filter the calendar by employee or customer, assign default crews to contract frequencies, and let field staff check in from mobile-friendly views.',
+        ],
+        bullets: [
+          'Recurring visit rules for weekly and contract frequencies',
+          'Property-level detail for commercial accounts',
+          'Employee filters on day, week, and month views',
+        ],
+        link: {
+          href: '/for/commercial-cleaning-companies',
+          label: 'Commercial cleaning scheduling software',
+        },
       },
       {
         title: 'Customer reschedule requests in one inbox',
@@ -215,6 +248,11 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
     ],
     faq: [
       {
+        question: 'What is cleaning schedule software?',
+        answer:
+          'Cleaning schedule software replaces spreadsheets and group texts with a shared calendar for recurring visits, crew assignment, and schedule changes. Upgrade when multiple people need the same live schedule or when customers expect professional reschedule handling.',
+      },
+      {
         question: 'Can I schedule both one-time and recurring jobs?',
         answer:
           'Yes. One-time visits and recurring rules coexist on the same calendar. Billing recurrence is configured separately when you invoice.',
@@ -226,6 +264,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
+      { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning scheduling' },
       { href: '/for/residential-cleaning-companies', label: 'Residential cleaning' },
       { href: '/features/invoicing-and-payments', label: 'Invoicing & payments' },
       { href: '/start-trial', label: 'Start free trial' },
@@ -238,7 +277,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
     path: '/features/invoicing-and-payments',
     metaTitle: 'Cleaning business invoicing & payments',
     metaDescription:
-      'Invoice cleaning clients, accept cards via Stripe, record cash and checks, and match Zelle deposits to open invoices. Built for cleaning company AR.',
+      'Invoice cleaning clients with Stripe integration, accept cards, record cash and checks, and match Zelle deposits to open invoices. Built for cleaning company AR.',
     eyebrow: 'Payments',
     headline: 'Invoicing and payments for cleaning businesses',
     lead: 'Send professional invoices, accept cards when you are ready, and track every payment method your customers actually use — including Zelle and checks.',
@@ -269,8 +308,8 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
           'Payment ledger for all customer payments',
         ],
         link: {
-          href: '/help/cleaning-businesses/get-paid-zelle-and-cards',
-          label: 'Get paid with cards and Zelle',
+          href: '/features/stripe-integration',
+          label: 'Stripe integration for cleaning companies',
         },
       },
       {
@@ -287,6 +326,11 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
     ],
     faq: [
       {
+        question: 'Does Clean Scheduler integrate with Stripe?',
+        answer:
+          'Yes. Stripe Connect lets you accept card and ACH payments on invoices. Your Clean Scheduler subscription is billed separately from customer payments collected through your connected Stripe account.',
+      },
+      {
         question: 'Is Stripe required?',
         answer:
           'No. You can record cash, check, and other manual payments without Stripe. Card acceptance requires Stripe Connect.',
@@ -298,11 +342,93 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
+      { href: '/features/stripe-integration', label: 'Stripe integration' },
       { href: '/features/scheduling-and-dispatch', label: 'Scheduling features' },
       { href: '/help/cleaning-businesses/get-paid-zelle-and-cards', label: 'Get paid guide' },
       { href: '/pricing', label: 'View pricing' },
     ],
     sitemapPriority: 0.8,
+    changeFrequency: 'monthly',
+  },
+  {
+    slug: 'stripe-integration',
+    path: '/features/stripe-integration',
+    metaTitle: 'Cleaning company software with Stripe integration',
+    metaDescription:
+      'Clean Scheduler Stripe integration for cleaning businesses: Stripe Connect onboarding, invoice pay links, card and ACH payments, and separation from platform billing.',
+    eyebrow: 'Stripe integration',
+    headline: 'Cleaning company software with Stripe integration',
+    lead: 'Accept card and ACH payments on cleaning invoices through Stripe Connect — funds settle to your connected account, separate from your Clean Scheduler subscription.',
+    sections: [
+      {
+        title: 'Two different Stripe relationships',
+        paragraphs: [
+          'Clean Scheduler uses Stripe in two ways that are easy to confuse. Your platform subscription (Starter, Business, or Pro) is billed to your business through Stripe. Customer payments — cards and ACH on cleaning invoices — flow through your own Stripe Connect account and settle to you directly.',
+        ],
+        bullets: [
+          'Platform billing: your Clean Scheduler plan fee',
+          'Stripe Connect: payments from your cleaning clients',
+          'Separate ledgers — no commingling of subscription and client revenue',
+        ],
+      },
+      {
+        title: 'Stripe Connect onboarding in the app',
+        paragraphs: [
+          'From Billing → Accept card payments, complete a one-time Stripe Connect onboarding. Once approved, open invoices can include secure pay links your customers use to pay by card or bank transfer.',
+        ],
+        bullets: [
+          'Guided Connect onboarding inside Clean Scheduler',
+          'Pay links on emailed invoices and customer portal',
+          'Payment ledger for every customer transaction',
+        ],
+        link: {
+          href: '/help/cleaning-businesses/get-paid-zelle-and-cards',
+          label: 'Get paid with cards, Zelle, and checks',
+        },
+      },
+      {
+        title: 'Optional — not required to run your business',
+        paragraphs: [
+          'Many cleaning companies start by recording cash, check, and Zelle payments manually. Enable Stripe when you are ready for card acceptance. On Business+, bank deposit matching helps reconcile Zelle and ACH even when cards are not turned on.',
+        ],
+        bullets: [
+          'Manual payment recording without Stripe',
+          'Customer portals can show invoices before Connect is live',
+          'Bank deposit matching for Zelle on Business+',
+        ],
+        link: { href: '/start-trial', label: 'Start a 7-day free trial' },
+      },
+    ],
+    faq: [
+      {
+        question: 'Is Stripe required to use Clean Scheduler?',
+        answer:
+          'No. Quotes, scheduling, invoicing, and manual payment recording work without Stripe. Connect is only needed when you want card or ACH checkout links on invoices.',
+      },
+      {
+        question: 'How is platform billing different from customer payments?',
+        answer:
+          'Your Clean Scheduler subscription is a separate Stripe charge from payments your clients make through your connected account. Client funds settle to your bank via Stripe Connect.',
+      },
+      {
+        question: 'Does Clean Scheduler support ACH through Stripe?',
+        answer:
+          'Yes. When Stripe Connect is enabled, customers can pay open invoices via card or ACH depending on your Connect configuration and the checkout options enabled on the invoice.',
+      },
+    ],
+    relatedLinks: [
+      { href: '/features/invoicing-and-payments', label: 'Invoicing & payments' },
+      {
+        href: '/help/cleaning-businesses/get-paid-zelle-and-cards',
+        label: 'Payment methods guide',
+      },
+      { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning software' },
+      { href: '/pricing', label: 'View pricing' },
+    ],
+    ctaTitle: 'Try Stripe integration on your next invoice',
+    ctaLead:
+      'Start a 7-day free trial, send a quote, and connect Stripe when you are ready to accept cards.',
+    sitemapPriority: 0.82,
     changeFrequency: 'monthly',
   },
 ];

@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Container';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { HelpGuideFigure } from '@/components/marketing/HelpGuideFigure';
-import { buildFaqJsonLd } from '@/lib/marketing/faqJsonLd';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { buildHelpGuideJsonLd } from '@/lib/marketing/seoJsonLd';
 import type { HelpGuideArticle } from '@/lib/marketing/seoContent/types';
 import styles from './HelpGuideArticle.module.scss';
 
@@ -23,16 +24,17 @@ export function HelpGuideArticle({
   hub?: { backHref: string; backLabel: string; breadcrumbLabel: string };
   showTrialCta?: boolean;
 }) {
-  const faqJsonLd = article.faq.length > 0 ? buildFaqJsonLd(article.faq) : null;
+  const helpGuideJsonLd = buildHelpGuideJsonLd(article, getPublicOrigin(null), {
+    backHref: hub.backHref,
+    breadcrumbLabel: hub.breadcrumbLabel,
+  });
 
   return (
     <>
-      {faqJsonLd ? (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      ) : null}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(helpGuideJsonLd) }}
+      />
 
       <main className={styles.page}>
         <Container size="md">
@@ -68,6 +70,11 @@ export function HelpGuideArticle({
                   <HelpGuideFigure key={figure.src} figure={figure} />
                 ))}
                 {section.tip ? <p className={styles.tip}>{section.tip}</p> : null}
+                {section.link ? (
+                  <Link href={section.link.href} className={styles.sectionLink}>
+                    {section.link.label} →
+                  </Link>
+                ) : null}
               </section>
             ))}
           </div>

@@ -202,6 +202,16 @@ export const MARKETING_THREE_PORTALS = [
 
 export const MARKETING_FAQ: MarketingFaqItem[] = [
   {
+    question: 'Does Clean Scheduler integrate with Stripe?',
+    answer:
+      'Yes. Stripe Connect lets cleaning companies accept card and ACH payments on invoices. Your Clean Scheduler subscription is billed separately from customer payments. See our Stripe integration page for details.',
+  },
+  {
+    question: 'Do you have commercial cleaning scheduling software?',
+    answer:
+      'Yes. Clean Scheduler supports multi-site janitorial routes, recurring visit rules per property, crew assignment, and month-end AR reports — built for commercial and residential mixed books.',
+  },
+  {
     question: 'Do I need a credit card to start the trial?',
     answer:
       'No. Every plan includes a 7-day free trial with no credit card required. You can explore quotes, scheduling, and invoicing before subscribing.',

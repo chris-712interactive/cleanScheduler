@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { CLEANING_BUSINESS_ARTICLES } from '@/lib/marketing/seoContent/helpArticles';
 import { COMPARE_PAGES } from '@/lib/marketing/seoContent/marketingPages';
-import { buildCompareHubJsonLd, buildSeoPageJsonLd } from '@/lib/marketing/seoJsonLd';
+import {
+  buildCompareHubJsonLd,
+  buildHelpGuideJsonLd,
+  buildSeoPageJsonLd,
+} from '@/lib/marketing/seoJsonLd';
 
 const ORIGIN = 'https://cleanscheduler.com';
 
@@ -48,6 +53,28 @@ describe('buildSeoPageJsonLd', () => {
       graph.some((node) => node['@id'] === `${ORIGIN}/compare/spreadsheets-and-texts#competitor`),
     ).toBe(false);
     expect(graph.some((node) => node['@type'] === 'SoftwareApplication')).toBe(true);
+  });
+});
+
+describe('buildHelpGuideJsonLd', () => {
+  it('emits Article, BreadcrumbList, and FAQPage for help guides', () => {
+    const article = CLEANING_BUSINESS_ARTICLES.find(
+      (entry) => entry.slug === 'how-to-get-commercial-cleaning-accounts',
+    );
+    expect(article).toBeDefined();
+
+    const jsonLd = buildHelpGuideJsonLd(article!, ORIGIN, {
+      backHref: '/help/cleaning-businesses',
+      breadcrumbLabel: 'Cleaning businesses',
+    });
+    const graph = graphNodes(jsonLd);
+
+    expect(graph.some((node) => node['@type'] === 'Article')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'BreadcrumbList')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'FAQPage')).toBe(true);
+
+    const articleNode = nodeById(jsonLd, `${ORIGIN}${article!.path}#article`);
+    expect(articleNode?.headline).toBe('How to get commercial cleaning accounts');
   });
 });
 

@@ -23,6 +23,15 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/compare">
               Compare
             </Link>
+            <Link className={styles.link} href="/for/commercial-cleaning-companies">
+              Commercial cleaning scheduling
+            </Link>
+            <Link className={styles.link} href="/features/scheduling-and-dispatch">
+              Cleaning schedule software
+            </Link>
+            <Link className={styles.link} href="/features/stripe-integration">
+              Stripe integration
+            </Link>
             <Link className={styles.link} href="/help">
               Help Center
             </Link>

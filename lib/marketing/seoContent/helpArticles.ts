@@ -101,7 +101,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       },
     ],
     relatedLinks: [
-      { href: '/features/scheduling-and-dispatch', label: 'Scheduling features' },
+      { href: '/features/scheduling-and-dispatch', label: 'Cleaning schedule software' },
       { href: '/help/cleaning-businesses/customer-portal', label: 'Customer portal guide' },
       { href: '/start-trial', label: 'Start free trial' },
     ],
@@ -153,6 +153,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       },
     ],
     relatedLinks: [
+      { href: '/features/stripe-integration', label: 'Stripe integration for cleaning companies' },
       { href: '/features/invoicing-and-payments', label: 'Invoicing & payments' },
       { href: '/for/residential-cleaning-companies', label: 'Residential cleaning' },
       { href: '/pricing', label: 'Pricing' },
@@ -258,6 +259,111 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       { href: '/pricing', label: 'Compare plans' },
     ],
     sitemapPriority: 0.65,
+    changeFrequency: 'monthly',
+  },
+  {
+    slug: 'how-to-get-commercial-cleaning-accounts',
+    path: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
+    title: 'How to get commercial cleaning accounts',
+    description:
+      'A practical guide to winning janitorial and commercial cleaning contracts — prospecting, RFPs, quoting, and onboarding accounts your office can actually run.',
+    sections: [
+      {
+        title: 'Where commercial cleaning contracts come from',
+        paragraphs: [
+          'Commercial accounts rarely appear from a single ad. Most cleaning companies build a pipeline from relationships, referrals, and repeat bidding. Focus on channels where facilities decision-makers already look for vendors.',
+        ],
+        bullets: [
+          'Property management companies and facility managers',
+          'Office buildings, medical clinics, schools, and retail centers',
+          'Referrals from existing residential clients who manage small offices',
+          'Local business networking groups and chamber of commerce events',
+          'Public RFPs and bid boards for government or institutional work',
+        ],
+      },
+      {
+        title: 'Get your business ready before you pitch',
+        paragraphs: [
+          'Commercial buyers ask about insurance, references, and consistency before price. Have these ready so you can respond the same day a prospect calls.',
+        ],
+        bullets: [
+          'General liability and workers comp certificates (COIs)',
+          'Two or three references from similar-sized accounts',
+          'A scope template: restrooms, break rooms, trash, floors, frequency',
+          'Clear service-level expectations for after-hours access',
+        ],
+        tip: 'Save a one-page capabilities sheet (crew size, service area, insurance limits) you can email within minutes of a lead.',
+      },
+      {
+        title: 'Quote commercial scopes professionally',
+        paragraphs: [
+          'Commercial quotes should break work into line items per site — not a single lump sum. Show frequency, square footage assumptions, and add-ons like floor waxing or window cleaning. A detailed quote signals you can manage multi-site contracts after you win them.',
+        ],
+        bullets: [
+          'Price per visit or monthly contract with clear inclusions',
+          'Separate line items for each property under one billing contact',
+          'Walk-through notes attached to the quote for your crew',
+        ],
+        link: {
+          href: '/help/cleaning-businesses/price-a-cleaning-job',
+          label: 'How to price a cleaning job',
+        },
+      },
+      {
+        title: 'Follow up and close without being pushy',
+        paragraphs: [
+          'Commercial sales cycles run weeks to months. Send the quote, confirm receipt, and schedule a follow-up before you leave the walk-through. Ask what would prevent them from starting next month — budget, incumbent contract end date, or internal approval.',
+        ],
+        bullets: [
+          'Follow up 3–5 business days after sending the quote',
+          'Offer a short pilot clean for skeptical facilities managers',
+          'Ask when their current contract ends — timing wins contracts',
+        ],
+      },
+      {
+        title: 'Onboard won accounts without chaos',
+        paragraphs: [
+          'The first 30 days set the tone. Document access codes, alarm instructions, supply closets, and billing contacts before the first scheduled visit. Once accounts are live, run recurring crew schedules, visit history, and invoicing from one system so the office does not revert to spreadsheets.',
+        ],
+        bullets: [
+          'Create one customer record per billing contact with multiple properties',
+          'Set recurring visit rules for each site frequency',
+          'Invoice on net terms with collections reports for month-end',
+        ],
+        link: {
+          href: '/for/commercial-cleaning-companies',
+          label: 'Commercial cleaning scheduling software',
+        },
+      },
+    ],
+    faq: [
+      {
+        question: 'How big are typical commercial cleaning contracts?',
+        answer:
+          'Small office contracts might be a few hundred dollars per month. Multi-site property management accounts can reach thousands per month. Start with one building or a pilot scope to prove consistency before bidding large portfolios.',
+      },
+      {
+        question: 'Is selling commercial cleaning different from residential?',
+        answer:
+          'Yes. Residential is often faster and emotional (trust in your team). Commercial is slower, more formal, and driven by price, insurance, references, and reliability. You will quote in writing more often and wait longer for decisions.',
+      },
+      {
+        question: 'How long does it take to win a commercial account?',
+        answer:
+          'Simple office contracts can close in 2–4 weeks. RFP-driven institutional work often takes 1–3 months. Relationship-based property management deals may take a full contract cycle (6–12 months) if you are displacing an incumbent.',
+      },
+    ],
+    relatedLinks: [
+      {
+        href: '/for/commercial-cleaning-companies',
+        label: 'Commercial cleaning scheduling software',
+      },
+      { href: '/features/scheduling-and-dispatch', label: 'Cleaning schedule software' },
+      { href: '/features/stripe-integration', label: 'Stripe integration' },
+      { href: '/pricing', label: 'Pricing' },
+      { href: '/start-trial', label: 'Start free trial' },
+    ],
+    sitemapPriority: 0.7,
     changeFrequency: 'monthly',
   },
 ];
