@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import { COMPARE_PAGES } from '@/lib/marketing/seoContent/marketingPages';
+import { buildCompareHubJsonLd, buildSeoPageJsonLd } from '@/lib/marketing/seoJsonLd';
+
+const ORIGIN = 'https://cleanscheduler.com';
+
+function graphNodes(jsonLd: Record<string, unknown>) {
+  return jsonLd['@graph'] as Array<Record<string, unknown>>;
+}
+
+function nodeById(jsonLd: Record<string, unknown>, id: string) {
+  return graphNodes(jsonLd).find((node) => node['@id'] === id);
+}
+
+describe('buildSeoPageJsonLd', () => {
+  it('includes comparison software entities for competitor pages', () => {
+    const page = COMPARE_PAGES.find((entry) => entry.slug === 'vs-jobber');
+    expect(page).toBeDefined();
+
+    const jsonLd = buildSeoPageJsonLd(page!, ORIGIN);
+    const graph = graphNodes(jsonLd);
+
+    expect(jsonLd['@context']).toBe('https://schema.org');
+    expect(graph.some((node) => node['@type'] === 'WebPage')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'Article')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'FAQPage')).toBe(true);
+    expect(graph.some((node) => node['@type'] === 'BreadcrumbList')).toBe(true);
+
+    const cleanScheduler = nodeById(jsonLd, `${ORIGIN}/#software`);
+    const competitor = nodeById(jsonLd, `${ORIGIN}/compare/vs-jobber#competitor`);
+
+    expect(cleanScheduler?.['@type']).toBe('SoftwareApplication');
+    expect(competitor?.['@type']).toBe('SoftwareApplication');
+    expect(competitor?.name).toBe('Jobber');
+    expect(cleanScheduler?.isSimilarTo).toEqual({
+      '@id': `${ORIGIN}/compare/vs-jobber#competitor`,
+    });
+  });
+
+  it('omits competitor software on non-comparison pages', () => {
+    const page = COMPARE_PAGES.find((entry) => entry.slug === 'spreadsheets-and-texts');
+    expect(page).toBeDefined();
+
+    const jsonLd = buildSeoPageJsonLd(page!, ORIGIN);
+    const graph = graphNodes(jsonLd);
+
+    expect(
+      graph.some((node) => node['@id'] === `${ORIGIN}/compare/spreadsheets-and-texts#competitor`),
+    ).toBe(false);
+    expect(graph.some((node) => node['@type'] === 'SoftwareApplication')).toBe(true);
+  });
+});
+
+describe('buildCompareHubJsonLd', () => {
+  it('lists all comparison pages in an ItemList', () => {
+    const jsonLd = buildCompareHubJsonLd(COMPARE_PAGES, ORIGIN, {
+      title: 'Compare Clean Scheduler',
+      description: 'Software comparisons for cleaning businesses.',
+    });
+
+    const itemList = nodeById(jsonLd, `${ORIGIN}/compare#itemlist`);
+    const items = itemList?.itemListElement as Array<Record<string, unknown>>;
+
+    expect(itemList?.['@type']).toBe('ItemList');
+    expect(items).toHaveLength(COMPARE_PAGES.length);
+    expect(items[0]?.url).toBe(`${ORIGIN}${COMPARE_PAGES[0]!.path}`);
+  });
+});
