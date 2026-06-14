@@ -54,6 +54,7 @@ export type HelpGuideSection = {
   bullets?: string[];
   tip?: string;
   figures?: HelpGuideFigure[];
+  link?: SeoContentLink;
 };
 
 export type HelpGuideArticle = {

@@ -1,7 +1,7 @@
 import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
 import { PRODUCT_NAME } from '@/lib/legal/site';
 import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
-import type { SeoMarketingPage } from '@/lib/marketing/seoContent/types';
+import type { HelpGuideArticle, SeoMarketingPage } from '@/lib/marketing/seoContent/types';
 
 const SCHEMA_CONTEXT = 'https://schema.org';
 
@@ -193,6 +193,66 @@ export function buildSeoPageJsonLd(page: SeoMarketingPage, origin: string): Json
 
   if (page.faq.length > 0) {
     graph.push(buildFaqPageNode(pageUrl, page.faq));
+    const webPageNode = graph.find((node) => node['@id'] === pageId) as JsonLdNode;
+    webPageNode.hasPart = { '@id': `${pageUrl}#faq` };
+  }
+
+  return {
+    '@context': SCHEMA_CONTEXT,
+    '@graph': graph,
+  };
+}
+
+export type HelpGuideJsonLdHub = {
+  backHref: string;
+  breadcrumbLabel: string;
+};
+
+/** Structured data graph for owner/customer help guide articles. */
+export function buildHelpGuideJsonLd(
+  article: HelpGuideArticle,
+  origin: string,
+  hub: HelpGuideJsonLdHub,
+): JsonLdNode {
+  const pageUrl = absoluteUrl(origin, article.path);
+  const pageId = `${pageUrl}#webpage`;
+
+  const graph: JsonLdNode[] = [
+    buildOrganization(origin),
+    buildWebsite(origin),
+    {
+      '@type': 'WebPage',
+      '@id': pageId,
+      url: pageUrl,
+      name: article.title,
+      description: article.description,
+      inLanguage: 'en-US',
+      isPartOf: { '@id': `${origin}/#website` },
+      breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
+      mainEntity: { '@id': `${pageUrl}#article` },
+    },
+    buildBreadcrumbList(origin, pageUrl, [
+      { name: 'Home', path: '/' },
+      { name: 'Help', path: '/help' },
+      { name: hub.breadcrumbLabel, path: hub.backHref },
+      { name: article.title, path: article.path },
+    ]),
+    {
+      '@type': 'Article',
+      '@id': `${pageUrl}#article`,
+      headline: article.title,
+      description: article.description,
+      inLanguage: 'en-US',
+      author: { '@id': `${origin}/#organization` },
+      publisher: { '@id': `${origin}/#organization` },
+      dateModified: new Date().toISOString().slice(0, 10),
+      mainEntityOfPage: { '@id': pageId },
+      about: { '@id': `${origin}/#software` },
+    },
+  ];
+
+  if (article.faq.length > 0) {
+    graph.push(buildFaqPageNode(pageUrl, article.faq));
     const webPageNode = graph.find((node) => node['@id'] === pageId) as JsonLdNode;
     webPageNode.hasPart = { '@id': `${pageUrl}#faq` };
   }

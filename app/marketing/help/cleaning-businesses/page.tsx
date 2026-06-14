@@ -48,19 +48,43 @@ export default function CleaningBusinessHelpHubPage() {
           <h2>Explore solutions</h2>
           <div className={styles.grid}>
             <Link
+              href="/for/commercial-cleaning-companies"
+              className={[styles.card, styles.cardLink].join(' ')}
+            >
+              <h3>Commercial cleaning scheduling software</h3>
+              <p>
+                Multi-site crew routes, recurring visit rules, and month-end AR for janitorial
+                teams.
+              </p>
+              <p className={styles.cardLinkText}>Open page</p>
+            </Link>
+            <Link
+              href="/features/scheduling-and-dispatch"
+              className={[styles.card, styles.cardLink].join(' ')}
+            >
+              <h3>Cleaning schedule software</h3>
+              <p>
+                Recurring visit scheduling, crew assignment, and reschedule requests for cleaning
+                businesses.
+              </p>
+              <p className={styles.cardLinkText}>Open page</p>
+            </Link>
+            <Link
+              href="/features/stripe-integration"
+              className={[styles.card, styles.cardLink].join(' ')}
+            >
+              <h3>Cleaning company software with Stripe integration</h3>
+              <p>
+                Stripe Connect for invoice pay links — separate from your platform subscription.
+              </p>
+              <p className={styles.cardLinkText}>Open page</p>
+            </Link>
+            <Link
               href="/for/residential-cleaning-companies"
               className={[styles.card, styles.cardLink].join(' ')}
             >
               <h3>Residential cleaning software</h3>
               <p>Quotes, recurring schedules, and invoicing for home cleaning companies.</p>
-              <p className={styles.cardLinkText}>Open page</p>
-            </Link>
-            <Link
-              href="/for/commercial-cleaning-companies"
-              className={[styles.card, styles.cardLink].join(' ')}
-            >
-              <h3>Commercial cleaning software</h3>
-              <p>Multi-site accounts, crew scheduling, and month-end AR for janitorial teams.</p>
               <p className={styles.cardLinkText}>Open page</p>
             </Link>
             <Link href="/why-cleanscheduler" className={[styles.card, styles.cardLink].join(' ')}>
