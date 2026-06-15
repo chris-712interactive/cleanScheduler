@@ -80,6 +80,49 @@ describe('tenant site theme', () => {
   });
 });
 
+describe('tenant site navigation labels', () => {
+  it('uses short preset labels instead of page headlines', async () => {
+    const { buildTenantSiteNavPages, resolveTenantSiteNavLabel } =
+      await import('@/lib/tenantSite/navLabels');
+
+    expect(
+      resolveTenantSiteNavLabel({
+        pageType: 'home',
+        slug: 'home',
+        headline: 'A cleaner space, without the hassle',
+        metaTitle: 'Professional cleaning services',
+        sortOrder: 0,
+      }),
+    ).toBe('Home');
+
+    const primary = buildTenantSiteNavPages(
+      [
+        {
+          slug: 'home',
+          page_type: 'home',
+          headline: 'A cleaner space, without the hassle',
+          meta_title: 'Professional cleaning services',
+          location_name: null,
+          city: null,
+          sort_order: 0,
+        },
+        {
+          slug: 'fort-myers',
+          page_type: 'service_area',
+          headline: 'Cleaning in Fort Myers',
+          meta_title: 'Cleaning in Fort Myers, FL',
+          location_name: 'Fort Myers',
+          city: 'Fort Myers',
+          sort_order: 4,
+        },
+      ],
+      { primaryOnly: true },
+    );
+
+    expect(primary.map((row) => row.label)).toEqual(['Home']);
+  });
+});
+
 describe('tenant site JSON-LD', () => {
   it('emits LocalBusiness and FAQ entities', () => {
     const json = buildTenantSitePageJsonLd(

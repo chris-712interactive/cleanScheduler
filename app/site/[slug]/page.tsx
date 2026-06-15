@@ -10,6 +10,7 @@ import {
   loadPublishedTenantSiteNavPages,
   loadPublishedTenantSitePage,
   loadTenantSiteContext,
+  mapTenantSiteNavLinks,
   publicPathForSitePage,
 } from '@/lib/tenantSite/loadTenantSiteData';
 import { isUnifiedSiteRequest } from '@/app/site/actions';
@@ -48,11 +49,10 @@ export default async function TenantSiteSlugPage({ params }: PageProps) {
   const page = await loadPublishedTenantSitePage(admin, site.tenantId, normalizedSlug);
   if (!page) notFound();
 
-  const navRows = await loadPublishedTenantSiteNavPages(admin, site.tenantId);
-  const navLinks = navRows.map((row) => ({
-    href: publicPathForSitePage(row.slug, site.unifiedDomain),
-    label: row.label,
-  }));
+  const [headerNavRows, footerNavRows] = await Promise.all([
+    loadPublishedTenantSiteNavPages(admin, site.tenantId, { primaryOnly: true }),
+    loadPublishedTenantSiteNavPages(admin, site.tenantId),
+  ]);
 
   const { data: pageRow } = await admin
     .from('tenant_marketing_pages')
@@ -65,7 +65,8 @@ export default async function TenantSiteSlugPage({ params }: PageProps) {
     <TenantSitePageView
       site={site}
       page={page}
-      navLinks={navLinks}
+      headerNavLinks={mapTenantSiteNavLinks(headerNavRows, site.unifiedDomain)}
+      footerNavLinks={mapTenantSiteNavLinks(footerNavRows, site.unifiedDomain)}
       pageId={pageRow?.id ?? null}
       showPoweredBy={plan !== 'pro'}
     />

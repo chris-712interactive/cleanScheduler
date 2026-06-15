@@ -17,13 +17,15 @@ import styles from './TenantSitePage.module.scss';
 export function TenantSitePageView({
   site,
   page,
-  navLinks,
+  headerNavLinks,
+  footerNavLinks,
   pageId,
   showPoweredBy,
 }: {
   site: TenantSiteContext & { tenantId: string };
   page: TenantSitePageContent;
-  navLinks: TenantSiteNavLink[];
+  headerNavLinks: TenantSiteNavLink[];
+  footerNavLinks: TenantSiteNavLink[];
   pageId?: string | null;
   showPoweredBy: boolean;
 }) {
@@ -34,6 +36,7 @@ export function TenantSitePageView({
     : publicPathForSitePage(site.settings.defaultCtaHref.replace(/^\//, '') || 'contact', false);
   const portalLoginHref = site.portalLoginHref;
   const isHomePage = page.pageType === 'home' || page.slug === site.settings.homepageSlug;
+  const isContactPage = page.pageType === 'contact';
   const themeStyle = resolveTenantSiteThemeStyle(
     site.settings.siteTemplate,
     site.settings.colorScheme,
@@ -45,13 +48,6 @@ export function TenantSitePageView({
     contactPhone,
     serviceAreaSummary: site.settings.serviceAreaSummary,
   });
-
-  const mappedNavLinks = navLinks.map((link) => ({
-    ...link,
-    href: site.unifiedDomain
-      ? publicPathForSitePage(link.href.replace(/^\//, ''), true)
-      : link.href,
-  }));
 
   const trustBullets = page.sections[0]?.bullets?.slice(0, 3) ?? [
     'Fully insured cleaning professionals',
@@ -68,22 +64,23 @@ export function TenantSitePageView({
 
       <TenantSiteHeader
         branding={site.branding}
-        navLinks={mappedNavLinks}
+        navLinks={headerNavLinks}
         phone={contactPhone}
         portalLoginHref={portalLoginHref}
         ctaLabel={site.settings.defaultCtaLabel}
         ctaHref={ctaHref.startsWith('http') ? ctaHref : ctaHref}
+        showCta={!isContactPage}
       />
 
       <main className={styles.main}>
-        <section className={styles.hero}>
+        <section className={styles.hero} data-contact={isContactPage || undefined}>
           <Container size="lg">
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
                 {page.eyebrow ? <span className={styles.eyebrow}>{page.eyebrow}</span> : null}
                 <h1 className={styles.title}>{page.headline}</h1>
-                {page.lead ? <p className={styles.lead}>{page.lead}</p> : null}
-                {page.pageType !== 'contact' ? (
+                {page.lead && !isContactPage ? <p className={styles.lead}>{page.lead}</p> : null}
+                {!isContactPage ? (
                   <div className={styles.heroActions}>
                     <Button size="lg" href={ctaHref} as="a" iconRight={<ArrowRight size={18} />}>
                       {site.settings.defaultCtaLabel}
@@ -170,15 +167,13 @@ export function TenantSitePageView({
           </section>
         ) : null}
 
-        {page.pageType === 'contact' ? (
+        {isContactPage ? (
           <section className={styles.contactSection}>
             <Container size="lg">
               <div className={styles.contactGrid}>
                 <div className={styles.contactInfo}>
                   <h2 className={styles.contactTitle}>Get in touch</h2>
-                  <p className={styles.contactLead}>
-                    Tell us about your space and we will follow up with pricing and availability.
-                  </p>
+                  {page.lead ? <p className={styles.contactLead}>{page.lead}</p> : null}
                   <ul className={styles.contactDetails}>
                     {contactPhone ? (
                       <li>
@@ -254,7 +249,7 @@ export function TenantSitePageView({
 
       <TenantSiteFooter
         branding={site.branding}
-        navLinks={mappedNavLinks}
+        navLinks={footerNavLinks}
         contactEmail={contactEmail}
         contactPhone={contactPhone}
         serviceAreaSummary={site.settings.serviceAreaSummary}

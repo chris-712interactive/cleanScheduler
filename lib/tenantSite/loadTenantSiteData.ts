@@ -4,6 +4,7 @@ import { isTenantSiteIndexable } from '@/lib/tenantSite/indexingPolicy';
 import type {
   TenantSiteBranding,
   TenantSiteContext,
+  TenantSiteNavLink,
   TenantSitePageContent,
   TenantSiteSettings,
 } from '@/lib/tenantSite/types';
@@ -14,6 +15,7 @@ import {
 } from '@/lib/portal/tenantSiteOrigin';
 import type { Database } from '@/lib/supabase/database.types';
 import type { TenantBillingStatus } from '@/lib/billing/tenantSubscriptionAccess';
+import { buildTenantSiteNavPages } from '@/lib/tenantSite/navLabels';
 
 type PageRow = Database['public']['Tables']['tenant_marketing_pages']['Row'];
 type SettingsRow = Database['public']['Tables']['tenant_marketing_site_settings']['Row'];
@@ -153,21 +155,18 @@ export async function loadPublishedTenantSitePage(
 export async function loadPublishedTenantSiteNavPages(
   admin: SupabaseClient<Database>,
   tenantId: string,
+  options?: { primaryOnly?: boolean },
 ): Promise<Array<{ slug: string; label: string; sortOrder: number }>> {
   const { data: rows, error } = await admin
     .from('tenant_marketing_pages')
-    .select('slug, meta_title, headline, sort_order')
+    .select('slug, page_type, meta_title, headline, location_name, city, sort_order')
     .eq('tenant_id', tenantId)
     .eq('status', 'published')
     .order('sort_order', { ascending: true });
 
   if (error || !rows) return [];
 
-  return rows.map((row) => ({
-    slug: row.slug,
-    label: row.headline?.trim() || row.meta_title?.trim() || row.slug,
-    sortOrder: row.sort_order,
-  }));
+  return buildTenantSiteNavPages(rows, options);
 }
 
 export async function loadTenantSitePagesForAdmin(
@@ -197,6 +196,16 @@ export async function loadTenantMarketingLeads(
 
   if (error) throw new Error(error.message);
   return rows ?? [];
+}
+
+export function mapTenantSiteNavLinks(
+  rows: Array<{ slug: string; label: string }>,
+  unifiedDomain: boolean,
+): TenantSiteNavLink[] {
+  return rows.map((row) => ({
+    href: publicPathForSitePage(row.slug, unifiedDomain),
+    label: row.label,
+  }));
 }
 
 export function publicPathForSitePage(slug: string, unifiedDomain: boolean): string {
