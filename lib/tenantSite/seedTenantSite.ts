@@ -21,6 +21,8 @@ export async function ensureTenantMarketingSiteSeeded(
     homepage_slug: 'home',
     default_cta_label: 'Request a quote',
     default_cta_href: '/contact',
+    site_template: 'classic',
+    color_scheme: 'brand',
   });
 
   if (settingsError) {

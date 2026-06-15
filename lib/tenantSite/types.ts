@@ -1,5 +1,6 @@
 import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
 import type { SeoContentLink, SeoPageSection } from '@/lib/marketing/seoContent/types';
+import type { TenantSiteColorScheme, TenantSiteTemplate } from '@/lib/tenantSite/siteTheme';
 
 export type TenantMarketingPageType =
   | 'home'
@@ -46,6 +47,8 @@ export type TenantSiteSettings = {
   contactEmail: string | null;
   contactPhone: string | null;
   serviceAreaSummary: string | null;
+  siteTemplate: TenantSiteTemplate;
+  colorScheme: TenantSiteColorScheme;
 };
 
 export type TenantSiteBranding = {
