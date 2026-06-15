@@ -10,6 +10,8 @@ import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
 import { publicPathForSitePage } from '@/lib/tenantSite/loadTenantSiteData';
 import { resolveTenantSiteOrigin } from '@/lib/portal/tenantSiteOrigin';
+import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
+import type { SeoPageSection } from '@/lib/marketing/seoContent/types';
 import { WebsitePageEditor } from '../WebsitePageEditor';
 
 export const dynamic = 'force-dynamic';
@@ -80,8 +82,8 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
             eyebrow: page.eyebrow,
             headline: page.headline,
             lead: page.lead,
-            sectionsJson: JSON.stringify(page.sections ?? []),
-            faqJson: JSON.stringify(page.faq ?? []),
+            sections: Array.isArray(page.sections) ? (page.sections as SeoPageSection[]) : [],
+            faq: Array.isArray(page.faq) ? (page.faq as MarketingFaqItem[]) : [],
             ctaTitle: page.cta_title,
             ctaLead: page.cta_lead,
             locationName: page.location_name,

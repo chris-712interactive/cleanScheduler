@@ -17,6 +17,8 @@ import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
 import { isTenantSiteColorScheme, isTenantSiteTemplate } from '@/lib/tenantSite/siteTheme';
 import { syncSupabaseAuthRedirectForHostname } from '@/lib/portal/customerPortalDomainActivation';
+import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
+import type { SeoPageSection } from '@/lib/marketing/seoContent/types';
 import type { Database } from '@/lib/supabase/database.types';
 import type { TenantMarketingPageType } from '@/lib/tenantSite/types';
 
@@ -27,11 +29,46 @@ export type WebsiteActionState = {
 
 type PageRow = Database['public']['Tables']['tenant_marketing_pages']['Row'];
 
+function sanitizeSections(raw: unknown): PageRow['sections'] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((entry) => {
+      const section = entry as SeoPageSection;
+      const title = String(section.title ?? '').trim();
+      const paragraphs = Array.isArray(section.paragraphs)
+        ? section.paragraphs.map((value) => String(value).trim()).filter(Boolean)
+        : [];
+      const bullets = Array.isArray(section.bullets)
+        ? section.bullets.map((value) => String(value).trim()).filter(Boolean)
+        : [];
+
+      return { title, paragraphs, bullets };
+    })
+    .filter(
+      (section) => section.title || section.paragraphs.length > 0 || section.bullets.length > 0,
+    );
+}
+
+function sanitizeFaq(raw: unknown): PageRow['faq'] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((entry) => {
+      const item = entry as MarketingFaqItem;
+      return {
+        question: String(item.question ?? '').trim(),
+        answer: String(item.answer ?? '').trim(),
+      };
+    })
+    .filter((item) => item.question && item.answer);
+}
+
 function parseSections(raw: FormData): PageRow['sections'] {
   const json = String(raw.get('sections_json') ?? '').trim();
   if (!json) return [];
   try {
-    return JSON.parse(json) as PageRow['sections'];
+    return sanitizeSections(JSON.parse(json));
   } catch {
     return [];
   }
@@ -41,7 +78,7 @@ function parseFaq(raw: FormData): PageRow['faq'] {
   const json = String(raw.get('faq_json') ?? '').trim();
   if (!json) return [];
   try {
-    return JSON.parse(json) as PageRow['faq'];
+    return sanitizeFaq(JSON.parse(json));
   } catch {
     return [];
   }

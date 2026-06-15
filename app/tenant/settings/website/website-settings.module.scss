@@ -259,3 +259,135 @@
   border: 2px solid rgb(255 255 255 / 80%);
   box-shadow: 0 0 0 1px var(--color-border);
 }
+
+.setupLayout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.setupTopGrid {
+  display: grid;
+  gap: var(--space-5);
+
+  @media (min-width: 56rem) {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: start;
+  }
+}
+
+.setupCard {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.pageGrid {
+  display: grid;
+  gap: var(--space-3);
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.editorLayout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.editorForm {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.editorGrid {
+  display: grid;
+  gap: var(--space-5);
+
+  @media (min-width: 64rem) {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: start;
+  }
+}
+
+.editorColumn {
+  display: grid;
+  gap: var(--space-5);
+  align-content: start;
+}
+
+.editorSaveBar {
+  position: sticky;
+  bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.segmentList {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.segmentEmpty,
+.segmentHint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.segmentCard {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+}
+
+.segmentCardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.segmentCardTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.segmentSublist {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.segmentSublistHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.segmentSublistLabel {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.segmentRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: end;
+}

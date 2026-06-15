@@ -18,7 +18,8 @@ import {
 } from '@/lib/tenantSite/loadTenantSiteData';
 import { WebsiteAppearancePanel } from './WebsiteAppearancePanel';
 import { WebsitePageListPanel } from './WebsitePageListPanel';
-import { WebsitePublishPanel } from './WebsitePublishPanel';
+import { WebsitePublishCard } from './WebsitePublishCard';
+import { WebsiteSiteDefaultsPanel } from './WebsiteSiteDefaultsPanel';
 import styles from './website-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -98,14 +99,20 @@ export default async function TenantWebsiteSettingsPage() {
             description={`Upgrade to ${minimumTierLabelForFeature('tenantMarketingSite')} to create SEO-friendly public pages and capture inbound leads.`}
           />
         ) : settingsRow ? (
-          <>
-            <WebsitePublishPanel
-              tenantSlug={membership.tenantSlug}
-              isPublished={settingsRow.is_published}
-              previewUrl={previewUrl}
-              trialPreview={trialPreview}
-              settings={mapTenantSiteSettings(settingsRow)}
-            />
+          <div className={styles.setupLayout}>
+            <div className={styles.setupTopGrid}>
+              <WebsitePublishCard
+                tenantSlug={membership.tenantSlug}
+                isPublished={settingsRow.is_published}
+                previewUrl={previewUrl}
+                trialPreview={trialPreview}
+              />
+              <WebsiteSiteDefaultsPanel
+                tenantSlug={membership.tenantSlug}
+                settings={mapTenantSiteSettings(settingsRow)}
+              />
+            </div>
+
             {canEdit ? (
               <WebsiteAppearancePanel
                 tenantSlug={membership.tenantSlug}
@@ -114,6 +121,7 @@ export default async function TenantWebsiteSettingsPage() {
                 brandColor={brandColor}
               />
             ) : null}
+
             <WebsitePageListPanel
               tenantSlug={membership.tenantSlug}
               pages={pages.map((page) => ({
@@ -125,7 +133,7 @@ export default async function TenantWebsiteSettingsPage() {
               }))}
               canCreatePage={canEdit}
             />
-          </>
+          </div>
         ) : null}
       </Stack>
     </>

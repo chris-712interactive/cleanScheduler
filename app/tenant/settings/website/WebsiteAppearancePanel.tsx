@@ -28,7 +28,7 @@ export function WebsiteAppearancePanel({
   );
 
   return (
-    <section className={styles.settingsSection}>
+    <section className={styles.setupCard}>
       <header className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Appearance</h2>
         <p className={styles.sectionLead}>
