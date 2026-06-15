@@ -30,7 +30,7 @@ export function WebsitePageListPanel({
   );
 
   return (
-    <section className={styles.settingsSection}>
+    <section className={styles.setupCard}>
       <header className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Pages</h2>
         <p className={styles.sectionLead}>
@@ -39,7 +39,7 @@ export function WebsitePageListPanel({
         </p>
       </header>
 
-      <div className={styles.pageList}>
+      <div className={styles.pageGrid}>
         {pages.map((page) => (
           <article key={page.id} className={styles.pageCard}>
             <div>
