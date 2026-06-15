@@ -48,9 +48,9 @@
     "react-plaid-link": "^4.1.1",
     "resend": "^6.12.3",
     "rrule": "^2.8.1",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.1",
     "stripe": "^22.2.0",
-    "web-vitals": "^4.2.4",
+    "web-vitals": "^5.3.0",
     "zod": "^4.4.3",
     "zxcvbn": "^4.4.2"
   },
