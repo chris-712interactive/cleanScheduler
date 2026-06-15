@@ -332,6 +332,7 @@ export async function updateWebsiteLeadStatusAction(
     if (error) return { error: error.message };
 
     revalidatePath('/tenant/settings/website', 'page');
+    revalidatePath('/tenant/settings/website/leads', 'page');
     return { success: 'Lead updated.' };
   } catch (error) {
     return { error: featureGateErrorMessage(error) ?? 'Could not update lead.' };

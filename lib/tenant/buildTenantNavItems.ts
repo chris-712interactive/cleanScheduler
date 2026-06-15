@@ -60,6 +60,7 @@ export function buildTenantNavItems(params: {
   subscriptionLocked: boolean;
   billingNavItem: NavItem;
   settingsNavItem: NavItem;
+  websiteNavItems?: NavItem[];
   campaignsNavEnabled: boolean;
   referralsNavEnabled: boolean;
   pendingRescheduleCount: number;
@@ -73,6 +74,7 @@ export function buildTenantNavItems(params: {
     subscriptionLocked,
     billingNavItem,
     settingsNavItem,
+    websiteNavItems = [],
     campaignsNavEnabled,
     referralsNavEnabled,
     pendingRescheduleCount,
@@ -106,6 +108,7 @@ export function buildTenantNavItems(params: {
         ...(referralsNavEnabled
           ? [{ label: 'Referrals', href: '/referrals', icon: 'referrals' as const }]
           : []),
+        ...websiteNavItems,
         settingsNavItem,
       ].filter((item) => {
         if (
@@ -117,6 +120,13 @@ export function buildTenantNavItems(params: {
         }
         if (
           item.href === '/settings' &&
+          permissions &&
+          !hasPermission(permissions, 'settings.view')
+        ) {
+          return false;
+        }
+        if (
+          (item.href === '/settings/website' || item.href === '/settings/website/leads') &&
           permissions &&
           !hasPermission(permissions, 'settings.view')
         ) {

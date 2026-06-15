@@ -13,12 +13,10 @@ import { siteUrlForTenant } from '@/lib/portal/tenantSiteOrigin';
 import { DEFAULT_BRAND_COLOR } from '@/lib/tenant/tenantBusinessSettings';
 import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
 import {
-  loadTenantMarketingLeads,
   loadTenantSitePagesForAdmin,
   mapTenantSiteSettings,
 } from '@/lib/tenantSite/loadTenantSiteData';
 import { WebsiteAppearancePanel } from './WebsiteAppearancePanel';
-import { WebsiteLeadsPanel } from './WebsiteLeadsPanel';
 import { WebsitePageListPanel } from './WebsitePageListPanel';
 import { WebsitePublishPanel } from './WebsitePublishPanel';
 import styles from './website-settings.module.scss';
@@ -50,7 +48,6 @@ export default async function TenantWebsiteSettingsPage() {
           .eq('tenant_id', membership.tenantId)
           .maybeSingle(),
         loadTenantSitePagesForAdmin(admin, membership.tenantId),
-        loadTenantMarketingLeads(admin, membership.tenantId),
         siteUrlForTenant(admin, membership.tenantId, '/'),
         admin.from('tenants').select('brand_color').eq('id', membership.tenantId).maybeSingle(),
       ])
@@ -59,9 +56,8 @@ export default async function TenantWebsiteSettingsPage() {
   const settingsRow = loaded?.[0].data ?? null;
   const billing = loaded?.[1].data ?? null;
   const pages = loaded?.[2] ?? [];
-  const leads = loaded?.[3] ?? [];
-  const previewUrl = loaded?.[4] ?? '';
-  const brandColor = loaded?.[5].data?.brand_color?.trim() || DEFAULT_BRAND_COLOR;
+  const previewUrl = loaded?.[3] ?? '';
+  const brandColor = loaded?.[4].data?.brand_color?.trim() || DEFAULT_BRAND_COLOR;
 
   const trialPreview =
     plan === 'trial' || !canUsePaidSubscriptionFeatures(billing?.status ?? 'trialing');
@@ -75,9 +71,16 @@ export default async function TenantWebsiteSettingsPage() {
         backLabel="Settings"
         actions={
           websiteEnabled ? (
-            <Link href="/settings/website/domain" className={styles.inlineLink}>
-              Domain settings
-            </Link>
+            <>
+              {settingsRow?.is_published ? (
+                <Link href="/settings/website/leads" className={styles.inlineLink}>
+                  View leads
+                </Link>
+              ) : null}
+              <Link href="/settings/website/domain" className={styles.inlineLink}>
+                Domain settings
+              </Link>
+            </>
           ) : undefined
         }
       />
@@ -121,18 +124,6 @@ export default async function TenantWebsiteSettingsPage() {
                 headline: page.headline,
               }))}
               canCreatePage={canEdit}
-            />
-            <WebsiteLeadsPanel
-              tenantSlug={membership.tenantSlug}
-              leads={leads.map((lead) => ({
-                id: lead.id,
-                name: lead.name,
-                email: lead.email,
-                phone: lead.phone,
-                message: lead.message,
-                status: lead.status,
-                createdAt: lead.created_at,
-              }))}
             />
           </>
         ) : null}

@@ -9,6 +9,7 @@ import {
   FileText,
   Home,
   LayoutDashboard,
+  LayoutTemplate,
   LineChart,
   ListChecks,
   Mail,
@@ -48,6 +49,7 @@ export const navIcons: Record<string, LucideIcon> = {
   tenants: Building2,
   users: Users,
   visits: Calendar,
+  website: LayoutTemplate,
   work: Wrench,
   audit: ShieldAlert,
 };
