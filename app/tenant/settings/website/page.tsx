@@ -100,27 +100,32 @@ export default async function TenantWebsiteSettingsPage() {
           />
         ) : settingsRow ? (
           <div className={styles.setupLayout}>
-            <div className={styles.setupTopGrid}>
-              <WebsitePublishCard
-                tenantSlug={membership.tenantSlug}
-                isPublished={settingsRow.is_published}
-                previewUrl={previewUrl}
-                trialPreview={trialPreview}
-              />
+            <WebsitePublishCard
+              tenantSlug={membership.tenantSlug}
+              isPublished={settingsRow.is_published}
+              previewUrl={previewUrl}
+              trialPreview={trialPreview}
+            />
+
+            {canEdit ? (
+              <div className={styles.setupMainGrid}>
+                <WebsiteSiteDefaultsPanel
+                  tenantSlug={membership.tenantSlug}
+                  settings={mapTenantSiteSettings(settingsRow)}
+                />
+                <WebsiteAppearancePanel
+                  tenantSlug={membership.tenantSlug}
+                  siteTemplate={settingsRow.site_template}
+                  colorScheme={settingsRow.color_scheme}
+                  brandColor={brandColor}
+                />
+              </div>
+            ) : (
               <WebsiteSiteDefaultsPanel
                 tenantSlug={membership.tenantSlug}
                 settings={mapTenantSiteSettings(settingsRow)}
               />
-            </div>
-
-            {canEdit ? (
-              <WebsiteAppearancePanel
-                tenantSlug={membership.tenantSlug}
-                siteTemplate={settingsRow.site_template}
-                colorScheme={settingsRow.color_scheme}
-                brandColor={brandColor}
-              />
-            ) : null}
+            )}
 
             <WebsitePageListPanel
               tenantSlug={membership.tenantSlug}
