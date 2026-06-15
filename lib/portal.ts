@@ -71,7 +71,10 @@ export async function getPortalContext(): Promise<PortalContext> {
   const h = await headers();
   const kindHeader = h.get('x-portal');
   const kind: PortalKind =
-    kindHeader === 'admin' || kindHeader === 'customer' || kindHeader === 'tenant'
+    kindHeader === 'admin' ||
+    kindHeader === 'customer' ||
+    kindHeader === 'tenant' ||
+    kindHeader === 'site'
       ? kindHeader
       : 'marketing';
 

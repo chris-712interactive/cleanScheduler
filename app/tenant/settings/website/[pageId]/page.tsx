@@ -1,0 +1,89 @@
+import { notFound } from 'next/navigation';
+import { PageHeader } from '@/components/portal/PageHeader';
+import { Stack } from '@/components/layout/Stack';
+import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
+import { getPortalContext } from '@/lib/portal';
+import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { createAdminClient } from '@/lib/supabase/server';
+import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
+import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
+import { publicPathForSitePage } from '@/lib/tenantSite/loadTenantSiteData';
+import { resolveTenantSiteOrigin } from '@/lib/portal/tenantSiteOrigin';
+import { WebsitePageEditor } from '../WebsitePageEditor';
+
+export const dynamic = 'force-dynamic';
+
+type PageProps = {
+  params: Promise<{ pageId: string }>;
+};
+
+export default async function TenantWebsitePageEditorPage({ params }: PageProps) {
+  const { pageId } = await params;
+  const { tenantSlug } = await getPortalContext();
+  const membership = await requireTenantPortalAccess(tenantSlug, '/settings/website');
+  const admin = createAdminClient();
+  const plan = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+
+  if (!isFeatureEnabled(plan, 'tenantMarketingSite')) {
+    return (
+      <>
+        <PageHeader title="Edit page" backHref="/settings/website" backLabel="Website" />
+        <FeatureUpgradePanel
+          title="Upgrade to edit website pages"
+          description={`Upgrade to ${minimumTierLabelForFeature('tenantMarketingSite')} to manage marketing pages.`}
+        />
+      </>
+    );
+  }
+
+  await ensureTenantMarketingSiteSeeded(admin, membership.tenantId);
+
+  const { data: page, error } = await admin
+    .from('tenant_marketing_pages')
+    .select('*')
+    .eq('id', pageId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (error || !page) notFound();
+
+  const originInfo = await resolveTenantSiteOrigin(admin, membership.tenantId);
+  const previewPath = `${originInfo.origin}${publicPathForSitePage(page.slug, originInfo.unifiedDomain)}`;
+
+  return (
+    <>
+      <PageHeader
+        title={page.headline || page.slug}
+        titleHint="Edit page content and SEO metadata."
+        backHref="/settings/website"
+        backLabel="Website"
+      />
+      <Stack gap={6}>
+        <WebsitePageEditor
+          tenantSlug={membership.tenantSlug}
+          page={{
+            id: page.id,
+            slug: page.slug,
+            pageType: page.page_type,
+            status: page.status,
+            metaTitle: page.meta_title,
+            metaDescription: page.meta_description,
+            eyebrow: page.eyebrow,
+            headline: page.headline,
+            lead: page.lead,
+            sectionsJson: JSON.stringify(page.sections ?? []),
+            faqJson: JSON.stringify(page.faq ?? []),
+            ctaTitle: page.cta_title,
+            ctaLead: page.cta_lead,
+            locationName: page.location_name,
+            city: page.city,
+            state: page.state,
+            postalCode: page.postal_code,
+          }}
+          previewPath={previewPath}
+        />
+      </Stack>
+    </>
+  );
+}

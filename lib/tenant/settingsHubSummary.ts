@@ -31,21 +31,27 @@ export async function getSettingsHubCardSummaries(options: {
   const tier = await resolveTenantPlanTier(admin, tenantId);
   const summaries: Record<string, SettingsHubCardSummary> = {};
 
-  const [{ data: billing }, { data: portalDomain }, { data: tenantRow }, mfaStatus] =
-    await Promise.all([
-      admin
-        .from('tenant_billing_accounts')
-        .select('status')
-        .eq('tenant_id', tenantId)
-        .maybeSingle(),
-      admin
-        .from('tenant_customer_portal_domains')
-        .select('status')
-        .eq('tenant_id', tenantId)
-        .maybeSingle(),
-      admin.from('tenants').select('logo_url').eq('id', tenantId).maybeSingle(),
-      getMfaStatus(),
-    ]);
+  const [
+    { data: billing },
+    { data: portalDomain },
+    { data: siteSettings },
+    { data: tenantRow },
+    mfaStatus,
+  ] = await Promise.all([
+    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+    admin
+      .from('tenant_customer_portal_domains')
+      .select('status')
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
+    admin
+      .from('tenant_marketing_site_settings')
+      .select('is_published')
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
+    admin.from('tenants').select('logo_url').eq('id', tenantId).maybeSingle(),
+    getMfaStatus(),
+  ]);
 
   const billingStatus = (billing?.status ?? 'trialing') as TenantBillingStatus;
   const paid = canUsePaidSubscriptionFeatures(billingStatus);
@@ -79,6 +85,25 @@ export async function getSettingsHubCardSummaries(options: {
       summaries['/settings/customer-portal'] = {
         href: '/settings/customer-portal',
         status: { label: 'DNS pending', tone: 'warning' },
+      };
+    }
+  }
+
+  if (isFeatureEnabled(tier, 'tenantMarketingSite')) {
+    if (siteSettings?.is_published) {
+      summaries['/settings/website'] = {
+        href: '/settings/website',
+        status: { label: tier === 'trial' ? 'Preview' : 'Live', tone: 'success' },
+      };
+    } else if (siteSettings) {
+      summaries['/settings/website'] = {
+        href: '/settings/website',
+        status: { label: 'Draft', tone: 'neutral' },
+      };
+    } else {
+      summaries['/settings/website'] = {
+        href: '/settings/website',
+        status: { label: 'Not set up', tone: 'neutral' },
       };
     }
   }

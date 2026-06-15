@@ -45,17 +45,21 @@ function requireManagementConfig(): { token: string; projectRef: string } {
 }
 
 /** OAuth / magic-link callback URL for a white-label customer portal hostname. */
-export function authCallbackUrlForHostname(hostname: string): string {
+export function authCallbackUrlForHostname(
+  hostname: string,
+  siteMode: 'portal_only' | 'unified' = 'portal_only',
+): string {
   const host = hostname.trim().toLowerCase();
   const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
   const port = apex.includes(':') ? apex.split(':')[1] : null;
   const proto = originForHostname(host).startsWith('https') ? 'https' : 'http';
+  const callbackPath = siteMode === 'unified' ? '/portal/auth/callback' : '/auth/callback';
 
   if (port && publicEnv.NEXT_PUBLIC_APP_ENV === 'local' && !host.includes(':')) {
-    return `${proto}://${host}:${port}/auth/callback`;
+    return `${proto}://${host}:${port}${callbackPath}`;
   }
 
-  return `${originForHostname(host)}/auth/callback`;
+  return `${originForHostname(host)}${callbackPath}`;
 }
 
 export function parseSupabaseUriAllowList(raw: string | null | undefined): string[] {
@@ -129,8 +133,9 @@ async function patchAuthUriAllowList(urls: string[]): Promise<void> {
 
 export async function addSupabaseAuthRedirectUrl(
   hostname: string,
+  siteMode: 'portal_only' | 'unified' = 'portal_only',
 ): Promise<{ callbackUrl: string }> {
-  const callbackUrl = authCallbackUrlForHostname(hostname);
+  const callbackUrl = authCallbackUrlForHostname(hostname, siteMode);
   const current = await fetchAuthUriAllowList();
 
   if (current.includes(callbackUrl)) {
@@ -141,10 +146,13 @@ export async function addSupabaseAuthRedirectUrl(
   return { callbackUrl };
 }
 
-export async function removeSupabaseAuthRedirectUrl(hostname: string): Promise<void> {
+export async function removeSupabaseAuthRedirectUrl(
+  hostname: string,
+  siteMode: 'portal_only' | 'unified' = 'portal_only',
+): Promise<void> {
   if (!isSupabaseAuthRedirectAutomationConfigured()) return;
 
-  const callbackUrl = authCallbackUrlForHostname(hostname);
+  const callbackUrl = authCallbackUrlForHostname(hostname, siteMode);
   const current = await fetchAuthUriAllowList();
   if (!current.includes(callbackUrl)) return;
 

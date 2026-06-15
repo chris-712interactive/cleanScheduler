@@ -55,8 +55,17 @@ export async function syncSupabaseAuthRedirectForHostname(
     return { authRedirectRegistered: false, authRedirectError: null };
   }
 
+  const { data: domainRow } = await admin
+    .from('tenant_customer_portal_domains')
+    .select('site_mode')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  const siteMode =
+    domainRow?.site_mode === 'unified' ? ('unified' as const) : ('portal_only' as const);
+
   try {
-    await addSupabaseAuthRedirectUrl(hostname);
+    await addSupabaseAuthRedirectUrl(hostname, siteMode);
     await admin
       .from('tenant_customer_portal_domains')
       .update({

@@ -167,6 +167,25 @@ Enforcement:
 
 Storage: `visit_proof_photos` bucket + `tenant_visit_proof_photos` table (migration `0045_visit_proof_photos.sql`).
 
+## Tenant marketing website (Business CMS / Pro unified domain)
+
+| Tier     | `tenantMarketingSite` | `tenantMarketingSiteCustomDomain` | `maxMarketingSitePages` | `maxMarketingSiteServiceAreaPages` |
+| -------- | --------------------- | --------------------------------- | ----------------------- | ---------------------------------- |
+| Starter  | No                    | No                                | 0                       | 0                                  |
+| Business | Yes                   | No                                | 10                      | 2                                  |
+| Pro      | Yes                   | Yes (paid)                        | 50                      | 25                                 |
+| Trial    | Yes (preview)         | No                                | 2                       | 0                                  |
+
+**Indexing:** Trial workspaces may preview the CMS but pages are **`noindex`** until a paid subscription is active. Paid Business+ pages are indexable when the site is published.
+
+**Business hosting:** Public pages at `https://{slug}.{apex}/site` and `/site/{page-slug}`.
+
+**Pro unified domain:** When `tenant_customer_portal_domains.site_mode = unified`, the custom hostname serves marketing at `/` and the customer portal at `/portal/*`. Existing `portal_only` domains are unchanged until the tenant opts into unified mode in Settings → Website.
+
+Settings: **Website** (`/settings/website`) — CMS page editor, publish toggle, leads inbox, domain setup (Pro).
+
+Migration `0076_tenant_marketing_site.sql`.
+
 ## Required API/server-action checks
 
 ### 1) Hard gates (feature flags)

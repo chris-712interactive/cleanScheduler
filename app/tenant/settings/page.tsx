@@ -6,6 +6,7 @@ import {
   Cable,
   ClipboardList,
   Globe,
+  LayoutTemplate,
   LifeBuoy,
   MapPin,
   Percent,
@@ -92,6 +93,12 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Customer portal',
         description: 'White-label custom domain for client-facing portal (Pro).',
         icon: Globe,
+      },
+      {
+        href: '/settings/website',
+        label: 'Website',
+        description: 'Public marketing pages, SEO, and inbound leads (Business+).',
+        icon: LayoutTemplate,
       },
       {
         href: '/settings/promotions',

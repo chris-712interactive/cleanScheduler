@@ -54,6 +54,12 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   if (features.whiteLabelCustomerPortal) {
     bullets.push('White-label customer portal (custom domain)');
   }
+  if (features.tenantMarketingSite) {
+    bullets.push('Marketing website CMS with SEO pages');
+  }
+  if (features.tenantMarketingSiteCustomDomain) {
+    bullets.push('Unified custom domain (website + portal)');
+  }
   if (features.proofOfServicePhotos) {
     bullets.push('Proof-of-service photos on completed visits');
   }
