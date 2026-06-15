@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { SettingsSaveButton } from '../SettingsSaveButton';
 import { updateWebsitePageAction, type WebsiteActionState } from './actions';
+import { WebsitePagePublishToggle } from './WebsitePagePublishToggle';
 import styles from './website-settings.module.scss';
 
 type EditorPage = {
@@ -30,10 +31,12 @@ export function WebsitePageEditor({
   tenantSlug,
   page,
   previewPath,
+  isSitePublished,
 }: {
   tenantSlug: string;
   page: EditorPage;
   previewPath: string;
+  isSitePublished: boolean;
 }) {
   const [state, formAction, pending] = useActionState<WebsiteActionState, FormData>(
     updateWebsitePageAction,
@@ -41,7 +44,24 @@ export function WebsitePageEditor({
   );
 
   return (
-    <form action={formAction} className={styles.stack}>
+    <div className={styles.stack}>
+      <section className={styles.settingsSection}>
+        <header className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Visibility</h2>
+          <p className={styles.sectionLead}>
+            {isSitePublished
+              ? 'Published pages appear on your live website. Draft pages stay hidden.'
+              : 'Publish this page when ready. It will appear once the website is published from Website settings.'}
+          </p>
+        </header>
+        <WebsitePagePublishToggle
+          tenantSlug={tenantSlug}
+          pageId={page.id}
+          status={page.status}
+        />
+      </section>
+
+      <form action={formAction} className={styles.stack}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="page_id" value={page.id} />
       <input type="hidden" name="sections_json" value={page.sectionsJson} />
@@ -78,13 +98,6 @@ export function WebsitePageEditor({
               defaultValue={page.slug}
               disabled={page.pageType === 'home'}
             />
-          </label>
-          <label className={styles.fieldLabel}>
-            Status
-            <select className={styles.fieldInput} name="status" defaultValue={page.status}>
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
           </label>
           <label className={styles.fieldLabel}>
             Meta title
@@ -181,6 +194,7 @@ export function WebsitePageEditor({
       </section>
 
       <SettingsSaveButton pending={pending} />
-    </form>
+      </form>
+    </div>
   );
 }

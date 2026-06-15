@@ -86,7 +86,15 @@
 .pageCardActions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
+}
+
+.pagePublishControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .inlineLink {
