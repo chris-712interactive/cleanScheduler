@@ -45,11 +45,11 @@ import {
 } from '@/lib/tenant/fieldEmployeeAccess';
 import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
 import { customerPortalJoinRedirectUrl } from '@/lib/portal/customerPortalOrigin';
-import { resolveActiveWhiteLabelCustomerPortal } from '@/lib/portal/resolveWhiteLabelCustomerPortal';
+import { resolveActiveTenantPublicDomain } from '@/lib/portal/resolveTenantPublicDomain';
 import { applyReferralCookieToResponse } from '@/lib/referrals/referralCookie';
 import { debugPerfStart } from '@/lib/performance/debugPerf';
 
-export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant';
+export type PortalKind = 'marketing' | 'admin' | 'customer' | 'tenant' | 'site';
 
 /** Served as marketing routes on any host; no session required (sign-in, OAuth return, post-auth denial). */
 const PUBLIC_MARKETING_PATHS = new Set([
@@ -90,7 +90,37 @@ const PORTAL_PATH_PREFIX: Record<PortalKind, string> = {
   admin: '/admin',
   customer: '/customer',
   tenant: '/tenant',
+  site: '/site',
 };
+
+const UNIFIED_SITE_RESERVED_PREFIXES = [
+  '/portal',
+  '/sign-in',
+  '/auth/callback',
+  '/access-denied',
+  '/complete-employee-invite',
+];
+
+function isPublicTenantSitePath(path: string): boolean {
+  return path === '/site' || path.startsWith('/site/');
+}
+
+function isUnifiedMarketingPath(path: string): boolean {
+  if (path === '/sitemap.xml' || path === '/robots.txt') return true;
+  return !UNIFIED_SITE_RESERVED_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+}
+
+function isUnifiedPortalPath(path: string): boolean {
+  return path === '/portal' || path.startsWith('/portal/');
+}
+
+function stripUnifiedPortalPrefix(path: string): string {
+  if (path === '/portal') return '/';
+  if (path.startsWith('/portal/')) return path.slice('/portal'.length) || '/';
+  return path;
+}
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -195,45 +225,109 @@ export async function proxy(request: NextRequest) {
     const apex = getApexHost();
     const hostWithoutPort = host.split(':')[0]!.toLowerCase();
     const isOurApexHost = isPlatformApexHost(host, apex);
-    const whiteLabelPortal = !isOurApexHost
-      ? await resolveActiveWhiteLabelCustomerPortal(hostWithoutPort)
+    const tenantPublicDomain = !isOurApexHost
+      ? await resolveActiveTenantPublicDomain(hostWithoutPort)
       : null;
+    const whiteLabelPortal =
+      tenantPublicDomain?.siteMode === 'portal_only' ? tenantPublicDomain : null;
+    const unifiedPublicDomain =
+      tenantPublicDomain?.siteMode === 'unified' ? tenantPublicDomain : null;
 
     const subdomain = isOurApexHost ? extractSubdomainLabel(host, apex) : null;
+    const requestedPath = request.nextUrl.pathname;
+
+    // Platform sitemap/robots — pass through without rewrite.
+    if (
+      isOurApexHost &&
+      subdomain === null &&
+      (requestedPath === '/sitemap.xml' || requestedPath === '/robots.txt')
+    ) {
+      return NextResponse.next();
+    }
 
     // Consolidate www -> apex for SEO (canonical tags point at apex only).
     if (isOurApexHost && subdomain === 'www') {
       return NextResponse.redirect(buildApexRedirectUrl(request, apex), 308);
     }
 
-    const requestedPath = request.nextUrl.pathname;
-    const isJoinPath = requestedPath === '/join' || requestedPath.startsWith('/join/');
+    const isJoinPath =
+      requestedPath === '/join' ||
+      requestedPath.startsWith('/join/') ||
+      requestedPath === '/portal/join' ||
+      requestedPath.startsWith('/portal/join/');
     const isPublicMarketingPath =
       PUBLIC_MARKETING_PATHS.has(requestedPath) ||
-      (requestedPath === '/contact' && subdomain === null && !whiteLabelPortal);
+      (requestedPath === '/contact' &&
+        subdomain === null &&
+        !whiteLabelPortal &&
+        !unifiedPublicDomain);
     const isPublicCustomerInvite =
-      (subdomain === 'my' || whiteLabelPortal) &&
-      (requestedPath === '/complete-invite' || requestedPath.startsWith('/complete-invite/'));
+      (subdomain === 'my' || whiteLabelPortal || unifiedPublicDomain) &&
+      (requestedPath === '/complete-invite' ||
+        requestedPath.startsWith('/complete-invite/') ||
+        requestedPath === '/portal/complete-invite' ||
+        requestedPath.startsWith('/portal/complete-invite/'));
     const isPublicCustomerJoin =
-      (subdomain === 'my' || whiteLabelPortal) &&
-      (requestedPath === '/join' || requestedPath.startsWith('/join/'));
+      (subdomain === 'my' || whiteLabelPortal || unifiedPublicDomain) &&
+      (requestedPath === '/join' ||
+        requestedPath.startsWith('/join/') ||
+        requestedPath === '/portal/join' ||
+        requestedPath.startsWith('/portal/join/'));
 
-    const onCustomerPortalHost = subdomain === 'my' || whiteLabelPortal != null;
-    if (isJoinPath && !onCustomerPortalHost) {
+    const onCustomerPortalHost =
+      subdomain === 'my' || whiteLabelPortal != null || unifiedPublicDomain != null;
+    if (
+      isJoinPath &&
+      !onCustomerPortalHost &&
+      !(unifiedPublicDomain && isUnifiedPortalPath(requestedPath))
+    ) {
       const redirect = NextResponse.redirect(customerPortalJoinRedirectUrl(request.nextUrl, apex));
       applyReferralCookieToResponse(redirect, request.nextUrl.searchParams.get('ref'));
       return redirect;
     }
 
-    const baseClassification = whiteLabelPortal
+    let baseClassification = whiteLabelPortal
       ? { kind: 'customer' as const, tenantSlug: whiteLabelPortal.tenantSlug }
       : classify(subdomain);
+
+    if (unifiedPublicDomain) {
+      if (isUnifiedPortalPath(requestedPath) || isPublicCustomerInvite || isPublicCustomerJoin) {
+        baseClassification = {
+          kind: 'customer',
+          tenantSlug: unifiedPublicDomain.tenantSlug,
+        };
+      } else if (isUnifiedMarketingPath(requestedPath)) {
+        baseClassification = {
+          kind: 'site',
+          tenantSlug: unifiedPublicDomain.tenantSlug,
+        };
+      }
+    } else if (
+      baseClassification.kind === 'tenant' &&
+      baseClassification.tenantSlug &&
+      isPublicTenantSitePath(requestedPath)
+    ) {
+      baseClassification = { kind: 'site', tenantSlug: baseClassification.tenantSlug };
+    }
+
     const kind: PortalKind = isPublicMarketingPath ? 'marketing' : baseClassification.kind;
-    // Keep tenant slug for /access-denied copy ("this organization") while sign-in/callback stay tenant-agnostic.
     const tenantSlug =
       isPublicMarketingPath && requestedPath !== '/access-denied'
         ? undefined
         : baseClassification.tenantSlug;
+
+    let rewritePath = requestedPath;
+    if (kind === 'site' && unifiedPublicDomain) {
+      if (requestedPath === '/sitemap.xml' || requestedPath === '/robots.txt') {
+        rewritePath = requestedPath;
+      } else if (requestedPath === '/') {
+        rewritePath = '/';
+      } else if (!requestedPath.startsWith('/site')) {
+        rewritePath = `/site${requestedPath}`;
+      }
+    } else if (kind === 'customer' && unifiedPublicDomain && isUnifiedPortalPath(requestedPath)) {
+      rewritePath = stripUnifiedPortalPrefix(requestedPath);
+    }
 
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-portal', kind);
@@ -244,17 +338,21 @@ export async function proxy(request: NextRequest) {
       requestHeaders.set('x-white-label-customer-portal', '1');
       requestHeaders.set('x-white-label-hostname', whiteLabelPortal.hostname);
     }
+    if (unifiedPublicDomain) {
+      requestHeaders.set('x-unified-public-domain', '1');
+      requestHeaders.set('x-white-label-hostname', unifiedPublicDomain.hostname);
+      if (kind === 'customer') {
+        requestHeaders.set('x-white-label-customer-portal', '1');
+      }
+    }
 
-    // Build the rewritten URL. Avoid double-prefixing if the request is already
-    // hitting an internal portal path (e.g. when Next.js itself recursively
-    // calls the proxy for an asset chunk that lives under the rewritten
-    // path).
     const url = request.nextUrl.clone();
     const prefix = PORTAL_PATH_PREFIX[kind];
     const alreadyPrefixed = url.pathname === prefix || url.pathname.startsWith(`${prefix}/`);
 
+    url.pathname = rewritePath;
     if (!alreadyPrefixed) {
-      url.pathname = url.pathname === '/' ? prefix : `${prefix}${url.pathname}`;
+      url.pathname = rewritePath === '/' ? prefix : `${prefix}${rewritePath}`;
     }
 
     // Post-rewrite path (e.g. /tenant/billing) for server-side billing gate / layout decisions.
@@ -264,8 +362,13 @@ export async function proxy(request: NextRequest) {
 
     const { userId, cookiesToSet } = await resolveUser(request);
     const refParam = request.nextUrl.searchParams.get('ref')?.trim();
-    if (!userId && (subdomain === 'my' || whiteLabelPortal) && requestedPath === '/' && refParam) {
-      const redirectUrl = new URL('/join', request.url);
+    if (
+      !userId &&
+      (subdomain === 'my' || whiteLabelPortal || unifiedPublicDomain) &&
+      (requestedPath === '/' || requestedPath === '/portal') &&
+      refParam
+    ) {
+      const redirectUrl = new URL(unifiedPublicDomain ? '/portal/join' : '/join', request.url);
       redirectUrl.searchParams.set('ref', refParam);
       const redirect = NextResponse.redirect(redirectUrl);
       applyCookies(redirect, cookiesToSet);
@@ -274,7 +377,7 @@ export async function proxy(request: NextRequest) {
     }
 
     const isProtectedPortal =
-      kind !== 'marketing' && !isPublicCustomerInvite && !isPublicCustomerJoin;
+      kind !== 'marketing' && kind !== 'site' && !isPublicCustomerInvite && !isPublicCustomerJoin;
 
     let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
     let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> =

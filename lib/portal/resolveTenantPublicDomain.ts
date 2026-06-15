@@ -6,16 +6,16 @@ import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHost
 import { whiteLabelHostTag } from '@/lib/portal/cacheTags';
 import type { TenantPublicDomainSiteMode } from '@/lib/tenantSite/types';
 
-export interface ActiveWhiteLabelCustomerPortal {
+export interface ActiveTenantPublicDomain {
   tenantId: string;
   tenantSlug: string;
   hostname: string;
   siteMode: TenantPublicDomainSiteMode;
 }
 
-async function resolveActiveWhiteLabelCustomerPortalUncached(
+async function resolveActiveTenantPublicDomainUncached(
   rawHost: string,
-): Promise<ActiveWhiteLabelCustomerPortal | null> {
+): Promise<ActiveTenantPublicDomain | null> {
   const hostname = normalizeCustomerPortalHostname(rawHost);
   if (!hostname) return null;
 
@@ -55,16 +55,16 @@ async function resolveActiveWhiteLabelCustomerPortalUncached(
   };
 }
 
-/** Resolves an active white-label customer portal host to its tenant (service role). */
-export async function resolveActiveWhiteLabelCustomerPortal(
+/** Resolves an active tenant public domain (portal-only or unified marketing + portal). */
+export async function resolveActiveTenantPublicDomain(
   rawHost: string,
-): Promise<ActiveWhiteLabelCustomerPortal | null> {
+): Promise<ActiveTenantPublicDomain | null> {
   const hostname = normalizeCustomerPortalHostname(rawHost);
   if (!hostname) return null;
 
   return unstable_cache(
-    () => resolveActiveWhiteLabelCustomerPortalUncached(rawHost),
-    ['white-label-customer-portal', hostname],
+    () => resolveActiveTenantPublicDomainUncached(rawHost),
+    ['tenant-public-domain', hostname],
     { revalidate: 300, tags: [whiteLabelHostTag(hostname)] },
   )();
 }
