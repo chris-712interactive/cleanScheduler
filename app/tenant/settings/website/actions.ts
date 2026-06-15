@@ -75,10 +75,60 @@ export async function toggleWebsitePublishAction(
 
     if (error) return { error: error.message };
 
+    if (publish) {
+      const publishedAt = new Date().toISOString();
+      const { error: pagesError } = await admin
+        .from('tenant_marketing_pages')
+        .update({ status: 'published', published_at: publishedAt })
+        .eq('tenant_id', membership.tenantId)
+        .eq('status', 'draft');
+
+      if (pagesError) return { error: pagesError.message };
+    }
+
     revalidatePath('/tenant/settings/website', 'page');
     return { success: publish ? 'Website published.' : 'Website unpublished.' };
   } catch (error) {
     return { error: featureGateErrorMessage(error) ?? 'Could not update publish state.' };
+  }
+}
+
+export async function toggleWebsitePagePublishAction(
+  _prev: WebsiteActionState,
+  formData: FormData,
+): Promise<WebsiteActionState> {
+  try {
+    const { membership, admin } = await membershipForAction(formData);
+    const pageId = String(formData.get('page_id') ?? '').trim();
+    if (!pageId) return { error: 'Page not found.' };
+
+    const publish = formData.get('publish') === 'true';
+
+    const { data: existing } = await admin
+      .from('tenant_marketing_pages')
+      .select('id')
+      .eq('id', pageId)
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle();
+
+    if (!existing) return { error: 'Page not found.' };
+
+    const { error } = await admin
+      .from('tenant_marketing_pages')
+      .update({
+        status: publish ? 'published' : 'draft',
+        published_at: publish ? new Date().toISOString() : null,
+      })
+      .eq('id', pageId)
+      .eq('tenant_id', membership.tenantId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/tenant/settings/website', 'page');
+    revalidatePath(`/tenant/settings/website/${pageId}`, 'page');
+    return { success: publish ? 'Page published.' : 'Page unpublished.' };
+  } catch (error) {
+    return { error: featureGateErrorMessage(error) ?? 'Could not update page publish state.' };
   }
 }
 
@@ -122,8 +172,6 @@ export async function updateWebsitePageAction(
     const slug = String(formData.get('slug') ?? '')
       .trim()
       .toLowerCase();
-    const status =
-      String(formData.get('status') ?? 'draft') === 'published' ? 'published' : 'draft';
 
     const { data: existing } = await admin
       .from('tenant_marketing_pages')
@@ -138,7 +186,6 @@ export async function updateWebsitePageAction(
       .from('tenant_marketing_pages')
       .update({
         slug: existing.page_type === 'home' ? existing.slug : slug,
-        status,
         meta_title: String(formData.get('meta_title') ?? '').trim(),
         meta_description: String(formData.get('meta_description') ?? '').trim(),
         eyebrow: String(formData.get('eyebrow') ?? '').trim(),
@@ -152,7 +199,6 @@ export async function updateWebsitePageAction(
         city: String(formData.get('city') ?? '').trim() || null,
         state: String(formData.get('state') ?? '').trim() || null,
         postal_code: String(formData.get('postal_code') ?? '').trim() || null,
-        published_at: status === 'published' ? new Date().toISOString() : null,
       })
       .eq('id', pageId)
       .eq('tenant_id', membership.tenantId);

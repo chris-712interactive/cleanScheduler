@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { StatusPill } from '@/components/ui/StatusPill';
 import { createWebsitePageAction, type WebsiteActionState } from './actions';
+import { WebsitePagePublishToggle } from './WebsitePagePublishToggle';
 import styles from './website-settings.module.scss';
 
 type PageItem = {
@@ -33,7 +33,10 @@ export function WebsitePageListPanel({
     <section className={styles.settingsSection}>
       <header className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Pages</h2>
-        <p className={styles.sectionLead}>Manage content for your public marketing website.</p>
+        <p className={styles.sectionLead}>
+          Manage content for your public marketing website. Draft pages stay hidden even when the
+          site is live.
+        </p>
       </header>
 
       <div className={styles.pageList}>
@@ -46,9 +49,12 @@ export function WebsitePageListPanel({
               </p>
             </div>
             <div className={styles.pageCardActions}>
-              <StatusPill tone={page.status === 'published' ? 'success' : 'neutral'}>
-                {page.status === 'published' ? 'Published' : 'Draft'}
-              </StatusPill>
+              <WebsitePagePublishToggle
+                tenantSlug={tenantSlug}
+                pageId={page.id}
+                status={page.status}
+                compact
+              />
               <Link href={`/settings/website/${page.id}`} className={styles.inlineLink}>
                 Edit
               </Link>

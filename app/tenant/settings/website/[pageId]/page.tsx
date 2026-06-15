@@ -39,12 +39,19 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
 
   await ensureTenantMarketingSiteSeeded(admin, membership.tenantId);
 
-  const { data: page, error } = await admin
-    .from('tenant_marketing_pages')
-    .select('*')
-    .eq('id', pageId)
-    .eq('tenant_id', membership.tenantId)
-    .maybeSingle();
+  const [{ data: page, error }, { data: settingsRow }] = await Promise.all([
+    admin
+      .from('tenant_marketing_pages')
+      .select('*')
+      .eq('id', pageId)
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+    admin
+      .from('tenant_marketing_site_settings')
+      .select('is_published')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+  ]);
 
   if (error || !page) notFound();
 
@@ -62,6 +69,7 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
       <Stack gap={6}>
         <WebsitePageEditor
           tenantSlug={membership.tenantSlug}
+          isSitePublished={settingsRow?.is_published ?? false}
           page={{
             id: page.id,
             slug: page.slug,
