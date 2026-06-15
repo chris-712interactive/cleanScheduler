@@ -8,10 +8,13 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
-import { publicPathForSitePage } from '@/lib/tenantSite/loadTenantSiteData';
+import { mapTenantSiteSettings } from '@/lib/tenantSite/loadTenantSiteData';
+import { publicPathForSitePage } from '@/lib/tenantSite/publicPaths';
 import { resolveTenantSiteOrigin } from '@/lib/portal/tenantSiteOrigin';
+import { DEFAULT_BRAND_COLOR } from '@/lib/tenant/tenantBusinessSettings';
 import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
 import type { SeoPageSection } from '@/lib/marketing/seoContent/types';
+import type { TenantSiteContext } from '@/lib/tenantSite/types';
 import { WebsitePageEditor } from '../WebsitePageEditor';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +44,7 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
 
   await ensureTenantMarketingSiteSeeded(admin, membership.tenantId);
 
-  const [{ data: page, error }, { data: settingsRow }] = await Promise.all([
+  const [{ data: page, error }, { data: settingsRow }, { data: tenantRow }] = await Promise.all([
     admin
       .from('tenant_marketing_pages')
       .select('*')
@@ -50,15 +53,35 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
       .maybeSingle(),
     admin
       .from('tenant_marketing_site_settings')
-      .select('is_published')
+      .select('*')
       .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+    admin
+      .from('tenants')
+      .select('name, logo_url, brand_color, slug')
+      .eq('id', membership.tenantId)
       .maybeSingle(),
   ]);
 
-  if (error || !page) notFound();
+  if (error || !page || !settingsRow || !tenantRow) notFound();
 
   const originInfo = await resolveTenantSiteOrigin(admin, membership.tenantId);
   const previewPath = `${originInfo.origin}${publicPathForSitePage(page.slug, originInfo.unifiedDomain)}`;
+
+  const previewSite: TenantSiteContext & { tenantId: string } = {
+    tenantId: membership.tenantId,
+    branding: {
+      tenantName: tenantRow.name,
+      logoUrl: tenantRow.logo_url,
+      brandColor: tenantRow.brand_color?.trim() || DEFAULT_BRAND_COLOR,
+      slug: tenantRow.slug,
+    },
+    settings: mapTenantSiteSettings(settingsRow),
+    origin: originInfo.origin,
+    unifiedDomain: originInfo.unifiedDomain,
+    portalLoginHref: '#preview-login',
+    indexable: false,
+  };
 
   return (
     <>
@@ -71,7 +94,8 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
       <Stack gap={6}>
         <WebsitePageEditor
           tenantSlug={membership.tenantSlug}
-          isSitePublished={settingsRow?.is_published ?? false}
+          isSitePublished={settingsRow.is_published}
+          previewSite={previewSite}
           page={{
             id: page.id,
             slug: page.slug,
