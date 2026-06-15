@@ -4,11 +4,13 @@ import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitleme
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import { normalizeCustomerPortalHostname } from '@/lib/portal/customerPortalHostname';
 import { whiteLabelHostTag } from '@/lib/portal/cacheTags';
+import type { TenantPublicDomainSiteMode } from '@/lib/tenantSite/types';
 
 export interface ActiveWhiteLabelCustomerPortal {
   tenantId: string;
   tenantSlug: string;
   hostname: string;
+  siteMode: TenantPublicDomainSiteMode;
 }
 
 async function resolveActiveWhiteLabelCustomerPortalUncached(
@@ -24,6 +26,7 @@ async function resolveActiveWhiteLabelCustomerPortalUncached(
       `
       hostname,
       status,
+      site_mode,
       tenants:tenants!inner ( id, slug )
     `,
     )
@@ -48,6 +51,7 @@ async function resolveActiveWhiteLabelCustomerPortalUncached(
     tenantId: tenant.id,
     tenantSlug: tenant.slug,
     hostname: row.hostname,
+    siteMode: (row.site_mode as TenantPublicDomainSiteMode) ?? 'portal_only',
   };
 }
 

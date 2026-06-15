@@ -3708,6 +3708,7 @@ export type Database = {
           vercel_last_error: string | null;
           auth_redirect_registered_at: string | null;
           auth_redirect_last_error: string | null;
+          site_mode: Database['public']['Enums']['tenant_public_domain_site_mode'];
           created_at: string;
           updated_at: string;
         };
@@ -3722,6 +3723,7 @@ export type Database = {
           vercel_last_error?: string | null;
           auth_redirect_registered_at?: string | null;
           auth_redirect_last_error?: string | null;
+          site_mode?: Database['public']['Enums']['tenant_public_domain_site_mode'];
           created_at?: string;
           updated_at?: string;
         };
@@ -3736,12 +3738,223 @@ export type Database = {
           vercel_last_error?: string | null;
           auth_redirect_registered_at?: string | null;
           auth_redirect_last_error?: string | null;
+          site_mode?: Database['public']['Enums']['tenant_public_domain_site_mode'];
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
           {
             foreignKeyName: 'tenant_customer_portal_domains_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_marketing_leads: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          page_id: string | null;
+          source: Database['public']['Enums']['tenant_marketing_lead_source'];
+          name: string;
+          email: string;
+          phone: string | null;
+          message: string | null;
+          service_address_line1: string | null;
+          service_city: string | null;
+          service_state: string | null;
+          service_postal_code: string | null;
+          status: Database['public']['Enums']['tenant_marketing_lead_status'];
+          customer_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          page_id?: string | null;
+          source?: Database['public']['Enums']['tenant_marketing_lead_source'];
+          name: string;
+          email: string;
+          phone?: string | null;
+          message?: string | null;
+          service_address_line1?: string | null;
+          service_city?: string | null;
+          service_state?: string | null;
+          service_postal_code?: string | null;
+          status?: Database['public']['Enums']['tenant_marketing_lead_status'];
+          customer_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          page_id?: string | null;
+          source?: Database['public']['Enums']['tenant_marketing_lead_source'];
+          name?: string;
+          email?: string;
+          phone?: string | null;
+          message?: string | null;
+          service_address_line1?: string | null;
+          service_city?: string | null;
+          service_state?: string | null;
+          service_postal_code?: string | null;
+          status?: Database['public']['Enums']['tenant_marketing_lead_status'];
+          customer_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_marketing_leads_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_marketing_pages: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          slug: string;
+          page_type: Database['public']['Enums']['tenant_marketing_page_type'];
+          status: Database['public']['Enums']['tenant_marketing_page_status'];
+          sort_order: number;
+          meta_title: string;
+          meta_description: string;
+          og_image_url: string | null;
+          eyebrow: string;
+          headline: string;
+          lead: string;
+          sections: Json;
+          faq: Json;
+          related_links: Json;
+          cta_title: string | null;
+          cta_lead: string | null;
+          location_name: string | null;
+          city: string | null;
+          state: string | null;
+          postal_code: string | null;
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          slug: string;
+          page_type?: Database['public']['Enums']['tenant_marketing_page_type'];
+          status?: Database['public']['Enums']['tenant_marketing_page_status'];
+          sort_order?: number;
+          meta_title?: string;
+          meta_description?: string;
+          og_image_url?: string | null;
+          eyebrow?: string;
+          headline?: string;
+          lead?: string;
+          sections?: Json;
+          faq?: Json;
+          related_links?: Json;
+          cta_title?: string | null;
+          cta_lead?: string | null;
+          location_name?: string | null;
+          city?: string | null;
+          state?: string | null;
+          postal_code?: string | null;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          slug?: string;
+          page_type?: Database['public']['Enums']['tenant_marketing_page_type'];
+          status?: Database['public']['Enums']['tenant_marketing_page_status'];
+          sort_order?: number;
+          meta_title?: string;
+          meta_description?: string;
+          og_image_url?: string | null;
+          eyebrow?: string;
+          headline?: string;
+          lead?: string;
+          sections?: Json;
+          faq?: Json;
+          related_links?: Json;
+          cta_title?: string | null;
+          cta_lead?: string | null;
+          location_name?: string | null;
+          city?: string | null;
+          state?: string | null;
+          postal_code?: string | null;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_marketing_pages_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_marketing_site_settings: {
+        Row: {
+          tenant_id: string;
+          is_published: boolean;
+          homepage_slug: string;
+          default_cta_label: string;
+          default_cta_href: string;
+          contact_email: string | null;
+          contact_phone: string | null;
+          service_area_summary: string | null;
+          social_links: Json;
+          site_template: Database['public']['Enums']['tenant_marketing_site_template'];
+          color_scheme: Database['public']['Enums']['tenant_marketing_site_color_scheme'];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          is_published?: boolean;
+          homepage_slug?: string;
+          default_cta_label?: string;
+          default_cta_href?: string;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          service_area_summary?: string | null;
+          social_links?: Json;
+          site_template?: Database['public']['Enums']['tenant_marketing_site_template'];
+          color_scheme?: Database['public']['Enums']['tenant_marketing_site_color_scheme'];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          is_published?: boolean;
+          homepage_slug?: string;
+          default_cta_label?: string;
+          default_cta_href?: string;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          service_area_summary?: string | null;
+          social_links?: Json;
+          site_template?: Database['public']['Enums']['tenant_marketing_site_template'];
+          color_scheme?: Database['public']['Enums']['tenant_marketing_site_color_scheme'];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_marketing_site_settings_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: true;
             referencedRelation: 'tenants';
@@ -4046,6 +4259,26 @@ export type Database = {
       scheduled_visit_purpose: 'service' | 'consultation';
       tenant_invoice_expectation: 'prepay' | 'pay_after_service';
       tenant_invoice_payment_recorded_via: 'manual' | 'stripe_checkout';
+      tenant_marketing_lead_source: 'contact_form' | 'quote_request';
+      tenant_marketing_lead_status: 'new' | 'contacted' | 'converted' | 'closed';
+      tenant_marketing_page_status: 'draft' | 'published';
+      tenant_marketing_page_type:
+        | 'home'
+        | 'services'
+        | 'about'
+        | 'contact'
+        | 'faq'
+        | 'service_area'
+        | 'custom';
+      tenant_marketing_site_color_scheme:
+        | 'brand'
+        | 'ocean'
+        | 'forest'
+        | 'slate'
+        | 'sunset'
+        | 'plum';
+      tenant_marketing_site_template: 'classic' | 'modern' | 'editorial';
+      tenant_public_domain_site_mode: 'portal_only' | 'unified';
       tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';
       tenant_customer_wallet_transaction_kind:
         | 'credit_grant'

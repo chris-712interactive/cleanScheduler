@@ -42,7 +42,7 @@ export async function getCustomerPortalOriginForTenant(
 ): Promise<string> {
   const { data: row } = await admin
     .from('tenant_customer_portal_domains')
-    .select('hostname')
+    .select('hostname, site_mode')
     .eq('tenant_id', tenantId)
     .eq('status', 'active')
     .maybeSingle();
@@ -54,15 +54,27 @@ export async function getCustomerPortalOriginForTenant(
   return getPublicOrigin('my');
 }
 
+function customerPortalPathPrefix(siteMode: string | null | undefined): string {
+  return siteMode === 'unified' ? '/portal' : '';
+}
+
 /** Full customer portal URL for a tenant path (white-label when active). */
 export async function customerPortalUrlForTenant(
   admin: SupabaseClient<Database>,
   tenantId: string,
   path: string,
 ): Promise<string> {
-  const origin = await getCustomerPortalOriginForTenant(admin, tenantId);
+  const { data: row } = await admin
+    .from('tenant_customer_portal_domains')
+    .select('hostname, site_mode, status')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  const origin = row?.hostname ? originForHostname(row.hostname) : getPublicOrigin('my');
+  const prefix = row?.hostname ? customerPortalPathPrefix(row.site_mode) : '';
   const normalized = path.startsWith('/') ? path : `/${path}`;
-  return `${origin}${normalized}`;
+  return `${origin}${prefix}${normalized}`;
 }
 
 /** Customer portal origin from the current request (shared my.* or white-label host). */

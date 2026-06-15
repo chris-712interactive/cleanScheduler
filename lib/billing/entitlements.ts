@@ -25,7 +25,9 @@ export type EntitlementFeature =
   | 'customServiceTypes'
   | 'customerPromotions'
   | 'customerReferralProgram'
-  | 'kanbanCustomization';
+  | 'kanbanCustomization'
+  | 'tenantMarketingSite'
+  | 'tenantMarketingSiteCustomDomain';
 
 export type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -38,7 +40,9 @@ export type EntitlementLimitKey =
   | 'maxCampaignSendsMonthly'
   | 'maxConcurrentActiveCampaigns'
   | 'maxCampaignAudienceSize'
-  | 'maxCampaignDrafts';
+  | 'maxCampaignDrafts'
+  | 'maxMarketingSitePages'
+  | 'maxMarketingSiteServiceAreaPages';
 
 /** Limits stored as plain numbers (excludes nullable field-seat cap). */
 export type NumericEntitlementLimitKey = Exclude<EntitlementLimitKey, 'includedFieldSeats'>;
@@ -86,6 +90,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customerPromotions: false,
       customerReferralProgram: false,
       kanbanCustomization: false,
+      tenantMarketingSite: false,
+      tenantMarketingSiteCustomDomain: false,
     },
     limits: {
       includedOfficeSeats: 1,
@@ -99,6 +105,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxConcurrentActiveCampaigns: 0,
       maxCampaignAudienceSize: 0,
       maxCampaignDrafts: 0,
+      maxMarketingSitePages: 0,
+      maxMarketingSiteServiceAreaPages: 0,
     },
   },
   business: {
@@ -127,6 +135,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customerPromotions: true,
       customerReferralProgram: true,
       kanbanCustomization: false,
+      tenantMarketingSite: true,
+      tenantMarketingSiteCustomDomain: false,
     },
     limits: {
       includedOfficeSeats: 2,
@@ -140,6 +150,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxConcurrentActiveCampaigns: 3,
       maxCampaignAudienceSize: 5000,
       maxCampaignDrafts: 20,
+      maxMarketingSitePages: 10,
+      maxMarketingSiteServiceAreaPages: 2,
     },
   },
   pro: {
@@ -168,6 +180,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       customerPromotions: true,
       customerReferralProgram: true,
       kanbanCustomization: true,
+      tenantMarketingSite: true,
+      tenantMarketingSiteCustomDomain: true,
     },
     limits: {
       includedOfficeSeats: 10,
@@ -181,6 +195,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxConcurrentActiveCampaigns: 10,
       maxCampaignAudienceSize: 15000,
       maxCampaignDrafts: 50,
+      maxMarketingSitePages: 50,
+      maxMarketingSiteServiceAreaPages: 25,
     },
   },
 };
@@ -215,6 +231,8 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     customerPromotions: true,
     customerReferralProgram: true,
     kanbanCustomization: true,
+    tenantMarketingSite: true,
+    tenantMarketingSiteCustomDomain: false,
   },
   limits: {
     includedOfficeSeats: 2,
@@ -228,6 +246,8 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     maxConcurrentActiveCampaigns: 0,
     maxCampaignAudienceSize: 0,
     maxCampaignDrafts: 0,
+    maxMarketingSitePages: 2,
+    maxMarketingSiteServiceAreaPages: 0,
   },
 };
 
