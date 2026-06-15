@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Phone } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
+import { formatTenantSitePhoneDisplay } from '@/lib/tenantSite/navLabels';
 import type { TenantSiteBranding, TenantSiteNavLink } from '@/lib/tenantSite/types';
 import styles from './TenantSitePage.module.scss';
+
+function mapPhoneHref(phone: string): string {
+  return `tel:${phone.replace(/\s/g, '')}`;
+}
 
 export function TenantSiteMobileNav({
   branding,
@@ -15,6 +20,7 @@ export function TenantSiteMobileNav({
   portalLoginHref,
   ctaLabel,
   ctaHref,
+  showCta,
 }: {
   branding: TenantSiteBranding;
   navLinks: TenantSiteNavLink[];
@@ -22,6 +28,7 @@ export function TenantSiteMobileNav({
   portalLoginHref: string;
   ctaLabel: string;
   ctaHref: string;
+  showCta: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -31,6 +38,8 @@ export function TenantSiteMobileNav({
       document.body.style.overflow = '';
     };
   }, [open]);
+
+  const phoneDisplay = phone ? formatTenantSitePhoneDisplay(phone) : null;
 
   return (
     <>
@@ -80,17 +89,20 @@ export function TenantSiteMobileNav({
         </ul>
 
         <div className={styles.mobileNavActions}>
-          {phone ? (
-            <a href={`tel:${phone.replace(/\s/g, '')}`} className={styles.phoneLink}>
-              {phone}
+          {phoneDisplay ? (
+            <a href={mapPhoneHref(phone!)} className={styles.mobilePhoneLink}>
+              <Phone size={18} aria-hidden />
+              {phoneDisplay}
             </a>
           ) : null}
-          <Button size="md" variant="secondary" href={portalLoginHref} as="a" fullWidth>
+          <Link href={portalLoginHref} className={styles.portalLoginLink}>
             Customer login
-          </Button>
-          <Button size="md" href={ctaHref} as="a" fullWidth onClick={() => setOpen(false)}>
-            {ctaLabel}
-          </Button>
+          </Link>
+          {showCta ? (
+            <Button size="md" href={ctaHref} as="a" fullWidth onClick={() => setOpen(false)}>
+              {ctaLabel}
+            </Button>
+          ) : null}
         </div>
       </nav>
     </>
@@ -104,6 +116,7 @@ export function TenantSiteHeader({
   portalLoginHref,
   ctaLabel,
   ctaHref,
+  showCta,
 }: {
   branding: TenantSiteBranding;
   navLinks: TenantSiteNavLink[];
@@ -111,7 +124,10 @@ export function TenantSiteHeader({
   portalLoginHref: string;
   ctaLabel: string;
   ctaHref: string;
+  showCta: boolean;
 }) {
+  const phoneDisplay = phone ? formatTenantSitePhoneDisplay(phone) : null;
+
   return (
     <header className={styles.header}>
       <Container size="lg">
@@ -121,31 +137,36 @@ export function TenantSiteHeader({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={branding.logoUrl} alt="" className={styles.logo} />
             ) : null}
-            <span>{branding.tenantName}</span>
+            <span className={styles.brandName}>{branding.tenantName}</span>
           </Link>
 
-          <ul className={styles.desktopNavLinks}>
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className={styles.desktopNavLink}>
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <nav className={styles.desktopNav} aria-label="Primary">
+            <ul className={styles.desktopNavLinks}>
+              {navLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className={styles.desktopNavLink}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
           <div className={styles.headerActions}>
-            {phone ? (
-              <a href={`tel:${phone.replace(/\s/g, '')}`} className={styles.phoneLink}>
-                {phone}
+            {phoneDisplay ? (
+              <a href={mapPhoneHref(phone!)} className={styles.phoneLink}>
+                <Phone size={16} aria-hidden className={styles.phoneIcon} />
+                <span>{phoneDisplay}</span>
               </a>
             ) : null}
-            <Button size="sm" variant="secondary" href={portalLoginHref} as="a">
+            <Link href={portalLoginHref} className={styles.portalLoginLink}>
               Customer login
-            </Button>
-            <Button size="sm" href={ctaHref} as="a">
-              {ctaLabel}
-            </Button>
+            </Link>
+            {showCta ? (
+              <Button size="sm" href={ctaHref} as="a">
+                {ctaLabel}
+              </Button>
+            ) : null}
           </div>
 
           <TenantSiteMobileNav
@@ -155,6 +176,7 @@ export function TenantSiteHeader({
             portalLoginHref={portalLoginHref}
             ctaLabel={ctaLabel}
             ctaHref={ctaHref}
+            showCta={showCta}
           />
         </div>
       </Container>
@@ -177,6 +199,8 @@ export function TenantSiteFooter({
   serviceAreaSummary: string | null;
   showPoweredBy: boolean;
 }) {
+  const phoneDisplay = contactPhone ? formatTenantSitePhoneDisplay(contactPhone) : null;
+
   return (
     <footer className={styles.footer}>
       <Container size="lg">
@@ -188,7 +212,7 @@ export function TenantSiteFooter({
 
           {navLinks.length > 0 ? (
             <div className={styles.footerColumn}>
-              <h3 className={styles.footerHeading}>Pages</h3>
+              <h3 className={styles.footerHeading}>Explore</h3>
               <ul className={styles.footerLinks}>
                 {navLinks.map((link) => (
                   <li key={link.href}>
@@ -210,7 +234,13 @@ export function TenantSiteFooter({
                 </a>
               </p>
             ) : null}
-            {contactPhone ? <p className={styles.footerMeta}>{contactPhone}</p> : null}
+            {phoneDisplay ? (
+              <p className={styles.footerMeta}>
+                <a href={mapPhoneHref(contactPhone!)} className={styles.footerLink}>
+                  {phoneDisplay}
+                </a>
+              </p>
+            ) : null}
           </div>
         </div>
 
