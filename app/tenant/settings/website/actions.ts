@@ -6,7 +6,6 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
   assertLimitNotExceeded,
   assertFeatureEnabled,
-  isFeatureEnabled,
   resolveTenantEntitlementPlan,
 } from '@/lib/billing/entitlements';
 import {
