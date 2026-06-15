@@ -29,32 +29,31 @@ export function WebsiteAppearancePanel({
 
   return (
     <section className={styles.setupCard}>
-      <header className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>Appearance</h2>
-        <p className={styles.sectionLead}>
-          Choose a layout template and accent palette for your public website.
-        </p>
-      </header>
-
-      <form action={formAction} className={styles.stack}>
+      <form action={formAction} className={styles.appearanceForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
+
+        <header className={styles.sectionHeaderCompact}>
+          <div>
+            <h2 className={styles.sectionTitle}>Appearance</h2>
+            <p className={styles.sectionLead}>Layout template and accent color.</p>
+          </div>
+          <SettingsSaveButton pending={pending} idleLabel="Save" pendingLabel="Saving…" />
+        </header>
 
         <div className={styles.appearanceGroup}>
           <h3 className={styles.appearanceLabel}>Layout template</h3>
-          <div className={styles.templateGrid}>
+          <div className={styles.templateGrid} role="radiogroup" aria-label="Layout template">
             {TENANT_SITE_TEMPLATE_OPTIONS.map((option) => (
-              <label key={option.id} className={styles.templateOption}>
+              <label key={option.id} className={styles.templateOption} title={option.description}>
                 <input
                   type="radio"
                   name="site_template"
                   value={option.id}
                   defaultChecked={siteTemplate === option.id}
+                  className={styles.hiddenChoice}
                 />
                 <span className={styles.templatePreview} data-template={option.id} aria-hidden />
-                <span className={styles.templateCopy}>
-                  <span className={styles.templateTitle}>{option.label}</span>
-                  <span className={styles.templateDescription}>{option.description}</span>
-                </span>
+                <span className={styles.templateTitle}>{option.label}</span>
               </label>
             ))}
           </div>
@@ -62,27 +61,26 @@ export function WebsiteAppearancePanel({
 
         <div className={styles.appearanceGroup}>
           <h3 className={styles.appearanceLabel}>Color scheme</h3>
-          <div className={styles.schemeGrid}>
+          <div className={styles.schemeGrid} role="radiogroup" aria-label="Color scheme">
             {TENANT_SITE_COLOR_SCHEME_OPTIONS.map((option) => {
               const swatch = option.id === 'brand' ? brandColor || option.accent : option.accent;
+              const label = option.id === 'brand' ? 'Brand' : option.label;
 
               return (
-                <label key={option.id} className={styles.schemeOption}>
+                <label key={option.id} className={styles.schemeOption} title={option.description}>
                   <input
                     type="radio"
                     name="color_scheme"
                     value={option.id}
                     defaultChecked={colorScheme === option.id}
+                    className={styles.hiddenChoice}
                   />
                   <span
                     className={styles.schemeSwatch}
                     style={{ backgroundColor: swatch }}
                     aria-hidden
                   />
-                  <span className={styles.schemeCopy}>
-                    <span className={styles.schemeTitle}>{option.label}</span>
-                    <span className={styles.schemeDescription}>{option.description}</span>
-                  </span>
+                  <span className={styles.schemeTitle}>{label}</span>
                 </label>
               );
             })}
@@ -99,8 +97,6 @@ export function WebsiteAppearancePanel({
             {state.success}
           </p>
         ) : null}
-
-        <SettingsSaveButton pending={pending} idleLabel="Save appearance" pendingLabel="Saving…" />
       </form>
     </section>
   );

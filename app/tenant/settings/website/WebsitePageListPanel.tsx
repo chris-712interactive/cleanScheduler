@@ -31,24 +31,25 @@ export function WebsitePageListPanel({
 
   return (
     <section className={styles.setupCard}>
-      <header className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>Pages</h2>
-        <p className={styles.sectionLead}>
-          Manage content for your public marketing website. Draft pages stay hidden even when the
-          site is live.
-        </p>
+      <header className={styles.sectionHeaderCompact}>
+        <div>
+          <h2 className={styles.sectionTitle}>Pages</h2>
+          <p className={styles.sectionLead}>
+            {pages.length} page{pages.length === 1 ? '' : 's'} · draft pages stay hidden when live
+          </p>
+        </div>
       </header>
 
-      <div className={styles.pageGrid}>
+      <ul className={styles.pageList}>
         {pages.map((page) => (
-          <article key={page.id} className={styles.pageCard}>
-            <div>
-              <h3 className={styles.pageCardTitle}>{page.headline || page.slug}</h3>
-              <p className={styles.pageCardMeta}>
+          <li key={page.id} className={styles.pageRow}>
+            <div className={styles.pageRowMain}>
+              <span className={styles.pageRowTitle}>{page.headline || page.slug}</span>
+              <span className={styles.pageRowMeta}>
                 /{page.slug} · {page.pageType.replace('_', ' ')}
-              </p>
+              </span>
             </div>
-            <div className={styles.pageCardActions}>
+            <div className={styles.pageRowActions}>
               <WebsitePagePublishToggle
                 tenantSlug={tenantSlug}
                 pageId={page.id}
@@ -59,28 +60,25 @@ export function WebsitePageListPanel({
                 Edit
               </Link>
             </div>
-          </article>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {canCreatePage ? (
-        <form action={formAction} className={styles.stack}>
+        <form action={formAction} className={styles.addPageForm}>
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="page_type" value="custom" />
-          <div className={styles.formGrid}>
-            <label className={styles.fieldLabel}>
-              New page slug
-              <input className={styles.fieldInput} name="slug" placeholder="service-area-austin" />
-            </label>
-            <label className={styles.fieldLabel}>
-              Headline
-              <input
-                className={styles.fieldInput}
-                name="headline"
-                placeholder="Cleaning in Austin"
-              />
-            </label>
-          </div>
+          <label className={styles.fieldLabel}>
+            <span className={styles.addPageLabel}>New page slug</span>
+            <input className={styles.fieldInput} name="slug" placeholder="service-area-austin" />
+          </label>
+          <label className={styles.fieldLabel}>
+            <span className={styles.addPageLabel}>Headline</span>
+            <input className={styles.fieldInput} name="headline" placeholder="Cleaning in Austin" />
+          </label>
+          <Button type="submit" disabled={pending} size="sm">
+            Add page
+          </Button>
           {state.error ? (
             <p className={styles.bannerError} role="alert">
               {state.error}
@@ -91,9 +89,6 @@ export function WebsitePageListPanel({
               {state.success}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending}>
-            Add page
-          </Button>
         </form>
       ) : null}
     </section>

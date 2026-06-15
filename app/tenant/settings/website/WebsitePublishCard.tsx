@@ -24,34 +24,24 @@ export function WebsitePublishCard({
   >(toggleWebsitePublishAction, {});
 
   return (
-    <section className={styles.setupCard}>
-      {trialPreview ? (
-        <p className={styles.trialNotice} role="status">
-          Preview only — pages are hidden from search until you subscribe to a paid plan.
-        </p>
-      ) : null}
-
-      <header className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>Publish</h2>
-        <p className={styles.sectionLead}>
-          When published, your public site is visible at the URL below.
-        </p>
-      </header>
-
-      <p className={styles.previewUrl}>
-        <Link href={previewUrl} className={styles.inlineLink} target="_blank" rel="noreferrer">
-          {previewUrl}
-        </Link>
-      </p>
-
-      <div className={styles.pageCardActions}>
+    <section className={styles.statusBar}>
+      <div className={styles.statusBarMain}>
         <StatusPill tone={isPublished ? 'success' : 'neutral'}>
           {isPublished ? 'Live' : 'Draft'}
         </StatusPill>
+        <Link href={previewUrl} className={styles.statusBarUrl} target="_blank" rel="noreferrer">
+          {previewUrl}
+        </Link>
+        {trialPreview ? (
+          <span className={styles.statusBarHint}>Preview only until you subscribe</span>
+        ) : null}
+      </div>
+
+      <div className={styles.statusBarActions}>
         <form action={publishAction}>
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="publish" value={isPublished ? 'false' : 'true'} />
-          <Button type="submit" disabled={publishPending}>
+          <Button type="submit" disabled={publishPending} size="sm">
             {isPublished ? 'Unpublish' : 'Publish website'}
           </Button>
         </form>

@@ -20,16 +20,24 @@ export function WebsiteSiteDefaultsPanel({
 
   return (
     <section className={styles.setupCard}>
-      <header className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>Site defaults</h2>
-        <p className={styles.sectionLead}>
-          Contact details and primary call-to-action used across every page.
-        </p>
+      <header className={styles.sectionHeaderCompact}>
+        <div>
+          <h2 className={styles.sectionTitle}>Site defaults</h2>
+          <p className={styles.sectionLead}>Contact info and primary call-to-action.</p>
+        </div>
+        <Button
+          type="submit"
+          form="website-site-defaults-form"
+          disabled={settingsPending}
+          size="sm"
+        >
+          Save
+        </Button>
       </header>
 
-      <form action={settingsAction} className={styles.stack}>
+      <form id="website-site-defaults-form" action={settingsAction} className={styles.defaultsForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
-        <div className={styles.formGrid}>
+        <div className={styles.defaultsGrid}>
           <label className={styles.fieldLabel}>
             Primary CTA label
             <input
@@ -64,16 +72,16 @@ export function WebsiteSiteDefaultsPanel({
               defaultValue={settings.contactPhone ?? ''}
             />
           </label>
+          <label className={`${styles.fieldLabel} ${styles.defaultsFullWidth}`}>
+            Service area summary
+            <textarea
+              className={styles.fieldInput}
+              name="service_area_summary"
+              rows={2}
+              defaultValue={settings.serviceAreaSummary ?? ''}
+            />
+          </label>
         </div>
-        <label className={styles.fieldLabel}>
-          Service area summary
-          <textarea
-            className={styles.fieldInput}
-            name="service_area_summary"
-            rows={3}
-            defaultValue={settings.serviceAreaSummary ?? ''}
-          />
-        </label>
         {settingsState.error ? (
           <p className={styles.bannerError} role="alert">
             {settingsState.error}
@@ -84,9 +92,6 @@ export function WebsiteSiteDefaultsPanel({
             {settingsState.success}
           </p>
         ) : null}
-        <Button type="submit" disabled={settingsPending}>
-          Save defaults
-        </Button>
       </form>
     </section>
   );
