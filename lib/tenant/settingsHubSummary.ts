@@ -95,6 +95,21 @@ export async function getSettingsHubCardSummaries(options: {
         href: '/settings/website',
         status: { label: tier === 'trial' ? 'Preview' : 'Live', tone: 'success' },
       };
+
+      const { count } = await admin
+        .from('tenant_marketing_leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('status', 'new');
+
+      const newLeads = count ?? 0;
+      summaries['/settings/website/leads'] = {
+        href: '/settings/website/leads',
+        status:
+          newLeads > 0
+            ? { label: `${newLeads} new`, tone: 'warning' }
+            : { label: 'Inbox', tone: 'neutral' },
+      };
     } else if (siteSettings) {
       summaries['/settings/website'] = {
         href: '/settings/website',

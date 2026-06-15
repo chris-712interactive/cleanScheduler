@@ -10,6 +10,10 @@ import {
 import { getTenantEntitlementPlan } from '@/lib/portal/requestContext';
 import { buildTenantBillingNavItem } from '@/lib/tenant/buildTenantBillingNav';
 import { buildTenantSettingsNavItem } from '@/lib/tenant/buildTenantSettingsNav';
+import {
+  buildTenantWebsiteNavItems,
+  countNewTenantMarketingLeads,
+} from '@/lib/tenant/buildTenantWebsiteNav';
 import { buildTenantNavItems } from '@/lib/tenant/buildTenantNavItems';
 import { needsSubscriptionPurchase } from '@/lib/billing/tenantSubscriptionAccess';
 import type { TenantBillingSnapshot } from '@/lib/portal/requestContext';
@@ -41,21 +45,47 @@ export const loadTenantNavItemsForShell = cache(
     const connectStatus = billingSnapshot.connectStatus;
 
     const admin = createAdminClient();
-    const [pendingRescheduleCount, openSupportThreadCount, planTier, onboarding, referralsEnabled] =
-      await Promise.all([
-        getCachedPendingRescheduleCount(tenantId),
-        getCachedOpenSupportThreadCount(tenantId),
-        getTenantEntitlementPlan(tenantId),
-        subscriptionLocked
-          ? Promise.resolve({ gettingStartedNavItem: null, coreSetupComplete: true })
-          : getCachedOwnerOnboardingNavContext({
-              tenantId,
-              tenantSlug,
-              role,
-              connectStatus,
-            }),
-        tenantReferralsNavEnabled(admin, tenantId),
-      ]);
+    const planTier = await getTenantEntitlementPlan(tenantId);
+    const websiteFeatureEnabled = isFeatureEnabled(planTier, 'tenantMarketingSite');
+
+    const [
+      pendingRescheduleCount,
+      openSupportThreadCount,
+      onboarding,
+      referralsEnabled,
+      siteSettings,
+    ] = await Promise.all([
+      getCachedPendingRescheduleCount(tenantId),
+      getCachedOpenSupportThreadCount(tenantId),
+      subscriptionLocked
+        ? Promise.resolve({ gettingStartedNavItem: null, coreSetupComplete: true })
+        : getCachedOwnerOnboardingNavContext({
+            tenantId,
+            tenantSlug,
+            role,
+            connectStatus,
+          }),
+      tenantReferralsNavEnabled(admin, tenantId),
+      websiteFeatureEnabled
+        ? admin
+            .from('tenant_marketing_site_settings')
+            .select('is_published')
+            .eq('tenant_id', tenantId)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const websitePublished = siteSettings.data?.is_published ?? false;
+    const newLeadsCount =
+      websiteFeatureEnabled && websitePublished
+        ? await countNewTenantMarketingLeads(admin, tenantId)
+        : 0;
+
+    const websiteNavItems = buildTenantWebsiteNavItems({
+      websiteEnabled: websiteFeatureEnabled,
+      websitePublished,
+      newLeadsCount,
+    });
 
     const pendingReferralCount = referralsEnabled
       ? await countPendingReferralAttributions(admin, tenantId)
@@ -73,6 +103,7 @@ export const loadTenantNavItemsForShell = cache(
       subscriptionLocked,
       billingNavItem: buildTenantBillingNavItem(),
       settingsNavItem: buildTenantSettingsNavItem(),
+      websiteNavItems,
       campaignsNavEnabled: isFeatureEnabled(planTier, 'campaigns'),
       referralsNavEnabled: referralsEnabled,
       pendingRescheduleCount,

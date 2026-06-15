@@ -6,6 +6,7 @@ import {
   Cable,
   ClipboardList,
   Globe,
+  Inbox,
   LayoutTemplate,
   LifeBuoy,
   MapPin,
@@ -97,8 +98,14 @@ const HUB_GROUPS: HubGroup[] = [
       {
         href: '/settings/website',
         label: 'Website',
-        description: 'Public marketing pages, SEO, and inbound leads (Business+).',
+        description: 'Public marketing pages, SEO, and site appearance (Business+).',
         icon: LayoutTemplate,
+      },
+      {
+        href: '/settings/website/leads',
+        label: 'Website leads',
+        description: 'Contact form submissions from your live marketing website.',
+        icon: Inbox,
       },
       {
         href: '/settings/promotions',
