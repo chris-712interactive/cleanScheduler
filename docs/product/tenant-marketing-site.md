@@ -4,7 +4,7 @@ Business and Pro workspaces can publish a **structured CMS marketing site** with
 
 ## Settings
 
-**Website** (`/settings/website`) — page list, publish toggle, site defaults, leads inbox.
+**Website** (`/settings/website`) — page list, publish toggle, **appearance** (layout template + color scheme), site defaults, leads inbox.
 
 **Website domain** (`/settings/website/domain`, Pro paid) — switch custom domain between `portal_only` and `unified` (`/` = marketing, `/portal` = customer portal).
 
@@ -30,7 +30,7 @@ See [tier-entitlements.md](../billing/tier-entitlements.md) — `tenantMarketing
 
 Migration `0076_tenant_marketing_site.sql`:
 
-- `tenant_marketing_site_settings`
+- `tenant_marketing_site_settings` — includes `site_template` and `color_scheme` (migration `0077`)
 - `tenant_marketing_pages`
 - `tenant_marketing_leads`
 - `tenant_customer_portal_domains.site_mode`

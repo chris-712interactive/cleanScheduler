@@ -27,6 +27,8 @@ export function mapTenantSiteSettings(row: SettingsRow): TenantSiteSettings {
     contactEmail: row.contact_email,
     contactPhone: row.contact_phone,
     serviceAreaSummary: row.service_area_summary,
+    siteTemplate: row.site_template,
+    colorScheme: row.color_scheme,
   };
 }
 

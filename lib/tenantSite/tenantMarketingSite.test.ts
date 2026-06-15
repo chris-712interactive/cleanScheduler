@@ -67,6 +67,19 @@ describe('tenant site public paths', () => {
   });
 });
 
+describe('tenant site theme', () => {
+  it('resolves brand color scheme from tenant settings', async () => {
+    const { resolveTenantSiteAccentColor, resolveTenantSiteThemeStyle } =
+      await import('@/lib/tenantSite/siteTheme');
+
+    expect(resolveTenantSiteAccentColor('brand', '#ff0000')).toBe('#ff0000');
+    expect(resolveTenantSiteAccentColor('ocean', '#ff0000')).toBe('#0284c7');
+    expect(resolveTenantSiteThemeStyle('modern', 'forest', '#123456')).toMatchObject({
+      '--tenant-brand': '#059669',
+    });
+  });
+});
+
 describe('tenant site JSON-LD', () => {
   it('emits LocalBusiness and FAQ entities', () => {
     const json = buildTenantSitePageJsonLd(

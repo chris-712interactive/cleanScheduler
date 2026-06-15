@@ -10,12 +10,14 @@ import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { siteUrlForTenant } from '@/lib/portal/tenantSiteOrigin';
+import { DEFAULT_BRAND_COLOR } from '@/lib/tenant/tenantBusinessSettings';
 import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
 import {
   loadTenantMarketingLeads,
   loadTenantSitePagesForAdmin,
   mapTenantSiteSettings,
 } from '@/lib/tenantSite/loadTenantSiteData';
+import { WebsiteAppearancePanel } from './WebsiteAppearancePanel';
 import { WebsiteLeadsPanel } from './WebsiteLeadsPanel';
 import { WebsitePageListPanel } from './WebsitePageListPanel';
 import { WebsitePublishPanel } from './WebsitePublishPanel';
@@ -50,6 +52,7 @@ export default async function TenantWebsiteSettingsPage() {
         loadTenantSitePagesForAdmin(admin, membership.tenantId),
         loadTenantMarketingLeads(admin, membership.tenantId),
         siteUrlForTenant(admin, membership.tenantId, '/'),
+        admin.from('tenants').select('brand_color').eq('id', membership.tenantId).maybeSingle(),
       ])
     : null;
 
@@ -58,6 +61,7 @@ export default async function TenantWebsiteSettingsPage() {
   const pages = loaded?.[2] ?? [];
   const leads = loaded?.[3] ?? [];
   const previewUrl = loaded?.[4] ?? '';
+  const brandColor = loaded?.[5].data?.brand_color?.trim() || DEFAULT_BRAND_COLOR;
 
   const trialPreview =
     plan === 'trial' || !canUsePaidSubscriptionFeatures(billing?.status ?? 'trialing');
@@ -99,6 +103,14 @@ export default async function TenantWebsiteSettingsPage() {
               trialPreview={trialPreview}
               settings={mapTenantSiteSettings(settingsRow)}
             />
+            {canEdit ? (
+              <WebsiteAppearancePanel
+                tenantSlug={membership.tenantSlug}
+                siteTemplate={settingsRow.site_template}
+                colorScheme={settingsRow.color_scheme}
+                brandColor={brandColor}
+              />
+            ) : null}
             <WebsitePageListPanel
               tenantSlug={membership.tenantSlug}
               pages={pages.map((page) => ({

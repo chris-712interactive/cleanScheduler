@@ -15,6 +15,7 @@ import {
 } from '@/lib/billing/tenantFeatureGate';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
+import { isTenantSiteColorScheme, isTenantSiteTemplate } from '@/lib/tenantSite/siteTheme';
 import { syncSupabaseAuthRedirectForHostname } from '@/lib/portal/customerPortalDomainActivation';
 import type { Database } from '@/lib/supabase/database.types';
 import type { TenantMarketingPageType } from '@/lib/tenantSite/types';
@@ -157,6 +158,39 @@ export async function updateWebsiteSettingsAction(
     return { success: 'Website settings saved.' };
   } catch (error) {
     return { error: featureGateErrorMessage(error) ?? 'Could not save settings.' };
+  }
+}
+
+export async function updateWebsiteAppearanceAction(
+  _prev: WebsiteActionState,
+  formData: FormData,
+): Promise<WebsiteActionState> {
+  try {
+    const { membership, admin } = await membershipForAction(formData);
+    const siteTemplateRaw = String(formData.get('site_template') ?? 'classic');
+    const colorSchemeRaw = String(formData.get('color_scheme') ?? 'brand');
+
+    if (!isTenantSiteTemplate(siteTemplateRaw)) {
+      return { error: 'Choose a valid site template.' };
+    }
+    if (!isTenantSiteColorScheme(colorSchemeRaw)) {
+      return { error: 'Choose a valid color scheme.' };
+    }
+
+    const { error } = await admin
+      .from('tenant_marketing_site_settings')
+      .update({
+        site_template: siteTemplateRaw,
+        color_scheme: colorSchemeRaw,
+      })
+      .eq('tenant_id', membership.tenantId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/tenant/settings/website', 'page');
+    return { success: 'Website appearance updated.' };
+  } catch (error) {
+    return { error: featureGateErrorMessage(error) ?? 'Could not update appearance.' };
   }
 }
 

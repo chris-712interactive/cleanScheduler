@@ -3917,6 +3917,8 @@ export type Database = {
           contact_phone: string | null;
           service_area_summary: string | null;
           social_links: Json;
+          site_template: Database['public']['Enums']['tenant_marketing_site_template'];
+          color_scheme: Database['public']['Enums']['tenant_marketing_site_color_scheme'];
           created_at: string;
           updated_at: string;
         };
@@ -3930,6 +3932,8 @@ export type Database = {
           contact_phone?: string | null;
           service_area_summary?: string | null;
           social_links?: Json;
+          site_template?: Database['public']['Enums']['tenant_marketing_site_template'];
+          color_scheme?: Database['public']['Enums']['tenant_marketing_site_color_scheme'];
           created_at?: string;
           updated_at?: string;
         };
@@ -3943,6 +3947,8 @@ export type Database = {
           contact_phone?: string | null;
           service_area_summary?: string | null;
           social_links?: Json;
+          site_template?: Database['public']['Enums']['tenant_marketing_site_template'];
+          color_scheme?: Database['public']['Enums']['tenant_marketing_site_color_scheme'];
           created_at?: string;
           updated_at?: string;
         };
@@ -4264,6 +4270,14 @@ export type Database = {
         | 'faq'
         | 'service_area'
         | 'custom';
+      tenant_marketing_site_color_scheme:
+        | 'brand'
+        | 'ocean'
+        | 'forest'
+        | 'slate'
+        | 'sunset'
+        | 'plum';
+      tenant_marketing_site_template: 'classic' | 'modern' | 'editorial';
       tenant_public_domain_site_mode: 'portal_only' | 'unified';
       tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';
       tenant_customer_wallet_transaction_kind:
