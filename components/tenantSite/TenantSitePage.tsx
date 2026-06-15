@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Mail, MapPin, Phone } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
@@ -5,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { TenantSiteContactForm } from '@/components/tenantSite/TenantSiteContactForm';
 import { TenantSiteFooter, TenantSiteHeader } from '@/components/tenantSite/TenantSiteNav';
 import { buildTenantSitePageJsonLd } from '@/lib/marketing/tenantSiteJsonLd';
-import { publicPathForSitePage } from '@/lib/tenantSite/loadTenantSiteData';
+import { publicPathForSitePage } from '@/lib/tenantSite/publicPaths';
 import { resolveTenantSiteThemeStyle } from '@/lib/tenantSite/siteTheme';
 import type {
   TenantSiteContext,

@@ -16,6 +16,7 @@ import {
 import type { Database } from '@/lib/supabase/database.types';
 import type { TenantBillingStatus } from '@/lib/billing/tenantSubscriptionAccess';
 import { buildTenantSiteNavPages } from '@/lib/tenantSite/navLabels';
+import { publicPathForSitePage } from '@/lib/tenantSite/publicPaths';
 
 type PageRow = Database['public']['Tables']['tenant_marketing_pages']['Row'];
 type SettingsRow = Database['public']['Tables']['tenant_marketing_site_settings']['Row'];
@@ -208,9 +209,4 @@ export function mapTenantSiteNavLinks(
   }));
 }
 
-export function publicPathForSitePage(slug: string, unifiedDomain: boolean): string {
-  if (slug === 'home') {
-    return unifiedDomain ? '/' : '/site';
-  }
-  return unifiedDomain ? `/${slug}` : `/site/${slug}`;
-}
+export { publicPathForSitePage } from '@/lib/tenantSite/publicPaths';
