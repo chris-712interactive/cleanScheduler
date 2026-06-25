@@ -5,6 +5,7 @@ import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 const MARKETING_PATHS = [
   { path: '/', priority: 1, changeFrequency: 'weekly' as const },
   { path: '/pricing', priority: 0.9, changeFrequency: 'weekly' as const },
+  { path: '/features', priority: 0.85, changeFrequency: 'monthly' as const },
   { path: '/start-trial', priority: 0.9, changeFrequency: 'monthly' as const },
   { path: '/compare', priority: 0.75, changeFrequency: 'monthly' as const },
   { path: '/contact', priority: 0.7, changeFrequency: 'monthly' as const },
@@ -38,6 +39,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/help/faq', priority: 0.5, changeFrequency: 'monthly' as const },
     { path: '/help/contact', priority: 0.4, changeFrequency: 'yearly' as const },
     { path: '/help/tcr', priority: 0.3, changeFrequency: 'monthly' as const },
+    { path: '/help/sms-opt-in', priority: 0.3, changeFrequency: 'monthly' as const },
   ];
 
   const allPaths = [...MARKETING_PATHS, ...seoPaths, ...helpPaths];

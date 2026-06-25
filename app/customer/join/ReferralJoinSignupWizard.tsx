@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { SmsOptInCheckboxLabel } from '@/components/legal/SmsOptInCheckboxLabel';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import type { ReferralJoinLandingView } from '@/lib/referrals/loadReferralJoinLanding';
@@ -346,10 +347,7 @@ export function ReferralJoinSignupWizard({
                 checked={draft.smsOptIn}
                 onChange={(event) => patchDraft({ smsOptIn: event.target.checked })}
               />
-              <span>
-                I agree to receive text messages about my bookings and account. Message and data
-                rates may apply. Reply STOP to unsubscribe.
-              </span>
+              <SmsOptInCheckboxLabel />
             </label>
 
             <label className={styles.checkboxRow} htmlFor="referral_marketing_opt_in">

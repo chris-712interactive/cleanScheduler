@@ -36,3 +36,14 @@
   color: var(--color-text-subtle);
   font-size: var(--font-size-sm);
 }
+
+.address {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+  font-style: normal;
+  line-height: 1.5;
+}
