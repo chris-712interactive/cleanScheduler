@@ -2,7 +2,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Container } from '@/components/layout/Container';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
+import { LEGAL_LAST_UPDATED } from '@/lib/legal/site';
+import { SMS_OPT_IN_CHECKBOX_DISCLOSURE } from '@/lib/legal/smsOptIn';
 import { buildHelpPageMetadata } from '@/lib/help/metadata';
 import styles from './page.module.scss';
 
@@ -41,6 +42,10 @@ export default function TcrDocumentationPage() {
               <li>
                 SMS Terms &amp; Conditions: <Link href="/sms-terms">/sms-terms</Link>
               </li>
+              <li>
+                Public SMS opt-in form (Call to Action URL):{' '}
+                <Link href="/help/sms-opt-in">/help/sms-opt-in</Link>
+              </li>
             </ul>
 
             <h2>Campaign setup</h2>
@@ -55,24 +60,21 @@ export default function TcrDocumentationPage() {
                 <strong>Audience:</strong> Homeowners (customers) and cleaning service providers
               </li>
               <li>
-                <strong>Opt-in method:</strong> Account signup at cleanscheduler.com
+                <strong>Opt-in method:</strong> Optional SMS checkbox during customer account signup
+                (see <Link href="/help/sms-opt-in">/help/sms-opt-in</Link>)
               </li>
             </ul>
 
             <h2>SMS consent disclosure used at opt-in</h2>
-            <p className={styles.disclosure}>
-              I agree to receive text messages from {PRODUCT_NAME} about my bookings and account.
-              Message frequency varies based on your bookings. Message and data rates may apply.
-              Reply STOP to unsubscribe. Reply HELP for help. View our Privacy Policy and Terms
-              &amp; Conditions.
-            </p>
+            <p className={styles.disclosure}>{SMS_OPT_IN_CHECKBOX_DISCLOSURE}</p>
 
             <h2>Customer opt-in flow proof</h2>
             <ul>
               <li>
                 Opt-in is collected during customer account signup from invite completion (
-                <code>/complete-invite</code> on the customer portal) or through the customer&apos;s
-                account settings.
+                <code>/complete-invite</code> on the customer portal) or referral join signup. A
+                public preview for reviewers lives at{' '}
+                <Link href="/help/sms-opt-in">/help/sms-opt-in</Link>.
               </li>
               <li>
                 Consent uses an explicit unchecked checkbox with clear disclosure language,

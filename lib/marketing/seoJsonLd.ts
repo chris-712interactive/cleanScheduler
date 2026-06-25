@@ -369,7 +369,38 @@ export function buildCompareHubJsonLd(
   origin: string,
   hub: { title: string; description: string },
 ): JsonLdNode {
-  const pageUrl = absoluteUrl(origin, '/compare');
+  return buildCollectionHubJsonLd('/compare', 'Compare', pages, origin, hub, {
+    itemListId: '#itemlist',
+    itemListName: 'Clean Scheduler software comparisons',
+  });
+}
+
+type FeatureHubPage = Pick<
+  SeoMarketingPage,
+  'path' | 'headline' | 'lead' | 'metaTitle' | 'metaDescription'
+>;
+
+/** Structured data for the /features hub listing all feature pages. */
+export function buildFeatureHubJsonLd(
+  pages: FeatureHubPage[],
+  origin: string,
+  hub: { title: string; description: string },
+): JsonLdNode {
+  return buildCollectionHubJsonLd('/features', 'Features', pages, origin, hub, {
+    itemListId: '#itemlist',
+    itemListName: 'Clean Scheduler product features',
+  });
+}
+
+function buildCollectionHubJsonLd(
+  hubPath: string,
+  breadcrumbLabel: string,
+  pages: CompareHubPage[],
+  origin: string,
+  hub: { title: string; description: string },
+  itemList: { itemListId: string; itemListName: string },
+): JsonLdNode {
+  const pageUrl = absoluteUrl(origin, hubPath);
   const pageId = `${pageUrl}#webpage`;
 
   return {
@@ -386,7 +417,7 @@ export function buildCompareHubJsonLd(
         inLanguage: 'en-US',
         isPartOf: { '@id': `${origin}/#website` },
         breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
-        mainEntity: { '@id': `${pageUrl}#itemlist` },
+        mainEntity: { '@id': `${pageUrl}${itemList.itemListId}` },
       },
       {
         '@type': 'BreadcrumbList',
@@ -401,15 +432,15 @@ export function buildCompareHubJsonLd(
           {
             '@type': 'ListItem',
             position: 2,
-            name: 'Compare',
+            name: breadcrumbLabel,
             item: pageUrl,
           },
         ],
       },
       {
         '@type': 'ItemList',
-        '@id': `${pageUrl}#itemlist`,
-        name: 'Clean Scheduler software comparisons',
+        '@id': `${pageUrl}${itemList.itemListId}`,
+        name: itemList.itemListName,
         itemListElement: pages.map((page, index) => ({
           '@type': 'ListItem',
           position: index + 1,

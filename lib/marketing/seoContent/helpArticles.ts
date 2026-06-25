@@ -366,6 +366,156 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
     sitemapPriority: 0.7,
     changeFrequency: 'monthly',
   },
+  {
+    slug: 'schedule-cleaning-crews',
+    path: '/help/cleaning-businesses/schedule-cleaning-crews',
+    title: 'How to schedule cleaning crews',
+    description:
+      'Assign cleaners to recurring routes, handle call-outs and reassignments, and know when to upgrade from a spreadsheet to cleaning staff scheduling software.',
+    sections: [
+      {
+        title: 'Start with recurring visit rules',
+        paragraphs: [
+          'Most cleaning schedules repeat — weekly homes, bi-weekly routes, commercial contract frequencies. Define a recurring visit rule per customer property with frequency, start date, and default assignees. The calendar generates upcoming visits automatically.',
+        ],
+        bullets: [
+          'Weekly, bi-weekly, and custom RRULE patterns',
+          'Default employee assignment per rule',
+          'Separate visit recurrence from billing recurrence',
+        ],
+        link: {
+          href: '/help/cleaning-businesses/recurring-cleaning-schedule',
+          label: 'Set up a recurring cleaning schedule',
+        },
+      },
+      {
+        title: 'Assign crews without double-booking',
+        paragraphs: [
+          'Use day views filtered by employee to see who is available. When assigning a one-off visit, check for conflicts on the same date. For commercial routes, assign default crews to each property under a billing contact.',
+        ],
+        bullets: [
+          'Employee filters on day, week, and month views',
+          'Conflict visibility when assigning crews',
+          'Drag-and-drop rescheduling for single visits',
+        ],
+      },
+      {
+        title: 'Handle call-outs and reassignments',
+        paragraphs: [
+          'When a cleaner calls in sick, reassign their visits on the day view or filter by employee to see the full impact. For customer-initiated changes, use the reschedule inbox (Business+) instead of playing phone tag.',
+        ],
+        tip: 'Document backup assignees for your busiest routes before flu season — it saves panic on Monday mornings.',
+      },
+      {
+        title: 'When to upgrade from a spreadsheet',
+        paragraphs: [
+          'Spreadsheets work for solo operators with a handful of clients. Upgrade to cleaning staff scheduling software when multiple people need the same live schedule, customers request reschedules online, or the office spends Sunday nights rebuilding the week.',
+        ],
+        link: {
+          href: '/compare/spreadsheets-and-texts',
+          label: 'Replace your cleaning spreadsheet',
+        },
+      },
+    ],
+    faq: [
+      {
+        question: 'Can one cleaner handle multiple routes in a day?',
+        answer:
+          'Yes. Assign multiple visits to the same employee on the day view. Field staff see their full route in mobile-friendly schedule views.',
+      },
+      {
+        question: 'How do I schedule both residential and commercial crews?',
+        answer:
+          'Use customer tags and property records to keep account types clear. Residential homes and commercial sites share the same calendar — filter by customer or employee as needed.',
+      },
+    ],
+    relatedLinks: [
+      { href: '/features/scheduling-and-dispatch', label: 'Cleaning scheduling software' },
+      { href: '/features/crew-scheduling-and-timekeeping', label: 'Crew scheduling & timekeeping' },
+      { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning scheduling' },
+      { href: '/start-trial', label: 'Start free trial' },
+    ],
+    sitemapPriority: 0.68,
+    changeFrequency: 'monthly',
+  },
+  {
+    slug: 'dispatch-vs-scheduling-for-cleaners',
+    path: '/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners',
+    title: 'Dispatch vs scheduling for cleaning companies',
+    description:
+      'What cleaning businesses actually need from dispatch software — and why recurring route scheduling beats generic field service dispatch for janitorial and maid services.',
+    sections: [
+      {
+        title: 'What cleaning owners mean by “dispatch software”',
+        paragraphs: [
+          'When cleaning company owners search for dispatch software, they usually mean assigning crews to today’s jobs, seeing who is where, and handling schedule changes — not HVAC parts inventory or truck rolls. The goal is route visibility and crew assignment, not emergency ticket dispatch.',
+        ],
+      },
+      {
+        title: 'Recurring scheduling vs one-off dispatch tickets',
+        paragraphs: [
+          'Generic field service dispatch tools optimize for on-demand repair calls. Cleaning businesses run on recurring routes — weekly homes, bi-weekly clients, commercial contract frequencies. Clean Scheduler is scheduling-first: recurring visit rules generate the calendar, and you override single dates when needed.',
+        ],
+        bullets: [
+          'Recurring visit rules for repeat clients',
+          'One-time visits on the same calendar',
+          'Customer reschedule inbox instead of dispatch tickets',
+        ],
+        link: {
+          href: '/features/scheduling-and-dispatch',
+          label: 'Cleaning scheduling software',
+        },
+      },
+      {
+        title: 'When generic dispatch software is the wrong fit',
+        paragraphs: [
+          'If your workflow centers on recurring cleans, quote line items, and invoice AR — not emergency service calls — a cleaning-specific platform saves configuration time. Generic tools often treat every job like a dispatch ticket and miss recurring visit logic out of the box.',
+        ],
+        link: {
+          href: '/compare/vs-generic-field-service-software',
+          label: 'Cleaning software vs generic field service tools',
+        },
+      },
+      {
+        title: 'What Clean Scheduler provides instead',
+        paragraphs: [
+          'Day, week, and month calendar views with employee filters. Field check-in and visit completion from mobile-friendly views. Reschedule requests from the customer portal. Payroll export from completed visits on Business+. That covers what most cleaning operators mean by dispatch — without HVAC-style ticket queues.',
+        ],
+        bullets: [
+          'Crew assignment with conflict visibility',
+          'Mobile schedule view for field cleaners',
+          'Visit check-in and completion workflow',
+        ],
+        link: {
+          href: '/features/mobile-scheduling-for-cleaners',
+          label: 'Mobile scheduling for cleaners',
+        },
+      },
+    ],
+    faq: [
+      {
+        question: 'Does Clean Scheduler have GPS dispatch tracking?',
+        answer:
+          'No. We focus on schedule visibility, visit completion, and payments — not live GPS fleet tracking. If GPS is critical, compare options on our comparison hub.',
+      },
+      {
+        question: 'Is Clean Scheduler dispatch software for cleaning companies?',
+        answer:
+          'It covers crew scheduling, assignment, and field visit workflow — what most cleaning operators mean by dispatch. It is not a generic emergency-ticket dispatch system.',
+      },
+    ],
+    relatedLinks: [
+      { href: '/features/scheduling-and-dispatch', label: 'Scheduling & dispatch features' },
+      {
+        href: '/help/cleaning-businesses/schedule-cleaning-crews',
+        label: 'Schedule cleaning crews',
+      },
+      { href: '/compare/vs-jobber', label: 'vs Jobber' },
+      { href: '/start-trial', label: 'Start free trial' },
+    ],
+    sitemapPriority: 0.68,
+    changeFrequency: 'monthly',
+  },
 ];
 
 export function getCleaningBusinessArticle(slug: string): HelpGuideArticle | undefined {

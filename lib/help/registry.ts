@@ -89,6 +89,13 @@ export const HELP_HUB_CATEGORIES: HelpCategory[] = [
         badges: [{ label: 'Compliance' }, { label: 'Reviewer-ready' }],
       },
       {
+        title: 'SMS opt-in form',
+        description: 'Public preview of the optional SMS consent checkbox for 10DLC review.',
+        href: '/help/sms-opt-in',
+        hrefLabel: 'Open SMS opt-in form',
+        badges: [{ label: 'Compliance' }, { label: 'Public' }],
+      },
+      {
         title: 'Privacy policy',
         description: 'Data handling practices and third-party service processing disclosures.',
         href: '/privacy',
@@ -152,6 +159,13 @@ export const HELP_ARTICLES: HelpArticleEntry[] = [
     path: '/help/tcr',
     title: 'TCR Documentation',
     description: 'TCR compliance documentation for 10DLC review.',
+    priority: 0.3,
+    changeFrequency: 'monthly',
+  },
+  {
+    path: '/help/sms-opt-in',
+    title: 'SMS Opt-In Form',
+    description: 'Public SMS consent form preview for 10DLC campaign review.',
     priority: 0.3,
     changeFrequency: 'monthly',
   },

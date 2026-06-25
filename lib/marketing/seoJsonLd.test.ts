@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CLEANING_BUSINESS_ARTICLES } from '@/lib/marketing/seoContent/helpArticles';
-import { COMPARE_PAGES } from '@/lib/marketing/seoContent/marketingPages';
+import { COMPARE_PAGES, FEATURE_PAGES } from '@/lib/marketing/seoContent/marketingPages';
 import {
   buildCompareHubJsonLd,
+  buildFeatureHubJsonLd,
   buildHelpGuideJsonLd,
   buildHomePageJsonLd,
   buildPricingPageJsonLd,
@@ -122,5 +123,21 @@ describe('buildCompareHubJsonLd', () => {
     expect(itemList?.['@type']).toBe('ItemList');
     expect(items).toHaveLength(COMPARE_PAGES.length);
     expect(items[0]?.url).toBe(`${ORIGIN}${COMPARE_PAGES[0]!.path}`);
+  });
+});
+
+describe('buildFeatureHubJsonLd', () => {
+  it('lists all feature pages in an ItemList', () => {
+    const jsonLd = buildFeatureHubJsonLd(FEATURE_PAGES, ORIGIN, {
+      title: 'Features',
+      description: 'Cleaning business software features.',
+    });
+
+    const itemList = nodeById(jsonLd, `${ORIGIN}/features#itemlist`);
+    const items = itemList?.itemListElement as Array<Record<string, unknown>>;
+
+    expect(itemList?.['@type']).toBe('ItemList');
+    expect(items).toHaveLength(FEATURE_PAGES.length);
+    expect(items[0]?.url).toBe(`${ORIGIN}${FEATURE_PAGES[0]!.path}`);
   });
 });
