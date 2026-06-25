@@ -80,11 +80,35 @@ export default function CleaningBusinessHelpHubPage() {
               <p className={styles.cardLinkText}>Open page</p>
             </Link>
             <Link
+              href="/features/crew-scheduling-and-timekeeping"
+              className={[styles.card, styles.cardLink].join(' ')}
+            >
+              <h3>Janitorial scheduling and timekeeping</h3>
+              <p>
+                Employee scheduling for cleaning crews, visit check-in, and payroll export from
+                completed visits.
+              </p>
+              <p className={styles.cardLinkText}>Open page</p>
+            </Link>
+            <Link
+              href="/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts"
+              className={[styles.card, styles.cardLink].join(' ')}
+            >
+              <h3>How to get commercial cleaning accounts</h3>
+              <p>
+                Prospecting, quoting, and onboarding janitorial contracts your office can actually
+                run.
+              </p>
+              <p className={styles.cardLinkText}>Read guide</p>
+            </Link>
+            <Link
               href="/for/residential-cleaning-companies"
               className={[styles.card, styles.cardLink].join(' ')}
             >
-              <h3>Residential cleaning software</h3>
-              <p>Quotes, recurring schedules, and invoicing for home cleaning companies.</p>
+              <h3>House cleaning scheduling software</h3>
+              <p>
+                Quotes, recurring home routes, and invoicing for residential cleaning companies.
+              </p>
               <p className={styles.cardLinkText}>Open page</p>
             </Link>
             <Link href="/why-cleanscheduler" className={[styles.card, styles.cardLink].join(' ')}>

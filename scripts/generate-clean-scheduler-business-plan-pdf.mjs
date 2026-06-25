@@ -86,9 +86,7 @@ function columnOffsets(widths) {
 function writeTable(doc, headers, rows, options = {}) {
   const { columnWidths } = options;
   const colCount = headers.length;
-  const widths =
-    columnWidths ??
-    Array.from({ length: colCount }, () => CONTENT_WIDTH / colCount);
+  const widths = columnWidths ?? Array.from({ length: colCount }, () => CONTENT_WIDTH / colCount);
   const offsets = columnOffsets(widths);
   const padding = 6;
 
@@ -171,9 +169,12 @@ async function generatePdf() {
         lineGap: 2,
       });
     doc.moveDown(0.8);
-    doc.text(`Prepared: ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`, {
-      width: CONTENT_WIDTH,
-    });
+    doc.text(
+      `Prepared: ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+      {
+        width: CONTENT_WIDTH,
+      },
+    );
     doc.text('Horizon: 2026 – 2030', { width: CONTENT_WIDTH });
 
     doc.addPage();
@@ -236,7 +237,14 @@ async function generatePdf() {
         ['NPS target', '40+', '45+', '50+', '50+', '55+'],
       ],
       {
-        columnWidths: [148, yearColumnWidth, yearColumnWidth, yearColumnWidth, yearColumnWidth, yearColumnWidth],
+        columnWidths: [
+          148,
+          yearColumnWidth,
+          yearColumnWidth,
+          yearColumnWidth,
+          yearColumnWidth,
+          yearColumnWidth,
+        ],
       },
     );
 
@@ -329,21 +337,38 @@ async function generatePdf() {
       'Support: Median first response < 4 hours (Business), < 1 hour (Pro)',
     ]);
 
-    writeSection(doc, 'Financial Outlook (Summary)', [
-      'Assumptions: 70% Starter / 25% Business / 5% Pro mix shifting to 40/45/15 by 2030; 15% annual price increases on new signups; infrastructure COGS ~8% of revenue at scale.',
-      'Break-even target: Month 30–36 on operating expenses excluding founder below-market comp. Funding: bootstrap through $1M ARR; evaluate $2–4M seed/Series A if growth rate exceeds 15% MoM and payback stays under 12 months.',
-      'Use of funds (if raised): 50% GTM, 30% product/engineering, 15% CS/onboarding, 5% compliance.',
-    ], { newPage: true });
+    writeSection(
+      doc,
+      'Financial Outlook (Summary)',
+      [
+        'Assumptions: 70% Starter / 25% Business / 5% Pro mix shifting to 40/45/15 by 2030; 15% annual price increases on new signups; infrastructure COGS ~8% of revenue at scale.',
+        'Break-even target: Month 30–36 on operating expenses excluding founder below-market comp. Funding: bootstrap through $1M ARR; evaluate $2–4M seed/Series A if growth rate exceeds 15% MoM and payback stays under 12 months.',
+        'Use of funds (if raised): 50% GTM, 30% product/engineering, 15% CS/onboarding, 5% compliance.',
+      ],
+      { newPage: true },
+    );
 
     writeSection(doc, 'Risks & Mitigations', []);
     writeTable(
       doc,
       ['Risk', 'Mitigation'],
       [
-        ['Slow trial conversion', 'In-app onboarding checklist, concierge calls for Business trials'],
-        ['Incumbent price pressure', 'Vertical depth, bookkeeper partnerships, switching cost via portal'],
-        ['Support load at scale', 'Help center, AI support triage, tiered SLAs, CS hire ahead of growth'],
-        ['Payment/compliance burden', 'Stripe Connect abstraction; SOC 2; legal review for SMS/PII'],
+        [
+          'Slow trial conversion',
+          'In-app onboarding checklist, concierge calls for Business trials',
+        ],
+        [
+          'Incumbent price pressure',
+          'Vertical depth, bookkeeper partnerships, switching cost via portal',
+        ],
+        [
+          'Support load at scale',
+          'Help center, AI support triage, tiered SLAs, CS hire ahead of growth',
+        ],
+        [
+          'Payment/compliance burden',
+          'Stripe Connect abstraction; SOC 2; legal review for SMS/PII',
+        ],
         ['Feature sprawl', 'Roadmap tied to cleaning personas; say no to non-vertical requests'],
       ],
       { columnWidths: [148, CONTENT_WIDTH - 148] },

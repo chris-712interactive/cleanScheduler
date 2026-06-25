@@ -27,9 +27,9 @@ import { PRODUCT_NAME } from '@/lib/legal/site';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import styles from './landing.module.scss';
 
-const pageTitle = 'Run your cleaning business from one console';
+const pageTitle = 'Cleaning scheduling software for residential & commercial teams';
 const pageDescription =
-  'Schedule crews, send quotes, invoice clients, and close the books — built for residential and commercial cleaning businesses. 7-day free trial, no credit card required.';
+  'Cleaning scheduling software to schedule crews, send quotes, accept online payments, and close the books — built for residential and commercial cleaning businesses. 7-day free trial, no credit card required.';
 
 export const metadata: Metadata = {
   title: pageTitle,

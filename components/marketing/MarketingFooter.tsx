@@ -23,14 +23,32 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/compare">
               Compare
             </Link>
+            <Link className={styles.link} href="/features">
+              Features
+            </Link>
             <Link className={styles.link} href="/for/commercial-cleaning-companies">
               Commercial cleaning scheduling
             </Link>
             <Link className={styles.link} href="/features/scheduling-and-dispatch">
-              Cleaning schedule software
+              Cleaning scheduling software
+            </Link>
+            <Link className={styles.link} href="/features/invoicing-and-payments">
+              Online payments
             </Link>
             <Link className={styles.link} href="/features/stripe-integration">
               Stripe integration
+            </Link>
+            <Link className={styles.link} href="/features/crew-scheduling-and-timekeeping">
+              Crew scheduling
+            </Link>
+            <Link
+              className={styles.link}
+              href="/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts"
+            >
+              Win commercial accounts
+            </Link>
+            <Link className={styles.link} href="/compare/spreadsheets-and-texts">
+              Replace spreadsheet
             </Link>
             <Link className={styles.link} href="/help">
               Help Center

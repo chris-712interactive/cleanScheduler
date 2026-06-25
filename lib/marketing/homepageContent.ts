@@ -202,6 +202,21 @@ export const MARKETING_THREE_PORTALS = [
 
 export const MARKETING_FAQ: MarketingFaqItem[] = [
   {
+    question: 'Do you offer cleaning scheduling software?',
+    answer:
+      'Yes. Clean Scheduler includes cleaning scheduling software with recurring visit rules, crew assignment, customer reschedule requests, and mobile field views. See our scheduling features page for details.',
+  },
+  {
+    question: 'How do cleaning companies accept online payments?',
+    answer:
+      'Connect Stripe to add secure pay links to invoices. Customers pay by card or ACH from the invoice email or customer portal. You can also record cash, checks, and Zelle — see our online payments feature page.',
+  },
+  {
+    question: 'Should I replace my cleaning spreadsheet?',
+    answer:
+      'Upgrade when multiple people need the same live schedule or month-end AR takes hours reconciling texts and payment screenshots. See our guide on replacing spreadsheet software for a practical migration path.',
+  },
+  {
     question: 'Does Clean Scheduler integrate with Stripe?',
     answer:
       'Yes. Stripe Connect lets cleaning companies accept card and ACH payments on invoices. Your Clean Scheduler subscription is billed separately from customer payments. See our Stripe integration page for details.',
@@ -259,7 +274,7 @@ export const HELP_CENTER_FAQ: MarketingFaqItem[] = [
   {
     question: 'Where can I find guides for cleaning business owners?',
     answer:
-      'Visit our Guides for cleaning businesses for walkthroughs on pricing jobs, recurring schedules, getting paid, month-end close, and winning commercial accounts.',
+      'Visit our Guides for cleaning businesses for walkthroughs on pricing jobs, recurring schedules, scheduling crews, dispatch vs scheduling, getting paid, month-end close, and winning commercial accounts.',
   },
   {
     question: 'How does Clean Scheduler compare to other cleaning software?',
