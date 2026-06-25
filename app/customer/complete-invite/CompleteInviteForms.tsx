@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
+import { SmsOptInCheckboxLabel } from '@/components/legal/SmsOptInCheckboxLabel';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
@@ -108,13 +109,7 @@ export function CompleteInviteForms({
 
           <label className={styles.checkboxRow} htmlFor="sms_opt_in">
             <input id="sms_opt_in" name="sms_opt_in" type="checkbox" value="on" />
-            <span>
-              I agree to receive text messages from Clean Scheduler about my bookings and account.
-              Message frequency varies based on your bookings. Message and data rates may apply.
-              Reply STOP to unsubscribe. Reply HELP for help. View our{' '}
-              <Link href="/privacy">Privacy Policy</Link> and{' '}
-              <Link href="/sms-terms">Terms &amp; Conditions</Link>.
-            </span>
+            <SmsOptInCheckboxLabel />
           </label>
 
           <Button type="submit" variant="primary" disabled={pwPending}>

@@ -39,6 +39,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/help/faq', priority: 0.5, changeFrequency: 'monthly' as const },
     { path: '/help/contact', priority: 0.4, changeFrequency: 'yearly' as const },
     { path: '/help/tcr', priority: 0.3, changeFrequency: 'monthly' as const },
+    { path: '/help/sms-opt-in', priority: 0.3, changeFrequency: 'monthly' as const },
   ];
 
   const allPaths = [...MARKETING_PATHS, ...seoPaths, ...helpPaths];

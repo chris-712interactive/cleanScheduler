@@ -5,6 +5,7 @@ import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { ThirdPartyServicesSection } from '@/components/marketing/ThirdPartyServicesSection';
 import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, PRODUCT_NAME } from '@/lib/legal/site';
+import { SMS_OPT_IN_MOBILE_DATA_DISCLOSURE } from '@/lib/legal/smsOptIn';
 import styles from '../legal.module.scss';
 
 export const metadata = buildMarketingPageMetadata({
@@ -159,7 +160,8 @@ export default function PrivacyPolicyPage() {
             <ThirdPartyServicesSection />
 
             <h2>6. How we share information</h2>
-            <p>We do not sell your personal information. We may share information:</p>
+            <p>We do not sell your personal information. {SMS_OPT_IN_MOBILE_DATA_DISCLOSURE}</p>
+            <p>We may share information:</p>
             <ul>
               <li>
                 <strong>With service providers</strong> listed in Section 5, under contracts that
@@ -215,7 +217,17 @@ export default function PrivacyPolicyPage() {
               use our <Link href="/contact">contact form</Link>.
             </p>
 
-            <h2>10. Cookies and similar technologies</h2>
+            <h2>10. SMS and text messaging</h2>
+            <p>
+              When you opt in through our customer account signup or account settings, we may send
+              transactional text messages about bookings, quotes, invoices, and account updates.
+              Message frequency varies based on your activity. Message and data rates may apply.
+              Reply STOP to opt out and HELP for help. See our{' '}
+              <Link href="/sms-terms">SMS Terms</Link> for program details.
+            </p>
+            <p>{SMS_OPT_IN_MOBILE_DATA_DISCLOSURE}</p>
+
+            <h2>11. Cookies and similar technologies</h2>
             <p>
               We use essential cookies and local storage to keep you signed in and remember
               preferences (such as theme). We do not use third-party advertising cookies on the
@@ -223,27 +235,27 @@ export default function PrivacyPolicyPage() {
               essential cookies may prevent you from using authenticated areas.
             </p>
 
-            <h2>11. Children</h2>
+            <h2>12. Children</h2>
             <p>
               The Service is intended for businesses and is not directed to children under 16. We do
               not knowingly collect personal information from children.
             </p>
 
-            <h2>12. International transfers</h2>
+            <h2>13. International transfers</h2>
             <p>
               We and our providers may process data in the United States and other countries. Where
               required, we rely on appropriate safeguards such as standard contractual clauses
               offered by our vendors.
             </p>
 
-            <h2>13. Changes to this policy</h2>
+            <h2>14. Changes to this policy</h2>
             <p>
               We may update this Privacy Policy from time to time. We will post the revised version
               on this page and update the &quot;Last updated&quot; date. Material changes may be
               communicated by email or in-product notice where appropriate.
             </p>
 
-            <h2>14. Contact us</h2>
+            <h2>15. Contact us</h2>
             <p>
               Questions about this Privacy Policy:{' '}
               <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>. You may also{' '}

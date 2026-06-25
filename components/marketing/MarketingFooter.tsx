@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Container } from '@/components/layout/Container';
-import { PRODUCT_NAME } from '@/lib/legal/site';
+import { formatLegalBusinessAddress, PRODUCT_NAME } from '@/lib/legal/site';
 import styles from './MarketingFooter.module.scss';
 
 export function MarketingFooter() {
@@ -101,6 +101,13 @@ export function MarketingFooter() {
           <p className={styles.copy}>
             © {year} {PRODUCT_NAME}. All rights reserved.
           </p>
+          <address className={styles.address}>
+            {formatLegalBusinessAddress({ multiline: true })
+              .split('\n')
+              .map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+          </address>
         </div>
       </Container>
     </footer>
