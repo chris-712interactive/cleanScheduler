@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { refreshOutreachCampaignMetrics } from '@/lib/admin/outreachMetrics';
+import { normalizeOutreachEmail } from '@/lib/admin/outreachTypes';
 import type { Database } from '@/lib/supabase/database.types';
 
 type ResendWebhookPayload = {
@@ -34,6 +36,54 @@ async function refreshCampaignMetrics(
     .eq('id', campaignId);
 }
 
+async function handleOutreachWebhookEvent(
+  admin: SupabaseClient<Database>,
+  payload: ResendWebhookPayload,
+  emailId: string,
+  eventType: string,
+): Promise<boolean> {
+  const { data: recipient } = await admin
+    .from('platform_outreach_recipients')
+    .select('id, campaign_id, email_normalized, opened_at, clicked_at')
+    .eq('resend_email_id', emailId)
+    .maybeSingle();
+
+  if (!recipient) return false;
+
+  const now = new Date().toISOString();
+  const updates: Database['public']['Tables']['platform_outreach_recipients']['Update'] = {};
+
+  if (eventType === 'email.delivered') {
+    updates.status = 'delivered';
+    updates.delivered_at = now;
+  } else if (eventType === 'email.opened') {
+    if (!recipient.opened_at) updates.opened_at = now;
+  } else if (eventType === 'email.clicked') {
+    if (!recipient.clicked_at) updates.clicked_at = now;
+  } else if (eventType === 'email.bounced') {
+    updates.status = 'bounced';
+    updates.bounced_at = now;
+    await admin.from('platform_outreach_suppressions').upsert(
+      {
+        email_normalized: normalizeOutreachEmail(recipient.email_normalized),
+        reason: 'bounce',
+        source: 'webhook',
+        campaign_id: recipient.campaign_id,
+      },
+      { onConflict: 'email_normalized' },
+    );
+  } else {
+    return true;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await admin.from('platform_outreach_recipients').update(updates).eq('id', recipient.id);
+  }
+
+  await refreshOutreachCampaignMetrics(admin, recipient.campaign_id);
+  return true;
+}
+
 export async function handleResendWebhookEvent(
   admin: SupabaseClient<Database>,
   payload: ResendWebhookPayload,
@@ -47,7 +97,11 @@ export async function handleResendWebhookEvent(
     .select('id, campaign_id, tenant_id, email, opened_at, clicked_at')
     .eq('resend_email_id', emailId)
     .maybeSingle();
-  if (!recipient) return;
+
+  if (!recipient) {
+    await handleOutreachWebhookEvent(admin, payload, emailId, eventType);
+    return;
+  }
 
   const now = new Date().toISOString();
   const updates: Database['public']['Tables']['tenant_email_campaign_recipients']['Update'] = {};
