@@ -119,6 +119,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Quote pipeline stages    | `docs/product/quote-pipeline-stages.md`           |
 | Custom roles             | `docs/product/custom-roles-permissions.md`        |
 | Accounting               | `docs/product/founder-accounting.md`              |
+| Platform outreach        | `docs/product/platform-outreach.md`               |
 | Customer messaging       | `docs/product/customer-support-messaging.md`      |
 | Tenant reports           | `docs/product/tenant-reports.md`                  |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |

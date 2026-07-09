@@ -85,5 +85,6 @@ Starter: upgrade card on `/campaigns` (billing hub pattern).
 ## Related docs
 
 - `docs/billing/tier-entitlements.md` — metering hooks
+- `docs/product/platform-outreach.md` — founder-admin cold outreach (separate from tenant campaigns)
 - `.cursor/docs/starterPlan/tenantPortalRequirements.md` — original requirements
 - `.cursor/docs/plan/implementation-plan.md` — Phase 3 roadmap

@@ -494,6 +494,202 @@ export type Database = {
           },
         ];
       };
+      platform_outreach_campaigns: {
+        Row: {
+          id: string;
+          name: string;
+          status: string;
+          recipient_count: number;
+          sent_count: number;
+          delivered_count: number;
+          opened_count: number;
+          clicked_count: number;
+          bounced_count: number;
+          replied_count: number;
+          skipped_count: number;
+          failed_count: number;
+          error_message: string | null;
+          created_by_user_id: string | null;
+          queued_at: string | null;
+          sent_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          status?: string;
+          recipient_count?: number;
+          sent_count?: number;
+          delivered_count?: number;
+          opened_count?: number;
+          clicked_count?: number;
+          bounced_count?: number;
+          replied_count?: number;
+          skipped_count?: number;
+          failed_count?: number;
+          error_message?: string | null;
+          created_by_user_id?: string | null;
+          queued_at?: string | null;
+          sent_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          status?: string;
+          recipient_count?: number;
+          sent_count?: number;
+          delivered_count?: number;
+          opened_count?: number;
+          clicked_count?: number;
+          bounced_count?: number;
+          replied_count?: number;
+          skipped_count?: number;
+          failed_count?: number;
+          error_message?: string | null;
+          created_by_user_id?: string | null;
+          queued_at?: string | null;
+          sent_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      platform_outreach_recipients: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          business_name: string | null;
+          owner_name: string | null;
+          email: string;
+          email_normalized: string;
+          phone: string | null;
+          city: string | null;
+          county: string | null;
+          business_type: string | null;
+          website: string | null;
+          notes: string | null;
+          subject: string;
+          body_text: string;
+          status: string;
+          resend_email_id: string | null;
+          error_message: string | null;
+          sent_at: string | null;
+          delivered_at: string | null;
+          opened_at: string | null;
+          clicked_at: string | null;
+          bounced_at: string | null;
+          response_status: string;
+          response_notes: string | null;
+          responded_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          business_name?: string | null;
+          owner_name?: string | null;
+          email: string;
+          email_normalized: string;
+          phone?: string | null;
+          city?: string | null;
+          county?: string | null;
+          business_type?: string | null;
+          website?: string | null;
+          notes?: string | null;
+          subject: string;
+          body_text: string;
+          status?: string;
+          resend_email_id?: string | null;
+          error_message?: string | null;
+          sent_at?: string | null;
+          delivered_at?: string | null;
+          opened_at?: string | null;
+          clicked_at?: string | null;
+          bounced_at?: string | null;
+          response_status?: string;
+          response_notes?: string | null;
+          responded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          campaign_id?: string;
+          business_name?: string | null;
+          owner_name?: string | null;
+          email?: string;
+          email_normalized?: string;
+          phone?: string | null;
+          city?: string | null;
+          county?: string | null;
+          business_type?: string | null;
+          website?: string | null;
+          notes?: string | null;
+          subject?: string;
+          body_text?: string;
+          status?: string;
+          resend_email_id?: string | null;
+          error_message?: string | null;
+          sent_at?: string | null;
+          delivered_at?: string | null;
+          opened_at?: string | null;
+          clicked_at?: string | null;
+          bounced_at?: string | null;
+          response_status?: string;
+          response_notes?: string | null;
+          responded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'platform_outreach_recipients_campaign_id_fkey';
+            columns: ['campaign_id'];
+            isOneToOne: false;
+            referencedRelation: 'platform_outreach_campaigns';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      platform_outreach_suppressions: {
+        Row: {
+          id: string;
+          email_normalized: string;
+          reason: string;
+          source: string;
+          campaign_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email_normalized: string;
+          reason: string;
+          source?: string;
+          campaign_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email_normalized?: string;
+          reason?: string;
+          source?: string;
+          campaign_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'platform_outreach_suppressions_campaign_id_fkey';
+            columns: ['campaign_id'];
+            isOneToOne: false;
+            referencedRelation: 'platform_outreach_campaigns';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       customer_tenant_links: {
         Row: {
           id: string;
