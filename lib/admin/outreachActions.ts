@@ -228,6 +228,42 @@ export async function cancelOutreachCampaignAction(formData: FormData): Promise<
   redirect(`/outreach/${campaignId}`);
 }
 
+const DELETABLE_CAMPAIGN_STATUSES = ['draft', 'cancelled', 'failed', 'sent'] as const;
+
+export async function deleteOutreachCampaignAction(formData: FormData): Promise<void> {
+  await requirePortalAccess('admin', '/outreach');
+  const campaignId = String(formData.get('campaignId') ?? '').trim();
+  if (!campaignId) {
+    formErrorRedirect('/outreach', 'Missing campaign.');
+  }
+
+  const admin = createAdminClient();
+  const { data: campaign } = await admin
+    .from('platform_outreach_campaigns')
+    .select('id, status')
+    .eq('id', campaignId)
+    .maybeSingle();
+
+  if (!campaign) {
+    formErrorRedirect('/outreach', 'Campaign not found.');
+  }
+
+  if (!(DELETABLE_CAMPAIGN_STATUSES as readonly string[]).includes(campaign.status)) {
+    formErrorRedirect(
+      `/outreach/${campaignId}`,
+      'Cancel or wait for sending to finish before deleting this campaign.',
+    );
+  }
+
+  // Recipients cascade via FK on delete.
+  const { error } = await admin.from('platform_outreach_campaigns').delete().eq('id', campaignId);
+  if (error) {
+    formErrorRedirect('/outreach', error.message);
+  }
+
+  redirect('/outreach');
+}
+
 export async function updateOutreachRecipientResponseAction(formData: FormData): Promise<void> {
   await requirePortalAccess('admin', '/outreach');
   const recipientId = String(formData.get('recipientId') ?? '').trim();

@@ -9,11 +9,16 @@ import {
   OUTREACH_CAMPAIGN_STATUS_LABEL,
   outreachCampaignStatusTone,
 } from '@/lib/admin/outreachDisplay';
+import { deleteOutreachCampaignAction } from '@/lib/admin/outreachActions';
 import type { OutreachCampaignStatus } from '@/lib/admin/outreachTypes';
 import { createAdminClient } from '@/lib/supabase/server';
 import styles from './outreach.module.scss';
 
 export const dynamic = 'force-dynamic';
+
+function canDeleteCampaign(status: string): boolean {
+  return status === 'draft' || status === 'cancelled' || status === 'failed' || status === 'sent';
+}
 
 export default async function AdminOutreachPage() {
   const admin = createAdminClient();
@@ -82,6 +87,7 @@ export default async function AdminOutreachPage() {
                   <th>Opens</th>
                   <th>Replies</th>
                   <th>Created</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,6 +115,18 @@ export default async function AdminOutreachPage() {
                       </td>
                       <td>{row.replied_count}</td>
                       <td className={styles.muted}>{new Date(row.created_at).toLocaleString()}</td>
+                      <td>
+                        {canDeleteCampaign(status) ? (
+                          <form action={deleteOutreachCampaignAction}>
+                            <input type="hidden" name="campaignId" value={row.id} />
+                            <Button type="submit" variant="secondary" size="sm">
+                              Delete
+                            </Button>
+                          </form>
+                        ) : (
+                          <span className={styles.muted}>—</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
