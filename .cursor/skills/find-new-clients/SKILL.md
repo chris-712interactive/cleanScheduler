@@ -57,16 +57,16 @@ Search and cross-check multiple sources (do not invent emails or phones):
 
 For each candidate capture:
 
-| Field | Notes |
-| --- | --- |
-| Business Name | Legal or DBA as shown publicly |
-| Owner Name | First name when findable; else `Unknown` |
-| Email | Public contact / info / owner email only — never guess |
-| Phone | Primary business line |
-| City / County / State | Service HQ or primary city; always fill State |
-| Type | `Residential`, `Commercial`, or `Both` |
-| Website | Canonical https URL |
-| Notes | Why relevant (years in market, eco, bilingual, etc.) |
+| Field                 | Notes                                                  |
+| --------------------- | ------------------------------------------------------ |
+| Business Name         | Legal or DBA as shown publicly                         |
+| Owner Name            | First name when findable; else `Unknown`               |
+| Email                 | Public contact / info / owner email only — never guess |
+| Phone                 | Primary business line                                  |
+| City / County / State | Service HQ or primary city; always fill State          |
+| Type                  | `Residential`, `Commercial`, or `Both`                 |
+| Website               | Canonical https URL                                    |
+| Notes                 | Why relevant (years in market, eco, bilingual, etc.)   |
 
 ### 3. Qualify
 
