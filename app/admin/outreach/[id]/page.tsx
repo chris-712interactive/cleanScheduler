@@ -13,6 +13,7 @@ import {
   updateOutreachCampaignSignatureAction,
   updateOutreachRecipientResponseAction,
 } from '@/lib/admin/outreachActions';
+import { formatOutreachArea, summarizeOutreachAreas } from '@/lib/admin/outreachArea';
 import { buildOutreachEmailContent } from '@/lib/admin/outreachEmailBody';
 import {
   formatOutreachRate,
@@ -97,6 +98,7 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
   const canDeleteCampaign =
     status === 'draft' || status === 'cancelled' || status === 'failed' || status === 'sent';
   const signature = signatureFromCampaignRow(campaign);
+  const areaSummary = summarizeOutreachAreas(rows);
 
   const previewRecipient = previewId ? (rows.find((r) => r.id === previewId) ?? null) : null;
   const previewContent = previewRecipient
@@ -205,6 +207,14 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
       ) : null}
 
       <Stack gap={5}>
+        {areaSummary.length ? (
+          <Card title="Areas in this campaign">
+            <p className={styles.areaSummary}>
+              {areaSummary.map((area) => `${area.label} (${area.count})`).join(' · ')}
+            </p>
+          </Card>
+        ) : null}
+
         <Card title="Email signature">
           {canEditDraft ? (
             <form action={updateOutreachCampaignSignatureAction} className={styles.signatureForm}>
@@ -387,7 +397,7 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
                   <tr>
                     <th>Contact</th>
                     <th>Email</th>
-                    <th>City</th>
+                    <th>Area</th>
                     <th>Status</th>
                     <th>Response</th>
                     <th>Actions</th>
@@ -416,7 +426,13 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
                             ) : null}
                           </td>
                           <td className={styles.emailCell}>{row.email}</td>
-                          <td>{row.city || '—'}</td>
+                          <td>
+                            {formatOutreachArea({
+                              city: row.city,
+                              county: row.county,
+                              state: row.state,
+                            })}
+                          </td>
                           <td>
                             <div className={styles.pillStack}>
                               <StatusPill tone="neutral">

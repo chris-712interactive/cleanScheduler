@@ -27,7 +27,7 @@ export default async function AdminOutreachNewPage({ searchParams }: PageProps) 
     <>
       <PageHeader
         title="New outreach campaign"
-        description="Import a mail-merge contact list from a CSV file or a published Google Sheet. Required columns: Email, Subject, Body. Optional: Business Name, Owner Name, Phone, City, County, Type, Website, Notes."
+        description="Import a mail-merge contact list from a CSV file or a published Google Sheet. Required columns: Email, Subject, Body. Optional: Business Name, Owner Name, Phone, City, County, State, Type, Website, Notes."
       />
 
       {err ? (

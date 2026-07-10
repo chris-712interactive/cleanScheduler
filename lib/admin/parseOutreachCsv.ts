@@ -8,6 +8,7 @@ export interface ParsedOutreachRow {
   phone: string | null;
   city: string | null;
   county: string | null;
+  state: string | null;
   businessType: string | null;
   website: string | null;
   notes: string | null;
@@ -138,6 +139,7 @@ export function parseOutreachCsv(text: string): ParseOutreachCsvResult {
   const phoneIdx = findColumn(headers, ['phone', 'phone number', 'mobile']);
   const cityIdx = findColumn(headers, ['city']);
   const countyIdx = findColumn(headers, ['county']);
+  const stateIdx = findColumn(headers, ['state', 'st', 'province', 'region']);
   const typeIdx = findColumn(headers, ['type', 'business type']);
   const websiteIdx = findColumn(headers, ['website', 'url', 'web']);
   const notesIdx = findColumn(headers, ['notes', 'note']);
@@ -178,6 +180,7 @@ export function parseOutreachCsv(text: string): ParseOutreachCsvResult {
       phone: cell(cells, phoneIdx),
       city: cell(cells, cityIdx),
       county: cell(cells, countyIdx),
+      state: cell(cells, stateIdx),
       businessType: cell(cells, typeIdx),
       website: cell(cells, websiteIdx),
       notes: cell(cells, notesIdx),

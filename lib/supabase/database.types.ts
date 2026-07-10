@@ -592,6 +592,7 @@ export type Database = {
           phone: string | null;
           city: string | null;
           county: string | null;
+          state: string | null;
           business_type: string | null;
           website: string | null;
           notes: string | null;
@@ -621,6 +622,7 @@ export type Database = {
           phone?: string | null;
           city?: string | null;
           county?: string | null;
+          state?: string | null;
           business_type?: string | null;
           website?: string | null;
           notes?: string | null;
@@ -650,6 +652,7 @@ export type Database = {
           phone?: string | null;
           city?: string | null;
           county?: string | null;
+          state?: string | null;
           business_type?: string | null;
           website?: string | null;
           notes?: string | null;

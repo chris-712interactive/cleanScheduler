@@ -261,9 +261,11 @@
   background: var(--color-surface-muted);
 }
 
-.previewSubject {
-  margin: 0 0 var(--space-3);
+.areaSummary {
+  margin: 0;
   font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.5;
 }
 
 .emailPreviewFrame {
