@@ -4,6 +4,7 @@ import {
   finalizeOutreachCampaignIfDrained,
   refreshOutreachCampaignMetrics,
 } from '@/lib/admin/outreachMetrics';
+import { signatureFromCampaignRow } from '@/lib/admin/outreachSignature';
 import { OUTREACH_SEND_BATCH_SIZE } from '@/lib/admin/outreachTypes';
 import { createOutreachUnsubscribeToken } from '@/lib/admin/outreachUnsubscribeToken';
 import { sendCampaignEmail } from '@/lib/email/sendCampaignEmail';
@@ -42,9 +43,12 @@ export async function processOutreachSendBatch(
   const campaignIds = [...new Set(recipients.map((r) => r.campaign_id))];
   const { data: campaigns } = await admin
     .from('platform_outreach_campaigns')
-    .select('id, status')
+    .select(
+      'id, status, signature_enabled, signature_name, signature_title, signature_company, signature_email, signature_phone, signature_website, signature_logo_url',
+    )
     .in('id', campaignIds);
 
+  const campaignById = new Map((campaigns ?? []).map((c) => [c.id, c]));
   const activeCampaignIds = new Set(
     (campaigns ?? [])
       .filter((c) => c.status === 'queued' || c.status === 'sending')
@@ -61,6 +65,9 @@ export async function processOutreachSendBatch(
     if (!activeCampaignIds.has(recipient.campaign_id)) {
       continue;
     }
+
+    const campaign = campaignById.get(recipient.campaign_id);
+    if (!campaign) continue;
 
     processed += 1;
     campaignIdsTouched.add(recipient.campaign_id);
@@ -80,6 +87,7 @@ export async function processOutreachSendBatch(
       subject: recipient.subject,
       bodyText: recipient.body_text,
       unsubscribeUrl,
+      signature: signatureFromCampaignRow(campaign),
     });
 
     const result = await sendCampaignEmail({

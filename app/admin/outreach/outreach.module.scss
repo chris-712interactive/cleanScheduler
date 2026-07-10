@@ -201,3 +201,75 @@
     color: var(--color-brand-primary);
   }
 }
+
+.signatureForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.signatureGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @include mq.down(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.signatureLogoField {
+  grid-column: 1 / -1;
+}
+
+.checkboxRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: var(--font-size-sm);
+}
+
+.contactName {
+  display: block;
+  font-weight: 600;
+}
+
+.mutedBlock {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.emailCell {
+  overflow-wrap: anywhere;
+}
+
+.pillStack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.directoryTable tr[data-active] td {
+  background: var(--color-surface-muted);
+}
+
+.previewSubject {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.emailPreviewFrame {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: auto;
+  max-height: 28rem;
+  background: var(--color-surface-muted);
+}

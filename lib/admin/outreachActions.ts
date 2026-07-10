@@ -13,6 +13,7 @@ import {
   normalizeOutreachEmail,
   type OutreachResponseStatus,
 } from '@/lib/admin/outreachTypes';
+import { defaultOutreachSignature, isHttpsLogoUrl } from '@/lib/admin/outreachSignature';
 import { createAdminClient } from '@/lib/supabase/server';
 
 function formErrorRedirect(path: string, message: string): never {
@@ -32,6 +33,7 @@ async function createDraftCampaignFromRows(params: {
     .in('email_normalized', emails);
 
   const suppressed = new Set((suppressions ?? []).map((s) => s.email_normalized));
+  const signatureDefaults = defaultOutreachSignature();
 
   const { data: campaign, error: campaignError } = await admin
     .from('platform_outreach_campaigns')
@@ -39,6 +41,14 @@ async function createDraftCampaignFromRows(params: {
       name: params.name,
       status: 'draft',
       created_by_user_id: params.userId,
+      signature_enabled: signatureDefaults.enabled,
+      signature_name: signatureDefaults.name,
+      signature_title: signatureDefaults.title,
+      signature_company: signatureDefaults.company,
+      signature_email: signatureDefaults.email,
+      signature_phone: signatureDefaults.phone,
+      signature_website: signatureDefaults.website,
+      signature_logo_url: signatureDefaults.logoUrl,
     })
     .select('id')
     .single();
@@ -271,4 +281,95 @@ export async function updateOutreachRecipientResponseAction(formData: FormData):
 
   await refreshOutreachCampaignMetrics(admin, campaignId);
   redirect(`/outreach/${campaignId}`);
+}
+
+export async function updateOutreachCampaignSignatureAction(formData: FormData): Promise<void> {
+  await requirePortalAccess('admin', '/outreach');
+  const campaignId = String(formData.get('campaignId') ?? '').trim();
+  if (!campaignId) {
+    formErrorRedirect('/outreach', 'Missing campaign.');
+  }
+
+  const admin = createAdminClient();
+  const { data: campaign } = await admin
+    .from('platform_outreach_campaigns')
+    .select('id, status')
+    .eq('id', campaignId)
+    .maybeSingle();
+
+  if (!campaign) {
+    formErrorRedirect('/outreach', 'Campaign not found.');
+  }
+  if (campaign.status !== 'draft') {
+    formErrorRedirect(
+      `/outreach/${campaignId}`,
+      'Signature can only be edited on draft campaigns.',
+    );
+  }
+
+  const logoUrl = String(formData.get('signatureLogoUrl') ?? '').trim() || null;
+  if (logoUrl && !isHttpsLogoUrl(logoUrl)) {
+    formErrorRedirect(`/outreach/${campaignId}`, 'Logo URL must be a valid HTTPS link.');
+  }
+
+  const enabled = String(formData.get('signatureEnabled') ?? '') === 'on';
+
+  await admin
+    .from('platform_outreach_campaigns')
+    .update({
+      signature_enabled: enabled,
+      signature_name: String(formData.get('signatureName') ?? '').trim() || null,
+      signature_title: String(formData.get('signatureTitle') ?? '').trim() || null,
+      signature_company: String(formData.get('signatureCompany') ?? '').trim() || null,
+      signature_email: String(formData.get('signatureEmail') ?? '').trim() || null,
+      signature_phone: String(formData.get('signaturePhone') ?? '').trim() || null,
+      signature_website: String(formData.get('signatureWebsite') ?? '').trim() || null,
+      signature_logo_url: logoUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', campaignId);
+
+  redirect(`/outreach/${campaignId}`);
+}
+
+export async function deleteOutreachRecipientAction(formData: FormData): Promise<void> {
+  await requirePortalAccess('admin', '/outreach');
+  const recipientId = String(formData.get('recipientId') ?? '').trim();
+  const campaignId = String(formData.get('campaignId') ?? '').trim();
+  const filter = String(formData.get('filter') ?? '').trim();
+
+  if (!recipientId || !campaignId) {
+    formErrorRedirect('/outreach', 'Missing recipient.');
+  }
+
+  const admin = createAdminClient();
+  const { data: campaign } = await admin
+    .from('platform_outreach_campaigns')
+    .select('id, status')
+    .eq('id', campaignId)
+    .maybeSingle();
+
+  if (!campaign) {
+    formErrorRedirect('/outreach', 'Campaign not found.');
+  }
+  if (campaign.status !== 'draft') {
+    formErrorRedirect(
+      `/outreach/${campaignId}`,
+      'Recipients can only be deleted from draft campaigns.',
+    );
+  }
+
+  const { error } = await admin
+    .from('platform_outreach_recipients')
+    .delete()
+    .eq('id', recipientId)
+    .eq('campaign_id', campaignId);
+
+  if (error) {
+    formErrorRedirect(`/outreach/${campaignId}`, error.message);
+  }
+
+  await refreshOutreachCampaignMetrics(admin, campaignId);
+  const qs = filter && filter !== 'all' ? `?filter=${encodeURIComponent(filter)}` : '';
+  redirect(`/outreach/${campaignId}${qs}`);
 }
