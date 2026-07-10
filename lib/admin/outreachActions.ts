@@ -68,6 +68,7 @@ async function createDraftCampaignFromRows(params: {
       phone: row.phone,
       city: row.city,
       county: row.county,
+      state: row.state,
       business_type: row.businessType,
       website: row.website,
       notes: row.notes,

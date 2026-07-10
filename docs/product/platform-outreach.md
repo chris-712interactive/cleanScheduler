@@ -57,9 +57,11 @@ Only `https://docs.google.com/...` published/export CSV URLs are accepted as the
 ## CSV columns
 
 **Required:** `Email`, `Subject`, `Body`  
-**Optional:** Business Name, Owner Name, Phone, City, County, Type, Website, Notes
+**Optional:** Business Name, Owner Name, Phone, City, County, State, Type, Website, Notes
 
 Rows missing email/content are skipped at import. Emails already in `platform_outreach_suppressions` import as `skipped`.
+
+Campaign detail shows a compact **Area** column (`City, County, ST`) and an **Areas in this campaign** summary for geographic tracking.
 
 ## Compliance
 
@@ -71,6 +73,7 @@ Rows missing email/content are skipped at import. Emails already in `platform_ou
 
 - `0078_platform_outreach.sql` — campaigns, recipients, suppressions
 - `0079_platform_outreach_signature.sql` — campaign signature columns
+- `0080_platform_outreach_state.sql` — recipient `state` for area tracking
 
 RLS: `is_platform_admin()`; service role used by admin portal + cron/webhooks.
 
