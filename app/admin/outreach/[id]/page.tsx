@@ -3,12 +3,16 @@ import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   cancelOutreachCampaignAction,
+  deleteOutreachRecipientAction,
   queueOutreachCampaignAction,
+  updateOutreachCampaignSignatureAction,
   updateOutreachRecipientResponseAction,
 } from '@/lib/admin/outreachActions';
+import { buildOutreachEmailContent } from '@/lib/admin/outreachEmailBody';
 import {
   formatOutreachRate,
   OUTREACH_CAMPAIGN_STATUS_LABEL,
@@ -16,6 +20,7 @@ import {
   OUTREACH_RESPONSE_STATUS_LABEL,
   outreachCampaignStatusTone,
 } from '@/lib/admin/outreachDisplay';
+import { signatureFromCampaignRow } from '@/lib/admin/outreachSignature';
 import {
   OUTREACH_RESPONSE_STATUSES,
   type OutreachCampaignStatus,
@@ -37,11 +42,20 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function filterQuery(filter: string, previewId?: string | null): string {
+  const params = new URLSearchParams();
+  if (filter && filter !== 'all') params.set('filter', filter);
+  if (previewId) params.set('preview', previewId);
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
 export default async function AdminOutreachDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const sp = await searchParams;
   const err = firstParam(sp.error);
   const filter = firstParam(sp.filter) ?? 'all';
+  const previewId = firstParam(sp.preview) ?? null;
 
   const admin = createAdminClient();
   const { data: campaign, error } = await admin
@@ -78,6 +92,18 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
   const status = campaign.status as OutreachCampaignStatus;
   const canQueue = status === 'draft';
   const canCancel = status === 'draft' || status === 'queued' || status === 'sending';
+  const canEditDraft = status === 'draft';
+  const signature = signatureFromCampaignRow(campaign);
+
+  const previewRecipient = previewId ? (rows.find((r) => r.id === previewId) ?? null) : null;
+  const previewContent = previewRecipient
+    ? buildOutreachEmailContent({
+        subject: previewRecipient.subject,
+        bodyText: previewRecipient.body_text,
+        unsubscribeUrl: '#unsubscribe-preview',
+        signature,
+      })
+    : null;
 
   return (
     <>
@@ -167,108 +193,268 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
         </p>
       ) : null}
 
-      <div className={styles.filterRow}>
-        {(
-          [
-            ['all', 'All'],
-            ['pending', 'Pending/queued'],
-            ['opened', 'Opened'],
-            ['replied', 'Responded'],
-            ['bounced', 'Bounced'],
-            ['failed', 'Failed'],
-          ] as const
-        ).map(([key, label]) => (
-          <Link
-            key={key}
-            href={`/outreach/${id}?filter=${key}`}
-            className={styles.filterLink}
-            data-active={filter === key ? '' : undefined}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-
-      <Card title={`Recipients (${rows.length})`}>
-        {!rows.length ? (
-          <p className={styles.muted}>No recipients match this filter.</p>
-        ) : (
-          <div>
-            {rows.map((row) => {
-              const recipientStatus = row.status as OutreachRecipientStatus;
-              const responseStatus = row.response_status as OutreachResponseStatus;
-              return (
-                <div key={row.id} className={styles.recipientCard}>
-                  <div className={styles.recipientHeader}>
-                    <div>
-                      <h3 className={styles.recipientTitle}>
-                        {row.business_name || row.owner_name || row.email}
-                      </h3>
-                      <p className={styles.muted}>
-                        {row.email}
-                        {row.city ? ` · ${row.city}` : ''}
-                        {row.phone ? ` · ${row.phone}` : ''}
-                      </p>
-                    </div>
-                    <div className={styles.actionsRow}>
-                      <StatusPill tone="neutral">
-                        {OUTREACH_RECIPIENT_STATUS_LABEL[recipientStatus] ?? row.status}
-                      </StatusPill>
-                      {row.opened_at ? <StatusPill tone="brand">Opened</StatusPill> : null}
-                      {responseStatus !== 'none' ? (
-                        <StatusPill tone="success">
-                          {OUTREACH_RESPONSE_STATUS_LABEL[responseStatus]}
-                        </StatusPill>
-                      ) : null}
-                    </div>
-                  </div>
-                  <p className={styles.muted}>
-                    <strong>Subject:</strong> {row.subject}
+      <Stack gap={5}>
+        <Card title="Email signature">
+          {canEditDraft ? (
+            <form action={updateOutreachCampaignSignatureAction} className={styles.signatureForm}>
+              <input type="hidden" name="campaignId" value={campaign.id} />
+              <label className={styles.checkboxRow}>
+                <input type="checkbox" name="signatureEnabled" defaultChecked={signature.enabled} />
+                <span>
+                  Append this signature to every email (keep CSV Body as the personal message only)
+                </span>
+              </label>
+              <div className={styles.signatureGrid}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Name</span>
+                  <input
+                    className={styles.input}
+                    type="text"
+                    name="signatureName"
+                    defaultValue={campaign.signature_name ?? ''}
+                    placeholder="Chris Kendig"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Title</span>
+                  <input
+                    className={styles.input}
+                    type="text"
+                    name="signatureTitle"
+                    defaultValue={campaign.signature_title ?? ''}
+                    placeholder="Founder"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Company</span>
+                  <input
+                    className={styles.input}
+                    type="text"
+                    name="signatureCompany"
+                    defaultValue={campaign.signature_company ?? ''}
+                    placeholder="Clean Scheduler"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Email</span>
+                  <input
+                    className={styles.input}
+                    type="email"
+                    name="signatureEmail"
+                    defaultValue={campaign.signature_email ?? ''}
+                    placeholder="you@cleanscheduler.com"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Phone</span>
+                  <input
+                    className={styles.input}
+                    type="text"
+                    name="signaturePhone"
+                    defaultValue={campaign.signature_phone ?? ''}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Website</span>
+                  <input
+                    className={styles.input}
+                    type="url"
+                    name="signatureWebsite"
+                    defaultValue={campaign.signature_website ?? ''}
+                    placeholder="https://cleanscheduler.com"
+                  />
+                </label>
+                <label className={`${styles.field} ${styles.signatureLogoField}`}>
+                  <span className={styles.fieldLabel}>Logo URL (HTTPS)</span>
+                  <input
+                    className={styles.input}
+                    type="url"
+                    name="signatureLogoUrl"
+                    defaultValue={campaign.signature_logo_url ?? ''}
+                    placeholder="https://…/logo.png"
+                  />
+                  <p className={styles.fieldHint}>
+                    Hosted image URL shown above your name in the signature.
                   </p>
-                  <pre className={styles.previewBody}>{row.body_text}</pre>
-                  {row.error_message ? (
-                    <p className={styles.formError}>{row.error_message}</p>
-                  ) : null}
-                  <form
-                    action={updateOutreachRecipientResponseAction}
-                    className={styles.responseForm}
-                  >
-                    <input type="hidden" name="recipientId" value={row.id} />
-                    <input type="hidden" name="campaignId" value={campaign.id} />
-                    <label className={styles.field}>
-                      <span className={styles.fieldLabel}>Response</span>
-                      <select
-                        className={styles.select}
-                        name="responseStatus"
-                        defaultValue={responseStatus}
-                      >
-                        {OUTREACH_RESPONSE_STATUSES.map((value) => (
-                          <option key={value} value={value}>
-                            {OUTREACH_RESPONSE_STATUS_LABEL[value]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className={styles.field}>
-                      <span className={styles.fieldLabel}>Notes</span>
-                      <input
-                        className={styles.input}
-                        type="text"
-                        name="responseNotes"
-                        defaultValue={row.response_notes ?? ''}
-                        placeholder="Call notes, next step…"
-                      />
-                    </label>
-                    <Button type="submit" variant="secondary" size="sm">
-                      Save
-                    </Button>
-                  </form>
-                </div>
-              );
-            })}
+                </label>
+              </div>
+              <Button type="submit" variant="secondary" size="sm">
+                Save signature
+              </Button>
+            </form>
+          ) : (
+            <p className={styles.muted}>
+              {signature.enabled
+                ? `Signature on: ${[signature.name, signature.title, signature.company].filter(Boolean).join(' · ') || 'enabled'}`
+                : 'Signature disabled for this campaign.'}
+            </p>
+          )}
+        </Card>
+
+        {previewRecipient && previewContent ? (
+          <Card
+            title={`Preview · ${previewRecipient.business_name || previewRecipient.email}`}
+            actions={
+              <Button
+                variant="secondary"
+                size="sm"
+                as="a"
+                href={`/outreach/${id}${filterQuery(filter)}`}
+              >
+                Close
+              </Button>
+            }
+          >
+            <p className={styles.previewSubject}>
+              <strong>Subject:</strong> {previewContent.subject}
+            </p>
+            <div
+              className={styles.emailPreviewFrame}
+              dangerouslySetInnerHTML={{ __html: previewContent.html }}
+            />
+            <form action={updateOutreachRecipientResponseAction} className={styles.responseForm}>
+              <input type="hidden" name="recipientId" value={previewRecipient.id} />
+              <input type="hidden" name="campaignId" value={campaign.id} />
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Response</span>
+                <select
+                  className={styles.select}
+                  name="responseStatus"
+                  defaultValue={previewRecipient.response_status}
+                >
+                  {OUTREACH_RESPONSE_STATUSES.map((value) => (
+                    <option key={value} value={value}>
+                      {OUTREACH_RESPONSE_STATUS_LABEL[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Notes</span>
+                <input
+                  className={styles.input}
+                  type="text"
+                  name="responseNotes"
+                  defaultValue={previewRecipient.response_notes ?? ''}
+                  placeholder="Call notes, next step…"
+                />
+              </label>
+              <Button type="submit" variant="secondary" size="sm">
+                Save response
+              </Button>
+            </form>
+          </Card>
+        ) : null}
+
+        <div>
+          <div className={styles.filterRow}>
+            {(
+              [
+                ['all', 'All'],
+                ['pending', 'Pending/queued'],
+                ['opened', 'Opened'],
+                ['replied', 'Responded'],
+                ['bounced', 'Bounced'],
+                ['failed', 'Failed'],
+              ] as const
+            ).map(([key, label]) => (
+              <Link
+                key={key}
+                href={`/outreach/${id}${filterQuery(key, previewId)}`}
+                className={styles.filterLink}
+                data-active={filter === key ? '' : undefined}
+              >
+                {label}
+              </Link>
+            ))}
           </div>
-        )}
-      </Card>
+
+          <div className={styles.tablePanel}>
+            <div className={styles.tableWrap}>
+              <table className={styles.directoryTable}>
+                <thead>
+                  <tr>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th>City</th>
+                    <th>Status</th>
+                    <th>Response</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!rows.length ? (
+                    <tr>
+                      <td colSpan={6} className={styles.muted}>
+                        No recipients match this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((row) => {
+                      const recipientStatus = row.status as OutreachRecipientStatus;
+                      const responseStatus = row.response_status as OutreachResponseStatus;
+                      const isPreview = previewId === row.id;
+                      return (
+                        <tr key={row.id} data-active={isPreview ? '' : undefined}>
+                          <td>
+                            <span className={styles.contactName}>
+                              {row.business_name || row.owner_name || '—'}
+                            </span>
+                            {row.owner_name && row.business_name ? (
+                              <span className={styles.mutedBlock}>{row.owner_name}</span>
+                            ) : null}
+                          </td>
+                          <td className={styles.emailCell}>{row.email}</td>
+                          <td>{row.city || '—'}</td>
+                          <td>
+                            <div className={styles.pillStack}>
+                              <StatusPill tone="neutral">
+                                {OUTREACH_RECIPIENT_STATUS_LABEL[recipientStatus] ?? row.status}
+                              </StatusPill>
+                              {row.opened_at ? <StatusPill tone="brand">Opened</StatusPill> : null}
+                            </div>
+                          </td>
+                          <td>
+                            {responseStatus !== 'none' ? (
+                              <StatusPill tone="success">
+                                {OUTREACH_RESPONSE_STATUS_LABEL[responseStatus]}
+                              </StatusPill>
+                            ) : (
+                              <span className={styles.muted}>—</span>
+                            )}
+                          </td>
+                          <td>
+                            <div className={styles.rowActions}>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                as="a"
+                                href={`/outreach/${id}${filterQuery(filter, row.id)}`}
+                              >
+                                {isPreview ? 'Viewing' : 'Preview'}
+                              </Button>
+                              {canEditDraft ? (
+                                <form action={deleteOutreachRecipientAction}>
+                                  <input type="hidden" name="recipientId" value={row.id} />
+                                  <input type="hidden" name="campaignId" value={campaign.id} />
+                                  <input type="hidden" name="filter" value={filter} />
+                                  <Button type="submit" variant="secondary" size="sm">
+                                    Delete
+                                  </Button>
+                                </form>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </Stack>
     </>
   );
 }

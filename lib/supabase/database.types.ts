@@ -514,6 +514,14 @@ export type Database = {
           sent_at: string | null;
           created_at: string;
           updated_at: string;
+          signature_enabled: boolean;
+          signature_name: string | null;
+          signature_title: string | null;
+          signature_company: string | null;
+          signature_email: string | null;
+          signature_phone: string | null;
+          signature_website: string | null;
+          signature_logo_url: string | null;
         };
         Insert: {
           id?: string;
@@ -534,6 +542,14 @@ export type Database = {
           sent_at?: string | null;
           created_at?: string;
           updated_at?: string;
+          signature_enabled?: boolean;
+          signature_name?: string | null;
+          signature_title?: string | null;
+          signature_company?: string | null;
+          signature_email?: string | null;
+          signature_phone?: string | null;
+          signature_website?: string | null;
+          signature_logo_url?: string | null;
         };
         Update: {
           id?: string;
@@ -554,6 +570,14 @@ export type Database = {
           sent_at?: string | null;
           created_at?: string;
           updated_at?: string;
+          signature_enabled?: boolean;
+          signature_name?: string | null;
+          signature_title?: string | null;
+          signature_company?: string | null;
+          signature_email?: string | null;
+          signature_phone?: string | null;
+          signature_website?: string | null;
+          signature_logo_url?: string | null;
         };
         Relationships: [];
       };
