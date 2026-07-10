@@ -7,6 +7,7 @@ import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   cancelOutreachCampaignAction,
+  deleteOutreachCampaignAction,
   deleteOutreachRecipientAction,
   queueOutreachCampaignAction,
   updateOutreachCampaignSignatureAction,
@@ -93,6 +94,8 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
   const canQueue = status === 'draft';
   const canCancel = status === 'draft' || status === 'queued' || status === 'sending';
   const canEditDraft = status === 'draft';
+  const canDeleteCampaign =
+    status === 'draft' || status === 'cancelled' || status === 'failed' || status === 'sent';
   const signature = signatureFromCampaignRow(campaign);
 
   const previewRecipient = previewId ? (rows.find((r) => r.id === previewId) ?? null) : null;
@@ -128,6 +131,14 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
                 <input type="hidden" name="campaignId" value={campaign.id} />
                 <Button type="submit" variant="secondary">
                   Cancel
+                </Button>
+              </form>
+            ) : null}
+            {canDeleteCampaign ? (
+              <form action={deleteOutreachCampaignAction}>
+                <input type="hidden" name="campaignId" value={campaign.id} />
+                <Button type="submit" variant="secondary">
+                  Delete campaign
                 </Button>
               </form>
             ) : null}

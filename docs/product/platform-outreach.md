@@ -34,6 +34,7 @@ Import mail-merge contact lists (per-recipient subject + body) from a **CSV uplo
 - Compact table: contact, email, city, status, response — no inline body preview.
 - **Preview** opens a panel with subject + rendered HTML (body + signature + CAN-SPAM footer).
 - **Delete** removes a recipient only while the campaign is `draft`.
+- **Delete campaign** (list or detail) removes `draft`, `cancelled`, `failed`, or `sent` campaigns (and cascaded recipients). Not allowed while `queued` / `sending` — cancel first.
 
 ## Campaign signature
 
