@@ -15,6 +15,7 @@ import {
 } from '@/lib/admin/outreachActions';
 import { formatOutreachArea, summarizeOutreachAreas } from '@/lib/admin/outreachArea';
 import { buildOutreachEmailContent } from '@/lib/admin/outreachEmailBody';
+import { refreshOutreachCampaignMetrics } from '@/lib/admin/outreachMetrics';
 import {
   formatOutreachRate,
   OUTREACH_CAMPAIGN_STATUS_LABEL,
@@ -60,15 +61,28 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
   const previewId = firstParam(sp.preview) ?? null;
 
   const admin = createAdminClient();
-  const { data: campaign, error } = await admin
+  const { data: campaignInitial, error } = await admin
     .from('platform_outreach_campaigns')
     .select('*')
     .eq('id', id)
     .maybeSingle();
 
-  if (error || !campaign) {
+  if (error || !campaignInitial) {
     notFound();
   }
+
+  // Recompute aggregates so bounce/delivery edge cases stay accurate after webhook fixes.
+  if (campaignInitial.status !== 'draft') {
+    await refreshOutreachCampaignMetrics(admin, id);
+  }
+
+  const { data: campaignFresh } = await admin
+    .from('platform_outreach_campaigns')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  const campaign = campaignFresh ?? campaignInitial;
 
   let recipientQuery = admin
     .from('platform_outreach_recipients')
