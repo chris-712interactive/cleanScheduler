@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { normalizePublishedGoogleSheetCsvUrl } from '@/lib/admin/fetchPublishedOutreachCsv';
+import {
+  isAllowedGoogleSheetDownloadHost,
+  normalizePublishedGoogleSheetCsvUrl,
+} from '@/lib/admin/fetchPublishedOutreachCsv';
 
 describe('normalizePublishedGoogleSheetCsvUrl', () => {
   it('accepts published-to-web CSV URLs', () => {
@@ -32,5 +35,19 @@ describe('normalizePublishedGoogleSheetCsvUrl', () => {
     if (!result.ok) {
       expect(result.error).toMatch(/docs\.google\.com/i);
     }
+  });
+});
+
+describe('isAllowedGoogleSheetDownloadHost', () => {
+  it('allows docs and googleusercontent CDN hosts used after redirect', () => {
+    expect(isAllowedGoogleSheetDownloadHost('docs.google.com')).toBe(true);
+    expect(isAllowedGoogleSheetDownloadHost('spreadsheets.google.com')).toBe(true);
+    expect(isAllowedGoogleSheetDownloadHost('docs.googleusercontent.com')).toBe(true);
+    expect(isAllowedGoogleSheetDownloadHost('lh3.googleusercontent.com')).toBe(true);
+  });
+
+  it('rejects unrelated hosts', () => {
+    expect(isAllowedGoogleSheetDownloadHost('example.com')).toBe(false);
+    expect(isAllowedGoogleSheetDownloadHost('evilgoogleusercontent.com')).toBe(false);
   });
 });

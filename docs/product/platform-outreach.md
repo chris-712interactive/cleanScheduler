@@ -35,7 +35,7 @@ Import mail-merge contact lists (per-recipient subject + body) from a **CSV uplo
 | CSV file     | Upload on `/outreach/new` (max 2 MB)                                                              |
 | Google Sheet | File → Share → Publish to web → CSV, paste `/pub?output=csv` (or public `/export?format=csv`) URL |
 
-Only `https://docs.google.com/...` published/export CSV URLs are fetched (`lib/admin/fetchPublishedOutreachCsv.ts`). Edit/share links are rejected. The sheet must be publicly readable via that URL.
+Only `https://docs.google.com/...` published/export CSV URLs are accepted as the source link (`lib/admin/fetchPublishedOutreachCsv.ts`). Edit/share links are rejected. After download, Google may redirect to `*.googleusercontent.com` or `spreadsheets.google.com`; those hosts are allowed for the response. The sheet must be publicly readable via that URL.
 
 ## CSV columns
 
