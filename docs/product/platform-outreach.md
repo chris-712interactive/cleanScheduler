@@ -83,6 +83,22 @@ RLS: `is_platform_admin()`; service role used by admin portal + cron/webhooks.
 
 Resend tags on send: `outreach_campaign_id`, `outreach_recipient_id`.
 
+Configure the Resend webhook to include at least:
+
+- `email.delivered` — recipient status → `delivered`
+- `email.bounced` — recipient status → `bounced` + platform suppression
+- `email.opened` / `email.clicked` — engagement timestamps
+
+### Sent vs Delivered
+
+| Status        | Meaning                                                                |
+| ------------- | ---------------------------------------------------------------------- |
+| **Sent**      | Resend accepted the API send (`processOutreachSendBatch`).             |
+| **Delivered** | Resend posted `email.delivered` (receiving mailbox accepted the mail). |
+| **Bounced**   | Resend posted `email.bounced` (rejected / undeliverable).              |
+
+Stuck **Sent** (no Delivered) is usually webhook delay, MTA deferral, a missing `email.delivered` event on the webhook, or a quiet receiving provider — the app cannot force inbox delivery. Campaign detail pills: Delivered = green, Sent = yellow, Bounced = red.
+
 ## Out of scope
 
 - Logo file upload / storage
@@ -91,3 +107,4 @@ Resend tags on send: `outreach_campaign_id`, `outreach_recipient_id`.
 - Inbound reply detection
 - Rich HTML body editor for CSV rows
 - SMS outreach
+- Resend API resync for stuck Sent rows

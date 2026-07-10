@@ -22,6 +22,7 @@ import {
   OUTREACH_RECIPIENT_STATUS_LABEL,
   OUTREACH_RESPONSE_STATUS_LABEL,
   outreachCampaignStatusTone,
+  outreachRecipientStatusTone,
 } from '@/lib/admin/outreachDisplay';
 import { signatureFromCampaignRow } from '@/lib/admin/outreachSignature';
 import {
@@ -213,6 +214,10 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
           <span className={styles.metricLabel}>Failed</span>
         </div>
       </div>
+
+      <p className={styles.statusLegend}>
+        Sent = accepted by Resend · Delivered = mailbox accepted · Bounced = rejected
+      </p>
 
       {status === 'queued' || status === 'sending' ? (
         <p className={styles.muted}>
@@ -449,7 +454,7 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
                           </td>
                           <td>
                             <div className={styles.pillStack}>
-                              <StatusPill tone="neutral">
+                              <StatusPill tone={outreachRecipientStatusTone(recipientStatus)}>
                                 {OUTREACH_RECIPIENT_STATUS_LABEL[recipientStatus] ?? row.status}
                               </StatusPill>
                               {row.opened_at ? <StatusPill tone="brand">Opened</StatusPill> : null}
