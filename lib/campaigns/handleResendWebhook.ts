@@ -26,8 +26,19 @@ async function refreshCampaignMetrics(
   await admin
     .from('tenant_email_campaigns')
     .update({
-      sent_count: rows.filter((r) => r.status === 'sent' || r.status === 'delivered').length,
-      delivered_count: rows.filter((r) => r.status === 'delivered' || r.delivered_at).length,
+      sent_count: rows.filter(
+        (r) =>
+          r.status === 'sent' ||
+          r.status === 'delivered' ||
+          r.status === 'bounced' ||
+          Boolean(r.bounced_at),
+      ).length,
+      delivered_count: rows.filter(
+        (r) =>
+          r.status !== 'bounced' &&
+          !r.bounced_at &&
+          (r.status === 'delivered' || Boolean(r.delivered_at)),
+      ).length,
       opened_count: rows.filter((r) => r.opened_at).length,
       clicked_count: rows.filter((r) => r.clicked_at).length,
       bounced_count: rows.filter((r) => r.status === 'bounced' || r.bounced_at).length,
@@ -44,7 +55,7 @@ async function handleOutreachWebhookEvent(
 ): Promise<boolean> {
   const { data: recipient } = await admin
     .from('platform_outreach_recipients')
-    .select('id, campaign_id, email_normalized, opened_at, clicked_at')
+    .select('id, campaign_id, email_normalized, opened_at, clicked_at, status, bounced_at')
     .eq('resend_email_id', emailId)
     .maybeSingle();
 
@@ -52,8 +63,10 @@ async function handleOutreachWebhookEvent(
 
   const now = new Date().toISOString();
   const updates: Database['public']['Tables']['platform_outreach_recipients']['Update'] = {};
+  const alreadyBounced = recipient.status === 'bounced' || Boolean(recipient.bounced_at);
 
   if (eventType === 'email.delivered') {
+    if (alreadyBounced) return true;
     updates.status = 'delivered';
     updates.delivered_at = now;
   } else if (eventType === 'email.opened') {
@@ -63,6 +76,7 @@ async function handleOutreachWebhookEvent(
   } else if (eventType === 'email.bounced') {
     updates.status = 'bounced';
     updates.bounced_at = now;
+    updates.delivered_at = null;
     await admin.from('platform_outreach_suppressions').upsert(
       {
         email_normalized: normalizeOutreachEmail(recipient.email_normalized),
@@ -94,7 +108,7 @@ export async function handleResendWebhookEvent(
 
   const { data: recipient } = await admin
     .from('tenant_email_campaign_recipients')
-    .select('id, campaign_id, tenant_id, email, opened_at, clicked_at')
+    .select('id, campaign_id, tenant_id, email, opened_at, clicked_at, status, bounced_at')
     .eq('resend_email_id', emailId)
     .maybeSingle();
 
@@ -105,8 +119,10 @@ export async function handleResendWebhookEvent(
 
   const now = new Date().toISOString();
   const updates: Database['public']['Tables']['tenant_email_campaign_recipients']['Update'] = {};
+  const alreadyBounced = recipient.status === 'bounced' || Boolean(recipient.bounced_at);
 
   if (eventType === 'email.delivered') {
+    if (alreadyBounced) return;
     updates.status = 'delivered';
     updates.delivered_at = now;
   } else if (eventType === 'email.opened') {
@@ -116,6 +132,7 @@ export async function handleResendWebhookEvent(
   } else if (eventType === 'email.bounced') {
     updates.status = 'bounced';
     updates.bounced_at = now;
+    updates.delivered_at = null;
     await admin.from('tenant_email_suppressions').upsert(
       {
         tenant_id: recipient.tenant_id,
