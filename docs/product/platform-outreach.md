@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Import mail-merge contact CSVs (per-recipient subject + body), queue sends through Resend, track delivery/open/click/bounce via webhooks, and log replies manually in the admin UI.
+Import mail-merge contact lists (per-recipient subject + body) from a **CSV upload** or a **published Google Sheet CSV URL**, queue sends through Resend, track delivery/open/click/bounce via webhooks, and log replies manually in the admin UI.
 
 ## Routes
 
@@ -22,11 +22,20 @@ Import mail-merge contact CSVs (per-recipient subject + body), queue sends throu
 
 `draft` → `queued` → `sending` → `sent` | `cancelled` | `failed`
 
-1. Admin uploads CSV → draft campaign + recipient rows.
+1. Admin imports contacts (CSV file or published Sheet URL) → draft campaign + recipient rows.
 2. **Queue send** marks pending recipients `queued` (no inline Resend calls).
 3. Cron drains ~40 queued recipients per minute via `processOutreachSendBatch`.
 4. Resend webhooks update engagement; bounces write platform suppressions.
 5. Admin sets per-recipient `response_status` (`replied`, `interested`, `not_interested`, `do_not_contact`).
+
+## Import sources
+
+| Source       | How                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| CSV file     | Upload on `/outreach/new` (max 2 MB)                                                              |
+| Google Sheet | File → Share → Publish to web → CSV, paste `/pub?output=csv` (or public `/export?format=csv`) URL |
+
+Only `https://docs.google.com/...` published/export CSV URLs are fetched (`lib/admin/fetchPublishedOutreachCsv.ts`). Edit/share links are rejected. The sheet must be publicly readable via that URL.
 
 ## CSV columns
 

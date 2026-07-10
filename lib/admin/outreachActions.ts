@@ -2,7 +2,11 @@
 
 import { redirect } from 'next/navigation';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
-import { parseOutreachCsv } from '@/lib/admin/parseOutreachCsv';
+import {
+  fetchPublishedOutreachCsv,
+  OUTREACH_MAX_CSV_BYTES,
+} from '@/lib/admin/fetchPublishedOutreachCsv';
+import { parseOutreachCsv, type ParsedOutreachRow } from '@/lib/admin/parseOutreachCsv';
 import { refreshOutreachCampaignMetrics } from '@/lib/admin/outreachMetrics';
 import {
   OUTREACH_RESPONSE_STATUSES,
@@ -11,35 +15,17 @@ import {
 } from '@/lib/admin/outreachTypes';
 import { createAdminClient } from '@/lib/supabase/server';
 
-const MAX_CSV_BYTES = 2_000_000;
-
 function formErrorRedirect(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
 }
 
-export async function createOutreachCampaignFromCsvAction(formData: FormData): Promise<void> {
-  const auth = await requirePortalAccess('admin', '/outreach/new');
-  const name = String(formData.get('name') ?? '').trim();
-  const file = formData.get('csv');
-
-  if (!name) {
-    formErrorRedirect('/outreach/new', 'Campaign name is required.');
-  }
-  if (!(file instanceof File) || file.size === 0) {
-    formErrorRedirect('/outreach/new', 'Upload a CSV contact sheet.');
-  }
-  if (file.size > MAX_CSV_BYTES) {
-    formErrorRedirect('/outreach/new', 'CSV must be under 2 MB.');
-  }
-
-  const text = await file.text();
-  const parsed = parseOutreachCsv(text);
-  if (parsed.error || parsed.rows.length === 0) {
-    formErrorRedirect('/outreach/new', parsed.error ?? 'No valid rows found.');
-  }
-
+async function createDraftCampaignFromRows(params: {
+  userId: string;
+  name: string;
+  rows: ParsedOutreachRow[];
+}): Promise<string> {
   const admin = createAdminClient();
-  const emails = parsed.rows.map((r) => r.emailNormalized);
+  const emails = params.rows.map((r) => r.emailNormalized);
   const { data: suppressions } = await admin
     .from('platform_outreach_suppressions')
     .select('email_normalized')
@@ -50,9 +36,9 @@ export async function createOutreachCampaignFromCsvAction(formData: FormData): P
   const { data: campaign, error: campaignError } = await admin
     .from('platform_outreach_campaigns')
     .insert({
-      name,
+      name: params.name,
       status: 'draft',
-      created_by_user_id: auth.user.id,
+      created_by_user_id: params.userId,
     })
     .select('id')
     .single();
@@ -61,7 +47,7 @@ export async function createOutreachCampaignFromCsvAction(formData: FormData): P
     formErrorRedirect('/outreach/new', campaignError?.message ?? 'Could not create campaign.');
   }
 
-  const inserts = parsed.rows.map((row) => {
+  const inserts = params.rows.map((row) => {
     const isSuppressed = suppressed.has(row.emailNormalized);
     return {
       campaign_id: campaign.id,
@@ -93,7 +79,63 @@ export async function createOutreachCampaignFromCsvAction(formData: FormData): P
   }
 
   await refreshOutreachCampaignMetrics(admin, campaign.id);
-  redirect(`/outreach/${campaign.id}`);
+  return campaign.id;
+}
+
+export async function createOutreachCampaignFromCsvAction(formData: FormData): Promise<void> {
+  const auth = await requirePortalAccess('admin', '/outreach/new');
+  const name = String(formData.get('name') ?? '').trim();
+  const file = formData.get('csv');
+
+  if (!name) {
+    formErrorRedirect('/outreach/new', 'Campaign name is required.');
+  }
+  if (!(file instanceof File) || file.size === 0) {
+    formErrorRedirect('/outreach/new', 'Upload a CSV contact sheet.');
+  }
+  if (file.size > OUTREACH_MAX_CSV_BYTES) {
+    formErrorRedirect('/outreach/new', 'CSV must be under 2 MB.');
+  }
+
+  const text = await file.text();
+  const parsed = parseOutreachCsv(text);
+  if (parsed.error || parsed.rows.length === 0) {
+    formErrorRedirect('/outreach/new', parsed.error ?? 'No valid rows found.');
+  }
+
+  const campaignId = await createDraftCampaignFromRows({
+    userId: auth.user.id,
+    name,
+    rows: parsed.rows,
+  });
+  redirect(`/outreach/${campaignId}`);
+}
+
+export async function createOutreachCampaignFromSheetUrlAction(formData: FormData): Promise<void> {
+  const auth = await requirePortalAccess('admin', '/outreach/new');
+  const name = String(formData.get('name') ?? '').trim();
+  const sheetUrl = String(formData.get('sheetUrl') ?? '').trim();
+
+  if (!name) {
+    formErrorRedirect('/outreach/new', 'Campaign name is required.');
+  }
+
+  const fetched = await fetchPublishedOutreachCsv(sheetUrl);
+  if (!fetched.ok) {
+    formErrorRedirect('/outreach/new', fetched.error);
+  }
+
+  const parsed = parseOutreachCsv(fetched.text);
+  if (parsed.error || parsed.rows.length === 0) {
+    formErrorRedirect('/outreach/new', parsed.error ?? 'No valid rows found.');
+  }
+
+  const campaignId = await createDraftCampaignFromRows({
+    userId: auth.user.id,
+    name,
+    rows: parsed.rows,
+  });
+  redirect(`/outreach/${campaignId}`);
 }
 
 export async function queueOutreachCampaignAction(formData: FormData): Promise<void> {
