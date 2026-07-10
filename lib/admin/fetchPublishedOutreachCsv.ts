@@ -1,7 +1,20 @@
 const MAX_CSV_BYTES = 2_000_000;
 const FETCH_TIMEOUT_MS = 20_000;
 
-const ALLOWED_HOSTS = new Set(['docs.google.com']);
+/** Initial paste URL must be a Sheets link on docs.google.com. */
+const ALLOWED_SOURCE_HOSTS = new Set(['docs.google.com']);
+
+/**
+ * After follow-redirects, Google often serves the CSV from googleusercontent CDN
+ * (or spreadsheets.google.com). Still restrict to Google-owned hosts.
+ */
+export function isAllowedGoogleSheetDownloadHost(hostname: string): boolean {
+  const host = hostname.trim().toLowerCase();
+  if (!host) return false;
+  if (host === 'docs.google.com' || host === 'spreadsheets.google.com') return true;
+  if (host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com')) return true;
+  return false;
+}
 
 export type FetchPublishedOutreachCsvResult =
   | { ok: true; text: string; resolvedUrl: string }
@@ -31,7 +44,7 @@ export function normalizePublishedGoogleSheetCsvUrl(
   if (url.protocol !== 'https:') {
     return { ok: false, error: 'URL must use HTTPS.' };
   }
-  if (!ALLOWED_HOSTS.has(url.hostname)) {
+  if (!ALLOWED_SOURCE_HOSTS.has(url.hostname)) {
     return { ok: false, error: 'Only docs.google.com spreadsheet URLs are allowed.' };
   }
 
@@ -97,8 +110,11 @@ export async function fetchPublishedOutreachCsv(
     }
 
     const finalUrl = new URL(response.url);
-    if (!ALLOWED_HOSTS.has(finalUrl.hostname)) {
-      return { ok: false, error: 'Redirect left docs.google.com; refusing to download.' };
+    if (!isAllowedGoogleSheetDownloadHost(finalUrl.hostname)) {
+      return {
+        ok: false,
+        error: `Download redirected to an unexpected host (${finalUrl.hostname}); refusing to continue.`,
+      };
     }
 
     const contentLength = Number(response.headers.get('content-length') ?? '0');
