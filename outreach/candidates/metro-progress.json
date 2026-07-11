@@ -1,0 +1,395 @@
+{
+  "updated_at": "2026-07-11",
+  "discovery_completed_metros": [
+    "new-york",
+    "los-angeles",
+    "chicago",
+    "dallas-fort-worth",
+    "houston",
+    "atlanta",
+    "washington-dc",
+    "miami",
+    "philadelphia",
+    "phoenix",
+    "riverside",
+    "boston",
+    "san-francisco",
+    "detroit",
+    "seattle",
+    "minneapolis",
+    "tampa",
+    "san-diego",
+    "denver",
+    "orlando"
+  ],
+  "discovery_pending_metros": [],
+  "counts": {
+    "new-york": 88,
+    "los-angeles": 84,
+    "chicago": 50,
+    "dallas-fort-worth": 52,
+    "houston": 51,
+    "atlanta": 47,
+    "washington-dc": 46,
+    "miami": 48,
+    "philadelphia": 49,
+    "phoenix": 43,
+    "riverside": 38,
+    "boston": 40,
+    "san-francisco": 39,
+    "detroit": 37,
+    "seattle": 49,
+    "minneapolis": 45,
+    "tampa": 44,
+    "san-diego": 49,
+    "denver": 43,
+    "orlando": 38
+  },
+  "total_candidates": 980,
+  "master_file": "outreach/candidates/us-top20-cleaning-candidates.json",
+  "enrichment_completed_metros": [
+    "atlanta",
+    "chicago",
+    "dallas-fort-worth",
+    "denver",
+    "houston",
+    "miami",
+    "orlando",
+    "riverside",
+    "san-diego",
+    "seattle",
+    "tampa"
+  ],
+  "enrichment_priority": [
+    "houston",
+    "dallas-fort-worth",
+    "san-diego",
+    "miami",
+    "tampa",
+    "denver",
+    "atlanta",
+    "riverside"
+  ],
+  "houston": {
+    "csv": "outreach/houston-cleaning-outreach-mailmerge.csv",
+    "rows": 48,
+    "channels": {
+      "Email": 38,
+      "Phone": 12,
+      "Website form": 1
+    },
+    "emailable": 35
+  },
+  "dallas-fort-worth": {
+    "csv": "outreach/dallas-fort-worth-cleaning-outreach-mailmerge.csv",
+    "rows": 52,
+    "channels": {
+      "Email": 30,
+      "Phone": 22
+    },
+    "emailable": 30,
+    "types": {
+      "Both": 21,
+      "Residential": 19,
+      "Commercial": 12
+    },
+    "counties": {
+      "Denton": 5,
+      "Collin": 12,
+      "Ellis": 1,
+      "Tarrant": 13,
+      "Dallas": 21
+    },
+    "updated": 52,
+    "raw_results": 52
+  },
+  "san-diego": {
+    "csv": "outreach/san-diego-cleaning-outreach-mailmerge.csv",
+    "rows": 44,
+    "channels": {
+      "Email": 34,
+      "Phone": 10,
+      "None": 3,
+      "Website form": 1
+    },
+    "emailable": 33,
+    "types": {
+      "Residential": 41,
+      "Both": 1,
+      "Commercial": 2
+    },
+    "counties": {
+      "San Diego": 44
+    },
+    "raw_results": 48
+  },
+  "enrichment_next_up": [
+    "philadelphia",
+    "san-francisco",
+    "minneapolis",
+    "detroit",
+    "washington-dc",
+    "phoenix",
+    "boston",
+    "new-york",
+    "los-angeles"
+  ],
+  "miami": {
+    "csv": "outreach/miami-cleaning-outreach-mailmerge.csv",
+    "rows": 37,
+    "channels": {
+      "None": 7,
+      "Email": 24,
+      "Phone": 12,
+      "Website form": 1
+    },
+    "emailable": 24,
+    "types": {
+      "Commercial": 3,
+      "Both": 11,
+      "Residential": 23
+    },
+    "counties": {
+      "Miami-Dade": 37
+    },
+    "raw_results": 44
+  },
+  "tampa": {
+    "csv": "outreach/tampa-cleaning-outreach-mailmerge.csv",
+    "rows": 36,
+    "channels": {
+      "Email": 23,
+      "Phone": 12,
+      "None": 4,
+      "Website form": 2
+    },
+    "emailable": 22,
+    "types": {
+      "Residential": 29,
+      "Commercial": 5,
+      "Both": 2
+    },
+    "counties": {
+      "Hillsborough": 35,
+      "Pinellas": 1
+    },
+    "raw_results": 41
+  },
+  "enrichment_summary": {
+    "metros_done": 11,
+    "csv_rows": 445,
+    "emailable": 305
+  },
+  "denver": {
+    "csv": "outreach/denver-cleaning-outreach-mailmerge.csv",
+    "rows": 40,
+    "channels": {
+      "Phone": 8,
+      "Email": 32,
+      "Website form": 1,
+      "None": 1
+    },
+    "emailable": 31,
+    "types": {
+      "Residential": 35,
+      "Commercial": 4,
+      "Both": 1
+    },
+    "counties": {
+      "Denver": 32,
+      "Arapahoe": 8
+    },
+    "raw_results": 42,
+    "result_ids": 42
+  },
+  "atlanta": {
+    "csv": "outreach/atlanta-cleaning-outreach-mailmerge.csv",
+    "rows": 36,
+    "channels": {
+      "Phone": 6,
+      "Email": 31,
+      "None": 7
+    },
+    "emailable": 30,
+    "types": {
+      "Commercial": 1,
+      "Residential": 26,
+      "Both": 9
+    },
+    "counties": {
+      "Fulton": 36
+    },
+    "raw_results": 44,
+    "result_ids": 44
+  },
+  "riverside": {
+    "csv": "outreach/riverside-cleaning-outreach-mailmerge.csv",
+    "rows": 31,
+    "channels": {
+      "Email": 21,
+      "Phone": 11,
+      "None": 5,
+      "Website form": 1
+    },
+    "emailable": 19,
+    "types": {
+      "Both": 17,
+      "Commercial": 8,
+      "Residential": 6
+    },
+    "counties": {
+      "San Bernardino": 17,
+      "Riverside": 14
+    },
+    "raw_results": 38,
+    "result_ids": 38
+  },
+  "orlando": {
+    "csv": "outreach/orlando-cleaning-outreach-mailmerge.csv",
+    "rows": 33,
+    "channels": {
+      "Email": 18,
+      "Phone": 15,
+      "None": 2
+    },
+    "emailable": 18,
+    "types": {
+      "Residential": 30,
+      "Commercial": 2,
+      "Both": 1
+    },
+    "counties": {
+      "Orange": 33
+    },
+    "raw_results": 35,
+    "result_ids": 35
+  },
+  "seattle": {
+    "csv": "outreach/seattle-cleaning-outreach-mailmerge.csv",
+    "rows": 44,
+    "channels": {
+      "Phone": 12,
+      "Email": 32,
+      "None": 4
+    },
+    "emailable": 32,
+    "types": {
+      "Residential": 34,
+      "Both": 2,
+      "Commercial": 8
+    },
+    "counties": {
+      "King": 40,
+      "Pierce": 4
+    },
+    "raw_results": 48,
+    "result_ids": 48
+  },
+  "chicago": {
+    "csv": "outreach/chicago-cleaning-outreach-mailmerge.csv",
+    "rows": 44,
+    "channels": {
+      "Email": 31,
+      "Phone": 12,
+      "Website form": 1,
+      "None": 4
+    },
+    "emailable": 31,
+    "types": {
+      "Commercial": 14,
+      "Both": 15,
+      "Residential": 15
+    },
+    "counties": {
+      "DuPage": 7,
+      "Kane": 5,
+      "Lake": 5,
+      "Cook": 23,
+      "Will": 4
+    },
+    "raw_results": 48,
+    "result_ids": 48
+  },
+  "paused": true,
+  "resume": {
+    "saved_at": "2026-07-11",
+    "paused_reason": "User paused to conserve tokens; resume enrichment later",
+    "pipeline": {
+      "model": "composer-2.5-fast",
+      "approach": "Contact-only AI enrichment in ~17-row batches; Python builds Subject/Body mail-merge CSV",
+      "queues_dir": "outreach/candidates/enrichment-queues/",
+      "master_file": "outreach/candidates/us-top20-cleaning-candidates.json",
+      "progress_file": "outreach/candidates/metro-progress.json"
+    },
+    "enrichment_completed_metros": [
+      "atlanta",
+      "chicago",
+      "dallas-fort-worth",
+      "denver",
+      "houston",
+      "miami",
+      "orlando",
+      "riverside",
+      "san-diego",
+      "seattle",
+      "tampa"
+    ],
+    "enrichment_pending_metros": [
+      "philadelphia",
+      "san-francisco",
+      "minneapolis",
+      "detroit",
+      "washington-dc",
+      "phoenix",
+      "boston",
+      "new-york",
+      "los-angeles"
+    ],
+    "resume_next": ["philadelphia", "san-francisco", "minneapolis"],
+    "recommended_next_order": [
+      "philadelphia",
+      "san-francisco",
+      "minneapolis",
+      "detroit",
+      "washington-dc",
+      "phoenix",
+      "boston",
+      "new-york",
+      "los-angeles"
+    ],
+    "candidate_enrichment_status": {
+      "pending": 476,
+      "enriched": 454,
+      "skipped": 50
+    },
+    "totals": {
+      "discovery_candidates": 980,
+      "metros_enriched": 11,
+      "metros_remaining": 9,
+      "csv_rows": 445,
+      "emailable": 305
+    },
+    "csv_files": {
+      "atlanta": "outreach/atlanta-cleaning-outreach-mailmerge.csv",
+      "chicago": "outreach/chicago-cleaning-outreach-mailmerge.csv",
+      "dallas-fort-worth": "outreach/dallas-fort-worth-cleaning-outreach-mailmerge.csv",
+      "denver": "outreach/denver-cleaning-outreach-mailmerge.csv",
+      "houston": "outreach/houston-cleaning-outreach-mailmerge.csv",
+      "miami": "outreach/miami-cleaning-outreach-mailmerge.csv",
+      "orlando": "outreach/orlando-cleaning-outreach-mailmerge.csv",
+      "riverside": "outreach/riverside-cleaning-outreach-mailmerge.csv",
+      "san-diego": "outreach/san-diego-cleaning-outreach-mailmerge.csv",
+      "seattle": "outreach/seattle-cleaning-outreach-mailmerge.csv",
+      "tampa": "outreach/tampa-cleaning-outreach-mailmerge.csv"
+    },
+    "how_to_resume": [
+      "1. Read outreach/candidates/RESUME.md or this file",
+      "2. Continue enrichment for enrichment_pending_metros starting with resume_next",
+      "3. Use composer-2.5-fast; batch ~17 websites; contact-only (no invented emails)",
+      "4. Write results to outreach/candidates/enrichment-queues/{metro}-batchN-results.json",
+      "5. Run the existing Python merge pattern to build outreach/{metro}-cleaning-outreach-mailmerge.csv",
+      "6. Update metro_progress enrichment_status=completed and candidate enrichment_status fields",
+      "7. Always exclude existing SWFL CSVs + already-enriched rows"
+    ]
+  }
+}

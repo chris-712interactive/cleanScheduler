@@ -1,0 +1,189 @@
+[
+  {
+    "id": "miami-0437",
+    "business_name": "Green House Cleaning Service Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://greencleaningmiami.weebly.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0438",
+    "business_name": "Haro Clean Facility Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://haroclean.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0439",
+    "business_name": "HomeClean Cleaning Service Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://homecleanco.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0440",
+    "business_name": "Impkable Cleaning Services Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://impkable.com/book-now/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0441",
+    "business_name": "ITSCLEAN SERVICES MIAMI",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://www.itscleanservices.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0442",
+    "business_name": "La Gota Cleaning",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.lagotacleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0443",
+    "business_name": "Magico Cleaners",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "http://www.magicocleaners.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0444",
+    "business_name": "Maid Svc",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://maidsvc.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0445",
+    "business_name": "MaidPro Miami Beach",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/miami-beach/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "miami-0447",
+    "business_name": "Miami Cleaning Group USA LLC",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.miamicleaninggroup.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0448",
+    "business_name": "Miami Cleaning Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "http://miamicleans.us/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0450",
+    "business_name": "Miami EXP Cleaning",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.miamiexpcleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0451",
+    "business_name": "Miami House Cleaning",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://miahousecleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0452",
+    "business_name": "Miami Top Cleaning",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://miamitopcleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0453",
+    "business_name": "Miracle Hands Clean LLC",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://miraclehandsclean.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0454",
+    "business_name": "Move Out Cleaning Service Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://moveoutcleaningservicemiami.weebly.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0455",
+    "business_name": "Nekoblue Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "http://www.miamiflcleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  }
+]

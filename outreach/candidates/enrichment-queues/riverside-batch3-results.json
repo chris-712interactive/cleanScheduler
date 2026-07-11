@@ -1,0 +1,34 @@
+[
+  {
+    "id": "riverside-0593",
+    "owner_name": "Ray",
+    "email": "info@rhcleaningservice.com",
+    "phone": "(909) 520-2397",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Footer and contact page list email and phone; About testimonials name Ray as owner"
+  },
+  {
+    "id": "riverside-0594",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "Website form",
+    "enrichment_notes": "About page family-owned; contact page quote form only; phone redacted on site"
+  },
+  {
+    "id": "riverside-0595",
+    "owner_name": "Sylvia",
+    "email": "sylviatorrescleaning@gmail.com",
+    "phone": "(951) 288-5474",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Footer and CTA list email and phone for Sylvia's Home & Office Cleaning"
+  },
+  {
+    "id": "riverside-0596",
+    "owner_name": "Teresita",
+    "email": "",
+    "phone": "(951) 490-8764",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Contact page lists text/call number; solo cleaner owner; no public email; site blocked during fetch"
+  }
+]

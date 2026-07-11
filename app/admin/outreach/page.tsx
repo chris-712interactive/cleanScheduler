@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { OutreachUsHeatMap } from '@/components/admin/outreach/OutreachUsHeatMap';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -10,6 +11,7 @@ import {
   outreachCampaignStatusTone,
 } from '@/lib/admin/outreachDisplay';
 import { deleteOutreachCampaignAction } from '@/lib/admin/outreachActions';
+import { aggregateOutreachByState } from '@/lib/admin/outreachGeoMetrics';
 import type { OutreachCampaignStatus } from '@/lib/admin/outreachTypes';
 import { createAdminClient } from '@/lib/supabase/server';
 import styles from './outreach.module.scss';
@@ -22,16 +24,23 @@ function canDeleteCampaign(status: string): boolean {
 
 export default async function AdminOutreachPage() {
   const admin = createAdminClient();
-  const { data: campaigns, error } = await admin
-    .from('platform_outreach_campaigns')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(100);
+  const [{ data: campaigns, error }, { data: geoRecipients }] = await Promise.all([
+    admin
+      .from('platform_outreach_campaigns')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100),
+    admin
+      .from('platform_outreach_recipients')
+      .select('state, status, delivered_at, opened_at, bounced_at')
+      .limit(10000),
+  ]);
 
   const rows = campaigns ?? [];
   const totalSent = rows.reduce((sum, c) => sum + c.sent_count, 0);
   const totalOpened = rows.reduce((sum, c) => sum + c.opened_count, 0);
   const totalReplied = rows.reduce((sum, c) => sum + c.replied_count, 0);
+  const geoAggregate = aggregateOutreachByState(geoRecipients ?? []);
 
   return (
     <>
@@ -59,6 +68,14 @@ export default async function AdminOutreachPage() {
           <span className={styles.metricValue}>{totalReplied}</span>
         </Card>
       </div>
+
+      {geoAggregate.states.length || geoAggregate.unknown ? (
+        <OutreachUsHeatMap
+          data={geoAggregate}
+          title="Where we’ve emailed"
+          description="All campaigns combined. Toggle Sent, Delivered, Open rate, or Bounce rate to recolor the map."
+        />
+      ) : null}
 
       {error ? (
         <p className={styles.formError} role="alert">

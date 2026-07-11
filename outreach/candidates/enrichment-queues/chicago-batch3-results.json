@@ -1,0 +1,114 @@
+[
+  {
+    "id": "chicago-0209",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(872) 324-2688",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Header, footer, and schema.org list phone; quote forms only with no public email"
+  },
+  {
+    "id": "chicago-0210",
+    "owner_name": "Patty",
+    "email": "pwodarczyk9191@gmail.com",
+    "phone": "(312) 619-8332",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page lists Gmail and Chicago phone; about page notes family-run sisters and mother"
+  },
+  {
+    "id": "chicago-0211",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain plainfieldcleaningservices.com does not resolve; no public contact info"
+  },
+  {
+    "id": "chicago-0212",
+    "owner_name": "Unknown",
+    "email": "contact@priehlcleaning.com",
+    "phone": "(224) 509-0339",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About and footer list family-owned Skokie business email and phone"
+  },
+  {
+    "id": "chicago-0213",
+    "owner_name": "Unknown",
+    "email": "info@simplechoicecleaning.com",
+    "phone": "(219) 359-3298",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage header lists family-run NW Indiana email and phone"
+  },
+  {
+    "id": "chicago-0214",
+    "owner_name": "Unknown",
+    "email": "info@sparkmaids.com",
+    "phone": "(331) 320-5620",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page lists Aurora-area email and phone; locally operated per about copy"
+  },
+  {
+    "id": "chicago-0215",
+    "owner_name": "Unknown",
+    "email": "spotlesshomemaids@gmail.com",
+    "phone": "(847) 499-7075",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage footer lists Gmail and Chicago phone; family-owned per site copy"
+  },
+  {
+    "id": "chicago-0216",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(708) 566-0098",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "About and homepage list Evanston phone only; no public business email found"
+  },
+  {
+    "id": "chicago-0217",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(630) 415-3003",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage and footer list Arlington Heights phone; family-owned since 1977, no public email"
+  },
+  {
+    "id": "chicago-0218",
+    "owner_name": "Unknown",
+    "email": "info@vnrcs.com",
+    "phone": "(773) 581-1989",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage header lists Chicago commercial cleaner email and phone"
+  },
+  {
+    "id": "chicago-0219",
+    "owner_name": "Jiri",
+    "email": "xcellentcleaning@yahoo.com",
+    "phone": "(630) 329-7994",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage and contact footer list email and phone; review names owner Jiri"
+  },
+  {
+    "id": "chicago-0220",
+    "owner_name": "Zenorina",
+    "email": "Info@zenorinasdeluxecleaning.com",
+    "phone": "(773) 992-6076",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Footer contact section lists email and phone; family and minority owned per homepage"
+  },
+  {
+    "id": "chicago-0221",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain redirects to Merry Maids Orlando franchise; no Ziggy Naperville contact info"
+  },
+  {
+    "id": "chicago-0222",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain zoetotalcleaning.com does not resolve; no public contact info"
+  }
+]

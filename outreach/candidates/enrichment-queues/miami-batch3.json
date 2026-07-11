@@ -1,0 +1,123 @@
+[
+  {
+    "id": "miami-0456",
+    "business_name": "Prime Services Miami Cleaning",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://primeservicesmiami.net/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0457",
+    "business_name": "Rent-A-Maiid Cleaning Services Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://themiamimaid.com/contact-us/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0458",
+    "business_name": "Rushmaid",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://rushmaid.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0459",
+    "business_name": "Sanitized Place Commercial & Municipal Janitorial Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://sanitizedplace.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0460",
+    "business_name": "SoClean Cleaning Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "http://miamisoclean.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0461",
+    "business_name": "Sparkly Maid Miami Cleaning Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://www.sparklymaidmiami.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0462",
+    "business_name": "Squeaky Clean Squad",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://squeakycleansquad.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0463",
+    "business_name": "Sweet Cleaners LLC",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "http://www.sweetcleanersmia.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0464",
+    "business_name": "The Prime Cleaner",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://www.theprimecleaner.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0465",
+    "business_name": "Total Cleaning",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://totalcleaningcorp.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0466",
+    "business_name": "Wiz Cleaners",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://wizcleaners.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  }
+]

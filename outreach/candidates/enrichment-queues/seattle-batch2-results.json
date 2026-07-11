@@ -1,0 +1,138 @@
+[
+  {
+    "id": "seattle-0731",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "ladonnascleaningseattle.com redirects to unrelated Xcellent Cleaning (Naperville, IL); no Seattle contact on homepage or footer"
+  },
+  {
+    "id": "seattle-0732",
+    "owner_name": "Mykhailo",
+    "email": "magicleansea@gmail.com",
+    "phone": "(253) 420-7879",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Owner Mykhailo Filippov on about/footer schema; email and phone on homepage and contact footer"
+  },
+  {
+    "id": "seattle-0733",
+    "owner_name": "Unknown",
+    "email": "seattlesgreenmaids@gmail.com",
+    "phone": "(206) 736-4650",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and Seattle phone on homepage and contact page; booking form also available"
+  },
+  {
+    "id": "seattle-0734",
+    "owner_name": "Maxine",
+    "email": "estimates.sea@maidpro.com",
+    "phone": "(206) 696-7023",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Local franchise operated by Maxine Kenefsky per homepage; email and phone in footer and contact section"
+  },
+  {
+    "id": "seattle-0735",
+    "owner_name": "Unknown",
+    "email": "meekascleaningservices@gmail.com",
+    "phone": "(206) 600-1316",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and Seattle phone on homepage and contact page footer; contact form present"
+  },
+  {
+    "id": "seattle-0736",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "moveoutseattle.com redirects to unrelated Simple Choice Cleaning (Northwest Indiana); no Seattle contact found"
+  },
+  {
+    "id": "seattle-0737",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(206) 800-0199",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Seattle phone on homepage and footer; online booking portal, no public email found"
+  },
+  {
+    "id": "seattle-0738",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(425) 988-4354",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Bellevue-area phone on homepage and contact page; GoDaddy placeholder email only, contact form present"
+  },
+  {
+    "id": "seattle-0739",
+    "owner_name": "Tania",
+    "email": "",
+    "phone": "(425) 671-2294",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Founder Tania Gutama in homepage schema/about; Seattle phone on homepage and contact; contact form, no public email"
+  },
+  {
+    "id": "seattle-0740",
+    "owner_name": "Unknown",
+    "email": "info@pugetsoundcleaners.com",
+    "phone": "(206) 457-1954",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on Seattle location page footer and about copy; booking form also available"
+  },
+  {
+    "id": "seattle-0741",
+    "owner_name": "Unknown",
+    "email": "hello@queenannecleaning.com",
+    "phone": "(206) 776-2626",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Seattle phone on homepage footer and contact section"
+  },
+  {
+    "id": "seattle-0742",
+    "owner_name": "Unknown",
+    "email": "seguquesa@gmail.com",
+    "phone": "(206) 489-7226",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and Seattle phone in homepage contact details footer; contact form present"
+  },
+  {
+    "id": "seattle-0743",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "raincitymaids.com redirects to unrelated Zenorina's Deluxe Cleaning (Chicago); no Seattle contact found"
+  },
+  {
+    "id": "seattle-0744",
+    "owner_name": "Unknown",
+    "email": "info@seattlecommercialcleaners.com",
+    "phone": "(206) 755-2949",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Seattle phone on homepage and footer; quote/contact form also available"
+  },
+  {
+    "id": "seattle-0745",
+    "owner_name": "Unknown",
+    "email": "info@premiumserviceswa.us",
+    "phone": "(425) 403-0056",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Domain resolves to Pristine Pro Janitorial (Seattle commercial); email and phone on homepage footer — listed business name/domain mismatch"
+  },
+  {
+    "id": "seattle-0746",
+    "owner_name": "Bryan",
+    "email": "support@seattlegreencleaningfairy.com",
+    "phone": "(425) 943-9025",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Bryan Torres named on about section; support email and phone in site settings and footer"
+  },
+  {
+    "id": "seattle-0747",
+    "owner_name": "Unknown",
+    "email": "info@seattlegec.com",
+    "phone": "(206) 595-4209",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Seattle phone in homepage footer and contact block; estimate form also available"
+  }
+]

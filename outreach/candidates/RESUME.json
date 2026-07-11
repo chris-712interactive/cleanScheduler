@@ -1,0 +1,81 @@
+{
+  "saved_at": "2026-07-11",
+  "paused_reason": "User paused to conserve tokens; resume enrichment later",
+  "pipeline": {
+    "model": "composer-2.5-fast",
+    "approach": "Contact-only AI enrichment in ~17-row batches; Python builds Subject/Body mail-merge CSV",
+    "queues_dir": "outreach/candidates/enrichment-queues/",
+    "master_file": "outreach/candidates/us-top20-cleaning-candidates.json",
+    "progress_file": "outreach/candidates/metro-progress.json"
+  },
+  "enrichment_completed_metros": [
+    "atlanta",
+    "chicago",
+    "dallas-fort-worth",
+    "denver",
+    "houston",
+    "miami",
+    "orlando",
+    "riverside",
+    "san-diego",
+    "seattle",
+    "tampa"
+  ],
+  "enrichment_pending_metros": [
+    "philadelphia",
+    "san-francisco",
+    "minneapolis",
+    "detroit",
+    "washington-dc",
+    "phoenix",
+    "boston",
+    "new-york",
+    "los-angeles"
+  ],
+  "resume_next": ["philadelphia", "san-francisco", "minneapolis"],
+  "recommended_next_order": [
+    "philadelphia",
+    "san-francisco",
+    "minneapolis",
+    "detroit",
+    "washington-dc",
+    "phoenix",
+    "boston",
+    "new-york",
+    "los-angeles"
+  ],
+  "candidate_enrichment_status": {
+    "pending": 476,
+    "enriched": 454,
+    "skipped": 50
+  },
+  "totals": {
+    "discovery_candidates": 980,
+    "metros_enriched": 11,
+    "metros_remaining": 9,
+    "csv_rows": 445,
+    "emailable": 305
+  },
+  "csv_files": {
+    "atlanta": "outreach/atlanta-cleaning-outreach-mailmerge.csv",
+    "chicago": "outreach/chicago-cleaning-outreach-mailmerge.csv",
+    "dallas-fort-worth": "outreach/dallas-fort-worth-cleaning-outreach-mailmerge.csv",
+    "denver": "outreach/denver-cleaning-outreach-mailmerge.csv",
+    "houston": "outreach/houston-cleaning-outreach-mailmerge.csv",
+    "miami": "outreach/miami-cleaning-outreach-mailmerge.csv",
+    "orlando": "outreach/orlando-cleaning-outreach-mailmerge.csv",
+    "riverside": "outreach/riverside-cleaning-outreach-mailmerge.csv",
+    "san-diego": "outreach/san-diego-cleaning-outreach-mailmerge.csv",
+    "seattle": "outreach/seattle-cleaning-outreach-mailmerge.csv",
+    "tampa": "outreach/tampa-cleaning-outreach-mailmerge.csv"
+  },
+  "how_to_resume": [
+    "1. Read outreach/candidates/RESUME.md or this file",
+    "2. Continue enrichment for enrichment_pending_metros starting with resume_next",
+    "3. Use composer-2.5-fast; batch ~17 websites; contact-only (no invented emails)",
+    "4. Write results to outreach/candidates/enrichment-queues/{metro}-batchN-results.json",
+    "5. Run the existing Python merge pattern to build outreach/{metro}-cleaning-outreach-mailmerge.csv",
+    "6. Update metro_progress enrichment_status=completed and candidate enrichment_status fields",
+    "7. Always exclude existing SWFL CSVs + already-enriched rows"
+  ]
+}

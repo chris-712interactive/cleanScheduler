@@ -1,0 +1,189 @@
+[
+  {
+    "id": "atlanta-0326",
+    "business_name": "360clean Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Commercial",
+    "website": "https://360clean.com/locations/atlanta-ga/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "atlanta-0327",
+    "business_name": "AllyMaids",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.allymaids.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0328",
+    "business_name": "Amazon Cleaning",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://amazoncleaning.net/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0329",
+    "business_name": "Amy's Angels Cleaning",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.amysangelscleaning.com/atlantacleaningservices",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0330",
+    "business_name": "Ansley Home Cleaning",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://ansleyhomecleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0331",
+    "business_name": "ATL Clean",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://www.atlclean.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0332",
+    "business_name": "Atlanta Cleaning Geeks",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://atlantacleaninggeeks.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0333",
+    "business_name": "Atlanta Cleaning Source",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://www.atlantacleaningsource.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0334",
+    "business_name": "Atlanta Eco Cleaners",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "http://maidcleaningservicesatlanta.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0335",
+    "business_name": "Atlanta Green Maids",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.atlantagreenmaids.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0336",
+    "business_name": "Atlanta Maids",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://atlantamaids.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0337",
+    "business_name": "Atlanta Premier Cleaning Services",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "https://www.atlpremiercleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0338",
+    "business_name": "Brazil Master Cleaners LLC",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "http://www.brazilmastercleaners.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0339",
+    "business_name": "Broomers Cleaning Service",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://broomerscleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0341",
+    "business_name": "Clean House Of Atlanta LLC",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://www.cleanhouseofatlanta.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0342",
+    "business_name": "Clean Space Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.cleanspaceatlanta.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0343",
+    "business_name": "Clean Tu Casa LLC",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.cleantucasa.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  }
+]

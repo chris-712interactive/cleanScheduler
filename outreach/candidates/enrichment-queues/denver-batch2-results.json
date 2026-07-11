@@ -1,0 +1,138 @@
+[
+  {
+    "id": "denver-0918",
+    "owner_name": "Unknown",
+    "email": "service@denvercleaningservicecompany.com",
+    "phone": "(720) 273-2762",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page lists service@ email and (720) 273-2762; general contact and quote forms"
+  },
+  {
+    "id": "denver-0919",
+    "owner_name": "Unknown",
+    "email": "info@denvermaids.com",
+    "phone": "(720) 780-6035",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage schema/footer lists info@denvermaids.com and (720) 780-6035; online booking"
+  },
+  {
+    "id": "denver-0920",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "Website form",
+    "enrichment_notes": "Contact page only; SPA site with contact form, no public email or phone in footer/about"
+  },
+  {
+    "id": "denver-0921",
+    "owner_name": "Unknown",
+    "email": "info@dreamcleanservice.com",
+    "phone": "720-704-3499",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage contact section lists info@ email and 720-704-3499; quote request form"
+  },
+  {
+    "id": "denver-0922",
+    "owner_name": "Unknown",
+    "email": "info@dreamteamhouseclean.com",
+    "phone": "720-808-0275",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage/footer lists info@dreamteamhouseclean.com and 720-808-0275"
+  },
+  {
+    "id": "denver-0923",
+    "owner_name": "Unknown",
+    "email": "info@elitemaidshousecleaning.com",
+    "phone": "(480) 933-1692",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Denver location page footer lists info@ email and (480) 933-1692; contact form"
+  },
+  {
+    "id": "denver-0924",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(720) 583-6325",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Contact page phone only; no public email found on homepage/about/contact"
+  },
+  {
+    "id": "denver-0925",
+    "owner_name": "Unknown",
+    "email": "jjpropertysolutions17@gmail.com",
+    "phone": "720-333-0710",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage footer lists jjpropertysolutions17@gmail.com and 720-333-0710"
+  },
+  {
+    "id": "denver-0926",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(720) 420-6011",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage/contact footer phone only; mentions text/call/email but no public email listed"
+  },
+  {
+    "id": "denver-0927",
+    "owner_name": "Unknown",
+    "email": "info@makcleaningllc.com",
+    "phone": "(303) 601-9707",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage footer lists info@makcleaningllc.com and (303) 601-9707"
+  },
+  {
+    "id": "denver-0928",
+    "owner_name": "Mego",
+    "email": "contact@megamegz.com",
+    "phone": "(720) 742-6399",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About page names founder/owner Mego; homepage lists contact@megamegz.com and (720) 742-6399"
+  },
+  {
+    "id": "denver-0929",
+    "owner_name": "Unknown",
+    "email": "trina.hopkins@merrymaids.pro",
+    "phone": "(303) 963-4219",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Aurora location page header lists (303) 963-4219; trina.hopkins@merrymaids.pro in page footer"
+  },
+  {
+    "id": "denver-0930",
+    "owner_name": "Unknown",
+    "email": "support@merrymaidsdenver.com",
+    "phone": "(303) 309-1732",
+    "outreach_channel": "Email",
+    "enrichment_notes": "South Denver location page header lists (303) 309-1732; support@merrymaidsdenver.com in page footer"
+  },
+  {
+    "id": "denver-0931",
+    "owner_name": "Unknown",
+    "email": "info@mopstars.com",
+    "phone": "(303) 481-1976",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage and contact page list info@mopstars.com and (303) 481-1976"
+  },
+  {
+    "id": "denver-0932",
+    "owner_name": "Unknown",
+    "email": "mountainhighcleaning@gmail.com",
+    "phone": "(303) 330-7191",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage schema lists mountainhighcleaning@gmail.com and (303) 330-7191; contact form"
+  },
+  {
+    "id": "denver-0933",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "BookingKoala site blocked by Cloudflare; no public email or phone found"
+  },
+  {
+    "id": "denver-0934",
+    "owner_name": "Unknown",
+    "email": "info@neatntidy.co",
+    "phone": "720-316-6824",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage/footer lists info@neatntidy.co and 720-316-6824; contact and quote forms"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "order": [
+    "houston",
+    "dallas-fort-worth",
+    "san-diego",
+    "miami",
+    "tampa",
+    "denver",
+    "atlanta",
+    "riverside",
+    "orlando",
+    "seattle",
+    "chicago",
+    "philadelphia",
+    "san-francisco",
+    "minneapolis",
+    "detroit",
+    "washington-dc",
+    "new-york",
+    "los-angeles",
+    "phoenix",
+    "boston"
+  ],
+  "strategy": "Website-first Sun Belt metros; contact-only AI enrichment; Python mail-merge copy",
+  "model": "composer-2.5-fast",
+  "next_batch": ["orlando", "seattle", "chicago"]
+}

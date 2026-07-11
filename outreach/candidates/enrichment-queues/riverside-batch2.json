@@ -1,0 +1,189 @@
+[
+  {
+    "id": "riverside-0576",
+    "business_name": "JGH Cleaning Professionals LLC",
+    "city": "Redlands",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://pro.porch.com/redlands-ca/home-cleaners/jgh-cleaning-professionals-llc/pp",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0577",
+    "business_name": "Juana\u2019s House Cleaning Services",
+    "city": "Riverside",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://juanashousecleanservices.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0578",
+    "business_name": "MaidPro Corona",
+    "city": "Corona",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/corona",
+    "notes": "",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "riverside-0579",
+    "business_name": "MaidPro Riverside",
+    "city": "Moreno Valley",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/moreno-valley",
+    "notes": "",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "riverside-0580",
+    "business_name": "Maldonado\u2019s Janitorial Services",
+    "city": "Riverside",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Commercial",
+    "website": "https://maldonadosjanitorialservices.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0581",
+    "business_name": "MCCV Janitorial Services LLC",
+    "city": "San Bernardino",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://mccvjanitorial.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0582",
+    "business_name": "Mentha Clean",
+    "city": "Chino Hills",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://menthaclean.com/chino-hills-ca/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0583",
+    "business_name": "Merry Maids of Rancho Cucamonga",
+    "city": "Rancho Cucamonga",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://merrymaids.com/home-cleaners-fontana-ca",
+    "notes": "",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "riverside-0584",
+    "business_name": "Merry Maids of Riverside",
+    "city": "Riverside",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.merrymaids.com/riverside/",
+    "notes": "",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "riverside-0585",
+    "business_name": "Modern Housekeeping",
+    "city": "Moreno Valley",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.modernhousekeeping.net/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0586",
+    "business_name": "Moms & Mops",
+    "city": "Ontario",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://www.momsandmops.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0587",
+    "business_name": "My Maids House Cleaning Service",
+    "city": "Redlands",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://mymaidshousecleaning.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0588",
+    "business_name": "OctoClean Inland Empire",
+    "city": "Riverside",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Commercial",
+    "website": "https://octoclean.com/",
+    "notes": "",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "riverside-0589",
+    "business_name": "Ofelia\u2019s Housekeeping",
+    "city": "San Bernardino",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://ofeliashousekeeping.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0590",
+    "business_name": "OlaClean LLC",
+    "city": "Redlands",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://olacleanllc.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0591",
+    "business_name": "Pure Shine Commercial Cleaning",
+    "city": "Ontario",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Commercial",
+    "website": "https://pureshinecommercialcleaning.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0592",
+    "business_name": "Redlands Cleaning",
+    "city": "Redlands",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://redlandscleaning.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  }
+]

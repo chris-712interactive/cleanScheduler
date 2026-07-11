@@ -1,0 +1,189 @@
+[
+  {
+    "id": "houston-0275",
+    "business_name": "9 Cleaning & Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://9cleaningservices.com/",
+    "notes": "Houston family-owned cleaning company operated by parents and children.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0276",
+    "business_name": "A&A Cleaning Services",
+    "city": "Pearland",
+    "county": "Brazoria",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://aacleaningservices.com/",
+    "notes": "Pearland-based residential and commercial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0277",
+    "business_name": "ABC Janitorial LLC",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.abcjanitorialllc.com/",
+    "notes": "Family-owned Houston commercial cleaner led by Jose S. Garcia.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0278",
+    "business_name": "All Clean by Anabelle",
+    "city": "Spring",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://allcleanbyanabelle.com/",
+    "notes": "Owner-branded local cleaner serving Spring and The Woodlands.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0279",
+    "business_name": "Angie's 5 Star Touch",
+    "city": "Katy",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://angies5startouch.com/",
+    "notes": "Locally owned family cleaning company based in Katy.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0280",
+    "business_name": "Baytown Cleaning Service",
+    "city": "Baytown",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.baytowncleaningservice.com/",
+    "notes": "Local Baytown residential and commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0281",
+    "business_name": "Bee Maids",
+    "city": "Katy",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://beemaids.com/",
+    "notes": "Locally owned home and commercial cleaner serving west Houston since 2009.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0282",
+    "business_name": "C&S Janitorial Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://cnsjanitorial.com/",
+    "notes": "Family-operated Houston janitorial company founded in 1991.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0283",
+    "business_name": "Caring Commercial Cleaning",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://caringtx.com/",
+    "notes": "Independent owner-operated commercial cleaner serving Greater Houston.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0284",
+    "business_name": "Clairve Cleaning",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://clairvecleaning.com/",
+    "notes": "Founder-led Houston house-cleaning company started as a one-person operation.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0285",
+    "business_name": "Claron Services Inc.",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "http://claron-services.com/",
+    "notes": "Woman-owned and operated Houston janitorial company founded in 1987.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0286",
+    "business_name": "Clear Lake Maids",
+    "city": "League City",
+    "county": "Galveston",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.clearlakemaids.com/",
+    "notes": "Local family-operated cleaner serving Clear Lake, Pearland and League City.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0287",
+    "business_name": "Coconut Cleaning Houston",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://coconutcleaningco.com/houston/services/",
+    "notes": "Houston-area eco-friendly home cleaner serving the full metro.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0288",
+    "business_name": "Detail Cleaning Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://detailcleanings.com/",
+    "notes": "Veteran-owned, family-run Houston cleaner operating since 2009.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0289",
+    "business_name": "E&E Fresh Cleaning Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://eefreshcleaning.com/",
+    "notes": "Owner-operated by Elissa Medina.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0290",
+    "business_name": "Eco Cleanify",
+    "city": "Sugar Land",
+    "county": "Fort Bend",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://ecocleanify.com/",
+    "notes": "Locally owned eco-conscious residential and commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0291",
+    "business_name": "ecomaids of Pearland",
+    "city": "Pearland",
+    "county": "Brazoria",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://ecomaids.com/cleaning-maid-service-pearland-tx/",
+    "notes": "Locally owned and operated eco-friendly cleaning franchise.",
+    "franchise_local_operator": true
+  }
+]

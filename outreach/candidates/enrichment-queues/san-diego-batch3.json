@@ -1,0 +1,156 @@
+[
+  {
+    "id": "san-diego-0885",
+    "business_name": "San Diego House Cleaning by The Mighty Maids",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://sandiegomightymaids.com/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0886",
+    "business_name": "San Diego House Cleaning Service LLC",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.sandiegohousecleaningservice.com/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0887",
+    "business_name": "San Diego Housekeeping Corp.",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://sandiegosolutions.net/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0888",
+    "business_name": "San Diego Short Term Rental Cleaning LLC",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.sdstrcleaning.com/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0889",
+    "business_name": "Sparkly Maid San Diego Cleaning Services",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.sparklymaidsandiego.com/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0890",
+    "business_name": "Spiffy Home Cleaning",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.spiffyhomecleaning.com/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0891",
+    "business_name": "Strictly Maids",
+    "city": "Chula Vista",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "http://www.strictlymaids.com/",
+    "notes": "House cleaning service found in the Chula Vista Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0892",
+    "business_name": "The Clean Sweet Home Cleaning Services",
+    "city": "Chula Vista",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "http://www.thecleansweethome.com/",
+    "notes": "House cleaning service found in the Chula Vista Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0893",
+    "business_name": "The Full Clean",
+    "city": "Chula Vista",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://the-fullclean.com/",
+    "notes": "House cleaning service found in the Chula Vista Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0894",
+    "business_name": "The Maids of San Diego",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://www.maids.com/45/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "san-diego-0895",
+    "business_name": "The Mighty Maids",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://themightymaidssandiego.com/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0897",
+    "business_name": "Weekend Maids",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "https://weekendmaids.net/san-diego-county/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0898",
+    "business_name": "Wepa Commercial Cleaning LLC",
+    "city": "Chula Vista",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Commercial",
+    "website": "http://www.wepacc.com/",
+    "notes": "Cleaning service found in the Chula Vista Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "san-diego-0899",
+    "business_name": "WHB Cleaning",
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "CA",
+    "type": "Residential",
+    "website": "http://www.whbcleaning.com/",
+    "notes": "House cleaning service found in the San Diego Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  }
+]

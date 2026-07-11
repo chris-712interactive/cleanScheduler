@@ -32,6 +32,15 @@ export const OUTREACH_RECIPIENT_STATUS_LABEL: Record<OutreachRecipientStatus, st
   skipped: 'Skipped',
 };
 
+export function outreachRecipientStatusTone(status: string): StatusTone {
+  if (status === 'delivered') return 'success';
+  if (status === 'sent') return 'warning';
+  if (status === 'bounced' || status === 'failed') return 'danger';
+  if (status === 'queued' || status === 'pending') return 'info';
+  if (status === 'skipped') return 'neutral';
+  return 'neutral';
+}
+
 export const OUTREACH_RESPONSE_STATUS_LABEL: Record<OutreachResponseStatus, string> = {
   none: 'No response',
   replied: 'Replied',

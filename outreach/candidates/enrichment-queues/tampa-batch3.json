@@ -1,0 +1,101 @@
+[
+  {
+    "id": "tampa-0842",
+    "business_name": "Skyshine Cleaning Solutions",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.skyshinesolution.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0843",
+    "business_name": "Stratus Clean Tampa",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://www.stratusclean.com/locations/tampa",
+    "notes": "Cleaning service found in the Tampa Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "tampa-0844",
+    "business_name": "Superb Maids Tampa",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://superbmaidstampa.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0845",
+    "business_name": "Tampa Bay Shine",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://tampabayshine.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0846",
+    "business_name": "Tampa Premium Cleaning LLC.",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://tampapremiumcleaning.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0847",
+    "business_name": "The Maids",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.maids.com/157/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "tampa-0848",
+    "business_name": "Tip Top Maid Services LLC",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://tiptopmaidservicetampa.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0849",
+    "business_name": "Washe Cleaning",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.washecleaning.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0850",
+    "business_name": "Wow Now Cleaning - Tampa",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://wownowcleaning.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  }
+]

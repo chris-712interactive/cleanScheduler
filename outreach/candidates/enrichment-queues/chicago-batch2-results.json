@@ -1,0 +1,138 @@
+[
+  {
+    "id": "chicago-0191",
+    "owner_name": "Unknown",
+    "email": "dreams@dukaneservices.com",
+    "phone": "(630) 761-9056",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Batavia-area phone on homepage, contact page, and about-us footer; family-owned per about page"
+  },
+  {
+    "id": "chicago-0192",
+    "owner_name": "Unknown",
+    "email": "info@elitedetailedcleaning.com",
+    "phone": "(872) 239-1113",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Chicago phone on homepage and about page footer"
+  },
+  {
+    "id": "chicago-0193",
+    "owner_name": "Unknown",
+    "email": "evanstoncleaningco@gmail.com",
+    "phone": "(847) 440-1423",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and Evanston phone on homepage footer; locally owned per site copy"
+  },
+  {
+    "id": "chicago-0194",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(630) 425-0210",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage and contact-us page; contact form present but no public email found"
+  },
+  {
+    "id": "chicago-0195",
+    "owner_name": "Unknown",
+    "email": "mail@happymaids.com",
+    "phone": "(847) 382-0082",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Barrington-area phone on about and contact-us pages; family owned per footer"
+  },
+  {
+    "id": "chicago-0196",
+    "owner_name": "Unknown",
+    "email": "info@helpinghandsmaidservices.com",
+    "phone": "(630) 530-1324",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Elmhurst phone on about and contact-us pages; locally owned since 2001 per about copy"
+  },
+  {
+    "id": "chicago-0197",
+    "owner_name": "Unknown",
+    "email": "hcsllc8@gmail.com",
+    "phone": "(219) 314-3752",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and Gary-area phone on homepage and footer tel links; contact form also available"
+  },
+  {
+    "id": "chicago-0199",
+    "owner_name": "Unknown",
+    "email": "info@jpscommercialcleaning.com",
+    "phone": "(630) 724-7846",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage and contact page; family-owned commercial cleaner per site copy"
+  },
+  {
+    "id": "chicago-0200",
+    "owner_name": "Unknown",
+    "email": "support@kingdomcleans.com",
+    "phone": "(877) 455-7603",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and toll-free phone on homepage and about page footer; woman-owned per site copy"
+  },
+  {
+    "id": "chicago-0201",
+    "owner_name": "John",
+    "email": "lajascleaningservices@gmail.com",
+    "phone": "(815) 325-2365",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and Joliet-area phone on homepage footer; owner John M. listed on Meet the Owners section"
+  },
+  {
+    "id": "chicago-0202",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(847) 414-9906",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage, about, and contact-us pages; contact form present but no public email found"
+  },
+  {
+    "id": "chicago-0203",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "mgcleanpros.com returns JS shell only; no email, phone, or contact form found in homepage HTML"
+  },
+  {
+    "id": "chicago-0204",
+    "owner_name": "Unknown",
+    "email": "info@mandmprocleaning.com",
+    "phone": "(773) 691-9389",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Chicago phone on homepage, contact, and about pages; family-owned per about copy"
+  },
+  {
+    "id": "chicago-0205",
+    "owner_name": "Josh",
+    "email": "josh@magicfresh.cleaning",
+    "phone": "(708) 378-7367",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Owner Josh listed in homepage schema; email and Romeoville-area phone on homepage footer"
+  },
+  {
+    "id": "chicago-0206",
+    "owner_name": "Peter",
+    "email": "evanston.il@maidpro.com",
+    "phone": "(847) 869-2005",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founded by Peter Goff per about copy; email and Evanston phone on location contact footer"
+  },
+  {
+    "id": "chicago-0207",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(630) 687-8701",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Naperville phone on homepage, about, and contact pages; contact form present but no public email found"
+  },
+  {
+    "id": "chicago-0208",
+    "owner_name": "Michael",
+    "email": "info@napervillejanitors.com",
+    "phone": "(847) 469-9527",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage and contact page; Michael Johnson listed as Founder and CEO on about page"
+  }
+]

@@ -1,0 +1,189 @@
+[
+  {
+    "id": "houston-0309",
+    "business_name": "OCD Cleaning",
+    "city": "Spring",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.ocdcleaning.net/",
+    "notes": "Privately woman-owned residential and commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0310",
+    "business_name": "One Source Cleaning Solutions",
+    "city": "Pearland",
+    "county": "Brazoria",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://onesourcecleantx.com/",
+    "notes": "Local commercial janitorial and property-maintenance provider.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0311",
+    "business_name": "Pasadena Clean",
+    "city": "Pasadena",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "http://pasadenaclean.com/",
+    "notes": "Veteran-owned local company operated by Juan and Diane; not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0312",
+    "business_name": "PHA Cleaning Services LLC",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://phacleaningllc.com/",
+    "notes": "Family-owned and operated Houston cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0313",
+    "business_name": "Prestige Janitorial Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.commercialcleaninginhouston.com/",
+    "notes": "Family-run privately held Houston commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0314",
+    "business_name": "Pro Houston Maids",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.prohoustonmaids.com/",
+    "notes": "Owner-operated Houston cleaning company led by Caria Collins.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0315",
+    "business_name": "Ready Set Maids",
+    "city": "Sugar Land",
+    "county": "Fort Bend",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.readysetmaids.com/",
+    "notes": "Local Texas cleaning company serving Sugar Land and Houston.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0316",
+    "business_name": "Schliks Home & Commercial Cleaning Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.schliksservices.com/",
+    "notes": "Family-, woman- and minority-owned Houston cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0317",
+    "business_name": "Signature Cleaning Concepts",
+    "city": "Katy",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://signaturecleaningconcepts.com/",
+    "notes": "Family-owned and locally operated Katy commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0318",
+    "business_name": "SparkTex Cleaners",
+    "city": "Spring",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://sparktexcleaners.com/",
+    "notes": "Locally owned home and office cleaner serving north Houston.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0319",
+    "business_name": "Spic N Span Cleanings",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.spicnspancleanings.com/",
+    "notes": "Female-owned, owner-operated Houston cleaner led by Danyelle.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0320",
+    "business_name": "Spring Cleaning",
+    "city": "Spring",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://springhousecleaners.com/",
+    "notes": "Founder-led local home and office cleaner serving north Houston.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0321",
+    "business_name": "Sugar Land House Cleaning",
+    "city": "Sugar Land",
+    "county": "Fort Bend",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://sugarlandhousecleaning.com/",
+    "notes": "Family-run, locally owned Sugar Land maid service.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0322",
+    "business_name": "Sweet & Clean",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.sweetandcleantx.com/",
+    "notes": "Locally owned, women-owned and family-operated cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0323",
+    "business_name": "The Clean Brigade",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://thecleanbrigade.com/",
+    "notes": "Family-run Greater Houston residential cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0324",
+    "business_name": "The Home Keepers",
+    "city": "Katy",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://thehomekeepers.com/",
+    "notes": "Family-owned company led by Julie Parish and serving Houston since 1994.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0325",
+    "business_name": "Ward L&J Innovations LLC",
+    "city": "Cypress",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://wardljinovations.com/",
+    "notes": "Disabled-veteran and woman-owned cleaning business.",
+    "franchise_local_operator": false
+  }
+]

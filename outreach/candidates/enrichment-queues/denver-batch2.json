@@ -1,0 +1,189 @@
+[
+  {
+    "id": "denver-0918",
+    "business_name": "Denver Cleaning Service Company",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://denvercleaningservicecompany.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0919",
+    "business_name": "Denver Maids",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://denvermaids.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0920",
+    "business_name": "Down Dirty \u2018N\u2019 Done",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://www.downdirtyndone.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0921",
+    "business_name": "Dream Clean Service",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://dreamcleanservice.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0922",
+    "business_name": "Dream Team House Clean",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://dreamteamhouseclean.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0923",
+    "business_name": "Elite Maids House Cleaning Denver",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://elitemaidshousecleaning.com/denver-co/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0924",
+    "business_name": "Healthy Happy Homes LLC",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "http://hhhomecleaners.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0925",
+    "business_name": "J&J Property Solutions LLC",
+    "city": "Aurora",
+    "county": "Arapahoe",
+    "state": "CO",
+    "type": "Residential",
+    "website": "http://jandjpropertysolutions.com/",
+    "notes": "House cleaning service found in the Aurora Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0926",
+    "business_name": "LifeShine Cleaning",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Both",
+    "website": "https://www.lifeshinecleaning.com/",
+    "notes": "Cleaners found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0927",
+    "business_name": "MAK-CLEANING LLC",
+    "city": "Aurora",
+    "county": "Arapahoe",
+    "state": "CO",
+    "type": "Commercial",
+    "website": "http://www.makcleaningllc.com/",
+    "notes": "Cleaning service found in the Aurora Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0928",
+    "business_name": "Mega Megz Cleaners",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://megamegzcleaners.co/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0929",
+    "business_name": "Merry Maids of Aurora",
+    "city": "Aurora",
+    "county": "Arapahoe",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://merrymaids.com/home-cleaners-aurora-co",
+    "notes": "House cleaning service found in the Aurora Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "denver-0930",
+    "business_name": "Merry Maids of South Denver",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://merrymaids.com/home-cleaners-south-denver-co",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "denver-0931",
+    "business_name": "Mop Stars Cleaning Service",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://www.mopstars.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0932",
+    "business_name": "Mountain High Cleaning LLC",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "http://www.denverscleaning.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0933",
+    "business_name": "Natural Cleaning Maids LLC",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://naturalcleaningmaidsllc.bookingkoala.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0934",
+    "business_name": "Neat N Tidy House Cleaning Of Denver",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://www.neatntidy.co/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  }
+]

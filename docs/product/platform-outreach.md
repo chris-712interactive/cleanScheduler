@@ -1,6 +1,6 @@
 # Platform outreach (founder cold email)
 
-**Status:** Implemented (v1 + signature polish)  
+**Status:** Implemented (v1 + signature polish + US heat map)  
 **Audience:** Platform admins only (`admin.<apex>`)  
 **Related:** Tenant marketing campaigns remain separate — see `docs/product/email-campaigns.md`.
 
@@ -63,6 +63,15 @@ Rows missing email/content are skipped at import. Emails already in `platform_ou
 
 Campaign detail shows a compact **Area** column (`City, County, ST`) and an **Areas in this campaign** summary for geographic tracking.
 
+### US heat map
+
+Both the campaign list (`/outreach`) and campaign detail (`/outreach/[id]`) show a state-level US choropleth built from recipient `state` values:
+
+- **List page:** all campaigns combined (“Where we’ve emailed”)
+- **Detail page:** current campaign only (“Campaign geography”)
+
+Use the metric toggle to recolor by **Sent**, **Delivered**, **Open rate**, or **Bounce rate** (open/bounce rates use `opened|bounced / sent`, matching campaign cards). Free-text states are normalized to 2-letter codes (`FL`, `Florida` → `FL`); missing/invalid values appear as “Unknown state” beside the map, not as a polygon. County-level tracking remains in the text area summary.
+
 ## Compliance
 
 - Platform physical address + unsubscribe link appended to every send (`lib/admin/outreachEmailBody.ts`).
@@ -83,6 +92,22 @@ RLS: `is_platform_admin()`; service role used by admin portal + cron/webhooks.
 
 Resend tags on send: `outreach_campaign_id`, `outreach_recipient_id`.
 
+Configure the Resend webhook to include at least:
+
+- `email.delivered` — recipient status → `delivered`
+- `email.bounced` — recipient status → `bounced` + platform suppression
+- `email.opened` / `email.clicked` — engagement timestamps
+
+### Sent vs Delivered
+
+| Status        | Meaning                                                                |
+| ------------- | ---------------------------------------------------------------------- |
+| **Sent**      | Resend accepted the API send (`processOutreachSendBatch`).             |
+| **Delivered** | Resend posted `email.delivered` (receiving mailbox accepted the mail). |
+| **Bounced**   | Resend posted `email.bounced` (rejected / undeliverable).              |
+
+Stuck **Sent** (no Delivered) is usually webhook delay, MTA deferral, a missing `email.delivered` event on the webhook, or a quiet receiving provider — the app cannot force inbox delivery. Campaign detail pills: Delivered = green, Sent = yellow, Bounced = red.
+
 ## Out of scope
 
 - Logo file upload / storage
@@ -91,3 +116,4 @@ Resend tags on send: `outreach_campaign_id`, `outreach_recipient_id`.
 - Inbound reply detection
 - Rich HTML body editor for CSV rows
 - SMS outreach
+- Resend API resync for stuck Sent rows

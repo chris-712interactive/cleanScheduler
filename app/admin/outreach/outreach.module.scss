@@ -183,6 +183,12 @@
   overflow: auto;
 }
 
+.statusLegend {
+  margin: calc(var(--space-2) * -1) 0 var(--space-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 .filterRow {
   display: flex;
   flex-wrap: wrap;
@@ -274,4 +280,160 @@
   overflow: auto;
   max-height: 28rem;
   background: var(--color-surface-muted);
+}
+
+.heatMapCard {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.heatMapHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  align-items: flex-start;
+}
+
+.heatMapTitle {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.heatMapDescription {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  max-width: 36rem;
+}
+
+.heatMetricToggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.heatMetricButton,
+.heatMetricActive {
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
+.heatMetricActive {
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.heatMapBody {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) 14rem;
+  align-items: start;
+
+  @include mq.down(lg) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.heatMapCanvas {
+  min-width: 0;
+}
+
+.heatLegend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.heatLegendBar {
+  flex: 1;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(226 232 240) 0%, rgb(15 118 110) 100%);
+}
+
+.heatMapSidebar {
+  min-width: 0;
+}
+
+.heatSidebarTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.heatStateList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heatStateList li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.heatStateName {
+  color: var(--color-text);
+}
+
+.heatStateValue {
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  white-space: nowrap;
+}
+
+.heatUnknown {
+  margin: var(--space-4) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.heatTooltip {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  max-width: 16rem;
+}
+
+.heatTooltip strong {
+  display: block;
+  margin-bottom: var(--space-1);
 }

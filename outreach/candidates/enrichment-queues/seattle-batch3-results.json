@@ -1,0 +1,114 @@
+[
+  {
+    "id": "seattle-0748",
+    "owner_name": "Unknown",
+    "email": "info@seattlehousecleaners.com",
+    "phone": "425-600-5826",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage lists info email and call-now phone; no owner name on Contact/About/footer"
+  },
+  {
+    "id": "seattle-0749",
+    "owner_name": "Jane",
+    "email": "info@seattlesparkleclean.com",
+    "phone": "(206) 829-0814",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About section notes owners know each cleaner; contact page lists email and phone; reviews name Jane as primary contact"
+  },
+  {
+    "id": "seattle-0750",
+    "owner_name": "James",
+    "email": "info@seattlesurfacecleaners.com",
+    "phone": "(206) 503-3712",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About section names James Hebel as owner; footer lists email and phone"
+  },
+  {
+    "id": "seattle-0751",
+    "owner_name": "Unknown",
+    "email": "shekinahexpressllc@gmail.com",
+    "phone": "(360) 503-5441",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Accessibility/contact footer lists email and phone; no owner name on accessible site pages"
+  },
+  {
+    "id": "seattle-0752",
+    "owner_name": "Renata",
+    "email": "",
+    "phone": "(206) 279-2123",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage names business owners Marcos and Renata; phone on homepage, estimate form only"
+  },
+  {
+    "id": "seattle-0753",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "206-973-2515",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage header lists Seattle office phone; instant-quote form only, no public email"
+  },
+  {
+    "id": "seattle-0754",
+    "owner_name": "Susan",
+    "email": "",
+    "phone": "(206) 348-1971",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Contact page lists phone; locally owned Susan's Green Cleaning, message form only"
+  },
+  {
+    "id": "seattle-0755",
+    "owner_name": "Tetyana",
+    "email": "smile@thacleaning.com",
+    "phone": "425-289-9310",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About page names founder Tetyana Silva; contacts page lists smile@ email and phone"
+  },
+  {
+    "id": "seattle-0756",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(425) 842-2566",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Contact page and homepage footer list phone; quote form only, no public email"
+  },
+  {
+    "id": "seattle-0757",
+    "owner_name": "Unknown",
+    "email": "cleaned@dazzlecompany.com",
+    "phone": "(206) 424-9909",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About page lists cleaned@ email; North Seattle location and contact pages list phone; online booking form"
+  },
+  {
+    "id": "seattle-0758",
+    "owner_name": "Victor",
+    "email": "info@thevictorcleanersservices.com",
+    "phone": "206-710-6698",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page footer lists email and phone; local LLC branding, no named owner on About"
+  },
+  {
+    "id": "seattle-0759",
+    "owner_name": "Unknown",
+    "email": "info@top2bottomjanitotial.com",
+    "phone": "(253) 368-0755",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About and contact footer list phone and info@ email; proud local owners noted but no names"
+  },
+  {
+    "id": "seattle-0760",
+    "owner_name": "Vladimir",
+    "email": "",
+    "phone": "312-918-0660",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "About section names family owners Vladimir and Olga; phone on homepage, quote form only"
+  },
+  {
+    "id": "seattle-0761",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(631) 639-6370",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Book-online header lists call-now phone; homepage quote form and address, no public email"
+  }
+]

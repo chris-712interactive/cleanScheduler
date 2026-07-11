@@ -1,0 +1,189 @@
+[
+  {
+    "id": "miami-0419",
+    "business_name": "AG Pure Cleaning Multiservices",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://agpurecleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0420",
+    "business_name": "American Janitorial Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://janitorialfl.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0421",
+    "business_name": "Bright Cleanup - Miami Cleaning Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://brightcleanupmanagement.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0422",
+    "business_name": "Catalina Cleaning",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://catalinacleaning.com/service-areas/miami",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0423",
+    "business_name": "Classy & Clean Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://classycleanmiami.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0424",
+    "business_name": "Clean and Spotless Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://cleanandspotlessservices.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0425",
+    "business_name": "Clean Casa Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://cleancasamiami.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0426",
+    "business_name": "Clean My Mess Cleaning Services Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "http://cleanmymess.miami/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0427",
+    "business_name": "Clean Ready Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://cleanreadymiami.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0428",
+    "business_name": "Cleaning Lumbi Service",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.cleaninglumbi.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0429",
+    "business_name": "Cleany Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://www.cleanymiami.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0430",
+    "business_name": "Cleanzen Miami Cleaning Services",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://cleanzen.com/miami/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0431",
+    "business_name": "Cleenora Maids Little Havana",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://cleenoramaidsandcleaningservices.com/professional-cleaning-services-little-havana",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0432",
+    "business_name": "Deni Cleaning Service Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://denicleaningmiami.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0433",
+    "business_name": "Essential Cleaners",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://www.essentialcleanersfl.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0435",
+    "business_name": "Gold Standard Cleaning Collective",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Both",
+    "website": "https://gscleaningcollective.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "miami-0436",
+    "business_name": "Golden Maids Miami",
+    "city": "Miami",
+    "county": "Miami-Dade",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://goldenmaidsmiami.weebly.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  }
+]

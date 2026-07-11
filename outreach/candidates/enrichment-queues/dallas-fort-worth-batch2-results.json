@@ -1,0 +1,138 @@
+[
+  {
+    "id": "dallas-fort-worth-0240",
+    "owner_name": "Flor E. Del Rio",
+    "email": "",
+    "phone": "(469) 733-5776",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage/footer lists phone and owner; no public email on site."
+  },
+  {
+    "id": "dallas-fort-worth-0241",
+    "owner_name": "Mark McGlothlin",
+    "email": "",
+    "phone": "(214) 618-0816",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "About/contact pages name Mark as owner; phone listed, contact form but no public email."
+  },
+  {
+    "id": "dallas-fort-worth-0242",
+    "owner_name": "Unknown",
+    "email": "hello@godislovecleaning.com",
+    "phone": "(214) 753-7022",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page lists Sales email and phone; About page does not name founder."
+  },
+  {
+    "id": "dallas-fort-worth-0243",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(469) 702-9632",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Primary domain hijacked; phone from deepcleaningfrisco.com and househugcleaners.com service page via search. No public email."
+  },
+  {
+    "id": "dallas-fort-worth-0244",
+    "owner_name": "Unknown",
+    "email": "info@howdy.cleaning",
+    "phone": "(469) 293-1724",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page footer lists email and phone."
+  },
+  {
+    "id": "dallas-fort-worth-0245",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(972) 812-9132",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage FAQ lists call/text phone; no public email, online quote tool only."
+  },
+  {
+    "id": "dallas-fort-worth-0246",
+    "owner_name": "Unknown",
+    "email": "booking@hygienemaid.com",
+    "phone": "(469) 935-7031",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on quote/terms pages; contact page sparse."
+  },
+  {
+    "id": "dallas-fort-worth-0247",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(469) 750-3215",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage contact form and BOOK NOW phone; no public email listed."
+  },
+  {
+    "id": "dallas-fort-worth-0248",
+    "owner_name": "Unknown",
+    "email": "info@kvcommercialservices.com",
+    "phone": "(214) 710-1980",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage contact section lists email, phone, and form."
+  },
+  {
+    "id": "dallas-fort-worth-0249",
+    "owner_name": "Unknown",
+    "email": "bookings@lacatrinahousecleaning.com",
+    "phone": "(817) 635-0607",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page lists email and phone."
+  },
+  {
+    "id": "dallas-fort-worth-0250",
+    "owner_name": "Unknown",
+    "email": "info@lazydayshome.com",
+    "phone": "(817) 277-7387",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Main site minimal; email and phone from commercialservices.lazydayshome.com contact page."
+  },
+  {
+    "id": "dallas-fort-worth-0251",
+    "owner_name": "Unknown",
+    "email": "sales@lovemymaids.com",
+    "phone": "(817) 542-0347",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page lists sales email, phone, and quote form."
+  },
+  {
+    "id": "dallas-fort-worth-0252",
+    "owner_name": "Paula Lozano",
+    "email": "info@lozanocleaningservices.com",
+    "phone": "(817) 385-9647",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage names Paula as founder; contact page lists email and phone."
+  },
+  {
+    "id": "dallas-fort-worth-0253",
+    "owner_name": "Marina Ward",
+    "email": "flowermound.tx@maidpro.com",
+    "phone": "(972) 791-8358",
+    "outreach_channel": "Email",
+    "enrichment_notes": "MaidPro Flower Mound page names Marina Ward as local owner; email/phone from MaidPro Lewisville contact."
+  },
+  {
+    "id": "dallas-fort-worth-0254",
+    "owner_name": "Katy McClain",
+    "email": "kmcclain003@gmail.com",
+    "phone": "(940) 224-1943",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage contact section lists Katy McClain as owner, email, and phone."
+  },
+  {
+    "id": "dallas-fort-worth-0255",
+    "owner_name": "Unknown",
+    "email": "mercedeshousecleaningllc@gmail.com",
+    "phone": "(469) 968-3183",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page lists email and phone; family-owned per site copy."
+  },
+  {
+    "id": "dallas-fort-worth-0256",
+    "owner_name": "James Miner",
+    "email": "",
+    "phone": "(817) 975-3267",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage names James Miner; phone from directory listing, site has quote form but no public email."
+  }
+]

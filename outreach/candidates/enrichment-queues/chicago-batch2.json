@@ -1,0 +1,189 @@
+[
+  {
+    "id": "chicago-0191",
+    "business_name": "DuKane Contract Services Inc.",
+    "city": "Batavia",
+    "county": "Kane",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://www.dukaneservices.com/",
+    "notes": "Local family-owned Fox Valley commercial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0192",
+    "business_name": "Elite Detailed Cleaning",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://elitedetailedcleaning.com/",
+    "notes": "Local family-owned residential and commercial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0193",
+    "business_name": "Evanston Cleaning Company",
+    "city": "Evanston",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://evanstoncleaningcompany.com/",
+    "notes": "Locally owned Evanston residential and commercial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0194",
+    "business_name": "Express Clean",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://expresscleanco.com/",
+    "notes": "Local company serving Chicago, Aurora and Naperville for over ten years.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0195",
+    "business_name": "Happy Maids",
+    "city": "Barrington",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://happymaids.com/",
+    "notes": "Locally owned family-run cleaner serving northwest suburbs since 1985.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0196",
+    "business_name": "Helping Hands Cleaning Services",
+    "city": "Elmhurst",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://helpinghandscleaningservices.com/",
+    "notes": "Locally owned western-suburbs cleaner operating since 2001.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0197",
+    "business_name": "Honor Cleaning Service LLC",
+    "city": "Gary",
+    "county": "Lake",
+    "state": "IN",
+    "type": "Both",
+    "website": "https://www.honorcleaningservice.com/",
+    "notes": "Locally owned Gary cleaner serving Northwest Indiana and Chicagoland.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0199",
+    "business_name": "JPS Commercial Cleaning",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://jpscommercialcleaning.com/",
+    "notes": "Family-owned commercial and janitorial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0200",
+    "business_name": "Kingdom Cleaning Services",
+    "city": "Gary",
+    "county": "Lake",
+    "state": "IN",
+    "type": "Commercial",
+    "website": "https://kingdomcleans.com/",
+    "notes": "Woman-owned commercial cleaner serving Chicago and Northwest Indiana.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0201",
+    "business_name": "Lajas Cleaning Services",
+    "city": "Joliet",
+    "county": "Will",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://lajascleaningservices.com/",
+    "notes": "Local home and office cleaning company established in 2008.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0202",
+    "business_name": "Lake City Janitorial",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://www.lakecityjanitorial.com/",
+    "notes": "Family-owned Chicagoland commercial cleaner with 25-plus years of experience.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0203",
+    "business_name": "M&G Clean Pros LLC",
+    "city": "Aurora",
+    "county": "Kane",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://mgcleanpros.com/",
+    "notes": "Aurora-based residential cleaning business.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0204",
+    "business_name": "M&M Pro Cleaning",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://www.mandmprocleaning.com/",
+    "notes": "Local family-owned home and commercial cleaning service.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0205",
+    "business_name": "Magic Fresh Cleaning",
+    "city": "Romeoville",
+    "county": "Will",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://magicfresh.cleaning/",
+    "notes": "Locally owned company serving homes and offices across southwest Chicagoland.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0206",
+    "business_name": "MaidPro Evanston",
+    "city": "Evanston",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/evanston",
+    "notes": "Locally operated franchise founded by Evanston resident Peter Goff.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "chicago-0207",
+    "business_name": "Naperville Clean",
+    "city": "Naperville",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://napervilleclean.com/",
+    "notes": "Locally owned residential cleaning company serving Naperville.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0208",
+    "business_name": "Naperville Janitors",
+    "city": "Naperville",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://napervillejanitors.com/",
+    "notes": "Family-owned, locally operated commercial cleaner founded in Naperville.",
+    "franchise_local_operator": false
+  }
+]

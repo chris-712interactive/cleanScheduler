@@ -1,0 +1,46 @@
+[
+  {
+    "id": "riverside-0593",
+    "business_name": "RH Cleaning Service",
+    "city": "Ontario",
+    "county": "San Bernardino",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://www.rhcleaningservice.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0594",
+    "business_name": "Serenity Shine Co",
+    "city": "Riverside",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://serenityshineco.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0595",
+    "business_name": "Sylvia\u2019s Home & Office Cleaning",
+    "city": "Moreno Valley",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://sylviashomecleaning.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "riverside-0596",
+    "business_name": "Teresita\u2019s Cleaning Services",
+    "city": "Riverside",
+    "county": "Riverside",
+    "state": "CA",
+    "type": "Both",
+    "website": "https://www.teresitascleaningservices.com/",
+    "notes": "",
+    "franchise_local_operator": false
+  }
+]

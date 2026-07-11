@@ -1,0 +1,189 @@
+[
+  {
+    "id": "dallas-fort-worth-0257",
+    "business_name": "Miracle Cleaning Pros",
+    "city": "Plano",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://miraclecleaningpros.com/",
+    "notes": "Texas-based family cleaning company serving Plano and Frisco.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0258",
+    "business_name": "Monica's Maid Service",
+    "city": "Plano",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://planomaidservice.com/",
+    "notes": "Local DFW residential and commercial cleaner founded in 2000.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0259",
+    "business_name": "Organically Maid",
+    "city": "Plano",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://organicallymaidcleaning.com/",
+    "notes": "Local natural house-cleaning provider serving the DFW metroplex.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0260",
+    "business_name": "Over The Moon Cleaning Co.",
+    "city": "Fort Worth",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://overthemooncleaningco.com/",
+    "notes": "Owner-operated Fort Worth cleaning company led by Sarah.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0261",
+    "business_name": "Pampered House",
+    "city": "Arlington",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://pamperedhouse.net/",
+    "notes": "Local maid service serving Tarrant County since 2001.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0262",
+    "business_name": "Pink Ribbon Cleaning Services Inc.",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.pinkrcleaning.com/",
+    "notes": "Minority- and woman-owned commercial cleaner led by Maribel Longoria.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0263",
+    "business_name": "Rag Mops Cleaning",
+    "city": "Lewisville",
+    "county": "Denton",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://ragmops.net/",
+    "notes": "Local house-cleaning company serving Lewisville and Flower Mound.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0264",
+    "business_name": "Reyes Cleaning Solutions",
+    "city": "Fort Worth",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://reyescleaningsolutions.com/",
+    "notes": "Local family-owned Fort Worth cleaning business operating since 2005.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0265",
+    "business_name": "Silva's Deep Cleaning",
+    "city": "McKinney",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://silvas-deep-cleaning.com/",
+    "notes": "Locally owned company founded by Elena and serving Collin County.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0266",
+    "business_name": "Sonlight Cleaning",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://sonlightcleaning.com/",
+    "notes": "Texas family-owned and operated commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0267",
+    "business_name": "Texas Maids of Frisco",
+    "city": "Frisco",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://texasmaidsoffrisco.com/",
+    "notes": "Local house-cleaning company serving Frisco, McKinney and North Dallas.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0268",
+    "business_name": "The Sisters Home Cleaning",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://thesistershomecleaning.com/",
+    "notes": "Locally owned family business founded by Yamirka Figueroa.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0269",
+    "business_name": "TidyDillo",
+    "city": "Richardson",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.tidydillo.com/",
+    "notes": "Locally owned DFW house-cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0270",
+    "business_name": "Todon Cleaning LLC",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.todoncleaning.com/",
+    "notes": "Family-owned Dallas cleaner serving homes and businesses.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0271",
+    "business_name": "Unica Enterprises LLC",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://unicajs.com/",
+    "notes": "Dallas-based certified minority woman-owned custodial company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0272",
+    "business_name": "Valor Janitorial",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.valorjanitorial.com/",
+    "notes": "Locally owned Dallas janitorial company operating since 2001.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0273",
+    "business_name": "Walo Maids",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://walomaids.com/",
+    "notes": "Local Dallas cleaning partner serving 20-plus DFW cities since 2009.",
+    "franchise_local_operator": false
+  }
+]

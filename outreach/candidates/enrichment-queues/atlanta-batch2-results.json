@@ -1,0 +1,138 @@
+[
+  {
+    "id": "atlanta-0344",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain cleaningmaxx.com unreachable; no contact info found on homepage or contact paths"
+  },
+  {
+    "id": "atlanta-0345",
+    "owner_name": "Unknown",
+    "email": "adivascarecleaning@gmail.com",
+    "phone": "",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail on contact-us page footer; Square storefront site; no public phone found"
+  },
+  {
+    "id": "atlanta-0346",
+    "owner_name": "Unknown",
+    "email": "djohome.office@gmail.com",
+    "phone": "(800) 215-3197",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and toll-free phone on homepage footer; quote/contact CTAs only"
+  },
+  {
+    "id": "atlanta-0347",
+    "owner_name": "Unknown",
+    "email": "booking@eleganzaclean.com",
+    "phone": "(470) 279-4937",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Atlanta phone on homepage and contact page"
+  },
+  {
+    "id": "atlanta-0348",
+    "owner_name": "Unknown",
+    "email": "contact@elitenesscleaning.com",
+    "phone": "(404) 848-1919",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Atlanta-area phone on homepage; contact form also available"
+  },
+  {
+    "id": "atlanta-0349",
+    "owner_name": "Unknown",
+    "email": "info@fyccleaning.com",
+    "phone": "(678) 965-3436",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage and contact page; contact form present"
+  },
+  {
+    "id": "atlanta-0350",
+    "owner_name": "Unknown",
+    "email": "support@happycleanatlanta.com",
+    "phone": "(770) 233-7511",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Family-owned per about page; email and Lawrenceville office phone on contact page footer"
+  },
+  {
+    "id": "atlanta-0351",
+    "owner_name": "Unknown",
+    "email": "contact@immaculatecleans.com",
+    "phone": "(770) 568-3138",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Metro Atlanta phone on homepage and contact pages"
+  },
+  {
+    "id": "atlanta-0352",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(404) 444-5947",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Atlanta phone on homepage and contact page footer; no public email found"
+  },
+  {
+    "id": "atlanta-0353",
+    "owner_name": "Unknown",
+    "email": "contact@jrcleaningatlanta.com",
+    "phone": "(678) 517-8451",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage; contact form on site"
+  },
+  {
+    "id": "atlanta-0354",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain redirects to empty lander/parking page; no business contact info"
+  },
+  {
+    "id": "atlanta-0355",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(470) 333-5378",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Buckhead/Midtown phone in homepage header; booking form only, no public email"
+  },
+  {
+    "id": "atlanta-0356",
+    "owner_name": "Mony",
+    "email": "hello@maidtoglow.com",
+    "phone": "(678) 697-4679",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Mony Gueorguiev named on about page; email and phone in footer and about"
+  },
+  {
+    "id": "atlanta-0357",
+    "owner_name": "Kelly",
+    "email": "buckhead.ga@maidpro.com",
+    "phone": "(404) 855-3030",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Local franchisee Kelly Gacutan; email and phone on Buckhead location page"
+  },
+  {
+    "id": "atlanta-0358",
+    "owner_name": "Jessica",
+    "email": "eastatlanta.ga@maidpro.com",
+    "phone": "(770) 872-8227",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Local franchisees Jessica and Rick Hardt; email and phone on East Atlanta location page"
+  },
+  {
+    "id": "atlanta-0359",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Site shows placeholder Home page only; no contact info on homepage or contact paths"
+  },
+  {
+    "id": "atlanta-0360",
+    "owner_name": "Unknown",
+    "email": "services@modernmaidsdallas.com",
+    "phone": "(404) 446-9229",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Atlanta location phone and corporate email on Atlanta service and contact pages"
+  }
+]

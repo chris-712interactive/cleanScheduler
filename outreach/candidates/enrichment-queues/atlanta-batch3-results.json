@@ -1,0 +1,82 @@
+[
+  {
+    "id": "atlanta-0361",
+    "owner_name": "Unknown",
+    "email": "contact@northcleaningatl.com",
+    "phone": "(678) 557-6449",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page mailto and footer phone listed"
+  },
+  {
+    "id": "atlanta-0362",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain redirects to MaidPro Buckhead franchise; no One Stop contact info"
+  },
+  {
+    "id": "atlanta-0363",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Coming-soon parked page; no public email or phone"
+  },
+  {
+    "id": "atlanta-0364",
+    "owner_name": "Unknown",
+    "email": "Info@spotlesssweeps.com",
+    "phone": "(678) 619-0789",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page email and phone listed"
+  },
+  {
+    "id": "atlanta-0365",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Wix ConnectYourDomain error page; site not live"
+  },
+  {
+    "id": "atlanta-0366",
+    "owner_name": "Wilma",
+    "email": "wilma@magicaldaycleaning.com",
+    "phone": "(404) 246-7083",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About page names founder Wilma Lopes; contact footer email and phone"
+  },
+  {
+    "id": "atlanta-0367",
+    "owner_name": "Unknown",
+    "email": "info@themoxiemaids.com",
+    "phone": "(470) 481-0707",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About page footer email and phone listed"
+  },
+  {
+    "id": "atlanta-0369",
+    "owner_name": "Unknown",
+    "email": "info@tjaffordablecleaning.com",
+    "phone": "(470) 656-0728",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About and contact pages list email and phone"
+  },
+  {
+    "id": "atlanta-0370",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(404) 500-6485",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "About page founder unnamed; homepage phone only, no public email"
+  },
+  {
+    "id": "atlanta-0371",
+    "owner_name": "Unknown",
+    "email": "info@heavenscentatl.com",
+    "phone": "(470) 374-9319",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page email; header and footer phone listed"
+  }
+]

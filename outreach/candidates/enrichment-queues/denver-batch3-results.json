@@ -1,0 +1,66 @@
+[
+  {
+    "id": "denver-0935",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(720) 477-7272",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage footer lists call/text phone; no public email found"
+  },
+  {
+    "id": "denver-0936",
+    "owner_name": "Jovany",
+    "email": "",
+    "phone": "+1 720-307-8027",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "About page names principal Jovany M; Denver office phone on homepage; contact form only"
+  },
+  {
+    "id": "denver-0937",
+    "owner_name": "Angela",
+    "email": "acshands05@gmail.com",
+    "phone": "720-914-6851",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage About section names Angela; contact footer lists email and phone"
+  },
+  {
+    "id": "denver-0938",
+    "owner_name": "Unknown",
+    "email": "customersupport@simplifiedlivinghomeservices.com",
+    "phone": "303-288-2505",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage header lists support email and phone; family-owned since 1973"
+  },
+  {
+    "id": "denver-0939",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "303-591-8667",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage contact section lists phone; estimate form only, no email"
+  },
+  {
+    "id": "denver-0940",
+    "owner_name": "Tracey",
+    "email": "hello@thehauskeepers.com",
+    "phone": "720-499-0700",
+    "outreach_channel": "Email",
+    "enrichment_notes": "About page names founder Tracey Nguyen; contact page lists email and phone"
+  },
+  {
+    "id": "denver-0941",
+    "owner_name": "Joe",
+    "email": "",
+    "phone": "(303) 282-0141",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Location page Meet the Owner lists Joe and Christina Quadhamer; phone listed, quote form only"
+  },
+  {
+    "id": "denver-0942",
+    "owner_name": "Carl",
+    "email": "info@tidytask.com",
+    "phone": "(833) 903-6444",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Denver page Meet the Owner section names Carl D; footer lists email and phone"
+  }
+]

@@ -1,0 +1,138 @@
+[
+  {
+    "id": "san-diego-0868",
+    "owner_name": "Unknown",
+    "email": "crystalcleaningmaidservice@gmail.com",
+    "phone": "858-888-9036",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in homepage schema markup"
+  },
+  {
+    "id": "san-diego-0869",
+    "owner_name": "Unknown",
+    "email": "glistenca@gmail.com",
+    "phone": "(619) 779-0205",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "san-diego-0870",
+    "owner_name": "Brian",
+    "email": "info@greenfrogcleaning.com",
+    "phone": "888-438-1781",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Brian Nilles co-owner; email and phone on homepage"
+  },
+  {
+    "id": "san-diego-0871",
+    "owner_name": "Unknown",
+    "email": "info@sdgreenmaids.com",
+    "phone": "(619) 709-3810",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "san-diego-0872",
+    "owner_name": "Unknown",
+    "email": "contact@kleanandfresh.com",
+    "phone": "(619) 346-1985",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage footer"
+  },
+  {
+    "id": "san-diego-0873",
+    "owner_name": "Unknown",
+    "email": "info@lacleanhouse.com",
+    "phone": "(858) 525-4929",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage"
+  },
+  {
+    "id": "san-diego-0874",
+    "owner_name": "Unknown",
+    "email": "contact@losangeleshousecleaners.net",
+    "phone": "(858) 667-5245",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and SD phone on San Diego location page"
+  },
+  {
+    "id": "san-diego-0875",
+    "owner_name": "Unknown",
+    "email": "magicleanmaid1@gmail.com",
+    "phone": "619-877-9657",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "san-diego-0876",
+    "owner_name": "Unknown",
+    "email": "maid2cleansd@gmail.com",
+    "phone": "858-461-8680",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage"
+  },
+  {
+    "id": "san-diego-0877",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(619) 291-5000",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage; family-owned per about page, no public email"
+  },
+  {
+    "id": "san-diego-0878",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(619) 374-6213",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage and contact; quote form only, no public email"
+  },
+  {
+    "id": "san-diego-0879",
+    "owner_name": "Unknown",
+    "email": "info@meximaids.net",
+    "phone": "619-777-2063",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage footer"
+  },
+  {
+    "id": "san-diego-0880",
+    "owner_name": "Miranda",
+    "email": "",
+    "phone": "(619) 812-0010",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Miranda named on about page; phone on homepage, no public email"
+  },
+  {
+    "id": "san-diego-0881",
+    "owner_name": "Mona",
+    "email": "",
+    "phone": "(858) 267-8747",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Mona family-owned per about page; phone in header, no public email"
+  },
+  {
+    "id": "san-diego-0882",
+    "owner_name": "Unknown",
+    "email": "info@onetouchcleaners.com",
+    "phone": "619-618-4137",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage footer"
+  },
+  {
+    "id": "san-diego-0883",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Site redirects to empty lander; no contact info on website"
+  },
+  {
+    "id": "san-diego-0884",
+    "owner_name": "Unknown",
+    "email": "info@sandiegocleaningservices.net",
+    "phone": "858-298-3544",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage footer"
+  }
+]

@@ -1,0 +1,138 @@
+[
+  {
+    "id": "seattle-0713",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(425) 494-5199",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "425-area phone in homepage tel link; no public email; Book Now CTA only"
+  },
+  {
+    "id": "seattle-0714",
+    "owner_name": "Unknown",
+    "email": "alwaysbestcleaningsolutions@gmail.com",
+    "phone": "(425) 675-6379",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and phone on about page footer"
+  },
+  {
+    "id": "seattle-0716",
+    "owner_name": "April",
+    "email": "hello@aprillanescleaning.com",
+    "phone": "(206) 527-4290",
+    "outreach_channel": "Email",
+    "enrichment_notes": "April Lane's business; email and phone on contact page"
+  },
+  {
+    "id": "seattle-0717",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(206) 222-3202",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone in schema and FAQ; online quote form, no public email"
+  },
+  {
+    "id": "seattle-0718",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(206) 782-2494",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone in homepage footer and tel link; no public email"
+  },
+  {
+    "id": "seattle-0719",
+    "owner_name": "Unknown",
+    "email": "info@cleaningservicesseattle.com",
+    "phone": "(206) 208-6962",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "seattle-0720",
+    "owner_name": "Unknown",
+    "email": "cleaningserviceswestseattle@gmail.com",
+    "phone": "(206) 385-4825",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and phone on homepage footer"
+  },
+  {
+    "id": "seattle-0721",
+    "owner_name": "Unknown",
+    "email": "hello@clearcoastcleaningwa.com",
+    "phone": "(206) 672-8403",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage and about page"
+  },
+  {
+    "id": "seattle-0722",
+    "owner_name": "Jose",
+    "email": "jose@diamondcleanersusa.com",
+    "phone": "(425) 529-5449",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Jose email and phone on about and contact pages"
+  },
+  {
+    "id": "seattle-0723",
+    "owner_name": "Guacolda",
+    "email": "info@emeraldcitycleaning.com",
+    "phone": "(206) 529-4700",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Owner Guacolda on about page; email and phone in footer"
+  },
+  {
+    "id": "seattle-0724",
+    "owner_name": "Unknown",
+    "email": "essentialmoveoutcleaning@gmail.com",
+    "phone": "(206) 735-3750",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and phone on about-us page; founder title only, no name"
+  },
+  {
+    "id": "seattle-0725",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "React SPA; no email, phone, or contact form in public HTML"
+  },
+  {
+    "id": "seattle-0726",
+    "owner_name": "Unknown",
+    "email": "info@fourspc.com",
+    "phone": "(206) 227-7964",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Seattle phone on contact page"
+  },
+  {
+    "id": "seattle-0727",
+    "owner_name": "Gea",
+    "email": "customerservice@greencleaningseattle.com",
+    "phone": "(206) 307-2270",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Gea on about-us page; email and phone in footer"
+  },
+  {
+    "id": "seattle-0728",
+    "owner_name": "Shawna",
+    "email": "shawna@greendiamondcleaning.com",
+    "phone": "(253) 645-0900",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Shawna email in homepage schema; Tacoma office phone on contact page"
+  },
+  {
+    "id": "seattle-0729",
+    "owner_name": "Unknown",
+    "email": "gritcitypropertycleaning@gmail.com",
+    "phone": "(253) 583-6970",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Gmail and phone on contact-us page"
+  },
+  {
+    "id": "seattle-0730",
+    "owner_name": "Unknown",
+    "email": "care@hometress.com",
+    "phone": "(206) 929-1605",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Seattle phone on Seattle location page"
+  }
+]
