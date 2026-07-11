@@ -1,0 +1,112 @@
+[
+  {
+    "id": "atlanta-0361",
+    "business_name": "North Cleaning ATL",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://www.northcleaningatl.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0362",
+    "business_name": "One Stop Household Services",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "http://www.onestophousehold.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0363",
+    "business_name": "RefreshCoATL",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://refreshcoatl.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0364",
+    "business_name": "Spotless Sweeps",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.spotlesssweeps.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0365",
+    "business_name": "The Cleaners Of Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "https://thecleanersofatlanta.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0366",
+    "business_name": "The Magical Day Cleaning LLC",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "http://magicaldaycleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0367",
+    "business_name": "The Moxie Maids",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://themoxiemaids.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0369",
+    "business_name": "TJ\u2019s Affordable Cleaning Service",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://www.tjaffordablecleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0370",
+    "business_name": "True Haven Cleaners",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "https://truehavencleaners.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0371",
+    "business_name": "We're Heaven Scent Cleaning Services LLC",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "https://heavenscentatl.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  }
+]

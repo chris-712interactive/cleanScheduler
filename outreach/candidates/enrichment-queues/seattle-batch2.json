@@ -1,0 +1,189 @@
+[
+  {
+    "id": "seattle-0731",
+    "business_name": "Ladonna's Cleaning Service",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "http://www.ladonnascleaningseattle.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0732",
+    "business_name": "MagiClean Cleaning Services",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "http://magicleanseattle.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0733",
+    "business_name": "Maid Service Seattle",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.seattlegreenmaids.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0734",
+    "business_name": "MaidPro Seattle",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/seattle-bellevue/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "seattle-0735",
+    "business_name": "Meekas cleaning services llc",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.meekascleaningservicesllc.com/",
+    "notes": "Meekas cleaning services llc found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0736",
+    "business_name": "Move Out Seattle",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "http://www.moveoutseattle.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0737",
+    "business_name": "NW Maids House Cleaning Service of Seattle",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://nwmaids.com/locations/seattle/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0738",
+    "business_name": "Positively Clean",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "http://positivelyclean.net/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0739",
+    "business_name": "Priscila's Cleaning Service",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://housecleaningpriscila.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0740",
+    "business_name": "Puget Sound Cleaners",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://pugetsoundcleaners.com/seattle/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0741",
+    "business_name": "Queen Anne Cleaning Services",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://queenannecleaning.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0742",
+    "business_name": "Quesada\u2019s Cleaning Services",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Commercial",
+    "website": "http://quesadascleaningservices.com/",
+    "notes": "Cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0743",
+    "business_name": "Rain City Maids of Seattle",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.raincitymaids.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0744",
+    "business_name": "Seattle Commercial Cleaners",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Commercial",
+    "website": "https://www.seattlecommercialcleaners.com/",
+    "notes": "Cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0745",
+    "business_name": "Seattle Commercial Cleaning Co.",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Commercial",
+    "website": "https://seattlecleaningco.shop/",
+    "notes": "Cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0746",
+    "business_name": "Seattle Green Cleaning Fairy",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://seattlegreencleaningfairy.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0747",
+    "business_name": "Seattle Green Earth Cleaning",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.seattlegec.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  }
+]

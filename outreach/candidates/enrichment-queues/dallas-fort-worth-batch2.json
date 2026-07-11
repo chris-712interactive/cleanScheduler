@@ -1,0 +1,189 @@
+[
+  {
+    "id": "dallas-fort-worth-0240",
+    "business_name": "Flor Garcia Cleaning LLC",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://florgarciacleaningllc.com/",
+    "notes": "Owner-operated by Flor E. Del Rio.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0241",
+    "business_name": "Frisco Brothers Janitorial Service",
+    "city": "Frisco",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.friscojanitorial.com/",
+    "notes": "Hands-on family owners Mark and Sandra McGlothlin; not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0242",
+    "business_name": "God Is Love Cleaning Company LLC",
+    "city": "Plano",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://godislovecleaning.com/",
+    "notes": "Local family-driven Plano company; explicitly not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0243",
+    "business_name": "House Hug Cleaners",
+    "city": "Frisco",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://househugcleaners.com/",
+    "notes": "Family-owned Frisco house-cleaning service.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0244",
+    "business_name": "Howdy Home Cleaning",
+    "city": "Flower Mound",
+    "county": "Denton",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://howdy.cleaning/",
+    "notes": "Locally owned, non-franchise Flower Mound cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0245",
+    "business_name": "Howdy Home Co.",
+    "city": "Frisco",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://howdyhomeco.com/",
+    "notes": "Local North Texas house-cleaning company serving Frisco, Plano and McKinney.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0246",
+    "business_name": "Hygiene Maids",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://hygienemaids.com/",
+    "notes": "DFW residential and business cleaning company based in Dallas.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0247",
+    "business_name": "Kiki's House Cleaning",
+    "city": "Plano",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.kikishousecleaning.com/",
+    "notes": "Local residential and commercial cleaning service based around Plano.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0248",
+    "business_name": "KV Commercial Services",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.kvcommercialservices.com/",
+    "notes": "Dallas women-owned commercial janitorial company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0249",
+    "business_name": "La Catrina House Cleaning",
+    "city": "Arlington",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://lacatrinahousecleaning.com/",
+    "notes": "Locally owned Arlington house-cleaning provider.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0250",
+    "business_name": "Lazy Days Home Services",
+    "city": "Arlington",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://lazydayshome.com/",
+    "notes": "Local house-cleaning service covering Arlington and nearby DFW cities.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0251",
+    "business_name": "Love My Maids",
+    "city": "Pantego",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://lovemymaids.com/",
+    "notes": "Veteran-owned, woman-led house-cleaning company serving west DFW.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0252",
+    "business_name": "Lozano Cleaning Services",
+    "city": "Fort Worth",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://lozanocleaningservices.com/",
+    "notes": "Founder-led Fort Worth residential cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0253",
+    "business_name": "MaidPro Flower Mound",
+    "city": "Flower Mound",
+    "county": "Denton",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.maidpro.com/flower-mound",
+    "notes": "Locally owned franchise operated by Marina Ward.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "dallas-fort-worth-0254",
+    "business_name": "McClain & Co. Services",
+    "city": "Fort Worth",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.mcclainpropertyservices.net/",
+    "notes": "Locally owned Fort Worth house-cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0255",
+    "business_name": "Mercedes House Cleaning",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://mercedeshousecleaning.com/",
+    "notes": "Family-owned Dallas residential and commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0256",
+    "business_name": "Miner & Sons Janitorial",
+    "city": "Fort Worth",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://minerandsons.com/",
+    "notes": "Family-owned Fort Worth janitorial service led by James Miner.",
+    "franchise_local_operator": false
+  }
+]

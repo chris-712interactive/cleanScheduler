@@ -1,0 +1,90 @@
+[
+  {
+    "id": "denver-0935",
+    "business_name": "Organic Maids",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://www.organicmaids.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0936",
+    "business_name": "Roochii Cleaning",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://roochiicleaning.com/co/denver/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0937",
+    "business_name": "Shands Cleaning Services LLC",
+    "city": "Aurora",
+    "county": "Arapahoe",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://www.shandscleaningservices.com/?fbclid=IwY2xjawHz2tdleHRuA2FlbQIxMQABHU4GmpePmWv51FYTgU6TbmOIGrW2MbJ96axqLE1J1Dq4mOaWHYfTqciCgg_aem_Jpv9nB2b2nDtBcCkN2cQNw",
+    "notes": "House cleaning service found in the Aurora Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0938",
+    "business_name": "Simplified Living Home Services",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://www.simplifiedlivinghomeservices.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0939",
+    "business_name": "The Blue Bucket Cleaning",
+    "city": "Aurora",
+    "county": "Arapahoe",
+    "state": "CO",
+    "type": "Residential",
+    "website": "http://thebluebucketcleaning.com/",
+    "notes": "House cleaning service found in the Aurora Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0940",
+    "business_name": "The Haus Keepers",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://thehauskeepers.com/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "denver-0941",
+    "business_name": "The Maids of Central and North Denver",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "http://www.maids.com/239/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "denver-0942",
+    "business_name": "TidyTask Denver",
+    "city": "Denver",
+    "county": "Denver",
+    "state": "CO",
+    "type": "Residential",
+    "website": "https://tidytask.com/denver/",
+    "notes": "House cleaning service found in the Denver Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  }
+]

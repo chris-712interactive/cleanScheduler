@@ -1,0 +1,189 @@
+[
+  {
+    "id": "tampa-0807",
+    "business_name": "00 Clean Inc.",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://www.00clean.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0808",
+    "business_name": "Affordable Cleaning Today LLC",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://affordablecleaningtoday.com/lander3",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0809",
+    "business_name": "Aroma Earth Cleaning",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://aromaearthcleaning.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0810",
+    "business_name": "Best Cleaning Tampa",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://bestcleaningtampallc.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0812",
+    "business_name": "Chery Maids | House Cleaning Service Tampa",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.cherymaids.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0813",
+    "business_name": "City Wide Facility Solutions - Tampa Bay",
+    "city": "St. Petersburg",
+    "county": "Pinellas",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://gocitywide.com/tampabay",
+    "notes": "Cleaning service found in the St. Petersburg Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0814",
+    "business_name": "Clean Bean",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://hellocleanbean.com/house-cleaning-services-tampa-bay-fl/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0815",
+    "business_name": "E2E Cleaning Services",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://www.e2ecleaning.com/",
+    "notes": "Cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0816",
+    "business_name": "Enviro-Master of Tampa",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://enviro-master.com/commercial-cleaning-locations/tampa-florida/",
+    "notes": "Cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0817",
+    "business_name": "Extreme Maids",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://www.extrememaids.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0818",
+    "business_name": "General Facility Care LLC",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://gfctampabay.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0819",
+    "business_name": "Gloss Cleaning",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://glosscleaningtampa.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0820",
+    "business_name": "Green Bee Maids",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://www.greenbeemaids.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0821",
+    "business_name": "Happy Florida Cleaning Services",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "http://www.happyfloridacleaning.com/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0822",
+    "business_name": "Home Clean Heroes of Tampa Bay",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://homecleanheroes.com/tampabay/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Local franchise operator; ownership details require enrichment.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "tampa-0823",
+    "business_name": "InsideOut Cleaning",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Residential",
+    "website": "https://insideoutcleaning.us/",
+    "notes": "House cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "tampa-0824",
+    "business_name": "J&C House Cleaning LLC",
+    "city": "Tampa",
+    "county": "Hillsborough",
+    "state": "FL",
+    "type": "Commercial",
+    "website": "https://jchousecleaning.org/",
+    "notes": "Cleaning service found in the Tampa Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  }
+]

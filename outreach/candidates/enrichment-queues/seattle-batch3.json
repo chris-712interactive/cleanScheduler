@@ -1,0 +1,156 @@
+[
+  {
+    "id": "seattle-0748",
+    "business_name": "Seattle House Cleaners",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.seattlehousecleaners.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0749",
+    "business_name": "Seattle Sparkle \u0421lean, LLC",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://seattlesparkleclean.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0750",
+    "business_name": "Seattle Surface Cleaners",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Commercial",
+    "website": "https://www.seattlesurfacecleaners.com/",
+    "notes": "Cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0751",
+    "business_name": "Shekinah Express cleaning services",
+    "city": "Tacoma",
+    "county": "Pierce",
+    "state": "WA",
+    "type": "Commercial",
+    "website": "https://www.shekinahexpress.com/",
+    "notes": "Shekinah Express cleaning services found in the Tacoma Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0752",
+    "business_name": "Shine Seattle LLC - Airbnb Cleaning and House Cleaning",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "http://www.shineseattle.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0753",
+    "business_name": "Simply Clean",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.seattlesimplyclean.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0754",
+    "business_name": "Susan's Green Cleaning",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.susansgreencleaning.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0755",
+    "business_name": "THA House Cleaning Seattle",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.thacleaning.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0756",
+    "business_name": "The Cleanup Guys",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://cleanupguys.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0757",
+    "business_name": "The Dazzle Cleaning Company",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://dazzlecompany.com/locations/north-seattle-wa",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0758",
+    "business_name": "The Victor Cleaning Services, LLC",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Both",
+    "website": "https://www.thevictorcleanersservices.com/",
+    "notes": "Cleaners found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0759",
+    "business_name": "TOP2BOTTOM JANITORIAL SERVICES LLC",
+    "city": "Tacoma",
+    "county": "Pierce",
+    "state": "WA",
+    "type": "Commercial",
+    "website": "http://top2bottomjanitotial.com/",
+    "notes": "Cleaning service found in the Tacoma Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0760",
+    "business_name": "Vladimir & Olga Cleaning Service",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "https://www.cleaninginseattlevladiolga.com/",
+    "notes": "House cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "seattle-0761",
+    "business_name": "YEMAYA cleaning service",
+    "city": "Seattle",
+    "county": "King",
+    "state": "WA",
+    "type": "Residential",
+    "website": "http://www.yemayahousecleaning.com/",
+    "notes": "YEMAYA cleaning service found in the Seattle Google Maps search area; active listing at research time. Independent/local operator likely; ownership details require enrichment.",
+    "franchise_local_operator": false
+  }
+]

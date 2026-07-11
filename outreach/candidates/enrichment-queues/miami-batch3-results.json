@@ -1,0 +1,90 @@
+[
+  {
+    "id": "miami-0456",
+    "owner_name": "Unknown",
+    "email": "primeservicesmiami@gmail.com",
+    "phone": "+1 (786) 261-9928",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page email and phone listed"
+  },
+  {
+    "id": "miami-0457",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Website compromised; no cleaning business contact info"
+  },
+  {
+    "id": "miami-0458",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(305) 699-2952",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "FAQ lists phone; app booking and WhatsApp chat"
+  },
+  {
+    "id": "miami-0459",
+    "owner_name": "Unknown",
+    "email": "info@sanitizedplace.com",
+    "phone": "(305) 571-1800",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Homepage footer email and phone listed"
+  },
+  {
+    "id": "miami-0460",
+    "owner_name": "Micaela",
+    "email": "",
+    "phone": "(786) 780-7039",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "About page names founder Micaela; phone on service area page"
+  },
+  {
+    "id": "miami-0461",
+    "owner_name": "Unknown",
+    "email": "sparklymaidmiami@gmail.com",
+    "phone": "+1 (305) 990-1669",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page email and phone listed"
+  },
+  {
+    "id": "miami-0462",
+    "owner_name": "Unknown",
+    "email": "support@squeakycleansquad.com",
+    "phone": "+1 (305) 419-0987",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Footer contact section email and phone listed"
+  },
+  {
+    "id": "miami-0463",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Square checkout cart only; no public email or phone"
+  },
+  {
+    "id": "miami-0464",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(305) 575-2776",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Homepage phone and estimate form; mom-and-son team unnamed"
+  },
+  {
+    "id": "miami-0465",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "+1 (954) 250-4962",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Service page phone listed; contact form only"
+  },
+  {
+    "id": "miami-0466",
+    "owner_name": "Unknown",
+    "email": "info@wizcleaners.com",
+    "phone": "(305) 874-0260",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Contact page email and phone in footer"
+  }
+]

@@ -1,0 +1,189 @@
+[
+  {
+    "id": "dallas-fort-worth-0223",
+    "business_name": "4R Cleaning Company",
+    "city": "Denton",
+    "county": "Denton",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://4rcleaning.com/",
+    "notes": "Local residential and commercial cleaner serving Denton County.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0224",
+    "business_name": "Absolutely Better Cleaning",
+    "city": "Plano",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.absolutelybettercleaning.com/",
+    "notes": "Local company serving Plano, Frisco and Prosper.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0225",
+    "business_name": "Back II Back Commercial Cleaning Service LLC",
+    "city": "Waxahachie",
+    "county": "Ellis",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://backiibackcommercialcleaningservice.com/",
+    "notes": "Woman-owned, family-operated North Texas cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0226",
+    "business_name": "Brenda's Cleaning",
+    "city": "Fort Worth",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://brendas-cleaning.com/",
+    "notes": "Family-run residential cleaning company serving Fort Worth.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0227",
+    "business_name": "Brite Janitorial",
+    "city": "Fort Worth",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://britejanitorial.com/",
+    "notes": "Locally rooted family-owned Fort Worth janitorial company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0228",
+    "business_name": "Casandra's Cleaning",
+    "city": "Arlington",
+    "county": "Tarrant",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://casandrascleaning.com/",
+    "notes": "Local residential and commercial cleaner serving Arlington and west DFW.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0229",
+    "business_name": "Cowboys Cleaning",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://cowboyscleaning.com/",
+    "notes": "Local DFW cleaner with direct owner contact listed publicly.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0230",
+    "business_name": "D&D Cleaning Services LLC",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://ddllc.info/d-home-page",
+    "notes": "Owner-operated Dallas cleaning company led by Lady Dra.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0231",
+    "business_name": "Dallas Cleaning LLC",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.dallascleaning.net/",
+    "notes": "Independent Dallas office and maid cleaning company founded in 2001.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0232",
+    "business_name": "Dallas Housekeeping Co.",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://dallashousekeepingco.com/",
+    "notes": "Family-owned Dallas home and business cleaning service.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0233",
+    "business_name": "Dallas Janitorial Services",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://dallasjanitorialservices.com/",
+    "notes": "Locally owned DFW commercial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0234",
+    "business_name": "Dallas Maids",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://dallasmaids.com/",
+    "notes": "Founder-led family-owned Dallas maid service founded in 2004.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0235",
+    "business_name": "Dallas Sunrise Maids",
+    "city": "Plano",
+    "county": "Collin",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://dallassunrisemaids.com/",
+    "notes": "Family-owned Plano-based house-cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0236",
+    "business_name": "DBM Janitorial Services",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://full-service-janitorial.com/",
+    "notes": "Locally owned DFW janitorial company operating since 1975.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0237",
+    "business_name": "DFW Janitorial Solutions LLC",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://dfwjanitorialsolutions.com/",
+    "notes": "Locally family-owned commercial cleaner; explicitly not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0238",
+    "business_name": "Dust Bunnies Inc.",
+    "city": "Lewisville",
+    "county": "Denton",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://dustbunniesinc.net/",
+    "notes": "Independent residential cleaning company operating since 1988.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "dallas-fort-worth-0239",
+    "business_name": "Emily's Maids of Dallas",
+    "city": "Dallas",
+    "county": "Dallas",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://emilysmaids.com/",
+    "notes": "Family-owned local maid service operating for over 15 years.",
+    "franchise_local_operator": false
+  }
+]

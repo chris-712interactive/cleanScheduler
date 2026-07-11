@@ -1,0 +1,138 @@
+[
+  {
+    "id": "orlando-0943",
+    "owner_name": "Unknown",
+    "email": "info@amazingsquad.org",
+    "phone": "(407) 653-0680",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Women-owned local operator; email and phone in site schema/footer; no owner name on contact/about"
+  },
+  {
+    "id": "orlando-0944",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(407) 205-2769",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone and Winter Park address on contact page; email contact form only, no public email"
+  },
+  {
+    "id": "orlando-0945",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(689) 600-1404",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Orlando phone on homepage; estimate form only, no public email in footer"
+  },
+  {
+    "id": "orlando-0946",
+    "owner_name": "Brunson",
+    "email": "support@breathemaids.com",
+    "phone": "(407) 974-7926",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Brunson Sayes on Orlando about page; support email and phone in footer/schema"
+  },
+  {
+    "id": "orlando-0947",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(321) 240-9629",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone in site schema; online estimate booking, no public email on contact/footer"
+  },
+  {
+    "id": "orlando-0948",
+    "owner_name": "Unknown",
+    "email": "CleanexCleaningServicesLLC@gmail.com",
+    "phone": "(321) 977-9404",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage footer/contact section"
+  },
+  {
+    "id": "orlando-0949",
+    "owner_name": "Shelley",
+    "email": "info@covenantcleaningorlando.com",
+    "phone": "(407) 282-2250",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Owner Shelley named on about page; email and phone on contact page"
+  },
+  {
+    "id": "orlando-0950",
+    "owner_name": "Unknown",
+    "email": "info@deanofcleanfl.com",
+    "phone": "(407) 743-7672",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in site schema; contact form on homepage"
+  },
+  {
+    "id": "orlando-0951",
+    "owner_name": "Edna",
+    "email": "edna@ednacleaning.com",
+    "phone": "(321) 352-4466",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Edna named on site/testimonials; email in schema; Orlando tel link on homepage"
+  },
+  {
+    "id": "orlando-0952",
+    "owner_name": "Andrew",
+    "email": "",
+    "phone": "(321) 340-2924",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Local owner Andrew Martin on Orlando location page; phone in header, quote form only"
+  },
+  {
+    "id": "orlando-0954",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(407) 613-2077",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Orlando phone in header/footer; online booking only, no public email"
+  },
+  {
+    "id": "orlando-0955",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Site returned 503 Service Unavailable; no contact info reachable on contact/about/footer"
+  },
+  {
+    "id": "orlando-0956",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(407) 280-2288",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone in footer; quote request form, no public email"
+  },
+  {
+    "id": "orlando-0957",
+    "owner_name": "Richard",
+    "email": "Richardb@icsoforlando.com",
+    "phone": "(407) 810-2026",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Family-owned; Richard Branche on about/testimonials; owner email and phone on contact page"
+  },
+  {
+    "id": "orlando-0958",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(407) 794-7471",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Local Maid Brigade franchise; phone on location contact; estimate form, no public email"
+  },
+  {
+    "id": "orlando-0959",
+    "owner_name": "Unknown",
+    "email": "info@maidtocleanorlando.com",
+    "phone": "(407) 437-2214",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page footer"
+  },
+  {
+    "id": "orlando-0960",
+    "owner_name": "Unknown",
+    "email": "eastorlando.fl@maidpro.com",
+    "phone": "(407) 767-5758",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Orlando East/Lake Nona franchise; email and phone on MaidPro service-areas footer"
+  }
+]

@@ -1,0 +1,189 @@
+[
+  {
+    "id": "atlanta-0344",
+    "business_name": "Cleaning Maxx",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://cleaningmaxx.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0345",
+    "business_name": "Diva's Care Cleaning Service",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://www.divascarecleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0346",
+    "business_name": "DJO Home Cleaning-Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.djohomecleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0347",
+    "business_name": "Eleganza Cleaners",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "https://eleganzaclean.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0348",
+    "business_name": "Eliteness Cleaning Maid Service",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.elitenesscleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0349",
+    "business_name": "FYC Cleaning Services",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "http://www.fyccleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0350",
+    "business_name": "Happy Clean Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://happycleanatlanta.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0351",
+    "business_name": "Immaculate Cleans - Metro Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://immaculatecleans.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0352",
+    "business_name": "JP Taurus Cleaning Services",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "https://jptauruscleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0353",
+    "business_name": "Jr Cleaning Services ATL",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Both",
+    "website": "http://jrcleaningatlanta.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0354",
+    "business_name": "M.A.P. Maids",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://mapmaidsofatlanta.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0355",
+    "business_name": "Maid Kept",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://maidkept.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0356",
+    "business_name": "Maid to Glow",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.maidtoglow.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0357",
+    "business_name": "MaidPro Buckhead",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/buckhead",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "atlanta-0358",
+    "business_name": "MaidPro East Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/east-atlanta/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "atlanta-0359",
+    "business_name": "Man Maid Cleaning",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "http://manmaidcleaning.com/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "atlanta-0360",
+    "business_name": "Modern Maids of Atlanta",
+    "city": "Atlanta",
+    "county": "Fulton",
+    "state": "GA",
+    "type": "Residential",
+    "website": "https://www.modern-maids.com/atlanta-maid-service/",
+    "notes": "Active local Google Maps listing; website included when publicly listed.",
+    "franchise_local_operator": false
+  }
+]

@@ -1,0 +1,189 @@
+[
+  {
+    "id": "chicago-0173",
+    "business_name": "Abay Cleaning Service",
+    "city": "Wheaton",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://abaycleaningservice.com/",
+    "notes": "Family-owned and locally operated Wheaton commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0174",
+    "business_name": "Advanced Cleaning Systems",
+    "city": "East Dundee",
+    "county": "Kane",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://advancedcleaningsystems.com/",
+    "notes": "Local family-owned janitorial company operating since 1973.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0175",
+    "business_name": "Agnes Cleaning Service",
+    "city": "Grayslake",
+    "county": "Lake",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://agneshousecleaning.com/",
+    "notes": "Family-owned north-suburban home and office cleaner operating since 1990.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0176",
+    "business_name": "Agnes Housekeeping",
+    "city": "Schaumburg",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://agneshousekeeping.com/",
+    "notes": "Local house-cleaning service for Schaumburg and nearby suburbs.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0177",
+    "business_name": "AP Janitorial",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://apjanitorial.com/",
+    "notes": "Local Chicago janitorial business with roots dating to 1985.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0178",
+    "business_name": "APN Cleaning Service",
+    "city": "Naperville",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://www.apncleaningservice.com/",
+    "notes": "Independent local family-owned company established in 1993.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0179",
+    "business_name": "Bee Line Support",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://www.beelinesupport.com/",
+    "notes": "Privately held, certified woman-owned Chicago commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0180",
+    "business_name": "Best Day Housecleaning",
+    "city": "Aurora",
+    "county": "Kane",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://www.bestdayhousecleaning.com/",
+    "notes": "Locally owned, woman-owned Aurora house-cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0181",
+    "business_name": "Casita Clean",
+    "city": "Joliet",
+    "county": "Will",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://casitaclean.com/",
+    "notes": "Family-run house-cleaning company based in Joliet.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0182",
+    "business_name": "Chicago Cleaning Services",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://chicagocleaningservices.com/",
+    "notes": "Locally owned and operated; explicitly identifies itself as non-franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0183",
+    "business_name": "City Wide Jani Inc.",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://citywidejani.com/",
+    "notes": "Founder-led minority- and woman-owned Chicago commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0185",
+    "business_name": "Clean Right / Office Cleaning Services Inc.",
+    "city": "Wheaton",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://cleanright.us/",
+    "notes": "Family-owned and operated DuPage County janitorial business.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0186",
+    "business_name": "Clove Cleaning",
+    "city": "Batavia",
+    "county": "Kane",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://clovecleaning.com/",
+    "notes": "Local eco-friendly cleaner serving Fox Valley and north suburban communities.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0187",
+    "business_name": "Commercial Cleaning Systems of Chicago",
+    "city": "Gurnee",
+    "county": "Lake",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://www.commercialcleaningsystemsofchicago.com/",
+    "notes": "Family-owned, locally operated and explicitly not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0188",
+    "business_name": "D&V Maintenance Corp",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://www.dvmaintenancecorp.com/",
+    "notes": "Locally rooted, women-owned commercial cleaning business.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0189",
+    "business_name": "D-One Cleaning Services",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://d-onecleaning.org/",
+    "notes": "Locally owned residential and commercial cleaning provider.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0190",
+    "business_name": "DSM Cleaning Solutions",
+    "city": "Romeoville",
+    "county": "Will",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://www.dsmcleaningsolutions.com/",
+    "notes": "Family-owned local company serving Romeoville and Joliet.",
+    "franchise_local_operator": false
+  }
+]

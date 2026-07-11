@@ -1,0 +1,138 @@
+[
+  {
+    "id": "chicago-0173",
+    "owner_name": "Tesfai",
+    "email": "info@abaycleaningservice.com",
+    "phone": "(630) 698-5611",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Tesfai Abay listed as owner on contact page; email and phone in footer"
+  },
+  {
+    "id": "chicago-0174",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(847) 304-0100",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone in header and footer; quote form only, no public email"
+  },
+  {
+    "id": "chicago-0175",
+    "owner_name": "Agnes",
+    "email": "",
+    "phone": "(847) 548-2288",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Agnes named throughout site and testimonials; phone on homepage, contact form only"
+  },
+  {
+    "id": "chicago-0176",
+    "owner_name": "Agnes",
+    "email": "info@agneshousekeeping.com",
+    "phone": "(847) 532-4469",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Agnes named in About section; email and phone in site schema/footer"
+  },
+  {
+    "id": "chicago-0177",
+    "owner_name": "Unknown",
+    "email": "mail@apjanitorial.com",
+    "phone": "(847) 980-0419",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page footer"
+  },
+  {
+    "id": "chicago-0178",
+    "owner_name": "Anna",
+    "email": "anna@apncleaningservice.com",
+    "phone": "(630) 904-4469",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Anna email and Romeoville phone on contact page"
+  },
+  {
+    "id": "chicago-0179",
+    "owner_name": "Unknown",
+    "email": "info@beelinesupport.com",
+    "phone": "(312) 233-5463",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Info email and sales phone on contact page footer"
+  },
+  {
+    "id": "chicago-0180",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(630) 463-9041",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone throughout homepage; quote form only, no public email"
+  },
+  {
+    "id": "chicago-0181",
+    "owner_name": "Unknown",
+    "email": "contact@casitaclean.com",
+    "phone": "(844) 779-7642",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in homepage footer"
+  },
+  {
+    "id": "chicago-0182",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(773) 717-9140",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage; online quote form, no public email"
+  },
+  {
+    "id": "chicago-0183",
+    "owner_name": "Calenthia",
+    "email": "",
+    "phone": "(773) 643-7000",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Calenthia Torrence-Harper named as founder/CEO on About; phone on homepage, quote form only"
+  },
+  {
+    "id": "chicago-0185",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "Website form",
+    "enrichment_notes": "Contact page online form only; no public email or phone on homepage or contact"
+  },
+  {
+    "id": "chicago-0186",
+    "owner_name": "Unknown",
+    "email": "info@clovecleaning.com",
+    "phone": "(630) 686-7226",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage footer"
+  },
+  {
+    "id": "chicago-0187",
+    "owner_name": "Unknown",
+    "email": "mm.cleaninc@gmail.com",
+    "phone": "(630) 202-7343",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone published on homepage and footer"
+  },
+  {
+    "id": "chicago-0188",
+    "owner_name": "Unknown",
+    "email": "viktor@dvmaintenance.com",
+    "phone": "(773) 815-3007",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in contact section footer"
+  },
+  {
+    "id": "chicago-0189",
+    "owner_name": "Unknown",
+    "email": "booking@d-onecleaning.org",
+    "phone": "(773) 814-6877",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Booking email and hotline phone on homepage footer"
+  },
+  {
+    "id": "chicago-0190",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(815) 246-2113",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage and contact; online booking form, no public email"
+  }
+]

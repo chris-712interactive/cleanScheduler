@@ -1,0 +1,189 @@
+[
+  {
+    "id": "houston-0292",
+    "business_name": "Efficient Klean",
+    "city": "Sugar Land",
+    "county": "Fort Bend",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://efficientklean.com/",
+    "notes": "Local residential and commercial cleaner serving southwest Houston.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0293",
+    "business_name": "Family & Friends Cleaning Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://dustfoe.com/",
+    "notes": "Veteran-owned local commercial cleaner; explicitly not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0294",
+    "business_name": "Hello Cleaning Services",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.hellocleaningtx.com/",
+    "notes": "Family-owned Houston residential cleaner serving since 2016.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0295",
+    "business_name": "Houston Commercial Cleaning",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.houstoncommercialcleaning.com/",
+    "notes": "Woman-owned and locally operated commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0296",
+    "business_name": "Houston's #1 Cleaning Specialist LLC",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://h1cs.com/",
+    "notes": "Founder-led company established by Maria Hernandez.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0297",
+    "business_name": "JMS of Houston LLC",
+    "city": "Magnolia",
+    "county": "Montgomery",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.jmsofhouston.com/",
+    "notes": "Family-owned janitorial company led by Aaron Chadwick.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0298",
+    "business_name": "JVS Home Cleaning",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://jvshomecleaning.com/",
+    "notes": "Locally owned Houston house-cleaning company established in 2020.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0299",
+    "business_name": "Katy Cleaning Services",
+    "city": "Katy",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.katycleaning.com/",
+    "notes": "Local family-owned Katy cleaner; explicitly not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0300",
+    "business_name": "LM Commercial Cleaning",
+    "city": "Katy",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Commercial",
+    "website": "https://www.lmcommercialcleaning.com/",
+    "notes": "Katy-based commercial cleaner serving Sugar Land and Pearland.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0301",
+    "business_name": "Maid U Shine",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.maidushine.com/",
+    "notes": "Family-owned local residential and commercial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0302",
+    "business_name": "MaidPro Houston Central",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/houston-central",
+    "notes": "Locally owned franchise operated by Sumont Sarma.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "houston-0303",
+    "business_name": "MaidPro Katy & Cypress",
+    "city": "Katy",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.maidpro.com/katy",
+    "notes": "Locally owned and operated MaidPro franchise.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "houston-0304",
+    "business_name": "MaidPro League City",
+    "city": "Friendswood",
+    "county": "Galveston",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://www.maidpro.com/league-city",
+    "notes": "Locally operated franchise serving League City and Pearland.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "houston-0305",
+    "business_name": "MaidPro Northeast Houston",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://www.maidpro.com/northeast-houston",
+    "notes": "Locally owned franchise operated by David and Mayra Meneses.",
+    "franchise_local_operator": true
+  },
+  {
+    "id": "houston-0306",
+    "business_name": "Maids & Moore",
+    "city": "The Woodlands",
+    "county": "Montgomery",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://maidsandmoore.com/",
+    "notes": "Long-standing residential cleaner serving The Woodlands and Houston.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0307",
+    "business_name": "Maids by Grace",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Residential",
+    "website": "https://maidsbygrace.com/",
+    "notes": "Locally owned eco-conscious Houston cleaner; explicitly not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "houston-0308",
+    "business_name": "Nova Cleaning",
+    "city": "Houston",
+    "county": "Harris",
+    "state": "TX",
+    "type": "Both",
+    "website": "https://houstonnovacleaning.com/",
+    "notes": "Locally owned faith-driven residential and commercial cleaner.",
+    "franchise_local_operator": false
+  }
+]

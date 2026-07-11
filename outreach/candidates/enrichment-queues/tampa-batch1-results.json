@@ -1,0 +1,130 @@
+[
+  {
+    "id": "tampa-0807",
+    "owner_name": "Unknown",
+    "email": "info@00clean.com",
+    "phone": "(813) 778-1649",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in site footer"
+  },
+  {
+    "id": "tampa-0808",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(727) 228-6075",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on quote lander; online booking form, no public email"
+  },
+  {
+    "id": "tampa-0809",
+    "owner_name": "Unknown",
+    "email": "aromaearthcleaning@gmail.com",
+    "phone": "(813) 368-2714",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email in header; phone on contact page"
+  },
+  {
+    "id": "tampa-0810",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(813) 550-1144",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage; quote form available, no email found"
+  },
+  {
+    "id": "tampa-0812",
+    "owner_name": "Chery",
+    "email": "clean@cherymaids.com",
+    "phone": "(813) 368-2714",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in site footer; Tampa HQ address listed"
+  },
+  {
+    "id": "tampa-0813",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(727) 940-5873",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone in header; quote form on homepage, no public email"
+  },
+  {
+    "id": "tampa-0814",
+    "owner_name": "Unknown",
+    "email": "info@hellocleanbean.com",
+    "phone": "(872) 221-1559",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in footer for Tampa Bay location"
+  },
+  {
+    "id": "tampa-0815",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(813) 819-0221",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage and contact pages; no public email"
+  },
+  {
+    "id": "tampa-0816",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(813) 491-8175",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Tampa local phone on location page; contact form, no public email"
+  },
+  {
+    "id": "tampa-0818",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain redirects to unrelated HomeClean site; no GFC Tampa contact found"
+  },
+  {
+    "id": "tampa-0819",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(813) 649-5449",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage and contact page; quote form, no email found"
+  },
+  {
+    "id": "tampa-0820",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "Domain parked on GoDaddy; no active business site"
+  },
+  {
+    "id": "tampa-0821",
+    "owner_name": "Unknown",
+    "email": "happyfloridacleaning@gmail.com",
+    "phone": "(813) 606-5950",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Tampa-area phone on homepage"
+  },
+  {
+    "id": "tampa-0822",
+    "owner_name": "Adeola",
+    "email": "tampabay@homecleanheroes.com",
+    "phone": "(813) 295-8440",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on Tampa Bay location page; owner Adeola Shabiyi on About page"
+  },
+  {
+    "id": "tampa-0823",
+    "owner_name": "Unknown",
+    "email": "info@insideoutcleaning.us",
+    "phone": "(813) 544-1133",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and Tampa phone on contact page footer"
+  },
+  {
+    "id": "tampa-0824",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(813) 647-7971",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "WhatsApp contact link in footer; no public email"
+  }
+]

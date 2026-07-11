@@ -1,0 +1,156 @@
+[
+  {
+    "id": "chicago-0209",
+    "business_name": "Neat N Tidy",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://chicagoilhousecleaning.com/",
+    "notes": "Local Greater Chicago house-cleaning company serving numerous suburbs.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0210",
+    "business_name": "Patty's Cleaning Service",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://pattys-cleaning-service.com/",
+    "notes": "Female-led family business founded by two sisters and their mother.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0211",
+    "business_name": "Plainfield Cleaning Services",
+    "city": "Plainfield",
+    "county": "Will",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://plainfieldcleaningservices.com/",
+    "notes": "Locally owned and operated Plainfield cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0212",
+    "business_name": "Priehl Cleaning",
+    "city": "Skokie",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://priehlcleaning.com/",
+    "notes": "Family-owned residential and commercial cleaning service.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0213",
+    "business_name": "Simple Choice Cleaning Services",
+    "city": "Merrillville",
+    "county": "Lake",
+    "state": "IN",
+    "type": "Both",
+    "website": "https://simplechoicecleaning.com/",
+    "notes": "Family-run Northwest Indiana residential and commercial cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0214",
+    "business_name": "SparkMaids LLC",
+    "city": "Aurora",
+    "county": "Kane",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://sparkmaids.com/",
+    "notes": "Local non-franchise house cleaner serving Kane and DuPage counties.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0215",
+    "business_name": "Spotless Home Cleaners of Chicago",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://spotlesshomeclean.com/",
+    "notes": "Family-owned and operated Chicago cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0216",
+    "business_name": "Suzan Cleaning Services",
+    "city": "Evanston",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://suzancleaningservices.com/",
+    "notes": "Family-owned, locally operated Evanston home cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0217",
+    "business_name": "Upstairs Downstairs Cleaning Service",
+    "city": "Arlington Heights",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://www.upstairsdownstairscleaning.com/",
+    "notes": "Woman-owned family-run local company, not a franchise.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0218",
+    "business_name": "V&R Cleaning Services Corp.",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Commercial",
+    "website": "https://vnrcs.com/",
+    "notes": "Independent, locally owned Chicago commercial cleaning company.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0219",
+    "business_name": "Xcellent Cleaning, Inc.",
+    "city": "Naperville",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://www.xcellentcleaningincs.com/",
+    "notes": "Family- and locally owned house and office cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0220",
+    "business_name": "Zenorina's Deluxe Cleaning LLC",
+    "city": "Chicago",
+    "county": "Cook",
+    "state": "IL",
+    "type": "Residential",
+    "website": "https://www.zenorinasdeluxecleaning.com/",
+    "notes": "Family- and minority-owned Chicago residential cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0221",
+    "business_name": "Ziggy's Cleaning Services",
+    "city": "Naperville",
+    "county": "DuPage",
+    "state": "IL",
+    "type": "Both",
+    "website": "https://ziggycleaning.com/",
+    "notes": "Wholly family-owned and operated Naperville cleaner.",
+    "franchise_local_operator": false
+  },
+  {
+    "id": "chicago-0222",
+    "business_name": "Zoe Total Cleaning",
+    "city": "Gary",
+    "county": "Lake",
+    "state": "IN",
+    "type": "Both",
+    "website": "https://www.zoetotalcleaning.com/",
+    "notes": "Gary-based residential and commercial cleaning company.",
+    "franchise_local_operator": false
+  }
+]

@@ -1,0 +1,130 @@
+[
+  {
+    "id": "tampa-0825",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "jan-pro.com/tampabay blocked by Cloudflare; no contact info accessible on site"
+  },
+  {
+    "id": "tampa-0826",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "",
+    "outreach_channel": "None",
+    "enrichment_notes": "cleaningservicejudys.com compromised (gambling redirect); no valid cleaning contact found"
+  },
+  {
+    "id": "tampa-0827",
+    "owner_name": "Kay",
+    "email": "kayscleaningservices.br@gmail.com",
+    "phone": "(813) 725-1831",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Kay referenced on about page; email and phone in footer and JSON-LD"
+  },
+  {
+    "id": "tampa-0828",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(813) 285-4488",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone in header, footer, and contact page; quote form but no public email"
+  },
+  {
+    "id": "tampa-0829",
+    "owner_name": "Unknown",
+    "email": "GetClean@LightningCleaningTampa.com",
+    "phone": "(813) 922-2110",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage and about page"
+  },
+  {
+    "id": "tampa-0830",
+    "owner_name": "Unknown",
+    "email": "linocleanings@gmail.com",
+    "phone": "(656) 224-0404",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in homepage footer; about notes local family-owned team"
+  },
+  {
+    "id": "tampa-0831",
+    "owner_name": "Unknown",
+    "email": "info@luxetampabay.com",
+    "phone": "(941) 677-8673",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in homepage about/footer section"
+  },
+  {
+    "id": "tampa-0832",
+    "owner_name": "Unknown",
+    "email": "office@magnoliacleaningservice.com",
+    "phone": "(813) 213-0288",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Tampa location email and phone in site schema and contact footer"
+  },
+  {
+    "id": "tampa-0833",
+    "owner_name": "Candace",
+    "email": "tampa.fl@maidpro.com",
+    "phone": "(813) 624-3776",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Locally operated by Candace Westlake per homepage; email and phone in footer"
+  },
+  {
+    "id": "tampa-0834",
+    "owner_name": "Unknown",
+    "email": "support@majormaidshomecleaning.com",
+    "phone": "(813) 295-8544",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage contact section"
+  },
+  {
+    "id": "tampa-0835",
+    "owner_name": "Unknown",
+    "email": "info@mastercleanersdecor.com",
+    "phone": "(813) 893-1925",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in homepage header contact icons"
+  },
+  {
+    "id": "tampa-0836",
+    "owner_name": "Unknown",
+    "email": "hello@missclean.com",
+    "phone": "(813) 421-3571",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in homepage JSON-LD contactPoint"
+  },
+  {
+    "id": "tampa-0837",
+    "owner_name": "Nina",
+    "email": "ultimatecstampa@aol.com",
+    "phone": "(813) 804-2241",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Nina's business name; email and phone on homepage header"
+  },
+  {
+    "id": "tampa-0838",
+    "owner_name": "James",
+    "email": "",
+    "phone": "(786) 589-1807",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "James listed as owner on about page; phone in header/footer, no public email"
+  },
+  {
+    "id": "tampa-0839",
+    "owner_name": "Unknown",
+    "email": "Info@royalhivecleaning.com",
+    "phone": "(813) 851-4278",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on Tampa location page contact section"
+  },
+  {
+    "id": "tampa-0841",
+    "owner_name": "Zach",
+    "email": "",
+    "phone": "(888) 808-7751",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Zach and Tyler named as Tampa operators; toll-free phone on location page, book online"
+  }
+]

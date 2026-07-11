@@ -1,0 +1,138 @@
+[
+  {
+    "id": "houston-0275",
+    "owner_name": "Patricia",
+    "email": "contact@9cleaningservices.com",
+    "phone": "(832) 703-7045",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage footer"
+  },
+  {
+    "id": "houston-0276",
+    "owner_name": "Mona",
+    "email": "mona@aacleaningservices.com",
+    "phone": "281-997-0917",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in site footer"
+  },
+  {
+    "id": "houston-0277",
+    "owner_name": "Jose",
+    "email": "abcinfo@a-b-cjanitorial.com",
+    "phone": "(713) 896-7881",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage Contact"
+  },
+  {
+    "id": "houston-0278",
+    "owner_name": "Anabelle",
+    "email": "anabelle@allcleanbyanabelle.com",
+    "phone": "866-887-1995",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Site error; email found via web search"
+  },
+  {
+    "id": "houston-0279",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(281) 712-4929",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on contact page; no public email"
+  },
+  {
+    "id": "houston-0280",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "281-612-7644",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage; contact form available"
+  },
+  {
+    "id": "houston-0281",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(281) 671-4550",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage; no email found"
+  },
+  {
+    "id": "houston-0282",
+    "owner_name": "Unknown",
+    "email": "cnsjanitorial@cnsjanitorial.com",
+    "phone": "(281) 440-3399",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in site footer"
+  },
+  {
+    "id": "houston-0283",
+    "owner_name": "Unknown",
+    "email": "gcastellon@caringtx.com",
+    "phone": "",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email on Houston homepage footer"
+  },
+  {
+    "id": "houston-0284",
+    "owner_name": "Junaid",
+    "email": "",
+    "phone": "(346) 680-5394",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on homepage; quote form only"
+  },
+  {
+    "id": "houston-0285",
+    "owner_name": "Unknown",
+    "email": "claronservices@aol.com",
+    "phone": "713-524-7001",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on homepage Contact"
+  },
+  {
+    "id": "houston-0286",
+    "owner_name": "Unknown",
+    "email": "hello@clearlakemaids.com",
+    "phone": "(346) 500-6270",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "houston-0287",
+    "owner_name": "Unknown",
+    "email": "service@coconutcleaningco.com",
+    "phone": "",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email on Houston contact page"
+  },
+  {
+    "id": "houston-0288",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "(832) 483-5721",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Houston phone on contact page; form"
+  },
+  {
+    "id": "houston-0289",
+    "owner_name": "Elissa",
+    "email": "eefreshcleaningservices@gmail.com",
+    "phone": "832-259-4956",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Owner email and phone on homepage"
+  },
+  {
+    "id": "houston-0290",
+    "owner_name": "Unknown",
+    "email": "Info@ecocleanify.com",
+    "phone": "346-375-8227",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "houston-0291",
+    "owner_name": "Unknown",
+    "email": "support@ecomaids.com",
+    "phone": "(800) 326-6243",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email on ecomaids contact Reach Us"
+  }
+]

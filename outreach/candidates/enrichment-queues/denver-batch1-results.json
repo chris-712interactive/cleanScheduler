@@ -1,0 +1,138 @@
+[
+  {
+    "id": "denver-0900",
+    "owner_name": "Unknown",
+    "email": "",
+    "phone": "303-615-5280",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Phone on contact page; quote form available, no public email"
+  },
+  {
+    "id": "denver-0901",
+    "owner_name": "Chris",
+    "email": "hello@alpinemaids.com",
+    "phone": "(720) 507-6208",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Chris on about-us page; email and phone in footer"
+  },
+  {
+    "id": "denver-0902",
+    "owner_name": "Juan",
+    "email": "juan.urias@americanstarscleaningservice.com",
+    "phone": "720-643-7053",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Owner email and phone on homepage contact section"
+  },
+  {
+    "id": "denver-0903",
+    "owner_name": "Nash",
+    "email": "info@bigleagueclean.com",
+    "phone": "(970) 805-0988",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Co-founder Nash on about page; email and phone on contact page"
+  },
+  {
+    "id": "denver-0904",
+    "owner_name": "Lawrence",
+    "email": "info@bluesprucemaids.com",
+    "phone": "(303) 747-5640",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Lawrence Baker in site schema; email and phone on about page"
+  },
+  {
+    "id": "denver-0905",
+    "owner_name": "Unknown",
+    "email": "info@bluespringcleaning.com",
+    "phone": "(303) 309-4226",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page footer"
+  },
+  {
+    "id": "denver-0906",
+    "owner_name": "Unknown",
+    "email": "hello@broomdenver.com",
+    "phone": "720-295-8551",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone in homepage footer"
+  },
+  {
+    "id": "denver-0907",
+    "owner_name": "Unknown",
+    "email": "hello@broomtheroom.com",
+    "phone": "(720) 599-6259",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on about page"
+  },
+  {
+    "id": "denver-0908",
+    "owner_name": "Unknown",
+    "email": "info@centralparkcleaning.com",
+    "phone": "303-720-6466",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact-us page"
+  },
+  {
+    "id": "denver-0909",
+    "owner_name": "Faizul",
+    "email": "faizuly4@hotmail.com",
+    "phone": "720-400-3598",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "denver-0910",
+    "owner_name": "Unknown",
+    "email": "info@chloescleaningcompany.com",
+    "phone": "(720) 738-4618",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on about page footer"
+  },
+  {
+    "id": "denver-0911",
+    "owner_name": "Unknown",
+    "email": "cleanswipecleaning@gmail.com",
+    "phone": "(720) 238-2809",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page"
+  },
+  {
+    "id": "denver-0912",
+    "owner_name": "Juan",
+    "email": "juanrod@cleaningprosllc.net",
+    "phone": "(720) 232-8733",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Owner email and phone on contact page"
+  },
+  {
+    "id": "denver-0914",
+    "owner_name": "Unknown",
+    "email": "support@cleanzen.com",
+    "phone": "(720) 807-1833",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Support email and Denver phone on location page"
+  },
+  {
+    "id": "denver-0915",
+    "owner_name": "Michelle",
+    "email": "",
+    "phone": "303-730-0077",
+    "outreach_channel": "Phone",
+    "enrichment_notes": "Local manager Michelle Archuleta on location page; pricing phone listed, no public email"
+  },
+  {
+    "id": "denver-0916",
+    "owner_name": "Karina",
+    "email": "crew@crmaids.com",
+    "phone": "720-713-1920",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Founder Karina Cohen on about-us page; email and phone in footer"
+  },
+  {
+    "id": "denver-0917",
+    "owner_name": "Unknown",
+    "email": "hello@dashingmaids.com",
+    "phone": "(720) 924-6513",
+    "outreach_channel": "Email",
+    "enrichment_notes": "Email and phone on contact page footer"
+  }
+]
