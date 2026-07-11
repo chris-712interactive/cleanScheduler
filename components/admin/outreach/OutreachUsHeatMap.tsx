@@ -1,7 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
+import { geoAlbersUsa, geoPath } from 'd3-geo';
+import { feature } from 'topojson-client';
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import type { GeometryCollection, Topology } from 'topojson-specification';
 import statesTopology from 'us-atlas/states-10m.json';
 import {
   OUTREACH_HEAT_METRIC_LABEL,
@@ -26,75 +29,76 @@ type HoverInfo = {
   y: number;
 };
 
-function stateCodeFromGeo(geo: {
-  id?: string | number;
-  properties?: { name?: string };
-}): string | null {
+type StateFeature = Feature<Geometry, { name?: string }> & { id?: string | number };
+
+const STATE_NAME_TO_CODE: Record<string, string> = {
+  Alabama: 'AL',
+  Alaska: 'AK',
+  Arizona: 'AZ',
+  Arkansas: 'AR',
+  California: 'CA',
+  Colorado: 'CO',
+  Connecticut: 'CT',
+  Delaware: 'DE',
+  'District of Columbia': 'DC',
+  Florida: 'FL',
+  Georgia: 'GA',
+  Hawaii: 'HI',
+  Idaho: 'ID',
+  Illinois: 'IL',
+  Indiana: 'IN',
+  Iowa: 'IA',
+  Kansas: 'KS',
+  Kentucky: 'KY',
+  Louisiana: 'LA',
+  Maine: 'ME',
+  Maryland: 'MD',
+  Massachusetts: 'MA',
+  Michigan: 'MI',
+  Minnesota: 'MN',
+  Mississippi: 'MS',
+  Missouri: 'MO',
+  Montana: 'MT',
+  Nebraska: 'NE',
+  Nevada: 'NV',
+  'New Hampshire': 'NH',
+  'New Jersey': 'NJ',
+  'New Mexico': 'NM',
+  'New York': 'NY',
+  'North Carolina': 'NC',
+  'North Dakota': 'ND',
+  Ohio: 'OH',
+  Oklahoma: 'OK',
+  Oregon: 'OR',
+  Pennsylvania: 'PA',
+  'Rhode Island': 'RI',
+  'South Carolina': 'SC',
+  'South Dakota': 'SD',
+  Tennessee: 'TN',
+  Texas: 'TX',
+  Utah: 'UT',
+  Vermont: 'VT',
+  Virginia: 'VA',
+  Washington: 'WA',
+  'West Virginia': 'WV',
+  Wisconsin: 'WI',
+  Wyoming: 'WY',
+  'Puerto Rico': 'PR',
+};
+
+const MAP_WIDTH = 800;
+const MAP_HEIGHT = 500;
+
+function stateCodeFromFeature(geo: StateFeature): string | null {
   const name = geo.properties?.name?.trim();
   if (!name) return null;
-  // Match by full state name from us-atlas
-  const entries: Record<string, string> = {
-    Alabama: 'AL',
-    Alaska: 'AK',
-    Arizona: 'AZ',
-    Arkansas: 'AR',
-    California: 'CA',
-    Colorado: 'CO',
-    Connecticut: 'CT',
-    Delaware: 'DE',
-    'District of Columbia': 'DC',
-    Florida: 'FL',
-    Georgia: 'GA',
-    Hawaii: 'HI',
-    Idaho: 'ID',
-    Illinois: 'IL',
-    Indiana: 'IN',
-    Iowa: 'IA',
-    Kansas: 'KS',
-    Kentucky: 'KY',
-    Louisiana: 'LA',
-    Maine: 'ME',
-    Maryland: 'MD',
-    Massachusetts: 'MA',
-    Michigan: 'MI',
-    Minnesota: 'MN',
-    Mississippi: 'MS',
-    Missouri: 'MO',
-    Montana: 'MT',
-    Nebraska: 'NE',
-    Nevada: 'NV',
-    'New Hampshire': 'NH',
-    'New Jersey': 'NJ',
-    'New Mexico': 'NM',
-    'New York': 'NY',
-    'North Carolina': 'NC',
-    'North Dakota': 'ND',
-    Ohio: 'OH',
-    Oklahoma: 'OK',
-    Oregon: 'OR',
-    Pennsylvania: 'PA',
-    'Rhode Island': 'RI',
-    'South Carolina': 'SC',
-    'South Dakota': 'SD',
-    Tennessee: 'TN',
-    Texas: 'TX',
-    Utah: 'UT',
-    Vermont: 'VT',
-    Virginia: 'VA',
-    Washington: 'WA',
-    'West Virginia': 'WV',
-    Wisconsin: 'WI',
-    Wyoming: 'WY',
-    'Puerto Rico': 'PR',
-  };
-  return entries[name] ?? null;
+  return STATE_NAME_TO_CODE[name] ?? null;
 }
 
 function lerpColor(t: number): string {
-  // Slate muted → brand teal (approx brand primary #0f766e family)
   const clamped = Math.max(0, Math.min(1, t));
-  const from = { r: 226, g: 232, b: 240 }; // slate-200-ish
-  const to = { r: 15, g: 118, b: 110 }; // teal-700-ish
+  const from = { r: 226, g: 232, b: 240 };
+  const to = { r: 15, g: 118, b: 110 };
   const r = Math.round(from.r + (to.r - from.r) * clamped);
   const g = Math.round(from.g + (to.g - from.g) * clamped);
   const b = Math.round(from.b + (to.b - from.b) * clamped);
@@ -108,6 +112,18 @@ function formatMetricValue(row: OutreachStateMetric, metric: OutreachHeatMetric)
   return String(row.sent);
 }
 
+function buildStateFeatures(): StateFeature[] {
+  const topology = statesTopology as unknown as Topology<{
+    states: GeometryCollection<{ name?: string }>;
+  }>;
+  const statesObject = topology.objects.states;
+  const collection = feature(topology, statesObject) as unknown as FeatureCollection<
+    Geometry,
+    { name?: string }
+  >;
+  return collection.features as StateFeature[];
+}
+
 export function OutreachUsHeatMap({
   data,
   title = 'Where we’ve emailed',
@@ -115,6 +131,16 @@ export function OutreachUsHeatMap({
 }: Props) {
   const [metric, setMetric] = useState<OutreachHeatMetric>('sent');
   const [hover, setHover] = useState<HoverInfo | null>(null);
+
+  const stateFeatures = useMemo(() => buildStateFeatures(), []);
+
+  const pathGenerator = useMemo(() => {
+    const projection = geoAlbersUsa().fitSize([MAP_WIDTH, MAP_HEIGHT], {
+      type: 'FeatureCollection',
+      features: stateFeatures,
+    });
+    return geoPath(projection);
+  }, [stateFeatures]);
 
   const byCode = useMemo(() => {
     const map = new Map<string, OutreachStateMetric>();
@@ -171,63 +197,48 @@ export function OutreachUsHeatMap({
       ) : (
         <div className={styles.heatMapBody}>
           <div className={styles.heatMapCanvas}>
-            <ComposableMap
-              projection="geoAlbersUsa"
-              projectionConfig={{ scale: 1000 }}
-              width={800}
-              height={500}
-              style={{ width: '100%', height: 'auto' }}
+            <svg
+              viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+              role="img"
+              aria-label="United States outreach heat map"
+              style={{ width: '100%', height: 'auto', display: 'block' }}
             >
-              <Geographies geography={statesTopology}>
-                {({ geographies }) =>
-                  geographies.map((geo) => {
-                    const code = stateCodeFromGeo(geo);
-                    const row = code ? byCode.get(code) : undefined;
-                    const value = row ? heatValueForMetric(row, metric) : 0;
-                    const intensity = maxValue > 0 ? value / maxValue : 0;
-                    const fill =
-                      row && (row.sent > 0 || row.recipientCount > 0)
-                        ? lerpColor(Math.max(0.12, intensity))
-                        : 'var(--color-surface-muted, #e2e8f0)';
+              {stateFeatures.map((geo) => {
+                const code = stateCodeFromFeature(geo);
+                const row = code ? byCode.get(code) : undefined;
+                const value = row ? heatValueForMetric(row, metric) : 0;
+                const intensity = maxValue > 0 ? value / maxValue : 0;
+                const fill =
+                  row && (row.sent > 0 || row.recipientCount > 0)
+                    ? lerpColor(Math.max(0.12, intensity))
+                    : 'var(--color-surface-muted, #e2e8f0)';
+                const d = pathGenerator(geo) ?? undefined;
+                if (!d) return null;
 
-                    return (
-                      <Geography
-                        key={geo.rsmKey}
-                        geography={geo}
-                        fill={fill}
-                        stroke="var(--color-border, #cbd5e1)"
-                        strokeWidth={0.6}
-                        style={{
-                          default: { outline: 'none' },
-                          hover: { outline: 'none', cursor: row ? 'pointer' : 'default' },
-                          pressed: { outline: 'none' },
-                        }}
-                        onMouseEnter={(event) => {
-                          if (!row) {
-                            setHover(null);
-                            return;
-                          }
-                          setHover({
-                            metric: row,
-                            x: event.clientX,
-                            y: event.clientY,
-                          });
-                        }}
-                        onMouseMove={(event) => {
-                          if (!row) return;
-                          setHover({
-                            metric: row,
-                            x: event.clientX,
-                            y: event.clientY,
-                          });
-                        }}
-                        onMouseLeave={() => setHover(null)}
-                      />
-                    );
-                  })
-                }
-              </Geographies>
-            </ComposableMap>
+                return (
+                  <path
+                    key={String(geo.id ?? geo.properties?.name ?? d)}
+                    d={d}
+                    fill={fill}
+                    stroke="var(--color-border, #cbd5e1)"
+                    strokeWidth={0.6}
+                    style={{ cursor: row ? 'pointer' : 'default' }}
+                    onMouseEnter={(event) => {
+                      if (!row) {
+                        setHover(null);
+                        return;
+                      }
+                      setHover({ metric: row, x: event.clientX, y: event.clientY });
+                    }}
+                    onMouseMove={(event) => {
+                      if (!row) return;
+                      setHover({ metric: row, x: event.clientX, y: event.clientY });
+                    }}
+                    onMouseLeave={() => setHover(null)}
+                  />
+                );
+              })}
+            </svg>
 
             <div className={styles.heatLegend} aria-hidden>
               <span>Low</span>
