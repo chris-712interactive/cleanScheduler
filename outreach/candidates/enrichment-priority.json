@@ -23,9 +23,5 @@
   ],
   "strategy": "Website-first Sun Belt metros; contact-only AI enrichment; Python mail-merge copy",
   "model": "composer-2.5-fast",
-  "next_batch": [
-    "orlando",
-    "seattle",
-    "chicago"
-  ]
+  "next_batch": ["orlando", "seattle", "chicago"]
 }

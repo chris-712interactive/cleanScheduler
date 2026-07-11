@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { OutreachUsHeatMap } from '@/components/admin/outreach/OutreachUsHeatMap';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,6 +16,7 @@ import {
 } from '@/lib/admin/outreachActions';
 import { formatOutreachArea, summarizeOutreachAreas } from '@/lib/admin/outreachArea';
 import { buildOutreachEmailContent } from '@/lib/admin/outreachEmailBody';
+import { aggregateOutreachByState } from '@/lib/admin/outreachGeoMetrics';
 import { refreshOutreachCampaignMetrics } from '@/lib/admin/outreachMetrics';
 import {
   formatOutreachRate,
@@ -106,6 +108,15 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
 
   const { data: recipients } = await recipientQuery;
   const rows = recipients ?? [];
+
+  // Unfiltered geo rows so the heat map is not affected by recipient table filters.
+  const { data: geoRecipients } = await admin
+    .from('platform_outreach_recipients')
+    .select('state, status, delivered_at, opened_at, bounced_at')
+    .eq('campaign_id', id)
+    .limit(10000);
+  const geoAggregate = aggregateOutreachByState(geoRecipients ?? []);
+
   const status = campaign.status as OutreachCampaignStatus;
   const canQueue = status === 'draft';
   const canCancel = status === 'draft' || status === 'queued' || status === 'sending';
@@ -226,6 +237,14 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
       ) : null}
 
       <Stack gap={5}>
+        {geoAggregate.states.length || geoAggregate.unknown ? (
+          <OutreachUsHeatMap
+            data={geoAggregate}
+            title="Campaign geography"
+            description="This campaign only. Toggle Sent, Delivered, Open rate, or Bounce rate to recolor the map."
+          />
+        ) : null}
+
         {areaSummary.length ? (
           <Card title="Areas in this campaign">
             <p className={styles.areaSummary}>

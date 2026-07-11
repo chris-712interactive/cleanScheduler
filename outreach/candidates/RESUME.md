@@ -5,12 +5,14 @@ Saved: **2026-07-11**
 Paused to conserve tokens. Discovery for all Top 20 metros is done; enrichment is partially complete.
 
 ## Status
+
 - Discovery candidates: **980**
 - Metros enriched: **11 / 20**
 - CSV rows so far: **445**
 - Emailable so far: **305**
 
 ## Completed metros
+
 - `atlanta` — 36 rows, 30 emailable — `outreach/atlanta-cleaning-outreach-mailmerge.csv`
 - `chicago` — 44 rows, 31 emailable — `outreach/chicago-cleaning-outreach-mailmerge.csv`
 - `dallas-fort-worth` — 52 rows, 30 emailable — `outreach/dallas-fort-worth-cleaning-outreach-mailmerge.csv`
@@ -36,6 +38,7 @@ Paused to conserve tokens. Discovery for all Top 20 metros is done; enrichment i
 - `los-angeles` — ~80 website-pending candidates
 
 ## How to resume
+
 1. Open `outreach/candidates/RESUME.json` for machine-readable state.
 2. Enrich next metros with **composer-2.5-fast**, ~17 per batch, contact-only.
 3. Write results under `outreach/candidates/enrichment-queues/`.
@@ -43,8 +46,8 @@ Paused to conserve tokens. Discovery for all Top 20 metros is done; enrichment i
 5. Keep excluding SWFL lists + already-enriched candidates.
 
 ## Key files
+
 - `outreach/candidates/us-top20-cleaning-candidates.json` — master candidates + enrichment fields
 - `outreach/candidates/metro-progress.json` — metro tab + per-metro CSV stats
 - `outreach/candidates/enrichment-priority.json` — priority order
 - `outreach/candidates/_exclude-swfl.json` — SWFL exclusion keys
-

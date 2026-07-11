@@ -32,11 +32,7 @@
     "new-york",
     "los-angeles"
   ],
-  "resume_next": [
-    "philadelphia",
-    "san-francisco",
-    "minneapolis"
-  ],
+  "resume_next": ["philadelphia", "san-francisco", "minneapolis"],
   "recommended_next_order": [
     "philadelphia",
     "san-francisco",

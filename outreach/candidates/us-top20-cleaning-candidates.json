@@ -12,12 +12,7 @@
       "outreach/swfl-cleaning-outreach-mailmerge-batch4.csv",
       "outreach/swfl-cleaning-outreach-mailmerge-batch4-candidates.json"
     ],
-    "enrichment_status_values": [
-      "pending",
-      "in_progress",
-      "enriched",
-      "skipped"
-    ],
+    "enrichment_status_values": ["pending", "in_progress", "enriched", "skipped"],
     "created_at": "2026-07-10",
     "updated_at": "2026-07-11",
     "total_candidates": 980,
@@ -66,11 +61,7 @@
         "new-york",
         "los-angeles"
       ],
-      "next_up": [
-        "philadelphia",
-        "san-francisco",
-        "minneapolis"
-      ],
+      "next_up": ["philadelphia", "san-francisco", "minneapolis"],
       "paused_at": "2026-07-11"
     },
     "paused": true,

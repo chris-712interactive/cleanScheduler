@@ -1,6 +1,6 @@
 # Platform outreach (founder cold email)
 
-**Status:** Implemented (v1 + signature polish)  
+**Status:** Implemented (v1 + signature polish + US heat map)  
 **Audience:** Platform admins only (`admin.<apex>`)  
 **Related:** Tenant marketing campaigns remain separate — see `docs/product/email-campaigns.md`.
 
@@ -62,6 +62,15 @@ Only `https://docs.google.com/...` published/export CSV URLs are accepted as the
 Rows missing email/content are skipped at import. Emails already in `platform_outreach_suppressions` import as `skipped`.
 
 Campaign detail shows a compact **Area** column (`City, County, ST`) and an **Areas in this campaign** summary for geographic tracking.
+
+### US heat map
+
+Both the campaign list (`/outreach`) and campaign detail (`/outreach/[id]`) show a state-level US choropleth built from recipient `state` values:
+
+- **List page:** all campaigns combined (“Where we’ve emailed”)
+- **Detail page:** current campaign only (“Campaign geography”)
+
+Use the metric toggle to recolor by **Sent**, **Delivered**, **Open rate**, or **Bounce rate** (open/bounce rates use `opened|bounced / sent`, matching campaign cards). Free-text states are normalized to 2-letter codes (`FL`, `Florida` → `FL`); missing/invalid values appear as “Unknown state” beside the map, not as a polygon. County-level tracking remains in the text area summary.
 
 ## Compliance
 
