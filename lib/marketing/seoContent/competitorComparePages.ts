@@ -319,12 +319,12 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
   {
     slug: 'vs-launch27',
     path: '/compare/vs-launch27',
-    metaTitle: 'Clean Scheduler vs Launch27 for maid services',
+    metaTitle: 'Launch27 alternative for cleaning companies',
     metaDescription:
-      'Compare Clean Scheduler and Launch27 for cleaning businesses. Online booking, pricing, team management, invoicing, and when to choose each platform. 7-day free trial.',
+      'Looking for a Launch27 alternative? Compare Clean Scheduler vs Launch27 for maid services — online booking, pricing, team management, invoicing, and when to switch. 7-day free trial.',
     eyebrow: 'Compare',
-    headline: 'Clean Scheduler vs Launch27',
-    lead: 'Launch27 is a veteran maid-service platform known for website booking forms and automated client communication. Clean Scheduler takes a broader ops-and-finance angle. Here is how they compare for growing cleaning companies.',
+    headline: 'Clean Scheduler — a Launch27 alternative for growing cleaning companies',
+    lead: 'Looking for a Launch27 alternative? Launch27 is a veteran maid-service platform known for website booking forms and automated client communication. Clean Scheduler takes a broader ops-and-finance angle. Here is an honest comparison for growing cleaning companies.',
     comparisonTable: {
       competitorName: 'Launch27',
       lastVerified: PRICING_VERIFIED,
@@ -429,7 +429,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         link: { href: '/pricing', label: 'View Clean Scheduler pricing' },
       },
       {
-        title: 'Switching from Launch27',
+        title: 'Who should switch from Launch27',
         paragraphs: [
           'Import your client list, recreate active recurring rules in Clean Scheduler, and send the next invoice cycle from the new system. If you rely heavily on an embedded booking form, plan a transition period where the form still points to Launch27 until you replicate quoting workflows in Clean Scheduler.',
           'Teams with bookkeepers drowning in Zelle payment screenshots often see immediate ROI from deposit matching — something Launch27 does not offer natively.',
@@ -437,6 +437,11 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       },
     ],
     faq: [
+      {
+        question: 'Is Clean Scheduler a good Launch27 alternative?',
+        answer:
+          'Yes, if you need lower entry pricing, formal quotes for commercial scopes, bookkeeper-friendly AR, and month-end close reports. Launch27 remains the better fit when your growth strategy centers on embeddable website booking forms and card-on-file automation for residential maid services.',
+      },
       {
         question: 'Does Clean Scheduler have a website booking widget like Launch27?',
         answer:
@@ -462,7 +467,8 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       { href: '/compare/vs-zenmaid', label: 'vs ZenMaid' },
       { href: '/compare/vs-jobber', label: 'vs Jobber' },
       { href: '/for/residential-cleaning-companies', label: 'Residential cleaning software' },
-      { href: '/compare/spreadsheets-and-texts', label: 'Spreadsheets vs software' },
+      { href: '/compare/spreadsheets-and-texts', label: 'Replace cleaning spreadsheet software' },
+      { href: '/features/invoicing-and-payments', label: 'Online payments for cleaning companies' },
       { href: '/pricing', label: 'Pricing' },
     ],
     ctaTitle: 'Run your next week of cleans in Clean Scheduler',
