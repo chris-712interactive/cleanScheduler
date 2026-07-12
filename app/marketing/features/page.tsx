@@ -15,7 +15,7 @@ import styles from '@/components/marketing/SeoMarketingPage.module.scss';
 
 const pageTitle = 'Cleaning business software features';
 const pageDescription =
-  'Cleaning scheduling software, online payments, Stripe integration, crew scheduling, mobile field views, and more — built for residential and commercial cleaning companies.';
+  'Cleaning scheduling software, online payments, cleaning company software with Stripe integration, crew scheduling, mobile app for cleaning employees, and more — built for residential and commercial cleaning companies.';
 
 export const metadata: Metadata = buildMarketingPageMetadata({
   path: '/features',

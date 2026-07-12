@@ -15,7 +15,7 @@ import styles from '@/components/marketing/SeoMarketingPage.module.scss';
 
 const pageTitle = 'Compare Clean Scheduler';
 const pageDescription =
-  'Honest comparisons of Clean Scheduler vs Jobber, ZenMaid, Launch27, Housecall Pro, Swept, spreadsheets, and generic field service tools for cleaning businesses.';
+  'Honest comparisons of Clean Scheduler vs Jobber, ZenMaid, Launch27 alternative, Housecall Pro, Swept, spreadsheets, and generic field service tools for cleaning businesses.';
 
 export const metadata: Metadata = buildMarketingPageMetadata({
   path: '/compare',

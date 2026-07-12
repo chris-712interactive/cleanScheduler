@@ -215,9 +215,9 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
   {
     slug: 'customer-portal',
     path: '/help/cleaning-businesses/customer-portal',
-    title: 'Customer portal for cleaning clients',
+    title: 'Client portal for cleaning companies',
     description:
-      'What your cleaning customers see in the portal — upcoming visits, invoices, payments, and reschedule requests (Business plan and above).',
+      'Client portal for cleaning companies — what your customers see: upcoming visits, invoices, payments, and reschedule requests (Business plan and above).',
     sections: [
       {
         title: 'What customers can do',
@@ -245,20 +245,30 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
     ],
     faq: [
       {
+        question: 'Do cleaning companies need a client portal?',
+        answer:
+          'A client portal helps when you field the same questions daily — “When is my next clean?” “What do I owe?” On Business and Pro plans, customers sign in to view visits, pay invoices, and request reschedules without calling the office.',
+      },
+      {
         question: 'Is the customer portal included on Starter?',
         answer:
           'Customer portals require Business or Pro. Starter includes core team workflows without client-facing portal access.',
       },
     ],
     relatedLinks: [
-      { href: '/features/scheduling-and-dispatch', label: 'Scheduling features' },
+      { href: '/features/scheduling-and-dispatch', label: 'Cleaning scheduling software' },
+      { href: '/features/invoicing-and-payments', label: 'Online payments for cleaning companies' },
+      {
+        href: '/features/stripe-integration',
+        label: 'Cleaning company software with Stripe integration',
+      },
       {
         href: '/help/cleaning-businesses/get-paid-zelle-and-cards',
         label: 'Payment methods guide',
       },
       { href: '/pricing', label: 'Compare plans' },
     ],
-    sitemapPriority: 0.65,
+    sitemapPriority: 0.7,
     changeFrequency: 'monthly',
   },
   {
@@ -266,7 +276,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
     path: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
     title: 'How to get commercial cleaning accounts',
     description:
-      'A practical guide to winning janitorial and commercial cleaning contracts — prospecting, RFPs, quoting, and onboarding accounts your office can actually run.',
+      'A practical guide to getting commercial cleaning accounts — prospecting, RFPs, quoting, and onboarding janitorial contracts your office can actually run.',
     sections: [
       {
         title: 'Where commercial cleaning contracts come from',
@@ -338,6 +348,11 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
     ],
     faq: [
       {
+        question: 'How do cleaning companies get commercial cleaning accounts?',
+        answer:
+          'Most companies build a pipeline from property managers, facility contacts, referrals, networking groups, and public RFPs. Have insurance certificates and references ready, quote scopes in writing with line items, and follow up within a few business days after the walk-through.',
+      },
+      {
         question: 'How big are typical commercial cleaning contracts?',
         answer:
           'Small office contracts might be a few hundred dollars per month. Multi-site property management accounts can reach thousands per month. Start with one building or a pilot scope to prove consistency before bidding large portfolios.',
@@ -359,7 +374,14 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
         label: 'Commercial cleaning scheduling software',
       },
       { href: '/features/scheduling-and-dispatch', label: 'Cleaning schedule software' },
-      { href: '/features/stripe-integration', label: 'Stripe integration' },
+      {
+        href: '/features/stripe-integration',
+        label: 'Cleaning company software with Stripe integration',
+      },
+      {
+        href: '/compare/spreadsheets-and-texts',
+        label: 'Replace cleaning spreadsheet software',
+      },
       { href: '/pricing', label: 'Pricing' },
       { href: '/start-trial', label: 'Start free trial' },
     ],
@@ -441,9 +463,9 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
   {
     slug: 'dispatch-vs-scheduling-for-cleaners',
     path: '/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners',
-    title: 'Dispatch vs scheduling for cleaning companies',
+    title: 'Dispatch software for cleaning companies',
     description:
-      'What cleaning businesses actually need from dispatch software — and why recurring route scheduling beats generic field service dispatch for janitorial and maid services.',
+      'Dispatch software for cleaning companies — what owners actually need from crew assignment, route visibility, and schedule changes vs generic field service dispatch tickets.',
     sections: [
       {
         title: 'What cleaning owners mean by “dispatch software”',
@@ -505,10 +527,17 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       },
     ],
     relatedLinks: [
-      { href: '/features/scheduling-and-dispatch', label: 'Scheduling & dispatch features' },
+      {
+        href: '/features/scheduling-and-dispatch',
+        label: 'Dispatch software for cleaning companies',
+      },
       {
         href: '/help/cleaning-businesses/schedule-cleaning-crews',
         label: 'Schedule cleaning crews',
+      },
+      {
+        href: '/features/mobile-scheduling-for-cleaners',
+        label: 'Mobile app for cleaning employees',
       },
       { href: '/compare/vs-jobber', label: 'vs Jobber' },
       { href: '/start-trial', label: 'Start free trial' },
