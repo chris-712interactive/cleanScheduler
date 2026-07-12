@@ -717,6 +717,41 @@ export type Database = {
           },
         ];
       };
+      platform_seo_task_completions: {
+        Row: {
+          task_id: string;
+          completed_at: string;
+          completed_by_user_id: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          task_id: string;
+          completed_at?: string;
+          completed_by_user_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          task_id?: string;
+          completed_at?: string;
+          completed_by_user_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'platform_seo_task_completions_completed_by_user_id_fkey';
+            columns: ['completed_by_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       customer_tenant_links: {
         Row: {
           id: string;
