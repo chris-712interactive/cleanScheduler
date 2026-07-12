@@ -68,6 +68,8 @@ Baseline: ~178 impressions, 2 clicks, most queries on pages 7–10. Re-measure a
 
 ## Post-deploy checklist
 
+Use the **admin SEO checklist** at `admin.<apex>/seo` for checkable tasks with persistence and recurring reminders. The list below is the source of truth for task content; the admin UI mirrors these steps.
+
 1. Rich Results Test on homepage, pricing, one compare page, one feature page, one help guide.
 2. Google Search Console → URL Inspection → request indexing for:
    - `/features` (hub)
@@ -84,6 +86,8 @@ Baseline: ~178 impressions, 2 clicks, most queries on pages 7–10. Re-measure a
    - `/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners`
 3. Confirm www redirect and canonical tags in live HTML.
 4. Monitor target queries over 6–8 weeks.
+
+See `docs/product/platform-seo-tasks.md` for the admin checklist implementation.
 
 ## Adding new SEO pages
 

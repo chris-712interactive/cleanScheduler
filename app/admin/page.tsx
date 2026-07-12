@@ -1,15 +1,22 @@
-import { ArrowUpRight, Building2, CreditCard, Users } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpRight, Building2, CreditCard, Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Grid } from '@/components/layout/Grid';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { loadSeoTaskChecklist } from '@/lib/admin/seoTasks';
 import { getPlatformDashboardStats, formatPlatformMrrLabel } from '@/lib/admin/platformStats';
+import { createAdminClient } from '@/lib/supabase/server';
 import styles from './admin-dashboard.module.scss';
 
 export default async function AdminDashboardPage() {
-  const stats = await getPlatformDashboardStats();
+  const admin = createAdminClient();
+  const [stats, seoChecklist] = await Promise.all([
+    getPlatformDashboardStats(),
+    loadSeoTaskChecklist(admin).catch(() => null),
+  ]);
 
   return (
     <>
@@ -89,6 +96,32 @@ export default async function AdminDashboardPage() {
             </div>
           </Card>
         </Grid>
+
+        {seoChecklist ? (
+          <Card
+            title="SEO tasks"
+            description={
+              seoChecklist.dueCount > 0
+                ? `${seoChecklist.dueCount} due now${seoChecklist.dueAgainCount > 0 ? ` · ${seoChecklist.dueAgainCount} recurring due again` : ''}`
+                : 'All SEO checklist items are complete for now'
+            }
+          >
+            <div className={styles.metric}>
+              <span className={styles.metricValue}>
+                {seoChecklist.completedCount} / {seoChecklist.totalCount}
+              </span>
+              <StatusPill
+                tone={seoChecklist.dueCount > 0 ? 'warning' : 'success'}
+                icon={<Search size={14} />}
+              >
+                {seoChecklist.dueCount > 0 ? 'Action needed' : 'On track'}
+              </StatusPill>
+            </div>
+            <p style={{ marginTop: 'var(--space-3)' }}>
+              <Link href="/seo">Open SEO checklist →</Link>
+            </p>
+          </Card>
+        ) : null}
 
         <Card
           title={stats.activeTenants > 0 ? 'Platform snapshot' : 'Getting started'}
