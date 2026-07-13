@@ -117,6 +117,39 @@
   align-items: center;
 }
 
+.searchForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+  margin-bottom: var(--space-3);
+}
+
+.searchField {
+  flex: 1 1 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: min(100%, 20rem);
+}
+
+.searchActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.searchResults {
+  margin-bottom: var(--space-5);
+}
+
+.searchSummary {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
 .metricStrip {
   display: flex;
   flex-wrap: wrap;
