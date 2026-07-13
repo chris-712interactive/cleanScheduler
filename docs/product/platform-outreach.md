@@ -15,6 +15,7 @@ Import mail-merge contact lists (per-recipient subject + body) from a **CSV uplo
 | Campaign list   | `/outreach`                              |
 | CSV import      | `/outreach/new`                          |
 | Campaign detail | `/outreach/[id]`                         |
+| Contact search  | `/outreach?q=…` (sent contacts only)     |
 | Unsubscribe     | `/api/outreach/unsubscribe?token=…`      |
 | Send cron       | `/api/cron/outreach-send` (every minute) |
 
@@ -28,6 +29,18 @@ Import mail-merge contact lists (per-recipient subject + body) from a **CSV uplo
 4. Cron drains ~40 queued recipients per minute via `processOutreachSendBatch`.
 5. Resend webhooks update engagement; bounces write platform suppressions.
 6. Admin sets per-recipient `response_status` (`replied`, `interested`, `not_interested`, `do_not_contact`).
+
+## Contact search
+
+On `/outreach`, use **Search sent contacts** to find any recipient you have already emailed across all campaigns. Matches partial text in:
+
+- Business name, owner name, email
+- Phone (including digit-only match when the query includes formatting)
+- City, county, state
+
+Only recipients with status `sent`, `delivered`, `bounced`, or `failed` are included. Results link to the parent campaign and open the message preview (`?preview=<recipientId>`).
+
+Implementation: `lib/admin/outreachRecipientSearch.ts`.
 
 ## Draft list UX
 

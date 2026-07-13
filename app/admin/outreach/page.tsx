@@ -5,26 +5,40 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { formatOutreachArea } from '@/lib/admin/outreachArea';
 import {
   formatOutreachRate,
   OUTREACH_CAMPAIGN_STATUS_LABEL,
+  OUTREACH_RECIPIENT_STATUS_LABEL,
   outreachCampaignStatusTone,
+  outreachRecipientStatusTone,
 } from '@/lib/admin/outreachDisplay';
 import { deleteOutreachCampaignAction } from '@/lib/admin/outreachActions';
 import { aggregateOutreachByState } from '@/lib/admin/outreachGeoMetrics';
-import type { OutreachCampaignStatus } from '@/lib/admin/outreachTypes';
+import {
+  parseOutreachSearchQuery,
+  searchOutreachRecipients,
+} from '@/lib/admin/outreachRecipientSearch';
+import type { OutreachCampaignStatus, OutreachRecipientStatus } from '@/lib/admin/outreachTypes';
 import { createAdminClient } from '@/lib/supabase/server';
 import styles from './outreach.module.scss';
 
 export const dynamic = 'force-dynamic';
 
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
 function canDeleteCampaign(status: string): boolean {
   return status === 'draft' || status === 'cancelled' || status === 'failed' || status === 'sent';
 }
 
-export default async function AdminOutreachPage() {
+export default async function AdminOutreachPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const searchQuery = parseOutreachSearchQuery(sp.q);
+
   const admin = createAdminClient();
-  const [{ data: campaigns, error }, { data: geoRecipients }] = await Promise.all([
+  const [{ data: campaigns, error }, { data: geoRecipients }, searchResult] = await Promise.all([
     admin
       .from('platform_outreach_campaigns')
       .select('*')
@@ -34,6 +48,13 @@ export default async function AdminOutreachPage() {
       .from('platform_outreach_recipients')
       .select('state, status, delivered_at, opened_at, bounced_at')
       .limit(10000),
+    searchQuery
+      ? searchOutreachRecipients(admin, searchQuery).catch((searchError) => ({
+          rows: [],
+          truncated: false,
+          error: searchError instanceof Error ? searchError.message : 'Search failed.',
+        }))
+      : Promise.resolve(null),
   ]);
 
   const rows = campaigns ?? [];
@@ -41,6 +62,11 @@ export default async function AdminOutreachPage() {
   const totalOpened = rows.reduce((sum, c) => sum + c.opened_count, 0);
   const totalReplied = rows.reduce((sum, c) => sum + c.replied_count, 0);
   const geoAggregate = aggregateOutreachByState(geoRecipients ?? []);
+  const searchRows = searchResult && 'rows' in searchResult ? searchResult.rows : [];
+  const searchTruncated =
+    searchResult && 'truncated' in searchResult ? searchResult.truncated : false;
+  const searchError =
+    searchResult && 'error' in searchResult ? (searchResult.error as string) : null;
 
   return (
     <>
@@ -53,6 +79,134 @@ export default async function AdminOutreachPage() {
           </Button>
         }
       />
+
+      <Card title="Search sent contacts">
+        <form action="/outreach" method="get" className={styles.searchForm}>
+          <label className={styles.searchField}>
+            <span className={styles.fieldLabel}>Find a contact</span>
+            <input
+              className={styles.input}
+              type="search"
+              name="q"
+              defaultValue={searchQuery}
+              placeholder="Company, owner, email, phone, city, state, county…"
+              autoComplete="off"
+            />
+          </label>
+          <div className={styles.searchActions}>
+            <Button type="submit" variant="primary">
+              Search
+            </Button>
+            {searchQuery ? (
+              <Button variant="secondary" as="a" href="/outreach">
+                Clear
+              </Button>
+            ) : null}
+          </div>
+        </form>
+        <p className={styles.fieldHint}>
+          Searches contacts you have already emailed (sent, delivered, bounced, or failed). Results
+          link to the campaign where you can preview the message and log a response.
+        </p>
+      </Card>
+
+      {searchQuery ? (
+        <div className={styles.searchResults}>
+          {searchError ? (
+            <p className={styles.formError} role="alert">
+              Could not search contacts ({searchError}).
+            </p>
+          ) : !searchRows.length ? (
+            <EmptyState
+              title="No matching contacts"
+              description={`No sent outreach records match “${searchQuery}”. Try a partial company name, email, or city.`}
+            />
+          ) : (
+            <>
+              <p className={styles.searchSummary}>
+                {searchRows.length} match{searchRows.length === 1 ? '' : 'es'}
+                {searchTruncated ? ' (showing first 50 — refine your search for more)' : ''} for “
+                {searchQuery}”
+              </p>
+              <div className={styles.tablePanel}>
+                <div className={styles.tableWrap}>
+                  <table className={styles.directoryTable}>
+                    <thead>
+                      <tr>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Area</th>
+                        <th>Campaign</th>
+                        <th>Status</th>
+                        <th>Sent</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {searchRows.map((row) => {
+                        const recipientStatus = row.status as OutreachRecipientStatus;
+                        return (
+                          <tr key={row.id}>
+                            <td>
+                              <span className={styles.contactName}>
+                                {row.business_name || row.owner_name || '—'}
+                              </span>
+                              {row.owner_name && row.business_name ? (
+                                <span className={styles.mutedBlock}>{row.owner_name}</span>
+                              ) : null}
+                            </td>
+                            <td className={styles.emailCell}>{row.email}</td>
+                            <td className={styles.muted}>{row.phone || '—'}</td>
+                            <td>
+                              {formatOutreachArea({
+                                city: row.city,
+                                county: row.county,
+                                state: row.state,
+                              })}
+                            </td>
+                            <td>
+                              <Link
+                                href={`/outreach/${row.campaign_id}`}
+                                className={styles.campaignLink}
+                              >
+                                {row.campaign?.name ?? 'Campaign'}
+                              </Link>
+                            </td>
+                            <td>
+                              <div className={styles.pillStack}>
+                                <StatusPill tone={outreachRecipientStatusTone(recipientStatus)}>
+                                  {OUTREACH_RECIPIENT_STATUS_LABEL[recipientStatus] ?? row.status}
+                                </StatusPill>
+                                {row.opened_at ? (
+                                  <StatusPill tone="brand">Opened</StatusPill>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className={styles.muted}>
+                              {row.sent_at ? new Date(row.sent_at).toLocaleString() : '—'}
+                            </td>
+                            <td>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                as="a"
+                                href={`/outreach/${row.campaign_id}?preview=${row.id}`}
+                              >
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
 
       <div className={styles.statGrid}>
         <Card title="Campaigns">
