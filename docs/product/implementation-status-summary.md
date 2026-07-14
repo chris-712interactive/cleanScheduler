@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-06-08  
-**Branch:** `feat/bucket-b-phase2` (based on `dev`)  
-**Latest commit:** `d1e8e8a` — migrations 0073–0075 + Bucket B Phase 2 features (roles UI refresh uncommitted locally)
+**Last updated:** 2026-07-14  
+**Branch:** `dev`  
+**Latest polish:** Enterprise UI consistency pass — see `docs/product/enterprise-ui-polish.md`
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
