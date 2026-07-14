@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
 import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -159,25 +161,28 @@ export default async function TenantQuotesPage({
 
         {quotesRes.error ? (
           <Card>
-            <p className={styles.empty} role="alert">
-              Could not load quotes ({quotesRes.error.message}).
-            </p>
+            <Alert>Could not load quotes ({quotesRes.error.message}).</Alert>
           </Card>
         ) : view === 'active' && activeQuotes.length === 0 ? (
           <Card>
-            <p className={styles.empty}>
-              Nothing here yet.{' '}
-              <Link href="/quotes/new" className={styles.inlineLink}>
-                Add your first quote
-              </Link>
-            </p>
+            <EmptyState
+              icon={<FileText size={28} strokeWidth={1.75} />}
+              title="No quotes yet"
+              description="Create a quote to start the scheduling and invoicing workflow."
+              action={
+                <Button as={Link} href="/quotes/new" iconLeft={<Plus size={16} />}>
+                  Add your first quote
+                </Button>
+              }
+            />
           </Card>
         ) : view === 'archived' && archivedQuotes.length === 0 ? (
           <Card>
-            <p className={styles.empty}>
-              No archived quotes yet. Accepted quotes appear here after they are tied to a scheduled
-              visit.
-            </p>
+            <EmptyState
+              icon={<FileText size={28} strokeWidth={1.75} />}
+              title="No archived quotes"
+              description="Accepted quotes appear here after they are tied to a scheduled visit."
+            />
           </Card>
         ) : view === 'archived' ? (
           <Card

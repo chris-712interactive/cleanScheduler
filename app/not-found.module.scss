@@ -1,0 +1,25 @@
+.page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-7);
+}
+
+.eyebrow {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: var(--font-size-sm);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  color: var(--color-text);
+}
+
+.copy {
+  margin: 0;
+  color: var(--color-text-muted);
+}

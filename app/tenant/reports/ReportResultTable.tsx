@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import { fieldCheckStageLabel } from '@/lib/reports/fieldCheckReport';
 import { bankDepositMatchStatusLabel } from '@/lib/reports/bankReconciliationReport';
 import type { ReportRunResult } from '@/lib/reports/runReport';
@@ -28,7 +30,17 @@ export function ReportResultTable({
   showFooter?: boolean;
 }) {
   if (result.kind === 'pro-placeholder') {
-    return <p className={styles.empty}>This report is coming in a future release.</p>;
+    return (
+      <EmptyState
+        title="Available on Pro"
+        description="This report is included with Pro and above. Upgrade your workspace plan to unlock it."
+        action={
+          <Button as={Link} href="/billing" variant="secondary">
+            View workspace billing
+          </Button>
+        }
+      />
+    );
   }
 
   switch (result.kind) {
