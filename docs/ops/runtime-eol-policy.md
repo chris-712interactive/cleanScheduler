@@ -17,12 +17,12 @@ This policy covers runtimes and dependencies used to build, deploy, and operate 
 
 ## Supported versions
 
-| Component  | Supported version          | Source of truth                      |
-| ---------- | -------------------------- | ------------------------------------ |
-| Node.js    | 22.x LTS (`>=22.22.1`)     | `.nvmrc`, `package.json` engines, CI |
-| Next.js    | 16.x (latest stable patch) | `package-lock.json`                  |
-| React      | 19.x                       | `package-lock.json`                  |
-| TypeScript | 6.x (hold TS 7 until eslint API) | `package-lock.json`            |
+| Component  | Supported version                | Source of truth                      |
+| ---------- | -------------------------------- | ------------------------------------ |
+| Node.js    | 22.x LTS (`>=22.22.1`)           | `.nvmrc`, `package.json` engines, CI |
+| Next.js    | 16.x (latest stable patch)       | `package-lock.json`                  |
+| React      | 19.x                             | `package-lock.json`                  |
+| TypeScript | 6.x (hold TS 7 until eslint API) | `package-lock.json`                  |
 
 Production deployments must not run on Node releases past their LTS maintenance end date.
 
