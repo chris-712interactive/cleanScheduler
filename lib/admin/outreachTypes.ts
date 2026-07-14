@@ -1,26 +1,11 @@
 export type OutreachCampaignStatus =
-  | 'draft'
-  | 'queued'
-  | 'sending'
-  | 'sent'
-  | 'cancelled'
-  | 'failed';
+  'draft' | 'queued' | 'sending' | 'sent' | 'cancelled' | 'failed';
 
 export type OutreachRecipientStatus =
-  | 'pending'
-  | 'queued'
-  | 'sent'
-  | 'delivered'
-  | 'bounced'
-  | 'failed'
-  | 'skipped';
+  'pending' | 'queued' | 'sent' | 'delivered' | 'bounced' | 'failed' | 'skipped';
 
 export type OutreachResponseStatus =
-  | 'none'
-  | 'replied'
-  | 'interested'
-  | 'not_interested'
-  | 'do_not_contact';
+  'none' | 'replied' | 'interested' | 'not_interested' | 'do_not_contact';
 
 export const OUTREACH_RESPONSE_STATUSES: OutreachResponseStatus[] = [
   'none',

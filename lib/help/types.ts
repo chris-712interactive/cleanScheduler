@@ -1,9 +1,5 @@
 export type HelpAudience =
-  | 'customers'
-  | 'developers'
-  | 'compliance'
-  | 'cleaning-businesses'
-  | 'general';
+  'customers' | 'developers' | 'compliance' | 'cleaning-businesses' | 'general';
 
 export type HelpBadge = {
   label: string;

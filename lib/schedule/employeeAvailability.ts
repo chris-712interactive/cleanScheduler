@@ -11,10 +11,7 @@ import type { WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
 type Admin = SupabaseClient<Database>;
 
 export type UnavailabilityReason =
-  | 'outside_work_window'
-  | 'time_off'
-  | 'visit_overlap'
-  | 'inactive_member';
+  'outside_work_window' | 'time_off' | 'visit_overlap' | 'inactive_member';
 
 export type EmployeeAvailabilityResult = {
   userId: string;

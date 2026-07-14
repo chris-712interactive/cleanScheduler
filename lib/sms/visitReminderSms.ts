@@ -32,9 +32,7 @@ async function customerPhoneForVisit(
     .maybeSingle();
 
   const identityRaw = data?.customer_identities as
-    | { phone: string | null }
-    | { phone: string | null }[]
-    | null;
+    { phone: string | null } | { phone: string | null }[] | null;
   const identity = Array.isArray(identityRaw) ? identityRaw[0] : identityRaw;
   const phone = (identity?.phone ?? '').trim() || null;
 

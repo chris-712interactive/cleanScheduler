@@ -1,27 +1,34 @@
-# Dev dependencies upgrade (Dependabot group)
+# Dependency upgrades (Dependabot consolidation)
 
-Consolidates [PR #4](https://github.com/chris-712interactive/cleanScheduler/pull/4) after Next 16 / Stripe 22 landed on `dev`.
+Consolidates safe open Dependabot PRs into one branch so lockfile conflicts are avoided and majors can stay deferred.
 
-## Upgraded
+Supersedes Dependabot PRs: #125, #131, #132, #153–#161, #164.
 
-| Package                          | From | To       |
-| -------------------------------- | ---- | -------- |
-| `@types/node`                    | 22.x | 25.x     |
-| `typescript`                     | 5.7  | 6.0      |
-| `vitest`                         | 3.2  | 4.1      |
-| `stylelint`                      | 16.x | 17.x     |
-| `stylelint-config-standard-scss` | 14   | 17 (ESM) |
-| `stylelint-order`                | 6    | 8        |
+## Included
 
-## Deferred
+| Package / group | From (approx.) | To (resolved) | Source PR |
+| --- | --- | --- | --- |
+| `@radix-ui/react-*` (dialog, dropdown, popover, tabs, toast, tooltip, visually-hidden) | patch set on main | latest caret patches | #154–#161 |
+| `next` / `eslint-config-next` | 16.2.6 | 16.2.10 | #132 / #164 |
+| `react` / `react-dom` / `@types/react` | 19.0 / 19.0.7 ranges | 19.2.7 / 19.2.17 | #132 |
+| `pdfkit` | 0.18.0 | 0.19.1 | #131 |
+| `@supabase/ssr` | 0.10.3 | 0.12.x | #125 |
+| `@playwright/test` | 1.60.0 | 1.61.1 | #164 (partial) |
+| `prettier` | 3.8.x | 3.9.5 | #164 (partial) |
+| `sass` | 1.100.0 | 1.101.0 | #164 (partial) |
+| `stylelint` | 17.12.0 | 17.14.0 | #164 (partial) |
+| `vitest` | 4.1.7 | 4.1.10 | #164 (partial) |
+| `actions/checkout` | v6 | v7 | #153 |
 
-- **ESLint 10** — `eslint-plugin-react` / `eslint-plugin-import` still target ESLint 9; kept `eslint@^9.39.4` until `eslint-config-next` ecosystem supports ESLint 10.
+Prettier 3.9 reformatted a small set of source files; no intentional logic changes.
 
-## Config / code changes
+## Deferred (from #164)
 
-- `stylelint.config.cjs` → `stylelint.config.mjs`
-- `types/modern-normalize.d.ts` — TS 6 side-effect import for `modern-normalize`
-- Visually-hidden / sr-only styles: `clip` → `clip-path: inset(50%)`; `word-break: break-word` → `overflow-wrap: break-word`
+| Package | Why hold |
+| --- | --- |
+| **TypeScript 7** | Go-native `tsc` lacks the stable programmatic API that `typescript-eslint` (via `eslint-config-next/typescript`) needs until ~TS 7.1; keep `typescript@^6.0.3`. |
+| **ESLint 10** | Major; ecosystem / Next config still on ESLint 9. Keep `eslint@^9.39.4`. |
+| **`@types/node` 26** | Major types bump; low urgency while Node engine stays on 22 LTS. Keep `^25.9.1`. |
 
 ## Verify
 

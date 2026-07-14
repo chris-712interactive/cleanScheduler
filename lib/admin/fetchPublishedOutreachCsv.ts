@@ -17,8 +17,7 @@ export function isAllowedGoogleSheetDownloadHost(hostname: string): boolean {
 }
 
 export type FetchPublishedOutreachCsvResult =
-  | { ok: true; text: string; resolvedUrl: string }
-  | { ok: false; error: string };
+  { ok: true; text: string; resolvedUrl: string } | { ok: false; error: string };
 
 /**
  * Accept published-to-web CSV links and public export links from Google Sheets.

@@ -1,11 +1,7 @@
 import { serverEnv } from '@/lib/env';
 
 export type SmsPurpose =
-  | 'quote_sent'
-  | 'quote_accepted'
-  | 'quote_declined'
-  | 'visit_reminder'
-  | 'invoice_overdue';
+  'quote_sent' | 'quote_accepted' | 'quote_declined' | 'visit_reminder' | 'invoice_overdue';
 
 export type SmsTemplatePayload =
   | { purpose: 'quote_sent'; tenantName: string; quoteTitle: string; link: string }

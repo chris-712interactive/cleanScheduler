@@ -92,9 +92,7 @@ export default async function CompleteEmployeeInvitePage({ searchParams }: PageP
   }
 
   const tenantsRaw = invite.tenants as
-    | { name: string; slug: string }
-    | { name: string; slug: string }[]
-    | null;
+    { name: string; slug: string } | { name: string; slug: string }[] | null;
   const tenantRow = Array.isArray(tenantsRaw) ? tenantsRaw[0] : tenantsRaw;
   const tenantName = tenantRow?.name ?? 'Your team';
   const inviteEmail = invite.email_normalized;

@@ -4,13 +4,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import styles from './PortalRouteLoading.module.scss';
 
 export type PortalRouteLoadingVariant =
-  | 'dashboard'
-  | 'quotes'
-  | 'schedule'
-  | 'customers'
-  | 'default'
-  | 'board'
-  | 'table';
+  'dashboard' | 'quotes' | 'schedule' | 'customers' | 'default' | 'board' | 'table';
 
 function resolveVariant(
   variant: PortalRouteLoadingVariant,

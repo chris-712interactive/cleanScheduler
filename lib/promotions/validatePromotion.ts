@@ -6,8 +6,7 @@ import type { TenantPromotionRow } from '@/lib/promotions/promotionTypes';
 type Admin = SupabaseClient<Database>;
 
 export type ValidatePromotionResult =
-  | { ok: true; promotion: TenantPromotionRow }
-  | { ok: false; error: string };
+  { ok: true; promotion: TenantPromotionRow } | { ok: false; error: string };
 
 function isWithinDateWindow(promotion: TenantPromotionRow, now: Date): boolean {
   if (promotion.valid_from) {

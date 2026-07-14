@@ -8,10 +8,7 @@ export const MANUAL_IMPORT_ACCESS_TOKEN = 'manual-import';
 export const REVOKED_ACCESS_TOKEN = 'revoked';
 
 export type RevokePlaidBankLinkReason =
-  | 'tenant_disconnected'
-  | 'subscription_canceled'
-  | 'workspace_purged'
-  | 'trial_expired';
+  'tenant_disconnected' | 'subscription_canceled' | 'workspace_purged' | 'trial_expired';
 
 export interface RevokePlaidBankLinkResult {
   found: boolean;

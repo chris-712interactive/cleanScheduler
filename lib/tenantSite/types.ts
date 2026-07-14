@@ -3,13 +3,7 @@ import type { SeoContentLink, SeoPageSection } from '@/lib/marketing/seoContent/
 import type { TenantSiteColorScheme, TenantSiteTemplate } from '@/lib/tenantSite/siteTheme';
 
 export type TenantMarketingPageType =
-  | 'home'
-  | 'services'
-  | 'about'
-  | 'contact'
-  | 'faq'
-  | 'service_area'
-  | 'custom';
+  'home' | 'services' | 'about' | 'contact' | 'faq' | 'service_area' | 'custom';
 
 export type TenantMarketingPageStatus = 'draft' | 'published';
 

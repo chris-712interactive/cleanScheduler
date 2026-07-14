@@ -4,11 +4,7 @@ export type TenantBillingStatus = Database['public']['Enums']['tenant_billing_st
 
 /** How the tenant workspace should be treated for portal access and UX. */
 export type TenantSubscriptionAccess =
-  | 'active'
-  | 'trialing'
-  | 'trial_expired'
-  | 'past_due'
-  | 'suspended';
+  'active' | 'trialing' | 'trial_expired' | 'past_due' | 'suspended';
 
 export interface TenantSubscriptionAccessInput {
   billingStatus: TenantBillingStatus | null | undefined;

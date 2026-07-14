@@ -26,12 +26,7 @@ import styles from './paymentAudits.module.scss';
 export const dynamic = 'force-dynamic';
 
 type FilterKey =
-  | 'all'
-  | 'awaiting_receipt'
-  | 'awaiting_deposit'
-  | 'awaiting_clearance'
-  | 'bounced'
-  | 'complete';
+  'all' | 'awaiting_receipt' | 'awaiting_deposit' | 'awaiting_clearance' | 'bounced' | 'complete';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   if (!value) return undefined;
