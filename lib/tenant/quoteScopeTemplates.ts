@@ -1,8 +1,5 @@
 export type QuoteScopeTemplateId =
-  | 'residential_standard'
-  | 'commercial_office'
-  | 'move_out_deep'
-  | 'custom';
+  'residential_standard' | 'commercial_office' | 'move_out_deep' | 'custom';
 
 export interface QuoteScopeTemplate {
   id: QuoteScopeTemplateId;

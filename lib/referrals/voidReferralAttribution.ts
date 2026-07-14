@@ -5,8 +5,7 @@ import { clawbackReferralRewardEvents } from '@/lib/referrals/clawbackReferralRe
 type Admin = SupabaseClient<Database>;
 
 export type VoidReferralAttributionResult =
-  | { ok: true; clawbackCents: number }
-  | { ok: false; error: string };
+  { ok: true; clawbackCents: number } | { ok: false; error: string };
 
 export async function voidReferralAttribution(
   admin: Admin,

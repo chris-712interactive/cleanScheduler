@@ -1,11 +1,7 @@
 export type SeoTaskCadence = 'once' | 'weekly' | 'monthly' | 'quarterly';
 
 export type SeoTaskCategoryId =
-  | 'near-win-pages'
-  | 'post-deploy'
-  | 'gsc-indexing'
-  | 'ongoing-monitoring'
-  | 'content-publishing';
+  'near-win-pages' | 'post-deploy' | 'gsc-indexing' | 'ongoing-monitoring' | 'content-publishing';
 
 export type SeoTaskDefinition = {
   id: string;

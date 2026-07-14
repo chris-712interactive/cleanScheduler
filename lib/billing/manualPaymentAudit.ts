@@ -17,11 +17,7 @@ export function isManualAuditPayment(row: {
 }
 
 export type ManualPaymentAuditStage =
-  | 'awaiting_receipt'
-  | 'awaiting_deposit'
-  | 'awaiting_clearance'
-  | 'bounced'
-  | 'complete';
+  'awaiting_receipt' | 'awaiting_deposit' | 'awaiting_clearance' | 'bounced' | 'complete';
 
 export function manualPaymentAuditStage(row: {
   received_at: string | null;

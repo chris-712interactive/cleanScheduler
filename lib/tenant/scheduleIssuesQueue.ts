@@ -10,10 +10,7 @@ import {
 export const SCHEDULE_ISSUES_TAB_HREF = '/schedule?tab=issues';
 
 export type ScheduleIssueKind =
-  | 'needs_staffing'
-  | 'schedule_conflict'
-  | 'unpriced'
-  | 'pending_reschedule';
+  'needs_staffing' | 'schedule_conflict' | 'unpriced' | 'pending_reschedule';
 
 export const SCHEDULE_ISSUE_LABEL: Record<ScheduleIssueKind, string> = {
   needs_staffing: 'No crew assigned',

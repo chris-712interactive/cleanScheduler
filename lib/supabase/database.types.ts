@@ -3429,11 +3429,7 @@ export type Database = {
           body_text: string;
           body_html: string;
           audience_preset:
-            | 'all_marketable'
-            | 'email_preferred'
-            | 'residential'
-            | 'portal_nudge'
-            | 'open_balance';
+            'all_marketable' | 'email_preferred' | 'residential' | 'portal_nudge' | 'open_balance';
           status: 'draft' | 'sending' | 'sent' | 'failed' | 'cancelled';
           recipient_count: number;
           sent_count: number;
@@ -3458,11 +3454,7 @@ export type Database = {
           body_text?: string;
           body_html?: string;
           audience_preset:
-            | 'all_marketable'
-            | 'email_preferred'
-            | 'residential'
-            | 'portal_nudge'
-            | 'open_balance';
+            'all_marketable' | 'email_preferred' | 'residential' | 'portal_nudge' | 'open_balance';
           status?: 'draft' | 'sending' | 'sent' | 'failed' | 'cancelled';
           recipient_count?: number;
           sent_count?: number;
@@ -3487,11 +3479,7 @@ export type Database = {
           body_text?: string;
           body_html?: string;
           audience_preset?:
-            | 'all_marketable'
-            | 'email_preferred'
-            | 'residential'
-            | 'portal_nudge'
-            | 'open_balance';
+            'all_marketable' | 'email_preferred' | 'residential' | 'portal_nudge' | 'open_balance';
           status?: 'draft' | 'sending' | 'sent' | 'failed' | 'cancelled';
           recipient_count?: number;
           sent_count?: number;
@@ -4507,11 +4495,7 @@ export type Database = {
       platform_support_message_side: 'tenant' | 'platform';
       platform_support_ticket_category: 'billing' | 'technical' | 'account' | 'other';
       platform_support_ticket_status:
-        | 'open'
-        | 'waiting_on_tenant'
-        | 'waiting_on_platform'
-        | 'resolved'
-        | 'closed';
+        'open' | 'waiting_on_tenant' | 'waiting_on_platform' | 'resolved' | 'closed';
       quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';
       accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
       scheduled_visit_purpose: 'service' | 'consultation';
@@ -4521,28 +4505,14 @@ export type Database = {
       tenant_marketing_lead_status: 'new' | 'contacted' | 'converted' | 'closed';
       tenant_marketing_page_status: 'draft' | 'published';
       tenant_marketing_page_type:
-        | 'home'
-        | 'services'
-        | 'about'
-        | 'contact'
-        | 'faq'
-        | 'service_area'
-        | 'custom';
+        'home' | 'services' | 'about' | 'contact' | 'faq' | 'service_area' | 'custom';
       tenant_marketing_site_color_scheme:
-        | 'brand'
-        | 'ocean'
-        | 'forest'
-        | 'slate'
-        | 'sunset'
-        | 'plum';
+        'brand' | 'ocean' | 'forest' | 'slate' | 'sunset' | 'plum';
       tenant_marketing_site_template: 'classic' | 'modern' | 'editorial';
       tenant_public_domain_site_mode: 'portal_only' | 'unified';
       tenant_stripe_connect_status: 'not_started' | 'pending' | 'complete' | 'restricted';
       tenant_customer_wallet_transaction_kind:
-        | 'credit_grant'
-        | 'credit_apply'
-        | 'credit_reverse'
-        | 'manual_adjustment';
+        'credit_grant' | 'credit_apply' | 'credit_reverse' | 'manual_adjustment';
       tenant_promotion_redemption_status: 'pending' | 'completed' | 'voided';
       tenant_promotion_type: 'percent' | 'fixed_cents' | 'account_credit';
       tenant_promotion_usage_type: 'single_use' | 'single_use_per_customer' | 'ongoing' | 'limited';

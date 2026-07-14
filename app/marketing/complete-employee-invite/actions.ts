@@ -113,9 +113,7 @@ export async function linkExistingEmployeeInviteAction(
   }
 
   const tenantsEmbed = invite.tenants as
-    | { slug: string; name: string }
-    | { slug: string; name: string }[]
-    | null;
+    { slug: string; name: string } | { slug: string; name: string }[] | null;
   const tenantInfo = Array.isArray(tenantsEmbed) ? tenantsEmbed[0] : tenantsEmbed;
   const tenantSlugEarly = tenantInfo?.slug ?? '';
   const invitedRole = invite.invited_role as TenantRole;
@@ -364,9 +362,7 @@ export async function acceptEmployeeInviteAction(
     .eq('token', token);
 
   const tenantsRaw = invite.tenants as
-    | { slug: string; name: string }
-    | { slug: string; name: string }[]
-    | null;
+    { slug: string; name: string } | { slug: string; name: string }[] | null;
   const tenantRow = Array.isArray(tenantsRaw) ? tenantsRaw[0] : tenantsRaw;
   const tenantSlug = tenantRow?.slug ?? '';
   redirect(tenantPortalLandingPath(tenantSlug, invitedRole));

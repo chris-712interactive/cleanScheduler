@@ -1,11 +1,7 @@
 export type BankConnectionActionResult = { ok: true } | { error: string };
 
 export type BankConnectionSuccessParam =
-  | 'connected'
-  | 'synced'
-  | 'matched'
-  | 'dismissed'
-  | 'disconnected';
+  'connected' | 'synced' | 'matched' | 'dismissed' | 'disconnected';
 
 export function finishBankConnectionAction(
   result: BankConnectionActionResult,
