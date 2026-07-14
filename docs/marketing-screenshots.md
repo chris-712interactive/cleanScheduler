@@ -47,6 +47,7 @@ Outputs to `public/marketing/`:
 | `feature-customers.png`       | `/customers`                    |
 | `feature-reports.png`         | `/billing/payment-audits`       |
 | `feature-portals.png`         | `/billing`                      |
+| `feature-campaigns.png`       | `/campaigns`                    |
 | `feature-schedule-mobile.png` | `/schedule` (mobile viewport)   |
 | `og-home.png`                 | Copy of hero dashboard          |
 
