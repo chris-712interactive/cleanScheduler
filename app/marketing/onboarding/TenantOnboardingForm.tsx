@@ -5,6 +5,11 @@ import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useActionState } from 'react';
 import zxcvbn from 'zxcvbn';
+import { Alert } from '@/components/ui/Alert';
+import { Button } from '@/components/ui/Button';
+import { FormField } from '@/components/ui/FormField';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { fireSlugAvailableConfetti } from '@/lib/ui/slugAvailableConfetti';
 import { createTenantAndOwner, type TenantOnboardingState } from './actions';
 import {
@@ -178,11 +183,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
 
   return (
     <form action={formAction} className={styles.form} onSubmit={handleSubmit} noValidate>
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      {state.error ? <Alert>{state.error}</Alert> : null}
 
       <div className={styles.steps} aria-label="Trial setup progress">
         <span data-active={step === 0 || undefined}>1. Workspace</span>
@@ -203,57 +204,53 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           signup.
         </p>
 
-        <label className={styles.label} htmlFor="business_name">
-          Business name
-        </label>
-        <input
-          id="business_name"
-          name="business_name"
-          className={styles.input}
-          required
-          placeholder="Acme Cleaning Co"
-          value={businessName}
-          onChange={(event) => setBusinessName(event.target.value)}
-        />
+        <FormField label="Business name" htmlFor="business_name">
+          <Input
+            id="business_name"
+            name="business_name"
+            required
+            placeholder="Acme Cleaning Co"
+            value={businessName}
+            onChange={(event) => setBusinessName(event.target.value)}
+          />
+        </FormField>
 
-        <label className={styles.label} htmlFor="workspace_slug">
-          Workspace slug
-        </label>
-        <div className={styles.slugField} data-tone={slugStatus.tone}>
-          <div className={styles.slugRow}>
-            <input
-              id="workspace_slug"
-              name="workspace_slug"
-              className={styles.input}
-              required
-              pattern="^[a-z0-9][a-z0-9\\-]{1,61}[a-z0-9]$"
-              placeholder="acme"
-              value={slug}
-              onChange={(event) => setSlug(event.target.value)}
-              aria-invalid={slugStatus.tone === 'warn' || slugStatus.tone === 'error' || undefined}
-              aria-describedby="workspace_slug_status"
-              aria-busy={slugStatus.tone === 'checking' || undefined}
-            />
-            <span className={styles.slugSuffix}>.{domainSuffix}</span>
+        <FormField label="Workspace slug" htmlFor="workspace_slug">
+          <div className={styles.slugField} data-tone={slugStatus.tone}>
+            <div className={styles.slugRow}>
+              <Input
+                id="workspace_slug"
+                name="workspace_slug"
+                required
+                pattern="^[a-z0-9][a-z0-9\\-]{1,61}[a-z0-9]$"
+                placeholder="acme"
+                value={slug}
+                onChange={(event) => setSlug(event.target.value)}
+                invalid={slugStatus.tone === 'warn' || slugStatus.tone === 'error'}
+                aria-describedby="workspace_slug_status"
+                aria-busy={slugStatus.tone === 'checking' || undefined}
+              />
+              <span className={styles.slugSuffix}>.{domainSuffix}</span>
+            </div>
+            <p
+              id="workspace_slug_status"
+              className={styles.slugStatus}
+              data-tone={slugStatus.tone}
+              aria-live="polite"
+            >
+              {slugStatus.tone === 'checking' ? (
+                <Loader2 size={16} className={styles.slugStatusIcon} aria-hidden="true" />
+              ) : null}
+              {slugStatus.tone === 'ok' ? (
+                <CheckCircle2 size={16} className={styles.slugStatusIcon} aria-hidden="true" />
+              ) : null}
+              {slugStatus.tone === 'warn' || slugStatus.tone === 'error' ? (
+                <XCircle size={16} className={styles.slugStatusIcon} aria-hidden="true" />
+              ) : null}
+              <span>{slugStatus.message}</span>
+            </p>
           </div>
-          <p
-            id="workspace_slug_status"
-            className={styles.slugStatus}
-            data-tone={slugStatus.tone}
-            aria-live="polite"
-          >
-            {slugStatus.tone === 'checking' ? (
-              <Loader2 size={16} className={styles.slugStatusIcon} aria-hidden="true" />
-            ) : null}
-            {slugStatus.tone === 'ok' ? (
-              <CheckCircle2 size={16} className={styles.slugStatusIcon} aria-hidden="true" />
-            ) : null}
-            {slugStatus.tone === 'warn' || slugStatus.tone === 'error' ? (
-              <XCircle size={16} className={styles.slugStatusIcon} aria-hidden="true" />
-            ) : null}
-            <span>{slugStatus.message}</span>
-          </p>
-        </div>
+        </FormField>
       </section>
 
       <section
@@ -273,84 +270,66 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
         </p>
 
         <div className={styles.nameRow}>
-          <div className={styles.nameField}>
-            <label className={styles.label} htmlFor="first_name">
-              First name
-            </label>
-            <input
+          <FormField label="First name" htmlFor="first_name" className={styles.nameField}>
+            <Input
               id="first_name"
               name="first_name"
-              className={styles.input}
               required
               autoComplete="given-name"
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
             />
-          </div>
-          <div className={styles.nameField}>
-            <label className={styles.label} htmlFor="last_name">
-              Last name
-            </label>
-            <input
+          </FormField>
+          <FormField label="Last name" htmlFor="last_name" className={styles.nameField}>
+            <Input
               id="last_name"
               name="last_name"
-              className={styles.input}
               required
               autoComplete="family-name"
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
             />
-          </div>
+          </FormField>
         </div>
 
-        <label className={styles.label} htmlFor="email">
-          Owner email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          className={styles.input}
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
+        <FormField label="Owner email" htmlFor="email">
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </FormField>
 
-        <label className={styles.label} htmlFor="owner_phone">
-          Owner phone <span className={styles.optional}>(optional)</span>
-        </label>
-        <input
-          id="owner_phone"
-          name="owner_phone"
-          type="tel"
-          autoComplete="tel"
-          className={styles.input}
-          placeholder="(555) 555-5555"
-          value={ownerPhone}
-          onChange={(event) => setOwnerPhone(event.target.value)}
-        />
+        <FormField label="Owner phone" htmlFor="owner_phone" optional>
+          <Input
+            id="owner_phone"
+            name="owner_phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="(555) 555-5555"
+            value={ownerPhone}
+            onChange={(event) => setOwnerPhone(event.target.value)}
+          />
+        </FormField>
 
-        <label className={styles.label} htmlFor="business_type">
-          Business type
-        </label>
-        <select
-          id="business_type"
-          name="business_type"
-          className={styles.input}
-          value={businessType}
-          onChange={(event) => setBusinessType(event.target.value)}
-        >
-          <option value="residential">Residential cleaning</option>
-          <option value="commercial">Commercial cleaning</option>
-          <option value="both">Both residential and commercial</option>
-        </select>
+        <FormField label="Business type" htmlFor="business_type">
+          <Select
+            id="business_type"
+            name="business_type"
+            value={businessType}
+            onChange={(event) => setBusinessType(event.target.value)}
+          >
+            <option value="residential">Residential cleaning</option>
+            <option value="commercial">Commercial cleaning</option>
+            <option value="both">Both residential and commercial</option>
+          </Select>
+        </FormField>
 
-        {stepError ? (
-          <p className={styles.stepFieldError} role="alert">
-            {stepError}
-          </p>
-        ) : null}
+        {stepError ? <Alert>{stepError}</Alert> : null}
       </section>
 
       <section
@@ -366,31 +345,27 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           password to sign in to your workspace.
         </p>
 
-        <label className={styles.label} htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          minLength={8}
-          className={[styles.input, passwordsMismatch ? styles.inputInvalid : '']
-            .filter(Boolean)
-            .join(' ')}
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          aria-invalid={passwordsMismatch || passwordTooShort || undefined}
-          aria-describedby={
-            [
-              passwordStrength ? 'password-strength-hint' : null,
-              passwordsMismatch ? 'password_confirm_error' : null,
-            ]
-              .filter(Boolean)
-              .join(' ') || undefined
-          }
-        />
+        <FormField label="Password" htmlFor="password">
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            invalid={passwordsMismatch || passwordTooShort}
+            aria-describedby={
+              [
+                passwordStrength ? 'password-strength-hint' : null,
+                passwordsMismatch ? 'password_confirm-error' : null,
+              ]
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
+          />
+        </FormField>
 
         {passwordStrength ? (
           <div
@@ -434,29 +409,23 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           </div>
         ) : null}
 
-        <label className={styles.label} htmlFor="password_confirm">
-          Confirm password
-        </label>
-        <input
-          id="password_confirm"
-          name="password_confirm"
-          type="password"
-          autoComplete="new-password"
-          minLength={8}
-          className={[styles.input, passwordsMismatch ? styles.inputInvalid : '']
-            .filter(Boolean)
-            .join(' ')}
-          required
-          value={passwordConfirm}
-          onChange={(event) => setPasswordConfirm(event.target.value)}
-          aria-invalid={passwordsMismatch || undefined}
-          aria-describedby={passwordsMismatch ? 'password_confirm_error' : undefined}
-        />
-        {passwordsMismatch ? (
-          <p id="password_confirm_error" className={styles.fieldError} role="alert">
-            Passwords do not match.
-          </p>
-        ) : null}
+        <FormField
+          label="Confirm password"
+          htmlFor="password_confirm"
+          error={passwordsMismatch ? 'Passwords do not match.' : undefined}
+        >
+          <Input
+            id="password_confirm"
+            name="password_confirm"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            required
+            value={passwordConfirm}
+            onChange={(event) => setPasswordConfirm(event.target.value)}
+            invalid={passwordsMismatch}
+          />
+        </FormField>
 
         <label className={styles.checkboxRow}>
           <input
@@ -479,34 +448,25 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           </span>
         </label>
 
-        {stepError ? (
-          <p className={styles.stepFieldError} role="alert">
-            {stepError}
-          </p>
-        ) : null}
+        {stepError ? <Alert>{stepError}</Alert> : null}
       </section>
 
       <div className={styles.actions}>
         {step > 0 ? (
-          <button type="button" className={styles.backButton} onClick={goBack}>
+          <Button type="button" variant="secondary" onClick={goBack}>
             Back
-          </button>
+          </Button>
         ) : (
           <span />
         )}
         {step < 2 ? (
-          <button
-            type="button"
-            className={styles.submit}
-            onClick={goNext}
-            disabled={step === 0 && workspaceStepBlocked}
-          >
+          <Button type="button" onClick={goNext} disabled={step === 0 && workspaceStepBlocked}>
             Continue
-          </button>
+          </Button>
         ) : (
-          <button type="submit" className={styles.submit} disabled={pending || !canSubmit}>
+          <Button type="submit" loading={pending} disabled={!canSubmit}>
             {pending ? 'Creating workspace...' : 'Start free trial'}
-          </button>
+          </Button>
         )}
       </div>
     </form>

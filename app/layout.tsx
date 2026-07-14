@@ -3,6 +3,7 @@ import 'modern-normalize';
 import '@/styles/globals.scss';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { themeScript } from '@/components/theme/themeScript';
+import { ToastProvider } from '@/components/ui/Toast';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { DEFAULT_OG_IMAGE } from '@/lib/marketing/marketingPageMetadata';
 import { PRODUCT_NAME } from '@/lib/legal/site';
@@ -57,7 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
