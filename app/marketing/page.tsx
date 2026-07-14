@@ -86,6 +86,7 @@ export default async function MarketingHome() {
         <SocialProof
           headline={MARKETING_SOCIAL_PROOF.headline}
           highlights={MARKETING_SOCIAL_PROOF.highlights}
+          trustItems={MARKETING_SOCIAL_PROOF.trustItems}
         />
 
         <section className={styles.personasIntro}>

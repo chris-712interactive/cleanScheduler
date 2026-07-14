@@ -1,9 +1,9 @@
 .section {
   padding: var(--space-10) 0 var(--space-12);
-  background: radial-gradient(
-    ellipse at bottom,
-    color-mix(in srgb, var(--color-brand-primary) 10%, transparent) 0%,
-    transparent 60%
+  background: linear-gradient(
+    180deg,
+    var(--color-bg) 0%,
+    color-mix(in srgb, var(--color-brand-primary) 6%, var(--color-bg)) 100%
   );
 }
 

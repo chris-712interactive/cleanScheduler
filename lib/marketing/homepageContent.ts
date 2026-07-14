@@ -123,8 +123,8 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Branded sends with CAN-SPAM footer',
       'Draft, schedule, and performance metrics',
     ],
-    imageSrc: '/marketing/feature-portals.png',
-    imageAlt: 'Clean Scheduler workspace billing hub showing customer AR tools',
+    imageSrc: '/marketing/feature-customers.png',
+    imageAlt: 'Clean Scheduler customer directory used to build campaign audiences',
     tierBadge: { label: 'Business plan', tier: 'business' },
   },
   {
@@ -153,8 +153,8 @@ export const MARKETING_FEATURE_SHOWCASES: MarketingFeatureShowcase[] = [
       'Visit reminders and on-my-way notifications',
       'Review request campaigns alongside email',
     ],
-    imageSrc: '/marketing/feature-portals.png',
-    imageAlt: 'Clean Scheduler customer communication features',
+    imageSrc: '/marketing/feature-schedule-mobile.png',
+    imageAlt: 'Clean Scheduler mobile schedule used for visit reminders and field updates',
     tierBadge: { label: 'Pro plan', tier: 'pro' },
   },
 ];
@@ -295,5 +295,27 @@ export const MARKETING_SOCIAL_PROOF = {
     'Residential & commercial',
     'Month-end close reports',
     'Customer portal on Business+',
+  ],
+  trustItems: [
+    {
+      label: 'Free to evaluate',
+      detail: '7-day trial with no credit card required.',
+      href: '/start-trial',
+    },
+    {
+      label: 'Payments via Stripe',
+      detail: 'Accept cards and ACH through Stripe Connect.',
+      href: '/features/invoicing-and-payments',
+    },
+    {
+      label: 'Security posture',
+      detail: 'Published access-control and information-security policies.',
+      href: '/security',
+    },
+    {
+      label: 'Help when you need it',
+      detail: 'Guides for owners, office staff, and customers.',
+      href: '/help',
+    },
   ],
 };

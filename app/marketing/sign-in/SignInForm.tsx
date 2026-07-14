@@ -3,6 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useActionState } from 'react';
+import { Alert } from '@/components/ui/Alert';
+import { Button } from '@/components/ui/Button';
+import { FormField } from '@/components/ui/FormField';
+import { Input } from '@/components/ui/Input';
 import { signInWithGoogle, signInWithPassword, type SignInState } from './actions';
 import styles from './sign-in.module.scss';
 
@@ -33,43 +37,35 @@ export function SignInForm({
 
   return (
     <div className={styles.wrapper}>
-      {(urlError || activeError) && (
-        <p className={styles.error} role="alert">
-          {activeError ?? urlError}
-        </p>
-      )}
+      {(urlError || activeError) && <Alert>{activeError ?? urlError}</Alert>}
 
       <form className={styles.form} action={passwordAction}>
         <input type="hidden" name="next" value={nextPath} />
         <input type="hidden" name="return_origin" value={returnOrigin} />
-        <label className={styles.label} htmlFor="pw-email">
-          Email
-        </label>
-        <input
-          id="pw-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          defaultValue={defaultEmail ?? ''}
-          placeholder="you@company.com"
-          className={styles.input}
-        />
-        <label className={styles.label} htmlFor="pw-password">
-          Password
-        </label>
-        <input
-          id="pw-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          placeholder="••••••••"
-          className={styles.input}
-        />
-        <button type="submit" className={styles.submit} disabled={passwordPending}>
+        <FormField label="Email" htmlFor="pw-email">
+          <Input
+            id="pw-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            defaultValue={defaultEmail ?? ''}
+            placeholder="you@company.com"
+          />
+        </FormField>
+        <FormField label="Password" htmlFor="pw-password">
+          <Input
+            id="pw-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="••••••••"
+          />
+        </FormField>
+        <Button type="submit" fullWidth loading={passwordPending}>
           {passwordPending ? 'Signing in...' : 'Sign in'}
-        </button>
+        </Button>
         <p className={styles.helpText}>
           <Link href="/forgot-password">Forgot password?</Link>
         </p>
@@ -90,9 +86,9 @@ export function SignInForm({
       <form className={styles.googleForm} action={signInWithGoogle}>
         <input type="hidden" name="next" value={nextPath} />
         <input type="hidden" name="return_origin" value={returnOrigin} />
-        <button type="submit" className={styles.googleButton}>
+        <Button type="submit" variant="secondary" fullWidth>
           Continue with Google
-        </button>
+        </Button>
       </form>
     </div>
   );

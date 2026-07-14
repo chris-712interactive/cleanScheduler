@@ -1,11 +1,20 @@
-// Typography tokens - font stacks, scale, weights, line heights. The font
-// stacks here are the system stack as a safe baseline; once we wire web fonts
-// they can be substituted at the theme layer without editing any component
-// SCSS.
+// Typography tokens - font stacks, scale, weights, line heights. Web fonts are
+// wired via next/font in app/layout.tsx as --font-source-sans; the stack below
+// keeps system fallbacks for first paint and offline resilience.
 
 $font-sans:
-  -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, 'Helvetica Neue', arial, 'Noto Sans',
-  sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  var(--font-source-sans),
+  -apple-system,
+  blinkmacsystemfont,
+  'Segoe UI',
+  'Helvetica Neue',
+  arial,
+  'Noto Sans',
+  sans-serif,
+  'Apple Color Emoji',
+  'Segoe UI Emoji',
+  'Segoe UI Symbol',
+  'Noto Color Emoji';
 $font-mono: ui-monospace, sfmono-regular, 'SF Mono', menlo, consolas, monospace;
 
 // Modular scale (1.125 - major second). Sizes are in rem so they scale with

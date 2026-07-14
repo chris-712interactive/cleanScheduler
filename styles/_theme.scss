@@ -39,6 +39,9 @@
   --color-surface-raised: #{c.$brand-bg-light};
   --color-surface-overlay: #{c.$brand-bg-light};
 
+  // Alias used across portals for inset panels / muted rows.
+  --color-surface-muted: #{c.$gray-100-light};
+
   // -- color: text --
   --color-text: #{c.$brand-text-light};
   --color-text-muted: #{c.$brand-text-muted-light};
@@ -49,6 +52,7 @@
   // -- color: borders / dividers --
   --color-border: #{c.$gray-200-light};
   --color-border-strong: #{c.$gray-300-light};
+  --color-border-subtle: #{c.$gray-100-light};
   --color-divider: #{c.$gray-100-light};
 
   // -- color: brand --
@@ -63,6 +67,9 @@
   --color-warning: #{c.$warning-light};
   --color-warning-bg: #fffbeb;
   --color-danger: #{c.$danger-light};
+
+  // Emphasis alias kept for older module styles that used a Tailwind-like scale.
+  --color-danger-600: #{c.$danger-light};
   --color-danger-bg: #fef2f2;
   --color-text-on-danger: #{c.$gray-0-light};
   --color-info: #{c.$info-light};
@@ -93,6 +100,7 @@
   --color-surface: #{c.$brand-surface-dark};
   --color-surface-raised: #{c.$gray-200-dark};
   --color-surface-overlay: #{c.$gray-200-dark};
+  --color-surface-muted: #{c.$gray-25-dark};
 
   // -- color: text --
   --color-text: #{c.$brand-text-dark};
@@ -104,6 +112,7 @@
   // -- color: borders / dividers --
   --color-border: #{c.$gray-300-dark};
   --color-border-strong: #{c.$gray-400-dark};
+  --color-border-subtle: #{c.$gray-200-dark};
   --color-divider: #{c.$gray-200-dark};
 
   // -- color: brand --
@@ -118,6 +127,7 @@
   --color-warning: #{c.$warning-dark};
   --color-warning-bg: #2a1c00;
   --color-danger: #{c.$danger-dark};
+  --color-danger-600: #{c.$danger-dark};
   --color-danger-bg: #2c0a0a;
   --color-text-on-danger: #{c.$gray-0-light};
   --color-info: #{c.$info-dark};

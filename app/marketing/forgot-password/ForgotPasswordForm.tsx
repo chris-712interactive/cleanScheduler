@@ -3,6 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useActionState } from 'react';
+import { Alert } from '@/components/ui/Alert';
+import { Button } from '@/components/ui/Button';
+import { FormField } from '@/components/ui/FormField';
+import { Input } from '@/components/ui/Input';
 import { requestPasswordReset, type ForgotPasswordState } from './actions';
 import styles from '../sign-in/sign-in.module.scss';
 
@@ -19,30 +23,14 @@ export function ForgotPasswordForm() {
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="return_origin" value={returnOrigin} />
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          {state.success}
-        </p>
-      ) : null}
-      <label className={styles.label} htmlFor="forgot-email">
-        <span>Email</span>
-        <input
-          id="forgot-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          className={styles.input}
-        />
-      </label>
-      <button type="submit" className={styles.submit} disabled={pending}>
+      {state.error ? <Alert>{state.error}</Alert> : null}
+      {state.success ? <Alert variant="success">{state.success}</Alert> : null}
+      <FormField label="Email" htmlFor="forgot-email">
+        <Input id="forgot-email" name="email" type="email" autoComplete="email" required />
+      </FormField>
+      <Button type="submit" fullWidth loading={pending}>
         {pending ? 'Sending…' : 'Send reset link'}
-      </button>
+      </Button>
       <p className={styles.helpText}>
         <Link href="/sign-in">Back to sign in</Link>
       </p>

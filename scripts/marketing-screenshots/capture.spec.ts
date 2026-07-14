@@ -47,6 +47,7 @@ const DESKTOP_CAPTURES: CaptureTarget[] = [
     output: 'feature-reports.png',
   },
   { name: 'Billing hub', browserPath: '/billing', output: 'feature-portals.png' },
+  { name: 'Campaigns', browserPath: '/campaigns', output: 'feature-campaigns.png' },
 ];
 
 const MOBILE_CAPTURES: CaptureTarget[] = [

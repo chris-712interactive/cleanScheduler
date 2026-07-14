@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -42,7 +42,7 @@ export function OwnerOnboardingDashboardHero({
       <div className={styles.nextStepHero}>
         <div className={styles.nextStepPrimary}>
           <span className={styles.nextStepMarker} aria-hidden>
-            ○
+            <Circle size={18} strokeWidth={2.25} />
           </span>
           <div className={styles.nextStepCopy}>
             {primary.locked ? (
@@ -69,7 +69,7 @@ export function OwnerOnboardingDashboardHero({
         {secondary ? (
           <div className={styles.nextStepSecondary}>
             <span className={styles.nextStepMarkerMuted} aria-hidden>
-              ○
+              <Circle size={16} strokeWidth={2} />
             </span>
             <div>
               <p className={styles.nextStepSecondaryLabel}>Then</p>

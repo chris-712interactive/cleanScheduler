@@ -24,8 +24,8 @@ export default async function AdminDashboardPage() {
         title="Founder dashboard"
         description="Cross-tenant view of platform health, revenue, and activity."
         actions={
-          <Button variant="secondary" iconRight={<ArrowUpRight size={16} />}>
-            Open status page
+          <Button as={Link} href="/seo" variant="secondary" iconRight={<ArrowUpRight size={16} />}>
+            Open SEO checklist
           </Button>
         }
       />

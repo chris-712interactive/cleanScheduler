@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Check, Circle, Minus } from 'lucide-react';
 import type { OwnerOnboardingChecklist } from '@/lib/tenant/ownerOnboardingChecklist';
 import {
   dismissOwnerChecklistAction,
@@ -9,6 +10,12 @@ import {
   snoozeOwnerChecklistAction,
 } from '@/app/tenant/ownerOnboardingActions';
 import styles from './ownerOnboardingChecklist.module.scss';
+
+function StepMarker({ complete, locked }: { complete: boolean; locked: boolean }) {
+  if (complete) return <Check size={16} strokeWidth={2.25} aria-hidden />;
+  if (locked) return <Minus size={16} strokeWidth={2.25} aria-hidden />;
+  return <Circle size={16} strokeWidth={2.25} aria-hidden />;
+}
 
 export function OwnerOnboardingChecklistView({
   tenantSlug,
@@ -52,7 +59,7 @@ export function OwnerOnboardingChecklistView({
             data-locked={step.locked || undefined}
           >
             <span className={styles.marker} aria-hidden>
-              {step.complete ? '✓' : step.locked ? '—' : '○'}
+              <StepMarker complete={step.complete} locked={Boolean(step.locked)} />
             </span>
             <div className={styles.copy}>
               {step.locked ? (

@@ -1,11 +1,20 @@
 import type { Metadata, Viewport } from 'next';
+import { Source_Sans_3 } from 'next/font/google';
 import 'modern-normalize';
 import '@/styles/globals.scss';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { themeScript } from '@/components/theme/themeScript';
+import { ToastProvider } from '@/components/ui/Toast';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { DEFAULT_OG_IMAGE } from '@/lib/marketing/marketingPageMetadata';
 import { PRODUCT_NAME } from '@/lib/legal/site';
+
+const sourceSans = Source_Sans_3({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-source-sans',
+  weight: ['400', '500', '600', '700'],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicOrigin(null)),
@@ -50,14 +59,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={sourceSans.variable} suppressHydrationWarning>
       <head>
         {/* Pre-hydration theme script - sets data-theme on <html> before
             React mounts so we never paint the wrong theme. */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
