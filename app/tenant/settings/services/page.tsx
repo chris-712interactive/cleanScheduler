@@ -18,13 +18,14 @@ export default async function TenantServicesSettingsPage() {
   const admin = createAdminClient();
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const customTypesEnabled = isFeatureEnabled(tier, 'customServiceTypes');
+  const checklistsEnabled = isFeatureEnabled(tier, 'visitChecklists');
   const entries = await loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true });
 
   return (
     <>
       <PageHeader
         title="Service types & durations"
-        titleHint="Default visit lengths used when auto-scheduling accepted quotes."
+        titleHint="Default visit lengths and crew checklists used when scheduling work."
         backHref="/settings"
         backLabel="Settings"
       />
@@ -41,6 +42,7 @@ export default async function TenantServicesSettingsPage() {
           canEdit={canEdit}
           entries={entries}
           customTypesEnabled={customTypesEnabled}
+          checklistsEnabled={checklistsEnabled}
         />
       </Stack>
     </>

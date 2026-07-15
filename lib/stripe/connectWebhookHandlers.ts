@@ -115,6 +115,17 @@ export async function handleTenantInvoiceCheckoutCompleted(
     }
   }
 
+  const payToken = session.metadata?.pay_token?.trim();
+  if (payToken) {
+    await admin
+      .from('tenant_invoice_pay_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('tenant_id', tenantId)
+      .eq('invoice_id', invoiceId)
+      .eq('token', payToken)
+      .is('used_at', null);
+  }
+
   await afterInvoicePaymentRecorded(admin, { tenantId, invoiceId });
   await sendInvoiceReceiptEmail(admin, {
     tenantId,

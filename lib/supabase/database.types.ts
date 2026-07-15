@@ -2535,6 +2535,7 @@ export type Database = {
           is_active: boolean;
           is_system_default: boolean;
           schedule_role: Database['public']['Enums']['service_template_schedule_role'];
+          checklist_items: Json;
           created_at: string;
           updated_at: string;
         };
@@ -2557,6 +2558,7 @@ export type Database = {
           is_active?: boolean;
           is_system_default?: boolean;
           schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
+          checklist_items?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -2579,6 +2581,7 @@ export type Database = {
           is_active?: boolean;
           is_system_default?: boolean;
           schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
+          checklist_items?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -3092,6 +3095,93 @@ export type Database = {
             columns: ['visit_id'];
             isOneToOne: false;
             referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_visit_checklist_state: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          visit_id: string;
+          items: Json;
+          updated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          visit_id: string;
+          items?: Json;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          visit_id?: string;
+          items?: Json;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_visit_checklist_state_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_visit_checklist_state_visit_id_fkey';
+            columns: ['visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_invoice_pay_tokens: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          invoice_id: string;
+          token: string;
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          invoice_id: string;
+          token: string;
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          invoice_id?: string;
+          token?: string;
+          expires_at?: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_invoice_pay_tokens_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_invoice_pay_tokens_invoice_id_fkey';
+            columns: ['invoice_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_invoices';
             referencedColumns: ['id'];
           },
         ];
@@ -4119,6 +4209,8 @@ export type Database = {
           service_postal_code: string | null;
           status: Database['public']['Enums']['tenant_marketing_lead_status'];
           customer_id: string | null;
+          service_interest: string | null;
+          preferred_time_window: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -4137,6 +4229,8 @@ export type Database = {
           service_postal_code?: string | null;
           status?: Database['public']['Enums']['tenant_marketing_lead_status'];
           customer_id?: string | null;
+          service_interest?: string | null;
+          preferred_time_window?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -4155,6 +4249,8 @@ export type Database = {
           service_postal_code?: string | null;
           status?: Database['public']['Enums']['tenant_marketing_lead_status'];
           customer_id?: string | null;
+          service_interest?: string | null;
+          preferred_time_window?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -27,10 +27,12 @@ describe('entitlements', () => {
     expect(isFeatureEnabled('starter', 'proofOfServicePhotos')).toBe(true);
     expect(isFeatureEnabled('starter', 'emailOnMyWay')).toBe(true);
     expect(isFeatureEnabled('starter', 'emailReviewRequest')).toBe(true);
+    expect(isFeatureEnabled('starter', 'visitChecklists')).toBe(true);
     expect(isFeatureEnabled('starter', 'proofOfServicePortalShare')).toBe(false);
     expect(isFeatureEnabled('trial', 'proofOfServicePhotos')).toBe(true);
     expect(isFeatureEnabled('trial', 'emailOnMyWay')).toBe(true);
     expect(isFeatureEnabled('trial', 'emailReviewRequest')).toBe(true);
+    expect(isFeatureEnabled('trial', 'visitChecklists')).toBe(true);
   });
 
   it('exposes seat limits for starter', () => {

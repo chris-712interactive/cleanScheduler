@@ -13,7 +13,7 @@ import {
   type TenantInvoiceExpectation,
 } from '@/lib/tenant/operationalSettings';
 import { SettingsSaveButton } from './SettingsSaveButton';
-import { updateTenantOperationalSettings } from './actions';
+import { updateTenantOperationalSettings, enableCustomerUpdateEmailsFormAction } from './actions';
 import { operationalSettingsFormInitial } from './operationalSettingsFormState';
 import styles from './operations/operations-settings.module.scss';
 
@@ -463,7 +463,24 @@ export function OperationalSettingsForm({
         </div>
 
         <div>
-          <p className={styles.subsectionTitle}>Visit reminders</p>
+          <p className={styles.subsectionTitle}>Visit reminders &amp; customer updates</p>
+          {!readOnly &&
+          (visitReminderEmailEditable || onMyWayEmailEditable || reviewRequestEmailEditable) ? (
+            <div className={styles.oneClickWrap}>
+              <button
+                type="submit"
+                formAction={enableCustomerUpdateEmailsFormAction}
+                className={styles.oneClickButton}
+                disabled={pending}
+              >
+                Enable customer update emails
+              </button>
+              <p className={styles.technicalNote}>
+                Turns on visit reminders, on-my-way, and review-request emails in one click. Add a
+                review link under Business settings so review emails can send.
+              </p>
+            </div>
+          ) : null}
           <div className={styles.notificationTableWrap}>
             <table className={styles.notificationTable}>
               <thead>

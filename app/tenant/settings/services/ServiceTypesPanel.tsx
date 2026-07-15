@@ -9,6 +9,7 @@ import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 import {
   createCustomServiceTypeAction,
   deleteCustomServiceTypeAction,
+  updateServiceTypeChecklistAction,
   updateServiceTypeDurationAction,
   updateServiceTypeScheduleRoleAction,
   type ServiceTypeActionState,
@@ -17,6 +18,64 @@ import { SCHEDULE_ROLE_LABEL, SCHEDULE_ROLE_OPTIONS } from '@/lib/tenant/schedul
 import styles from './services-settings.module.scss';
 
 const initialState: ServiceTypeActionState = {};
+
+function ChecklistEditor({
+  tenantSlug,
+  entry,
+  canEdit,
+}: {
+  tenantSlug: string;
+  entry: JobTypeCatalogEntry;
+  canEdit: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(
+    updateServiceTypeChecklistAction,
+    initialState,
+  );
+  const defaultValue = (entry.checklist_items ?? []).map((item) => item.label).join('\n');
+
+  if (!canEdit) {
+    if (!(entry.checklist_items ?? []).length) {
+      return <span className={styles.itemMeta}>No checklist</span>;
+    }
+    return (
+      <ul className={styles.checklistReadonly}>
+        {(entry.checklist_items ?? []).map((item) => (
+          <li key={item.id}>{item.label}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <form action={formAction} className={styles.checklistForm}>
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="template_id" value={entry.id} />
+      <textarea
+        className={styles.checklistTextarea}
+        name="checklist_lines"
+        rows={4}
+        defaultValue={defaultValue}
+        placeholder={'One task per line\ne.g. Kitchen counters wiped'}
+        aria-label={`Checklist for ${entry.service_label}`}
+        disabled={pending}
+      />
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+        Save checklist
+      </Button>
+      {state.error ? (
+        <span className={styles.bannerError} role="alert">
+          {state.error}
+        </span>
+      ) : null}
+      {state.success ? (
+        <span className={styles.bannerSuccess} role="status">
+          Saved
+        </span>
+      ) : null}
+    </form>
+  );
+}
 
 function DurationEditor({
   tenantSlug,
@@ -117,11 +176,13 @@ export function ServiceTypesPanel({
   canEdit,
   entries,
   customTypesEnabled,
+  checklistsEnabled = true,
 }: {
   tenantSlug: string;
   canEdit: boolean;
   entries: JobTypeCatalogEntry[];
   customTypesEnabled: boolean;
+  checklistsEnabled?: boolean;
 }) {
   const [createState, createAction, createPending] = useActionState(
     createCustomServiceTypeAction,
@@ -182,6 +243,12 @@ export function ServiceTypesPanel({
                       <span className={styles.editorLabel}>Schedule role</span>
                       <ScheduleRoleEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
                     </div>
+                    {checklistsEnabled ? (
+                      <div className={styles.editorGroup}>
+                        <span className={styles.editorLabel}>Visit checklist</span>
+                        <ChecklistEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+                      </div>
+                    ) : null}
                     {canEdit && customTypesEnabled && !entry.is_system_default ? (
                       <form action={deleteCustomServiceTypeAction}>
                         <input type="hidden" name="tenant_slug" value={tenantSlug} />

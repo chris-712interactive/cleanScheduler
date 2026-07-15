@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapPin, Phone } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
@@ -27,6 +27,7 @@ import {
 } from '@/lib/schedule/visitFieldWork';
 import type { TenantRole } from '@/lib/auth/types';
 import type { VisitProofPhotoRow } from '@/lib/visits/visitProofPhotos';
+import type { VisitChecklistItem } from '@/lib/visits/visitChecklist';
 import type { RelatedRecordsSnapshot } from '@/lib/tenant/relatedRecordsTypes';
 import {
   mergeVisitDetailPatch,
@@ -39,6 +40,7 @@ import { formatCheckInLocationProof } from '@/lib/schedule/checkInLocation';
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import { DeleteVisitButton } from './DeleteVisitButton';
 import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
+import { VisitChecklistPanel } from './VisitChecklistPanel';
 import { VisitScheduleEditPanel } from './VisitScheduleEditPanel';
 import { VisitJobPriceForm } from './VisitJobPriceForm';
 import type { EmployeeOption } from './ScheduleVisitForm';
@@ -104,18 +106,28 @@ export type VisitDetailSnapshot = {
   completionCheckNumber: string | null;
   completionInvoiceId: string | null;
   visitPurpose: 'service' | 'consultation';
+  checklistItems: VisitChecklistItem[];
 };
 
 export function VisitDetailCard({
   initial,
   employeeOptions = [],
   relatedRecords,
+  scrollToFieldActions = false,
 }: {
   initial: VisitDetailSnapshot;
   employeeOptions?: EmployeeOption[];
   relatedRecords?: RelatedRecordsSnapshot | null;
+  scrollToFieldActions?: boolean;
 }) {
   const [visit, setVisit] = useState(initial);
+
+  useEffect(() => {
+    if (!scrollToFieldActions) return;
+    document
+      .getElementById('field-actions')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [scrollToFieldActions]);
 
   const onVisitPatch = useCallback((patch: VisitDetailPatch) => {
     setVisit((current) => mergeVisitDetailPatch(current, patch));
@@ -222,7 +234,11 @@ export function VisitDetailCard({
           ) : null}
 
           {showFieldWork ? (
-            <section className={styles.panel} aria-labelledby="field-actions-heading">
+            <section
+              id="field-actions"
+              className={styles.panel}
+              aria-labelledby="field-actions-heading"
+            >
               <h2 id="field-actions-heading" className={styles.panelTitle}>
                 Field actions
               </h2>
@@ -245,6 +261,15 @@ export function VisitDetailCard({
                 compact
               />
             </section>
+          ) : null}
+
+          {visit.checklistItems.length > 0 ? (
+            <VisitChecklistPanel
+              tenantSlug={visit.tenantSlug}
+              visitId={visit.visitId}
+              items={visit.checklistItems}
+              readOnly={visit.status === 'completed' || visit.status === 'cancelled'}
+            />
           ) : null}
 
           {visit.proofPhotos.length > 0 ? (

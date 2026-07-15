@@ -2,11 +2,27 @@
 
 import Link from 'next/link';
 import { ChevronRight, MapPin, Phone } from 'lucide-react';
-import { VisitStatusPill } from './VisitStatusPill';
 import { formatVisitTimeRange } from './scheduleTimelineUtils';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import type { ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
+
+function fieldStatusLabel(visit: ScheduleVisitVM): string {
+  if (visit.status === 'completed') return 'Done';
+  if (visit.status === 'cancelled') return 'Cancelled';
+  if (visit.checkedInAt) return 'Checked in';
+  return 'Scheduled';
+}
+
+function primaryAction(visit: ScheduleVisitVM): { href: string; label: string } | null {
+  if (visit.status !== 'scheduled') {
+    return { href: `/schedule/${visit.id}`, label: 'Open job' };
+  }
+  if (!visit.checkedInAt) {
+    return { href: `/schedule/${visit.id}?action=checkin`, label: 'Check in' };
+  }
+  return { href: `/schedule/${visit.id}?action=complete`, label: 'Complete' };
+}
 
 export function FieldEmployeeDayJobs({
   visits,
@@ -38,15 +54,28 @@ export function FieldEmployeeDayJobs({
           isLocalToday &&
           visit.status === 'scheduled' &&
           new Date(visit.ends_at).getTime() >= Date.now();
+        const action = primaryAction(visit);
+        const mapsQuery = visit.siteLine?.trim()
+          ? `https://maps.google.com/?q=${encodeURIComponent(visit.siteLine)}`
+          : null;
+        const phoneHref = visit.customerPhone
+          ? `tel:${visit.customerPhone.replace(/\s/g, '')}`
+          : null;
 
         return (
-          <li key={visit.id}>
-            <Link href={`/schedule/${visit.id}`} className={styles.fieldJobCard}>
+          <li key={visit.id} className={styles.fieldJobCardShell}>
+            <div className={styles.fieldJobCard}>
               <div className={styles.fieldJobCardHeader}>
                 <div className={styles.fieldJobCardTime}>
                   {formatVisitTimeRange(visit.starts_at, visit.ends_at, tenantTimezone)}
                 </div>
-                <VisitStatusPill status={visit.status} />
+                <span
+                  className={styles.fieldJobStatusChip}
+                  data-status={visit.status}
+                  data-checked-in={visit.checkedInAt ? 'true' : 'false'}
+                >
+                  {fieldStatusLabel(visit)}
+                </span>
               </div>
               <h3 className={styles.fieldJobCardCustomer}>{visit.customerName}</h3>
               <p className={styles.fieldJobCardService}>{serviceLabel}</p>
@@ -67,14 +96,36 @@ export function FieldEmployeeDayJobs({
                   <span>{visit.customerPhone}</span>
                 </p>
               ) : null}
-              <div className={styles.fieldJobCardFooter}>
-                {isNextUp ? <span className={styles.fieldJobNextBadge}>Up next</span> : null}
-                <span className={styles.fieldJobOpen}>
-                  Open job
-                  <ChevronRight size={16} aria-hidden />
-                </span>
+              <div className={styles.fieldJobCardActions}>
+                {action ? (
+                  <Link href={action.href} className={styles.fieldJobPrimaryAction}>
+                    {action.label}
+                    <ChevronRight size={16} aria-hidden />
+                  </Link>
+                ) : null}
+                <div className={styles.fieldJobSecondaryActions}>
+                  {phoneHref ? (
+                    <a href={phoneHref} className={styles.fieldJobSecondaryAction}>
+                      Call
+                    </a>
+                  ) : null}
+                  {mapsQuery ? (
+                    <a
+                      href={mapsQuery}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.fieldJobSecondaryAction}
+                    >
+                      Maps
+                    </a>
+                  ) : null}
+                  <Link href={`/schedule/${visit.id}`} className={styles.fieldJobSecondaryAction}>
+                    Details
+                  </Link>
+                </div>
               </div>
-            </Link>
+              {isNextUp ? <span className={styles.fieldJobNextBadge}>Up next</span> : null}
+            </div>
           </li>
         );
       })}

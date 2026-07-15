@@ -206,7 +206,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Cleaner checklists / GPS',
-          cleanScheduler: 'GPS check-in + proof photos (all plans)',
+          cleanScheduler: 'Visit checklists + GPS check-in (all plans)',
           competitor: 'Digital checklists + GPS (Pro+)',
         },
         {
@@ -269,7 +269,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         paragraphs: [
           `Pricing last verified ${PRICING_VERIFIED}. ZenMaid uses a base fee plus per-seat model: Starter $19/mo + $4/seat (capped at 40 appointments/month), Pro $39/mo + $14/seat, Pro Max $49/mo + $24/seat. SMS messaging is extra on all plans.`,
           'A five-cleaner team on ZenMaid Pro pays about $39 + (5 × $14) = $109/mo before SMS and processing fees. Clean Scheduler Business is $129/mo with two office seats, ten field seats, customer portal, payroll export, and bank reconciliation included.',
-          'ZenMaid Starter looks inexpensive until you outgrow the appointment cap or need checklists and booking forms — then Pro seat fees add up similarly to other platforms. Clean Scheduler includes GPS check-in proof on every plan.',
+          'ZenMaid Starter looks inexpensive until you outgrow the appointment cap or need booking forms — then Pro seat fees add up similarly to other platforms. Clean Scheduler includes visit checklists and GPS check-in proof on every plan.',
         ],
         link: { href: '/pricing', label: 'View Clean Scheduler pricing' },
       },
@@ -710,7 +710,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have janitorial inspection checklists like Swept?',
         answer:
-          'Clean Scheduler offers proof-of-service photos on every plan but does not match Swept’s depth of inspection audit workflows. If inspections are your primary product requirement, evaluate Swept alongside Clean Scheduler.',
+          'Clean Scheduler includes visit checklists and proof-of-service photos on every plan but does not match Swept’s depth of inspection audit workflows. If inspections are your primary product requirement, evaluate Swept alongside Clean Scheduler.',
       },
       {
         question: 'Can Clean Scheduler handle large commercial contracts?',

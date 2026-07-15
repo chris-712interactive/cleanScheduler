@@ -31,6 +31,15 @@ export async function submitBookingRequestAction(
   const phone = String(formData.get('phone') ?? '').trim() || null;
   const message = String(formData.get('message') ?? '').trim() || null;
   const preferredDate = String(formData.get('preferred_date') ?? '').trim() || null;
+  const serviceInterest = String(formData.get('service_interest') ?? '').trim() || null;
+  const preferredTimeRaw = String(formData.get('preferred_time_window') ?? '').trim();
+  const preferredTimeWindow =
+    preferredTimeRaw === 'morning' ||
+    preferredTimeRaw === 'afternoon' ||
+    preferredTimeRaw === 'evening' ||
+    preferredTimeRaw === 'flexible'
+      ? preferredTimeRaw
+      : null;
   const addressLine1 = String(formData.get('address_line1') ?? '').trim() || null;
   const city = String(formData.get('city') ?? '').trim() || null;
   const state = String(formData.get('state') ?? '').trim() || null;
@@ -79,7 +88,9 @@ export async function submitBookingRequestAction(
   }
 
   const preferredNote = preferredDate ? `Preferred date: ${preferredDate}` : null;
-  const fullMessage = [message, preferredNote].filter(Boolean).join('\n\n');
+  const timeNote = preferredTimeWindow ? `Preferred time: ${preferredTimeWindow}` : null;
+  const serviceNote = serviceInterest ? `Service interest: ${serviceInterest}` : null;
+  const fullMessage = [message, serviceNote, preferredNote, timeNote].filter(Boolean).join('\n\n');
 
   const { error: insertError } = await admin.from('tenant_marketing_leads').insert({
     tenant_id: tenant.id,
@@ -93,6 +104,8 @@ export async function submitBookingRequestAction(
     service_city: city,
     service_state: state,
     service_postal_code: postalCode,
+    service_interest: serviceInterest,
+    preferred_time_window: preferredTimeWindow,
     status: 'new',
   });
 

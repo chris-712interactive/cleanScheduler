@@ -10,7 +10,12 @@ export function buildTenantInvoiceEmailContent(params: {
   status: string;
   dueLabel: string | null;
   portalUrl: string;
+  /** When set, CTA prefers guest pay over portal copy. */
+  payUrl?: string | null;
+  ctaLabel?: string;
 }): { subject: string; text: string; html: string } {
+  const payHref = params.payUrl?.trim() || params.portalUrl;
+  const ctaLabel = params.ctaLabel ?? (params.payUrl ? 'Pay this invoice' : 'Open customer portal');
   const subject = `Invoice from ${params.tenantName}: ${params.invoiceTitle}`;
   const text = [
     `${params.tenantName} sent you an invoice in Clean Scheduler.`,
@@ -22,7 +27,7 @@ export function buildTenantInvoiceEmailContent(params: {
     `Balance: ${formatUsdFromCents(params.balanceCents)}`,
     params.dueLabel ? `Due: ${params.dueLabel}` : null,
     ``,
-    `View and pay in your customer portal: ${params.portalUrl}`,
+    `${ctaLabel}: ${payHref}`,
   ]
     .filter(Boolean)
     .join('\n');
@@ -46,7 +51,7 @@ export function buildTenantInvoiceEmailContent(params: {
         )
         .join('')}
     </table>
-    <p style="margin:16px 0 0;"><a href="${escapeEmailAttr(params.portalUrl)}" style="color:#2563eb;">Open customer portal</a></p>
+    <p style="margin:16px 0 0;"><a href="${escapeEmailAttr(payHref)}" style="color:#2563eb;">${escape(ctaLabel)}</a></p>
   `.trim();
 
   const html = wrapTransactionalEmailHtml({

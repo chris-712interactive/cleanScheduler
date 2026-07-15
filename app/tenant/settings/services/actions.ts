@@ -11,6 +11,8 @@ import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { parseCustomerPropertyKind } from '@/lib/tenant/quoteStructuredFields';
 import { parseScheduleRole } from '@/lib/tenant/scheduleRoleLabels';
+import { parseChecklistLabelsFromForm } from '@/lib/visits/visitChecklist';
+import type { Json } from '@/lib/supabase/database.types';
 
 export interface ServiceTypeActionState {
   error?: string;
@@ -91,6 +93,48 @@ export async function updateServiceTypeScheduleRoleAction(
 
   revalidatePath('/tenant/settings/services', 'page');
   revalidatePath('/tenant/quotes', 'page');
+  return { success: true };
+}
+
+export async function updateServiceTypeChecklistAction(
+  _prev: ServiceTypeActionState,
+  formData: FormData,
+): Promise<ServiceTypeActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const templateId = String(formData.get('template_id') ?? '').trim();
+  const lines = String(formData.get('checklist_lines') ?? '');
+
+  if (!slug || !templateId) return { error: 'Missing service type.' };
+
+  const membership = await requireTenantPortalAccess(slug, '/settings/services');
+  if (!canManageTeamInvitesAndRoles(membership.role)) {
+    return { error: 'Only owners and admins can edit checklists.' };
+  }
+
+  try {
+    await assertTenantFeatureEnabled(createAdminClient(), membership.tenantId, 'visitChecklists');
+  } catch (error) {
+    return {
+      error: featureGateErrorMessage(error) ?? 'Visit checklists are not available on this plan.',
+    };
+  }
+
+  const items = parseChecklistLabelsFromForm(lines);
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('tenant_service_templates')
+    .update({ checklist_items: items as unknown as Json })
+    .eq('tenant_id', membership.tenantId)
+    .eq('id', templateId)
+    .eq('kind', 'service_line');
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/tenant/settings/services', 'page');
+  revalidatePath('/tenant/schedule', 'page');
   return { success: true };
 }
 

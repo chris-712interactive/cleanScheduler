@@ -20,6 +20,7 @@ import { resolveVisitDurationForVisit } from '@/lib/schedule/resolveVisitDuratio
 import { DEFAULT_VISIT_DURATION_HOURS } from '@/lib/schedule/visitDuration';
 import { SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
+import { ensureVisitChecklistState } from '@/lib/visits/visitChecklistState';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import styles from '../visitDetail.module.scss';
 
@@ -147,12 +148,21 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   const canUseProofPhotos = isFeatureEnabled(tier, 'proofOfServicePhotos');
   const canUseGpsCheckIn = isFeatureEnabled(tier, 'gpsVerifiedCheckIn');
   const proofPhotosSharedWithCustomers = isFeatureEnabled(tier, 'proofOfServicePortalShare');
+  const canUseChecklists = isFeatureEnabled(tier, 'visitChecklists');
 
   const proofPhotos =
     row.status === 'completed' && canUseProofPhotos
       ? await listVisitProofPhotos(admin, visitId)
       : [];
 
+  const checklistItems = canUseChecklists
+    ? await ensureVisitChecklistState(admin, {
+        tenantId: membership.tenantId,
+        visitId,
+      })
+    : [];
+
+  const fieldAction = typeof sp.action === 'string' ? sp.action.trim().toLowerCase() : '';
   const durationResolution =
     !isFieldEmployee && row.status === 'scheduled'
       ? await resolveVisitDurationForVisit(admin, membership.tenantId, visitId)
@@ -211,6 +221,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       <VisitDetailCard
         employeeOptions={employeeOptions}
         relatedRecords={!isFieldEmployee ? relatedRecords : null}
+        scrollToFieldActions={fieldAction === 'checkin' || fieldAction === 'complete'}
         initial={{
           visitId,
           tenantSlug: membership.tenantSlug,
@@ -236,6 +247,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           canUseGpsCheckIn,
           proofPhotosSharedWithCustomers,
           proofPhotos,
+          checklistItems,
           startsAt: row.starts_at,
           endsAt: row.ends_at,
           durationHours,

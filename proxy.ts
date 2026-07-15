@@ -358,6 +358,12 @@ export async function proxy(request: NextRequest) {
     if (kind === 'site' && isPublicBookingRequestPath(requestedPath)) {
       // Public booking form lives at app/book (and /request alias), not under /site.
       url.pathname = requestedPath === '/request' ? '/book' : requestedPath;
+    } else if (
+      kind === 'marketing' &&
+      (requestedPath === '/pay' || requestedPath.startsWith('/pay/'))
+    ) {
+      // Guest invoice pay links live at app/pay, not under /marketing.
+      url.pathname = requestedPath;
     } else if (!alreadyPrefixed) {
       url.pathname = rewritePath === '/' ? prefix : `${prefix}${rewritePath}`;
     }

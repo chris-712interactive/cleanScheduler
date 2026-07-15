@@ -30,6 +30,7 @@ type EntitlementFeature =
   | 'emailOnMyWay'
   | 'emailReviewRequest'
   | 'publicBookingRequest'
+  | 'visitChecklists'
   | 'proofOfServicePortalShare';
 
 type EntitlementLimitKey =
@@ -201,6 +202,25 @@ Enforcement / UI:
 - `app/tenant/schedule/VisitDetailCard.tsx` — shows check-in location proof in the aside
 
 Migration: `0082_visit_gps_checkin.sql`. Product notes: `docs/product/gps-verified-check-in.md`.
+
+## Visit checklists (all plans)
+
+| Tier     | `visitChecklists` |
+| -------- | ----------------- |
+| Starter  | Yes               |
+| Business | Yes               |
+| Pro      | Yes               |
+| Trial    | Yes               |
+
+Templates on Settings → Service types; progress on visit detail. Does not hard-block visit complete.
+
+Migration `0086_value_everywhere_pack.sql`. See `docs/product/visit-checklists.md`.
+
+## Guest invoice pay (no portal)
+
+When `customerPortal` is off, invoice emails use `{apex}/pay/{token}` guest Checkout links. Portal tenants keep portal CTAs.
+
+See `docs/product/guest-invoice-pay.md`.
 
 ## Public booking request form (all plans)
 
