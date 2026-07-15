@@ -24,6 +24,8 @@ export type EntitlementFeature =
   | 'gpsVerifiedCheckIn'
   | 'invoiceReminderEmail'
   | 'emailVisitReminders'
+  | 'emailOnMyWay'
+  | 'emailReviewRequest'
   | 'publicBookingRequest'
   | 'proofOfServicePortalShare'
   | 'customServiceTypes'
@@ -88,10 +90,12 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       plaidReconciliation: false,
       smsCommunication: false,
       whiteLabelCustomerPortal: false,
-      proofOfServicePhotos: false,
+      proofOfServicePhotos: true,
       gpsVerifiedCheckIn: true,
       invoiceReminderEmail: true,
       emailVisitReminders: true,
+      emailOnMyWay: true,
+      emailReviewRequest: true,
       publicBookingRequest: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
@@ -102,8 +106,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       tenantMarketingSiteCustomDomain: false,
     },
     limits: {
-      includedOfficeSeats: 1,
-      includedFieldSeats: 3,
+      includedOfficeSeats: 2,
+      includedFieldSeats: 5,
       maxActiveCustomers: 500,
       maxAutomationWorkflows: 3,
       includedSmsCreditsMonthly: 0,
@@ -141,6 +145,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       gpsVerifiedCheckIn: true,
       invoiceReminderEmail: true,
       emailVisitReminders: true,
+      emailOnMyWay: true,
+      emailReviewRequest: true,
       publicBookingRequest: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
@@ -190,6 +196,8 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       gpsVerifiedCheckIn: true,
       invoiceReminderEmail: true,
       emailVisitReminders: true,
+      emailOnMyWay: true,
+      emailReviewRequest: true,
       publicBookingRequest: true,
       proofOfServicePortalShare: true,
       customServiceTypes: true,
@@ -245,6 +253,8 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     gpsVerifiedCheckIn: true,
     invoiceReminderEmail: true,
     emailVisitReminders: true,
+    emailOnMyWay: true,
+    emailReviewRequest: true,
     publicBookingRequest: true,
     proofOfServicePortalShare: false,
     customServiceTypes: false,

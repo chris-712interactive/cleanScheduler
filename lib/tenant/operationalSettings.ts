@@ -83,6 +83,8 @@ export function parseQuoteNotifyFromForm(formData: FormData) {
     sms_notify_quote_declined: formData.get('sms_notify_quote_declined') === 'on',
     sms_notify_visit_reminder: formData.get('sms_notify_visit_reminder') === 'on',
     email_notify_visit_reminder: formData.get('email_notify_visit_reminder') === 'on',
+    email_notify_on_my_way: formData.get('email_notify_on_my_way') === 'on',
+    email_notify_review_request: formData.get('email_notify_review_request') === 'on',
     email_notify_invoice_overdue: formData.get('email_notify_invoice_overdue') === 'on',
     sms_notify_invoice_overdue: formData.get('sms_notify_invoice_overdue') === 'on',
     email_notify_customer_message: formData.get('email_notify_customer_message') === 'on',

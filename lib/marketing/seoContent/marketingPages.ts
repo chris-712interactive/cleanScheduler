@@ -125,7 +125,7 @@ export const FOR_PAGES: SeoMarketingPage[] = [
         bullets: [
           'Customer directory with property addresses',
           'Quotes with detailed line items per scope',
-          'Visit history and proof-of-service photos on Business+',
+          'Visit history and proof-of-service photos on every plan',
         ],
         link: {
           href: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
@@ -245,11 +245,11 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         title: 'Field-friendly mobile workflow',
         paragraphs: [
-          'Crews check in, complete visits, capture proof photos on Business+, and record on-site payments. Owners see status from the dashboard without calling the team.',
+          'Crews check in, complete visits, capture proof photos, and record on-site payments. Owners see status from the dashboard without calling the team.',
         ],
         bullets: [
           'Visit check-in and completion',
-          'Proof-of-service photos (Business+)',
+          'Proof-of-service photos',
           'On-site payment recording',
         ],
         link: {
@@ -598,7 +598,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         bullets: [
           'Visit check-in and completion workflow',
           'Field schedule view for cleaners',
-          'GPS-verified check-in on every plan; proof-of-service photos on Business+',
+          'GPS-verified check-in and proof-of-service photos on every plan',
         ],
         link: {
           href: '/features/mobile-scheduling-for-cleaners',
@@ -705,11 +705,11 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         title: 'Record payments and proof in the field',
         paragraphs: [
-          'When customers pay cash or check on site, field staff record the payment during visit completion. On Business+, capture proof-of-service photos for commercial accounts or quality assurance.',
+          'When customers pay cash or check on site, field staff record the payment during visit completion. Capture proof-of-service photos for commercial accounts or quality assurance on every plan.',
         ],
         bullets: [
           'On-site manual payment recording',
-          'Proof-of-service photos (Business+)',
+          'Proof-of-service photos',
           'Payment audits for month-end close',
         ],
         link: {

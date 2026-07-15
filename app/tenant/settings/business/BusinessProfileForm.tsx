@@ -88,6 +88,22 @@ export function BusinessProfileForm({
         disabled={readOnly}
       />
 
+      <label className={styles.fieldLabel} htmlFor="customer_review_url">
+        Review link
+      </label>
+      <input
+        id="customer_review_url"
+        name="customer_review_url"
+        type="url"
+        className={styles.fieldInput}
+        defaultValue={snapshot.customerReviewUrl}
+        placeholder="https://g.page/r/…"
+        disabled={readOnly}
+      />
+      <p className={styles.fieldHint}>
+        Google or Yelp review URL. Used when Operations sends post-visit review request emails.
+      </p>
+
       <label className={styles.fieldLabel} htmlFor="business_timezone">
         Timezone
       </label>

@@ -28,6 +28,8 @@ import {
   checkInLocationUpdateFields,
   parseCheckInLocationFromFormData,
 } from '@/lib/schedule/checkInLocation';
+import { maybeSendVisitOnMyWayEmail } from '@/lib/email/visitOnMyWayEmail';
+import { maybeSendVisitReviewRequestEmail } from '@/lib/email/visitReviewRequestEmail';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -121,6 +123,12 @@ export async function checkInToVisitAction(
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId);
   if (upErr) return { error: upErr.message };
+
+  void maybeSendVisitOnMyWayEmail(admin, {
+    tenantId: membership.tenantId,
+    visitId,
+    customerId: loaded.visit.customer_id,
+  });
 
   revalidateVisitPaths(visitId);
   return {
@@ -305,6 +313,13 @@ export async function completeVisitWithPaymentAction(
     customerId: loaded.visit.customer_id,
     title: loaded.visit.title,
     status: 'completed',
+  });
+
+  void maybeSendVisitReviewRequestEmail(admin, {
+    tenantId: membership.tenantId,
+    visitId,
+    customerId: loaded.visit.customer_id,
+    visitPurpose: loaded.visit.visit_purpose,
   });
 
   revalidateVisitPaths(visitId);

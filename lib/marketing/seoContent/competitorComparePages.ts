@@ -206,7 +206,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Cleaner checklists / GPS',
-          cleanScheduler: 'GPS check-in (all plans); proof photos (Business+)',
+          cleanScheduler: 'GPS check-in + proof photos (all plans)',
           competitor: 'Digital checklists + GPS (Pro+)',
         },
         {
@@ -636,7 +636,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Quality inspections',
-          cleanScheduler: 'Proof-of-service photos (Business+)',
+          cleanScheduler: 'Proof-of-service photos (all plans)',
           competitor: 'Core product — inspection checklists',
         },
         {
@@ -710,7 +710,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have janitorial inspection checklists like Swept?',
         answer:
-          'Clean Scheduler offers proof-of-service photos on Business+ but does not match Swept’s depth of inspection audit workflows. If inspections are your primary product requirement, evaluate Swept alongside Clean Scheduler.',
+          'Clean Scheduler offers proof-of-service photos on every plan but does not match Swept’s depth of inspection audit workflows. If inspections are your primary product requirement, evaluate Swept alongside Clean Scheduler.',
       },
       {
         question: 'Can Clean Scheduler handle large commercial contracts?',

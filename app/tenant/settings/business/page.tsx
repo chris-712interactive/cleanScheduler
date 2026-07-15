@@ -31,6 +31,7 @@ export default async function TenantBusinessSettingsPage() {
       timezone,
       business_email,
       business_phone,
+      customer_review_url,
       brand_color,
       logo_url,
       address_line1,

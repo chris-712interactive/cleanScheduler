@@ -23,8 +23,18 @@ describe('entitlements', () => {
     expect(isFeatureEnabled('pro', 'smsCommunication')).toBe(true);
   });
 
+  it('enables proof photos, on-my-way, and review-request emails on Starter', () => {
+    expect(isFeatureEnabled('starter', 'proofOfServicePhotos')).toBe(true);
+    expect(isFeatureEnabled('starter', 'emailOnMyWay')).toBe(true);
+    expect(isFeatureEnabled('starter', 'emailReviewRequest')).toBe(true);
+    expect(isFeatureEnabled('starter', 'proofOfServicePortalShare')).toBe(false);
+    expect(isFeatureEnabled('trial', 'proofOfServicePhotos')).toBe(true);
+    expect(isFeatureEnabled('trial', 'emailOnMyWay')).toBe(true);
+    expect(isFeatureEnabled('trial', 'emailReviewRequest')).toBe(true);
+  });
+
   it('exposes seat limits for starter', () => {
-    expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedOfficeSeats).toBe(1);
-    expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedFieldSeats).toBe(3);
+    expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedOfficeSeats).toBe(2);
+    expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedFieldSeats).toBe(5);
   });
 });

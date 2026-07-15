@@ -49,13 +49,15 @@ export default async function TenantOperationsSettingsPage() {
     : null;
   const invoiceReminderEmailEditable = isFeatureEnabled(plan, 'invoiceReminderEmail');
   const visitReminderEmailEditable = isFeatureEnabled(plan, 'emailVisitReminders');
+  const onMyWayEmailEditable = isFeatureEnabled(plan, 'emailOnMyWay');
+  const reviewRequestEmailEditable = isFeatureEnabled(plan, 'emailReviewRequest');
   const invoiceReminderSmsEditable = smsAllowed;
 
   const supabase = createTenantPortalDbClient();
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_visit_reminder, email_notify_invoice_overdue, sms_notify_invoice_overdue, email_notify_customer_message, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels, public_booking_request_enabled',
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_visit_reminder, email_notify_on_my_way, email_notify_review_request, email_notify_invoice_overdue, sms_notify_invoice_overdue, email_notify_customer_message, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels, public_booking_request_enabled',
     )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -75,6 +77,8 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_quote_declined: opsRow.sms_notify_quote_declined,
         sms_notify_visit_reminder: opsRow.sms_notify_visit_reminder,
         email_notify_visit_reminder: opsRow.email_notify_visit_reminder,
+        email_notify_on_my_way: opsRow.email_notify_on_my_way,
+        email_notify_review_request: opsRow.email_notify_review_request,
         email_notify_invoice_overdue: opsRow.email_notify_invoice_overdue,
         sms_notify_invoice_overdue: opsRow.sms_notify_invoice_overdue,
         email_notify_customer_message: opsRow.email_notify_customer_message,
@@ -99,6 +103,8 @@ export default async function TenantOperationsSettingsPage() {
         sms_notify_quote_declined: false,
         sms_notify_visit_reminder: false,
         email_notify_visit_reminder: false,
+        email_notify_on_my_way: false,
+        email_notify_review_request: false,
         email_notify_invoice_overdue: true,
         sms_notify_invoice_overdue: false,
         email_notify_customer_message: true,
@@ -143,6 +149,8 @@ export default async function TenantOperationsSettingsPage() {
           sentDmConfigured={sentDmConfigured}
           invoiceReminderEmailEditable={invoiceReminderEmailEditable}
           visitReminderEmailEditable={visitReminderEmailEditable}
+          onMyWayEmailEditable={onMyWayEmailEditable}
+          reviewRequestEmailEditable={reviewRequestEmailEditable}
           invoiceReminderSmsEditable={invoiceReminderSmsEditable}
           smsUsageSummary={smsUsageSummary}
         />

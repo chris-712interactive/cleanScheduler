@@ -5,6 +5,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import {
   parseBrandColor,
+  parseCustomerReviewUrl,
   parseTenantTimezone,
   parseWorkTimeFromForm,
   parseWorkWeekDaysFromForm,
@@ -44,6 +45,12 @@ export async function updateBusinessProfileAction(
     const businessEmail = String(formData.get('business_email') ?? '').trim();
     const businessPhone = String(formData.get('business_phone') ?? '').trim();
     const timezone = parseTenantTimezone(String(formData.get('timezone') ?? ''));
+    const reviewUrlParsed = parseCustomerReviewUrl(
+      String(formData.get('customer_review_url') ?? ''),
+    );
+    if (reviewUrlParsed === undefined) {
+      return { error: 'Review link must be a valid https:// URL (or leave blank).' };
+    }
 
     const admin = createAdminClient();
     const { error } = await admin
@@ -53,6 +60,7 @@ export async function updateBusinessProfileAction(
         business_email: businessEmail || null,
         business_phone: businessPhone || null,
         timezone,
+        customer_review_url: reviewUrlParsed,
         updated_at: new Date().toISOString(),
       })
       .eq('id', membership.tenantId);
@@ -65,6 +73,7 @@ export async function updateBusinessProfileAction(
         businessEmail,
         businessPhone,
         timezone,
+        customerReviewUrl: reviewUrlParsed ?? '',
       },
     };
   } catch (err) {
