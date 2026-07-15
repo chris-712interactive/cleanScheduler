@@ -1633,6 +1633,7 @@ export type Database = {
           sms_notify_quote_accepted: boolean;
           sms_notify_quote_declined: boolean;
           sms_notify_visit_reminder: boolean;
+          email_notify_visit_reminder: boolean;
           email_notify_invoice_overdue: boolean;
           sms_notify_invoice_overdue: boolean;
           email_notify_customer_message: boolean;
@@ -1643,6 +1644,7 @@ export type Database = {
           recurring_starts_after_initial: boolean;
           allow_same_day_initial_recurring: boolean;
           messaging_channels: string[];
+          public_booking_request_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1658,6 +1660,7 @@ export type Database = {
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
           sms_notify_visit_reminder?: boolean;
+          email_notify_visit_reminder?: boolean;
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           email_notify_customer_message?: boolean;
@@ -1668,6 +1671,7 @@ export type Database = {
           recurring_starts_after_initial?: boolean;
           allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
+          public_booking_request_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1683,6 +1687,7 @@ export type Database = {
           sms_notify_quote_accepted?: boolean;
           sms_notify_quote_declined?: boolean;
           sms_notify_visit_reminder?: boolean;
+          email_notify_visit_reminder?: boolean;
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           email_notify_customer_message?: boolean;
@@ -1693,6 +1698,7 @@ export type Database = {
           recurring_starts_after_initial?: boolean;
           allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
+          public_booking_request_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -2999,6 +3005,45 @@ export type Database = {
           },
           {
             foreignKeyName: 'visit_reschedule_requests_visit_id_fkey';
+            columns: ['visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_visit_reminder_log: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          visit_id: string;
+          channel: Database['public']['Enums']['visit_reminder_channel'];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          visit_id: string;
+          channel: Database['public']['Enums']['visit_reminder_channel'];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          visit_id?: string;
+          channel?: Database['public']['Enums']['visit_reminder_channel'];
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_visit_reminder_log_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_visit_reminder_log_visit_id_fkey';
             columns: ['visit_id'];
             isOneToOne: false;
             referencedRelation: 'tenant_scheduled_visits';
@@ -4502,6 +4547,7 @@ export type Database = {
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       visit_check_in_location_status: 'captured' | 'denied' | 'unavailable' | 'unsupported';
+      visit_reminder_channel: 'email' | 'sms';
       visit_staffing_status: 'assigned' | 'needs_staffing' | 'override_confirmed';
       tenant_time_off_status: 'pending' | 'approved' | 'denied' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';

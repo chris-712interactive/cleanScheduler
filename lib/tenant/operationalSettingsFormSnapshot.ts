@@ -16,6 +16,7 @@ export type OperationalSettingsFormSnapshot = {
   sms_notify_quote_accepted: boolean;
   sms_notify_quote_declined: boolean;
   sms_notify_visit_reminder: boolean;
+  email_notify_visit_reminder: boolean;
   email_notify_invoice_overdue: boolean;
   sms_notify_invoice_overdue: boolean;
   email_notify_customer_message: boolean;

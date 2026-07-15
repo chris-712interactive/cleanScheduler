@@ -63,7 +63,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'GPS / route optimization',
-          cleanScheduler: 'GPS check-in proof (Business+); no live fleet / routes',
+          cleanScheduler: 'GPS check-in proof (all plans); no live fleet / routes',
           competitor: 'GPS tracking on Grow+',
         },
         {
@@ -131,7 +131,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have GPS tracking like Jobber?',
         answer:
-          'Clean Scheduler Business+ captures GPS location proof at visit check-in so the office can verify arrival. We do not offer live fleet tracking or route optimization — Jobber’s Grow tier may still be a better fit if those are must-haves.',
+          'Clean Scheduler captures GPS location proof at visit check-in on every plan so the office can verify arrival. We do not offer live fleet tracking or route optimization — Jobber’s Grow tier may still be a better fit if those are must-haves.',
       },
       {
         question: 'Can Clean Scheduler handle commercial cleaning accounts?',
@@ -191,7 +191,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Online booking widget',
-          cleanScheduler: 'Customer portal & quotes (Business+)',
+          cleanScheduler: 'Public quote request form (all plans); portal Business+',
           competitor: 'High-converting booking forms (Pro+)',
         },
         {
@@ -206,7 +206,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Cleaner checklists / GPS',
-          cleanScheduler: 'Proof photos + GPS check-in (Business+)',
+          cleanScheduler: 'GPS check-in (all plans); proof photos (Business+)',
           competitor: 'Digital checklists + GPS (Pro+)',
         },
         {
@@ -269,7 +269,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         paragraphs: [
           `Pricing last verified ${PRICING_VERIFIED}. ZenMaid uses a base fee plus per-seat model: Starter $19/mo + $4/seat (capped at 40 appointments/month), Pro $39/mo + $14/seat, Pro Max $49/mo + $24/seat. SMS messaging is extra on all plans.`,
           'A five-cleaner team on ZenMaid Pro pays about $39 + (5 × $14) = $109/mo before SMS and processing fees. Clean Scheduler Business is $129/mo with two office seats, ten field seats, customer portal, payroll export, and bank reconciliation included.',
-          'ZenMaid Starter looks inexpensive until you outgrow the appointment cap or need GPS, checklists, and booking forms — then Pro seat fees add up similarly to other platforms.',
+          'ZenMaid Starter looks inexpensive until you outgrow the appointment cap or need checklists and booking forms — then Pro seat fees add up similarly to other platforms. Clean Scheduler includes GPS check-in proof on every plan.',
         ],
         link: { href: '/pricing', label: 'View Clean Scheduler pricing' },
       },
@@ -346,7 +346,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Website booking form',
-          cleanScheduler: 'Quotes & portal (Business+)',
+          cleanScheduler: 'Public /book quote request (all plans)',
           competitor: 'Core product — bedroom/bath/sqft pricing',
         },
         {
@@ -445,7 +445,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have a website booking widget like Launch27?',
         answer:
-          'Not as a standalone embeddable widget today. Clean Scheduler emphasizes office-driven quotes, customer portals on Business+, and email invoicing. If instant website self-booking is your primary sales channel, Launch27 Base is hard to beat.',
+          'Every plan includes a public quote / booking request form on your workspace subdomain (`/book`). It captures leads for your office — it is not an embeddable bedroom/bath pricing calculator or instant self-booking like Launch27. If that widget is your primary sales channel, Launch27 Base may still be a better fit.',
       },
       {
         question: 'Is Launch27 cheaper for larger teams?',

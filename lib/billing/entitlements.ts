@@ -22,6 +22,9 @@ export type EntitlementFeature =
   | 'whiteLabelCustomerPortal'
   | 'proofOfServicePhotos'
   | 'gpsVerifiedCheckIn'
+  | 'invoiceReminderEmail'
+  | 'emailVisitReminders'
+  | 'publicBookingRequest'
   | 'proofOfServicePortalShare'
   | 'customServiceTypes'
   | 'customerPromotions'
@@ -86,7 +89,10 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       smsCommunication: false,
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: false,
-      gpsVerifiedCheckIn: false,
+      gpsVerifiedCheckIn: true,
+      invoiceReminderEmail: true,
+      emailVisitReminders: true,
+      publicBookingRequest: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
       customerPromotions: false,
@@ -133,6 +139,9 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: true,
       gpsVerifiedCheckIn: true,
+      invoiceReminderEmail: true,
+      emailVisitReminders: true,
+      publicBookingRequest: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
       customerPromotions: true,
@@ -179,6 +188,9 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       whiteLabelCustomerPortal: true,
       proofOfServicePhotos: true,
       gpsVerifiedCheckIn: true,
+      invoiceReminderEmail: true,
+      emailVisitReminders: true,
+      publicBookingRequest: true,
       proofOfServicePortalShare: true,
       customServiceTypes: true,
       customerPromotions: true,
@@ -231,6 +243,9 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     whiteLabelCustomerPortal: false,
     proofOfServicePhotos: true,
     gpsVerifiedCheckIn: true,
+    invoiceReminderEmail: true,
+    emailVisitReminders: true,
+    publicBookingRequest: true,
     proofOfServicePortalShare: false,
     customServiceTypes: false,
     customerPromotions: true,

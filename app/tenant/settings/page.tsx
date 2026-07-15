@@ -96,6 +96,12 @@ const HUB_GROUPS: HubGroup[] = [
         icon: Globe,
       },
       {
+        href: '/settings/booking-requests',
+        label: 'Booking requests',
+        description: 'Public quote request form on your workspace subdomain.',
+        icon: Inbox,
+      },
+      {
         href: '/settings/website',
         label: 'Website',
         description: 'Public marketing pages, SEO, and site appearance (Business+).',
@@ -103,8 +109,8 @@ const HUB_GROUPS: HubGroup[] = [
       },
       {
         href: '/settings/website/leads',
-        label: 'Website leads',
-        description: 'Contact form submissions from your live marketing website.',
+        label: 'Leads',
+        description: 'Quote requests and contact form submissions.',
         icon: Inbox,
       },
       {

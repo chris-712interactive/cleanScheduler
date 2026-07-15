@@ -41,7 +41,8 @@ export async function updateTenantOperationalSettings(
   ]);
   const smsAllowed =
     isFeatureEnabled(tier, 'smsCommunication') && canUseSmsCommunication(billing?.status);
-  const invoiceEmailAllowed = tier === 'business' || tier === 'pro';
+  const invoiceEmailAllowed = isFeatureEnabled(tier, 'invoiceReminderEmail');
+  const visitEmailAllowed = isFeatureEnabled(tier, 'emailVisitReminders');
 
   const methods = parseTenantPaymentMethodsFromForm(formData);
   if (!methods) {
@@ -85,6 +86,7 @@ export async function updateTenantOperationalSettings(
     sms_notify_quote_accepted: smsAllowed ? notify.sms_notify_quote_accepted : false,
     sms_notify_quote_declined: smsAllowed ? notify.sms_notify_quote_declined : false,
     sms_notify_visit_reminder: smsAllowed ? notify.sms_notify_visit_reminder : false,
+    email_notify_visit_reminder: visitEmailAllowed ? notify.email_notify_visit_reminder : false,
     email_notify_invoice_overdue: invoiceEmailAllowed ? notify.email_notify_invoice_overdue : false,
     sms_notify_invoice_overdue: smsAllowed ? notify.sms_notify_invoice_overdue : false,
     email_notify_customer_message: notify.email_notify_customer_message,
@@ -119,6 +121,7 @@ export async function updateTenantOperationalSettings(
     sms_notify_quote_accepted: row.sms_notify_quote_accepted ?? false,
     sms_notify_quote_declined: row.sms_notify_quote_declined ?? false,
     sms_notify_visit_reminder: row.sms_notify_visit_reminder ?? false,
+    email_notify_visit_reminder: row.email_notify_visit_reminder ?? false,
     email_notify_invoice_overdue: row.email_notify_invoice_overdue ?? false,
     sms_notify_invoice_overdue: row.sms_notify_invoice_overdue ?? false,
     email_notify_customer_message: row.email_notify_customer_message ?? true,

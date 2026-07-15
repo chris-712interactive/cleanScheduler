@@ -104,6 +104,9 @@ These mirror “evaluate the business” without paid integrations or Pro-only s
 | `customerPortal`            | **Yes** | Strong eval hook — customers accept quotes, pay invoices          |
 | `proofOfServicePhotos`      | **Yes** | Field crew workflow                                               |
 | `gpsVerifiedCheckIn`        | **Yes** | Arrival location proof on check-in                                |
+| `invoiceReminderEmail`      | **Yes** | Overdue invoice email nudges                                      |
+| `emailVisitReminders`       | **Yes** | ~24h visit reminder emails                                        |
+| `publicBookingRequest`      | **Yes** | Lite `/book` quote request form                                   |
 | `proofOfServicePortalShare` | **No**  | Pro-only customer portal share                                    |
 | `campaigns`                 | **No**  | Marketing email excluded (see limits)                             |
 | `salesTaxSummary`           | **Yes** | Basic financial close                                             |

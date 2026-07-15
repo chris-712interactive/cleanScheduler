@@ -2,21 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { buildTenantWebsiteNavItems } from '@/lib/tenant/buildTenantWebsiteNav';
 
 describe('buildTenantWebsiteNavItems', () => {
-  it('returns no items when website feature is disabled', () => {
+  it('returns booking + leads when only booking request is enabled', () => {
     expect(
       buildTenantWebsiteNavItems({
         websiteEnabled: false,
-        websitePublished: true,
+        websitePublished: false,
+        bookingRequestEnabled: true,
         newLeadsCount: 3,
       }),
-    ).toEqual([]);
+    ).toEqual([
+      { label: 'Booking requests', href: '/settings/booking-requests', icon: 'inquiries' },
+      { label: 'Leads', href: '/settings/website/leads', icon: 'inquiries', badge: 3 },
+    ]);
   });
 
-  it('returns website only before publish', () => {
+  it('returns website only before publish when booking is off', () => {
     expect(
       buildTenantWebsiteNavItems({
         websiteEnabled: true,
         websitePublished: false,
+        bookingRequestEnabled: false,
         newLeadsCount: 0,
       }),
     ).toEqual([{ label: 'Website', href: '/settings/website', icon: 'website' }]);
@@ -27,6 +32,7 @@ describe('buildTenantWebsiteNavItems', () => {
       buildTenantWebsiteNavItems({
         websiteEnabled: true,
         websitePublished: true,
+        bookingRequestEnabled: false,
         newLeadsCount: 2,
       }),
     ).toEqual([
