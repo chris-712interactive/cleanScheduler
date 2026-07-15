@@ -8,8 +8,8 @@ describe('entitlements', () => {
     expect(isFeatureEnabled('pro', 'smsCommunication')).toBe(true);
   });
 
-  it('enables GPS check-in on Business and trial, not Starter', () => {
-    expect(isFeatureEnabled('starter', 'gpsVerifiedCheckIn')).toBe(false);
+  it('enables GPS check-in on all plans including Starter', () => {
+    expect(isFeatureEnabled('starter', 'gpsVerifiedCheckIn')).toBe(true);
     expect(isFeatureEnabled('business', 'gpsVerifiedCheckIn')).toBe(true);
     expect(isFeatureEnabled('pro', 'gpsVerifiedCheckIn')).toBe(true);
     expect(isFeatureEnabled('trial', 'gpsVerifiedCheckIn')).toBe(true);

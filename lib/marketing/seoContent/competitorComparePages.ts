@@ -63,7 +63,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'GPS / route optimization',
-          cleanScheduler: 'GPS check-in proof (Business+); no live fleet / routes',
+          cleanScheduler: 'GPS check-in proof (all plans); no live fleet / routes',
           competitor: 'GPS tracking on Grow+',
         },
         {
@@ -131,7 +131,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have GPS tracking like Jobber?',
         answer:
-          'Clean Scheduler Business+ captures GPS location proof at visit check-in so the office can verify arrival. We do not offer live fleet tracking or route optimization — Jobber’s Grow tier may still be a better fit if those are must-haves.',
+          'Clean Scheduler captures GPS location proof at visit check-in on every plan so the office can verify arrival. We do not offer live fleet tracking or route optimization — Jobber’s Grow tier may still be a better fit if those are must-haves.',
       },
       {
         question: 'Can Clean Scheduler handle commercial cleaning accounts?',
@@ -206,7 +206,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Cleaner checklists / GPS',
-          cleanScheduler: 'Proof photos + GPS check-in (Business+)',
+          cleanScheduler: 'GPS check-in (all plans); proof photos (Business+)',
           competitor: 'Digital checklists + GPS (Pro+)',
         },
         {
@@ -269,7 +269,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         paragraphs: [
           `Pricing last verified ${PRICING_VERIFIED}. ZenMaid uses a base fee plus per-seat model: Starter $19/mo + $4/seat (capped at 40 appointments/month), Pro $39/mo + $14/seat, Pro Max $49/mo + $24/seat. SMS messaging is extra on all plans.`,
           'A five-cleaner team on ZenMaid Pro pays about $39 + (5 × $14) = $109/mo before SMS and processing fees. Clean Scheduler Business is $129/mo with two office seats, ten field seats, customer portal, payroll export, and bank reconciliation included.',
-          'ZenMaid Starter looks inexpensive until you outgrow the appointment cap or need GPS, checklists, and booking forms — then Pro seat fees add up similarly to other platforms.',
+          'ZenMaid Starter looks inexpensive until you outgrow the appointment cap or need checklists and booking forms — then Pro seat fees add up similarly to other platforms. Clean Scheduler includes GPS check-in proof on every plan.',
         ],
         link: { href: '/pricing', label: 'View Clean Scheduler pricing' },
       },

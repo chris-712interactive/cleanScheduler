@@ -27,7 +27,7 @@ const FEATURE_MINIMUM_TIER: Record<EntitlementFeature, PlatformPlanTier> = {
   smsCommunication: 'pro',
   whiteLabelCustomerPortal: 'pro',
   proofOfServicePhotos: 'business',
-  gpsVerifiedCheckIn: 'business',
+  gpsVerifiedCheckIn: 'starter',
   proofOfServicePortalShare: 'pro',
   customServiceTypes: 'pro',
   customerPromotions: 'business',

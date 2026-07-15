@@ -86,7 +86,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       smsCommunication: false,
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: false,
-      gpsVerifiedCheckIn: false,
+      gpsVerifiedCheckIn: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
       customerPromotions: false,

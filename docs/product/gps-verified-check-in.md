@@ -1,7 +1,7 @@
 # GPS-verified check-in
 
 **Status:** Shipped (MVP)  
-**Tier:** Business+, free trial (`gpsVerifiedCheckIn`)  
+**Tier:** All plans including Starter and free trial (`gpsVerifiedCheckIn`)  
 **Migration:** `0082_visit_gps_checkin.sql`
 
 ## What it is
