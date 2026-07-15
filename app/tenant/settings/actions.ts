@@ -18,6 +18,11 @@ import type { OperationalSettingsFormState } from './operationalSettingsFormStat
 import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
 import { parseConsultationDurationMinutes } from '@/lib/tenant/consultationDuration';
 
+/** Form-compatible one-click enable for customer update emails. */
+export async function enableCustomerUpdateEmailsFormAction(formData: FormData): Promise<void> {
+  await enableCustomerUpdateEmailsAction({}, formData);
+}
+
 export async function updateTenantOperationalSettings(
   _prev: OperationalSettingsFormState,
   formData: FormData,
@@ -143,4 +148,36 @@ export async function updateTenantOperationalSettings(
   };
 
   return { success: true, settingsSnapshot };
+}
+
+/** One-click: enable visit reminder + on-my-way + review-request email toggles. */
+export async function enableCustomerUpdateEmailsAction(
+  _prev: OperationalSettingsFormState,
+  formData: FormData,
+): Promise<OperationalSettingsFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  if (!slug) return { error: 'Workspace is required.' };
+
+  const membership = await requireTenantPortalAccess(slug, '/settings/operations');
+  const admin = createAdminClient();
+  const plan = await resolveTenantPlanTier(admin, membership.tenantId);
+
+  const patch: Database['public']['Tables']['tenant_operational_settings']['Insert'] = {
+    tenant_id: membership.tenantId,
+    email_notify_visit_reminder: isFeatureEnabled(plan, 'emailVisitReminders'),
+    email_notify_on_my_way: isFeatureEnabled(plan, 'emailOnMyWay'),
+    email_notify_review_request: isFeatureEnabled(plan, 'emailReviewRequest'),
+  };
+
+  const { error } = await admin.from('tenant_operational_settings').upsert(patch, {
+    onConflict: 'tenant_id',
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/tenant/settings/operations', 'page');
+  revalidatePath('/tenant/getting-started', 'page');
+  return { success: true };
 }

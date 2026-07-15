@@ -27,6 +27,7 @@ export type EntitlementFeature =
   | 'emailOnMyWay'
   | 'emailReviewRequest'
   | 'publicBookingRequest'
+  | 'visitChecklists'
   | 'proofOfServicePortalShare'
   | 'customServiceTypes'
   | 'customerPromotions'
@@ -97,6 +98,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       emailOnMyWay: true,
       emailReviewRequest: true,
       publicBookingRequest: true,
+      visitChecklists: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
       customerPromotions: false,
@@ -148,6 +150,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       emailOnMyWay: true,
       emailReviewRequest: true,
       publicBookingRequest: true,
+      visitChecklists: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
       customerPromotions: true,
@@ -199,6 +202,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       emailOnMyWay: true,
       emailReviewRequest: true,
       publicBookingRequest: true,
+      visitChecklists: true,
       proofOfServicePortalShare: true,
       customServiceTypes: true,
       customerPromotions: true,
@@ -256,6 +260,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     emailOnMyWay: true,
     emailReviewRequest: true,
     publicBookingRequest: true,
+    visitChecklists: true,
     proofOfServicePortalShare: false,
     customServiceTypes: false,
     customerPromotions: true,

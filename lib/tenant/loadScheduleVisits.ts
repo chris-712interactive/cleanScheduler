@@ -23,6 +23,7 @@ type VisitListRow = {
   status: Tables<'tenant_scheduled_visits'>['status'];
   notes: string | null;
   expected_amount_cents: number | null;
+  checked_in_at: string | null;
   customers: {
     customer_identities: {
       first_name: string | null;
@@ -81,6 +82,7 @@ function mapVisitRows(rows: VisitListRow[]): ScheduleVisitVM[] {
             : null,
       assignees,
       assigneeUserIds: assignees.map((a) => a.userId),
+      checkedInAt: v.checked_in_at,
     };
   });
 }
@@ -108,6 +110,7 @@ export async function loadScheduleVisits(params: {
       status,
       notes,
       expected_amount_cents,
+      checked_in_at,
       customers (
         customer_identities (
           first_name,

@@ -78,6 +78,9 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   if (features.publicBookingRequest) {
     bullets.push('Public quote / booking request form');
   }
+  if (features.visitChecklists) {
+    bullets.push('Visit checklists for field crews');
+  }
   if (features.proofOfServicePortalShare) {
     bullets.push('Proof photos shared with customers in portal');
   }

@@ -82,6 +82,8 @@ export function buildOwnerOnboardingChecklist(
     hasBank: boolean;
     businessComplete: boolean;
     connectComplete: boolean;
+    customerUpdatesComplete: boolean;
+    reviewLinkComplete: boolean;
   },
 ): OwnerOnboardingChecklist {
   const skips = new Set(input.profileState.checklist_optional_skips);
@@ -136,6 +138,24 @@ export function buildOwnerOnboardingChecklist(
       detail: 'Give office staff or crew access to this workspace',
       href: '/employees/new',
       complete: counts.hasTeam,
+    },
+    {
+      id: 'customer_updates',
+      title: 'Turn on customer update emails',
+      detail: 'Optional — visit reminders, on-my-way, and review requests',
+      href: '/settings/operations',
+      complete: counts.customerUpdatesComplete || skips.has('customer_updates'),
+      optional: true,
+      skipped: skips.has('customer_updates') && !counts.customerUpdatesComplete,
+    },
+    {
+      id: 'review_link',
+      title: 'Add your Google review link',
+      detail: 'Optional — used when asking happy customers for reviews',
+      href: '/settings/business',
+      complete: counts.reviewLinkComplete || skips.has('review_link'),
+      optional: true,
+      skipped: skips.has('review_link') && !counts.reviewLinkComplete,
     },
     {
       id: 'compensation',
@@ -201,6 +221,7 @@ export async function getOwnerOnboardingChecklist(
     compensationRes,
     bankRes,
     tenantRes,
+    opsRes,
   ] = await Promise.all([
     db
       .from('tenant_quotes')
@@ -244,49 +265,54 @@ export async function getOwnerOnboardingChecklist(
       .neq('status', 'disconnected'),
     db
       .from('tenants')
-      .select('name, timezone, business_email, business_phone, address_line1, city')
+      .select(
+        'name, timezone, business_email, business_phone, address_line1, city, customer_review_url',
+      )
       .eq('id', input.tenantId)
+      .maybeSingle(),
+    db
+      .from('tenant_operational_settings')
+      .select('email_notify_visit_reminder, email_notify_on_my_way, email_notify_review_request')
+      .eq('tenant_id', input.tenantId)
       .maybeSingle(),
   ]);
 
   const tenant = tenantRes.data;
   const connectComplete = input.connectStatus === 'complete';
+  const ops = opsRes.data;
+  const customerUpdatesComplete = Boolean(
+    ops?.email_notify_visit_reminder &&
+    ops?.email_notify_on_my_way &&
+    ops?.email_notify_review_request,
+  );
+  const reviewLinkComplete = Boolean(tenant?.customer_review_url?.trim());
+
+  const countArgs = {
+    hasQuotes: (quotesRes.count ?? 0) > 0,
+    hasCustomers: (customersRes.count ?? 0) > 0,
+    hasVisits: (visitsRes.count ?? 0) > 0,
+    hasInvoices: (invoicesRes.count ?? 0) > 0,
+    hasTeam: (membersRes.count ?? 0) > 1 || (invitesRes.count ?? 0) > 0,
+    hasCompensation: (compensationRes.count ?? 0) > 0,
+    hasBank: (bankRes.count ?? 0) > 0,
+    businessComplete: tenant ? isBusinessProfileComplete(tenant) : false,
+    connectComplete,
+    customerUpdatesComplete,
+    reviewLinkComplete,
+  };
 
   let checklist = buildOwnerOnboardingChecklist(
     {
       ...input,
       profileState,
     },
-    {
-      hasQuotes: (quotesRes.count ?? 0) > 0,
-      hasCustomers: (customersRes.count ?? 0) > 0,
-      hasVisits: (visitsRes.count ?? 0) > 0,
-      hasInvoices: (invoicesRes.count ?? 0) > 0,
-      hasTeam: (membersRes.count ?? 0) > 1 || (invitesRes.count ?? 0) > 0,
-      hasCompensation: (compensationRes.count ?? 0) > 0,
-      hasBank: (bankRes.count ?? 0) > 0,
-      businessComplete: tenant ? isBusinessProfileComplete(tenant) : false,
-      connectComplete,
-    },
+    countArgs,
   );
 
   if (checklist.allRequiredComplete && !profileState.checklist_completed_at) {
     await markChecklistCompleted(admin, input.tenantId);
     const refreshed = await loadOwnerOnboardingProfileState(admin, input.tenantId);
-    checklist = buildOwnerOnboardingChecklist(
-      { ...input, profileState: refreshed },
-      {
-        hasQuotes: (quotesRes.count ?? 0) > 0,
-        hasCustomers: (customersRes.count ?? 0) > 0,
-        hasVisits: (visitsRes.count ?? 0) > 0,
-        hasInvoices: (invoicesRes.count ?? 0) > 0,
-        hasTeam: (membersRes.count ?? 0) > 1 || (invitesRes.count ?? 0) > 0,
-        hasCompensation: (compensationRes.count ?? 0) > 0,
-        hasBank: (bankRes.count ?? 0) > 0,
-        businessComplete: tenant ? isBusinessProfileComplete(tenant) : false,
-        connectComplete,
-      },
-    );
+    checklist = buildOwnerOnboardingChecklist({ ...input, profileState: refreshed }, countArgs);
   }
 
   return checklist;

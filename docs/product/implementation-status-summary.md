@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-07-15  
 **Branch:** `dev`  
-**Latest polish:** Starter value pack — proof photos, on-my-way + review emails, 2 office / 5 field seats — see `docs/product/starter-customer-emails.md`
+**Latest polish:** Value everywhere pack — visit checklists, Today polish, onboarding email defaults, guest pay links, richer `/book` — see `docs/product/visit-checklists.md`
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -19,6 +19,7 @@ Use this file as the handoff snapshot for new AI sessions. Detailed specs live u
 - Lite public booking request at `{slug}/book` (`0084`, `publicBookingRequest`)
 - Proof-of-service photos on all plans (portal share stays Pro)
 - On-my-way + post-visit review-request emails (`0085`); Starter seats 2 office / 5 field
+- Visit checklists, guest invoice pay, richer `/book`, crew Today CTAs (`0086`)
 
 **GPS-verified check-in (MVP)** — one-shot browser location on visit check-in; office sees proof on visit detail. Not live fleet tracking.
 

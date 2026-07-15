@@ -3,6 +3,9 @@ import type { Database } from '@/lib/supabase/database.types';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import { buildTenantInvoiceEmailContent } from '@/lib/email/tenantInvoiceEmailBody';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
+import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import { createOrReuseInvoicePayToken, guestInvoicePayUrl } from '@/lib/billing/invoicePayToken';
+import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -57,6 +60,20 @@ export async function sendTenantInvoiceEmailForInvoice(
     `/invoices/${params.invoiceId}`,
   );
 
+  const plan = await resolveTenantEntitlementPlan(admin, params.tenantId);
+  const hasPortal = isFeatureEnabled(plan, 'customerPortal');
+  let payUrl: string | null = null;
+  if (!hasPortal && balance > 0 && inv.status === 'open') {
+    const connect = await requireConnectForOnlinePayments(admin, params.tenantId);
+    if (connect.ok) {
+      const token = await createOrReuseInvoicePayToken(admin, {
+        tenantId: params.tenantId,
+        invoiceId: params.invoiceId,
+      });
+      if (token) payUrl = guestInvoicePayUrl(token);
+    }
+  }
+
   const body = buildTenantInvoiceEmailContent({
     tenantName,
     invoiceTitle: inv.title,
@@ -66,6 +83,8 @@ export async function sendTenantInvoiceEmailForInvoice(
     status: inv.status,
     dueLabel,
     portalUrl,
+    payUrl,
+    ctaLabel: payUrl ? 'Pay this invoice' : undefined,
   });
 
   const sent = await sendTransactionalEmail({ to: email, ...body });

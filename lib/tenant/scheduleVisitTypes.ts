@@ -14,4 +14,5 @@ export type ScheduleVisitVM = {
   expectedAmountCents: number | null;
   assignees: ScheduleAssigneeChip[];
   assigneeUserIds: string[];
+  checkedInAt: string | null;
 };

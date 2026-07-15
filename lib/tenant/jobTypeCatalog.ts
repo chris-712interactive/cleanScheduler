@@ -7,6 +7,8 @@ import {
   defaultHoursForJobType,
   type ServiceTemplateScheduleRole,
 } from '@/lib/tenant/defaultJobTypeCatalog';
+import type { ChecklistTemplateItem } from '@/lib/visits/visitChecklist';
+import { parseChecklistTemplateItems } from '@/lib/visits/visitChecklist';
 
 type Admin = SupabaseClient<Database>;
 
@@ -21,6 +23,7 @@ export type JobTypeCatalogEntry = {
   is_active: boolean;
   sort_order: number;
   schedule_role: ServiceTemplateScheduleRole;
+  checklist_items?: ChecklistTemplateItem[];
 };
 
 export async function ensureTenantJobTypeCatalog(admin: Admin, tenantId: string): Promise<void> {
@@ -63,7 +66,7 @@ export async function loadJobTypeCatalog(
   let query = admin
     .from('tenant_service_templates')
     .select(
-      'id, service_label, name, job_type, estimated_hours, amount_cents, is_system_default, is_active, sort_order, schedule_role',
+      'id, service_label, name, job_type, estimated_hours, amount_cents, is_system_default, is_active, sort_order, schedule_role, checklist_items',
     )
     .eq('tenant_id', tenantId)
     .eq('kind', 'service_line')
@@ -98,6 +101,7 @@ export async function loadJobTypeCatalog(
       is_active: row.is_active,
       sort_order: row.sort_order,
       schedule_role: (row.schedule_role as ServiceTemplateScheduleRole | null) ?? 'standard',
+      checklist_items: parseChecklistTemplateItems(row.checklist_items),
     }));
 }
 

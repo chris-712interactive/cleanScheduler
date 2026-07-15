@@ -104,6 +104,10 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: { starter: true, business: true, pro: true },
   },
   {
+    label: 'Visit checklists',
+    values: { starter: true, business: true, pro: true },
+  },
+  {
     label: 'Proof photos in customer portal',
     values: { starter: false, business: false, pro: true },
   },
