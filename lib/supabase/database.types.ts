@@ -1634,6 +1634,8 @@ export type Database = {
           sms_notify_quote_declined: boolean;
           sms_notify_visit_reminder: boolean;
           email_notify_visit_reminder: boolean;
+          email_notify_on_my_way: boolean;
+          email_notify_review_request: boolean;
           email_notify_invoice_overdue: boolean;
           sms_notify_invoice_overdue: boolean;
           email_notify_customer_message: boolean;
@@ -1661,6 +1663,8 @@ export type Database = {
           sms_notify_quote_declined?: boolean;
           sms_notify_visit_reminder?: boolean;
           email_notify_visit_reminder?: boolean;
+          email_notify_on_my_way?: boolean;
+          email_notify_review_request?: boolean;
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           email_notify_customer_message?: boolean;
@@ -1688,6 +1692,8 @@ export type Database = {
           sms_notify_quote_declined?: boolean;
           sms_notify_visit_reminder?: boolean;
           email_notify_visit_reminder?: boolean;
+          email_notify_on_my_way?: boolean;
+          email_notify_review_request?: boolean;
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           email_notify_customer_message?: boolean;
@@ -3051,6 +3057,45 @@ export type Database = {
           },
         ];
       };
+      tenant_visit_customer_email_log: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          visit_id: string;
+          kind: Database['public']['Enums']['visit_customer_email_kind'];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          visit_id: string;
+          kind: Database['public']['Enums']['visit_customer_email_kind'];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          visit_id?: string;
+          kind?: Database['public']['Enums']['visit_customer_email_kind'];
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_visit_customer_email_log_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_visit_customer_email_log_visit_id_fkey';
+            columns: ['visit_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_scheduled_visits';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_scheduled_visits: {
         Row: {
           id: string;
@@ -4382,6 +4427,7 @@ export type Database = {
           stripe_connect_status: Database['public']['Enums']['tenant_stripe_connect_status'];
           business_email: string | null;
           business_phone: string | null;
+          customer_review_url: string | null;
           brand_color: string | null;
           logo_url: string | null;
           address_line1: string | null;
@@ -4404,6 +4450,7 @@ export type Database = {
           stripe_connect_status?: Database['public']['Enums']['tenant_stripe_connect_status'];
           business_email?: string | null;
           business_phone?: string | null;
+          customer_review_url?: string | null;
           brand_color?: string | null;
           logo_url?: string | null;
           address_line1?: string | null;
@@ -4426,6 +4473,7 @@ export type Database = {
           stripe_connect_status?: Database['public']['Enums']['tenant_stripe_connect_status'];
           business_email?: string | null;
           business_phone?: string | null;
+          customer_review_url?: string | null;
           brand_color?: string | null;
           logo_url?: string | null;
           address_line1?: string | null;
@@ -4548,6 +4596,7 @@ export type Database = {
       visit_status: 'scheduled' | 'completed' | 'cancelled';
       visit_check_in_location_status: 'captured' | 'denied' | 'unavailable' | 'unsupported';
       visit_reminder_channel: 'email' | 'sms';
+      visit_customer_email_kind: 'on_my_way' | 'review_request';
       visit_staffing_status: 'assigned' | 'needs_staffing' | 'override_confirmed';
       tenant_time_off_status: 'pending' | 'approved' | 'denied' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';

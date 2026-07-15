@@ -150,6 +150,7 @@ export interface TenantBusinessSnapshot {
   businessEmail: string;
   businessPhone: string;
   timezone: string;
+  customerReviewUrl: string;
   brandColor: string;
   logoUrl: string | null;
   addressLine1: string;
@@ -162,11 +163,25 @@ export interface TenantBusinessSnapshot {
   workDayEnd: string;
 }
 
+/** Accept empty or https:// review URLs only. */
+export function parseCustomerReviewUrl(raw: string): string | null | undefined {
+  const value = raw.trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 export function tenantBusinessSnapshotFromRow(row: {
   name: string;
   timezone: string;
   business_email: string | null;
   business_phone: string | null;
+  customer_review_url?: string | null;
   brand_color: string | null;
   logo_url: string | null;
   address_line1: string | null;
@@ -187,6 +202,7 @@ export function tenantBusinessSnapshotFromRow(row: {
     businessEmail: row.business_email?.trim() || '',
     businessPhone: row.business_phone?.trim() || '',
     timezone: row.timezone?.trim() || DEFAULT_TENANT_TIMEZONE,
+    customerReviewUrl: row.customer_review_url?.trim() || '',
     brandColor: row.brand_color?.trim() || DEFAULT_BRAND_COLOR,
     logoUrl: row.logo_url?.trim() || null,
     addressLine1: row.address_line1?.trim() || '',

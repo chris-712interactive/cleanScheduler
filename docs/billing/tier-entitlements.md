@@ -27,6 +27,8 @@ type EntitlementFeature =
   | 'gpsVerifiedCheckIn'
   | 'invoiceReminderEmail'
   | 'emailVisitReminders'
+  | 'emailOnMyWay'
+  | 'emailReviewRequest'
   | 'publicBookingRequest'
   | 'proofOfServicePortalShare';
 
@@ -68,7 +70,7 @@ Office seats count **owner**, **admin**, and **viewer** logins. Field seats coun
 
 | Tier     | Office seats | Field seats |
 | -------- | ------------ | ----------- |
-| Starter  | 1            | 3           |
+| Starter  | 2            | 5           |
 | Business | 2            | 10          |
 | Pro      | 10           | Unlimited   |
 
@@ -121,18 +123,22 @@ Entitlement flag is defined and enforced at send time. Requires sent.dm env vars
 
 See `docs/product/tenant-api-webhooks.md`.
 
-## Invoice & visit reminders (email all plans / SMS Pro)
+## Invoice, visit, on-my-way & review emails (email all plans / SMS Pro)
 
-| Tier     | Invoice overdue email (`invoiceReminderEmail`) | Visit reminder email (`emailVisitReminders`) | SMS visit / invoice  |
-| -------- | ---------------------------------------------- | -------------------------------------------- | -------------------- |
-| Starter  | Yes                                            | Yes (opt-in)                                 | No                   |
-| Business | Yes                                            | Yes (opt-in)                                 | No                   |
-| Pro      | Yes                                            | Yes (opt-in)                                 | Yes (paid + sent.dm) |
-| Trial    | Yes                                            | Yes (opt-in)                                 | No                   |
+| Tier     | Invoice overdue email | Visit reminder email | On-my-way email | Review-request email | SMS visit / invoice  |
+| -------- | --------------------- | -------------------- | --------------- | -------------------- | -------------------- |
+| Starter  | Yes                   | Yes (opt-in)         | Yes (opt-in)    | Yes (opt-in)         | No                   |
+| Business | Yes                   | Yes (opt-in)         | Yes (opt-in)    | Yes (opt-in)         | No                   |
+| Pro      | Yes                   | Yes (opt-in)         | Yes (opt-in)    | Yes (opt-in)         | Yes (paid + sent.dm) |
+| Trial    | Yes                   | Yes (opt-in)         | Yes (opt-in)    | Yes (opt-in)         | No                   |
 
 - Invoice overdue: daily cron `/api/cron/invoice-reminders` (11:00 UTC). Respects check holds. Settings → Operations.
 - Visit reminders (~24h before): cron `/api/cron/visit-reminders` (10:00 UTC). Migration `0083_email_visit_reminders.sql`.
+- On-my-way: fires from `checkInToVisitAction` when enabled (not on silent check-in at complete). Migration `0085_starter_value_pack.sql`.
+- Review request: fires after service visit complete when enabled **and** `tenants.customer_review_url` is set. Skips consultations. Same migration.
 - Starter invoice emails omit customer-portal pay links when `customerPortal` is off (office contact copy instead).
+
+Product notes: `docs/product/starter-customer-emails.md`.
 
 ## Multi-location (Pro)
 
@@ -156,13 +162,14 @@ Flow: tenant saves hostname → cleanScheduler registers it on the Vercel projec
 
 Migrations `0042_tenant_customer_portal_domains.sql`, `0043_tenant_customer_portal_domains_vercel.sql`, `0044_tenant_customer_portal_auth_redirect.sql`, `0045_visit_proof_photos.sql`.
 
-## Proof-of-service photos (Business upload / Pro portal share)
+## Proof-of-service photos (all plans upload / Pro portal share)
 
 | Tier     | `proofOfServicePhotos` (crew upload + tenant visit detail) | `proofOfServicePortalShare` (customer portal) |
 | -------- | ---------------------------------------------------------- | --------------------------------------------- |
-| Starter  | No                                                         | No                                            |
+| Starter  | Yes                                                        | No                                            |
 | Business | Yes                                                        | No                                            |
 | Pro      | Yes                                                        | Yes                                           |
+| Trial    | Yes                                                        | No                                            |
 
 Crew attach up to 5 photos when completing a visit (`CompleteVisitPaymentModal` → `visitFieldActions.ts`). Tenant staff see photos on visit detail. Pro customers see recent completed visits with photos under Customer portal → Visits.
 
@@ -294,9 +301,9 @@ Current implementation:
   - `plaidReconciliation` — bank connection UI + Plaid link token
   - `jobCosting` — compensation settings mutations
   - `rolePermissions` — admin/viewer team invites and role changes
-  - `proofOfServicePhotos` — visit completion photo uploads (`visitFieldActions.ts`)
+  - `proofOfServicePhotos` — visit completion photo uploads (`visitFieldActions.ts`) — all plans
   - `gpsVerifiedCheckIn` — point-in-time check-in location proof (`visitFieldActions.ts`)
-  - `invoiceReminderEmail` / `emailVisitReminders` — Operations toggles + reminder crons
+  - `invoiceReminderEmail` / `emailVisitReminders` / `emailOnMyWay` / `emailReviewRequest` — Operations toggles + senders
   - `publicBookingRequest` — `/book` form + Settings → Booking requests
   - `proofOfServicePortalShare` — customer portal completed-visit photos (`app/customer/visits/page.tsx`)
 - `lib/billing/automationWorkflows.ts`

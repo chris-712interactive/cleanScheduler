@@ -69,6 +69,12 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   if (features.invoiceReminderEmail) {
     bullets.push('Email visit & overdue invoice reminders');
   }
+  if (features.emailOnMyWay) {
+    bullets.push('On-my-way email when crew checks in');
+  }
+  if (features.emailReviewRequest) {
+    bullets.push('Post-visit review request emails');
+  }
   if (features.publicBookingRequest) {
     bullets.push('Public quote / booking request form');
   }

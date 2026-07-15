@@ -85,7 +85,7 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   },
   {
     label: 'Proof-of-service photos (crew upload)',
-    values: { starter: false, business: true, pro: true },
+    values: { starter: true, business: true, pro: true },
   },
   {
     label: 'GPS-verified check-in',
@@ -93,6 +93,10 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   },
   {
     label: 'Email visit & invoice reminders',
+    values: { starter: true, business: true, pro: true },
+  },
+  {
+    label: 'On-my-way & review-request emails',
     values: { starter: true, business: true, pro: true },
   },
   {

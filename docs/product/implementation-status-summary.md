@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-07-15  
 **Branch:** `dev`  
-**Latest polish:** Starter email reminders + lite `/book` request form — see `docs/product/public-booking-request.md`
+**Latest polish:** Starter value pack — proof photos, on-my-way + review emails, 2 office / 5 field seats — see `docs/product/starter-customer-emails.md`
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -17,6 +17,8 @@ Use this file as the handoff snapshot for new AI sessions. Detailed specs live u
 - GPS-verified check-in on all plans (`0082`)
 - Email overdue invoice + visit reminders on all plans; SMS stays Pro (`0083`, `/api/cron/visit-reminders`)
 - Lite public booking request at `{slug}/book` (`0084`, `publicBookingRequest`)
+- Proof-of-service photos on all plans (portal share stays Pro)
+- On-my-way + post-visit review-request emails (`0085`); Starter seats 2 office / 5 field
 
 **GPS-verified check-in (MVP)** — one-shot browser location on visit check-in; office sees proof on visit detail. Not live fleet tracking.
 

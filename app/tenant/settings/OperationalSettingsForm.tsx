@@ -87,6 +87,8 @@ export function OperationalSettingsForm({
   sentDmConfigured = false,
   invoiceReminderEmailEditable = false,
   visitReminderEmailEditable = false,
+  onMyWayEmailEditable = false,
+  reviewRequestEmailEditable = false,
   invoiceReminderSmsEditable = false,
   smsUsageSummary,
 }: {
@@ -98,6 +100,8 @@ export function OperationalSettingsForm({
   sentDmConfigured?: boolean;
   invoiceReminderEmailEditable?: boolean;
   visitReminderEmailEditable?: boolean;
+  onMyWayEmailEditable?: boolean;
+  reviewRequestEmailEditable?: boolean;
   invoiceReminderSmsEditable?: boolean;
   smsUsageSummary?: string | null;
 }) {
@@ -130,6 +134,9 @@ export function OperationalSettingsForm({
     if (snapshot.email_notify_quote_declined) count += 1;
     if (snapshot.email_notify_invoice_overdue) count += 1;
     if (snapshot.email_notify_customer_message) count += 1;
+    if (snapshot.email_notify_visit_reminder) count += 1;
+    if (snapshot.email_notify_on_my_way) count += 1;
+    if (snapshot.email_notify_review_request) count += 1;
     return count;
   }, [snapshot]);
 
@@ -502,9 +509,57 @@ export function OperationalSettingsForm({
                     )}
                   </td>
                 </tr>
+                <tr>
+                  <th scope="row">Crew checks in (on my way)</th>
+                  <td>
+                    {onMyWayEmailEditable ? (
+                      <label className={styles.notifyToggle}>
+                        <input
+                          type="checkbox"
+                          name="email_notify_on_my_way"
+                          defaultChecked={snapshot.email_notify_on_my_way}
+                          disabled={readOnly}
+                        />
+                        On
+                      </label>
+                    ) : (
+                      <span className={styles.notifyUnavailable}>Unavailable</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className={styles.notifyUnavailable}>Not available</span>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Ask for a review after a completed cleaning</th>
+                  <td>
+                    {reviewRequestEmailEditable ? (
+                      <label className={styles.notifyToggle}>
+                        <input
+                          type="checkbox"
+                          name="email_notify_review_request"
+                          defaultChecked={snapshot.email_notify_review_request}
+                          disabled={readOnly}
+                        />
+                        On
+                      </label>
+                    ) : (
+                      <span className={styles.notifyUnavailable}>Unavailable</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className={styles.notifyUnavailable}>Not available</span>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
+          {reviewRequestEmailEditable ? (
+            <p className={styles.technicalNote}>
+              Review emails need a review link under{' '}
+              <Link href="/settings/business">Business settings</Link>. Consultations are skipped.
+            </p>
+          ) : null}
         </div>
 
         <div>

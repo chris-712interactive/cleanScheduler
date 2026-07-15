@@ -124,8 +124,8 @@ These mirror “evaluate the business” without paid integrations or Pro-only s
 
 | Limit                          | Trial (proposed) | Compare                                                         |
 | ------------------------------ | ---------------- | --------------------------------------------------------------- |
-| `includedOfficeSeats`          | **2**            | Starter 1, Business 2                                           |
-| `includedFieldSeats`           | **8**            | Starter 3, Business 10                                          |
+| `includedOfficeSeats`          | **2**            | Starter 2, Business 2                                           |
+| `includedFieldSeats`           | **8**            | Starter 5, Business 10                                          |
 | `maxActiveCustomers`           | **2,000**        | Starter 500, Business 5,000                                     |
 | `maxAutomationWorkflows`       | **10**           | Starter 3, Business 20                                          |
 | `includedIntegrations`         | **2**            | Starter 1, Business 5 (API keys count; API calls still blocked) |
