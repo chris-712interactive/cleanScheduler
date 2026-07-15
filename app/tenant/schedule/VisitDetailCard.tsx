@@ -30,10 +30,12 @@ import type { VisitProofPhotoRow } from '@/lib/visits/visitProofPhotos';
 import type { RelatedRecordsSnapshot } from '@/lib/tenant/relatedRecordsTypes';
 import {
   mergeVisitDetailPatch,
+  type CheckInLocationStatus,
   type CollectedMethod,
   type VisitDetailPatch,
   type VisitStatus,
 } from '@/lib/tenant/visitDetailPatch';
+import { formatCheckInLocationProof } from '@/lib/schedule/checkInLocation';
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import { DeleteVisitButton } from './DeleteVisitButton';
 import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
@@ -81,6 +83,7 @@ export type VisitDetailSnapshot = {
   actorRole: TenantRole;
   isFieldEmployee: boolean;
   canUseProofPhotos: boolean;
+  canUseGpsCheckIn: boolean;
   proofPhotosSharedWithCustomers: boolean;
   proofPhotos: VisitProofPhotoRow[];
   startsAt: string;
@@ -90,6 +93,10 @@ export type VisitDetailSnapshot = {
   status: VisitStatus;
   expectedAmountCents: number | null;
   checkedInAt: string | null;
+  checkInLat: number | null;
+  checkInLng: number | null;
+  checkInAccuracyM: number | null;
+  checkInLocationStatus: CheckInLocationStatus | null;
   completedAt: string | null;
   completionPaymentCollected: boolean | null;
   completionCollectedMethod: CollectedMethod | null;
@@ -155,6 +162,16 @@ export function VisitDetailCard({
       ? `$${formatCentsAsDollars(defaultAmountCents ?? 0)}`
       : 'Price needed';
 
+  const checkInLocationProof =
+    visit.canUseGpsCheckIn && visit.checkInLocationStatus
+      ? formatCheckInLocationProof({
+          status: visit.checkInLocationStatus,
+          lat: visit.checkInLat,
+          lng: visit.checkInLng,
+          accuracyM: visit.checkInAccuracyM,
+        })
+      : null;
+
   return (
     <div className={styles.workspace}>
       <div className={styles.summaryStrip} aria-label="Appointment overview">
@@ -219,6 +236,7 @@ export function VisitDetailCard({
                 defaultAmountCents={defaultAmountCents}
                 customerHasEmail={Boolean(visit.customerEmail)}
                 canAttachProofPhotos={visit.canUseProofPhotos}
+                canUseGpsCheckIn={visit.canUseGpsCheckIn}
                 proofPhotosSharedWithCustomers={visit.proofPhotosSharedWithCustomers}
                 isFieldEmployee={visit.isFieldEmployee}
                 hasBillableAmount={hasBillableAmount}
@@ -303,6 +321,24 @@ export function VisitDetailCard({
                   <dt className={styles.metaLabel}>Checked in</dt>
                   <dd className={styles.metaValue}>
                     {formatTimestamp(visit.checkedInAt, visit.tenantTimezone)}
+                  </dd>
+                </div>
+              ) : null}
+              {checkInLocationProof ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Check-in location</dt>
+                  <dd className={styles.metaValue}>
+                    {checkInLocationProof.mapsUrl ? (
+                      <a
+                        href={checkInLocationProof.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {checkInLocationProof.label}
+                      </a>
+                    ) : (
+                      checkInLocationProof.label
+                    )}
                   </dd>
                 </div>
               ) : null}

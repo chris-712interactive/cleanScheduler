@@ -88,6 +88,10 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: { starter: false, business: true, pro: true },
   },
   {
+    label: 'GPS-verified check-in',
+    values: { starter: false, business: true, pro: true },
+  },
+  {
     label: 'Proof photos in customer portal',
     values: { starter: false, business: false, pro: true },
   },

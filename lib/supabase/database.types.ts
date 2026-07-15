@@ -3027,6 +3027,11 @@ export type Database = {
           recurring_rule_id: string | null;
           checked_in_at: string | null;
           checked_in_by_user_id: string | null;
+          check_in_lat: number | null;
+          check_in_lng: number | null;
+          check_in_accuracy_m: number | null;
+          check_in_location_status:
+            Database['public']['Enums']['visit_check_in_location_status'] | null;
           completed_at: string | null;
           completed_by_user_id: string | null;
           completion_payment_collected: boolean | null;
@@ -3056,6 +3061,11 @@ export type Database = {
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
           checked_in_by_user_id?: string | null;
+          check_in_lat?: number | null;
+          check_in_lng?: number | null;
+          check_in_accuracy_m?: number | null;
+          check_in_location_status?:
+            Database['public']['Enums']['visit_check_in_location_status'] | null;
           completed_at?: string | null;
           completed_by_user_id?: string | null;
           completion_payment_collected?: boolean | null;
@@ -3085,6 +3095,11 @@ export type Database = {
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
           checked_in_by_user_id?: string | null;
+          check_in_lat?: number | null;
+          check_in_lng?: number | null;
+          check_in_accuracy_m?: number | null;
+          check_in_location_status?:
+            Database['public']['Enums']['visit_check_in_location_status'] | null;
           completed_at?: string | null;
           completed_by_user_id?: string | null;
           completion_payment_collected?: boolean | null;
@@ -4486,6 +4501,7 @@ export type Database = {
       service_template_schedule_role: 'initial' | 'recurring' | 'standard';
       customer_property_kind: 'residential' | 'commercial' | 'short_term_rental' | 'other';
       visit_status: 'scheduled' | 'completed' | 'cancelled';
+      visit_check_in_location_status: 'captured' | 'denied' | 'unavailable' | 'unsupported';
       visit_staffing_status: 'assigned' | 'needs_staffing' | 'override_confirmed';
       tenant_time_off_status: 'pending' | 'approved' | 'denied' | 'cancelled';
       tenant_invoice_status: 'draft' | 'open' | 'paid' | 'void';

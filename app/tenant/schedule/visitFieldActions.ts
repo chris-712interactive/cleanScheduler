@@ -24,6 +24,10 @@ import { saveVisitProofPhotosFromForm } from '@/lib/visits/visitProofPhotos';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { buildCreateQuotePath } from '@/lib/tenant/customerConsultation';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
+import {
+  checkInLocationUpdateFields,
+  parseCheckInLocationFromFormData,
+} from '@/lib/schedule/checkInLocation';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -98,12 +102,21 @@ export async function checkInToVisitAction(
   }
 
   const now = new Date().toISOString();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const locationUpdate = isFeatureEnabled(tier, 'gpsVerifiedCheckIn')
+    ? (() => {
+        const parsed = parseCheckInLocationFromFormData(formData);
+        return parsed ? checkInLocationUpdateFields(parsed) : null;
+      })()
+    : null;
+
   const { error: upErr } = await admin
     .from('tenant_scheduled_visits')
     .update({
       checked_in_at: now,
       checked_in_by_user_id: auth.user.id,
       updated_at: now,
+      ...(locationUpdate ?? {}),
     })
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId);
@@ -111,8 +124,21 @@ export async function checkInToVisitAction(
 
   revalidateVisitPaths(visitId);
   return {
-    success: 'Checked in at property.',
-    visitPatch: { checkedInAt: now },
+    success:
+      locationUpdate?.check_in_location_status === 'captured'
+        ? 'Checked in at property with location proof.'
+        : 'Checked in at property.',
+    visitPatch: {
+      checkedInAt: now,
+      ...(locationUpdate
+        ? {
+            checkInLat: locationUpdate.check_in_lat,
+            checkInLng: locationUpdate.check_in_lng,
+            checkInAccuracyM: locationUpdate.check_in_accuracy_m,
+            checkInLocationStatus: locationUpdate.check_in_location_status,
+          }
+        : {}),
+    },
   };
 }
 
@@ -206,6 +232,16 @@ export async function completeVisitWithPaymentAction(
       : null;
 
   const now = new Date().toISOString();
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const shouldCaptureCheckInLocation =
+    !loaded.visit.checked_in_at && isFeatureEnabled(tier, 'gpsVerifiedCheckIn');
+  const locationUpdate = shouldCaptureCheckInLocation
+    ? (() => {
+        const parsed = parseCheckInLocationFromFormData(formData);
+        return parsed ? checkInLocationUpdateFields(parsed) : null;
+      })()
+    : null;
+
   const patch: Database['public']['Tables']['tenant_scheduled_visits']['Update'] = {
     status: 'completed',
     completed_at: now,
@@ -220,7 +256,11 @@ export async function completeVisitWithPaymentAction(
     completion_collected_amount_cents: effectivePaymentCollected ? billing.amountCents : null,
     completion_invoice_id: billing.invoiceId,
     ...(!loaded.visit.checked_in_at
-      ? { checked_in_at: now, checked_in_by_user_id: auth.user.id }
+      ? {
+          checked_in_at: now,
+          checked_in_by_user_id: auth.user.id,
+          ...(locationUpdate ?? {}),
+        }
       : {}),
   };
 
@@ -231,7 +271,6 @@ export async function completeVisitWithPaymentAction(
     .eq('tenant_id', membership.tenantId);
   if (upErr) return { error: upErr.message };
 
-  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const hasProofPhotoUpload = formData
     .getAll('proof_photos')
     .some((entry) => entry instanceof File && entry.size > 0);
@@ -281,6 +320,14 @@ export async function completeVisitWithPaymentAction(
         ? checkNumber || null
         : null,
     completionInvoiceId: billing.invoiceId,
+    ...(locationUpdate
+      ? {
+          checkInLat: locationUpdate.check_in_lat,
+          checkInLng: locationUpdate.check_in_lng,
+          checkInAccuracyM: locationUpdate.check_in_accuracy_m,
+          checkInLocationStatus: locationUpdate.check_in_location_status,
+        }
+      : {}),
   };
 
   if (consultationComplete) {

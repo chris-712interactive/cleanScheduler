@@ -24,6 +24,7 @@ type EntitlementFeature =
   | 'smsCommunication'
   | 'whiteLabelCustomerPortal'
   | 'proofOfServicePhotos'
+  | 'gpsVerifiedCheckIn'
   | 'proofOfServicePortalShare';
 
 type EntitlementLimitKey =
@@ -167,6 +168,27 @@ Enforcement:
 
 Storage: `visit_proof_photos` bucket + `tenant_visit_proof_photos` table (migration `0045_visit_proof_photos.sql`).
 
+## GPS-verified check-in (Business+)
+
+| Tier     | `gpsVerifiedCheckIn` |
+| -------- | -------------------- |
+| Starter  | No                   |
+| Business | Yes                  |
+| Pro      | Yes                  |
+| Trial    | Yes                  |
+
+On check-in (and when office completes a visit that still needs check-in), entitled workspaces request a **one-shot** browser location and store lat/lng + accuracy on the visit. Office staff see the proof on visit detail (Maps link when captured). Permission denied / unavailable still allows check-in — location is optional proof, not a hard gate.
+
+This is **not** live fleet tracking, continuous GPS, geofencing, or route optimization.
+
+Enforcement / UI:
+
+- `app/tenant/schedule/VisitFieldWorkPanel.tsx` — captures device location before check-in when entitled
+- `app/tenant/schedule/visitFieldActions.ts` — persists fields only when `gpsVerifiedCheckIn` is enabled
+- `app/tenant/schedule/VisitDetailCard.tsx` — shows check-in location proof in the aside
+
+Migration: `0082_visit_gps_checkin.sql`. Product notes: `docs/product/gps-verified-check-in.md`.
+
 ## Tenant marketing website (Business CMS / Pro unified domain)
 
 | Tier     | `tenantMarketingSite` | `tenantMarketingSiteCustomDomain` | `maxMarketingSitePages` | `maxMarketingSiteServiceAreaPages` |
@@ -254,6 +276,7 @@ Current implementation:
   - `jobCosting` — compensation settings mutations
   - `rolePermissions` — admin/viewer team invites and role changes
   - `proofOfServicePhotos` — visit completion photo uploads (`visitFieldActions.ts`)
+  - `gpsVerifiedCheckIn` — point-in-time check-in location proof (`visitFieldActions.ts`)
   - `proofOfServicePortalShare` — customer portal completed-visit photos (`app/customer/visits/page.tsx`)
 - `lib/billing/automationWorkflows.ts`
   - enforces `maxAutomationWorkflows` when creating recurring visit rules

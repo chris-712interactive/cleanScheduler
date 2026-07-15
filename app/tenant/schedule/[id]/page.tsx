@@ -67,6 +67,10 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       customer_id,
       checked_in_at,
       checked_in_by_user_id,
+      check_in_lat,
+      check_in_lng,
+      check_in_accuracy_m,
+      check_in_location_status,
       completed_at,
       completed_by_user_id,
       completion_payment_collected,
@@ -141,6 +145,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   const admin = createAdminClient();
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const canUseProofPhotos = isFeatureEnabled(tier, 'proofOfServicePhotos');
+  const canUseGpsCheckIn = isFeatureEnabled(tier, 'gpsVerifiedCheckIn');
   const proofPhotosSharedWithCustomers = isFeatureEnabled(tier, 'proofOfServicePortalShare');
 
   const proofPhotos =
@@ -228,6 +233,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           actorRole,
           isFieldEmployee,
           canUseProofPhotos,
+          canUseGpsCheckIn,
           proofPhotosSharedWithCustomers,
           proofPhotos,
           startsAt: row.starts_at,
@@ -237,6 +243,10 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           status: row.status,
           expectedAmountCents: row.expected_amount_cents,
           checkedInAt: row.checked_in_at,
+          checkInLat: row.check_in_lat,
+          checkInLng: row.check_in_lng,
+          checkInAccuracyM: row.check_in_accuracy_m,
+          checkInLocationStatus: row.check_in_location_status,
           completedAt: row.completed_at,
           completionPaymentCollected: row.completion_payment_collected,
           completionCollectedMethod: row.completion_collected_method,
