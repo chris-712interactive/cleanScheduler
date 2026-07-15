@@ -20,6 +20,8 @@ export default async function TenantWebsiteLeadsPage() {
   const admin = createAdminClient();
   const plan = await resolveTenantEntitlementPlan(admin, membership.tenantId);
   const websiteEnabled = isFeatureEnabled(plan, 'tenantMarketingSite');
+  const bookingEnabled = isFeatureEnabled(plan, 'publicBookingRequest');
+  const leadsAccess = websiteEnabled || bookingEnabled;
 
   if (websiteEnabled) {
     await ensureTenantMarketingSiteSeeded(admin, membership.tenantId);
@@ -33,35 +35,40 @@ export default async function TenantWebsiteLeadsPage() {
         .maybeSingle()
     : { data: null };
 
-  const leads = websiteEnabled ? await loadTenantMarketingLeads(admin, membership.tenantId) : [];
+  const leads = leadsAccess ? await loadTenantMarketingLeads(admin, membership.tenantId) : [];
+  const showLeads =
+    leadsAccess && (bookingEnabled || Boolean(settingsRow?.is_published) || websiteEnabled);
 
   return (
     <>
       <PageHeader
         title="Leads"
-        titleHint="Contact form submissions from your public marketing website."
-        backHref="/settings/website"
-        backLabel="Website"
+        titleHint="Quote requests and contact form submissions from your public forms."
+        backHref={websiteEnabled ? '/settings/website' : '/settings/booking-requests'}
+        backLabel={websiteEnabled ? 'Website' : 'Booking requests'}
         actions={
-          websiteEnabled ? (
-            <Link href="/settings/website" className={styles.inlineLink}>
-              Website settings
+          leadsAccess ? (
+            <Link
+              href={websiteEnabled ? '/settings/website' : '/settings/booking-requests'}
+              className={styles.inlineLink}
+            >
+              {websiteEnabled ? 'Website settings' : 'Booking form'}
             </Link>
           ) : undefined
         }
       />
 
       <Stack gap={6}>
-        {!websiteEnabled ? (
+        {!leadsAccess ? (
           <FeatureUpgradePanel
-            title="Upgrade to capture website leads"
-            description={`Upgrade to ${minimumTierLabelForFeature('tenantMarketingSite')} to collect inbound leads from your public site.`}
+            title="Upgrade to capture leads"
+            description={`Upgrade to ${minimumTierLabelForFeature('publicBookingRequest')} to collect booking requests, or ${minimumTierLabelForFeature('tenantMarketingSite')} for a full marketing website.`}
           />
-        ) : !settingsRow?.is_published ? (
+        ) : !showLeads ? (
           <p className={styles.readOnlyNotice} role="status">
-            Publish your website to start receiving leads.{' '}
-            <Link href="/settings/website" className={styles.inlineLink}>
-              Go to website settings
+            Publish your website or enable the booking request form to start receiving leads.{' '}
+            <Link href="/settings/booking-requests" className={styles.inlineLink}>
+              Booking requests
             </Link>
           </p>
         ) : (

@@ -5,19 +5,30 @@ import type { Database } from '@/lib/supabase/database.types';
 export function buildTenantWebsiteNavItems(params: {
   websiteEnabled: boolean;
   websitePublished: boolean;
+  bookingRequestEnabled: boolean;
   newLeadsCount: number;
 }): NavItem[] {
-  if (!params.websiteEnabled) return [];
+  const items: NavItem[] = [];
 
-  const items: NavItem[] = [
-    {
+  if (params.bookingRequestEnabled) {
+    items.push({
+      label: 'Booking requests',
+      href: '/settings/booking-requests',
+      icon: 'inquiries',
+    });
+  }
+
+  if (params.websiteEnabled) {
+    items.push({
       label: 'Website',
       href: '/settings/website',
       icon: 'website',
-    },
-  ];
+    });
+  }
 
-  if (params.websitePublished) {
+  const showLeads =
+    (params.websiteEnabled && params.websitePublished) || params.bookingRequestEnabled;
+  if (showLeads) {
     items.push({
       label: 'Leads',
       href: '/settings/website/leads',

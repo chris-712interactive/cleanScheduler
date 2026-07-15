@@ -47,6 +47,7 @@ export const loadTenantNavItemsForShell = cache(
     const admin = createAdminClient();
     const planTier = await getTenantEntitlementPlan(tenantId);
     const websiteFeatureEnabled = isFeatureEnabled(planTier, 'tenantMarketingSite');
+    const bookingRequestEnabled = isFeatureEnabled(planTier, 'publicBookingRequest');
 
     const [
       pendingRescheduleCount,
@@ -77,13 +78,14 @@ export const loadTenantNavItemsForShell = cache(
 
     const websitePublished = siteSettings.data?.is_published ?? false;
     const newLeadsCount =
-      websiteFeatureEnabled && websitePublished
+      (websiteFeatureEnabled && websitePublished) || bookingRequestEnabled
         ? await countNewTenantMarketingLeads(admin, tenantId)
         : 0;
 
     const websiteNavItems = buildTenantWebsiteNavItems({
       websiteEnabled: websiteFeatureEnabled,
       websitePublished,
+      bookingRequestEnabled,
       newLeadsCount,
     });
 

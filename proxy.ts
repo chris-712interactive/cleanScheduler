@@ -105,6 +105,10 @@ function isPublicTenantSitePath(path: string): boolean {
   return path === '/site' || path.startsWith('/site/');
 }
 
+function isPublicBookingRequestPath(path: string): boolean {
+  return path === '/book' || path === '/request';
+}
+
 function isUnifiedMarketingPath(path: string): boolean {
   if (path === '/sitemap.xml' || path === '/robots.txt') return true;
   return !UNIFIED_SITE_RESERVED_PREFIXES.some(
@@ -305,7 +309,7 @@ export async function proxy(request: NextRequest) {
     } else if (
       baseClassification.kind === 'tenant' &&
       baseClassification.tenantSlug &&
-      isPublicTenantSitePath(requestedPath)
+      (isPublicTenantSitePath(requestedPath) || isPublicBookingRequestPath(requestedPath))
     ) {
       baseClassification = { kind: 'site', tenantSlug: baseClassification.tenantSlug };
     }
@@ -351,7 +355,10 @@ export async function proxy(request: NextRequest) {
     const alreadyPrefixed = url.pathname === prefix || url.pathname.startsWith(`${prefix}/`);
 
     url.pathname = rewritePath;
-    if (!alreadyPrefixed) {
+    if (kind === 'site' && isPublicBookingRequestPath(requestedPath)) {
+      // Public booking form lives at app/book (and /request alias), not under /site.
+      url.pathname = requestedPath === '/request' ? '/book' : requestedPath;
+    } else if (!alreadyPrefixed) {
       url.pathname = rewritePath === '/' ? prefix : `${prefix}${rewritePath}`;
     }
 

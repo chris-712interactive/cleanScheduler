@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { serverEnv } from '@/lib/env';
 import { sendVisitRemindersForAllTenants } from '@/lib/schedule/visitReminders';
 
-/** Alias for {@link /api/cron/visit-reminders} — keeps existing Vercel cron path working. */
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {

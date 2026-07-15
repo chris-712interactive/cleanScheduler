@@ -25,6 +25,9 @@ type EntitlementFeature =
   | 'whiteLabelCustomerPortal'
   | 'proofOfServicePhotos'
   | 'gpsVerifiedCheckIn'
+  | 'invoiceReminderEmail'
+  | 'emailVisitReminders'
+  | 'publicBookingRequest'
   | 'proofOfServicePortalShare';
 
 type EntitlementLimitKey =
@@ -118,15 +121,18 @@ Entitlement flag is defined and enforced at send time. Requires sent.dm env vars
 
 See `docs/product/tenant-api-webhooks.md`.
 
-## Invoice reminders (Business email / Pro SMS)
+## Invoice & visit reminders (email all plans / SMS Pro)
 
-| Tier     | Overdue email | Overdue SMS          |
-| -------- | ------------- | -------------------- |
-| Starter  | No            | No                   |
-| Business | Yes           | No                   |
-| Pro      | Yes           | Yes (paid + sent.dm) |
+| Tier     | Invoice overdue email (`invoiceReminderEmail`) | Visit reminder email (`emailVisitReminders`) | SMS visit / invoice  |
+| -------- | ---------------------------------------------- | -------------------------------------------- | -------------------- |
+| Starter  | Yes                                            | Yes (opt-in)                                 | No                   |
+| Business | Yes                                            | Yes (opt-in)                                 | No                   |
+| Pro      | Yes                                            | Yes (opt-in)                                 | Yes (paid + sent.dm) |
+| Trial    | Yes                                            | Yes (opt-in)                                 | No                   |
 
-Daily cron `/api/cron/invoice-reminders` (11:00 UTC). Respects `check_reminder_hold_days` for unreceived check payments. Settings → Operations toggles.
+- Invoice overdue: daily cron `/api/cron/invoice-reminders` (11:00 UTC). Respects check holds. Settings → Operations.
+- Visit reminders (~24h before): cron `/api/cron/visit-reminders` (10:00 UTC). Migration `0083_email_visit_reminders.sql`.
+- Starter invoice emails omit customer-portal pay links when `customerPortal` is off (office contact copy instead).
 
 ## Multi-location (Pro)
 
@@ -188,6 +194,19 @@ Enforcement / UI:
 - `app/tenant/schedule/VisitDetailCard.tsx` — shows check-in location proof in the aside
 
 Migration: `0082_visit_gps_checkin.sql`. Product notes: `docs/product/gps-verified-check-in.md`.
+
+## Public booking request form (all plans)
+
+| Tier     | `publicBookingRequest` |
+| -------- | ---------------------- |
+| Starter  | Yes                    |
+| Business | Yes                    |
+| Pro      | Yes                    |
+| Trial    | Yes                    |
+
+Lite quote request at `{slug}.{apex}/book` (alias `/request`). Creates `tenant_marketing_leads` with `source = quote_request`. Does **not** unlock marketing CMS (`tenantMarketingSite` stays Business+). Settings → Booking requests; Leads inbox works with booking form or CMS.
+
+Migration: `0084_public_booking_request.sql`. Product notes: `docs/product/public-booking-request.md`.
 
 ## Tenant marketing website (Business CMS / Pro unified domain)
 
@@ -277,6 +296,8 @@ Current implementation:
   - `rolePermissions` — admin/viewer team invites and role changes
   - `proofOfServicePhotos` — visit completion photo uploads (`visitFieldActions.ts`)
   - `gpsVerifiedCheckIn` — point-in-time check-in location proof (`visitFieldActions.ts`)
+  - `invoiceReminderEmail` / `emailVisitReminders` — Operations toggles + reminder crons
+  - `publicBookingRequest` — `/book` form + Settings → Booking requests
   - `proofOfServicePortalShare` — customer portal completed-visit photos (`app/customer/visits/page.tsx`)
 - `lib/billing/automationWorkflows.ts`
   - enforces `maxAutomationWorkflows` when creating recurring visit rules

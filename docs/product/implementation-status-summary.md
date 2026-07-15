@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-07-15  
 **Branch:** `dev`  
-**Latest polish:** GPS-verified check-in MVP — see `docs/product/gps-verified-check-in.md`
+**Latest polish:** Starter email reminders + lite `/book` request form — see `docs/product/public-booking-request.md`
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -10,9 +10,15 @@ Use this file as the handoff snapshot for new AI sessions. Detailed specs live u
 
 ## Where we are
 
-**v1.0.0** is in PROD. **Release 1.1.0** work continues in parallel (quote ops wiring, Resend webhook verify, RLS smoke). **Bucket A** (doc sync + customer help articles) shipped via **PR #120**.
+**v1.0.0** is in PROD. **Release 1.1.0** work continues in parallel.
 
-**GPS-verified check-in (MVP)** is available on all plans: one-shot browser location on visit check-in; office sees proof on visit detail. Migration **`0082_visit_gps_checkin.sql`**. Not live fleet tracking.
+**Starter competitive pack (2026-07-15):**
+
+- GPS-verified check-in on all plans (`0082`)
+- Email overdue invoice + visit reminders on all plans; SMS stays Pro (`0083`, `/api/cron/visit-reminders`)
+- Lite public booking request at `{slug}/book` (`0084`, `publicBookingRequest`)
+
+**GPS-verified check-in (MVP)** — one-shot browser location on visit check-in; office sees proof on visit detail. Not live fleet tracking.
 
 **Bucket B — Phase 2** is **code-complete** on `feat/bucket-b-phase2`. All four slices (B1–B4) are implemented, typecheck/lint/test/build pass, and migrations **0073 → 0074 → 0075** must be applied in order on each Supabase environment.
 

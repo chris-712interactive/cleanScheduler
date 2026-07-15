@@ -86,6 +86,7 @@ export function OperationalSettingsForm({
   smsTrialLocked = false,
   sentDmConfigured = false,
   invoiceReminderEmailEditable = false,
+  visitReminderEmailEditable = false,
   invoiceReminderSmsEditable = false,
   smsUsageSummary,
 }: {
@@ -96,6 +97,7 @@ export function OperationalSettingsForm({
   smsTrialLocked?: boolean;
   sentDmConfigured?: boolean;
   invoiceReminderEmailEditable?: boolean;
+  visitReminderEmailEditable?: boolean;
   invoiceReminderSmsEditable?: boolean;
   smsUsageSummary?: string | null;
 }) {
@@ -468,7 +470,19 @@ export function OperationalSettingsForm({
                 <tr>
                   <th scope="row">Reminder ~24 hours before a scheduled cleaning</th>
                   <td>
-                    <span className={styles.notifyUnavailable}>Not available</span>
+                    {visitReminderEmailEditable ? (
+                      <label className={styles.notifyToggle}>
+                        <input
+                          type="checkbox"
+                          name="email_notify_visit_reminder"
+                          defaultChecked={snapshot.email_notify_visit_reminder}
+                          disabled={readOnly}
+                        />
+                        On
+                      </label>
+                    ) : (
+                      <span className={styles.notifyUnavailable}>Unavailable</span>
+                    )}
                   </td>
                   <td>
                     {smsDisabled ? (
@@ -535,9 +549,9 @@ export function OperationalSettingsForm({
           <p className={styles.subsectionTitle}>Overdue invoices</p>
           {!invoiceReminderEmailEditable ? (
             <div className={styles.planNotice}>
-              <p className={styles.planNoticeTitle}>Email reminders require Business or Pro</p>
+              <p className={styles.planNoticeTitle}>Email reminders unavailable</p>
               <p className={styles.planNoticeBody}>
-                Upgrade to send automatic overdue invoice emails to customers.
+                Overdue invoice email reminders are not enabled for this workspace.
               </p>
             </div>
           ) : null}
@@ -565,7 +579,7 @@ export function OperationalSettingsForm({
                         On
                       </label>
                     ) : (
-                      <span className={styles.notifyUnavailable}>Business+</span>
+                      <span className={styles.notifyUnavailable}>Unavailable</span>
                     )}
                   </td>
                   <td>

@@ -191,7 +191,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Online booking widget',
-          cleanScheduler: 'Customer portal & quotes (Business+)',
+          cleanScheduler: 'Public quote request form (all plans); portal Business+',
           competitor: 'High-converting booking forms (Pro+)',
         },
         {
@@ -346,7 +346,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'Website booking form',
-          cleanScheduler: 'Quotes & portal (Business+)',
+          cleanScheduler: 'Public /book quote request (all plans)',
           competitor: 'Core product — bedroom/bath/sqft pricing',
         },
         {
@@ -445,7 +445,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have a website booking widget like Launch27?',
         answer:
-          'Not as a standalone embeddable widget today. Clean Scheduler emphasizes office-driven quotes, customer portals on Business+, and email invoicing. If instant website self-booking is your primary sales channel, Launch27 Base is hard to beat.',
+          'Every plan includes a public quote / booking request form on your workspace subdomain (`/book`). It captures leads for your office — it is not an embeddable bedroom/bath pricing calculator or instant self-booking like Launch27. If that widget is your primary sales channel, Launch27 Base may still be a better fit.',
       },
       {
         question: 'Is Launch27 cheaper for larger teams?',

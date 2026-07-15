@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
-import { isFeatureEnabled } from '@/lib/billing/entitlements';
+import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import type { Database } from '@/lib/supabase/database.types';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
@@ -9,10 +8,6 @@ import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
 import { formatUsdFromCents } from '@/lib/format/money';
 
 type Admin = SupabaseClient<Database>;
-
-function isBusinessOrPro(tier: PlatformPlanTier): boolean {
-  return tier === 'business' || tier === 'pro';
-}
 
 async function invoiceBlockedByCheckHold(
   admin: Admin,
@@ -132,20 +127,21 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
   for (const ops of opsRows ?? []) {
     const tenantId = ops.tenant_id;
 
-    const [{ data: billing }, { data: tenant }] = await Promise.all([
+    const [{ data: billing }, { data: tenant }, plan] = await Promise.all([
       admin
         .from('tenant_billing_accounts')
         .select('status, platform_plan')
         .eq('tenant_id', tenantId)
         .maybeSingle(),
-      admin.from('tenants').select('name, slug').eq('id', tenantId).maybeSingle(),
+      admin.from('tenants').select('name, slug, business_email').eq('id', tenantId).maybeSingle(),
+      resolveTenantEntitlementPlan(admin, tenantId),
     ]);
 
-    const tier = (billing?.platform_plan ?? 'starter') as PlatformPlanTier;
-    const emailAllowed = ops.email_notify_invoice_overdue && isBusinessOrPro(tier);
+    const emailAllowed =
+      ops.email_notify_invoice_overdue && isFeatureEnabled(plan, 'invoiceReminderEmail');
     const smsAllowed =
       ops.sms_notify_invoice_overdue &&
-      isFeatureEnabled(tier, 'smsCommunication') &&
+      isFeatureEnabled(plan, 'smsCommunication') &&
       canUsePaidSubscriptionFeatures(billing?.status);
 
     if (!emailAllowed && !smsAllowed) {
@@ -166,7 +162,11 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
     }
 
     const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your provider';
-    const portalOrigin = await getCustomerPortalOriginForTenant(admin, tenantId);
+    const hasCustomerPortal = isFeatureEnabled(plan, 'customerPortal');
+    const portalOrigin = hasCustomerPortal
+      ? await getCustomerPortalOriginForTenant(admin, tenantId)
+      : null;
+    const officeContact = tenant?.business_email?.trim() || null;
 
     for (const inv of invoices ?? []) {
       const balance = inv.amount_cents - inv.amount_paid_cents;
@@ -186,7 +186,7 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
       }
 
       const contact = await loadCustomerContact(admin, inv.customer_id);
-      const portalUrl = `${portalOrigin}/invoices/${inv.id}`;
+      const portalUrl = portalOrigin ? `${portalOrigin}/invoices/${inv.id}` : null;
       const dueLabel = inv.due_date
         ? new Date(String(inv.due_date)).toLocaleDateString()
         : 'the due date';
@@ -204,7 +204,12 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
           skipped += 1;
         } else if (isResendConfigured()) {
           const subject = `Reminder: invoice from ${tenantName}`;
-          const text = `${tenantName}: Your invoice "${inv.title}" for ${balanceLabel} was due ${dueLabel}. Pay or view details: ${portalUrl}`;
+          const cta = portalUrl
+            ? `Pay or view details: ${portalUrl}`
+            : officeContact
+              ? `Contact ${tenantName} at ${officeContact} to pay or ask questions.`
+              : `Contact ${tenantName} to pay or ask questions.`;
+          const text = `${tenantName}: Your invoice "${inv.title}" for ${balanceLabel} was due ${dueLabel}. ${cta}`;
           const sent = await sendTransactionalEmail({
             to: contact.email,
             subject,
@@ -245,7 +250,7 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
               tenantName,
               invoiceTitle: inv.title,
               balance: balanceLabel,
-              portalUrl,
+              portalUrl: portalUrl ?? officeContact ?? tenantName,
             },
           });
           if (sent.ok) {

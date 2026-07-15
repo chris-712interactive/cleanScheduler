@@ -92,6 +92,14 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: { starter: true, business: true, pro: true },
   },
   {
+    label: 'Email visit & invoice reminders',
+    values: { starter: true, business: true, pro: true },
+  },
+  {
+    label: 'Public quote / booking request form',
+    values: { starter: true, business: true, pro: true },
+  },
+  {
     label: 'Proof photos in customer portal',
     values: { starter: false, business: false, pro: true },
   },

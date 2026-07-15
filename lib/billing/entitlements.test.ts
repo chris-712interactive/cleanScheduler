@@ -15,6 +15,14 @@ describe('entitlements', () => {
     expect(isFeatureEnabled('trial', 'gpsVerifiedCheckIn')).toBe(true);
   });
 
+  it('enables Starter email reminders and booking request, keeps SMS on Pro', () => {
+    expect(isFeatureEnabled('starter', 'invoiceReminderEmail')).toBe(true);
+    expect(isFeatureEnabled('starter', 'emailVisitReminders')).toBe(true);
+    expect(isFeatureEnabled('starter', 'publicBookingRequest')).toBe(true);
+    expect(isFeatureEnabled('starter', 'smsCommunication')).toBe(false);
+    expect(isFeatureEnabled('pro', 'smsCommunication')).toBe(true);
+  });
+
   it('exposes seat limits for starter', () => {
     expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedOfficeSeats).toBe(1);
     expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedFieldSeats).toBe(3);
