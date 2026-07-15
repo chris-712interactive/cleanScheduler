@@ -518,7 +518,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       {
         question: 'Does Clean Scheduler have GPS dispatch tracking?',
         answer:
-          'No. We focus on schedule visibility, visit completion, and payments — not live GPS fleet tracking. If GPS is critical, compare options on our comparison hub.',
+          'Business+ includes GPS-verified check-in: a one-time location stamp when crews check in to a visit, visible to office staff. We do not offer live GPS fleet tracking or continuous dispatch maps.',
       },
       {
         question: 'Is Clean Scheduler dispatch software for cleaning companies?',

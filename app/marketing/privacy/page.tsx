@@ -75,6 +75,16 @@ export default function PrivacyPolicyPage() {
                 referring URLs, and timestamps stored in server logs and session cookies.
               </li>
               <li>
+                <strong>Field check-in location (optional):</strong> when a workspace is on a plan
+                that includes GPS-verified check-in, we may collect approximate device location
+                (latitude, longitude, and accuracy) at the moment a crew member checks in to a visit
+                — or when office staff complete a visit that still needs check-in. Location is
+                requested through the browser only at that moment (not continuously), used to show
+                arrival proof to that workspace’s staff, and is not used for live fleet tracking. If
+                location permission is denied or unavailable, check-in still works without
+                coordinates.
+              </li>
+              <li>
                 <strong>Payment metadata:</strong> subscription status, invoice IDs, and transaction
                 amounts from Stripe (we do not store full payment card numbers).
               </li>

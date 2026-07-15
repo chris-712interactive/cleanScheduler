@@ -17,6 +17,10 @@ import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
+import {
+  appendCheckInLocationToFormData,
+  captureDeviceLocation,
+} from '@/lib/schedule/captureDeviceLocation';
 import { completeVisitWithPaymentAction, type VisitFieldActionState } from './visitFieldActions';
 import {
   PORTAL_INTERACTION_FLOWS,
@@ -54,6 +58,7 @@ export function CompleteVisitPaymentModal({
   defaultAmountCents,
   customerHasEmail,
   canAttachProofPhotos,
+  canUseGpsCheckIn = false,
   proofPhotosSharedWithCustomers,
   isFieldEmployee = false,
   isConsultation = false,
@@ -65,6 +70,7 @@ export function CompleteVisitPaymentModal({
   defaultAmountCents: number | null;
   customerHasEmail: boolean;
   canAttachProofPhotos: boolean;
+  canUseGpsCheckIn?: boolean;
   proofPhotosSharedWithCustomers: boolean;
   isFieldEmployee?: boolean;
   isConsultation?: boolean;
@@ -78,6 +84,7 @@ export function CompleteVisitPaymentModal({
   const [checkAmountDollars, setCheckAmountDollars] = useState('');
   const [stepError, setStepError] = useState<string | null>(null);
   const [proofPhotos, setProofPhotos] = useState<ProofPhotoCaptureItem[]>([]);
+  const [locating, setLocating] = useState(false);
 
   const [state, formAction, pending] = useActionState(completeVisitWithPaymentAction, initial);
   useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
@@ -162,7 +169,18 @@ export function CompleteVisitPaymentModal({
     setStepIndex((i) => Math.max(0, i - 1));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function attachGpsIfNeeded(formData: FormData) {
+    if (!canUseGpsCheckIn) return;
+    setLocating(true);
+    try {
+      const location = await captureDeviceLocation();
+      appendCheckInLocationToFormData(formData, location);
+    } finally {
+      setLocating(false);
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const err = validateCurrentStep();
     if (err) {
@@ -185,7 +203,15 @@ export function CompleteVisitPaymentModal({
       }
     }
 
+    await attachGpsIfNeeded(formData);
     startPortalInteraction(PORTAL_INTERACTION_FLOWS.visitComplete, { visitId });
+    formAction(formData);
+  }
+
+  async function handleConsultationSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    await attachGpsIfNeeded(formData);
     formAction(formData);
   }
 
@@ -204,7 +230,7 @@ export function CompleteVisitPaymentModal({
           </Dialog.Title>
 
           {isConsultation ? (
-            <form action={formAction} className={styles.form}>
+            <form action={formAction} className={styles.form} onSubmit={handleConsultationSubmit}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <input type="hidden" name="visit_id" value={visitId} />
               <input type="hidden" name="payment_collected" value="no" />
@@ -214,6 +240,9 @@ export function CompleteVisitPaymentModal({
                 {isFieldEmployee
                   ? ' Your office can create a quote once this is marked complete.'
                   : " You'll open a new quote for this customer next."}
+                {canUseGpsCheckIn
+                  ? ' Your phone may ask for location so the office gets arrival proof.'
+                  : null}
               </p>
               {state.error ? (
                 <p className={styles.error} role="alert">
@@ -222,12 +251,16 @@ export function CompleteVisitPaymentModal({
               ) : null}
               <div className={styles.actions}>
                 <Dialog.Close asChild>
-                  <Button type="button" variant="ghost" disabled={pending}>
+                  <Button type="button" variant="ghost" disabled={pending || locating}>
                     Cancel
                   </Button>
                 </Dialog.Close>
-                <Button type="submit" variant="primary" disabled={pending}>
-                  {pending ? 'Saving…' : 'Mark complete'}
+                <Button type="submit" variant="primary" disabled={pending || locating}>
+                  {pending || locating
+                    ? locating
+                      ? 'Getting location…'
+                      : 'Saving…'
+                    : 'Mark complete'}
                 </Button>
               </div>
             </form>
@@ -397,12 +430,17 @@ export function CompleteVisitPaymentModal({
 
                 <div className={styles.actions}>
                   {stepIndex > 0 ? (
-                    <Button type="button" variant="ghost" disabled={pending} onClick={goBack}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={pending || locating}
+                      onClick={goBack}
+                    >
                       Back
                     </Button>
                   ) : (
                     <Dialog.Close asChild>
-                      <Button type="button" variant="ghost" disabled={pending}>
+                      <Button type="button" variant="ghost" disabled={pending || locating}>
                         Cancel
                       </Button>
                     </Dialog.Close>
@@ -411,13 +449,15 @@ export function CompleteVisitPaymentModal({
                     <Button
                       type="submit"
                       variant="primary"
-                      disabled={pending}
+                      disabled={pending || locating}
                       onClick={() => setStepError(null)}
                     >
-                      {pending
-                        ? proofPhotos.length > 0
-                          ? 'Uploading photos…'
-                          : 'Completing…'
+                      {pending || locating
+                        ? locating
+                          ? 'Getting location…'
+                          : proofPhotos.length > 0
+                            ? 'Uploading photos…'
+                            : 'Completing…'
                         : 'Mark complete'}
                     </Button>
                   ) : (

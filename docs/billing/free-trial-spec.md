@@ -103,6 +103,7 @@ These mirror “evaluate the business” without paid integrations or Pro-only s
 | `jobCosting`                | **Yes** | Tips/commissions are core ops                                     |
 | `customerPortal`            | **Yes** | Strong eval hook — customers accept quotes, pay invoices          |
 | `proofOfServicePhotos`      | **Yes** | Field crew workflow                                               |
+| `gpsVerifiedCheckIn`        | **Yes** | Arrival location proof on check-in                                |
 | `proofOfServicePortalShare` | **No**  | Pro-only customer portal share                                    |
 | `campaigns`                 | **No**  | Marketing email excluded (see limits)                             |
 | `salesTaxSummary`           | **Yes** | Basic financial close                                             |

@@ -63,6 +63,9 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   if (features.proofOfServicePhotos) {
     bullets.push('Proof-of-service photos on completed visits');
   }
+  if (features.gpsVerifiedCheckIn) {
+    bullets.push('GPS-verified check-in (arrival location proof)');
+  }
   if (features.proofOfServicePortalShare) {
     bullets.push('Proof photos shared with customers in portal');
   }

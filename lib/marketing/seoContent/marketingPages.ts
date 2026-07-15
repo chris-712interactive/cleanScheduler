@@ -593,12 +593,12 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         title: 'Visit check-in as lightweight timekeeping',
         paragraphs: [
-          'Field employees check in and complete visits from mobile-friendly views. That gives your office a record of who was on site and when work finished — without GPS punch clocks or a separate timekeeping system.',
+          'Field employees check in and complete visits from mobile-friendly views. That gives your office a record of who was on site and when work finished. On Business+, check-in can also capture GPS location proof — without a separate timeclock app or continuous GPS tracking.',
         ],
         bullets: [
           'Visit check-in and completion workflow',
           'Field schedule view for cleaners',
-          'Proof-of-service photos on Business+',
+          'GPS-verified check-in and proof-of-service photos on Business+',
         ],
         link: {
           href: '/features/mobile-scheduling-for-cleaners',
@@ -623,7 +623,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         title: 'What Clean Scheduler is not',
         paragraphs: [
-          'We are not a full HR or timeclock platform. If you need GPS geofencing, break tracking, or PTO management, pair Clean Scheduler with a dedicated timekeeping tool. Our focus is cleaning-specific scheduling, visit completion, and payroll-ready exports for operators who outgrew spreadsheets.',
+          'We are not a full HR or timeclock platform. Business+ includes GPS-verified visit check-in for arrival proof. If you need continuous geofencing, break tracking, or PTO management, pair Clean Scheduler with a dedicated timekeeping tool. Our focus is cleaning-specific scheduling, visit completion, and payroll-ready exports for operators who outgrew spreadsheets.',
         ],
       },
     ],
@@ -641,7 +641,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler replace a timeclock app?',
         answer:
-          'Partially. Visit check-in and completion track field work tied to customer jobs. For full timeclock features (breaks, geofencing, PTO), use a dedicated HR tool alongside Clean Scheduler.',
+          'Partially. Visit check-in and completion track field work tied to customer jobs, and Business+ can capture GPS location proof at check-in. For full timeclock features (breaks, continuous geofencing, PTO), use a dedicated HR tool alongside Clean Scheduler.',
       },
       {
         question: 'Can I export payroll hours from Clean Scheduler?',
@@ -737,7 +737,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         question: 'How does this compare to competitor cleaner apps?',
         answer:
-          'Many maid-service tools offer a dedicated cleaner app with GPS. Clean Scheduler focuses on scheduling, visit completion, and payments tied to your quotes and invoices — see our comparison hub for details on ZenMaid, Launch27, and others.',
+          'Many maid-service tools offer a dedicated cleaner app with live GPS. Clean Scheduler focuses on scheduling, visit completion, GPS check-in proof on Business+, and payments tied to your quotes and invoices — see our comparison hub for details on ZenMaid, Launch27, and others.',
       },
     ],
     relatedLinks: [

@@ -21,6 +21,7 @@ export type EntitlementFeature =
   | 'smsCommunication'
   | 'whiteLabelCustomerPortal'
   | 'proofOfServicePhotos'
+  | 'gpsVerifiedCheckIn'
   | 'proofOfServicePortalShare'
   | 'customServiceTypes'
   | 'customerPromotions'
@@ -85,6 +86,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       smsCommunication: false,
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: false,
+      gpsVerifiedCheckIn: false,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
       customerPromotions: false,
@@ -130,6 +132,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       smsCommunication: false,
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: true,
+      gpsVerifiedCheckIn: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
       customerPromotions: true,
@@ -175,6 +178,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       smsCommunication: true,
       whiteLabelCustomerPortal: true,
       proofOfServicePhotos: true,
+      gpsVerifiedCheckIn: true,
       proofOfServicePortalShare: true,
       customServiceTypes: true,
       customerPromotions: true,
@@ -226,6 +230,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     smsCommunication: false,
     whiteLabelCustomerPortal: false,
     proofOfServicePhotos: true,
+    gpsVerifiedCheckIn: true,
     proofOfServicePortalShare: false,
     customServiceTypes: false,
     customerPromotions: true,
