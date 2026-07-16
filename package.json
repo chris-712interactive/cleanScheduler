@@ -39,7 +39,7 @@
     "canvas-confetti": "^1.9.4",
     "d3-geo": "^3.1.1",
     "jose": "^6.2.3",
-    "lucide-react": "^1.17.0",
+    "lucide-react": "^1.24.0",
     "next": "^16.2.10",
     "pdfkit": "^0.19.1",
     "plaid": "^42.2.0",
