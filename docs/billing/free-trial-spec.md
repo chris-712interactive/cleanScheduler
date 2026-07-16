@@ -35,16 +35,21 @@ This document defines the target free-trial flow: **DB-only trial at signup**, a
 ### A. Signup (new workspace)
 
 ```
-Marketing onboarding form
-  → create auth user + tenant + membership
-  → insert tenant_billing_accounts:
-       status = 'trialing'
-       trial_started_at = now
-       trial_ends_at = now + TRIAL_DAYS
-       platform_plan = NULL
-       stripe_* = NULL
-  → sign in → redirect to tenant home (no Stripe)
+Marketing onboarding form (/start-trial)
+  → create auth user with email_confirm=true (always for trial owners;
+       ONBOARDING_EMAIL_CONFIRM_MODE does not gate this path)
+  → tenant + membership + billing (trialing, platform_plan NULL)
+  → fire-and-forget Resend welcome email (“Open your workspace”) — not Auth confirm
+  → signInWithPassword → redirect to {slug}.{apex}/ (no Stripe)
+  → if sign-in fails after create: success Alert + link to {slug}/sign-in
 ```
+
+**Auth note:** Trial owners are never blocked on a Supabase confirmation email.
+Invite/employee flows may still honor `ONBOARDING_EMAIL_CONFIRM_MODE`.
+
+**Post-login routing:** Signing in on any host (apex, wrong tenant, etc.) resolves the
+correct portal from role/membership (`resolvePostLoginDestination`) and redirects
+there. Access-denied pages offer a primary CTA to that destination.
 
 ### B. During trial
 

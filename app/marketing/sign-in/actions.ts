@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { needsMfaChallenge } from '@/lib/auth/mfa';
+import { resolvePostLoginDestinationForUser } from '@/lib/auth/resolvePostLoginDestination';
 import { parseAllowedAuthRedirectOrigin } from '@/lib/auth/whiteLabelRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -55,7 +56,7 @@ export async function signInWithPassword(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: error.message };
@@ -65,7 +66,19 @@ export async function signInWithPassword(
     redirect(`/sign-in/mfa?next=${encodeURIComponent(nextPath)}`);
   }
 
-  redirect(nextPath);
+  const h = await headers();
+  const currentOrigin = getOriginFromHeaders(h);
+  const user = data.user;
+  if (!user) {
+    redirect(nextPath);
+  }
+
+  const destination = await resolvePostLoginDestinationForUser({
+    user,
+    nextPath,
+    currentOrigin,
+  });
+  redirect(destination.url);
 }
 
 export async function signInWithGoogle(formData: FormData): Promise<void> {

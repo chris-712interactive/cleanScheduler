@@ -51,6 +51,12 @@ export function MfaChallengeForm({ nextPath }: { nextPath: string }) {
       return;
     }
 
+    // Absolute URLs (cross-subdomain portal routing) need a full navigation.
+    if (nextPath.startsWith('http://') || nextPath.startsWith('https://')) {
+      window.location.assign(nextPath);
+      return;
+    }
+
     router.push(nextPath);
     router.refresh();
   };
