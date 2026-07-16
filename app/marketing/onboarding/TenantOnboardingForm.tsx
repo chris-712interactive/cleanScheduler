@@ -183,7 +183,18 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
 
   return (
     <form action={formAction} className={styles.form} onSubmit={handleSubmit} noValidate>
-      {state.error ? <Alert>{state.error}</Alert> : null}
+      {state.error ? <Alert variant="danger">{state.error}</Alert> : null}
+      {state.success ? (
+        <Alert variant="success">
+          {state.success}
+          {state.signInUrl ? (
+            <>
+              {' '}
+              <Link href={state.signInUrl}>Open workspace sign-in</Link>
+            </>
+          ) : null}
+        </Alert>
+      ) : null}
 
       <div className={styles.steps} aria-label="Trial setup progress">
         <span data-active={step === 0 || undefined}>1. Workspace</span>

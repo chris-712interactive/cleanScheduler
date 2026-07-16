@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import { getPortalContext } from '@/lib/portal';
 import { getAuthContext } from '@/lib/auth/session';
+import { resolvePostLoginDestinationForUser } from '@/lib/auth/resolvePostLoginDestination';
 import { signOut } from '@/lib/auth/signOutAction';
 import styles from './access-denied.module.scss';
 
@@ -18,11 +20,19 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function getOriginFromHeaders(h: Headers): string {
+  const forwardedProto = h.get('x-forwarded-proto');
+  const host = h.get('x-forwarded-host') ?? h.get('host');
+  const protocol = forwardedProto ?? 'http';
+  if (!host) return 'http://lvh.me:3000';
+  return `${protocol}://${host}`;
+}
+
 const COPY: Record<string, { title: string; description: string }> = {
   membership: {
     title: 'No access to this workspace',
     description:
-      'You are signed in, but this account is not a member of this organization on Clean Scheduler. Ask an owner to invite you, or sign out and use a different account.',
+      'You are signed in, but this account is not a member of this organization on Clean Scheduler. Ask an owner to invite you, or open the workspace you belong to.',
   },
   membership_inactive: {
     title: 'Workspace access deactivated',
@@ -37,7 +47,7 @@ const COPY: Record<string, { title: string; description: string }> = {
   forbidden: {
     title: 'Portal unavailable',
     description:
-      'Your account does not have permission to use this portal. Sign out and try another account, or use the link you were given.',
+      'Your account does not have permission to use this portal. Open the portal that matches your account, or sign out and try another account.',
   },
   tenant_config: {
     title: 'Setup incomplete',
@@ -69,6 +79,19 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
   const { tenantSlug } = await getPortalContext();
   const auth = await getAuthContext();
 
+  let recovery: { url: string; ctaLabel: string } | null = null;
+  if (auth) {
+    const h = await headers();
+    const destination = await resolvePostLoginDestinationForUser({
+      user: auth.user,
+      nextPath: '/',
+      currentOrigin: getOriginFromHeaders(h),
+    });
+    if (destination.kind !== 'home') {
+      recovery = { url: destination.url, ctaLabel: destination.ctaLabel };
+    }
+  }
+
   return (
     <main className={styles.page}>
       <Container size="sm">
@@ -84,9 +107,17 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
             <p className={styles.meta}>You are not signed in.</p>
           )}
           <div className={styles.actions}>
+            {recovery ? (
+              <Link href={recovery.url} className={styles.primaryButton}>
+                {recovery.ctaLabel}
+              </Link>
+            ) : null}
             {auth ? (
               <form action={signOut}>
-                <button type="submit" className={styles.primaryButton}>
+                <button
+                  type="submit"
+                  className={recovery ? styles.linkButton : styles.primaryButton}
+                >
                   Sign out
                 </button>
               </form>

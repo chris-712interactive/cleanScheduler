@@ -49,7 +49,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <Container size="sm">
           <Card
             title="Sign in to Clean Scheduler"
-            description="Sign in to your existing workspace. New businesses should start a free trial first."
+            description="Sign in here and we’ll send you to the right place — your workspace, customer portal, or admin. After a free trial, owners can also use their workspace URL directly."
           >
             <SignInForm nextPath={nextPath} urlError={signInUrlError} defaultEmail={defaultEmail} />
             <p className={styles.helpText}>

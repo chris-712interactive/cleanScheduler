@@ -5,14 +5,18 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
-import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
+import { shouldAutoConfirmTrialOwnerEmail } from '@/lib/auth/emailConfirmMode';
 import { publicEnv } from '@/lib/env';
+import { maybeSendTrialWelcomeEmail } from '@/lib/email/trialWelcomeEmail';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
 
 export interface TenantOnboardingState {
   error?: string;
+  success?: string;
+  /** Absolute sign-in URL when workspace exists but session could not be created. */
+  signInUrl?: string;
 }
 const TRIAL_DAYS = 7;
 
@@ -103,7 +107,7 @@ export async function createTenantAndOwner(
     return { error: 'That workspace slug is unavailable. Try another.' };
   }
 
-  const autoConfirmEmail = shouldAutoConfirmEmail();
+  const autoConfirmEmail = shouldAutoConfirmTrialOwnerEmail();
   const createdUser = await admin.auth.admin.createUser({
     email,
     password,
@@ -227,20 +231,26 @@ export async function createTenantAndOwner(
     },
   });
 
+  const requestOrigin = resolveRequestOrigin(requestHeaders);
+  const tenantOrigin = buildTenantOrigin(slug, requestOrigin);
+  const signInUrl = `${tenantOrigin}/sign-in`;
+
+  void maybeSendTrialWelcomeEmail({
+    to: email,
+    ownerName: displayName,
+    businessName,
+    slug,
+    trialDays: TRIAL_DAYS,
+  });
+
   const sessionClient = await createClient();
   const signInResult = await sessionClient.auth.signInWithPassword({ email, password });
   if (signInResult.error) {
-    if (!autoConfirmEmail) {
-      return {
-        error:
-          'Account and workspace created. Confirm your email (Supabase Auth setting) before first sign-in.',
-      };
-    }
-    return { error: signInResult.error.message };
+    return {
+      success: `Your workspace is ready. We could not sign you in automatically — open your workspace and sign in with the password you just created.`,
+      signInUrl,
+    };
   }
-
-  const requestOrigin = resolveRequestOrigin(requestHeaders);
-  const tenantOrigin = buildTenantOrigin(slug, requestOrigin);
 
   redirect(`${tenantOrigin}/`);
 }

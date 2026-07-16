@@ -76,7 +76,8 @@ export function SignInForm({
         <Link href="/start-trial" className={styles.trialLink}>
           Start your free trial
         </Link>{' '}
-        to create a workspace — sign-in alone does not set up a business account.
+        to create a workspace — you&apos;ll be signed in right away (no confirmation email
+        required).
       </p>
 
       <div className={styles.divider}>
