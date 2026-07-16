@@ -47,7 +47,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-plaid-link": "^4.1.1",
-    "resend": "^6.12.3",
+    "resend": "^6.17.2",
     "rrule": "^2.8.1",
     "sharp": "^0.35.1",
     "stripe": "^22.2.0",
