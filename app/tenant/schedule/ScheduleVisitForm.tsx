@@ -34,6 +34,7 @@ export function ScheduleVisitForm({
   defaults,
   isConsultation = false,
   consultationDurationMinutes = 60,
+  returnTo = null,
 }: {
   tenantSlug: string;
   tenantTimezone: string;
@@ -50,6 +51,7 @@ export function ScheduleVisitForm({
   };
   isConsultation?: boolean;
   consultationDurationMinutes?: number;
+  returnTo?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
 
@@ -133,6 +135,7 @@ export function ScheduleVisitForm({
         name="visit_purpose"
         value={isConsultation ? 'consultation' : 'service'}
       />
+      {returnTo ? <input type="hidden" name="return_to" value={returnTo} /> : null}
       <input
         type="hidden"
         name="client_timezone_offset"

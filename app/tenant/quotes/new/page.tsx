@@ -11,6 +11,7 @@ import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { createAdminClient } from '@/lib/supabase/server';
+import { loadQuoteConsultationPromptsByCustomer } from '@/lib/tenant/customerConsultation';
 import { QuoteCreateWizard } from '../QuoteCreateWizard';
 import type { CustomerPropertyGroup } from '../quoteFormTypes';
 import styles from '../quotes.module.scss';
@@ -112,9 +113,14 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
 
   const admin = createAdminClient();
-  const [jobTypeCatalog, ops] = await Promise.all([
+  const [jobTypeCatalog, ops, consultationByCustomerId] = await Promise.all([
     loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
     loadTenantOperationalSettings(admin, membership.tenantId),
+    loadQuoteConsultationPromptsByCustomer(
+      admin,
+      membership.tenantId,
+      customerRows.map((row) => row.id),
+    ),
   ]);
   const autoScheduleEnabled = isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode);
 
@@ -138,6 +144,7 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
           customerPropertyGroups={customerPropertyGroups}
           jobTypeCatalog={jobTypeCatalog}
           autoScheduleEnabled={autoScheduleEnabled}
+          consultationByCustomerId={consultationByCustomerId}
           defaults={{
             customerId: defaultCustomerId,
             propertyId: defaultPropertyId,

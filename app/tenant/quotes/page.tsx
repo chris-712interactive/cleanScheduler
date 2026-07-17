@@ -135,9 +135,14 @@ export default async function TenantQuotesPage({
             : 'Drag cards between columns on desktop, or use Move to on smaller screens.'
         }
         actions={
-          <Button variant="primary" as="a" href="/quotes/new" iconLeft={<Plus size={16} />}>
-            Add quote
-          </Button>
+          <div className={styles.quoteHeaderActions}>
+            <Button as="a" href="/schedule/new?purpose=consultation" variant="secondary">
+              Schedule consultation
+            </Button>
+            <Button variant="primary" as="a" href="/quotes/new" iconLeft={<Plus size={16} />}>
+              Add quote
+            </Button>
+          </div>
         }
       />
 

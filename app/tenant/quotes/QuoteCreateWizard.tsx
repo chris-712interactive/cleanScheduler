@@ -26,6 +26,10 @@ import { QuoteLiveTotalSidebar } from './QuoteLiveTotalSidebar';
 import type { CustomerPropertyGroup, QuoteCustomerOption } from './quoteFormTypes';
 import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import {
+  QuoteConsultationPrompt,
+  type QuoteConsultationPromptInfo,
+} from './QuoteConsultationPrompt';
 import styles from './quotes.module.scss';
 
 const initial: QuoteFormState = {};
@@ -56,6 +60,7 @@ export function QuoteCreateWizard({
   customerPropertyGroups,
   jobTypeCatalog = [],
   autoScheduleEnabled = false,
+  consultationByCustomerId = {},
   defaults,
 }: {
   tenantSlug: string;
@@ -63,6 +68,7 @@ export function QuoteCreateWizard({
   customerPropertyGroups: CustomerPropertyGroup[];
   jobTypeCatalog?: JobTypeCatalogEntry[];
   autoScheduleEnabled?: boolean;
+  consultationByCustomerId?: Record<string, QuoteConsultationPromptInfo>;
   defaults?: {
     customerId?: string;
     propertyId?: string;
@@ -436,7 +442,16 @@ export function QuoteCreateWizard({
       <input type="hidden" name="scope_template_id" value={scopeTemplateId} />
       <input type="hidden" name="quote_property_kind" value={quotePropertyType} />
 
-      {state.error ? (
+      {state.error && state.schedulePath ? (
+        <QuoteConsultationPrompt
+          customerId={customerSource === 'existing' ? customerId : ''}
+          propertyId={propertyId || null}
+          schedulePathOverride={state.schedulePath}
+          errorMessage={state.error}
+          returnTo="/quotes/new"
+        />
+      ) : null}
+      {state.error && !state.schedulePath ? (
         <p className={styles.error} role="alert">
           {state.error}
         </p>
@@ -546,6 +561,14 @@ export function QuoteCreateWizard({
                 />
                 {effectiveCustomerId ? (
                   <>
+                    {consultationByCustomerId[effectiveCustomerId] && !state.error ? (
+                      <QuoteConsultationPrompt
+                        customerId={effectiveCustomerId}
+                        propertyId={propertyId || null}
+                        prompt={consultationByCustomerId[effectiveCustomerId]}
+                        returnTo="/quotes/new"
+                      />
+                    ) : null}
                     <fieldset className={styles.propertySourceFieldset}>
                       <legend className={styles.label}>Service location</legend>
                       <div className={styles.customerSourceRow}>
@@ -926,6 +949,17 @@ export function QuoteCreateWizard({
               placeholder="Walkthrough notes, margin targets, follow-up reminders…"
             />
             <h3 className={styles.wizardSubheading}>Ready to save or send?</h3>
+            {customerSource === 'existing' &&
+            customerId &&
+            consultationByCustomerId[customerId] &&
+            !state.error ? (
+              <QuoteConsultationPrompt
+                customerId={customerId}
+                propertyId={propertyId || null}
+                prompt={consultationByCustomerId[customerId]}
+                returnTo="/quotes/new"
+              />
+            ) : null}
             <ul className={styles.completenessList}>
               {completeness.map((item) => (
                 <li

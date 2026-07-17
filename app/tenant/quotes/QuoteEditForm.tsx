@@ -13,6 +13,10 @@ import { QUOTE_STATUS_LABEL, TENANT_QUOTE_STATUS_EDIT_OPTIONS } from '@/lib/tena
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditorLoadable';
 import { QuoteHeaderPricingFields } from './QuoteHeaderPricingFields';
 import { QuotePromotionFields } from './QuotePromotionFields';
+import {
+  QuoteConsultationPrompt,
+  type QuoteConsultationPromptInfo,
+} from './QuoteConsultationPrompt';
 import styles from './quotes.module.scss';
 
 export type { QuoteEditSnapshot, QuoteEditLineItem } from '@/lib/tenant/loadQuoteEditSnapshot';
@@ -35,6 +39,7 @@ export function QuoteEditForm({
   quotePropertyKind = null,
   autoScheduleEnabled = false,
   promotionsEnabled = false,
+  consultationPrompt = null,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -46,6 +51,7 @@ export function QuoteEditForm({
   quotePropertyKind?: CustomerPropertyKind | null;
   autoScheduleEnabled?: boolean;
   promotionsEnabled?: boolean;
+  consultationPrompt?: QuoteConsultationPromptInfo | null;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [rowsRevision, setRowsRevision] = useState(0);
@@ -105,10 +111,27 @@ export function QuoteEditForm({
     <form onSubmit={handleSubmit} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="quote_id" value={snapshot.quoteId} />
-      {state.error ? (
+      {state.error && state.schedulePath ? (
+        <QuoteConsultationPrompt
+          customerId={customerId}
+          propertyId={propertyDefault || null}
+          schedulePathOverride={state.schedulePath}
+          errorMessage={state.error}
+          returnTo={`/quotes/${snapshot.quoteId}`}
+        />
+      ) : null}
+      {state.error && !state.schedulePath ? (
         <p className={styles.error} role="alert">
           {state.error}
         </p>
+      ) : null}
+      {consultationPrompt && !state.schedulePath ? (
+        <QuoteConsultationPrompt
+          customerId={customerId}
+          propertyId={propertyDefault || null}
+          prompt={consultationPrompt}
+          returnTo={`/quotes/${snapshot.quoteId}`}
+        />
       ) : null}
       {state.success ? (
         <p className={styles.success} role="status">
