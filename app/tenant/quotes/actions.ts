@@ -72,8 +72,7 @@ export interface QuoteFormState {
 }
 
 export type MoveQuoteStatusResult =
-  | { ok: true }
-  | { ok: false; error: string; schedulePath?: string };
+  { ok: true } | { ok: false; error: string; schedulePath?: string };
 
 const QUOTE_STATUSES = new Set<Database['public']['Enums']['quote_status']>([
   'draft',
