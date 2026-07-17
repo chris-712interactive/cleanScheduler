@@ -5,12 +5,13 @@
  * and keeps the resolved theme synchronised with the OS when "system" is
  * selected.
  *
- * Marketing hosts always stay in light mode; user preference is restored on
- * tenant, admin, and customer portals.
+ * Marketing hosts and auth/signup paths always stay in light mode; user
+ * preference is restored on tenant, admin, and customer portals.
  *
  * The pre-hydration script (themeScript.ts) handles the *initial* paint by
  * setting `data-theme` on <html> before React renders. This provider then
- * takes over for runtime updates (user toggles + OS-level changes).
+ * takes over for runtime updates (user toggles + OS-level changes + leaving
+ * light-locked routes via client navigation).
  */
 
 import {
@@ -22,10 +23,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import {
+  DEFAULT_THEME_PREFERENCE,
   THEME_STORAGE_KEY,
   isLightOnlyPath,
   isMarketingHostname,
+  parseThemePreference,
   type ResolvedTheme,
   type ThemePreference,
 } from './themeScript';
@@ -39,11 +43,9 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function readInitialPreference(): ThemePreference {
-  if (typeof window === 'undefined') return 'system';
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
-  return 'system';
+function readStoredPreference(): ThemePreference {
+  if (typeof window === 'undefined') return DEFAULT_THEME_PREFERENCE;
+  return parseThemePreference(window.localStorage.getItem(THEME_STORAGE_KEY));
 }
 
 function resolve(preference: ThemePreference): ResolvedTheme {
@@ -73,30 +75,33 @@ function shouldLockLightTheme(): boolean {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [marketingThemeLocked] = useState(() =>
+  const pathname = usePathname();
+  const [marketingThemeLocked, setMarketingThemeLocked] = useState(() =>
     typeof window === 'undefined' ? false : shouldLockLightTheme(),
   );
-  const [preference, setPreferenceState] = useState<ThemePreference>('system');
+  const [preference, setPreferenceState] = useState<ThemePreference>(DEFAULT_THEME_PREFERENCE);
   const [resolved, setResolved] = useState<ResolvedTheme>('light');
 
   useEffect(() => {
     if (shouldLockLightTheme()) {
       applyMarketingLightTheme();
+      setMarketingThemeLocked(true);
       setPreferenceState('light');
       setResolved('light');
       return;
     }
 
     clearMarketingLightTheme();
-    const initial = readInitialPreference();
-    const initialResolved = resolve(initial);
-    setPreferenceState(initial);
-    setResolved(initialResolved);
-    applyToDom(initial, initialResolved);
-  }, []);
+    setMarketingThemeLocked(false);
+    const stored = readStoredPreference();
+    const nextResolved = resolve(stored);
+    setPreferenceState(stored);
+    setResolved(nextResolved);
+    applyToDom(stored, nextResolved);
+  }, [pathname]);
 
   useEffect(() => {
-    if (shouldLockLightTheme()) return;
+    if (marketingThemeLocked) return;
     if (preference !== 'system') return;
     if (typeof window === 'undefined') return;
 
@@ -108,7 +113,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
-  }, [preference]);
+  }, [preference, marketingThemeLocked]);
 
   const setPreference = useCallback((next: ThemePreference) => {
     if (shouldLockLightTheme()) return;

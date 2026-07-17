@@ -17,6 +17,13 @@ export const THEME_STORAGE_KEY = 'cs_theme';
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
 
+/**
+ * Default when the user has never chosen a theme. Prefer light so leaving
+ * always-light marketing/auth surfaces does not suddenly follow OS dark.
+ * Users can still pick System / Dark via the portal toggle.
+ */
+export const DEFAULT_THEME_PREFERENCE: ThemePreference = 'light';
+
 /** Auth and signup surfaces always render in light mode, even on tenant hosts. */
 export const LIGHT_ONLY_PATHS = [
   '/sign-in',
@@ -30,6 +37,12 @@ export const LIGHT_ONLY_PATHS = [
 
 export function isLightOnlyPath(pathname: string): boolean {
   return (LIGHT_ONLY_PATHS as readonly string[]).includes(pathname);
+}
+
+/** Parse a raw localStorage value into a theme preference. */
+export function parseThemePreference(raw: string | null | undefined): ThemePreference {
+  if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
+  return DEFAULT_THEME_PREFERENCE;
 }
 
 /** Mirrors middleware portal classification for the marketing site. */
@@ -127,7 +140,7 @@ export const themeScript = /* javascript */ `
     var KEY = '${THEME_STORAGE_KEY}';
     var pref = localStorage.getItem(KEY);
     if (pref !== 'light' && pref !== 'dark' && pref !== 'system') {
-      pref = 'system';
+      pref = '${DEFAULT_THEME_PREFERENCE}';
     }
 
     var resolved = pref;
@@ -141,7 +154,7 @@ export const themeScript = /* javascript */ `
     root.setAttribute('data-theme-pref', pref);
   } catch (e) {
     document.documentElement.setAttribute('data-theme', 'light');
-    document.documentElement.setAttribute('data-theme-pref', 'system');
+    document.documentElement.setAttribute('data-theme-pref', '${DEFAULT_THEME_PREFERENCE}');
   }
 })();
 `;
