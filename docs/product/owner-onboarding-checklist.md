@@ -109,8 +109,8 @@ Steps are defined in code (`OWNER_ONBOARDING_STEPS` constant). Completion is com
 | ID         | Title                     | Complete when                                                                                        | Route                    |
 | ---------- | ------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ |
 | `business` | Complete business profile | `tenants.timezone` set **and** (`business_email` or `business_phone`) **and** address line 1 or city | `/settings/business`     |
-| `quote`    | Create your first quote   | ≥1 non-superseded quote                                                                              | `/quotes/new`            |
 | `customer` | Add a customer            | ≥1 active customer                                                                                   | `/customers/new`         |
+| `quote`    | Create your first quote   | ≥1 non-superseded quote                                                                              | `/quotes/new`            |
 | `visit`    | Schedule a visit          | ≥1 scheduled visit                                                                                   | `/schedule/new`          |
 | `connect`  | Set up online payments    | `tenants.stripe_connect_status = complete`                                                           | `/billing/payment-setup` |
 | `invoice`  | Send a customer invoice   | ≥1 invoice (any status except void)                                                                  | `/billing/invoices/new`  |

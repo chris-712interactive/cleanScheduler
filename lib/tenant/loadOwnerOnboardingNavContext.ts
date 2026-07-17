@@ -12,7 +12,7 @@ import type { Database } from '@/lib/supabase/database.types';
 
 export interface OwnerOnboardingNavContext {
   gettingStartedNavItem: NavItem | null;
-  /** Business profile, quote, customer, and visit steps complete — show Connect banner after this. */
+  /** Business profile, customer, quote, and visit steps complete — show Connect banner after this. */
   coreSetupComplete: boolean;
 }
 
