@@ -12,6 +12,7 @@ import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm'
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { createAdminClient } from '@/lib/supabase/server';
 import { loadConsultationDurationMinutes } from '@/lib/tenant/consultationDuration';
+import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
 import { ScheduleVisitForm } from '../ScheduleVisitForm';
 import styles from '../schedule.module.scss';
 
@@ -73,6 +74,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   const defaultPropertyId = firstParam(sp.property_id)?.trim() ?? '';
   const defaultTitle = firstParam(sp.title)?.trim() ?? '';
   const isConsultation = firstParam(sp.purpose)?.trim() === 'consultation';
+  const returnToRaw = firstParam(sp.return_to)?.trim() ?? '';
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/schedule/new');
@@ -167,6 +169,8 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
     label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
   }));
 
+  const returnTo = sanitizeInternalReturnPath(returnToRaw);
+
   return (
     <>
       <PageHeader
@@ -177,8 +181,8 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
             : 'Pick a customer, optional site, and time window. You return to the calendar when you save.'
         }
         actions={
-          <Link href="/schedule" className={styles.backToSchedule}>
-            ← Back to schedule
+          <Link href={returnTo ?? '/schedule'} className={styles.backToSchedule}>
+            {returnTo ? '← Back to quote' : '← Back to schedule'}
           </Link>
         }
       />
@@ -200,6 +204,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
           employeeOptions={employeeOptions}
           isConsultation={isConsultation}
           consultationDurationMinutes={consultationDurationMinutes}
+          returnTo={returnTo}
           defaults={{
             customerId: defaultCustomerId,
             quoteId: isConsultation ? undefined : defaultQuoteId,

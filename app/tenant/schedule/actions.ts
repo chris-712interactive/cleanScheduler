@@ -29,6 +29,7 @@ import {
   CONSULTATION_VISIT_TITLE,
   loadConsultationDurationMinutes,
 } from '@/lib/tenant/consultationDuration';
+import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 
@@ -306,7 +307,8 @@ export async function createScheduledVisit(
 
   revalidatePath('/schedule');
   revalidatePath('/schedule/new');
-  redirect('/schedule');
+  const returnTo = sanitizeInternalReturnPath(String(formData.get('return_to') ?? ''));
+  redirect(returnTo ?? '/schedule');
 }
 
 export async function deleteScheduledVisit(

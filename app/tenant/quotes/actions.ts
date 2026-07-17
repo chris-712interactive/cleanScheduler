@@ -67,7 +67,12 @@ export interface QuoteFormState {
   /** Set after create — client navigates when present (avoids redirect prefetch race). */
   quoteId?: string;
   quoteSnapshot?: QuoteEditSnapshot;
+  /** Deep link when consultation gate blocks send. */
+  schedulePath?: string;
 }
+
+export type MoveQuoteStatusResult =
+  { ok: true } | { ok: false; error: string; schedulePath?: string };
 
 const QUOTE_STATUSES = new Set<Database['public']['Enums']['quote_status']>([
   'draft',
@@ -76,8 +81,6 @@ const QUOTE_STATUSES = new Set<Database['public']['Enums']['quote_status']>([
   'declined',
   'expired',
 ]);
-
-export type MoveQuoteStatusResult = { ok: true } | { ok: false; error: string };
 
 export async function moveTenantQuoteStatus(
   tenantSlug: string,
@@ -151,7 +154,11 @@ export async function moveTenantQuoteStatus(
       existing.customer_id as string,
     );
     if (!consultationGate.ok) {
-      return { ok: false, error: consultationGate.error };
+      return {
+        ok: false,
+        error: consultationGate.error,
+        schedulePath: consultationGate.schedulePath,
+      };
     }
   }
 
@@ -598,7 +605,10 @@ export async function createTenantQuote(
       customerId,
     );
     if (!consultationGate.ok) {
-      return { error: consultationGate.error };
+      return {
+        error: consultationGate.error,
+        schedulePath: consultationGate.schedulePath,
+      };
     }
   }
 
@@ -873,7 +883,10 @@ export async function updateTenantQuote(
       customerId,
     );
     if (!consultationGate.ok) {
-      return { error: consultationGate.error };
+      return {
+        error: consultationGate.error,
+        schedulePath: consultationGate.schedulePath,
+      };
     }
   }
 

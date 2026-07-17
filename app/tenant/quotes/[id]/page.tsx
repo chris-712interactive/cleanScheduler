@@ -22,6 +22,8 @@ import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { CustomerConsultationBanner } from '@/app/tenant/customers/CustomerConsultationBanner';
+import { resolveCustomerConsultationStatus } from '@/lib/tenant/customerConsultation';
 import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import { QuoteAutoScheduleBanner } from '../QuoteAutoScheduleBanner';
@@ -156,6 +158,18 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     loadTenantOperationalSettings(admin, membership.tenantId),
   ]);
   const autoScheduleEnabled = isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode);
+
+  const consultation =
+    row.customer_id && !row.is_locked && row.status !== 'accepted' && row.status !== 'expired'
+      ? await resolveCustomerConsultationStatus(admin, membership.tenantId, row.customer_id)
+      : null;
+
+  const { data: tenantTzRow } = await admin
+    .from('tenants')
+    .select('timezone')
+    .eq('id', membership.tenantId)
+    .maybeSingle();
+  const tenantTimezone = tenantTzRow?.timezone?.trim() || 'America/New_York';
 
   const walletBalanceCents =
     promotionsEnabled && row.customer_id
@@ -351,6 +365,25 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
             quoteId={row.id}
             flaggedLineCount={flaggedAutoScheduleLines.length}
             expectedVisitCount={expectedAutoScheduleVisitCount}
+          />
+        ) : null}
+
+        {consultation && row.customer_id ? (
+          <CustomerConsultationBanner
+            status={consultation.status}
+            customerId={row.customer_id}
+            primaryPropertyId={row.property_id}
+            tenantTimezone={tenantTimezone}
+            nextConsultation={
+              consultation.nextConsultation
+                ? {
+                    id: consultation.nextConsultation.id,
+                    startsAt: consultation.nextConsultation.startsAt,
+                    endsAt: consultation.nextConsultation.endsAt,
+                  }
+                : null
+            }
+            returnTo={`/quotes/${row.id}`}
           />
         ) : null}
 

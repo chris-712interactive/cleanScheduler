@@ -11,16 +11,21 @@ export function CustomerConsultationBanner({
   primaryPropertyId,
   tenantTimezone,
   nextConsultation,
+  returnTo,
 }: {
   status: ConsultationStatus;
   customerId: string;
   primaryPropertyId: string | null;
   tenantTimezone: string;
   nextConsultation: { id: string; startsAt: string; endsAt: string } | null;
+  /** After scheduling, send staff back here (e.g. quote detail). */
+  returnTo?: string | null;
 }) {
   if (status === 'not_required' || status === 'completed') return null;
 
-  const scheduleHref = buildScheduleConsultationPath(customerId, primaryPropertyId);
+  const scheduleHref = buildScheduleConsultationPath(customerId, primaryPropertyId, {
+    returnTo,
+  });
 
   if (status === 'needs_scheduling') {
     return (

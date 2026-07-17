@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildCreateQuotePath,
+  buildScheduleConsultationPath,
   consultationNeedsStaffAction,
   resolveConsultationStatusFromVisits,
+  sanitizeInternalReturnPath,
   type ConsultationVisitSummary,
 } from '@/lib/tenant/customerConsultation';
 
@@ -53,5 +55,18 @@ describe('buildCreateQuotePath', () => {
     expect(buildCreateQuotePath('cust-1', 'prop-1')).toBe(
       '/quotes/new?customer_id=cust-1&property_id=prop-1',
     );
+  });
+});
+
+describe('buildScheduleConsultationPath', () => {
+  it('builds consultation schedule URL with optional return_to', () => {
+    expect(buildScheduleConsultationPath('cust-1')).toBe(
+      '/schedule/new?purpose=consultation&customer_id=cust-1',
+    );
+    expect(buildScheduleConsultationPath('cust-1', 'prop-1', { returnTo: '/quotes/abc' })).toBe(
+      '/schedule/new?purpose=consultation&customer_id=cust-1&property_id=prop-1&return_to=%2Fquotes%2Fabc',
+    );
+    expect(sanitizeInternalReturnPath('//evil.com')).toBeNull();
+    expect(sanitizeInternalReturnPath('/quotes/new')).toBe('/quotes/new');
   });
 });

@@ -105,13 +105,94 @@ export async function customerHasCompletedConsultation(
 export function buildScheduleConsultationPath(
   customerId: string,
   propertyId?: string | null,
+  options?: { returnTo?: string | null },
 ): string {
   const params = new URLSearchParams({
     purpose: 'consultation',
     customer_id: customerId,
   });
   if (propertyId) params.set('property_id', propertyId);
+  const returnTo = sanitizeInternalReturnPath(options?.returnTo);
+  if (returnTo) params.set('return_to', returnTo);
   return `/schedule/new?${params.toString()}`;
+}
+
+/** Same-origin relative path only (e.g. `/quotes/abc` or `/quotes/new?...`). */
+export function sanitizeInternalReturnPath(raw: string | null | undefined): string | null {
+  if (!raw || typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return null;
+  return trimmed;
+}
+
+/**
+ * Batch consultation status for quote UI (wizard customer picker).
+ * Only returns customers that still need scheduling or have an open consultation.
+ */
+export async function loadQuoteConsultationPromptsByCustomer(
+  admin: Admin,
+  tenantId: string,
+  customerIds: string[],
+): Promise<
+  Record<
+    string,
+    {
+      status: Extract<ConsultationStatus, 'needs_scheduling' | 'scheduled'>;
+      nextConsultationId: string | null;
+    }
+  >
+> {
+  const uniqueIds = [...new Set(customerIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return {};
+
+  const requireConsultation = await loadRequireConsultationBeforeQuote(admin, tenantId);
+  if (!requireConsultation) return {};
+
+  const { data: visits } = await admin
+    .from('tenant_scheduled_visits')
+    .select('id, starts_at, ends_at, status, title, customer_id')
+    .eq('tenant_id', tenantId)
+    .eq('visit_purpose', 'consultation')
+    .neq('status', 'cancelled')
+    .in('customer_id', uniqueIds)
+    .order('starts_at', { ascending: true });
+
+  const byCustomer = new Map<string, ConsultationVisitSummary[]>();
+  for (const row of visits ?? []) {
+    const list = byCustomer.get(row.customer_id) ?? [];
+    list.push({
+      id: row.id,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      status: row.status,
+      title: row.title,
+    });
+    byCustomer.set(row.customer_id, list);
+  }
+
+  const result: Record<
+    string,
+    {
+      status: Extract<ConsultationStatus, 'needs_scheduling' | 'scheduled'>;
+      nextConsultationId: string | null;
+    }
+  > = {};
+
+  for (const customerId of uniqueIds) {
+    const customerVisits = byCustomer.get(customerId) ?? [];
+    const status = resolveConsultationStatusFromVisits(true, customerVisits);
+    if (status !== 'needs_scheduling' && status !== 'scheduled') continue;
+    const next =
+      customerVisits.find((visit) => visit.status === 'scheduled') ??
+      customerVisits.find((visit) => visit.status === 'completed') ??
+      null;
+    result[customerId] = {
+      status,
+      nextConsultationId: next?.id ?? null,
+    };
+  }
+
+  return result;
 }
 
 export function buildCreateQuotePath(customerId: string, propertyId?: string | null): string {
