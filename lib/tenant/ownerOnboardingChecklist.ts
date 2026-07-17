@@ -32,7 +32,7 @@ export interface OwnerOnboardingChecklist {
   profileState: OwnerOnboardingProfileChecklistState;
 }
 
-const CORE_ONBOARDING_STEP_IDS = ['business', 'quote', 'customer', 'visit'] as const;
+const CORE_ONBOARDING_STEP_IDS = ['business', 'customer', 'quote', 'visit'] as const;
 
 export function getNextIncompleteRequiredSteps(
   checklist: OwnerOnboardingChecklist,
@@ -98,18 +98,18 @@ export function buildOwnerOnboardingChecklist(
       complete: counts.businessComplete,
     },
     {
-      id: 'quote',
-      title: 'Create your first quote',
-      detail: 'Price a job before scheduling or invoicing',
-      href: '/quotes/new',
-      complete: counts.hasQuotes,
-    },
-    {
       id: 'customer',
       title: 'Add a customer',
-      detail: 'Build your customer directory',
+      detail: 'Add someone you can quote and schedule for',
       href: '/customers/new',
       complete: counts.hasCustomers,
+    },
+    {
+      id: 'quote',
+      title: 'Create your first quote',
+      detail: 'Price a job for a customer before scheduling or invoicing',
+      href: '/quotes/new',
+      complete: counts.hasQuotes,
     },
     {
       id: 'visit',

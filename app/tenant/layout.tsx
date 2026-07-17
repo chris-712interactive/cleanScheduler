@@ -42,8 +42,9 @@ const GlobalSearchLazy = nextDynamic(
 export const dynamic = 'force-dynamic';
 
 /**
- * Sidebar order matches product build priority for net-new tenant work (after
- * Dashboard): quotes → customers → schedule (`lib/tenant/portalBuildOrder.ts`).
+ * Getting-started order (after business profile): customers → quotes → schedule
+ * (`lib/tenant/portalBuildOrder.ts`). Sidebar keeps Quotes near the top for
+ * day-to-day sales work once the directory exists.
  *
  * Phase 4: shell paints with membership + billing; nav badges and deferred
  * banners stream in via Suspense without blocking page content.

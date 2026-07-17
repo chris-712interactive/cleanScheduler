@@ -307,18 +307,18 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
             {showGetStartedEmptyState ? (
               <Card
                 title="Get started"
-                titleHint="Ship work in order: quotes, then a solid customer directory, then the schedule."
+                titleHint="Ship work in order: customers, then quotes, then the schedule."
               >
                 <EmptyState
                   title="Nothing in the pipeline yet"
-                  description="Start from Quotes when you are ready to price jobs; add contacts under Customers; lock visits on the Schedule once quoting is live."
+                  description="Add a customer first, price the job under Quotes, then lock visits on the Schedule."
                   action={
                     <Stack gap={3}>
-                      <Button variant="primary" as="a" href="/quotes">
-                        Go to quotes
-                      </Button>
-                      <Button variant="secondary" as="a" href="/customers/new">
+                      <Button variant="primary" as="a" href="/customers/new">
                         Add customer
+                      </Button>
+                      <Button variant="secondary" as="a" href="/quotes">
+                        Go to quotes
                       </Button>
                     </Stack>
                   }

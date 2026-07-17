@@ -36,7 +36,7 @@ export function OwnerOnboardingDashboardHero({
   return (
     <Card
       title="Next up"
-      titleHint="Work through these in order — quote, customer, then schedule."
+      titleHint="Work through these in order — customer, quote, then schedule."
       className={styles.nextStepCard}
     >
       <div className={styles.nextStepHero}>
