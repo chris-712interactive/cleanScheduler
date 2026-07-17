@@ -55,7 +55,7 @@ export function OwnerOnboardingDashboardHero({
             <p className={styles.nextStepDetail}>{primary.detail}</p>
             {!primary.locked ? (
               <Button
-                as="a"
+                as={Link}
                 href={primary.href}
                 iconRight={<ArrowRight size={16} />}
                 className={styles.nextStepCta}
