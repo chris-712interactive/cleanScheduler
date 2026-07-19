@@ -24,6 +24,7 @@ export type JobTypeCatalogEntry = {
   sort_order: number;
   schedule_role: ServiceTemplateScheduleRole;
   checklist_items?: ChecklistTemplateItem[];
+  consultation_checklist_items?: ChecklistTemplateItem[];
 };
 
 export async function ensureTenantJobTypeCatalog(admin: Admin, tenantId: string): Promise<void> {
@@ -66,7 +67,7 @@ export async function loadJobTypeCatalog(
   let query = admin
     .from('tenant_service_templates')
     .select(
-      'id, service_label, name, job_type, estimated_hours, amount_cents, is_system_default, is_active, sort_order, schedule_role, checklist_items',
+      'id, service_label, name, job_type, estimated_hours, amount_cents, is_system_default, is_active, sort_order, schedule_role, checklist_items, consultation_checklist_items',
     )
     .eq('tenant_id', tenantId)
     .eq('kind', 'service_line')
@@ -102,6 +103,7 @@ export async function loadJobTypeCatalog(
       sort_order: row.sort_order,
       schedule_role: (row.schedule_role as ServiceTemplateScheduleRole | null) ?? 'standard',
       checklist_items: parseChecklistTemplateItems(row.checklist_items),
+      consultation_checklist_items: parseChecklistTemplateItems(row.consultation_checklist_items),
     }));
 }
 

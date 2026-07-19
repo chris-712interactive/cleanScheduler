@@ -32,6 +32,7 @@ import {
 import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
+import { sanitizeConsultationNotes } from '@/lib/visits/consultationNotes';
 
 export interface ScheduleFormState {
   error?: string;
@@ -134,6 +135,9 @@ export async function createScheduledVisit(
   const notesRaw = String(formData.get('notes') ?? '').trim();
   const jobPriceDollars = String(formData.get('job_price_dollars') ?? '').trim();
   const statusRaw = String(formData.get('status') ?? 'scheduled').trim();
+  const consultationTemplateRaw = String(
+    formData.get('consultation_service_template_id') ?? '',
+  ).trim();
 
   if (!slug || !customerId || !startsRaw) {
     return { error: 'Workspace, customer, and start time are required.' };
@@ -143,7 +147,7 @@ export async function createScheduledVisit(
   const admin = createAdminClient();
 
   const title = visitPurpose === 'consultation' ? CONSULTATION_VISIT_TITLE : titleRaw || 'Visit';
-  const notes = visitPurpose === 'consultation' ? '' : notesRaw;
+  const notes = sanitizeConsultationNotes(notesRaw);
   const status =
     visitPurpose === 'consultation'
       ? 'scheduled'
@@ -168,10 +172,26 @@ export async function createScheduledVisit(
   }
 
   let quoteId: string | null = null;
+  let consultationServiceTemplateId: string | null = null;
   if (visitPurpose === 'consultation') {
     if (quoteRaw) {
       return { error: 'Consultation visits cannot be linked to a quote.' };
     }
+    if (!consultationTemplateRaw) {
+      return { error: 'Select a service type for this consultation.' };
+    }
+    const { data: template } = await admin
+      .from('tenant_service_templates')
+      .select('id')
+      .eq('id', consultationTemplateRaw)
+      .eq('tenant_id', membership.tenantId)
+      .eq('kind', 'service_line')
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!template?.id) {
+      return { error: 'Service type not found in this workspace.' };
+    }
+    consultationServiceTemplateId = template.id;
   } else if (quoteRaw) {
     if (!(await assertQuote(admin, membership.tenantId, quoteRaw))) {
       return { error: 'Quote not found in this workspace.' };
@@ -225,6 +245,7 @@ export async function createScheduledVisit(
       expected_amount_cents: pricing.expectedAmountCents,
       title,
       visit_purpose: visitPurpose,
+      consultation_service_template_id: consultationServiceTemplateId,
       starts_at: startsAt,
       ends_at: endsAt,
       status,

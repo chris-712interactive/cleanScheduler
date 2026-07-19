@@ -62,6 +62,7 @@ export function CompleteVisitPaymentModal({
   proofPhotosSharedWithCustomers,
   isFieldEmployee = false,
   isConsultation = false,
+  initialNotes = '',
   onVisitPatch,
 }: {
   tenantSlug: string;
@@ -74,6 +75,7 @@ export function CompleteVisitPaymentModal({
   proofPhotosSharedWithCustomers: boolean;
   isFieldEmployee?: boolean;
   isConsultation?: boolean;
+  initialNotes?: string;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -243,6 +245,20 @@ export function CompleteVisitPaymentModal({
                 {canUseGpsCheckIn
                   ? ' Your phone may ask for location so the office gets arrival proof.'
                   : null}
+              </p>
+              <label className={styles.label} htmlFor="consultation_complete_notes">
+                Property notes
+              </label>
+              <textarea
+                id="consultation_complete_notes"
+                name="notes"
+                className={styles.textarea}
+                rows={4}
+                defaultValue={initialNotes}
+                placeholder="Access, parking, pets, condition, square footage cues…"
+              />
+              <p className={styles.fieldHint}>
+                Saved on this visit and merged into the property’s site notes for quoting.
               </p>
               {state.error ? (
                 <p className={styles.error} role="alert">

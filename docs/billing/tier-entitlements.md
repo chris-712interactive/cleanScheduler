@@ -214,7 +214,7 @@ Migration: `0082_visit_gps_checkin.sql`. Product notes: `docs/product/gps-verifi
 
 Templates on Settings → Service types; progress on visit detail. Does not hard-block visit complete.
 
-Migration `0086_value_everywhere_pack.sql`. See `docs/product/visit-checklists.md`.
+Migration `0086_value_everywhere_pack.sql` / `0087_consultation_checklist_and_notes.sql`. See `docs/product/visit-checklists.md`.
 
 ## Guest invoice pay (no portal)
 

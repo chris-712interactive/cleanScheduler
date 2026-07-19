@@ -10,6 +10,7 @@ import {
   createCustomServiceTypeAction,
   deleteCustomServiceTypeAction,
   updateServiceTypeChecklistAction,
+  updateServiceTypeConsultationChecklistAction,
   updateServiceTypeDurationAction,
   updateServiceTypeScheduleRoleAction,
   type ServiceTypeActionState,
@@ -62,6 +63,66 @@ function ChecklistEditor({
       />
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>
         Save checklist
+      </Button>
+      {state.error ? (
+        <span className={styles.bannerError} role="alert">
+          {state.error}
+        </span>
+      ) : null}
+      {state.success ? (
+        <span className={styles.bannerSuccess} role="status">
+          Saved
+        </span>
+      ) : null}
+    </form>
+  );
+}
+
+function ConsultationChecklistEditor({
+  tenantSlug,
+  entry,
+  canEdit,
+}: {
+  tenantSlug: string;
+  entry: JobTypeCatalogEntry;
+  canEdit: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(
+    updateServiceTypeConsultationChecklistAction,
+    initialState,
+  );
+  const defaultValue = (entry.consultation_checklist_items ?? [])
+    .map((item) => item.label)
+    .join('\n');
+
+  if (!canEdit) {
+    if (!(entry.consultation_checklist_items ?? []).length) {
+      return <span className={styles.itemMeta}>No checklist</span>;
+    }
+    return (
+      <ul className={styles.checklistReadonly}>
+        {(entry.consultation_checklist_items ?? []).map((item) => (
+          <li key={item.id}>{item.label}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <form action={formAction} className={styles.checklistForm}>
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="template_id" value={entry.id} />
+      <textarea
+        className={styles.checklistTextarea}
+        name="checklist_lines"
+        rows={4}
+        defaultValue={defaultValue}
+        placeholder={'One item per line\ne.g. Note parking / access'}
+        aria-label={`Consultation checklist for ${entry.service_label}`}
+        disabled={pending}
+      />
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+        Save consultation checklist
       </Button>
       {state.error ? (
         <span className={styles.bannerError} role="alert">
@@ -206,7 +267,8 @@ export function ServiceTypesPanel({
           These defaults feed auto-scheduling and crew availability. When you flag quote lines for
           auto-schedule, visit duration comes from here. Schedule role tells the app whether a job
           type is an initial visit, recurring visit, or standard when quotes are accepted with
-          automatic scheduling enabled in Operations.
+          automatic scheduling enabled in Operations. Visit and consultation checklists are edited
+          per row below.
         </p>
       </header>
 
@@ -244,10 +306,24 @@ export function ServiceTypesPanel({
                       <ScheduleRoleEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
                     </div>
                     {checklistsEnabled ? (
-                      <div className={styles.editorGroup}>
-                        <span className={styles.editorLabel}>Visit checklist</span>
-                        <ChecklistEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
-                      </div>
+                      <>
+                        <div className={styles.editorGroup}>
+                          <span className={styles.editorLabel}>Visit checklist</span>
+                          <ChecklistEditor
+                            tenantSlug={tenantSlug}
+                            entry={entry}
+                            canEdit={canEdit}
+                          />
+                        </div>
+                        <div className={styles.editorGroup}>
+                          <span className={styles.editorLabel}>Consultation checklist</span>
+                          <ConsultationChecklistEditor
+                            tenantSlug={tenantSlug}
+                            entry={entry}
+                            canEdit={canEdit}
+                          />
+                        </div>
+                      </>
                     ) : null}
                     {canEdit && customTypesEnabled && !entry.is_system_default ? (
                       <form action={deleteCustomServiceTypeAction}>

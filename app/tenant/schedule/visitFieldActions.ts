@@ -30,6 +30,10 @@ import {
 } from '@/lib/schedule/checkInLocation';
 import { maybeSendVisitOnMyWayEmail } from '@/lib/email/visitOnMyWayEmail';
 import { maybeSendVisitReviewRequestEmail } from '@/lib/email/visitReviewRequestEmail';
+import {
+  mergeConsultationNotesIntoSiteNotes,
+  sanitizeConsultationNotes,
+} from '@/lib/visits/consultationNotes';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -45,7 +49,7 @@ async function loadVisitForActor(
   const { data: visit, error } = await admin
     .from('tenant_scheduled_visits')
     .select(
-      'id, status, checked_in_at, checked_in_by_user_id, customer_id, property_id, quote_id, expected_amount_cents, title, visit_purpose',
+      'id, status, checked_in_at, checked_in_by_user_id, customer_id, property_id, quote_id, expected_amount_cents, title, visit_purpose, notes',
     )
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
@@ -162,6 +166,7 @@ export async function completeVisitWithPaymentAction(
   const collectedMethodRaw = String(formData.get('collected_method') ?? '').trim();
   const checkNumber = String(formData.get('check_number') ?? '').trim();
   const amountDollars = String(formData.get('amount_dollars') ?? '').trim();
+  const notesFromForm = sanitizeConsultationNotes(String(formData.get('notes') ?? ''));
 
   if (!slug || !visitId) return { error: 'Missing visit.' };
   if (paymentCollectedRaw !== 'yes' && paymentCollectedRaw !== 'no') {
@@ -250,6 +255,10 @@ export async function completeVisitWithPaymentAction(
       })()
     : null;
 
+  const consultationNotes = consultationComplete
+    ? notesFromForm || sanitizeConsultationNotes(loaded.visit.notes ?? '')
+    : null;
+
   const patch: Database['public']['Tables']['tenant_scheduled_visits']['Update'] = {
     status: 'completed',
     completed_at: now,
@@ -263,6 +272,7 @@ export async function completeVisitWithPaymentAction(
         : null,
     completion_collected_amount_cents: effectivePaymentCollected ? billing.amountCents : null,
     completion_invoice_id: billing.invoiceId,
+    ...(consultationComplete && notesFromForm ? { notes: notesFromForm } : {}),
     ...(!loaded.visit.checked_in_at
       ? {
           checked_in_at: now,
@@ -278,6 +288,30 @@ export async function completeVisitWithPaymentAction(
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId);
   if (upErr) return { error: upErr.message };
+
+  if (consultationComplete && consultationNotes && loaded.visit.property_id) {
+    const { data: property } = await admin
+      .from('tenant_customer_properties')
+      .select('site_notes')
+      .eq('id', loaded.visit.property_id)
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle();
+
+    const mergedSiteNotes = mergeConsultationNotesIntoSiteNotes(
+      property?.site_notes,
+      consultationNotes,
+      new Date(now),
+    );
+
+    if (mergedSiteNotes !== (property?.site_notes ?? '').trim()) {
+      await admin
+        .from('tenant_customer_properties')
+        .update({ site_notes: mergedSiteNotes || null })
+        .eq('id', loaded.visit.property_id)
+        .eq('tenant_id', membership.tenantId);
+      revalidatePath(`/customers/${loaded.visit.customer_id}`, 'page');
+    }
+  }
 
   const hasProofPhotoUpload = formData
     .getAll('proof_photos')
