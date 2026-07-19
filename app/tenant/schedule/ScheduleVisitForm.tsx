@@ -24,6 +24,8 @@ type CrewAvailabilityRow = {
 
 export type EmployeeOption = { id: string; label: string };
 
+export type ConsultationServiceTypeOption = { id: string; label: string };
+
 export function ScheduleVisitForm({
   tenantSlug,
   tenantTimezone,
@@ -34,6 +36,7 @@ export function ScheduleVisitForm({
   defaults,
   isConsultation = false,
   consultationDurationMinutes = 60,
+  consultationServiceTypes = [],
   returnTo = null,
 }: {
   tenantSlug: string;
@@ -51,6 +54,7 @@ export function ScheduleVisitForm({
   };
   isConsultation?: boolean;
   consultationDurationMinutes?: number;
+  consultationServiceTypes?: ConsultationServiceTypeOption[];
   returnTo?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
@@ -272,6 +276,35 @@ export function ScheduleVisitForm({
         </div>
       )}
 
+      {isConsultation ? (
+        <div className={styles.formGridFull}>
+          <div className={styles.formField}>
+            <label className={styles.label} htmlFor="consultation_service_type">
+              Service type
+            </label>
+            <select
+              id="consultation_service_type"
+              name="consultation_service_template_id"
+              className={styles.select}
+              required
+              defaultValue=""
+            >
+              <option value="" disabled>
+                What are you consulting for?
+              </option>
+              {consultationServiceTypes.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className={styles.crewHint}>
+              Chooses the consultation checklist for this walkthrough (Settings → Service types).
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {isConsultation ? null : (
         <>
           <div className={styles.formGridTwo}>
@@ -444,19 +477,21 @@ export function ScheduleVisitForm({
         </fieldset>
       </div>
 
-      {isConsultation ? null : (
-        <div className={styles.formGridFull}>
-          <label className={styles.label} htmlFor="visit_notes">
-            Notes
-          </label>
-          <textarea
-            id="visit_notes"
-            name="notes"
-            className={styles.textarea}
-            placeholder="Crew notes, supplies…"
-          />
-        </div>
-      )}
+      <div className={styles.formGridFull}>
+        <label className={styles.label} htmlFor="visit_notes">
+          Notes
+        </label>
+        <textarea
+          id="visit_notes"
+          name="notes"
+          className={styles.textarea}
+          placeholder={
+            isConsultation
+              ? 'Access, parking, pets, condition, square footage cues…'
+              : 'Crew notes, supplies…'
+          }
+        />
+      </div>
 
       <div className={styles.formActions}>
         <button

@@ -138,6 +138,48 @@ export async function updateServiceTypeChecklistAction(
   return { success: true };
 }
 
+export async function updateServiceTypeConsultationChecklistAction(
+  _prev: ServiceTypeActionState,
+  formData: FormData,
+): Promise<ServiceTypeActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const templateId = String(formData.get('template_id') ?? '').trim();
+  const lines = String(formData.get('checklist_lines') ?? '');
+
+  if (!slug || !templateId) return { error: 'Missing service type.' };
+
+  const membership = await requireTenantPortalAccess(slug, '/settings/services');
+  if (!canManageTeamInvitesAndRoles(membership.role)) {
+    return { error: 'Only owners and admins can edit checklists.' };
+  }
+
+  try {
+    await assertTenantFeatureEnabled(createAdminClient(), membership.tenantId, 'visitChecklists');
+  } catch (error) {
+    return {
+      error: featureGateErrorMessage(error) ?? 'Visit checklists are not available on this plan.',
+    };
+  }
+
+  const items = parseChecklistLabelsFromForm(lines);
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('tenant_service_templates')
+    .update({ consultation_checklist_items: items as unknown as Json })
+    .eq('tenant_id', membership.tenantId)
+    .eq('id', templateId)
+    .eq('kind', 'service_line');
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/tenant/settings/services', 'page');
+  revalidatePath('/tenant/schedule', 'page');
+  return { success: true };
+}
+
 export async function createCustomServiceTypeAction(
   _prev: ServiceTypeActionState,
   formData: FormData,

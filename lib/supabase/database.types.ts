@@ -2536,6 +2536,7 @@ export type Database = {
           is_system_default: boolean;
           schedule_role: Database['public']['Enums']['service_template_schedule_role'];
           checklist_items: Json;
+          consultation_checklist_items: Json;
           created_at: string;
           updated_at: string;
         };
@@ -2559,6 +2560,7 @@ export type Database = {
           is_system_default?: boolean;
           schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
           checklist_items?: Json;
+          consultation_checklist_items?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -2582,6 +2584,7 @@ export type Database = {
           is_system_default?: boolean;
           schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
           checklist_items?: Json;
+          consultation_checklist_items?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -3204,6 +3207,7 @@ export type Database = {
           visit_purpose: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status: Database['public']['Enums']['visit_staffing_status'];
           notes: string | null;
+          consultation_service_template_id: string | null;
           recurring_rule_id: string | null;
           checked_in_at: string | null;
           checked_in_by_user_id: string | null;
@@ -3238,6 +3242,7 @@ export type Database = {
           visit_purpose?: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
+          consultation_service_template_id?: string | null;
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
           checked_in_by_user_id?: string | null;
@@ -3272,6 +3277,7 @@ export type Database = {
           visit_purpose?: Database['public']['Enums']['scheduled_visit_purpose'];
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
+          consultation_service_template_id?: string | null;
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
           checked_in_by_user_id?: string | null;
@@ -3296,6 +3302,13 @@ export type Database = {
             columns: ['recurring_rule_id'];
             isOneToOne: false;
             referencedRelation: 'recurring_appointment_rules';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_scheduled_visits_consultation_service_template_id_fkey';
+            columns: ['consultation_service_template_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_service_templates';
             referencedColumns: ['id'];
           },
           {

@@ -257,6 +257,7 @@ export function VisitDetailCard({
                 isFieldEmployee={visit.isFieldEmployee}
                 hasBillableAmount={hasBillableAmount}
                 isConsultation={isConsultation}
+                initialNotes={visit.notes ?? ''}
                 onVisitPatch={onVisitPatch}
                 compact
               />

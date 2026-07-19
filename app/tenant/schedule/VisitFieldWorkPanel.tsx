@@ -34,6 +34,7 @@ export function VisitFieldWorkPanel({
   isFieldEmployee = false,
   hasBillableAmount = true,
   isConsultation = false,
+  initialNotes = '',
   onVisitPatch,
   compact = false,
 }: {
@@ -51,6 +52,7 @@ export function VisitFieldWorkPanel({
   isFieldEmployee?: boolean;
   hasBillableAmount?: boolean;
   isConsultation?: boolean;
+  initialNotes?: string;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
   compact?: boolean;
 }) {
@@ -128,6 +130,7 @@ export function VisitFieldWorkPanel({
         proofPhotosSharedWithCustomers={proofPhotosSharedWithCustomers}
         isFieldEmployee={isFieldEmployee}
         isConsultation={isConsultation}
+        initialNotes={initialNotes}
         onVisitPatch={onVisitPatch}
       />
     ) : null;
