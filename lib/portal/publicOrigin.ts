@@ -15,5 +15,5 @@ export function getPublicOrigin(subdomain: string | null): string {
 
 /** Absolute URL to the public marketing privacy policy (apex host, not tenant subdomain). */
 export function marketingPrivacyPolicyUrl(): string {
-  return `${getPublicOrigin(null)}/marketing/privacy`;
+  return `${getPublicOrigin(null)}/privacy`;
 }
