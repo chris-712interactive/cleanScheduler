@@ -14,9 +14,17 @@ Developer reference for public-site search optimization on cleanscheduler.com.
 
 ## Canonical & www
 
-- All public pages set `alternates.canonical` to apex paths.
+- All public pages set `alternates.canonical` to apex paths (`https://cleanscheduler.com/...`, never `www`).
 - `proxy.ts` and `vercel.json` 308-redirect `www.cleanscheduler.com` → `https://cleanscheduler.com/:path*`.
-- After deploy, verify: `curl -sI https://www.cleanscheduler.com/` returns `308` to apex.
+- `proxy.ts` also 308-redirects browser-visible `/marketing/*` HTML paths → the canonical public path (e.g. `/marketing/help/...` → `/help/...`). The `/marketing` App Router tree is an internal rewrite target only; static assets under `public/marketing/` keep their `/marketing/*.png` URLs.
+- After deploy, verify: `curl -sI https://www.cleanscheduler.com/` returns `308` to apex, and `curl -sI https://cleanscheduler.com/marketing/help/cleaning-businesses/price-a-cleaning-job` returns `308` to `/help/cleaning-businesses/price-a-cleaning-job`.
+
+### GSC: “Alternate page with proper canonical tag”
+
+This is usually **not a bug**. Google found a duplicate URL (commonly `www.…` or a legacy `/marketing/…` path) whose canonical points at the apex public URL, and correctly chose not to index the duplicate.
+
+- **Expected for www:** Inspect the apex URL (`https://cleanscheduler.com/...`) — that should be Indexed. The www URL may appear under this status or “Page with redirect”; both are fine once www 308s to apex.
+- **Action only if** Google-selected canonical differs from the apex path in the sitemap, or an important page is listed here instead of Indexed.
 
 ## Indexing policy
 
@@ -84,7 +92,7 @@ Use the **admin SEO checklist** at `admin.<apex>/seo` for checkable tasks with p
    - `/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts`
    - `/help/cleaning-businesses/schedule-cleaning-crews`
    - `/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners`
-3. Confirm www redirect and canonical tags in live HTML.
+3. Confirm www redirect, `/marketing/*` HTML collapse, and canonical tags in live HTML.
 4. Monitor target queries over 6–8 weeks.
 
 See `docs/product/platform-seo-tasks.md` for the admin checklist implementation.

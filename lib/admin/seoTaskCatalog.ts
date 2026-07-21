@@ -202,7 +202,7 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     category: 'post-deploy',
     title: 'Spot-check canonical tags on live HTML',
     detail:
-      'View source on homepage, one feature page, and one help article. Each should have rel=canonical pointing to the apex path.',
+      'View source on homepage, one feature page, and one help article. Each should have rel=canonical pointing to the apex path. Also confirm /marketing/help/... 308s to /help/... (internal prefix must not be crawlable).',
     cadence: 'once',
     sortOrder: 26,
   },

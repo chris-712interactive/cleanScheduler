@@ -221,6 +221,32 @@ function buildApexRedirectUrl(request: NextRequest, apex: string): URL {
   return redirectUrl;
 }
 
+/** Static files under `public/marketing/` (OG images, screenshots) keep the `/marketing/` URL. */
+function isMarketingStaticAssetPath(pathname: string): boolean {
+  return /\.[a-zA-Z0-9]{1,8}$/.test(pathname);
+}
+
+/**
+ * Browser-visible URLs must not use the internal App Router prefix (`/marketing/...`).
+ * Those paths are rewrite targets only; serving them as public URLs creates GSC
+ * "Alternate page with proper canonical tag" duplicates.
+ */
+function stripInternalMarketingPrefix(pathname: string): string {
+  if (pathname === '/marketing') return '/';
+  if (pathname.startsWith('/marketing/')) {
+    const stripped = pathname.slice('/marketing'.length);
+    return stripped.length > 0 ? stripped : '/';
+  }
+  return pathname;
+}
+
+function shouldStripInternalMarketingPrefix(pathname: string): boolean {
+  return (
+    (pathname === '/marketing' || pathname.startsWith('/marketing/')) &&
+    !isMarketingStaticAssetPath(pathname)
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const endProxy = debugPerfStart('proxy.request', request.nextUrl.pathname);
 
@@ -251,7 +277,23 @@ export async function proxy(request: NextRequest) {
 
     // Consolidate www -> apex for SEO (canonical tags point at apex only).
     if (isOurApexHost && subdomain === 'www') {
-      return NextResponse.redirect(buildApexRedirectUrl(request, apex), 308);
+      const redirectUrl = buildApexRedirectUrl(request, apex);
+      if (shouldStripInternalMarketingPrefix(redirectUrl.pathname)) {
+        redirectUrl.pathname = stripInternalMarketingPrefix(redirectUrl.pathname);
+      }
+      return NextResponse.redirect(redirectUrl, 308);
+    }
+
+    // Collapse internal /marketing/* HTML paths to canonical public URLs.
+    // (Static assets under public/marketing/ are excluded.)
+    if (
+      isOurApexHost &&
+      subdomain === null &&
+      shouldStripInternalMarketingPrefix(requestedPath)
+    ) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = stripInternalMarketingPrefix(requestedPath);
+      return NextResponse.redirect(redirectUrl, 308);
     }
 
     const isJoinPath =
