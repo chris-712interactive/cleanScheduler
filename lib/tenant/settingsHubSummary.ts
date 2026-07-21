@@ -150,6 +150,22 @@ export async function getSettingsHubCardSummaries(options: {
     };
   }
 
+  {
+    const { count } = await admin
+      .from('tenant_service_zones')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true);
+    const activeZones = count ?? 0;
+    summaries['/settings/service-zones'] = {
+      href: '/settings/service-zones',
+      status: {
+        label: activeZones === 0 ? 'No zones' : `${activeZones} active`,
+        tone: activeZones === 0 ? 'neutral' : 'info',
+      },
+    };
+  }
+
   if (isFeatureEnabled(tier, 'jobCosting')) {
     const { count } = await admin
       .from('compensation_rules')

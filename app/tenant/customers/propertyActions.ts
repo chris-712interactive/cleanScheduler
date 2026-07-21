@@ -9,6 +9,7 @@ import {
   type CustomerPropertiesPatch,
   type CustomerPropertyVM,
 } from '@/lib/tenant/customerPropertyPatch';
+import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
 
 export interface PropertyFormState {
   error?: string;
@@ -53,6 +54,7 @@ export async function addCustomerProperty(
   const postal = String(formData.get('postal_code') ?? '').trim();
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
   const wantPrimary = String(formData.get('set_primary') ?? '') === 'on';
+  const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
 
   if (!slug || !customerId) {
     return { error: 'Workspace and customer are required.' };
@@ -60,6 +62,11 @@ export async function addCustomerProperty(
 
   const membership = await requireTenantPortalAccess(slug, `/customers/${customerId}`);
   const admin = createAdminClient();
+
+  const zoneResolved = await resolveAssignableServiceZoneId(admin, membership.tenantId, rawZoneId);
+  if (zoneResolved.error) {
+    return { error: zoneResolved.error };
+  }
 
   const { data: cust, error: ce } = await admin
     .from('customers')
@@ -102,6 +109,7 @@ export async function addCustomerProperty(
       state: state || null,
       postal_code: postal || null,
       site_notes: siteNotes || null,
+      service_zone_id: zoneResolved.zoneId,
       is_primary: makePrimary,
     })
     .select(CUSTOMER_PROPERTY_SELECT)
@@ -138,6 +146,7 @@ export async function updateCustomerProperty(
   const state = String(formData.get('state') ?? '').trim();
   const postal = String(formData.get('postal_code') ?? '').trim();
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
+  const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
 
   if (!slug || !customerId || !propertyId) {
     return { error: 'Workspace, customer, and property are required.' };
@@ -148,7 +157,7 @@ export async function updateCustomerProperty(
 
   const { data: row, error: fe } = await admin
     .from('tenant_customer_properties')
-    .select('id')
+    .select('id, service_zone_id')
     .eq('id', propertyId)
     .eq('customer_id', customerId)
     .eq('tenant_id', membership.tenantId)
@@ -156,6 +165,13 @@ export async function updateCustomerProperty(
 
   if (fe || !row) {
     return { error: 'Property not found for this customer.' };
+  }
+
+  const zoneResolved = await resolveAssignableServiceZoneId(admin, membership.tenantId, rawZoneId, {
+    allowInactiveIfCurrent: row.service_zone_id,
+  });
+  if (zoneResolved.error) {
+    return { error: zoneResolved.error };
   }
 
   const upd = await admin
@@ -169,6 +185,7 @@ export async function updateCustomerProperty(
       state: state || null,
       postal_code: postal || null,
       site_notes: siteNotes || null,
+      service_zone_id: zoneResolved.zoneId,
     })
     .eq('id', propertyId)
     .eq('tenant_id', membership.tenantId)

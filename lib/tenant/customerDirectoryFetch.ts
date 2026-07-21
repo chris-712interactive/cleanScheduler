@@ -11,6 +11,7 @@ import {
   CUSTOMER_DIRECTORY_PAGE_SIZE,
   customerDirectoryRange,
 } from '@/lib/tenant/customerDirectoryPaging';
+import { findServiceZoneIdsByNameQuery } from '@/lib/tenant/serviceZones';
 
 type Admin = SupabaseClient<Database>;
 
@@ -32,6 +33,7 @@ export type CustomerDirectoryListRow = {
         state: string | null;
         postal_code: string | null;
         is_primary: boolean;
+        service_zone_id: string | null;
       }[]
     | null;
 };
@@ -52,7 +54,8 @@ const CUSTOMER_SELECT = `
     city,
     state,
     postal_code,
-    is_primary
+    is_primary,
+    service_zone_id
   )
 `;
 
@@ -73,7 +76,7 @@ async function resolveSearchOrFilter(
 ): Promise<{ searchOrFilter: string | null; error: string | null }> {
   const statusFromQuery = customerDirectoryStatusFromQuery(q);
 
-  const [identResult, propertyResult, statusResult] = await Promise.all([
+  const [identResult, propertyResult, statusResult, zoneNameResult] = await Promise.all([
     admin.from('customer_identities').select('id').or(customerIdentitySearchOrClause(q)),
     admin
       .from('tenant_customer_properties')
@@ -83,7 +86,25 @@ async function resolveSearchOrFilter(
     statusFromQuery
       ? admin.from('customers').select('id').eq('tenant_id', tenantId).eq('status', statusFromQuery)
       : Promise.resolve({ data: null, error: null }),
+    findServiceZoneIdsByNameQuery(admin, tenantId, q),
   ]);
+
+  if (zoneNameResult.error) {
+    return { searchOrFilter: null, error: zoneNameResult.error };
+  }
+
+  let zoneCustomerIds: string[] = [];
+  if (zoneNameResult.zoneIds.length > 0) {
+    const zoneProps = await admin
+      .from('tenant_customer_properties')
+      .select('customer_id')
+      .eq('tenant_id', tenantId)
+      .in('service_zone_id', zoneNameResult.zoneIds);
+    if (zoneProps.error) {
+      return { searchOrFilter: null, error: zoneProps.error.message };
+    }
+    zoneCustomerIds = zoneProps.data?.map((row) => row.customer_id) ?? [];
+  }
 
   const searchError = identResult.error ?? propertyResult.error ?? statusResult.error ?? null;
   if (searchError) {
@@ -95,11 +116,30 @@ async function resolveSearchOrFilter(
     ...new Set([
       ...(propertyResult.data?.map((row) => row.customer_id) ?? []),
       ...(statusResult.data?.map((row) => row.id) ?? []),
+      ...zoneCustomerIds,
     ]),
   ];
 
   return {
     searchOrFilter: buildCustomerDirectorySearchOrFilter({ identityIds, customerIds }),
+    error: null,
+  };
+}
+
+async function resolveZoneCustomerIds(
+  admin: Admin,
+  tenantId: string,
+  zoneId: string,
+): Promise<{ customerIds: string[]; error: string | null }> {
+  const { data, error } = await admin
+    .from('tenant_customer_properties')
+    .select('customer_id')
+    .eq('tenant_id', tenantId)
+    .eq('service_zone_id', zoneId);
+
+  if (error) return { customerIds: [], error: error.message };
+  return {
+    customerIds: [...new Set((data ?? []).map((row) => row.customer_id))],
     error: null,
   };
 }
@@ -110,12 +150,21 @@ function buildFilteredCustomerQuery(
     tenantId: string;
     statusFilter: CustomerDirectoryStatusParam;
     searchOrFilter: string | null;
+    zoneCustomerIds: string[] | null;
   },
 ) {
   let query = admin.from('customers').select(CUSTOMER_SELECT, { count: 'exact' });
   query = query.eq('tenant_id', params.tenantId);
   if (params.statusFilter !== 'all') {
     query = query.eq('status', params.statusFilter);
+  }
+  if (params.zoneCustomerIds) {
+    if (params.zoneCustomerIds.length === 0) {
+      // Force empty result without a broken `.in()` call.
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    } else {
+      query = query.in('id', params.zoneCustomerIds);
+    }
   }
   if (params.searchOrFilter) {
     query = query.or(params.searchOrFilter);
@@ -159,9 +208,29 @@ export async function fetchCustomerDirectoryPage(
     q: string;
     statusFilter: CustomerDirectoryStatusParam;
     page: number;
+    zoneId?: string | null;
   },
 ): Promise<CustomerDirectoryFetchResult> {
   let searchOrFilter: string | null = null;
+  let zoneCustomerIds: string[] | null = null;
+
+  if (params.zoneId) {
+    const zoneCustomers = await resolveZoneCustomerIds(admin, params.tenantId, params.zoneId);
+    if (zoneCustomers.error) {
+      return { ok: false, phase: 'search', message: zoneCustomers.error };
+    }
+    zoneCustomerIds = zoneCustomers.customerIds;
+    if (zoneCustomerIds.length === 0) {
+      const statusCounts = await fetchCustomerDirectoryStatusCounts(admin, params.tenantId);
+      return {
+        ok: true,
+        rows: [],
+        totalCount: 0,
+        statusCounts: statusCounts ?? { all: 0, active: 0, inactive: 0 },
+        page: 1,
+      };
+    }
+  }
 
   if (params.q.length > 0) {
     const search = await resolveSearchOrFilter(admin, params.tenantId, params.q);
@@ -189,6 +258,7 @@ export async function fetchCustomerDirectoryPage(
       tenantId: params.tenantId,
       statusFilter: params.statusFilter,
       searchOrFilter,
+      zoneCustomerIds,
     })
       .order('created_at', { ascending: false })
       .range(range.from, range.to)

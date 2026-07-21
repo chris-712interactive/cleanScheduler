@@ -51,3 +51,17 @@ export function primaryCustomerAddressLine(
   const line = formatPropertyAddressLine(primary);
   return line || null;
 }
+
+type PropertyZonePick = {
+  is_primary: boolean;
+  service_zone_id: string | null;
+};
+
+export function primaryCustomerZoneId(
+  properties: PropertyZonePick[] | null | undefined,
+): string | null {
+  const list = properties ?? [];
+  if (!list.length) return null;
+  const primary = list.find((p) => p.is_primary) ?? list[0];
+  return primary?.service_zone_id ?? null;
+}

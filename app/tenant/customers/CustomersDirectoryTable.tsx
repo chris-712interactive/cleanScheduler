@@ -8,6 +8,7 @@ export type CustomerDirectoryRow = {
   email: string | null;
   phone: string | null;
   addressLine: string | null;
+  zoneName?: string | null;
   consultationLabel?: string | null;
 };
 

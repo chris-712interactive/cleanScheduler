@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-07-18  
+**Last updated:** 2026-07-21  
 **Branch:** `dev`  
-**Latest polish:** Consultation checklists + property notes — per–service-type walkthrough checklists, required service type when booking consultations, notes synced to visit + property `site_notes` — see `docs/product/visit-checklists.md`
+**Latest polish:** Service zones (`0088`) — admin-defined communities/areas on properties; directory filter + name search — see `docs/product/service-zones.md`
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -21,6 +21,7 @@ Use this file as the handoff snapshot for new AI sessions. Detailed specs live u
 - On-my-way + post-visit review-request emails (`0085`); Starter seats 2 office / 5 field
 - Visit checklists, guest invoice pay, richer `/book`, crew Today CTAs (`0086`)
 - Consultation checklists per service type + consultation notes → property site notes (`0087`)
+- Service zones for CRM geography on properties; directory filter/search (`0088`)
 
 **GPS-verified check-in (MVP)** — one-shot browser location on visit check-in; office sees proof on visit detail. Not live fleet tracking.
 
@@ -134,6 +135,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Platform outreach        | `docs/product/platform-outreach.md`               |
 | Customer messaging       | `docs/product/customer-support-messaging.md`      |
 | Tenant reports           | `docs/product/tenant-reports.md`                  |
+| Service zones            | `docs/product/service-zones.md`                   |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |
 
 ---

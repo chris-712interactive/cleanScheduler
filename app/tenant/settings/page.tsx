@@ -9,6 +9,7 @@ import {
   Inbox,
   LayoutTemplate,
   LifeBuoy,
+  Map,
   MapPin,
   Percent,
   Shield,
@@ -76,6 +77,12 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Locations',
         description: 'Branches and territories for multi-crew ops (Pro).',
         icon: MapPin,
+      },
+      {
+        href: '/settings/service-zones',
+        label: 'Service zones',
+        description: 'Communities and areas for organizing customer locations.',
+        icon: Map,
       },
       {
         href: '/settings/compensation',

@@ -6,6 +6,7 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createAdminClient } from '@/lib/supabase/server';
 import { tenantReferralsNavEnabled } from '@/lib/referrals/tenantReferralsNav';
+import { loadServiceZonesForAssignment } from '@/lib/tenant/serviceZones';
 import { CustomerCreateForm } from '../CustomerCreateForm';
 import styles from '../customers.module.scss';
 
@@ -15,7 +16,10 @@ export default async function TenantCustomerNewPage() {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/customers/new');
   const admin = createAdminClient();
-  const referralProgramEnabled = await tenantReferralsNavEnabled(admin, membership.tenantId);
+  const [referralProgramEnabled, serviceZones] = await Promise.all([
+    tenantReferralsNavEnabled(admin, membership.tenantId),
+    loadServiceZonesForAssignment(admin, membership.tenantId),
+  ]);
 
   return (
     <>
@@ -38,6 +42,7 @@ export default async function TenantCustomerNewPage() {
           <CustomerCreateForm
             tenantSlug={membership.tenantSlug}
             referralProgramEnabled={referralProgramEnabled}
+            serviceZones={serviceZones}
           />
         </Card>
       </Stack>

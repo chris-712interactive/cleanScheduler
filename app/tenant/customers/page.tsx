@@ -19,7 +19,11 @@ import {
 import { fetchCustomerDirectoryPage } from '@/lib/tenant/customerDirectoryFetch';
 import { loadCustomersNeedingConsultation } from '@/lib/tenant/customerConsultation';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
-import { primaryCustomerAddressLine } from '@/lib/tenant/customerListDisplay';
+import {
+  primaryCustomerAddressLine,
+  primaryCustomerZoneId,
+} from '@/lib/tenant/customerListDisplay';
+import { loadServiceZonesForAssignment, parseServiceZoneParam } from '@/lib/tenant/serviceZones';
 import { CustomerDirectoryPagination } from './CustomerDirectoryPagination';
 import { CustomerDirectorySearchForm } from './CustomerDirectorySearchForm';
 import { CustomersDirectoryCards } from './CustomersDirectoryCards';
@@ -29,7 +33,13 @@ import styles from './customers.module.scss';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; status?: string; page?: string; consultation?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    page?: string;
+    consultation?: string;
+    zone?: string;
+  }>;
 }
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -37,29 +47,35 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function toDirectoryRow(row: {
-  id: string;
-  status: string;
-  customer_identities: {
-    email: string | null;
-    first_name: string | null;
-    last_name: string | null;
-    full_name: string | null;
-    phone: string | null;
-  } | null;
-  tenant_customer_properties:
-    | {
-        address_line1: string | null;
-        address_line2: string | null;
-        city: string | null;
-        state: string | null;
-        postal_code: string | null;
-        is_primary: boolean;
-      }[]
-    | null;
-}): CustomerDirectoryRow {
+function toDirectoryRow(
+  row: {
+    id: string;
+    status: string;
+    customer_identities: {
+      email: string | null;
+      first_name: string | null;
+      last_name: string | null;
+      full_name: string | null;
+      phone: string | null;
+    } | null;
+    tenant_customer_properties:
+      | {
+          address_line1: string | null;
+          address_line2: string | null;
+          city: string | null;
+          state: string | null;
+          postal_code: string | null;
+          is_primary: boolean;
+          service_zone_id: string | null;
+        }[]
+      | null;
+  },
+  zoneNameById: Map<string, string>,
+): CustomerDirectoryRow {
   const identity = row.customer_identities;
   const name = identity ? formatCustomerDisplayName(identity) : 'Unnamed';
+  const zoneId = primaryCustomerZoneId(row.tenant_customer_properties);
+  const zoneName = zoneId ? (zoneNameById.get(zoneId) ?? null) : null;
 
   return {
     id: row.id,
@@ -68,6 +84,7 @@ function toDirectoryRow(row: {
     email: identity?.email?.trim() || null,
     phone: identity?.phone?.trim() || null,
     addressLine: primaryCustomerAddressLine(row.tenant_customer_properties),
+    zoneName,
   };
 }
 
@@ -90,12 +107,17 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const q = parseCustomerDirectoryQuery(sp?.q);
   const statusFilter = parseCustomerDirectoryStatus(sp?.status);
+  const zoneFilter = parseServiceZoneParam(sp?.zone);
   const requestedPage = parseCustomerDirectoryPage(firstParam(sp?.page));
   const consultationFilter = firstParam(sp?.consultation)?.trim() === 'needs_action';
-  const filtersActive = q.length > 0 || statusFilter !== 'all' || consultationFilter;
+  const filtersActive =
+    q.length > 0 || statusFilter !== 'all' || consultationFilter || Boolean(zoneFilter);
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/customers');
+  const admin = createAdminClient();
+  const serviceZones = await loadServiceZonesForAssignment(admin, membership.tenantId);
+  const zoneNameById = new Map(serviceZones.map((z) => [z.id, z.name]));
 
   let directoryRows: CustomerDirectoryRow[] = [];
   let totalCount = 0;
@@ -104,7 +126,6 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
   let showEmptyWorkspace = false;
 
   if (consultationFilter) {
-    const admin = createAdminClient();
     const consultationRows = await loadCustomersNeedingConsultation(
       admin,
       membership.tenantId,
@@ -117,6 +138,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       email: null,
       phone: null,
       addressLine: null,
+      zoneName: null,
       consultationLabel: 'Needs consultation',
     }));
     totalCount = directoryRows.length;
@@ -130,6 +152,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       q,
       statusFilter,
       page: requestedPage,
+      zoneId: zoneFilter,
     });
 
     if (!result.ok) {
@@ -162,7 +185,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
     totalCount = result.totalCount;
     statusCounts = result.statusCounts;
     safePage = result.page;
-    directoryRows = result.rows.map(toDirectoryRow);
+    directoryRows = result.rows.map((row) => toDirectoryRow(row, zoneNameById));
     showEmptyWorkspace = statusCounts.all === 0 && !filtersActive;
   }
 
@@ -202,7 +225,12 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       ) : (
         <div className={styles.directoryPanel}>
           <div className={styles.panelToolbar}>
-            <CustomerDirectorySearchForm q={q} status={statusFilter} />
+            <CustomerDirectorySearchForm
+              q={q}
+              status={statusFilter}
+              zone={zoneFilter}
+              zones={serviceZones.filter((z) => z.is_active || z.id === zoneFilter)}
+            />
             <nav className={styles.panelTabs} aria-label="Customer filters">
               <Link
                 href="/customers?consultation=needs_action"
@@ -215,7 +243,11 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
               {TAB_LINKS.map((tab) => (
                 <Link
                   key={tab.key}
-                  href={`/customers${buildCustomerDirectorySearchParams({ q, status: tab.key })}`}
+                  href={`/customers${buildCustomerDirectorySearchParams({
+                    q,
+                    status: tab.key,
+                    zone: zoneFilter,
+                  })}`}
                   className={styles.panelTab}
                   data-active={statusFilter === tab.key || undefined}
                   aria-current={statusFilter === tab.key ? 'page' : undefined}
@@ -251,6 +283,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
                 toIndex={start + pageRows.length}
                 q={q}
                 status={statusFilter}
+                zone={zoneFilter}
               />
             </>
           )}

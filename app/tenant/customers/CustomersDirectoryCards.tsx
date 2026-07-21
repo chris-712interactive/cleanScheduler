@@ -43,6 +43,7 @@ function CustomerDirectoryCard({ row }: { row: CustomerDirectoryRow }) {
         ) : (
           <p className={styles.customerAddressMuted}>No address on file</p>
         )}
+        {row.zoneName ? <p className={styles.customerZone}>{row.zoneName}</p> : null}
         <span className={styles.directoryCardMeta}>
           {row.email ? <span>{row.email}</span> : null}
           {phone ? <span>{phone}</span> : null}

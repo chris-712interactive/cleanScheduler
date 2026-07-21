@@ -9,9 +9,13 @@ import styles from './customers.module.scss';
 export function CustomerDirectorySearchForm({
   q,
   status,
+  zone,
+  zones,
 }: {
   q: string;
   status: CustomerDirectoryStatusParam;
+  zone: string | null;
+  zones: Array<{ id: string; name: string }>;
 }) {
   const clearHref = `/customers${buildCustomerDirectorySearchParams({ status })}`;
 
@@ -28,12 +32,31 @@ export function CustomerDirectorySearchForm({
           name="q"
           type="search"
           className={styles.searchInput}
-          placeholder="Name, email, phone, or address…"
+          placeholder="Name, email, phone, address, or zone…"
           defaultValue={q}
           autoComplete="off"
         />
       </div>
-      {q ? (
+      {zones.length > 0 ? (
+        <label className={styles.zoneFilter}>
+          <span className={styles.zoneFilterLabel}>Zone</span>
+          <select
+            name="zone"
+            className={styles.zoneFilterSelect}
+            defaultValue={zone ?? ''}
+            aria-label="Filter by service zone"
+            onChange={(event) => event.currentTarget.form?.requestSubmit()}
+          >
+            <option value="">All zones</option>
+            {zones.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {q || zone ? (
         <Link href={clearHref} className={styles.searchClear}>
           Clear
         </Link>

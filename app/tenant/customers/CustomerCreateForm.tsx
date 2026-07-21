@@ -16,9 +16,11 @@ const initial: CustomerFormState = {};
 export function CustomerCreateForm({
   tenantSlug,
   referralProgramEnabled = false,
+  serviceZones = [],
 }: {
   tenantSlug: string;
   referralProgramEnabled?: boolean;
+  serviceZones?: Array<{ id: string; name: string; is_active: boolean }>;
 }) {
   const [state, formAction, pending] = useActionState(createTenantCustomer, initial);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -182,6 +184,29 @@ export function CustomerCreateForm({
             className={styles.input}
             placeholder="37203"
           />
+
+          {serviceZones.length > 0 ? (
+            <>
+              <label className={styles.label} htmlFor="service_zone_id">
+                Service zone (optional)
+              </label>
+              <select
+                id="service_zone_id"
+                name="service_zone_id"
+                className={styles.input}
+                defaultValue=""
+              >
+                <option value="">— None —</option>
+                {serviceZones
+                  .filter((z) => z.is_active)
+                  .map((zone) => (
+                    <option key={zone.id} value={zone.id}>
+                      {zone.name}
+                    </option>
+                  ))}
+              </select>
+            </>
+          ) : null}
         </section>
 
         <section className={styles.sectionCard}>
