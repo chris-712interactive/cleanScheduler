@@ -448,7 +448,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       {
         question: 'How do I schedule both residential and commercial crews?',
         answer:
-          'Use customer tags and property records to keep account types clear. Residential homes and commercial sites share the same calendar — filter by customer or employee as needed.',
+          'Use service zones and property records to keep account types and areas clear. Residential homes and commercial sites share the same calendar — filter by customer, zone, or employee as needed.',
       },
     ],
     relatedLinks: [

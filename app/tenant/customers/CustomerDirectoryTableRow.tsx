@@ -49,6 +49,7 @@ export function CustomerDirectoryTableRow({ row }: { row: CustomerDirectoryRow }
             ) : (
               <p className={styles.customerAddressMuted}>No address on file</p>
             )}
+            {row.zoneName ? <p className={styles.customerZone}>{row.zoneName}</p> : null}
           </div>
         </div>
       </td>

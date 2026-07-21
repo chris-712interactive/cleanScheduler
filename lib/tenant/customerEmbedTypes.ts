@@ -29,6 +29,7 @@ type PropertyPick = Pick<
   | 'postal_code'
   | 'site_notes'
   | 'is_primary'
+  | 'service_zone_id'
 >;
 
 /** Row shape for `customers` + profile + service locations (detail projection). */

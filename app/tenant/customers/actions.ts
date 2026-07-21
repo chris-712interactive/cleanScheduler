@@ -18,6 +18,7 @@ import {
 import { attributeRefereeByReferrerCustomer } from '@/lib/referrals/referralAttribution';
 import { resolveTenantCustomerIdByEmail } from '@/lib/referrals/loadCustomerReferralAttribution';
 import { tenantReferralsNavEnabled } from '@/lib/referrals/tenantReferralsNav';
+import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
 
 export interface CustomerFormState {
   error?: string;
@@ -52,6 +53,7 @@ export async function createTenantCustomer(
   const serviceCity = String(formData.get('service_city') ?? '').trim();
   const serviceState = String(formData.get('service_state') ?? '').trim();
   const servicePostalCode = String(formData.get('service_postal_code') ?? '').trim();
+  const rawServiceZoneId = String(formData.get('service_zone_id') ?? '').trim();
   const preferredContactMethod = normalizeContactMethod(
     String(formData.get('preferred_contact_method') ?? '').trim(),
   );
@@ -73,6 +75,15 @@ export async function createTenantCustomer(
   const membership = await requireTenantPortalAccess(slug, '/customers/new');
 
   const admin = createAdminClient();
+
+  const zoneResolved = await resolveAssignableServiceZoneId(
+    admin,
+    membership.tenantId,
+    rawServiceZoneId,
+  );
+  if (zoneResolved.error) {
+    return { error: zoneResolved.error };
+  }
 
   try {
     await assertMeteredLimit(admin, membership.tenantId, 'maxActiveCustomers', 1);
@@ -156,6 +167,7 @@ export async function createTenantCustomer(
     city: serviceCity || null,
     state: serviceState || null,
     postal_code: servicePostalCode || null,
+    service_zone_id: zoneResolved.zoneId,
     is_primary: true,
   });
 

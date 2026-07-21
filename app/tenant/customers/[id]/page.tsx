@@ -16,6 +16,7 @@ import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
 import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import { loadServiceZonesForAssignment } from '@/lib/tenant/serviceZones';
 import { RecurringBillingPanel } from '../RecurringBillingPanel';
 import { CustomerActivityPanel } from '../CustomerActivityPanel';
 import { CustomerWalletPanel } from '../CustomerWalletPanel';
@@ -113,7 +114,8 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         state,
         postal_code,
         site_notes,
-        is_primary
+        is_primary,
+        service_zone_id
       )
     `,
     )
@@ -134,6 +136,11 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const profile = customer.tenant_customer_profiles;
   const properties = customer.tenant_customer_properties ?? [];
   const primary = properties.find((p) => p.is_primary);
+  const serviceZones = await loadServiceZonesForAssignment(
+    admin,
+    membership.tenantId,
+    properties.map((p) => p.service_zone_id),
+  );
 
   const displayName = formatCustomerDisplayName(identity);
   const email = identity.email ?? '';
@@ -302,6 +309,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
             tenantSlug={membership.tenantSlug}
             customerId={customer.id}
             properties={properties}
+            serviceZones={serviceZones}
           />
         </Card>
       </Stack>

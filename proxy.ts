@@ -286,11 +286,7 @@ export async function proxy(request: NextRequest) {
 
     // Collapse internal /marketing/* HTML paths to canonical public URLs.
     // (Static assets under public/marketing/ are excluded.)
-    if (
-      isOurApexHost &&
-      subdomain === null &&
-      shouldStripInternalMarketingPrefix(requestedPath)
-    ) {
+    if (isOurApexHost && subdomain === null && shouldStripInternalMarketingPrefix(requestedPath)) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = stripInternalMarketingPrefix(requestedPath);
       return NextResponse.redirect(redirectUrl, 308);

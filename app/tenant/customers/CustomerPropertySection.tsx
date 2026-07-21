@@ -8,6 +8,7 @@ import {
 } from '@/lib/tenant/customerPropertyPatch';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import type { ServiceZoneOption } from '@/lib/tenant/serviceZones';
 import {
   addCustomerProperty,
   updateCustomerProperty,
@@ -18,6 +19,45 @@ import {
 import styles from './customers.module.scss';
 
 const initial: PropertyFormState = {};
+
+function zoneLabel(zones: ServiceZoneOption[], zoneId: string | null): string | null {
+  if (!zoneId) return null;
+  return zones.find((z) => z.id === zoneId)?.name ?? null;
+}
+
+function ServiceZoneSelect({
+  id,
+  zones,
+  defaultValue,
+}: {
+  id: string;
+  zones: ServiceZoneOption[];
+  defaultValue: string | null;
+}) {
+  if (zones.length === 0) return null;
+
+  return (
+    <>
+      <label className={styles.label} htmlFor={id}>
+        Service zone
+      </label>
+      <select
+        id={id}
+        name="service_zone_id"
+        className={styles.input}
+        defaultValue={defaultValue ?? ''}
+      >
+        <option value="">— None —</option>
+        {zones.map((zone) => (
+          <option key={zone.id} value={zone.id}>
+            {zone.name}
+            {!zone.is_active ? ' (inactive)' : ''}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
 
 function PropertyActionMessages({ state }: { state: PropertyFormState }) {
   return (
@@ -40,10 +80,12 @@ export function CustomerPropertySection({
   tenantSlug,
   customerId,
   properties: initialProperties,
+  serviceZones,
 }: {
   tenantSlug: string;
   customerId: string;
   properties: CustomerPropertyVM[];
+  serviceZones: ServiceZoneOption[];
 }) {
   const [properties, setProperties] = useState(initialProperties);
   const [addLocationOpen, setAddLocationOpen] = useState(false);
@@ -73,52 +115,57 @@ export function CustomerPropertySection({
             quotes and visits attach here.
           </p>
         ) : (
-          sorted.map((p) => (
-            <details key={p.id} className={styles.propertyCard}>
-              <summary className={styles.propertySummary}>
-                <span className={styles.propertyTitle}>
-                  {p.label?.trim() || 'Unnamed location'}
-                  {p.is_primary ? <span className={styles.primaryBadge}>Primary</span> : null}
-                </span>
-                <span className={styles.propertyMeta}>
-                  {PROPERTY_KIND_LABEL[p.property_kind]} ·{' '}
-                  {formatPropertyAddressLine(p) || 'No address on file'}
-                </span>
-              </summary>
+          sorted.map((p) => {
+            const zoneName = zoneLabel(serviceZones, p.service_zone_id);
+            return (
+              <details key={p.id} className={styles.propertyCard}>
+                <summary className={styles.propertySummary}>
+                  <span className={styles.propertyTitle}>
+                    {p.label?.trim() || 'Unnamed location'}
+                    {p.is_primary ? <span className={styles.primaryBadge}>Primary</span> : null}
+                  </span>
+                  <span className={styles.propertyMeta}>
+                    {PROPERTY_KIND_LABEL[p.property_kind]}
+                    {zoneName ? ` · ${zoneName}` : ''} ·{' '}
+                    {formatPropertyAddressLine(p) || 'No address on file'}
+                  </span>
+                </summary>
 
-              <div className={styles.propertyBody}>
-                {p.site_notes ? (
-                  <p className={styles.propertySiteNotes}>
-                    <strong>Site notes:</strong> {p.site_notes}
-                  </p>
-                ) : null}
+                <div className={styles.propertyBody}>
+                  {p.site_notes ? (
+                    <p className={styles.propertySiteNotes}>
+                      <strong>Site notes:</strong> {p.site_notes}
+                    </p>
+                  ) : null}
 
-                <div className={styles.propertyActions}>
-                  {!p.is_primary ? (
-                    <SetPrimaryForm
+                  <div className={styles.propertyActions}>
+                    {!p.is_primary ? (
+                      <SetPrimaryForm
+                        tenantSlug={tenantSlug}
+                        customerId={customerId}
+                        propertyId={p.id}
+                        onPropertiesPatch={onPropertiesPatch}
+                      />
+                    ) : null}
+                    <DeletePropertyForm
                       tenantSlug={tenantSlug}
                       customerId={customerId}
                       propertyId={p.id}
                       onPropertiesPatch={onPropertiesPatch}
                     />
-                  ) : null}
-                  <DeletePropertyForm
+                  </div>
+
+                  <EditPropertyForm
                     tenantSlug={tenantSlug}
                     customerId={customerId}
-                    propertyId={p.id}
+                    property={p}
+                    serviceZones={serviceZones}
                     onPropertiesPatch={onPropertiesPatch}
                   />
                 </div>
-
-                <EditPropertyForm
-                  tenantSlug={tenantSlug}
-                  customerId={customerId}
-                  property={p}
-                  onPropertiesPatch={onPropertiesPatch}
-                />
-              </div>
-            </details>
-          ))
+              </details>
+            );
+          })
         )}
       </div>
 
@@ -128,6 +175,7 @@ export function CustomerPropertySection({
             tenantSlug={tenantSlug}
             customerId={customerId}
             hasAny={sorted.length > 0}
+            serviceZones={serviceZones}
             onPropertiesPatch={onPropertiesPatch}
             onAdded={() => setAddLocationOpen(false)}
           />
@@ -210,11 +258,13 @@ function EditPropertyForm({
   tenantSlug,
   customerId,
   property,
+  serviceZones,
   onPropertiesPatch,
 }: {
   tenantSlug: string;
   customerId: string;
   property: CustomerPropertyVM;
+  serviceZones: ServiceZoneOption[];
   onPropertiesPatch: PatchHandler;
 }) {
   const [state, action, pending] = useActionState(updateCustomerProperty, initial);
@@ -252,6 +302,12 @@ function EditPropertyForm({
           </option>
         ))}
       </select>
+
+      <ServiceZoneSelect
+        id={`sz_${property.id}`}
+        zones={serviceZones}
+        defaultValue={property.service_zone_id}
+      />
 
       <label className={styles.label} htmlFor={`a1_${property.id}`}>
         Address line 1
@@ -324,12 +380,14 @@ function AddPropertyForm({
   tenantSlug,
   customerId,
   hasAny,
+  serviceZones,
   onPropertiesPatch,
   onAdded,
 }: {
   tenantSlug: string;
   customerId: string;
   hasAny: boolean;
+  serviceZones: ServiceZoneOption[];
   onPropertiesPatch: PatchHandler;
   onAdded: () => void;
 }) {
@@ -380,6 +438,8 @@ function AddPropertyForm({
             </option>
           ))}
         </select>
+
+        <ServiceZoneSelect id="new_service_zone" zones={serviceZones} defaultValue={null} />
 
         <label className={styles.label} htmlFor="new_a1">
           Address line 1

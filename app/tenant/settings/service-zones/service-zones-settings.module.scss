@@ -1,0 +1,105 @@
+@use 'mixins/tenant-settings-layout' as layout;
+
+.stack {
+  @include layout.stack;
+}
+
+.readOnlyNotice {
+  @include layout.read-only-notice;
+}
+
+.hero {
+  @include layout.hero;
+}
+
+.heroTitle {
+  @include layout.hero-title;
+}
+
+.heroLead {
+  @include layout.hero-lead;
+}
+
+.heroMeta {
+  @include layout.meta-chips;
+}
+
+.metaChip {
+  @include layout.meta-chip;
+}
+
+.bannerError {
+  @include layout.banner-error;
+}
+
+.bannerSuccess {
+  color: var(--color-success);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.emptyState {
+  @include layout.empty-state;
+}
+
+.itemList {
+  @include layout.item-list;
+}
+
+.itemCard {
+  @include layout.item-card;
+}
+
+.itemMain {
+  @include layout.item-main;
+}
+
+.itemTitle {
+  @include layout.item-title;
+}
+
+.itemMeta {
+  @include layout.item-meta;
+}
+
+.itemActions {
+  @include layout.item-actions;
+}
+
+.renameForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+  margin-top: 0.75rem;
+}
+
+.renameInput {
+  @include layout.text-input;
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.setupCard {
+  @include layout.setup-card;
+}
+
+.setupTitle {
+  @include layout.setup-title;
+}
+
+.field {
+  @include layout.field;
+}
+
+.fieldLabel {
+  @include layout.field-label;
+}
+
+.fieldHint {
+  @include layout.field-hint;
+}
+
+.textInput {
+  @include layout.text-input;
+}

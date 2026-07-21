@@ -18,10 +18,12 @@ export function buildCustomerDirectorySearchParams(params: {
   q?: string;
   status?: CustomerDirectoryStatusParam;
   page?: number;
+  zone?: string | null;
 }): string {
   const search = new URLSearchParams();
   if (params.q?.trim()) search.set('q', params.q.trim());
   if (params.status && params.status !== 'all') search.set('status', params.status);
+  if (params.zone?.trim()) search.set('zone', params.zone.trim());
   if (params.page && params.page > 1) search.set('page', String(params.page));
   const q = search.toString();
   return q ? `?${q}` : '';

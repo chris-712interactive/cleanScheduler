@@ -1796,6 +1796,7 @@ export type Database = {
           bathrooms: number | null;
           sqft: number | null;
           stories: number | null;
+          service_zone_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1816,6 +1817,7 @@ export type Database = {
           bathrooms?: number | null;
           sqft?: number | null;
           stories?: number | null;
+          service_zone_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1836,6 +1838,7 @@ export type Database = {
           bathrooms?: number | null;
           sqft?: number | null;
           stories?: number | null;
+          service_zone_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1845,6 +1848,13 @@ export type Database = {
             columns: ['customer_id'];
             isOneToOne: false;
             referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_customer_properties_service_zone_id_fkey';
+            columns: ['service_zone_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_service_zones';
             referencedColumns: ['id'];
           },
           {
@@ -3983,6 +3993,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'tenant_locations_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_service_zones: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_service_zones_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
