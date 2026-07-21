@@ -1,31 +1,15 @@
+@use 'mixins/breakpoints' as mq;
+@use 'mixins/a11y' as a11y;
 @use 'mixins/tenant-settings-layout' as layout;
 
 .stack {
-  @include layout.stack;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .readOnlyNotice {
   @include layout.read-only-notice;
-}
-
-.hero {
-  @include layout.hero;
-}
-
-.heroTitle {
-  @include layout.hero-title;
-}
-
-.heroLead {
-  @include layout.hero-lead;
-}
-
-.heroMeta {
-  @include layout.meta-chips;
-}
-
-.metaChip {
-  @include layout.meta-chip;
 }
 
 .bannerError {
@@ -33,73 +17,161 @@
 }
 
 .bannerSuccess {
-  color: var(--color-success);
-  font-size: 0.9rem;
+  @include layout.banner-success;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.introLead {
   margin: 0;
+  max-width: 40rem;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.introMeta {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.addLabel {
+  @include a11y.visually-hidden;
+}
+
+.addInput {
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
+}
+
+.addRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
 }
 
 .emptyState {
-  @include layout.empty-state;
+  margin: 0;
+  padding: var(--space-5) var(--space-3);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
-.itemList {
-  @include layout.item-list;
+.zoneList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.itemCard {
-  @include layout.item-card;
+.zoneRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+
+  &:first-child {
+    border-top: 0;
+  }
+
+  &[data-inactive] {
+    background: color-mix(in srgb, var(--color-bg-subtle) 70%, transparent);
+  }
+
+  @include mq.up(md) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding-block: var(--space-2);
+    padding-inline: var(--space-3);
+  }
 }
 
-.itemMain {
-  @include layout.item-main;
-}
-
-.itemTitle {
-  @include layout.item-title;
-}
-
-.itemMeta {
-  @include layout.item-meta;
-}
-
-.itemActions {
-  @include layout.item-actions;
-}
-
-.renameForm {
+.zoneIdentity {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: flex-end;
-  margin-top: 0.75rem;
-}
-
-.renameInput {
-  @include layout.text-input;
-  flex: 1 1 12rem;
+  align-items: center;
+  gap: var(--space-2);
   min-width: 0;
 }
 
-.setupCard {
-  @include layout.setup-card;
+.zoneName {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
 }
 
-.setupTitle {
-  @include layout.setup-title;
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex-shrink: 0;
 }
 
-.field {
-  @include layout.field;
+.renameRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+
+  @include mq.up(md) {
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
-.fieldLabel {
-  @include layout.field-label;
-}
+.renameInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 
-.fieldHint {
-  @include layout.field-hint;
-}
-
-.textInput {
-  @include layout.text-input;
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
 }

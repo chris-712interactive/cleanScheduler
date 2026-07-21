@@ -34,7 +34,7 @@ export default async function TenantServiceZonesSettingsPage() {
         backLabel="Settings"
       />
 
-      <Stack gap={6}>
+      <Stack gap={4}>
         {!canEdit ? (
           <p className={styles.readOnlyNotice} role="status">
             You can view service zones here. Only owners and admins can make changes.

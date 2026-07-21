@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
@@ -14,6 +14,13 @@ import styles from './service-zones-settings.module.scss';
 
 const initialState: ServiceZoneActionState = {};
 
+type ZoneRow = {
+  id: string;
+  name: string;
+  is_active: boolean;
+  sort_order: number;
+};
+
 export function ServiceZonesPanel({
   tenantSlug,
   canEdit,
@@ -21,12 +28,7 @@ export function ServiceZonesPanel({
 }: {
   tenantSlug: string;
   canEdit: boolean;
-  zones: Array<{
-    id: string;
-    name: string;
-    is_active: boolean;
-    sort_order: number;
-  }>;
+  zones: ZoneRow[];
 }) {
   const [createState, createAction, createPending] = useActionState(
     createTenantServiceZoneAction,
@@ -40,6 +42,21 @@ export function ServiceZonesPanel({
     deleteTenantServiceZoneAction,
     initialState,
   );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [addFormKey, setAddFormKey] = useState(0);
+
+  useEffect(() => {
+    if (renameState.success) {
+      setEditingId(null);
+    }
+  }, [renameState.success]);
+
+  useEffect(() => {
+    if (createState.success) {
+      setAddFormKey((key) => key + 1);
+    }
+  }, [createState.success]);
+
   const activeCount = zones.filter((zone) => zone.is_active).length;
   const bannerError = createState.error ?? renameState.error ?? deleteState.error;
   const bannerSuccess =
@@ -58,100 +75,135 @@ export function ServiceZonesPanel({
         </p>
       ) : null}
 
-      <header className={styles.hero}>
-        <h2 className={styles.heroTitle}>Organize customers by community or area</h2>
-        <p className={styles.heroLead}>
-          Service zones are labels you assign to service locations — for example &ldquo;Babcock
-          Ranch&rdquo; or &ldquo;North county&rdquo;. Search and filter the customer directory by
-          zone. Separate from Locations (Pro), which tag visits and invoices by crew or branch.
+      <header className={styles.intro}>
+        <p className={styles.introLead}>
+          Labels for communities and areas (e.g. Babcock Ranch). Assign on a customer&rsquo;s
+          service location, then search or filter the directory by zone. Different from Locations
+          (Pro), which tag visits by crew or branch.
         </p>
-        <div className={styles.heroMeta}>
-          <span className={styles.metaChip}>
-            {zones.length} {zones.length === 1 ? 'zone' : 'zones'}
-          </span>
-          <span className={styles.metaChip}>{activeCount} active</span>
-        </div>
+        <p className={styles.introMeta}>
+          {zones.length} {zones.length === 1 ? 'zone' : 'zones'}
+          {zones.length > 0 ? ` · ${activeCount} active` : null}
+        </p>
       </header>
 
-      {zones.length === 0 ? (
-        <p className={styles.emptyState}>
-          No service zones yet. Add communities or areas your team uses when organizing customers.
-        </p>
-      ) : (
-        <ul className={styles.itemList}>
-          {zones.map((zone) => (
-            <li key={zone.id} className={styles.itemCard}>
-              <div className={styles.itemMain}>
-                <p className={styles.itemTitle}>{zone.name}</p>
-                <StatusPill tone={zone.is_active ? 'success' : 'neutral'}>
-                  {zone.is_active ? 'Active' : 'Inactive'}
-                </StatusPill>
-                {canEdit ? (
-                  <form action={renameAction} className={styles.renameForm}>
-                    <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                    <input type="hidden" name="zone_id" value={zone.id} />
-                    <input
-                      className={styles.renameInput}
-                      name="name"
-                      defaultValue={zone.name}
-                      aria-label={`Rename ${zone.name}`}
-                      required
-                      disabled={renamePending}
-                    />
-                    <Button type="submit" size="sm" variant="secondary" disabled={renamePending}>
-                      {renamePending ? 'Saving…' : 'Rename'}
-                    </Button>
-                  </form>
-                ) : null}
-              </div>
-              {canEdit ? (
-                <div className={styles.itemActions}>
-                  <form action={toggleTenantServiceZoneAction}>
-                    <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                    <input type="hidden" name="zone_id" value={zone.id} />
-                    <input type="hidden" name="enabled" value={zone.is_active ? 'false' : 'true'} />
-                    <Button type="submit" size="sm" variant="secondary">
-                      {zone.is_active ? 'Deactivate' : 'Activate'}
-                    </Button>
-                  </form>
-                  <form action={deleteAction}>
-                    <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                    <input type="hidden" name="zone_id" value={zone.id} />
-                    <Button type="submit" size="sm" variant="danger" disabled={deletePending}>
-                      Delete
-                    </Button>
-                  </form>
-                </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {canEdit ? (
-        <div className={styles.setupCard}>
-          <p className={styles.setupTitle}>Add a service zone</p>
-          <form action={createAction}>
+      <section className={styles.panel} aria-label="Service zones">
+        {canEdit ? (
+          <form key={addFormKey} action={createAction} className={styles.addRow}>
             <input type="hidden" name="tenant_slug" value={tenantSlug} />
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Zone name</span>
-              <span className={styles.fieldHint}>
-                Something your team will type when searching, like &ldquo;Babcock Ranch&rdquo;.
-              </span>
-              <input
-                className={styles.textInput}
-                name="name"
-                placeholder="Babcock Ranch"
-                required
-                disabled={createPending}
-              />
+            <label className={styles.addLabel} htmlFor="new_service_zone_name">
+              Add zone
             </label>
-            <Button type="submit" disabled={createPending}>
-              {createPending ? 'Adding…' : 'Add zone'}
+            <input
+              id="new_service_zone_name"
+              className={styles.addInput}
+              name="name"
+              placeholder="e.g. Babcock Ranch"
+              required
+              disabled={createPending}
+              autoComplete="off"
+            />
+            <Button type="submit" size="sm" disabled={createPending}>
+              {createPending ? 'Adding…' : 'Add'}
             </Button>
           </form>
-        </div>
-      ) : null}
+        ) : null}
+
+        {zones.length === 0 ? (
+          <p className={styles.emptyState}>
+            No zones yet. Add the communities or areas your team uses when organizing customers.
+          </p>
+        ) : (
+          <ul className={styles.zoneList}>
+            {zones.map((zone) => {
+              const isEditing = editingId === zone.id;
+
+              return (
+                <li
+                  key={zone.id}
+                  className={styles.zoneRow}
+                  data-inactive={!zone.is_active || undefined}
+                >
+                  {isEditing && canEdit ? (
+                    <form action={renameAction} className={styles.renameRow}>
+                      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+                      <input type="hidden" name="zone_id" value={zone.id} />
+                      <input
+                        className={styles.renameInput}
+                        name="name"
+                        defaultValue={zone.name}
+                        aria-label={`Rename ${zone.name}`}
+                        required
+                        disabled={renamePending}
+                        autoFocus
+                      />
+                      <div className={styles.rowActions}>
+                        <Button type="submit" size="sm" disabled={renamePending}>
+                          {renamePending ? 'Saving…' : 'Save'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setEditingId(null)}
+                          disabled={renamePending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className={styles.zoneIdentity}>
+                        <span className={styles.zoneName}>{zone.name}</span>
+                        <StatusPill tone={zone.is_active ? 'success' : 'neutral'}>
+                          {zone.is_active ? 'Active' : 'Inactive'}
+                        </StatusPill>
+                      </div>
+                      {canEdit ? (
+                        <div className={styles.rowActions}>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setEditingId(zone.id)}
+                          >
+                            Rename
+                          </Button>
+                          <form action={toggleTenantServiceZoneAction}>
+                            <input type="hidden" name="tenant_slug" value={tenantSlug} />
+                            <input type="hidden" name="zone_id" value={zone.id} />
+                            <input
+                              type="hidden"
+                              name="enabled"
+                              value={zone.is_active ? 'false' : 'true'}
+                            />
+                            <Button type="submit" size="sm" variant="secondary">
+                              {zone.is_active ? 'Deactivate' : 'Activate'}
+                            </Button>
+                          </form>
+                          <form action={deleteAction}>
+                            <input type="hidden" name="tenant_slug" value={tenantSlug} />
+                            <input type="hidden" name="zone_id" value={zone.id} />
+                            <Button
+                              type="submit"
+                              size="sm"
+                              variant="danger"
+                              disabled={deletePending}
+                            >
+                              Delete
+                            </Button>
+                          </form>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
