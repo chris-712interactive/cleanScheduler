@@ -141,7 +141,7 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     category: 'post-deploy',
     title: 'Rich Results Test — homepage',
     detail:
-      'Run Google Rich Results Test on /. Confirm Organization, WebSite, SoftwareApplication, and FAQ schema validate.',
+      'Run Google Rich Results Test on /. Expect Organization (logo/address/contact) and SoftwareApplication/WebApplication offers. WebSite and FAQPage stay in JSON-LD for understanding but are no longer rich-result types in Google’s tester (FAQ retired mid-2026). Do not invent aggregateRating without real public reviews.',
     href: RICH_RESULTS_URL,
     external: true,
     cadence: 'once',

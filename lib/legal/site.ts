@@ -12,6 +12,11 @@ export const LEGAL_CONTACT_EMAIL = 'legal@712int.com';
 export const LEGAL_BUSINESS_ADDRESS = {
   line1: '5830 E 2nd St, STE 6300',
   line2: 'Casper, WY 82609',
+  streetAddress: '5830 E 2nd St, STE 6300',
+  addressLocality: 'Casper',
+  addressRegion: 'WY',
+  postalCode: '82609',
+  addressCountry: 'US',
 } as const;
 
 export function formatLegalBusinessAddress(options?: { multiline?: boolean }): string {

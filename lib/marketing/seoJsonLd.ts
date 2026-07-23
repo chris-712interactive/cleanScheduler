@@ -1,9 +1,21 @@
 import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
-import { PRODUCT_NAME } from '@/lib/legal/site';
+import { LEGAL_BUSINESS_ADDRESS, LEGAL_CONTACT_EMAIL, PRODUCT_NAME } from '@/lib/legal/site';
 import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
 import type { HelpGuideArticle, SeoMarketingPage } from '@/lib/marketing/seoContent/types';
 
 const SCHEMA_CONTEXT = 'https://schema.org';
+
+/** Customer-facing support inbox (also published on /help/contact). */
+const SUPPORT_EMAIL = 'support@cleanscheduler.com';
+
+/** Square brand mark for Organization logo (Google Images–crawlable PNG, ≥112px). */
+const ORGANIZATION_LOGO_PATH = '/favicon/web-app-manifest-512x512.png';
+
+const ORGANIZATION_DESCRIPTION =
+  'Clean Scheduler is cleaning business management software for residential and commercial teams — scheduling, quotes, invoicing, online payments, and a branded customer portal.';
+
+const SOFTWARE_DESCRIPTION =
+  'Cleaning scheduling software to schedule crews, send quotes, accept online payments, and close the books — built for residential and commercial cleaning businesses.';
 
 const COMPETITOR_URLS: Record<string, string> = {
   Jobber: 'https://www.getjobber.com',
@@ -36,11 +48,49 @@ function parseContentVerifiedDate(verified?: string): string {
 }
 
 function buildOrganization(origin: string): JsonLdNode {
+  const logoUrl = absoluteUrl(origin, ORGANIZATION_LOGO_PATH);
+
   return {
     '@type': 'Organization',
     '@id': `${origin}/#organization`,
     name: PRODUCT_NAME,
+    legalName: PRODUCT_NAME,
     url: origin,
+    description: ORGANIZATION_DESCRIPTION,
+    email: SUPPORT_EMAIL,
+    logo: {
+      '@type': 'ImageObject',
+      '@id': `${origin}/#logo`,
+      url: logoUrl,
+      contentUrl: logoUrl,
+      caption: PRODUCT_NAME,
+      width: 512,
+      height: 512,
+    },
+    image: { '@id': `${origin}/#logo` },
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: LEGAL_BUSINESS_ADDRESS.streetAddress,
+      addressLocality: LEGAL_BUSINESS_ADDRESS.addressLocality,
+      addressRegion: LEGAL_BUSINESS_ADDRESS.addressRegion,
+      postalCode: LEGAL_BUSINESS_ADDRESS.postalCode,
+      addressCountry: LEGAL_BUSINESS_ADDRESS.addressCountry,
+    },
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        email: SUPPORT_EMAIL,
+        url: absoluteUrl(origin, '/help/contact'),
+        availableLanguage: ['English'],
+      },
+      {
+        '@type': 'ContactPoint',
+        contactType: 'privacy',
+        email: LEGAL_CONTACT_EMAIL,
+        availableLanguage: ['English'],
+      },
+    ],
   };
 }
 
@@ -50,7 +100,10 @@ function buildWebsite(origin: string): JsonLdNode {
     '@id': `${origin}/#website`,
     name: PRODUCT_NAME,
     url: origin,
+    description: ORGANIZATION_DESCRIPTION,
+    inLanguage: 'en-US',
     publisher: { '@id': `${origin}/#organization` },
+    about: { '@id': `${origin}/#organization` },
   };
 }
 
@@ -58,17 +111,24 @@ function buildCleanSchedulerSoftware(origin: string): JsonLdNode {
   const starterPrice = PLATFORM_TIER_ENTITLEMENTS.starter.monthlyPriceUsd;
 
   return {
-    '@type': 'SoftwareApplication',
+    '@type': ['SoftwareApplication', 'WebApplication'],
     '@id': `${origin}/#software`,
     name: PRODUCT_NAME,
+    description: SOFTWARE_DESCRIPTION,
     applicationCategory: 'BusinessApplication',
     applicationSubCategory: 'Cleaning business management software',
     operatingSystem: 'Web browser',
+    browserRequirements: 'Requires JavaScript. Works in modern browsers.',
     url: origin,
+    image: absoluteUrl(origin, '/marketing/og-home.png'),
+    publisher: { '@id': `${origin}/#organization` },
+    author: { '@id': `${origin}/#organization` },
     offers: {
       '@type': 'Offer',
       price: String(starterPrice),
       priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      category: 'Subscription',
       description: `Starter plan from $${starterPrice}/month with a 7-day free trial`,
       url: absoluteUrl(origin, '/pricing'),
     },
@@ -275,17 +335,25 @@ export function buildPricingPageJsonLd(origin: string, tiers: PricingTierOffer[]
         mainEntity: { '@id': `${pageUrl}#software` },
       },
       {
-        '@type': 'SoftwareApplication',
+        '@type': ['SoftwareApplication', 'WebApplication'],
         '@id': `${pageUrl}#software`,
         name: PRODUCT_NAME,
+        description: SOFTWARE_DESCRIPTION,
         applicationCategory: 'BusinessApplication',
+        applicationSubCategory: 'Cleaning business management software',
         operatingSystem: 'Web browser',
+        browserRequirements: 'Requires JavaScript. Works in modern browsers.',
         url: origin,
+        image: absoluteUrl(origin, '/marketing/og-home.png'),
+        publisher: { '@id': `${origin}/#organization` },
+        author: { '@id': `${origin}/#organization` },
         offers: tiers.map((tier) => ({
           '@type': 'Offer',
           name: `${tier.displayName} plan`,
           price: String(tier.monthlyPriceUsd),
           priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          category: 'Subscription',
           description: `${tier.displayName} — $${tier.monthlyPriceUsd}/month`,
           url: pageUrl,
         })),
