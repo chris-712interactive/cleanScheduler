@@ -52,6 +52,14 @@ This is usually **not a bug**. Google found a duplicate URL (commonly `www.…` 
 | Compare / feature / for pages | `buildSeoPageJsonLd` — WebPage, Article, competitor SoftwareApplication entities |
 | Help guides                   | `buildHelpGuideJsonLd` — Article graph with breadcrumbs                          |
 
+Shared Organization / software nodes (`lib/marketing/seoJsonLd.ts`) include:
+
+- **Organization** — logo (`ImageObject`), Casper WY mailing address, support + privacy contact points, description
+- **WebSite** — publisher/about links to Organization, `inLanguage`
+- **SoftwareApplication** + **WebApplication** — description, image, publisher/author, InStock subscription offers
+
+Do **not** add `aggregateRating` until real public reviews exist and are shown on-page (Google spam policy). `FAQPage` markup remains for content understanding; Google retired FAQ rich results in mid-2026, so the Rich Results Test will not list FAQ.
+
 Tests: `lib/marketing/seoJsonLd.test.ts`.
 
 ## GSC query mapping (June 2026 — 28-day window)

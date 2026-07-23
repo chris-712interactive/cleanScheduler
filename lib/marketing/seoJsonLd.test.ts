@@ -20,6 +20,11 @@ function nodeById(jsonLd: Record<string, unknown>, id: string) {
   return graphNodes(jsonLd).find((node) => node['@id'] === id);
 }
 
+function includesType(node: Record<string, unknown> | undefined, type: string) {
+  const value = node?.['@type'];
+  return value === type || (Array.isArray(value) && value.includes(type));
+}
+
 describe('buildSeoPageJsonLd', () => {
   it('includes comparison software entities for competitor pages', () => {
     const page = COMPARE_PAGES.find((entry) => entry.slug === 'vs-jobber');
@@ -37,7 +42,7 @@ describe('buildSeoPageJsonLd', () => {
     const cleanScheduler = nodeById(jsonLd, `${ORIGIN}/#software`);
     const competitor = nodeById(jsonLd, `${ORIGIN}/compare/vs-jobber#competitor`);
 
-    expect(cleanScheduler?.['@type']).toBe('SoftwareApplication');
+    expect(includesType(cleanScheduler, 'SoftwareApplication')).toBe(true);
     expect(competitor?.['@type']).toBe('SoftwareApplication');
     expect(competitor?.name).toBe('Jobber');
     expect(cleanScheduler?.isSimilarTo).toEqual({
@@ -55,21 +60,45 @@ describe('buildSeoPageJsonLd', () => {
     expect(
       graph.some((node) => node['@id'] === `${ORIGIN}/compare/spreadsheets-and-texts#competitor`),
     ).toBe(false);
-    expect(graph.some((node) => node['@type'] === 'SoftwareApplication')).toBe(true);
+    expect(graph.some((node) => includesType(node, 'SoftwareApplication'))).toBe(true);
   });
 });
 
 describe('buildHomePageJsonLd', () => {
-  it('includes Organization, WebSite, and SoftwareApplication', () => {
+  it('includes enriched Organization, WebSite, SoftwareApplication, and FAQ', () => {
     const jsonLd = buildHomePageJsonLd(ORIGIN, [{ question: 'Q?', answer: 'A.' }], {
       title: 'Home',
       description: 'Cleaning software.',
     });
     const graph = graphNodes(jsonLd);
+    const organization = nodeById(jsonLd, `${ORIGIN}/#organization`);
+    const website = nodeById(jsonLd, `${ORIGIN}/#website`);
+    const software = nodeById(jsonLd, `${ORIGIN}/#software`);
+    const logo = organization?.logo as Record<string, unknown> | undefined;
+    const address = organization?.address as Record<string, unknown> | undefined;
+    const contactPoints = organization?.contactPoint as Array<Record<string, unknown>>;
 
-    expect(graph.some((node) => node['@type'] === 'Organization')).toBe(true);
-    expect(graph.some((node) => node['@type'] === 'WebSite')).toBe(true);
-    expect(graph.some((node) => node['@type'] === 'SoftwareApplication')).toBe(true);
+    expect(organization?.['@type']).toBe('Organization');
+    expect(organization?.email).toBe('support@cleanscheduler.com');
+    expect(logo?.['@type']).toBe('ImageObject');
+    expect(logo?.url).toBe(`${ORIGIN}/favicon/web-app-manifest-512x512.png`);
+    expect(address?.addressLocality).toBe('Casper');
+    expect(address?.addressRegion).toBe('WY');
+    expect(address?.postalCode).toBe('82609');
+    expect(contactPoints).toHaveLength(2);
+
+    expect(website?.['@type']).toBe('WebSite');
+    expect(website?.publisher).toEqual({ '@id': `${ORIGIN}/#organization` });
+    expect(website?.inLanguage).toBe('en-US');
+
+    expect(includesType(software, 'SoftwareApplication')).toBe(true);
+    expect(includesType(software, 'WebApplication')).toBe(true);
+    expect(software?.publisher).toEqual({ '@id': `${ORIGIN}/#organization` });
+    expect(software?.description).toContain('Cleaning scheduling software');
+    expect((software?.offers as Record<string, unknown>)?.availability).toBe(
+      'https://schema.org/InStock',
+    );
+
     expect(graph.some((node) => node['@type'] === 'FAQPage')).toBe(true);
   });
 });
