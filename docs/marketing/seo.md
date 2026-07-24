@@ -43,14 +43,14 @@ This is usually **not a bug**. Google found a duplicate URL (commonly `www.…` 
 
 ## JSON-LD by page type
 
-| Page                          | Builder                                                                          |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| Homepage                      | `buildHomePageJsonLd` — Organization, WebSite, SoftwareApplication, FAQPage      |
-| Pricing                       | `buildPricingPageJsonLd` — tiered SoftwareApplication offers                     |
-| Compare hub                   | `buildCompareHubJsonLd` — ItemList of comparison pages                           |
-| Features hub                  | `buildFeatureHubJsonLd` — ItemList of feature pages                              |
-| Compare / feature / for pages | `buildSeoPageJsonLd` — WebPage, Article, competitor SoftwareApplication entities |
-| Help guides                   | `buildHelpGuideJsonLd` — Article graph with breadcrumbs                          |
+| Page                          | Builder                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| Homepage                      | `buildHomePageJsonLd` — Organization, WebSite, SoftwareApplication, FAQPage             |
+| Pricing                       | `buildPricingPageJsonLd` — tiered SoftwareApplication offers                            |
+| Compare hub                   | `buildCompareHubJsonLd` — ItemList of comparison pages                                  |
+| Features hub                  | `buildFeatureHubJsonLd` — ItemList of feature pages                                     |
+| Compare / feature / for pages | `buildSeoPageJsonLd` — WebPage, Article (image + dates), competitor SoftwareApplication |
+| Help guides                   | `buildHelpGuideJsonLd` — Article graph with breadcrumbs, image, and dates               |
 
 Shared Organization / software nodes (`lib/marketing/seoJsonLd.ts`) include:
 

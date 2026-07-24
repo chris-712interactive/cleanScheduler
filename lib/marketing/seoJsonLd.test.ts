@@ -51,6 +51,15 @@ describe('buildSeoPageJsonLd', () => {
     expect(cleanScheduler?.isSimilarTo).toEqual({
       '@id': `${ORIGIN}/compare/vs-jobber#competitor`,
     });
+
+    const article = nodeById(jsonLd, `${ORIGIN}/compare/vs-jobber#article`);
+    const articleImage = article?.image as Record<string, unknown> | undefined;
+    const articleAuthor = article?.author as Record<string, unknown> | undefined;
+    expect(article?.['@type']).toBe('Article');
+    expect(article?.datePublished).toBe('2026-06-01');
+    expect(article?.dateModified).toBe('2026-06-01');
+    expect(articleImage?.url).toBe(`${ORIGIN}/marketing/og-home.png`);
+    expect(articleAuthor?.name).toBe('Clean Scheduler');
   });
 
   it('gives competitor SoftwareApplication the minimum Google-required fields', () => {
@@ -155,6 +164,10 @@ describe('buildHelpGuideJsonLd', () => {
 
     const articleNode = nodeById(jsonLd, `${ORIGIN}${article!.path}#article`);
     expect(articleNode?.headline).toBe('How to get commercial cleaning accounts');
+    expect(articleNode?.datePublished).toBe('2026-06-01');
+    expect((articleNode?.image as Record<string, unknown>)?.url).toBe(
+      `${ORIGIN}/marketing/og-home.png`,
+    );
   });
 });
 

@@ -1,6 +1,7 @@
 import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
 import { LEGAL_BUSINESS_ADDRESS, LEGAL_CONTACT_EMAIL, PRODUCT_NAME } from '@/lib/legal/site';
 import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
+import { DEFAULT_OG_IMAGE } from '@/lib/marketing/marketingPageMetadata';
 import type { HelpGuideArticle, SeoMarketingPage } from '@/lib/marketing/seoContent/types';
 
 const SCHEMA_CONTEXT = 'https://schema.org';
@@ -10,6 +11,9 @@ const SUPPORT_EMAIL = 'support@cleanscheduler.com';
 
 /** Square brand mark for Organization logo (Google Images–crawlable PNG, ≥112px). */
 const ORGANIZATION_LOGO_PATH = '/favicon/web-app-manifest-512x512.png';
+
+/** Stable publish/verify date for evergreen marketing SEO content (month of last pricing verify). */
+const DEFAULT_CONTENT_DATE = '2026-06-01';
 
 const ORGANIZATION_DESCRIPTION =
   'Clean Scheduler is cleaning business management software for residential and commercial teams — scheduling, quotes, invoicing, online payments, and a branded customer portal.';
@@ -37,14 +41,33 @@ function absoluteUrl(origin: string, path: string): string {
 }
 
 function parseContentVerifiedDate(verified?: string): string {
-  if (!verified) return new Date().toISOString().slice(0, 10);
+  if (!verified) return DEFAULT_CONTENT_DATE;
 
   const monthYearMatch = verified.match(/^([A-Za-z]+)\s+(\d{4})$/);
   const normalized = monthYearMatch ? `${monthYearMatch[1]} 1, ${monthYearMatch[2]}` : verified;
   const timestamp = Date.parse(normalized);
   return Number.isNaN(timestamp)
-    ? new Date().toISOString().slice(0, 10)
+    ? DEFAULT_CONTENT_DATE
     : new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function buildArticleImage(origin: string): JsonLdNode {
+  return {
+    '@type': 'ImageObject',
+    url: absoluteUrl(origin, DEFAULT_OG_IMAGE.url),
+    width: DEFAULT_OG_IMAGE.width,
+    height: DEFAULT_OG_IMAGE.height,
+    caption: DEFAULT_OG_IMAGE.alt,
+  };
+}
+
+function buildOrganizationAuthor(origin: string): JsonLdNode {
+  return {
+    '@type': 'Organization',
+    '@id': `${origin}/#organization`,
+    name: PRODUCT_NAME,
+    url: origin,
+  };
 }
 
 function buildOrganization(origin: string): JsonLdNode {
@@ -185,7 +208,7 @@ function buildArticleNode(
   origin: string,
   aboutIds: string[],
 ): JsonLdNode {
-  const dateModified = parseContentVerifiedDate(page.comparisonTable?.lastVerified);
+  const contentDate = parseContentVerifiedDate(page.comparisonTable?.lastVerified);
 
   return {
     '@type': 'Article',
@@ -193,9 +216,11 @@ function buildArticleNode(
     headline: page.headline,
     description: page.lead,
     inLanguage: 'en-US',
-    author: { '@id': `${origin}/#organization` },
+    image: buildArticleImage(origin),
+    author: buildOrganizationAuthor(origin),
     publisher: { '@id': `${origin}/#organization` },
-    dateModified,
+    datePublished: contentDate,
+    dateModified: contentDate,
     mainEntityOfPage: { '@id': pageId },
     about: aboutIds.map((id) => ({ '@id': id })),
   };
@@ -411,9 +436,11 @@ export function buildHelpGuideJsonLd(
       headline: article.title,
       description: article.description,
       inLanguage: 'en-US',
-      author: { '@id': `${origin}/#organization` },
+      image: buildArticleImage(origin),
+      author: buildOrganizationAuthor(origin),
       publisher: { '@id': `${origin}/#organization` },
-      dateModified: new Date().toISOString().slice(0, 10),
+      datePublished: DEFAULT_CONTENT_DATE,
+      dateModified: DEFAULT_CONTENT_DATE,
       mainEntityOfPage: { '@id': pageId },
       about: { '@id': `${origin}/#software` },
     },
