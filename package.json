@@ -40,7 +40,7 @@
     "d3-geo": "^3.1.1",
     "jose": "^6.2.3",
     "lucide-react": "^1.24.0",
-    "next": "^16.2.10",
+    "next": "^16.2.11",
     "pdfkit": "^0.19.1",
     "plaid": "^43.0.0",
     "qrcode": "^1.5.4",
@@ -70,7 +70,7 @@
     "@types/topojson-specification": "^1.0.5",
     "@types/zxcvbn": "^4.4.5",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.10",
+    "eslint-config-next": "^16.2.11",
     "modern-normalize": "^3.0.1",
     "prettier": "^3.9.5",
     "sass": "^1.101.0",
@@ -84,6 +84,8 @@
     "node": ">=22.22.1"
   },
   "overrides": {
-    "postcss": "^8.5.10"
+    "postcss": "^8.5.10",
+    "axios": "^1.18.1",
+    "sharp": "^0.35.3"
   }
 }

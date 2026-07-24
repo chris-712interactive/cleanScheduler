@@ -9,7 +9,7 @@ Supersedes Dependabot PRs: #125, #131, #132, #153–#161, #164.
 | Package / group                                                                        | From (approx.)       | To (resolved)        | Source PR      |
 | -------------------------------------------------------------------------------------- | -------------------- | -------------------- | -------------- |
 | `@radix-ui/react-*` (dialog, dropdown, popover, tabs, toast, tooltip, visually-hidden) | patch set on main    | latest caret patches | #154–#161      |
-| `next` / `eslint-config-next`                                                          | 16.2.6               | 16.2.10              | #132 / #164    |
+| `next` / `eslint-config-next`                                                          | 16.2.6               | 16.2.11              | #132 / #164 + security patch |
 | `react` / `react-dom` / `@types/react`                                                 | 19.0 / 19.0.7 ranges | 19.2.7 / 19.2.17     | #132           |
 | `pdfkit`                                                                               | 0.18.0               | 0.19.1               | #131           |
 | `@supabase/ssr` / `@supabase/supabase-js`                                              | 0.10.3 / 2.106.x     | 0.12.x / 2.110.4     | #125           |
@@ -21,6 +21,14 @@ Supersedes Dependabot PRs: #125, #131, #132, #153–#161, #164.
 | `actions/checkout`                                                                     | v6                   | v7                   | #153           |
 
 Prettier 3.9 reformatted a small set of source files; no intentional logic changes.
+
+## Security follow-ups (Jul 2026)
+
+CI `npm audit --omit=dev --audit-level=high` required:
+
+- Bump `next` / `eslint-config-next` to **16.2.11** (App Router / proxy advisories).
+- Override nested **`sharp`** to `^0.35.3` (Next still optionally depends on `^0.34.5`).
+- Override transitive **`axios`** (via `plaid`) to `^1.18.1`.
 
 ## Deferred (from #164)
 
