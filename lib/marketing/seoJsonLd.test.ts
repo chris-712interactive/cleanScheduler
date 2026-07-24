@@ -43,11 +43,30 @@ describe('buildSeoPageJsonLd', () => {
     const competitor = nodeById(jsonLd, `${ORIGIN}/compare/vs-jobber#competitor`);
 
     expect(includesType(cleanScheduler, 'SoftwareApplication')).toBe(true);
-    expect(competitor?.['@type']).toBe('SoftwareApplication');
+    expect(includesType(competitor, 'SoftwareApplication')).toBe(true);
+    expect(includesType(competitor, 'WebApplication')).toBe(true);
     expect(competitor?.name).toBe('Jobber');
+    expect(competitor?.applicationCategory).toBe('BusinessApplication');
+    expect(competitor?.operatingSystem).toBe('Web browser');
     expect(cleanScheduler?.isSimilarTo).toEqual({
       '@id': `${ORIGIN}/compare/vs-jobber#competitor`,
     });
+  });
+
+  it('gives competitor SoftwareApplication the minimum Google-required fields', () => {
+    const page = COMPARE_PAGES.find((entry) => entry.slug === 'vs-launch27');
+    expect(page).toBeDefined();
+
+    const competitor = nodeById(
+      buildSeoPageJsonLd(page!, ORIGIN),
+      `${ORIGIN}/compare/vs-launch27#competitor`,
+    );
+
+    expect(competitor?.name).toBe('Launch27');
+    expect(competitor?.applicationCategory).toBe('BusinessApplication');
+    expect(competitor?.operatingSystem).toBe('Web browser');
+    expect(competitor?.offers).toBeUndefined();
+    expect(competitor?.aggregateRating).toBeUndefined();
   });
 
   it('omits competitor software on non-comparison pages', () => {
