@@ -204,12 +204,17 @@ function buildArticleNode(
 function buildCompetitorSoftware(pageUrl: string, competitorName: string): JsonLdNode {
   const competitorUrl = COMPETITOR_URLS[competitorName];
 
+  // Google Software App rich results require ≥2 of: offers, aggregateRating,
+  // applicationCategory, operatingSystem. We never invent competitor pricing
+  // or ratings — category + OS is enough for a valid comparison entity.
   return {
-    '@type': 'SoftwareApplication',
+    '@type': ['SoftwareApplication', 'WebApplication'],
     '@id': `${pageUrl}#competitor`,
     name: competitorName,
+    description: `${competitorName} cleaning business management software`,
     applicationCategory: 'BusinessApplication',
     applicationSubCategory: 'Cleaning business management software',
+    operatingSystem: 'Web browser',
     ...(competitorUrl ? { url: competitorUrl, sameAs: competitorUrl } : {}),
   };
 }
