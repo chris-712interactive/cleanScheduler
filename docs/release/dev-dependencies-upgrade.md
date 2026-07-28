@@ -29,6 +29,7 @@ CI `npm audit --omit=dev --audit-level=high` required:
 - Bump `next` / `eslint-config-next` to **16.2.11** (App Router / proxy advisories).
 - Override nested **`sharp`** to `^0.35.3` (Next still optionally depends on `^0.34.5`).
 - Override transitive **`axios`** (via `plaid`) to `^1.18.1`.
+- Override nested **`postcss`** to `^8.5.18` (GHSA-r28c-9q8g-f849 path traversal via source map auto-loading; Next still nests an older postcss).
 
 ## Deferred (from #164)
 
