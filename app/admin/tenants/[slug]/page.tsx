@@ -15,12 +15,18 @@ import {
 } from '@/lib/billing/platformPlanTier';
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
 import { formatOfficeFieldSeatLine } from '@/lib/billing/teamSeats';
+import {
+  formatAutoPurgeDate,
+  getTenantPurgeStatus,
+  isCanceledForAdminPurge,
+} from '@/lib/billing/tenantPurge';
 import { startMasqueradeAction } from '@/lib/admin/masqueradeActions';
 import { loadPlatformSupportInbox } from '@/lib/admin/loadPlatformSupportInbox';
 import {
   PLATFORM_SUPPORT_CATEGORY_LABEL,
   PLATFORM_SUPPORT_STATUS_LABEL,
 } from '@/lib/admin/platformSupportLabels';
+import { AdminDeleteTenantPanel } from '../AdminDeleteTenantPanel';
 import styles from '../tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +59,8 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
         status,
         trial_started_at,
         trial_ends_at,
+        activated_at,
+        canceled_at,
         stripe_customer_id,
         stripe_subscription_id,
         platform_plan
@@ -88,6 +96,8 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
 
   const billing = normalizeOne(tenant.tenant_billing_accounts);
   const onboarding = normalizeOne(tenant.tenant_onboarding_profiles);
+  const purgeStatus = getTenantPurgeStatus(billing);
+  const canAdminPurge = isCanceledForAdminPurge(billing);
 
   const planRaw = billing?.platform_plan;
   const planLabel =
@@ -176,28 +186,58 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
 
           <Card title="Billing">
             {billing ? (
-              <KeyValueList
-                items={[
-                  { key: 'Plan', value: planLabel ?? '—' },
-                  { key: 'Status', value: String(billing.status ?? '') },
-                  {
-                    key: 'Trial',
-                    value: billing.trial_ends_at
-                      ? `ends ${new Date(String(billing.trial_ends_at)).toLocaleString()}`
-                      : '—',
-                  },
-                  {
-                    key: 'Stripe customer',
-                    value: billing.stripe_customer_id ? String(billing.stripe_customer_id) : '—',
-                  },
-                  {
-                    key: 'Stripe subscription',
-                    value: billing.stripe_subscription_id
-                      ? String(billing.stripe_subscription_id)
-                      : '—',
-                  },
-                ]}
-              />
+              <>
+                <KeyValueList
+                  items={[
+                    { key: 'Plan', value: planLabel ?? '—' },
+                    { key: 'Status', value: String(billing.status ?? '') },
+                    {
+                      key: 'Trial',
+                      value: billing.trial_ends_at
+                        ? `ends ${new Date(String(billing.trial_ends_at)).toLocaleString()}`
+                        : '—',
+                    },
+                    {
+                      key: 'Activated',
+                      value: billing.activated_at
+                        ? new Date(String(billing.activated_at)).toLocaleString()
+                        : '—',
+                    },
+                    {
+                      key: 'Canceled',
+                      value: billing.canceled_at
+                        ? new Date(String(billing.canceled_at)).toLocaleString()
+                        : '—',
+                    },
+                    {
+                      key: 'Auto-purge',
+                      value: purgeStatus.autoPurgeAt
+                        ? `${formatAutoPurgeDate(purgeStatus.autoPurgeAt)}${
+                            purgeStatus.autoPurgeOverdue ? ' (overdue)' : ''
+                          }`
+                        : '—',
+                    },
+                    {
+                      key: 'Stripe customer',
+                      value: billing.stripe_customer_id ? String(billing.stripe_customer_id) : '—',
+                    },
+                    {
+                      key: 'Stripe subscription',
+                      value: billing.stripe_subscription_id
+                        ? String(billing.stripe_subscription_id)
+                        : '—',
+                    },
+                  ]}
+                />
+                {billing.status === 'canceled' &&
+                purgeStatus.autoPurgeAt &&
+                !purgeStatus.autoPurgeOverdue ? (
+                  <p className={styles.retentionNote}>
+                    Canceled workspaces are hard-deleted automatically 30 days after cancellation
+                    unless an admin deletes them sooner.
+                  </p>
+                ) : null}
+              </>
             ) : (
               <p className={styles.empty}>No billing row.</p>
             )}
@@ -264,6 +304,23 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
               <p className={styles.empty}>No onboarding profile (pre-migration tenant).</p>
             )}
           </Card>
+
+          {canAdminPurge ? (
+            <Card title="Delete canceled tenant">
+              <AdminDeleteTenantPanel
+                tenantId={tenant.id}
+                tenantSlug={tenant.slug}
+                purgeStatus={purgeStatus}
+              />
+            </Card>
+          ) : (
+            <Card title="Delete canceled tenant">
+              <p className={styles.empty}>
+                Admin deletion is only available when billing status is canceled. Active, trialing,
+                and past-due workspaces cannot be purged from here.
+              </p>
+            </Card>
+          )}
 
           <p className={styles.backWrap}>
             <Link href="/tenants" className={styles.backLink}>

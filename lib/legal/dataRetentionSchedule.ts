@@ -21,10 +21,10 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
     examples:
       'Company profile, slug, branding, operational settings, compensation rules, service plans',
     retentionPeriod:
-      'While the workspace is active; 30 days after free trial ends if never subscribed; up to 90 days after voluntary owner closure on activated workspaces',
+      'While the workspace is active; 30 days after free trial ends if never subscribed; 30 days after platform subscription cancel on activated workspaces (or immediately on owner/admin delete)',
     disposition: 'delete',
     notes:
-      'Never-activated trial workspaces are hard-deleted automatically 30 days after trial_ends_at (see lib/billing/tenantPurge.ts). Voluntary owner deletion allows time to export data and complete billing wind-down. Hard delete cascades to tenant-scoped tables where database constraints are configured with ON DELETE CASCADE.',
+      'Never-activated trial workspaces are hard-deleted automatically 30 days after trial_ends_at. Activated workspaces canceled in billing are hard-deleted automatically 30 days after canceled_at (see lib/billing/tenantPurge.ts). Owners may delete immediately from account settings; platform admins may delete canceled tenants from the admin console. Hard delete cascades to tenant-scoped tables where database constraints use ON DELETE CASCADE.',
   },
   {
     category: 'Tenant user accounts (staff and owners)',

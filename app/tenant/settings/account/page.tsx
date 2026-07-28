@@ -68,7 +68,9 @@ export default async function TenantAccountSettingsPage() {
   const [{ data: billing }, { data: tenantRow }, memberProfile] = await Promise.all([
     admin
       .from('tenant_billing_accounts')
-      .select('activated_at, trial_ends_at, stripe_subscription_id, stripe_customer_id')
+      .select(
+        'activated_at, trial_ends_at, status, canceled_at, stripe_subscription_id, stripe_customer_id',
+      )
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
     canSetScheduleAvailability && userId

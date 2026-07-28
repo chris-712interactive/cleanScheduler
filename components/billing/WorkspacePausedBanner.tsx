@@ -21,7 +21,7 @@ export function WorkspacePausedBanner({
 
   const canSubscribe = canManageTeamInvitesAndRoles(role);
   const isOwner = role === 'owner';
-  const showAutoPurge = isOwner && purgeStatus?.neverActivated && purgeStatus.autoPurgeAt != null;
+  const showAutoPurge = isOwner && purgeStatus?.autoPurgeAt != null;
   const title =
     access === 'trial_expired' ? 'Your free trial has ended' : 'This workspace is paused';
 
@@ -44,8 +44,12 @@ export function WorkspacePausedBanner({
           <>
             {' '}
             {purgeStatus.autoPurgeOverdue
-              ? 'This workspace will be permanently deleted soon because the trial ended without a subscription.'
-              : `If you do not subscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt!)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`}
+              ? purgeStatus.canceledRetention
+                ? 'This workspace will be permanently deleted soon because the subscription was canceled more than 30 days ago.'
+                : 'This workspace will be permanently deleted soon because the trial ended without a subscription.'
+              : purgeStatus.canceledRetention
+                ? `If you do not resubscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt!)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`
+                : `If you do not subscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt!)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`}
           </>
         ) : null}
       </div>

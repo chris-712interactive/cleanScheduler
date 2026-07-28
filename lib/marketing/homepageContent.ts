@@ -254,7 +254,7 @@ export const MARKETING_FAQ: MarketingFaqItem[] = [
   {
     question: 'What happens when my trial ends?',
     answer:
-      'If you subscribe, your workspace stays active. If not, access pauses until you subscribe. Owners can manage billing or delete the workspace from account settings.',
+      'If you subscribe, your workspace stays active. If not, access pauses until you subscribe. Canceled workspaces are deleted after 30 days. Owners can manage billing or delete the workspace from account settings.',
   },
   {
     question: 'Is Clean Scheduler only for cleaning businesses?',

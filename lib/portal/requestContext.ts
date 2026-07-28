@@ -30,6 +30,7 @@ export interface TenantBillingSnapshot {
   billingStatus: string | null;
   trialEndsAt: string | null;
   activatedAt: string | null;
+  canceledAt: string | null;
   stripeSubscriptionId: string | null;
   subscriptionAccess: ReturnType<typeof resolveTenantSubscriptionAccess>;
 }
@@ -46,7 +47,7 @@ export const getTenantBillingSnapshot = cache(
         .maybeSingle(),
       supabase
         .from('tenant_billing_accounts')
-        .select('status, trial_ends_at, stripe_subscription_id, activated_at')
+        .select('status, trial_ends_at, stripe_subscription_id, activated_at, canceled_at')
         .eq('tenant_id', tenantId)
         .maybeSingle(),
     ]);
@@ -64,6 +65,7 @@ export const getTenantBillingSnapshot = cache(
       billingStatus: billingRow?.status ?? null,
       trialEndsAt: billingRow?.trial_ends_at ?? null,
       activatedAt: billingRow?.activated_at ?? null,
+      canceledAt: billingRow?.canceled_at ?? null,
       stripeSubscriptionId: billingRow?.stripe_subscription_id ?? null,
       subscriptionAccess,
     };

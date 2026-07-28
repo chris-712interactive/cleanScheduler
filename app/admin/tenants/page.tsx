@@ -49,9 +49,20 @@ async function fetchTenants() {
   }));
 }
 
-export default async function AdminTenantsPage() {
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function firstParam(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+export default async function AdminTenantsPage({ searchParams }: PageProps) {
   const tenants = await fetchTenants();
   const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
+  const sp = await searchParams;
+  const purgedSlug = firstParam(sp.purged)?.trim().toLowerCase() || null;
 
   return (
     <>
@@ -61,6 +72,11 @@ export default async function AdminTenantsPage() {
       />
 
       <Container size="lg">
+        {purgedSlug ? (
+          <p className={styles.bannerSuccess} role="status">
+            Deleted canceled tenant <strong>{purgedSlug}</strong>.
+          </p>
+        ) : null}
         <Card title="All tenants" description={`Workspace URLs use *.${apex}`}>
           {tenants.length === 0 ? (
             <p className={styles.empty}>No tenants yet.</p>

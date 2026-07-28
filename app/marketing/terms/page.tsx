@@ -91,10 +91,16 @@ export default function TermsOfServicePage() {
                 <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
               </li>
               <li>
-                Except where we must retain records for legal, tax, fraud, or security purposes,
-                workspace data is kept for a limited reactivation or wind-down period after
-                cancellation, then deleted or anonymized according to the same{' '}
+                After a platform subscription is canceled, we retain workspace data for{' '}
+                <strong>30 days</strong> so you can resubscribe or export what you need. After that
+                30-day period, we permanently delete the workspace and tenant-scoped operational
+                data, except records we must keep for legal, tax, fraud, or security purposes as
+                described in our{' '}
                 <Link href="/data-retention">Data Retention &amp; Disposal Policy</Link>.
+                Never-activated free trial workspaces are likewise deleted 30 days after the trial
+                ends if you do not subscribe. Workspace owners may delete a workspace immediately
+                from account settings; platform administrators may also delete canceled workspaces
+                from the admin console.
               </li>
             </ul>
 
