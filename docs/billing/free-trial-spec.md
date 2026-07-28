@@ -12,7 +12,7 @@ This document defines the target free-trial flow: **DB-only trial at signup**, a
 2. **No Stripe subscription at signup** — trial clock lives in Postgres only.
 3. Trial includes **core operational workflows** (scheduling, quotes, customers, invoicing) but **excludes paid integrations** (Plaid, SMS, API) and **limits marketing email**.
 4. At trial end (or early subscribe), owner picks **tier + monthly/yearly** → Stripe Checkout → webhook sets `platform_plan`, `billing_interval`, `status=active`.
-5. Keep existing safety nets: trial expiry cron, 30-day auto-purge for never-activated workspaces, owner self-delete.
+5. Keep existing safety nets: trial expiry cron, 30-day auto-purge for never-activated workspaces, 30-day auto-purge for canceled activated workspaces, owner self-delete, and admin delete for canceled tenants.
 
 ---
 
@@ -87,6 +87,7 @@ resolveTenantSubscriptionAccess → trial_expired
   → middleware redirects to /billing?subscribe=required
   → expire-stale-trials cron (DB-only): status=canceled, tenants.is_active=false
   → purge-unconverted-trials cron: hard-delete 30 days after trial_ends_at if activated_at IS NULL
+  → purge-canceled-tenants cron: hard-delete 30 days after canceled_at if activated_at IS NOT NULL
 ```
 
 ---

@@ -304,11 +304,15 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           </p>
         ) : null}
 
-        {purgeStatus.neverActivated && purgeStatus.autoPurgeAt && mustSubscribe ? (
+        {purgeStatus.autoPurgeAt && mustSubscribe ? (
           <p className={styles.bannerError} role="status">
             {purgeStatus.autoPurgeOverdue
-              ? 'This workspace is scheduled for automatic deletion because the free trial ended without a subscription.'
-              : `If you do not subscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`}
+              ? purgeStatus.canceledRetention
+                ? 'This workspace is scheduled for automatic deletion because the subscription was canceled more than 30 days ago.'
+                : 'This workspace is scheduled for automatic deletion because the free trial ended without a subscription.'
+              : purgeStatus.canceledRetention
+                ? `If you do not resubscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`
+                : `If you do not subscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`}
             {isOwner ? (
               <>
                 {' '}

@@ -92,24 +92,26 @@ export default function DataRetentionPolicyPage() {
             <p>
               When a free trial ends without conversion, or a platform subscription lapses or is
               canceled, we may restrict access to paid features and revoke optional integrations
-              (including Plaid bank connections). Data generally remains stored for a reasonable
-              reactivation window (typically aligned with the 90-day post-closure period in Section
-              3) unless the tenant requests earlier deletion.
+              (including Plaid bank connections). Data generally remains stored for a{' '}
+              <strong>30-day</strong> reactivation window after trial end (never-activated
+              workspaces) or after cancellation (activated workspaces), unless the tenant owner or a
+              platform administrator deletes the workspace sooner.
             </p>
             <h3>Workspace closure</h3>
             <p>When a tenant requests workspace closure or we terminate for cause:</p>
             <ol>
               <li>
-                We confirm the request with an authorized workspace owner and offer a data export
-                window where technically available.
+                We confirm the request with an authorized workspace owner (or platform admin for
+                canceled workspaces) and offer a data export window where technically available.
               </li>
               <li>
                 We disable sign-in for that workspace and stop processing new customer-facing
                 actions (email campaigns, new charges, etc.).
               </li>
               <li>
-                Within <strong>90 days</strong>, we delete or anonymize tenant-scoped operational
-                data in our primary database and application storage, except categories marked
+                Within <strong>30 days</strong> of cancellation (or immediately when an owner or
+                admin confirms deletion), we delete or anonymize tenant-scoped operational data in
+                our primary database and application storage, except categories marked
                 &quot;Archived&quot; or &quot;Provider-controlled&quot; in Section 3.
               </li>
               <li>

@@ -145,7 +145,7 @@ export async function syncTenantFromStripeSubscription(
 
   const { data: existingBilling } = await admin
     .from('tenant_billing_accounts')
-    .select('activated_at, status')
+    .select('activated_at, status, canceled_at')
     .eq('tenant_id', tenantId)
     .maybeSingle();
 
@@ -157,7 +157,13 @@ export async function syncTenantFromStripeSubscription(
     status: mappedStatus,
     trial_started_at: trialStart,
     trial_ends_at: trialEnd,
-    canceled_at: isCanceled ? nowIso : null,
+    // Preserve original cancel timestamp so the 30-day retention clock does not reset
+    // when Stripe re-delivers subscription.deleted / updated events.
+    canceled_at: isCanceled
+      ? wasAlreadyCanceled
+        ? (existingBilling?.canceled_at ?? nowIso)
+        : nowIso
+      : null,
   };
   if (platformPlan) {
     updatePayload.platform_plan = platformPlan;

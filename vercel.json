@@ -25,6 +25,10 @@
       "schedule": "30 7 * * *"
     },
     {
+      "path": "/api/cron/purge-canceled-tenants",
+      "schedule": "45 7 * * *"
+    },
+    {
       "path": "/api/cron/backfill-stripe-payout-links",
       "schedule": "30 8 * * 0"
     },

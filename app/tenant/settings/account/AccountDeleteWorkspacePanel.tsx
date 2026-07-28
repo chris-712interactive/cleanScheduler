@@ -38,11 +38,15 @@ export function AccountDeleteWorkspacePanel({
 
       <form action={formAction} className={styles.dangerForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
-        {purgeStatus.neverActivated && purgeStatus.autoPurgeAt ? (
+        {purgeStatus.autoPurgeAt ? (
           <p className={styles.dangerLead}>
             {purgeStatus.autoPurgeOverdue
-              ? 'This workspace is scheduled for automatic deletion because the free trial ended without a subscription.'
-              : `If you do not subscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`}
+              ? purgeStatus.canceledRetention
+                ? 'This workspace is scheduled for automatic deletion because the subscription was canceled more than 30 days ago.'
+                : 'This workspace is scheduled for automatic deletion because the free trial ended without a subscription.'
+              : purgeStatus.canceledRetention
+                ? `If you do not resubscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining). You can delete it now instead.`
+                : `If you do not subscribe, this workspace will be permanently deleted on ${formatAutoPurgeDate(purgeStatus.autoPurgeAt)} (${purgeStatus.daysUntilAutoPurge} day${purgeStatus.daysUntilAutoPurge === 1 ? '' : 's'} remaining).`}
           </p>
         ) : (
           <p className={styles.dangerLead}>

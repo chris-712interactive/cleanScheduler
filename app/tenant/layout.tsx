@@ -7,6 +7,7 @@ import {
   needsSubscriptionPurchase,
   shouldShowTrialPurchaseBanner,
   trialDaysRemaining,
+  type TenantBillingStatus,
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
 import { getPortalContext } from '@/lib/portal';
@@ -75,6 +76,8 @@ export default async function TenantLayout({ children }: { children: React.React
     const purgeStatus = getTenantPurgeStatus({
       activated_at: billingSnapshot.activatedAt,
       trial_ends_at: billingSnapshot.trialEndsAt,
+      status: (billingSnapshot.billingStatus as TenantBillingStatus | null) ?? null,
+      canceled_at: billingSnapshot.canceledAt,
       stripe_subscription_id: billingSnapshot.stripeSubscriptionId,
     });
 
