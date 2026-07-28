@@ -8,7 +8,7 @@ import {
 } from '@/lib/admin/purgeTenantActions';
 import type { TenantPurgeStatus } from '@/lib/billing/tenantPurge';
 import { formatAutoPurgeDate } from '@/lib/billing/tenantPurge';
-import styles from '../tenants.module.scss';
+import styles from './tenants.module.scss';
 
 const initial: AdminPurgeTenantFormState = {};
 
