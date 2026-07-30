@@ -72,7 +72,8 @@ export default function PrivacyPolicyPage() {
             <ul>
               <li>
                 <strong>Usage and device data:</strong> IP address, browser type, pages viewed,
-                referring URLs, and timestamps stored in server logs and session cookies.
+                referring URLs, and timestamps stored in server logs and session cookies. On the
+                marketing website, Google Analytics may also collect similar usage metrics.
               </li>
               <li>
                 <strong>Field check-in location (optional):</strong> we may collect approximate
@@ -149,6 +150,7 @@ export default function PrivacyPolicyPage() {
                 Plaid;
               </li>
               <li>Respond to support requests and improve the product;</li>
+              <li>Measure marketing-website traffic and engagement with Google Analytics;</li>
               <li>Comply with law and protect against fraud or abuse.</li>
             </ul>
 
@@ -239,9 +241,21 @@ export default function PrivacyPolicyPage() {
             <h2>11. Cookies and similar technologies</h2>
             <p>
               We use essential cookies and local storage to keep you signed in and remember
-              preferences (such as theme). We do not use third-party advertising cookies on the
-              Service today. You can control cookies through your browser settings; disabling
-              essential cookies may prevent you from using authenticated areas.
+              preferences (such as theme). On our public marketing website, we also use Google
+              Analytics (gtag.js) to understand how visitors find and use the site — for example,
+              pages viewed, approximate location, device or browser type, and referral sources.
+              Google Analytics may set cookies or similar identifiers. We do not use third-party
+              advertising cookies on the Service. You can control cookies through your browser
+              settings; disabling essential cookies may prevent you from using authenticated areas.
+              For more about Google&apos;s data use, see{' '}
+              <a
+                href="https://policies.google.com/privacy"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Google&apos;s Privacy Policy
+              </a>
+              .
             </p>
 
             <h2>12. Children</h2>
