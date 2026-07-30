@@ -48,9 +48,9 @@ export const ACTIVE_THIRD_PARTY_SERVICES: ThirdPartyService[] = [
     name: 'Google',
     status: 'active',
     purpose:
-      'Optional “Sign in with Google” through Supabase Auth (OAuth). Google does not receive your Clean Scheduler workspace data directly.',
+      'Optional “Sign in with Google” through Supabase Auth (OAuth), and Google Analytics 4 on the public marketing site to measure traffic and page views. Google does not receive your Clean Scheduler workspace data directly from OAuth or Analytics.',
     dataShared:
-      'OAuth profile information (such as name and email) handled by Supabase Auth during sign-in.',
+      'OAuth profile information (such as name and email) handled by Supabase Auth during sign-in; marketing-site usage data such as page URLs, approximate location, device/browser info, and referral sources via Google Analytics cookies and similar identifiers.',
     privacyPolicyUrl: 'https://policies.google.com/privacy',
   },
   {
