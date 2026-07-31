@@ -62,25 +62,29 @@ Do **not** add `aggregateRating` until real public reviews exist and are shown o
 
 Tests: `lib/marketing/seoJsonLd.test.ts`.
 
-## GSC query mapping (June 2026 — 28-day window)
+## GSC query mapping (July 2026 — 28-day window: 2026-07-01 → 2026-07-28)
 
-Baseline: ~178 impressions, 2 clicks, most queries on pages 7–10. Re-measure after 6–8 weeks.
+Baseline: 6 clicks, 1,823 impressions (+199% vs prior), CTR 0.33%, avg position 59.7. Re-measure after 6–8 weeks.
 
-| Query cluster                           | Primary URL                                                                      | Notes                                                      |
-| --------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Stripe integration                      | `/features/stripe-integration`                                                   | Best position (~48); exact meta match                      |
-| Cleaning scheduling software (variants) | `/features/scheduling-and-dispatch`                                              | Retitled meta + FAQ for staff/company variants             |
-| House / residential scheduling          | `/for/residential-cleaning-companies`                                            | Retitled to “house cleaning scheduling software”           |
-| Commercial / janitorial scheduling      | `/for/commercial-cleaning-companies`                                             | Existing page; internal links strengthened                 |
-| Janitorial scheduling + timekeeping     | `/features/crew-scheduling-and-timekeeping`                                      | **New** — visit check-in + payroll export                  |
-| Online payments                         | `/features/invoicing-and-payments`                                               | Retitled meta for “online payments for cleaning companies” |
-| Spreadsheet replacement                 | `/compare/spreadsheets-and-texts`                                                | Retitled meta with “replace” keyword                       |
-| Employee / crew scheduling              | `/features/crew-scheduling-and-timekeeping`, `/help/.../schedule-cleaning-crews` | **New** pages                                              |
-| Dispatch software                       | `/help/.../dispatch-vs-scheduling-for-cleaners`                                  | **New** — scheduling-first positioning                     |
-| Mobile / app                            | `/features/mobile-scheduling-for-cleaners`                                       | **New**                                                    |
-| How to get commercial accounts          | `/help/.../how-to-get-commercial-cleaning-accounts`                              | Footer + hub links added                                   |
+| Query cluster                                      | Primary URL                                                | Notes                                                                 |
+| -------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| Stripe integration (declining; pos ~8.8)           | `/features/stripe-integration`                             | Exact meta match; CTR-focused description + definition FAQ            |
+| Cleaning crew mobile software (declining)          | `/features/mobile-scheduling-for-cleaners`                 | Retitled meta/H1 to exact query; footer + hub links                   |
+| Online payments / check → bank                     | `/features/invoicing-and-payments`, get-paid help guide    | Check deposit matching section; top page CTR rewrite                  |
+| Best scheduling software for cleaning business     | `/features/scheduling-and-dispatch`, homepage              | Meta + FAQ aligned; homepage title CTR rewrite                        |
+| Janitorial companies managing schedules            | `/for/commercial-cleaning-companies`                       | FAQ for janitorial scheduling query                                   |
+| Cleaning booking software                          | `/features/scheduling-and-dispatch`                        | Booking-workflow FAQ                                                  |
+| Dispatch / janitorial dispatch & scheduling        | `/help/.../dispatch-vs-scheduling-for-cleaners`            | Description + FAQ for dispatch phrasing                               |
+| Compare hub (weak CTR, deep position)              | `/compare`                                                 | Hub title/H1 rewritten for cleaning business software comparisons     |
+| Competitor compares (HCP, spreadsheets, Jobber)    | `/compare/*`                                               | Meta descriptions + Stripe/mobile internal links                      |
+
+**Prior window (June 2026):** ~178 impressions, 2 clicks — see git history for that mapping.
 
 **Ignore:** WinPure pricing, “scheduled database cleanup”, competitor-only pricing queries with no product fit.
+
+## Title template note
+
+Root layout applies `title.template = "%s | Clean Scheduler"`. SEO segment pages must pass the bare `metaTitle` via `buildPageMetadata()` / `buildHelpPageMetadata()` — do **not** append `| Clean Scheduler` again in `generateMetadata`, or SERP titles double-suffix.
 
 ## Post-deploy checklist
 
