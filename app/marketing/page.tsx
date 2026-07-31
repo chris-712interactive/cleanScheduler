@@ -27,12 +27,14 @@ import { PRODUCT_NAME } from '@/lib/legal/site';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import styles from './landing.module.scss';
 
-const pageTitle = 'Cleaning scheduling software for residential & commercial teams';
+const pageTitle = 'Clean Scheduler — cleaning scheduling software for residential & commercial teams';
 const pageDescription =
-  'Cleaning scheduling software to schedule crews, send quotes, accept online payments, and close the books — built for residential and commercial cleaning businesses. 7-day free trial, no credit card required.';
+  'Clean Scheduler is cleaning scheduling software for residential and commercial teams — schedule crews, send quotes, accept online payments with Stripe, and close the books. Free 7-day trial.';
 
 export const metadata: Metadata = {
-  title: pageTitle,
+  title: {
+    absolute: pageTitle,
+  },
   description: pageDescription,
   alternates: {
     canonical: '/',
