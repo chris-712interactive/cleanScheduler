@@ -66,17 +66,17 @@ Tests: `lib/marketing/seoJsonLd.test.ts`.
 
 Baseline: 6 clicks, 1,823 impressions (+199% vs prior), CTR 0.33%, avg position 59.7. Re-measure after 6–8 weeks.
 
-| Query cluster                                      | Primary URL                                                | Notes                                                                 |
-| -------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------- |
-| Stripe integration (declining; pos ~8.8)           | `/features/stripe-integration`                             | Exact meta match; CTR-focused description + definition FAQ            |
-| Cleaning crew mobile software (declining)          | `/features/mobile-scheduling-for-cleaners`                 | Retitled meta/H1 to exact query; footer + hub links                   |
-| Online payments / check → bank                     | `/features/invoicing-and-payments`, get-paid help guide    | Check deposit matching section; top page CTR rewrite                  |
-| Best scheduling software for cleaning business     | `/features/scheduling-and-dispatch`, homepage              | Meta + FAQ aligned; homepage title CTR rewrite                        |
-| Janitorial companies managing schedules            | `/for/commercial-cleaning-companies`                       | FAQ for janitorial scheduling query                                   |
-| Cleaning booking software                          | `/features/scheduling-and-dispatch`                        | Booking-workflow FAQ                                                  |
-| Dispatch / janitorial dispatch & scheduling        | `/help/.../dispatch-vs-scheduling-for-cleaners`            | Description + FAQ for dispatch phrasing                               |
-| Compare hub (weak CTR, deep position)              | `/compare`                                                 | Hub title/H1 rewritten for cleaning business software comparisons     |
-| Competitor compares (HCP, spreadsheets, Jobber)    | `/compare/*`                                               | Meta descriptions + Stripe/mobile internal links                      |
+| Query cluster                                   | Primary URL                                             | Notes                                                             |
+| ----------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------- |
+| Stripe integration (declining; pos ~8.8)        | `/features/stripe-integration`                          | Exact meta match; CTR-focused description + definition FAQ        |
+| Cleaning crew mobile software (declining)       | `/features/mobile-scheduling-for-cleaners`              | Retitled meta/H1 to exact query; footer + hub links               |
+| Online payments / check → bank                  | `/features/invoicing-and-payments`, get-paid help guide | Check deposit matching section; top page CTR rewrite              |
+| Best scheduling software for cleaning business  | `/features/scheduling-and-dispatch`, homepage           | Meta + FAQ aligned; homepage title CTR rewrite                    |
+| Janitorial companies managing schedules         | `/for/commercial-cleaning-companies`                    | FAQ for janitorial scheduling query                               |
+| Cleaning booking software                       | `/features/scheduling-and-dispatch`                     | Booking-workflow FAQ                                              |
+| Dispatch / janitorial dispatch & scheduling     | `/help/.../dispatch-vs-scheduling-for-cleaners`         | Description + FAQ for dispatch phrasing                           |
+| Compare hub (weak CTR, deep position)           | `/compare`                                              | Hub title/H1 rewritten for cleaning business software comparisons |
+| Competitor compares (HCP, spreadsheets, Jobber) | `/compare/*`                                            | Meta descriptions + Stripe/mobile internal links                  |
 
 **Prior window (June 2026):** ~178 impressions, 2 clicks — see git history for that mapping.
 
