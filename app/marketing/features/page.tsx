@@ -15,7 +15,7 @@ import styles from '@/components/marketing/SeoMarketingPage.module.scss';
 
 const pageTitle = 'Cleaning business software features';
 const pageDescription =
-  'Cleaning scheduling software, online payments, cleaning company software with Stripe integration, crew scheduling, mobile app for cleaning employees, and more — built for residential and commercial cleaning companies.';
+  'Cleaning scheduling software, cleaning company software with Stripe integration, cleaning crew mobile software, online payments, and crew scheduling — built for residential and commercial cleaning companies.';
 
 export const metadata: Metadata = buildMarketingPageMetadata({
   path: '/features',
@@ -45,9 +45,9 @@ export default function FeaturesHubPage() {
               <span className={styles.eyebrow}>Features</span>
               <h1 className={styles.title}>Software features for cleaning businesses</h1>
               <p className={styles.lead}>
-                From cleaning scheduling software and crew assignment to online payments and Stripe
-                integration — explore how Clean Scheduler supports residential and commercial
-                cleaning teams.
+                From cleaning scheduling software and cleaning crew mobile software to online
+                payments and Stripe integration — explore how Clean Scheduler supports residential
+                and commercial cleaning teams.
               </p>
               <div className={styles.heroActions}>
                 <Button size="lg" href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>
