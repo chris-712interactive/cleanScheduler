@@ -254,7 +254,8 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     id: 'gsc-indexing-compare-pages',
     category: 'gsc-indexing',
     title: 'Request indexing — compare pages',
-    detail: 'Request indexing for /compare, /compare/spreadsheets-and-texts, /compare/vs-housecall-pro, and /compare/vs-launch27.',
+    detail:
+      'Request indexing for /compare, /compare/spreadsheets-and-texts, /compare/vs-housecall-pro, and /compare/vs-launch27.',
     href: GSC_URL,
     external: true,
     cadence: 'once',

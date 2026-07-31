@@ -27,7 +27,8 @@ import { PRODUCT_NAME } from '@/lib/legal/site';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import styles from './landing.module.scss';
 
-const pageTitle = 'Clean Scheduler — cleaning scheduling software for residential & commercial teams';
+const pageTitle =
+  'Clean Scheduler — cleaning scheduling software for residential & commercial teams';
 const pageDescription =
   'Clean Scheduler is cleaning scheduling software for residential and commercial teams — schedule crews, send quotes, accept online payments with Stripe, and close the books. Free 7-day trial.';
 

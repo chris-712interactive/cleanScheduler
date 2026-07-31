@@ -180,7 +180,10 @@ export const FOR_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
-      { href: '/features/scheduling-and-dispatch', label: 'Best scheduling software for cleaning businesses' },
+      {
+        href: '/features/scheduling-and-dispatch',
+        label: 'Best scheduling software for cleaning businesses',
+      },
       {
         href: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
         label: 'How to get commercial cleaning accounts',
@@ -452,8 +455,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
           'Most cleaning companies accept cards via Stripe Connect, record cash and checks in the field, and match Zelle or bank deposits on Business+. Clean Scheduler tracks all payment methods in one ledger — no separate payment app required.',
       },
       {
-        question:
-          'Can I automate check payments to a bank account for cleaning business clients?',
+        question: 'Can I automate check payments to a bank account for cleaning business clients?',
         answer:
           'Record check payments when they are collected, then use bank deposit matching on Business+ to tie cleared check deposits (and Zelle/ACH) to open invoices. Clean Scheduler does not remotely deposit physical checks — it helps you track and reconcile them against your bank account.',
       },
@@ -938,7 +940,10 @@ export const COMPARE_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
-      { href: '/features/scheduling-and-dispatch', label: 'Best scheduling software for cleaning businesses' },
+      {
+        href: '/features/scheduling-and-dispatch',
+        label: 'Best scheduling software for cleaning businesses',
+      },
       {
         href: '/features/stripe-integration',
         label: 'Cleaning company software with Stripe integration',

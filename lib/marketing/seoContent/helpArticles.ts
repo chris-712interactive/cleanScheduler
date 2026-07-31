@@ -155,8 +155,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
     ],
     faq: [
       {
-        question:
-          'Can cleaning companies automate check payments to a bank account?',
+        question: 'Can cleaning companies automate check payments to a bank account?',
         answer:
           'Record check payments when collected, then match cleared bank deposits to open invoices on Business+. Clean Scheduler does not remotely deposit physical checks — it helps you track and reconcile them against your bank account alongside Zelle and ACH.',
       },

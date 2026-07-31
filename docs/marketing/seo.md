@@ -66,16 +66,16 @@ Tests: `lib/marketing/seoJsonLd.test.ts`.
 
 Baseline: 6 clicks, 1,823 impressions (+199%), CTR 0.33%, avg position 59.7. Re-measure after 6–8 weeks.
 
-| Query cluster                                      | Primary URL                                                 | Notes                                                                 |
-| -------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
-| Stripe integration (declining, pos ~8.8)           | `/features/stripe-integration`                              | Exact-match title; CTR-focused meta + cleaning-company framing        |
-| Cleaning crew mobile software (declining, pos ~34) | `/features/mobile-scheduling-for-cleaners`                  | Retitled to exact query; browser-based field workflow                 |
-| Online payments / check → bank                     | `/features/invoicing-and-payments`                          | Top page by clicks; check/deposit matching section + FAQ              |
-| Best scheduling / booking software                 | `/features/scheduling-and-dispatch`                         | Meta + booking section for “best scheduling” and “cleaning booking”   |
-| Janitorial schedule management                     | `/for/commercial-cleaning-companies`                        | Meta/FAQ for janitorial companies managing cleaning schedules         |
-| Cleaning & janitorial dispatch (pos ~9.5, 0 CTR)   | `/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners` | Retitled for exact query cluster — near-page-one CTR opportunity  |
-| Brand / Clean Scheduler                            | `/`                                                         | Absolute title leads with brand name                                  |
-| Housecall Pro / spreadsheet compares               | `/compare/vs-housecall-pro`, `/compare/spreadsheets-and-texts` | CTR meta + Stripe/mobile internal links                            |
+| Query cluster                                      | Primary URL                                                     | Notes                                                               |
+| -------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Stripe integration (declining, pos ~8.8)           | `/features/stripe-integration`                                  | Exact-match title; CTR-focused meta + cleaning-company framing      |
+| Cleaning crew mobile software (declining, pos ~34) | `/features/mobile-scheduling-for-cleaners`                      | Retitled to exact query; browser-based field workflow               |
+| Online payments / check → bank                     | `/features/invoicing-and-payments`                              | Top page by clicks; check/deposit matching section + FAQ            |
+| Best scheduling / booking software                 | `/features/scheduling-and-dispatch`                             | Meta + booking section for “best scheduling” and “cleaning booking” |
+| Janitorial schedule management                     | `/for/commercial-cleaning-companies`                            | Meta/FAQ for janitorial companies managing cleaning schedules       |
+| Cleaning & janitorial dispatch (pos ~9.5, 0 CTR)   | `/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners` | Retitled for exact query cluster — near-page-one CTR opportunity    |
+| Brand / Clean Scheduler                            | `/`                                                             | Absolute title leads with brand name                                |
+| Housecall Pro / spreadsheet compares               | `/compare/vs-housecall-pro`, `/compare/spreadsheets-and-texts`  | CTR meta + Stripe/mobile internal links                             |
 
 **Ignore:** WinPure pricing, “scheduled database cleanup”, competitor-only pricing queries with no product fit.
 
