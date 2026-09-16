@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
+import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import { getStripe } from '@/lib/stripe/server';
 import {
   parseConnectApplicationFeeBps,
@@ -33,7 +34,7 @@ export async function startGuestInvoicePayCheckoutAction(formData: FormData): Pr
   const [{ data: inv }, { data: conn }] = await Promise.all([
     admin
       .from('tenant_invoices')
-      .select('id, title, currency, status, amount_cents, amount_paid_cents')
+      .select('id, title, currency, status, amount_cents, amount_paid_cents, customer_id')
       .eq('id', row.invoice_id)
       .eq('tenant_id', row.tenant_id)
       .maybeSingle(),
@@ -46,6 +47,16 @@ export async function startGuestInvoicePayCheckoutAction(formData: FormData): Pr
 
   if (!inv || inv.status === 'void' || !conn?.stripe_account_id) {
     redirect(`/pay/${encodeURIComponent(token)}`);
+  }
+
+  const velocity = await assertConnectPaymentVelocityAllowed(admin, {
+    tenantId: row.tenant_id,
+    customerId: inv.customer_id,
+    actorUserId: null,
+    kind: 'invoice_pay',
+  });
+  if (!velocity.ok) {
+    redirect(`/pay/${encodeURIComponent(token)}?error=${encodeURIComponent(velocity.message)}`);
   }
 
   const remaining = inv.amount_cents - inv.amount_paid_cents;

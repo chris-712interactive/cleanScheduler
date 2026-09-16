@@ -7,13 +7,22 @@ import styles from './pay.module.scss';
 
 export const dynamic = 'force-dynamic';
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function GuestInvoicePayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { token: rawToken } = await params;
+  const sp = await searchParams;
   const token = decodeURIComponent(rawToken).trim();
+  const error = firstParam(sp.error);
   if (!token) notFound();
 
   const admin = createAdminClient();
@@ -90,6 +99,11 @@ export default async function GuestInvoicePayPage({
       <h1 className={styles.title}>Pay invoice</h1>
       <p className={styles.invoiceTitle}>{inv.title}</p>
       <p className={styles.amount}>{formatUsdFromCents(remaining)} due</p>
+      {error ? (
+        <p className={styles.body} role="alert">
+          {error}
+        </p>
+      ) : null}
       <GuestPayCheckoutButton token={token} />
       <p className={styles.fineprint}>Secure card payment powered by Stripe.</p>
     </main>

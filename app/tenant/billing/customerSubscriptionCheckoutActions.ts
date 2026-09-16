@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
+import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import { getStripe } from '@/lib/stripe/server';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
@@ -26,6 +27,16 @@ export async function createCustomerSubscriptionCheckoutSessionAction(
   const gate = await requireConnectForOnlinePayments(admin, membership.tenantId);
   if (!gate.ok) {
     redirect(`/customers/${customerId}?error=${encodeURIComponent(gate.message)}`);
+  }
+
+  const velocity = await assertConnectPaymentVelocityAllowed(admin, {
+    tenantId: membership.tenantId,
+    customerId,
+    actorUserId: null,
+    kind: 'subscription_checkout',
+  });
+  if (!velocity.ok) {
+    redirect(`/customers/${customerId}?error=${encodeURIComponent(velocity.message)}`);
   }
 
   const [
