@@ -17,7 +17,10 @@ export default async function AdminAuditLogPage() {
 
   return (
     <>
-      <PageHeader title="Audit log" description="Security-sensitive actions across the platform." />
+      <PageHeader
+        title="Audit log"
+        description="Security-sensitive actions across the platform, including account creation fingerprints (IP / user-agent)."
+      />
 
       {error ? (
         <Card title="Could not load entries">

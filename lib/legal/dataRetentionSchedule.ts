@@ -103,7 +103,8 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
     examples: 'audit_log_entries, masquerade_sessions',
     retentionPeriod: '3 years from event timestamp',
     disposition: 'archive',
-    notes: 'Supports security investigations and access reviews.',
+    notes:
+      'Supports security investigations and access reviews. Account-creation entries may include client IP and user-agent for fraud correlation.',
   },
   {
     category: 'Application and hosting logs',

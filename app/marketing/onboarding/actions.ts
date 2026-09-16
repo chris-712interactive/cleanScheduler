@@ -8,6 +8,11 @@ import type { Database } from '@/lib/supabase/database.types';
 import { shouldAutoConfirmTrialOwnerEmail } from '@/lib/auth/emailConfirmMode';
 import { publicEnv } from '@/lib/env';
 import { maybeSendTrialWelcomeEmail } from '@/lib/email/trialWelcomeEmail';
+import {
+  ACCOUNT_TENANT_OWNER_CREATED,
+  recordAccountCreationAudit,
+} from '@/lib/audit/accountCreationAudit';
+import { requestFingerprintFromHeaders } from '@/lib/audit/requestFingerprint';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
@@ -228,6 +233,25 @@ export async function createTenantAndOwner(
       app_role: 'admin',
       tenant_role: 'owner',
       current_tenant_id: tenantId,
+    },
+  });
+
+  await recordAccountCreationAudit(admin, {
+    action: ACCOUNT_TENANT_OWNER_CREATED,
+    actorUserId: userId,
+    targetTenantId: tenantId,
+    fingerprint: requestFingerprintFromHeaders(requestHeaders),
+    payload: {
+      slug,
+      email,
+      business_name: businessName,
+      owner_phone: ownerPhone || null,
+      company_email: companyEmail || null,
+      company_phone: companyPhone || null,
+      referral_source: referralSource || null,
+      service_area: serviceArea || null,
+      team_size: teamSize || null,
+      business_type: businessType || null,
     },
   });
 

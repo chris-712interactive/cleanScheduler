@@ -28,6 +28,13 @@ Billing webhooks (`syncTenantPlatformSubscription`) will not clear admin suspens
 - `tenant.admin_access_suspended` / `tenant.admin_access_unsuspended`
 - `connect.charges_frozen` / `connect.charges_unfrozen`
 - (existing) `connect.velocity_blocked`
+- **Account creation (IP / UA fingerprint):**
+  - `account.tenant_owner_created` — self-serve trial signup (`/start-trial`)
+  - `account.customer_portal_created` — customer finishes portal invite with a new login
+  - `account.customer_portal_linked` — existing login linked to a portal invite
+  - `account.customer_referral_created` — customer portal signup via referral join
+
+Payload fields for account-creation events include `client_ip`, `user_agent`, `accept_language`, email, and related ids (`slug` / `customer_id`). Viewable under Admin → Audit log.
 
 ## Stripe identifiers
 
@@ -44,6 +51,7 @@ Search helper: `lib/admin/searchAdminTenants.ts`.
 
 - `lib/admin/tenantRiskControls.ts`, `lib/admin/tenantRiskActions.ts`
 - `lib/admin/loadAdminFraudAlerts.ts`, `lib/admin/searchAdminTenants.ts`
+- `lib/audit/accountCreationAudit.ts`, `lib/audit/requestFingerprint.ts`
 - `app/admin/tenants/AdminTenantRiskPanel.tsx`
 - `app/admin/fraud/page.tsx`
 - Enforcement: `lib/auth/tenantAccess.ts`, `lib/billing/requireConnect.ts`
