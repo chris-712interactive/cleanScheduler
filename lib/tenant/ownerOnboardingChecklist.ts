@@ -88,6 +88,8 @@ export function buildOwnerOnboardingChecklist(
 ): OwnerOnboardingChecklist {
   const skips = new Set(input.profileState.checklist_optional_skips);
   const plaidAllowed = isFeatureEnabled(input.entitlementPlan, 'plaidReconciliation');
+  /** Stripe Connect is locked on free trial (fraud control) — same paid gate as SMS/API. */
+  const connectAllowed = input.entitlementPlan !== 'trial';
 
   const steps: OwnerOnboardingStep[] = [
     {
@@ -121,9 +123,14 @@ export function buildOwnerOnboardingChecklist(
     {
       id: 'connect',
       title: 'Set up online payments',
-      detail: 'Connect Stripe to accept cards and subscriptions',
-      href: '/billing/payment-setup',
+      detail: connectAllowed
+        ? 'Connect Stripe to accept cards and subscriptions'
+        : 'Available after you subscribe — card payments are locked during the free trial',
+      href: connectAllowed ? '/billing/payment-setup' : '/billing',
       complete: counts.connectComplete,
+      optional: !connectAllowed,
+      locked: !connectAllowed,
+      lockedReason: connectAllowed ? undefined : 'Subscribe to unlock card payments',
     },
     {
       id: 'invoice',

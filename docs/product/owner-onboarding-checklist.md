@@ -18,7 +18,7 @@ Related code today:
 1. **Same device or new browser** — progress and dismiss/snooze state follow the workspace in Postgres.
 2. **Always findable** — owners can reopen “Getting started” from the dashboard or nav until required steps are done.
 3. **Honest progress** — step completion stays **data-driven** (counts / flags in existing tables), not self-reported clicks.
-4. **Trial-aware** — steps match what a free-trial workspace can actually do (Connect yes, Plaid no until subscribed).
+4. **Trial-aware** — steps match what a free-trial workspace can actually do (Connect no until subscribed, Plaid no until subscribed).
 5. **Low ceremony** — no forced modal wizard; keep the checklist pattern, make it durable and discoverable.
 
 ---
@@ -106,15 +106,15 @@ Steps are defined in code (`OWNER_ONBOARDING_STEPS` constant). Completion is com
 
 ### Required (trial-friendly)
 
-| ID         | Title                     | Complete when                                                                                        | Route                    |
-| ---------- | ------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ |
-| `business` | Complete business profile | `tenants.timezone` set **and** (`business_email` or `business_phone`) **and** address line 1 or city | `/settings/business`     |
-| `customer` | Add a customer            | ≥1 active customer                                                                                   | `/customers/new`         |
-| `quote`    | Create your first quote   | ≥1 non-superseded quote                                                                              | `/quotes/new`            |
-| `visit`    | Schedule a visit          | ≥1 scheduled visit                                                                                   | `/schedule/new`          |
-| `connect`  | Set up online payments    | `tenants.stripe_connect_status = complete`                                                           | `/billing/payment-setup` |
-| `invoice`  | Send a customer invoice   | ≥1 invoice (any status except void)                                                                  | `/billing/invoices/new`  |
-| `team`     | Invite a teammate         | >1 active membership **or** pending invite                                                           | `/employees/new`         |
+| ID         | Title                     | Complete when                                                                                        | Route                                                       |
+| ---------- | ------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `business` | Complete business profile | `tenants.timezone` set **and** (`business_email` or `business_phone`) **and** address line 1 or city | `/settings/business`                                        |
+| `customer` | Add a customer            | ≥1 active customer                                                                                   | `/customers/new`                                            |
+| `quote`    | Create your first quote   | ≥1 non-superseded quote                                                                              | `/quotes/new`                                               |
+| `visit`    | Schedule a visit          | ≥1 scheduled visit                                                                                   | `/schedule/new`                                             |
+| `connect`  | Set up online payments    | `tenants.stripe_connect_status = complete`                                                           | `/billing/payment-setup` (locked → `/billing` during trial) |
+| `invoice`  | Send a customer invoice   | ≥1 invoice (any status except void)                                                                  | `/billing/invoices/new`                                     |
+| `team`     | Invite a teammate         | >1 active membership **or** pending invite                                                           | `/employees/new`                                            |
 
 **Removed from required vs today:** none — same seven concepts, stricter `business` detection.
 
@@ -130,6 +130,7 @@ Steps are defined in code (`OWNER_ONBOARDING_STEPS` constant). Completion is com
 
 - Add **`portal_invite`** — key trial eval feature (customer portal).
 - **`bank`** — during trial: show as locked with “Available on Business after you subscribe” + link to `/billing`; not counted in required progress; optional skip still allowed after subscribe.
+- **`connect`** — during trial: show as locked with “Subscribe to unlock card payments”; treated as optional so other required steps can complete; becomes required again after subscribe.
 - **`compensation`** — remains optional; skip allowed.
 
 ### Subscribe step (conditional)
@@ -253,7 +254,7 @@ interface OwnerOnboardingChecklist {
 
 | Step                        | Trialing                    | Subscribed           |
 | --------------------------- | --------------------------- | -------------------- |
-| Connect                     | Show, completable           | Same                 |
+| Connect                     | Locked — subscribe first    | Show, completable    |
 | Invoice / quotes / schedule | Show, completable           | Same                 |
 | Bank (Plaid)                | Locked — link to `/billing` | Show if Business+    |
 | Subscribe                   | Show when trial ending      | Hidden when `active` |

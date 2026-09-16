@@ -42,8 +42,9 @@ export async function TenantDeferredSessionNotices({
 
   const notices = [];
   const status = (connectStatus ?? 'not_started') as TenantStripeConnectStatus;
+  const connectPromoted = subscriptionAccess !== 'trialing';
 
-  if (onboarding.coreSetupComplete && status !== 'complete') {
+  if (connectPromoted && onboarding.coreSetupComplete && status !== 'complete') {
     notices.push(<ConnectStatusBanner key="connect" status={status} />);
   }
 

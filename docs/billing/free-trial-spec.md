@@ -153,9 +153,16 @@ Implementation: reports already use `isFeatureEnabled(tier, feature)` — trial 
 
 #### Customer AR / Stripe Connect during trial
 
-**Recommendation: keep unlocked** while `subscriptionAccess` is `trialing` (existing `canAccessCustomerBillingTools`).
+**Manual invoicing stays unlocked** while `subscriptionAccess` is `trialing` (existing
+`canAccessCustomerBillingTools`) so owners can evaluate quotes → invoices → cash/check/Zelle.
 
-Rationale: invoicing and “Pay online” via Connect are core to evaluating the product. Plaid bank reconciliation stays off via `plaidReconciliation: false`.
+**Stripe Connect is locked during the free trial** (`canAccessStripeConnect` /
+`canUsePaidSubscriptionFeatures`). Trial workspaces cannot create Express connected accounts
+or run card Checkout on a connected account. This blocks trial abuse that creates Connect
+accounts and charges stolen cards. After subscribe (`status=active` or `past_due`), Connect
+onboarding and card payments unlock on all paid tiers.
+
+Plaid bank reconciliation stays off via `plaidReconciliation: false`.
 
 ---
 
@@ -293,17 +300,18 @@ Optional: email on `trial_expired` when cron sets `canceled` (nice-to-have).
 
 ## Access control summary
 
-| Capability                      | Trial                 | After subscribe |
-| ------------------------------- | --------------------- | --------------- |
-| Scheduling, quotes, customers   | Yes (trial limits)    | Tier limits     |
-| Customer portal (shared `my.*`) | Yes                   | Tier            |
-| Customer invoicing + Connect    | Yes                   | Yes             |
-| Plaid reconciliation            | **No**                | Business+       |
-| SMS                             | **No**                | Pro + paid      |
-| API / webhooks                  | **No**                | Pro + paid      |
-| Email campaigns                 | **No**                | Business+       |
-| White-label portal domain       | **No**                | Pro + paid      |
-| Portal suspended at trial end   | Yes → `/billing` only | —               |
+| Capability                      | Trial                  | After subscribe |
+| ------------------------------- | ---------------------- | --------------- |
+| Scheduling, quotes, customers   | Yes (trial limits)     | Tier limits     |
+| Customer portal (shared `my.*`) | Yes                    | Tier            |
+| Customer invoicing (manual)     | Yes                    | Yes             |
+| Stripe Connect / card Checkout  | **No** (fraud control) | Yes             |
+| Plaid reconciliation            | **No**                 | Business+       |
+| SMS                             | **No**                 | Pro + paid      |
+| API / webhooks                  | **No**                 | Pro + paid      |
+| Email campaigns                 | **No**                 | Business+       |
+| White-label portal domain       | **No**                 | Pro + paid      |
+| Portal suspended at trial end   | Yes → `/billing` only  | —               |
 
 ---
 
@@ -364,8 +372,11 @@ Reply with choices (or edits) before implementation.
 
 ### Stripe Connect + tenant invoicing during trial
 
-- **A.** Yes — **recommended**
+- **A.** Yes (Connect + invoicing)
 - **B.** No (unlock only after subscribe)
+- **Decided: hybrid** — manual invoicing **yes**; Stripe Connect / card Checkout **no**
+  (fraud control: prevent trial Express accounts used with stolen cards). Enforced by
+  `canAccessStripeConnect` + `requireConnectForOnlinePayments` + payment-setup actions.
 
 ### Proof-of-service photos during trial
 
