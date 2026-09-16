@@ -10,7 +10,7 @@ import {
   unsuspendTenantAccessAction,
   type AdminTenantRiskFormState,
 } from '@/lib/admin/tenantRiskActions';
-import styles from '../tenants.module.scss';
+import styles from './tenants.module.scss';
 
 export interface AdminTenantRiskPanelProps {
   tenantId: string;
