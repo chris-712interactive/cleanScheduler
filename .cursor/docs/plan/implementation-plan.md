@@ -426,7 +426,7 @@ erDiagram
 ## 10. Integrations
 
 - **Stripe (cleanScheduler subscription)**: products/prices per plan, Checkout for trial signup with `trial_period_days = 7`, Customer Portal for self-service. Webhook -> Edge Function -> updates `tenants.status` and `tenant_subscriptions`. On `customer.subscription.created` we cross-reference inquiry email to mark `inquiries.status = 'converted'`.
-- **Stripe Connect (tenant -> customer payments)**: each tenant connects their own Stripe account (Standard or Express) so they can collect from their customers and receive payouts directly. Powers card payments on invoices and recurring billing for end customers (Concern #3). Connected-account webhooks update `customer_subscriptions`, create `invoices`, and record `payments` automatically. Connect onboarding lives in Tenant Settings > Billing > Payment Setup and is **optional during the 7-day trial** — tenants who skip see a verbose education screen and have recurring/card features feature-gated until they complete it (see section 14, Concern #3 for the full skip flow and gated feature list).
+- **Stripe Connect (tenant -> customer payments)**: each tenant connects their own Stripe account (Standard or Express) so they can collect from their customers and receive payouts directly. Powers card payments on invoices and recurring billing for end customers (Concern #3). Connected-account webhooks update `customer_subscriptions`, create `invoices`, and record `payments` automatically. Connect onboarding lives in Tenant Settings > Billing > Payment Setup and is **locked during the free trial** (fraud control — no Express account creation or card Checkout until `status=active`/`past_due`). Manual cash/check/Zelle invoicing still works on trial.
 - **Plaid (Phase 2, Zelle/ACH reconciliation)**: tenant links a business bank account via Plaid Link; we poll daily for incoming transactions, surface Zelle/ACH credits in a match-suggestion queue, and let the tenant confirm matches against open invoices (see section 14, Concern #1).
 - **Twilio**: outbound SMS via Programmable Messaging; inbound webhook -> Edge Function -> stores into `messages` table. Per-tenant phone numbers assigned from Admin > Integrations.
 - **Resend**: transactional email (invites, invoices, reminders, password reset). Phase 2: campaigns via Resend Broadcasts.
@@ -440,7 +440,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 
 - Marketing site + Inquiry form + 7-day trial signup (creates `tenant` + Super Admin + Stripe trial subscription on cleanScheduler's account).
 - Tenant portal: Dashboard (basic KPIs), Customers (CRUD), Schedule (day/week views, create/edit/assign, mobile-first appointment detail), Quotes (fixed 4-column Kanban with drag-and-drop), Billing (invoices + Stripe payments + multi-method recording), Employees (CRUD + 3 system roles), Settings (Personal, Business Info, Billing, **Payment Setup via Stripe Connect**, **Service Plans**).
-- **Stripe Connect** tenant onboarding so tenants can collect from their own customers (cards + recurring). **Optional during trial** with a verbose education + skip flow; recurring billing, card-charge actions, and pay-now invoice links are server-side gated until Connect is `complete`. Manual recording of cash/check/Zelle works without Connect.
+- **Stripe Connect** tenant onboarding so tenants can collect from their own customers (cards + recurring). **Locked during free trial** (fraud control); after subscribe, recurring billing, card-charge actions, and pay-now invoice links are server-side gated until Connect is `complete`. Manual recording of cash/check/Zelle works without Connect.
 - **Customer recurring billing (Concern #3)**: `service_plans`, `customer_subscriptions`, `recurring_appointment_rules`, RRULE-based recurring appointment generator.
 - **Field Accept Payment flow (Concern #2)**: mobile-first capture of cash / check (with check number, amount, optional photo). `received_in_field` -> office workflow `received_in_office` -> `deposited` -> `cleared`.
 - **Manual Zelle recording (Concern #1)**: "Record Zelle payment" form with confirmation number, optional screenshot upload, and notes. Plaid auto-reconcile arrives in Phase 2.
@@ -586,7 +586,7 @@ _(None open from the last round — add new rows here when tradeoffs reappear.)_
 - **Encryption + search**: encrypted phone/address can't be full-text searched; we'll add a hashed/blind-indexed lookup column for exact-match search where needed.
 - **SCSS at scale**: without Tailwind's enforced consistency, drift is the main risk. Mitigations: stylelint forbids hard-coded colors/spacing outside token files; layout primitives (Stack/Cluster/Grid) absorb most flex/grid duplication; PR template includes a "no inline styles, no magic numbers" checkbox.
 - **Zelle has no public API**: any "Zelle integration" we ship is bank-side inference (Plaid + memo conventions + manual entry). We will not promise tenants automatic Zelle reconciliation in marketing copy without the qualifier "via your linked bank account." Detail in section 14, Concern #1.
-- **Stripe Connect onboarding friction**: tenants must complete identity verification with Stripe before they can collect cards from customers. Mitigation: Connect is optional during the 7-day trial. Tenants who skip see a verbose education screen (benefits, fees, what gets blocked, what still works) and a persistent in-app banner reminding them to complete it. Server-side feature gates protect every Connect-dependent action (recurring billing, card charges, pay-now links). Detailed skip flow in section 14, Concern #3.
+- **Stripe Connect onboarding friction**: tenants must complete identity verification with Stripe before they can collect cards from customers. Mitigation: Connect is **locked during the free trial** (prevents Express account fraud); after subscribe, tenants who skip see education + a persistent banner. Server-side feature gates protect every Connect-dependent action (recurring billing, card charges, pay-now links) and also require a paid platform subscription. Detailed skip flow in section 14, Concern #3.
 - **Recurring-appointment generator drift**: RRULE materialization runs daily and can double-create or skip if the cron is delayed or retried. Mitigation: idempotency key per `(rule_id, occurrence_date)`; dry-run preview in the UI before activating a rule.
 - **PDF generation cost**: server-side PDF rendering (Puppeteer/Chromium) is heavy on serverless. Mitigation: render PDFs on a queued worker, cache in Supabase Storage keyed off `report_run_id`, and let users download from the cached URL.
 - **Cross-environment credential leak**: a live Stripe / Plaid / Twilio key accidentally configured in DEV would create real charges or send real SMS during testing. Mitigation: fail-fast env-mismatch assertion in `[lib/env.ts](lib/env.ts)` (PROD-shaped Supabase URL must pair with `sk_live_` Stripe and Plaid Production), persistent red "DEV ENVIRONMENT" banner across every authenticated page in DEV, and Stripe Restricted Keys with the narrowest scope necessary. Detail in section 16.
@@ -660,7 +660,7 @@ This section captures concerns raised during plan review by a prospective tenant
 
 **Resolution approach**:
 
-- **Stripe Connect** (Standard or Express): each tenant connects their own Stripe account so they can collect from customers and receive payouts directly. cleanScheduler facilitates the integration; funds flow tenant <-> customer. **Connect is optional during the trial** — see "Trial-time Connect skip flow" below.
+- **Stripe Connect** (Standard or Express): each tenant connects their own Stripe account so they can collect from customers and receive payouts directly. cleanScheduler facilitates the integration; funds flow tenant <-> customer. **Connect is locked during the free trial** (fraud control) — see "Trial-time Connect skip flow" below for post-subscribe education.
 - **Service Plans** (`service_plans`): tenant-defined templates in Settings (e.g., "Bi-weekly Standard Clean", base price, billing interval, default appointment cadence, included service items).
 - **Customer enrollment** (`customer_subscriptions`): from the customer detail page, "Set up recurring billing" enrolls a customer either in a Service Plan or a custom recurrence. Backed by a Stripe Subscription on the connected account, with `billing_cycle_anchor` set so the customer is billed on a fixed day of the month/week (the prospective tenant's exact requirement).
 - **Recurring appointments** (`recurring_appointment_rules`): independent of billing cadence — a customer can be billed monthly but cleaned bi-weekly. RRULE-based generator (`[supabase/functions/recurring-appointments/index.ts](supabase/functions/recurring-appointments/index.ts)`) runs daily and materializes the next N occurrences (configurable, default 60 days out) so they appear on the Schedule and can be reassigned individually.
@@ -668,16 +668,19 @@ This section captures concerns raised during plan review by a prospective tenant
 
 #### Trial-time Connect skip flow + feature gating
 
-Stripe Connect requires identity verification (legal name, EIN/SSN, bank account, sometimes a business document). That can take 5–30 minutes and isn't always something a tenant wants to do at 9 PM while exploring a new SaaS. We make Connect optional during the trial, but invest in education so tenants understand the trade-off.
+Stripe Connect requires identity verification (legal name, EIN/SSN, bank account, sometimes a business document). That can take 5–30 minutes. **Connect is locked during the free trial** to prevent fraud (trial Express accounts used with stolen cards). After the workspace subscribes (`active` / `past_due`), Connect onboarding unlocks; tenants who skip then see education + a persistent banner. Manual cash/check/Zelle invoicing works throughout the trial.
 
-**Onboarding UI**:
+**Paid-subscription gate** (`canAccessStripeConnect` / `requireConnectForOnlinePayments`):
+
+- Blocks `startStripeConnectOnboardingAction` (no Express `account.create` on trial).
+- Blocks all Connect Checkout / refund / Billing Portal charge paths even if a legacy trial row already has `stripe_connect_status=complete`.
+
+**Post-subscribe onboarding UI**:
 
 1. Self-serve trial signup creates the tenant + Super Admin and lands them on the Tenant Dashboard.
-2. The Dashboard shows a prominent (but dismissible per session) banner: "Set up payment processing to unlock card payments and recurring billing."
+2. After subscribe, the Dashboard may show a banner: "Set up payment processing to unlock card payments and recurring billing."
 3. Settings > Billing > Payment Setup is the canonical Connect entry point. Tenant can also be deep-linked there from any blocked feature.
-4. The Payment Setup page presents a **two-CTA education screen**:
-   - **Primary CTA**: "Set up Stripe Connect" (kicks off Stripe-hosted onboarding via `accountLinks`).
-   - **Secondary CTA**: "Skip for now — I'll set this up later" (opens a confirmation dialog explaining what's about to be blocked).
+4. The Payment Setup page presents Stripe Connect CTAs once the platform subscription is paid.
 
 **Education-screen copy** (verbose by design — captured here so we don't lose intent during build):
 

@@ -9,6 +9,7 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Enums } from '@/lib/supabase/database.types';
+import { canAccessStripeConnect } from '@/lib/billing/tenantSubscriptionAccess';
 import { refreshStripeConnectAccountAction, startStripeConnectOnboardingAction } from './actions';
 import billingStyles from '../billing.module.scss';
 import styles from './payment-setup.module.scss';
@@ -101,20 +102,34 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
   const returnedFromStripe = connectParam === 'return';
 
   const db = createTenantPortalDbClient();
-  const [{ data: tenant }, { data: acct }] = await Promise.all([
+  const [{ data: tenant }, { data: acct }, { data: billing }] = await Promise.all([
     db.from('tenants').select('stripe_connect_status').eq('id', membership.tenantId).maybeSingle(),
     db
       .from('tenant_stripe_connect_accounts')
       .select('details_submitted, charges_enabled, payouts_enabled')
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
+    db
+      .from('tenant_billing_accounts')
+      .select('status')
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
   ]);
 
+  const connectAllowed = canAccessStripeConnect(billing?.status);
   const status = (tenant?.stripe_connect_status ?? 'not_started') as ConnectStatus;
-  const meta = connectStatusMeta(status);
+  const meta = connectAllowed
+    ? connectStatusMeta(status)
+    : {
+        tone: 'warning' as StatusTone,
+        pillLabel: 'Locked on free trial',
+        title: 'Card payments unlock after you subscribe',
+        lead: 'During the free trial you can still create invoices and record cash, check, and Zelle. Stripe Connect (pay-by-card) requires an active subscription to reduce payment fraud.',
+        primaryActionLabel: 'Choose a plan',
+      };
   const setupSteps = buildSetupSteps(acct);
-  const showSetupSteps = setupSteps.length > 0 && status !== 'not_started';
-  const showRefresh = Boolean(acct) && status !== 'complete';
+  const showSetupSteps = connectAllowed && setupSteps.length > 0 && status !== 'not_started';
+  const showRefresh = connectAllowed && Boolean(acct) && status !== 'complete';
 
   return (
     <>
@@ -179,7 +194,13 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
             </ul>
           ) : null}
 
-          {status !== 'complete' ? (
+          {!connectAllowed ? (
+            <div className={styles.connectHeroActions}>
+              <Button href="/billing" variant="primary">
+                {meta.primaryActionLabel}
+              </Button>
+            </div>
+          ) : status !== 'complete' ? (
             <div className={styles.connectHeroActions}>
               <form action={startStripeConnectOnboardingAction}>
                 <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
@@ -227,6 +248,9 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
             </li>
             <li>
               Stripe handles secure checkout, identity verification, and payouts to your bank.
+            </li>
+            <li>
+              Stripe Connect is available after you subscribe — it is locked during the free trial.
             </li>
           </ul>
         </section>

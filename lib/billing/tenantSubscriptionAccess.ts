@@ -71,20 +71,34 @@ export function needsSubscriptionPurchase(access: TenantSubscriptionAccess): boo
   return access === 'trial_expired' || access === 'suspended';
 }
 
-/** Customer invoicing / Connect tools — only when platform subscription is in good standing. */
+/**
+ * Manual customer invoicing and AR tools (cash/check/Zelle, invoice CRUD).
+ * Available during the free trial. Stripe Connect card payments are gated separately
+ * via {@link canAccessStripeConnect} / `requireConnectForOnlinePayments`.
+ */
 export function canAccessCustomerBillingTools(access: TenantSubscriptionAccess): boolean {
   return access === 'active' || access === 'trialing' || access === 'past_due';
 }
 
 /**
- * Pro SMS is a paid feature — not available during the free trial, even when the
- * selected plan tier is Pro. Requires an active or past_due platform subscription.
+ * Paid platform features (SMS, API, white-label, Stripe Connect) — not available
+ * during the free trial. Requires an active or past_due platform subscription.
  */
 export function canUsePaidSubscriptionFeatures(
   billingStatus: TenantBillingStatus | null | undefined,
 ): boolean {
   const status = billingStatus ?? 'trialing';
   return status === 'active' || status === 'past_due';
+}
+
+/**
+ * Stripe Connect onboarding and card Checkout — paid subscription only.
+ * Blocked during free trial to prevent Express account creation and card fraud.
+ */
+export function canAccessStripeConnect(
+  billingStatus: TenantBillingStatus | null | undefined,
+): boolean {
+  return canUsePaidSubscriptionFeatures(billingStatus);
 }
 
 /** @deprecated Use {@link canUsePaidSubscriptionFeatures} */

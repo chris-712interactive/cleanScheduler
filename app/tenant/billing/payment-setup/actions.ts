@@ -11,15 +11,33 @@ import {
   createExpressConnectedAccount,
   retrieveConnectAccount,
 } from '@/lib/billing/stripeConnectServer';
+import { STRIPE_CONNECT_REQUIRES_PAID_SUBSCRIPTION_MESSAGE } from '@/lib/billing/requireConnect';
+import { canAccessStripeConnect } from '@/lib/billing/tenantSubscriptionAccess';
 
 function paymentSetupPath(): string {
   return `/billing/payment-setup`;
+}
+
+async function assertPaidSubscriptionForConnect(tenantId: string): Promise<void> {
+  const admin = createAdminClient();
+  const { data: billing } = await admin
+    .from('tenant_billing_accounts')
+    .select('status')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (!canAccessStripeConnect(billing?.status)) {
+    redirect(
+      `${paymentSetupPath()}?error=${encodeURIComponent(STRIPE_CONNECT_REQUIRES_PAID_SUBSCRIPTION_MESSAGE)}`,
+    );
+  }
 }
 
 export async function startStripeConnectOnboardingAction(formData: FormData): Promise<void> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   const auth = await requirePortalAccess('tenant', '/billing/payment-setup');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/payment-setup');
+  await assertPaidSubscriptionForConnect(membership.tenantId);
   const admin = createAdminClient();
 
   const { data: existing } = await admin
@@ -70,6 +88,7 @@ export async function refreshStripeConnectAccountAction(formData: FormData): Pro
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
   await requirePortalAccess('tenant', '/billing/payment-setup');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/payment-setup');
+  await assertPaidSubscriptionForConnect(membership.tenantId);
   const admin = createAdminClient();
 
   const { data: row } = await admin

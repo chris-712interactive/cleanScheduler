@@ -28,6 +28,7 @@ import {
 import { getPlatformPricingDisplay, formatPlanPriceUsd } from '@/lib/billing/platformPricing';
 import {
   canAccessCustomerBillingTools,
+  canAccessStripeConnect,
   needsSubscriptionPurchase,
   resolveTenantSubscriptionAccess,
   trialDaysRemaining,
@@ -207,6 +208,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
 
   const mustSubscribe = needsSubscriptionPurchase(subscriptionAccess);
   const customerBillingUnlocked = canAccessCustomerBillingTools(subscriptionAccess);
+  const stripeConnectAllowed = canAccessStripeConnect(billing?.status);
   const canManageSubscription = canManageTeamInvitesAndRoles(membership.role as TenantRole);
   const daysLeft = trialDaysRemaining(billing?.trial_ends_at ?? null);
   const purgeStatus = getTenantPurgeStatus(billing);
@@ -258,8 +260,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
     nextDate: nextPaymentDate,
   });
 
-  const connectLabel =
-    connectStatus === 'complete'
+  const connectLabel = !stripeConnectAllowed
+    ? 'Locked on free trial'
+    : connectStatus === 'complete'
       ? 'Stripe connected'
       : connectStatus === 'pending'
         ? 'Stripe setup in progress'
@@ -267,8 +270,9 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           ? 'Stripe needs attention'
           : 'Card payments not set up';
 
-  const connectTone: StatusTone =
-    connectStatus === 'complete'
+  const connectTone: StatusTone = !stripeConnectAllowed
+    ? 'warning'
+    : connectStatus === 'complete'
       ? 'success'
       : connectStatus === 'restricted'
         ? 'danger'
@@ -440,9 +444,11 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
                   <StatusPill tone={connectTone}>{connectLabel}</StatusPill>
                 </span>
                 <span className={styles.snapshotMeta}>
-                  {connectStatus === 'complete'
-                    ? 'Customers can pay invoices by card'
-                    : 'Set up Stripe to accept cards'}
+                  {!stripeConnectAllowed
+                    ? 'Subscribe to unlock Stripe card payments'
+                    : connectStatus === 'complete'
+                      ? 'Customers can pay invoices by card'
+                      : 'Set up Stripe to accept cards'}
                 </span>
               </Link>
             </div>

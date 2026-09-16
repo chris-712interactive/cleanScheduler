@@ -338,6 +338,8 @@ Next checks to add:
 
 Workspaces on a **DB-only free trial** (`status=trialing`, `platform_plan IS NULL`, no Stripe subscription) use `TRIAL_ENTITLEMENTS` in `lib/billing/entitlements.ts` — not Starter/Business/Pro limits. All `status=trialing` rows use the trial profile until conversion.
 
+**Stripe Connect is not available during the free trial** — `canAccessStripeConnect` / `requireConnectForOnlinePayments` require `active` or `past_due`. Manual invoicing (cash/check/Zelle) remains available.
+
 See `docs/billing/free-trial-spec.md` for signup, conversion (tier + monthly/yearly on `/billing`), and cron behavior.
 
 ## Stripe mapping and fulfillment
@@ -439,4 +441,9 @@ Configure two Stripe event destinations (see Connect section below): platform in
 
 **Schema** — migration `0023_tenant_billing_stripe_connect.sql`: `tenant_stripe_connect_accounts`, `tenants.stripe_connect_status`, extended `tenant_invoice_payments`, `tenant_usage_snapshots` (rollup TBD), mirror tables for refunds/disputes/payouts (webhook writers TBD).
 
-**Gates** — `lib/billing/requireConnect.ts`; manual **card** entry on invoices is blocked (`recordInvoicePaymentAction`); use **Pay online** only after Connect completes. The same gate applies to **subscription Checkout** (tenant customer detail) and **customer portal invoice pay** (`createCustomerInvoicePayCheckoutSessionAction`).
+**Gates** — `lib/billing/requireConnect.ts` requires (1) a paid platform subscription
+(`active` / `past_due` — **not** free trial) and (2) `tenants.stripe_connect_status = complete`.
+Manual **card** entry on invoices is blocked (`recordInvoicePaymentAction`); use **Pay online**
+only after Connect completes. The same gate applies to **subscription Checkout** (tenant customer
+detail) and **customer portal invoice pay** (`createCustomerInvoicePayCheckoutSessionAction`).
+Free-trial workspaces cannot start Connect onboarding (`startStripeConnectOnboardingAction`).
