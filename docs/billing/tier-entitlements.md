@@ -443,6 +443,8 @@ Configure two Stripe event destinations (see Connect section below): platform in
 
 **Gates** — `lib/billing/requireConnect.ts` requires (1) a paid platform subscription
 (`active` / `past_due` — **not** free trial) and (2) `tenants.stripe_connect_status = complete`.
+**New-account velocity** — for 14 days after `activated_at`, Connect Checkout is capped at
+3 tenant-wide card charges/checkout starts per 24h and 2 per customer (`lib/billing/connectPaymentVelocity.ts`).
 Manual **card** entry on invoices is blocked (`recordInvoicePaymentAction`); use **Pay online**
 only after Connect completes. The same gate applies to **subscription Checkout** (tenant customer
 detail) and **customer portal invoice pay** (`createCustomerInvoicePayCheckoutSessionAction`).

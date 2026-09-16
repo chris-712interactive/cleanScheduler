@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
+import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import { getStripe } from '@/lib/stripe/server';
 import {
   parseConnectApplicationFeeBps,
@@ -25,7 +26,7 @@ export async function createInvoicePayCheckoutSessionAction(formData: FormData):
   const [{ data: inv, error: invErr }, { data: conn, error: connErr }] = await Promise.all([
     admin
       .from('tenant_invoices')
-      .select('id, title, currency, status, amount_cents, amount_paid_cents')
+      .select('id, title, currency, status, amount_cents, amount_paid_cents, customer_id')
       .eq('id', invoiceId)
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
@@ -43,6 +44,16 @@ export async function createInvoicePayCheckoutSessionAction(formData: FormData):
     redirect(
       `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Stripe Connect is not linked.')}`,
     );
+  }
+
+  const velocity = await assertConnectPaymentVelocityAllowed(admin, {
+    tenantId: membership.tenantId,
+    customerId: inv.customer_id,
+    actorUserId: null,
+    kind: 'invoice_pay',
+  });
+  if (!velocity.ok) {
+    redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent(velocity.message)}`);
   }
 
   const remaining = inv.amount_cents - inv.amount_paid_cents;

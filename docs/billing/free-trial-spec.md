@@ -162,6 +162,11 @@ or run card Checkout on a connected account. This blocks trial abuse that create
 accounts and charges stolen cards. After subscribe (`status=active` or `past_due`), Connect
 onboarding and card payments unlock on all paid tiers.
 
+**New-account velocity (post-subscribe):** for 14 days after `activated_at`, Connect Checkout is
+limited to **3** tenant-wide card charges or checkout starts per rolling 24 hours, and **2** per
+customer (`lib/billing/connectPaymentVelocity.ts`). Breaches email `legal@712int.com` and write
+an audit event. This targets burst patterns such as repeated small charges on the same card.
+
 Plaid bank reconciliation stays off via `plaidReconciliation: false`.
 
 ---

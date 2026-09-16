@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
+import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import { getStripe } from '@/lib/stripe/server';
 import { getCustomerPortalOriginFromRequest } from '@/lib/portal/customerPortalOrigin';
 import {
@@ -44,6 +45,16 @@ export async function createCustomerInvoicePayCheckoutSessionAction(
   const gate = await requireConnectForOnlinePayments(admin, inv.tenant_id);
   if (!gate.ok) {
     redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(gate.message)}`);
+  }
+
+  const velocity = await assertConnectPaymentVelocityAllowed(admin, {
+    tenantId: inv.tenant_id,
+    customerId: inv.customer_id,
+    actorUserId: auth.user.id,
+    kind: 'invoice_pay',
+  });
+  if (!velocity.ok) {
+    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(velocity.message)}`);
   }
 
   const { data: conn, error: connErr } = await admin
