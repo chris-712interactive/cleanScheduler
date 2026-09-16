@@ -21,9 +21,38 @@ function normalizeOne<T>(raw: T | T[] | null | undefined): T | null {
   return Array.isArray(raw) ? (raw[0] ?? null) : raw;
 }
 
-async function fetchTenants() {
+type TenantListRow = {
+  id: string;
+  slug: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  admin_access_suspended_at: string | null;
+  connect_charges_frozen_at: string | null;
+  tenant_billing_accounts: {
+    status: string | null;
+    trial_ends_at: string | null;
+    stripe_subscription_id: string | null;
+    platform_plan: string | null;
+  } | null;
+};
+
+function isMissingFraudControlColumnError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('admin_access_suspended_at') ||
+    lower.includes('connect_charges_frozen_at') ||
+    (lower.includes('column') && lower.includes('does not exist'))
+  );
+}
+
+async function fetchTenants(): Promise<{
+  tenants: TenantListRow[];
+  error: string | null;
+  needsFraudControlsMigration: boolean;
+}> {
   const admin = createAdminClient();
-  const { data, error } = await admin
+  const withRiskColumns = await admin
     .from('tenants')
     .select(
       `
@@ -44,11 +73,62 @@ async function fetchTenants() {
     )
     .order('created_at', { ascending: false });
 
-  if (error || !data) return [];
-  return data.map((row) => ({
-    ...row,
-    tenant_billing_accounts: normalizeOne(row.tenant_billing_accounts),
-  }));
+  if (!withRiskColumns.error && withRiskColumns.data) {
+    return {
+      tenants: withRiskColumns.data.map((row) => ({
+        ...row,
+        admin_access_suspended_at: row.admin_access_suspended_at ?? null,
+        connect_charges_frozen_at: row.connect_charges_frozen_at ?? null,
+        tenant_billing_accounts: normalizeOne(row.tenant_billing_accounts),
+      })),
+      error: null,
+      needsFraudControlsMigration: false,
+    };
+  }
+
+  const primaryError = withRiskColumns.error?.message ?? 'Could not load tenants.';
+  if (!isMissingFraudControlColumnError(primaryError)) {
+    return { tenants: [], error: primaryError, needsFraudControlsMigration: false };
+  }
+
+  // Migration 0089 not applied yet — fall back so the list still renders.
+  const fallback = await admin
+    .from('tenants')
+    .select(
+      `
+      id,
+      slug,
+      name,
+      is_active,
+      created_at,
+      tenant_billing_accounts (
+        status,
+        trial_ends_at,
+        stripe_subscription_id,
+        platform_plan
+      )
+    `,
+    )
+    .order('created_at', { ascending: false });
+
+  if (fallback.error || !fallback.data) {
+    return {
+      tenants: [],
+      error: fallback.error?.message ?? primaryError,
+      needsFraudControlsMigration: true,
+    };
+  }
+
+  return {
+    tenants: fallback.data.map((row) => ({
+      ...row,
+      admin_access_suspended_at: null,
+      connect_charges_frozen_at: null,
+      tenant_billing_accounts: normalizeOne(row.tenant_billing_accounts),
+    })),
+    error: null,
+    needsFraudControlsMigration: true,
+  };
 }
 
 interface PageProps {
@@ -61,7 +141,7 @@ function firstParam(value: string | string[] | undefined): string | null {
 }
 
 export default async function AdminTenantsPage({ searchParams }: PageProps) {
-  const tenants = await fetchTenants();
+  const { tenants, error, needsFraudControlsMigration } = await fetchTenants();
   const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
   const sp = await searchParams;
   const purgedSlug = firstParam(sp.purged)?.trim().toLowerCase() || null;
@@ -79,10 +159,22 @@ export default async function AdminTenantsPage({ searchParams }: PageProps) {
             Deleted canceled tenant <strong>{purgedSlug}</strong>.
           </p>
         ) : null}
+        {needsFraudControlsMigration ? (
+          <p className={styles.bannerError} role="status">
+            Apply Supabase migration <code>0089_admin_tenant_fraud_controls.sql</code> to enable
+            suspend/freeze badges and tenant risk controls. The tenant list below is using a
+            temporary fallback query.
+          </p>
+        ) : null}
+        {error ? (
+          <p className={styles.bannerError} role="alert">
+            Could not load tenants: {error}
+          </p>
+        ) : null}
         <Card title="All tenants" description={`Workspace URLs use *.${apex}`}>
-          {tenants.length === 0 ? (
+          {!error && tenants.length === 0 ? (
             <p className={styles.empty}>No tenants yet.</p>
-          ) : (
+          ) : tenants.length > 0 ? (
             <Stack gap={3}>
               <ul className={styles.list}>
                 {tenants.map((t) => {
@@ -137,7 +229,7 @@ export default async function AdminTenantsPage({ searchParams }: PageProps) {
                 })}
               </ul>
             </Stack>
-          )}
+          ) : null}
         </Card>
       </Container>
     </>
