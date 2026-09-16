@@ -20,6 +20,7 @@ export interface AdminTenantRiskPanelProps {
   connectChargesFrozenAt: string | null;
   connectChargesFrozenReason: string | null;
   stripeConnectStatus: string;
+  stripeConnectAccountId: string | null;
   chargesEnabled: boolean | null;
   payoutsEnabled: boolean | null;
   recentDisputeCount: number;
@@ -85,6 +86,10 @@ export function AdminTenantRiskPanel(props: AdminTenantRiskPanelProps) {
       </div>
 
       <dl className={styles.riskMetaList}>
+        <div>
+          <dt>Connect account</dt>
+          <dd className={styles.monoId}>{props.stripeConnectAccountId ?? '—'}</dd>
+        </div>
         <div>
           <dt>Stripe Connect status</dt>
           <dd>{props.stripeConnectStatus}</dd>

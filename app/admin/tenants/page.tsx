@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Container } from '@/components/layout/Container';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
+import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { createAdminClient } from '@/lib/supabase/server';
 import { publicEnv } from '@/lib/env';
@@ -12,6 +13,12 @@ import {
   type PlatformPlanTier,
 } from '@/lib/billing/platformPlanTier';
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
+import {
+  adminTenantSearchKindLabel,
+  classifyAdminTenantSearchQuery,
+  parseAdminTenantSearchQuery,
+  searchAdminTenantIds,
+} from '@/lib/admin/searchAdminTenants';
 import styles from './tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -46,7 +53,119 @@ function isMissingFraudControlColumnError(message: string): boolean {
   );
 }
 
-async function fetchTenants(): Promise<{
+function mapTenantRows(
+  rows: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    is_active: boolean;
+    created_at: string;
+    admin_access_suspended_at?: string | null;
+    connect_charges_frozen_at?: string | null;
+    tenant_billing_accounts: unknown;
+  }>,
+): TenantListRow[] {
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    is_active: row.is_active,
+    created_at: row.created_at,
+    admin_access_suspended_at: row.admin_access_suspended_at ?? null,
+    connect_charges_frozen_at: row.connect_charges_frozen_at ?? null,
+    tenant_billing_accounts: normalizeOne(
+      row.tenant_billing_accounts as TenantListRow['tenant_billing_accounts'] | null,
+    ),
+  }));
+}
+
+async function fetchTenantsByIds(tenantIds: string[]): Promise<{
+  tenants: TenantListRow[];
+  error: string | null;
+  needsFraudControlsMigration: boolean;
+}> {
+  if (tenantIds.length === 0) {
+    return { tenants: [], error: null, needsFraudControlsMigration: false };
+  }
+
+  const admin = createAdminClient();
+  const withRiskColumns = await admin
+    .from('tenants')
+    .select(
+      `
+      id,
+      slug,
+      name,
+      is_active,
+      created_at,
+      admin_access_suspended_at,
+      connect_charges_frozen_at,
+      tenant_billing_accounts (
+        status,
+        trial_ends_at,
+        stripe_subscription_id,
+        platform_plan
+      )
+    `,
+    )
+    .in('id', tenantIds)
+    .order('created_at', { ascending: false });
+
+  if (!withRiskColumns.error && withRiskColumns.data) {
+    const byId = new Map(mapTenantRows(withRiskColumns.data).map((row) => [row.id, row]));
+    return {
+      tenants: tenantIds
+        .map((id) => byId.get(id))
+        .filter((row): row is TenantListRow => Boolean(row)),
+      error: null,
+      needsFraudControlsMigration: false,
+    };
+  }
+
+  const primaryError = withRiskColumns.error?.message ?? 'Could not load tenants.';
+  if (!isMissingFraudControlColumnError(primaryError)) {
+    return { tenants: [], error: primaryError, needsFraudControlsMigration: false };
+  }
+
+  const fallback = await admin
+    .from('tenants')
+    .select(
+      `
+      id,
+      slug,
+      name,
+      is_active,
+      created_at,
+      tenant_billing_accounts (
+        status,
+        trial_ends_at,
+        stripe_subscription_id,
+        platform_plan
+      )
+    `,
+    )
+    .in('id', tenantIds)
+    .order('created_at', { ascending: false });
+
+  if (fallback.error || !fallback.data) {
+    return {
+      tenants: [],
+      error: fallback.error?.message ?? primaryError,
+      needsFraudControlsMigration: true,
+    };
+  }
+
+  const byId = new Map(mapTenantRows(fallback.data).map((row) => [row.id, row]));
+  return {
+    tenants: tenantIds
+      .map((id) => byId.get(id))
+      .filter((row): row is TenantListRow => Boolean(row)),
+    error: null,
+    needsFraudControlsMigration: true,
+  };
+}
+
+async function fetchAllTenants(): Promise<{
   tenants: TenantListRow[];
   error: string | null;
   needsFraudControlsMigration: boolean;
@@ -75,12 +194,7 @@ async function fetchTenants(): Promise<{
 
   if (!withRiskColumns.error && withRiskColumns.data) {
     return {
-      tenants: withRiskColumns.data.map((row) => ({
-        ...row,
-        admin_access_suspended_at: row.admin_access_suspended_at ?? null,
-        connect_charges_frozen_at: row.connect_charges_frozen_at ?? null,
-        tenant_billing_accounts: normalizeOne(row.tenant_billing_accounts),
-      })),
+      tenants: mapTenantRows(withRiskColumns.data),
       error: null,
       needsFraudControlsMigration: false,
     };
@@ -91,7 +205,6 @@ async function fetchTenants(): Promise<{
     return { tenants: [], error: primaryError, needsFraudControlsMigration: false };
   }
 
-  // Migration 0089 not applied yet — fall back so the list still renders.
   const fallback = await admin
     .from('tenants')
     .select(
@@ -120,12 +233,7 @@ async function fetchTenants(): Promise<{
   }
 
   return {
-    tenants: fallback.data.map((row) => ({
-      ...row,
-      admin_access_suspended_at: null,
-      connect_charges_frozen_at: null,
-      tenant_billing_accounts: normalizeOne(row.tenant_billing_accounts),
-    })),
+    tenants: mapTenantRows(fallback.data),
     error: null,
     needsFraudControlsMigration: true,
   };
@@ -141,10 +249,36 @@ function firstParam(value: string | string[] | undefined): string | null {
 }
 
 export default async function AdminTenantsPage({ searchParams }: PageProps) {
-  const { tenants, error, needsFraudControlsMigration } = await fetchTenants();
-  const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
   const sp = await searchParams;
+  const searchQuery = parseAdminTenantSearchQuery(firstParam(sp.q));
   const purgedSlug = firstParam(sp.purged)?.trim().toLowerCase() || null;
+  const apex = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
+  const admin = createAdminClient();
+
+  let tenants: TenantListRow[] = [];
+  let error: string | null = null;
+  let needsFraudControlsMigration = false;
+  let searchKindLabel: string | null = null;
+  let matchedValue: string | null = null;
+
+  if (searchQuery) {
+    searchKindLabel = adminTenantSearchKindLabel(classifyAdminTenantSearchQuery(searchQuery));
+    const search = await searchAdminTenantIds(admin, searchQuery);
+    if (search.error) {
+      error = search.error;
+    } else {
+      matchedValue = search.hits[0]?.matchedValue ?? null;
+      const loaded = await fetchTenantsByIds(search.hits.map((hit) => hit.tenantId));
+      tenants = loaded.tenants;
+      error = loaded.error;
+      needsFraudControlsMigration = loaded.needsFraudControlsMigration;
+    }
+  } else {
+    const loaded = await fetchAllTenants();
+    tenants = loaded.tenants;
+    error = loaded.error;
+    needsFraudControlsMigration = loaded.needsFraudControlsMigration;
+  }
 
   return (
     <>
@@ -171,9 +305,51 @@ export default async function AdminTenantsPage({ searchParams }: PageProps) {
             Could not load tenants: {error}
           </p>
         ) : null}
-        <Card title="All tenants" description={`Workspace URLs use *.${apex}`}>
+
+        <Card
+          title="Find a tenant"
+          description="Paste a Connect acct_…, platform cus_/sub_, tenant UUID, slug, or company name."
+        >
+          <form action="/tenants" method="get" className={styles.searchForm}>
+            <label className={styles.searchField}>
+              <span className={styles.fieldLabel}>Search</span>
+              <input
+                type="search"
+                name="q"
+                defaultValue={searchQuery}
+                placeholder="acct_… / cus_… / sub_… / slug / UUID"
+                className={styles.searchInput}
+                autoComplete="off"
+              />
+            </label>
+            <div className={styles.searchActions}>
+              <Button type="submit" variant="primary">
+                Search
+              </Button>
+              {searchQuery ? (
+                <Button as="a" href="/tenants" variant="secondary">
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+          </form>
+          {searchQuery && !error ? (
+            <p className={styles.searchSummary}>
+              {tenants.length} match{tenants.length === 1 ? '' : 'es'} for “{searchQuery}”
+              {searchKindLabel ? ` · ${searchKindLabel}` : ''}
+              {matchedValue && matchedValue !== searchQuery ? ` · matched ${matchedValue}` : ''}
+            </p>
+          ) : null}
+        </Card>
+
+        <Card
+          title={searchQuery ? 'Search results' : 'All tenants'}
+          description={`Workspace URLs use *.${apex}`}
+        >
           {!error && tenants.length === 0 ? (
-            <p className={styles.empty}>No tenants yet.</p>
+            <p className={styles.empty}>
+              {searchQuery ? 'No tenants matched that search.' : 'No tenants yet.'}
+            </p>
           ) : tenants.length > 0 ? (
             <Stack gap={3}>
               <ul className={styles.list}>
