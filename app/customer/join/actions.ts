@@ -1,7 +1,9 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
+import { requestFingerprintFromHeaders } from '@/lib/audit/requestFingerprint';
 import { buildCompleteInvitePath } from '@/lib/tenant/customerPortalInvite';
 import { loadReferralJoinLanding } from '@/lib/referrals/loadReferralJoinLanding';
 import {
@@ -134,6 +136,7 @@ export async function signupReferralRefereeAction(
     marketingEmailOptIn: draft.marketingEmailOptIn,
     existingCustomerId,
     existingIdentityId,
+    requestFingerprint: requestFingerprintFromHeaders(await headers()),
   });
 
   if (!result.ok) {

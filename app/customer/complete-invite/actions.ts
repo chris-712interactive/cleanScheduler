@@ -1,9 +1,16 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  ACCOUNT_CUSTOMER_PORTAL_CREATED,
+  ACCOUNT_CUSTOMER_PORTAL_LINKED,
+  recordAccountCreationAudit,
+} from '@/lib/audit/accountCreationAudit';
+import { requestFingerprintFromHeaders } from '@/lib/audit/requestFingerprint';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
@@ -183,6 +190,19 @@ export async function linkExistingCustomerInviteAction(
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
 
+  await recordAccountCreationAudit(admin, {
+    action: ACCOUNT_CUSTOMER_PORTAL_LINKED,
+    actorUserId: auth.user.id,
+    targetTenantId: invite.tenant_id as string,
+    fingerprint: requestFingerprintFromHeaders(await headers()),
+    payload: {
+      customer_id: invite.customer_id,
+      customer_identity_id: invite.customer_identity_id,
+      email,
+      source: 'portal_invite_link_existing',
+    },
+  });
+
   await tryApplyReferralAttributionForInvite(
     admin,
     invite.tenant_id as string,
@@ -355,6 +375,21 @@ export async function acceptCustomerPortalInviteAction(
     .from('customer_portal_invites')
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
+
+  await recordAccountCreationAudit(admin, {
+    action: ACCOUNT_CUSTOMER_PORTAL_CREATED,
+    actorUserId: userId,
+    targetTenantId: invite.tenant_id as string,
+    fingerprint: requestFingerprintFromHeaders(await headers()),
+    payload: {
+      customer_id: invite.customer_id,
+      customer_identity_id: invite.customer_identity_id,
+      email,
+      phone: phone || null,
+      sms_opt_in: smsOptIn,
+      source: 'portal_invite_signup',
+    },
+  });
 
   await tryApplyReferralAttributionForInvite(
     admin,

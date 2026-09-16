@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  ACCOUNT_CUSTOMER_REFERRAL_CREATED,
+  recordAccountCreationAudit,
+} from '@/lib/audit/accountCreationAudit';
+import type { RequestFingerprint } from '@/lib/audit/requestFingerprint';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { assertMeteredLimit, isLimitExceededError } from '@/lib/billing/checkLimit';
 import { attributeRefereeFromReferralCode } from '@/lib/referrals/referralAttribution';
@@ -170,6 +175,8 @@ export type ReferralRefereeSignupInput = {
   marketingEmailOptIn: boolean;
   existingCustomerId: string | null;
   existingIdentityId: string | null;
+  /** Request fingerprint for account-creation audit (IP / UA). */
+  requestFingerprint: RequestFingerprint;
 };
 
 export async function signupReferralReferee(
@@ -261,6 +268,8 @@ export async function signupReferralReferee(
     lastName: input.lastName.trim(),
     password: input.password,
     referralCode: input.referralCode,
+    phone: input.phone.trim() || null,
+    requestFingerprint: input.requestFingerprint,
   });
 
   return linked;
@@ -481,6 +490,8 @@ async function linkReferralRefereePortalAccount(
     lastName: string;
     password: string;
     referralCode: string;
+    phone: string | null;
+    requestFingerprint: RequestFingerprint;
   },
 ): Promise<{ ok: true } | { ok: false; error: string; duplicateAccount?: boolean }> {
   const identityLabel = formatCustomerDisplayName({
@@ -574,6 +585,21 @@ async function linkReferralRefereePortalAccount(
   if (!attribution.ok && !attribution.skipped) {
     console.warn('[referral-join] attribution failed:', attribution.error);
   }
+
+  await recordAccountCreationAudit(admin, {
+    action: ACCOUNT_CUSTOMER_REFERRAL_CREATED,
+    actorUserId: userId,
+    targetTenantId: input.tenantId,
+    fingerprint: input.requestFingerprint,
+    payload: {
+      customer_id: input.customerId,
+      customer_identity_id: input.identityId,
+      email: input.email,
+      phone: input.phone,
+      referral_code: input.referralCode,
+      source: 'referral_join_signup',
+    },
+  });
 
   return { ok: true };
 }
