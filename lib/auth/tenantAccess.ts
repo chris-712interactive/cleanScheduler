@@ -31,6 +31,8 @@ export interface TenantPortalAccessOptions {
   allowBillingResume?: boolean;
   /** Skip field-employee route allowlist (server actions, API routes). */
   skipFieldEmployeeRouteEnforcement?: boolean;
+  /** Platform admins may enter suspended workspaces for support / masquerade. */
+  bypassAdminSuspension?: boolean;
 }
 
 async function lookupMembership(
@@ -96,19 +98,27 @@ async function assertTenantWorkspaceUnlocked(
     return;
   }
 
-  const allowWhenSuspended =
-    options?.allowBillingResume === true ||
-    isTenantSuspendedEscapePath(options?.internalPathname, options?.browserPathname);
-
   const admin = createAdminClient();
   const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
-    admin.from('tenants').select('is_active').eq('id', tenantId).maybeSingle(),
+    admin
+      .from('tenants')
+      .select('is_active, admin_access_suspended_at')
+      .eq('id', tenantId)
+      .maybeSingle(),
     admin
       .from('tenant_billing_accounts')
       .select('status, trial_ends_at, stripe_subscription_id')
       .eq('tenant_id', tenantId)
       .maybeSingle(),
   ]);
+
+  if (tenantRow?.admin_access_suspended_at && options?.bypassAdminSuspension !== true) {
+    redirect('/access-denied?reason=workspace_suspended');
+  }
+
+  const allowWhenSuspended =
+    options?.allowBillingResume === true ||
+    isTenantSuspendedEscapePath(options?.internalPathname, options?.browserPathname);
 
   const access = resolveTenantSubscriptionAccess({
     billingStatus: billingRow?.status,
@@ -160,6 +170,7 @@ export async function requireTenantPortalAccess(
     await assertTenantWorkspaceUnlocked(membership.tenantId, {
       ...mergedOptions,
       memberRole: membership.role,
+      bypassAdminSuspension: isPlatformAdmin,
     });
 
     let subscriptionLocked = false;
@@ -199,7 +210,10 @@ export async function requireTenantPortalAccess(
   if (isPlatformAdmin) {
     const tenant = await lookupTenantBySlug(slug);
     if (tenant) {
-      await assertTenantWorkspaceUnlocked(tenant.id, mergedOptions);
+      await assertTenantWorkspaceUnlocked(tenant.id, {
+        ...mergedOptions,
+        bypassAdminSuspension: true,
+      });
       return {
         tenantId: tenant.id,
         tenantSlug: tenant.slug,

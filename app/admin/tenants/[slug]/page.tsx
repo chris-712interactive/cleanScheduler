@@ -27,6 +27,8 @@ import {
   PLATFORM_SUPPORT_STATUS_LABEL,
 } from '@/lib/admin/platformSupportLabels';
 import { AdminDeleteTenantPanel } from '../AdminDeleteTenantPanel';
+import { AdminTenantRiskPanel } from '../AdminTenantRiskPanel';
+import { CONNECT_VELOCITY_BLOCKED_AUDIT_ACTION } from '@/lib/billing/connectPaymentVelocity';
 import styles from '../tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -36,13 +38,21 @@ function normalizeOne<T>(raw: T | T[] | null | undefined): T | null {
   return Array.isArray(raw) ? (raw[0] ?? null) : raw;
 }
 
-interface PageProps {
-  params: Promise<{ slug: string }>;
+function firstParam(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
 }
 
-export default async function AdminTenantDetailPage({ params }: PageProps) {
+interface PageProps {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AdminTenantDetailPage({ params, searchParams }: PageProps) {
   const { slug: rawSlug } = await params;
+  const sp = await searchParams;
   const slug = rawSlug.trim().toLowerCase();
+  const riskFlash = firstParam(sp.risk);
 
   const admin = createAdminClient();
   const { data: tenant, error } = await admin
@@ -55,6 +65,11 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
       timezone,
       is_active,
       created_at,
+      stripe_connect_status,
+      admin_access_suspended_at,
+      admin_access_suspended_reason,
+      connect_charges_frozen_at,
+      connect_charges_frozen_reason,
       tenant_billing_accounts (
         status,
         trial_started_at,
@@ -76,6 +91,11 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
         owner_name,
         owner_email,
         owner_phone
+      ),
+      tenant_stripe_connect_accounts (
+        charges_enabled,
+        payouts_enabled,
+        details_submitted
       )
     `,
     )
@@ -94,8 +114,25 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
   });
   const recentSupportTickets = supportTickets.slice(0, 5);
 
+  const sinceDisputes = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const sinceVelocity = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ count: recentDisputeCount }, { count: recentVelocityBlockCount }] = await Promise.all([
+    admin
+      .from('tenant_stripe_disputes')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenant.id)
+      .gte('created_at', sinceDisputes),
+    admin
+      .from('audit_log_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('target_tenant_id', tenant.id)
+      .eq('action', CONNECT_VELOCITY_BLOCKED_AUDIT_ACTION)
+      .gte('created_at', sinceVelocity),
+  ]);
+
   const billing = normalizeOne(tenant.tenant_billing_accounts);
   const onboarding = normalizeOne(tenant.tenant_onboarding_profiles);
+  const connectAcct = normalizeOne(tenant.tenant_stripe_connect_accounts);
   const purgeStatus = getTenantPurgeStatus(billing);
   const canAdminPurge = isCanceledForAdminPurge(billing);
 
@@ -133,6 +170,36 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
 
       <Container size="md">
         <Stack gap={4}>
+          {riskFlash ? (
+            <p className={styles.bannerSuccess} role="status">
+              {riskFlash === 'suspended'
+                ? 'Portal access suspended.'
+                : riskFlash === 'unsuspended'
+                  ? 'Portal access restored.'
+                  : riskFlash === 'connect_frozen'
+                    ? 'Connect charges frozen.'
+                    : riskFlash === 'connect_unfrozen'
+                      ? 'Connect charges unfrozen.'
+                      : 'Risk controls updated.'}
+            </p>
+          ) : null}
+
+          <Card title="Fraud & risk controls">
+            <AdminTenantRiskPanel
+              tenantId={tenant.id}
+              tenantSlug={tenant.slug}
+              adminAccessSuspendedAt={tenant.admin_access_suspended_at}
+              adminAccessSuspendedReason={tenant.admin_access_suspended_reason}
+              connectChargesFrozenAt={tenant.connect_charges_frozen_at}
+              connectChargesFrozenReason={tenant.connect_charges_frozen_reason}
+              stripeConnectStatus={tenant.stripe_connect_status}
+              chargesEnabled={connectAcct?.charges_enabled ?? null}
+              payoutsEnabled={connectAcct?.payouts_enabled ?? null}
+              recentDisputeCount={recentDisputeCount ?? 0}
+              recentVelocityBlockCount={recentVelocityBlockCount ?? 0}
+            />
+          </Card>
+
           <Card title="Support masquerade">
             <p className={styles.empty}>
               Opens the tenant portal in your browser with masquerade metadata set on your account.
