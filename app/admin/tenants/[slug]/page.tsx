@@ -93,6 +93,7 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
         owner_phone
       ),
       tenant_stripe_connect_accounts (
+        stripe_account_id,
         charges_enabled,
         payouts_enabled,
         details_submitted
@@ -193,6 +194,7 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
               connectChargesFrozenAt={tenant.connect_charges_frozen_at}
               connectChargesFrozenReason={tenant.connect_charges_frozen_reason}
               stripeConnectStatus={tenant.stripe_connect_status}
+              stripeConnectAccountId={connectAcct?.stripe_account_id ?? null}
               chargesEnabled={connectAcct?.charges_enabled ?? null}
               payoutsEnabled={connectAcct?.payouts_enabled ?? null}
               recentDisputeCount={recentDisputeCount ?? 0}
@@ -292,6 +294,12 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
                       key: 'Stripe subscription',
                       value: billing.stripe_subscription_id
                         ? String(billing.stripe_subscription_id)
+                        : '—',
+                    },
+                    {
+                      key: 'Connect account',
+                      value: connectAcct?.stripe_account_id
+                        ? String(connectAcct.stripe_account_id)
                         : '—',
                     },
                   ]}
