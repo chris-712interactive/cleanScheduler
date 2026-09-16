@@ -59,6 +59,11 @@ const COPY: Record<string, { title: string; description: string }> = {
     description:
       'This workspace is paused because the trial or subscription ended without an active payment method. A workspace owner can subscribe from Workspace billing, or start a new workspace from the marketing site.',
   },
+  workspace_suspended: {
+    title: 'Workspace suspended',
+    description:
+      'This workspace has been suspended by Clean Scheduler for review. Contact support if you believe this is an error.',
+  },
   no_customer_profile: {
     title: 'Customer profile not linked',
     description:

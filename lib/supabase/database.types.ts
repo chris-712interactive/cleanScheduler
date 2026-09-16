@@ -4582,6 +4582,10 @@ export type Database = {
           timezone: string;
           is_active: boolean;
           stripe_connect_status: Database['public']['Enums']['tenant_stripe_connect_status'];
+          admin_access_suspended_at: string | null;
+          admin_access_suspended_reason: string | null;
+          connect_charges_frozen_at: string | null;
+          connect_charges_frozen_reason: string | null;
           business_email: string | null;
           business_phone: string | null;
           customer_review_url: string | null;
@@ -4605,6 +4609,10 @@ export type Database = {
           timezone?: string;
           is_active?: boolean;
           stripe_connect_status?: Database['public']['Enums']['tenant_stripe_connect_status'];
+          admin_access_suspended_at?: string | null;
+          admin_access_suspended_reason?: string | null;
+          connect_charges_frozen_at?: string | null;
+          connect_charges_frozen_reason?: string | null;
           business_email?: string | null;
           business_phone?: string | null;
           customer_review_url?: string | null;
@@ -4628,6 +4636,10 @@ export type Database = {
           timezone?: string;
           is_active?: boolean;
           stripe_connect_status?: Database['public']['Enums']['tenant_stripe_connect_status'];
+          admin_access_suspended_at?: string | null;
+          admin_access_suspended_reason?: string | null;
+          connect_charges_frozen_at?: string | null;
+          connect_charges_frozen_reason?: string | null;
           business_email?: string | null;
           business_phone?: string | null;
           customer_review_url?: string | null;

@@ -56,4 +56,16 @@ describe('evaluateConnectOnlinePaymentsGate', () => {
       message: STRIPE_CONNECT_SETUP_REQUIRED_MESSAGE,
     });
   });
+
+  it('blocks Checkout when Connect charges are frozen by admin', () => {
+    const result = evaluateConnectOnlinePaymentsGate({
+      billingStatus: 'active',
+      connectStatus: 'complete',
+      connectChargesFrozen: true,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain('temporarily unavailable');
+    }
+  });
 });

@@ -184,9 +184,17 @@ export async function syncTenantFromStripeSubscription(
     throw new Error(`tenant_billing_accounts update failed: ${billingError.message}`);
   }
 
+  const { data: tenantFlags } = await admin
+    .from('tenants')
+    .select('admin_access_suspended_at')
+    .eq('id', tenantId)
+    .maybeSingle();
+
   const { error: tenantError } = await admin
     .from('tenants')
-    .update({ is_active: !isCanceled })
+    .update({
+      is_active: tenantFlags?.admin_access_suspended_at ? false : !isCanceled,
+    })
     .eq('id', tenantId);
 
   if (tenantError) {

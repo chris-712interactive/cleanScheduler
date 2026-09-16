@@ -32,6 +32,8 @@ async function fetchTenants() {
       name,
       is_active,
       created_at,
+      admin_access_suspended_at,
+      connect_charges_frozen_at,
       tenant_billing_accounts (
         status,
         trial_ends_at,
@@ -110,6 +112,12 @@ export default async function AdminTenantsPage({ searchParams }: PageProps) {
                         <StatusPill tone={t.is_active ? 'brand' : 'neutral'}>
                           {t.is_active ? 'active' : 'inactive'}
                         </StatusPill>
+                        {t.admin_access_suspended_at ? (
+                          <StatusPill tone="danger">suspended</StatusPill>
+                        ) : null}
+                        {t.connect_charges_frozen_at ? (
+                          <StatusPill tone="warning">charges frozen</StatusPill>
+                        ) : null}
                         {planLabel ? <span className={styles.badge}>{planLabel}</span> : null}
                         {planPrice ? <span className={styles.badge}>${planPrice}/mo</span> : null}
                         {billing?.status ? (

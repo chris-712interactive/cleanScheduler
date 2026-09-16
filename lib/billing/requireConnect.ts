@@ -4,6 +4,10 @@ import {
   canUsePaidSubscriptionFeatures,
   type TenantBillingStatus,
 } from '@/lib/billing/tenantSubscriptionAccess';
+import {
+  CONNECT_CHARGES_FROZEN_MESSAGE,
+  isConnectChargesFrozen,
+} from '@/lib/admin/tenantRiskControls';
 
 export type TenantStripeConnectStatus = Database['public']['Enums']['tenant_stripe_connect_status'];
 
@@ -53,11 +57,21 @@ export type ConnectGateResult = ConnectGateOk | ConnectGateBlocked;
 /**
  * Pure gate used by {@link requireConnectForOnlinePayments} and unit tests.
  * Paid subscription is required before Connect charges (fraud control during trials).
+ * Platform admin freeze blocks charges even when Connect is complete.
  */
 export function evaluateConnectOnlinePaymentsGate(options: {
   billingStatus: TenantBillingStatus | null | undefined;
   connectStatus: TenantStripeConnectStatus;
+  connectChargesFrozen?: boolean;
 }): ConnectGateResult {
+  if (options.connectChargesFrozen) {
+    return {
+      ok: false,
+      status: options.connectStatus,
+      message: CONNECT_CHARGES_FROZEN_MESSAGE,
+    };
+  }
+
   if (!canUsePaidSubscriptionFeatures(options.billingStatus)) {
     return {
       ok: false,
@@ -80,18 +94,26 @@ export function evaluateConnectOnlinePaymentsGate(options: {
 /**
  * Card-on-file / Stripe Checkout flows require a paid platform subscription and a
  * fully onboarded Connect Express account. Free trials cannot create or charge via Connect.
+ * Admin freeze blocks Checkout even when Connect is otherwise complete.
  */
 export async function requireConnectForOnlinePayments(
   admin: Admin,
   tenantId: string,
 ): Promise<ConnectGateResult> {
-  const [billingRes, status] = await Promise.all([
+  const [billingRes, tenantRes] = await Promise.all([
     admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
-    getTenantStripeConnectStatus(admin, tenantId),
+    admin
+      .from('tenants')
+      .select('stripe_connect_status, connect_charges_frozen_at')
+      .eq('id', tenantId)
+      .maybeSingle(),
   ]);
+
+  const status = tenantRes.data?.stripe_connect_status ?? 'not_started';
 
   return evaluateConnectOnlinePaymentsGate({
     billingStatus: billingRes.data?.status,
     connectStatus: status,
+    connectChargesFrozen: isConnectChargesFrozen(tenantRes.data),
   });
 }

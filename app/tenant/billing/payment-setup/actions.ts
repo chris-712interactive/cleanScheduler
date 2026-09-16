@@ -13,6 +13,10 @@ import {
 } from '@/lib/billing/stripeConnectServer';
 import { STRIPE_CONNECT_REQUIRES_PAID_SUBSCRIPTION_MESSAGE } from '@/lib/billing/requireConnect';
 import { canAccessStripeConnect } from '@/lib/billing/tenantSubscriptionAccess';
+import {
+  CONNECT_CHARGES_FROZEN_MESSAGE,
+  isConnectChargesFrozen,
+} from '@/lib/admin/tenantRiskControls';
 
 function paymentSetupPath(): string {
   return `/billing/payment-setup`;
@@ -20,11 +24,14 @@ function paymentSetupPath(): string {
 
 async function assertPaidSubscriptionForConnect(tenantId: string): Promise<void> {
   const admin = createAdminClient();
-  const { data: billing } = await admin
-    .from('tenant_billing_accounts')
-    .select('status')
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
+  const [{ data: billing }, { data: tenant }] = await Promise.all([
+    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+    admin.from('tenants').select('connect_charges_frozen_at').eq('id', tenantId).maybeSingle(),
+  ]);
+
+  if (isConnectChargesFrozen(tenant)) {
+    redirect(`${paymentSetupPath()}?error=${encodeURIComponent(CONNECT_CHARGES_FROZEN_MESSAGE)}`);
+  }
 
   if (!canAccessStripeConnect(billing?.status)) {
     redirect(
