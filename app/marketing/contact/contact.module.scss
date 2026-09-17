@@ -4,6 +4,15 @@
 
 .form {
   margin-top: var(--space-2);
+  position: relative;
+}
+
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }
 
 .field {

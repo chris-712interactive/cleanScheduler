@@ -27,7 +27,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 export default async function MarketingContactPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const sent = firstParam(sp.sent) === '1';
-  const err = firstParam(sp.error) === '1';
+  const errorCode = firstParam(sp.error);
 
   return (
     <>
@@ -43,14 +43,28 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
               Thanks — we received your message and will follow up by email.
             </p>
           ) : null}
-          {err ? (
+          {errorCode ? (
             <p className={styles.bannerErr} role="alert">
-              Please fill in name, email, and a short message, then try again.
+              {errorCode === 'rate'
+                ? 'Too many messages from this network. Please try again later.'
+                : 'Please fill in name, email, and a short message, then try again.'}
             </p>
           ) : null}
 
           <Card title="Send a message">
             <form action={submitMarketingInquiryAction} className={styles.form}>
+              <div className={styles.honeypot} aria-hidden="true">
+                <label>
+                  Website
+                  <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    defaultValue=""
+                  />
+                </label>
+              </div>
               <Stack gap={4} as="div">
                 <label className={styles.field}>
                   <span>Name</span>
@@ -60,6 +74,7 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
                     required
                     className={styles.input}
                     autoComplete="name"
+                    maxLength={200}
                   />
                 </label>
                 <label className={styles.field}>
@@ -70,6 +85,7 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
                     required
                     className={styles.input}
                     autoComplete="email"
+                    maxLength={320}
                   />
                 </label>
                 <label className={styles.field}>
@@ -79,11 +95,18 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
                     type="text"
                     className={styles.input}
                     autoComplete="organization"
+                    maxLength={200}
                   />
                 </label>
                 <label className={styles.field}>
                   <span>Message</span>
-                  <textarea name="message" required className={styles.textarea} rows={5} />
+                  <textarea
+                    name="message"
+                    required
+                    className={styles.textarea}
+                    rows={5}
+                    maxLength={5000}
+                  />
                 </label>
                 <Button type="submit" variant="primary">
                   Submit
