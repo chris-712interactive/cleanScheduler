@@ -6,13 +6,15 @@ Platform admins can respond to Connect fraud without waiting for Stripe Dashboar
 
 ## Capabilities
 
-| Control                    | Where                           | Effect                                                                                                                                   |
-| -------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Suspend portal access**  | Admin → Tenants → tenant detail | Sets `tenants.admin_access_suspended_at`; members hit `/access-denied?reason=workspace_suspended`. Platform admins can still masquerade. |
-| **Freeze Connect charges** | Same                            | Sets `tenants.connect_charges_frozen_at`; `requireConnectForOnlinePayments` blocks all Connect Checkout even if Connect is `complete`.   |
-| **Fraud alerts inbox**     | Admin → Fraud alerts (`/fraud`) | Velocity blocks, disputes (30d), and recent suspend/freeze audit events.                                                                 |
-| **Connect strip**          | Tenant detail risk card         | Connect `acct_…`, status, charges/payouts, dispute + velocity counts.                                                                    |
-| **Tenant search**          | Admin → Tenants                 | Search by Connect `acct_…`, platform `cus_`/`sub_`, tenant UUID, slug, or name.                                                          |
+| Control                    | Where                             | Effect                                                                                                                                   |
+| -------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Suspend portal access**  | Admin → Tenants → tenant detail   | Sets `tenants.admin_access_suspended_at`; members hit `/access-denied?reason=workspace_suspended`. Platform admins can still masquerade. |
+| **Freeze Connect charges** | Same                              | Sets `tenants.connect_charges_frozen_at`; `requireConnectForOnlinePayments` blocks all Connect Checkout even if Connect is `complete`.   |
+| **Block signup email**     | Tenant risk card or Signup blocks | Adds email to `platform_signup_email_blocks` (no tenant FK). Blocks `/start-trial` even after purge.                                     |
+| **Fraud alerts inbox**     | Admin → Fraud alerts (`/fraud`)   | Velocity blocks, disputes (30d), and recent suspend/freeze audit events.                                                                 |
+| **Signup email blocks**    | Admin → Signup blocks             | List / add / remove platform-wide signup bans.                                                                                           |
+| **Connect strip**          | Tenant detail risk card           | Connect `acct_…`, status, charges/payouts, dispute + velocity counts.                                                                    |
+| **Tenant search**          | Admin → Tenants                   | Search by Connect `acct_…`, platform `cus_`/`sub_`, tenant UUID, slug, or name.                                                          |
 
 ## Schema
 
@@ -21,12 +23,18 @@ Migration `0089_admin_tenant_fraud_controls.sql`:
 - `tenants.admin_access_suspended_at` / `admin_access_suspended_reason`
 - `tenants.connect_charges_frozen_at` / `connect_charges_frozen_reason`
 
+Migration `0090_platform_signup_email_blocks.sql`:
+
+- `platform_signup_email_blocks` — normalized email, reason, source (`manual` / `admin_tenant` / `fraud`), optional non-FK provenance (`source_tenant_id` / `source_tenant_slug`)
+- Enforced in `createTenantAndOwner` against owner email and company email
+
 Billing webhooks (`syncTenantPlatformSubscription`) will not clear admin suspension or re-activate `is_active` while suspended.
 
 ## Audit actions
 
 - `tenant.admin_access_suspended` / `tenant.admin_access_unsuspended`
 - `connect.charges_frozen` / `connect.charges_unfrozen`
+- `signup.email_blocked` / `signup.email_unblocked`
 - (existing) `connect.velocity_blocked`
 - **Account creation (IP / UA fingerprint):**
   - `account.tenant_owner_created` — self-serve trial signup (`/start-trial`)
@@ -50,11 +58,12 @@ Search helper: `lib/admin/searchAdminTenants.ts`.
 ## Key files
 
 - `lib/admin/tenantRiskControls.ts`, `lib/admin/tenantRiskActions.ts`
+- `lib/admin/platformSignupEmailBlocks.ts`, `lib/admin/signupEmailBlockActions.ts`
 - `lib/admin/loadAdminFraudAlerts.ts`, `lib/admin/searchAdminTenants.ts`
 - `lib/audit/accountCreationAudit.ts`, `lib/audit/requestFingerprint.ts`
 - `app/admin/tenants/AdminTenantRiskPanel.tsx`
-- `app/admin/fraud/page.tsx`
-- Enforcement: `lib/auth/tenantAccess.ts`, `lib/billing/requireConnect.ts`
+- `app/admin/fraud/page.tsx`, `app/admin/fraud/signup-blocks/page.tsx`
+- Enforcement: `lib/auth/tenantAccess.ts`, `lib/billing/requireConnect.ts`, `app/marketing/onboarding/actions.ts`
 
 ## Phase 2 (not yet)
 

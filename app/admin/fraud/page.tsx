@@ -51,6 +51,11 @@ export default async function AdminFraudAlertsPage() {
       />
 
       <Container size="lg">
+        <p className={styles.backWrap}>
+          <Link href="/fraud/signup-blocks" className={styles.backLink}>
+            Manage signup email blocks →
+          </Link>
+        </p>
         {alerts.length === 0 ? (
           <EmptyState
             title="No recent alerts"

@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'SEO', href: '/seo', icon: 'seo' },
   { label: 'Tenants', href: '/tenants', icon: 'tenants' },
   { label: 'Fraud alerts', href: '/fraud', icon: 'audit' },
+  { label: 'Signup blocks', href: '/fraud/signup-blocks', icon: 'audit' },
   { label: 'Accounting', href: '/accounting', icon: 'accounting' },
   { label: 'Customer Service', href: '/support', icon: 'messages' },
   { label: 'Audit log', href: '/audit', icon: 'audit' },

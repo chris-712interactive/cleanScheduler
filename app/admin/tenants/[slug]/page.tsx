@@ -29,6 +29,7 @@ import {
 import { AdminDeleteTenantPanel } from '../AdminDeleteTenantPanel';
 import { AdminTenantRiskPanel } from '../AdminTenantRiskPanel';
 import { CONNECT_VELOCITY_BLOCKED_AUDIT_ACTION } from '@/lib/billing/connectPaymentVelocity';
+import { isSignupEmailBlocked } from '@/lib/admin/platformSignupEmailBlocks';
 import styles from '../tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -134,8 +135,12 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
   const billing = normalizeOne(tenant.tenant_billing_accounts);
   const onboarding = normalizeOne(tenant.tenant_onboarding_profiles);
   const connectAcct = normalizeOne(tenant.tenant_stripe_connect_accounts);
+  const ownerEmail =
+    typeof onboarding?.owner_email === 'string' ? onboarding.owner_email.trim() : '';
+  const ownerEmailBlocked = ownerEmail ? await isSignupEmailBlocked(admin, ownerEmail) : false;
   const purgeStatus = getTenantPurgeStatus(billing);
   const canAdminPurge = isCanceledForAdminPurge(billing);
+  const emailBlockFlash = firstParam(sp.emailBlock);
 
   const planRaw = billing?.platform_plan;
   const planLabel =
@@ -184,11 +189,22 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
                       : 'Risk controls updated.'}
             </p>
           ) : null}
+          {emailBlockFlash ? (
+            <p className={styles.bannerSuccess} role="status">
+              {emailBlockFlash === 'blocked'
+                ? 'Owner email blocked from future workspace signups.'
+                : emailBlockFlash === 'unblocked'
+                  ? 'Owner email removed from the signup block list.'
+                  : 'Signup email block updated.'}
+            </p>
+          ) : null}
 
           <Card title="Fraud & risk controls">
             <AdminTenantRiskPanel
               tenantId={tenant.id}
               tenantSlug={tenant.slug}
+              ownerEmail={ownerEmail || null}
+              ownerEmailBlocked={ownerEmailBlocked}
               adminAccessSuspendedAt={tenant.admin_access_suspended_at}
               adminAccessSuspendedReason={tenant.admin_access_suspended_reason}
               connectChargesFrozenAt={tenant.connect_charges_frozen_at}

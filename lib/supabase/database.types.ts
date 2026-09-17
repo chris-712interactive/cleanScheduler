@@ -717,6 +717,39 @@ export type Database = {
           },
         ];
       };
+      platform_signup_email_blocks: {
+        Row: {
+          id: string;
+          email_normalized: string;
+          reason: string | null;
+          source: string;
+          source_tenant_id: string | null;
+          source_tenant_slug: string | null;
+          created_by_user_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email_normalized: string;
+          reason?: string | null;
+          source?: string;
+          source_tenant_id?: string | null;
+          source_tenant_slug?: string | null;
+          created_by_user_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email_normalized?: string;
+          reason?: string | null;
+          source?: string;
+          source_tenant_id?: string | null;
+          source_tenant_slug?: string | null;
+          created_by_user_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       platform_seo_task_completions: {
         Row: {
           task_id: string;
