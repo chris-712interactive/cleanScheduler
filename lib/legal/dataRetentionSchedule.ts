@@ -100,11 +100,11 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
   },
   {
     category: 'Founder admin audit and masquerade',
-    examples: 'audit_log_entries, masquerade_sessions',
-    retentionPeriod: '3 years from event timestamp',
+    examples: 'audit_log_entries, masquerade_sessions, platform_signup_email_blocks',
+    retentionPeriod: '3 years from event timestamp (blocks until manually removed)',
     disposition: 'archive',
     notes:
-      'Supports security investigations and access reviews. Account-creation entries may include client IP and user-agent for fraud correlation.',
+      'Supports security investigations and access reviews. Account-creation entries may include client IP and user-agent for fraud correlation. Signup email blocks are independent of tenants and survive workspace purge.',
   },
   {
     category: 'Application and hosting logs',

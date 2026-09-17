@@ -9,6 +9,10 @@ import { shouldAutoConfirmTrialOwnerEmail } from '@/lib/auth/emailConfirmMode';
 import { publicEnv } from '@/lib/env';
 import { maybeSendTrialWelcomeEmail } from '@/lib/email/trialWelcomeEmail';
 import {
+  isAnySignupEmailBlocked,
+  SIGNUP_EMAIL_BLOCKED_MESSAGE,
+} from '@/lib/admin/platformSignupEmailBlocks';
+import {
   ACCOUNT_TENANT_OWNER_CREATED,
   recordAccountCreationAudit,
 } from '@/lib/audit/accountCreationAudit';
@@ -107,6 +111,10 @@ export async function createTenantAndOwner(
   }
 
   const admin = createAdminClient();
+  if (await isAnySignupEmailBlocked(admin, [email, companyEmail])) {
+    return { error: SIGNUP_EMAIL_BLOCKED_MESSAGE };
+  }
+
   const slugAvailable = await ensureSlugAvailable(admin, slug);
   if (!slugAvailable) {
     return { error: 'That workspace slug is unavailable. Try another.' };

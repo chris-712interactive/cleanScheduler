@@ -10,11 +10,18 @@ import {
   unsuspendTenantAccessAction,
   type AdminTenantRiskFormState,
 } from '@/lib/admin/tenantRiskActions';
+import {
+  blockSignupEmailAction,
+  unblockSignupEmailAction,
+  type SignupEmailBlockFormState,
+} from '@/lib/admin/signupEmailBlockActions';
 import styles from './tenants.module.scss';
 
 export interface AdminTenantRiskPanelProps {
   tenantId: string;
   tenantSlug: string;
+  ownerEmail: string | null;
+  ownerEmailBlocked: boolean;
   adminAccessSuspendedAt: string | null;
   adminAccessSuspendedReason: string | null;
   connectChargesFrozenAt: string | null;
@@ -28,6 +35,7 @@ export interface AdminTenantRiskPanelProps {
 }
 
 const initialState: AdminTenantRiskFormState = {};
+const emailBlockInitial: SignupEmailBlockFormState = {};
 
 export function AdminTenantRiskPanel(props: AdminTenantRiskPanelProps) {
   const [suspendState, suspendAction, suspendPending] = useActionState(
@@ -46,11 +54,25 @@ export function AdminTenantRiskPanel(props: AdminTenantRiskPanelProps) {
     unfreezeTenantConnectChargesAction,
     initialState,
   );
+  const [blockEmailState, blockEmailAction, blockEmailPending] = useActionState(
+    blockSignupEmailAction,
+    emailBlockInitial,
+  );
+  const [unblockEmailState, unblockEmailAction, unblockEmailPending] = useActionState(
+    unblockSignupEmailAction,
+    emailBlockInitial,
+  );
 
   const accessSuspended = Boolean(props.adminAccessSuspendedAt);
   const connectFrozen = Boolean(props.connectChargesFrozenAt);
+  const ownerEmail = props.ownerEmail?.trim() || null;
   const formError =
-    suspendState.error || unsuspendState.error || freezeState.error || unfreezeState.error;
+    suspendState.error ||
+    unsuspendState.error ||
+    freezeState.error ||
+    unfreezeState.error ||
+    blockEmailState.error ||
+    unblockEmailState.error;
 
   return (
     <div className={styles.riskPanel}>
@@ -82,6 +104,14 @@ export function AdminTenantRiskPanel(props: AdminTenantRiskPanelProps) {
               Since {new Date(props.connectChargesFrozenAt).toLocaleString()}
             </p>
           ) : null}
+        </div>
+        <div>
+          <p className={styles.riskLabel}>Owner signup email</p>
+          <StatusPill tone={props.ownerEmailBlocked ? 'danger' : 'success'}>
+            {props.ownerEmailBlocked ? 'Blocked' : 'Allowed'}
+          </StatusPill>
+          {ownerEmail ? <p className={styles.hintMuted}>{ownerEmail}</p> : null}
+          <p className={styles.hintMuted}>Survives tenant purge</p>
         </div>
       </div>
 
@@ -173,6 +203,43 @@ export function AdminTenantRiskPanel(props: AdminTenantRiskPanelProps) {
               {freezePending ? 'Freezing…' : 'Freeze Connect charges'}
             </Button>
           </form>
+        )}
+
+        {ownerEmail ? (
+          props.ownerEmailBlocked ? (
+            <form action={unblockEmailAction}>
+              <input type="hidden" name="return_path" value={`/tenants/${props.tenantSlug}`} />
+              <input type="hidden" name="email" value={ownerEmail} />
+              <Button type="submit" variant="secondary" disabled={unblockEmailPending}>
+                {unblockEmailPending ? 'Unblocking…' : 'Unblock owner email for signup'}
+              </Button>
+            </form>
+          ) : (
+            <form action={blockEmailAction} className={styles.riskForm}>
+              <input type="hidden" name="return_path" value={`/tenants/${props.tenantSlug}`} />
+              <input type="hidden" name="email" value={ownerEmail} />
+              <input type="hidden" name="tenant_id" value={props.tenantId} />
+              <input type="hidden" name="tenant_slug" value={props.tenantSlug} />
+              <input type="hidden" name="source" value="admin_tenant" />
+              <label className={styles.riskReasonLabel} htmlFor="block-owner-reason">
+                Block owner email from future signups
+              </label>
+              <input
+                id="block-owner-reason"
+                name="reason"
+                className={styles.riskReasonInput}
+                placeholder="e.g. Fraud — ban before purge"
+                maxLength={500}
+              />
+              <Button type="submit" variant="danger" disabled={blockEmailPending}>
+                {blockEmailPending ? 'Blocking…' : 'Block owner email'}
+              </Button>
+            </form>
+          )
+        ) : (
+          <p className={styles.hintMuted}>
+            No owner email on file — add a block under Fraud → Signup email blocks.
+          </p>
         )}
       </div>
     </div>
