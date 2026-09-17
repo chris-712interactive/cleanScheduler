@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { updateMarketingInquiryStatusAction } from '@/lib/admin/inquiryActions';
+import {
+  updateMarketingInquiryStatusAction,
+  deleteMarketingInquiryAction,
+} from '@/lib/admin/inquiryActions';
 import styles from '../../tenants/tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -86,6 +89,16 @@ export default async function AdminInquiryDetailPage({ params, searchParams }: P
             </label>
             <Button type="submit" variant="primary">
               Save
+            </Button>
+          </form>
+        </Card>
+
+        <Card title="Delete inquiry">
+          <p className={styles.empty}>Permanently remove this message from the inquiries list.</p>
+          <form action={deleteMarketingInquiryAction} className={styles.backWrap}>
+            <input type="hidden" name="id" value={row.id} />
+            <Button type="submit" variant="danger">
+              Delete inquiry
             </Button>
           </form>
         </Card>
