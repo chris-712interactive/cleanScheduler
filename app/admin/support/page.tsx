@@ -1,6 +1,7 @@
 import { PageHeader } from '@/components/portal/PageHeader';
 import { createAdminClient } from '@/lib/supabase/server';
 import { loadPlatformSupportInbox } from '@/lib/admin/loadPlatformSupportInbox';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import { loadPlatformSupportTicketDetail } from '@/lib/admin/loadPlatformSupportTicketDetail';
 import type { PlatformSupportInboxFilter } from '@/lib/admin/platformSupportLabels';
 import { AdminSupportTicketList } from './AdminSupportTicketList';
@@ -41,6 +42,7 @@ function errorMessage(code: string | undefined): string | null {
 }
 
 export default async function AdminSupportPage({ searchParams }: PageProps) {
+  await requirePlatformAdmin('/support');
   const sp = await searchParams;
   const filter = parseFilter(firstParam(sp.filter));
   const ticketIdRaw = firstParam(sp.ticket)?.trim() ?? null;

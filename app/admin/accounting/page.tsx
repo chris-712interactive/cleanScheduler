@@ -9,6 +9,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { formatPlatformMrrLabel, getPlatformAccountingSummary } from '@/lib/admin/platformStats';
 import { platformAccountingSummaryToCsv } from '@/lib/admin/platformAccountingCsv';
 import { formatUsdFromCents } from '@/lib/format/money';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import styles from '../tenants/tenants.module.scss';
 import metricStyles from '../admin-dashboard.module.scss';
 
@@ -24,6 +25,7 @@ interface PageProps {
 }
 
 export default async function AdminAccountingPage({ searchParams }: PageProps) {
+  await requirePlatformAdmin('/accounting');
   const sp = await searchParams;
   const summary = await getPlatformAccountingSummary();
 

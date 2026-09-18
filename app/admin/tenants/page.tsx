@@ -20,6 +20,7 @@ import {
   searchAdminTenantIds,
 } from '@/lib/admin/searchAdminTenants';
 import styles from './tenants.module.scss';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -249,6 +250,7 @@ function firstParam(value: string | string[] | undefined): string | null {
 }
 
 export default async function AdminTenantsPage({ searchParams }: PageProps) {
+  await requirePlatformAdmin('/tenants');
   const sp = await searchParams;
   const searchQuery = parseAdminTenantSearchQuery(firstParam(sp.q));
   const purgedSlug = firstParam(sp.purged)?.trim().toLowerCase() || null;

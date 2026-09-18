@@ -1,7 +1,7 @@
 # Platform outreach (founder cold email)
 
 **Status:** Implemented (v1 + signature polish + US heat map)  
-**Audience:** Platform admins only (`admin.<apex>`)  
+**Audience:** Platform admins and sales closers (`admin.<apex>`)  
 **Related:** Tenant marketing campaigns remain separate — see `docs/product/email-campaigns.md`.
 
 ## Purpose

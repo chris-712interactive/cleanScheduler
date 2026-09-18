@@ -6,6 +6,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createAdminClient } from '@/lib/supabase/server';
 import { purgeAllMarketingInquiriesAction } from '@/lib/admin/inquiryActions';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import styles from '../tenants/tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 }
 
 export default async function AdminInquiriesPage({ searchParams }: PageProps) {
+  await requirePlatformAdmin('/inquiries');
   const sp = await searchParams;
   const purged = firstParam(sp.purged);
   const err = firstParam(sp.error);

@@ -34,6 +34,11 @@ export const PLATFORM_ROLE_MATRIX: { role: string; capabilities: string }[] = [
       'Founder admin portal, tenant support, masquerade into tenant workspaces (logged), audit log access.',
   },
   {
+    role: 'sales',
+    capabilities:
+      'Admin portal limited to outreach campaigns, sales pipeline (leads, demos, trial follow-up), and own settings. No masquerade, fraud, accounting, or tenant purge.',
+  },
+  {
     role: 'customer',
     capabilities: 'Customer portal access scoped to linked service providers.',
   },

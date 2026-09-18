@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import {
   updateMarketingInquiryStatusAction,
   deleteMarketingInquiryAction,
@@ -26,6 +27,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 export default async function AdminInquiryDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  await requirePlatformAdmin(`/inquiries/${id}`);
   const sp = await searchParams;
   const err = firstParam(sp.error);
 

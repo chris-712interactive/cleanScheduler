@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 
-export type AppRole = 'super_admin' | 'admin' | 'employee' | 'customer';
+export type AppRole = 'super_admin' | 'admin' | 'sales' | 'employee' | 'customer';
 export type TenantRole = 'owner' | 'admin' | 'employee' | 'viewer';
 
 export interface AppClaims {
@@ -22,7 +22,13 @@ function asString(value: unknown): string | null {
 function parseAppRole(value: unknown): AppRole | null {
   const role = asString(value);
   if (!role) return null;
-  if (role === 'super_admin' || role === 'admin' || role === 'employee' || role === 'customer') {
+  if (
+    role === 'super_admin' ||
+    role === 'admin' ||
+    role === 'sales' ||
+    role === 'employee' ||
+    role === 'customer'
+  ) {
     return role;
   }
   return null;

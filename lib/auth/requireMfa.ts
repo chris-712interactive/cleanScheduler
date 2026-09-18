@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getMfaStatus } from '@/lib/auth/mfa';
 import { hasMinimumTenantRole } from '@/lib/auth/tenantRoleAccess';
+import { isPlatformStaffRole } from '@/lib/auth/platformRoles';
 import type { AppRole, TenantRole } from '@/lib/auth/types';
-
-const PRIVILEGED_APP_ROLES: AppRole[] = ['super_admin', 'admin'];
 
 /**
  * Returns an error message when owner/admin lacks MFA enrollment or AAL2.
@@ -44,7 +43,7 @@ export async function requireMfaForPrivilegedTenantRole(
 
 /** Redirects platform admins without MFA enrollment or AAL2. */
 export async function requireMfaForPlatformAdmin(appRole: AppRole | null): Promise<void> {
-  if (!appRole || !PRIVILEGED_APP_ROLES.includes(appRole)) {
+  if (!isPlatformStaffRole(appRole)) {
     return;
   }
 

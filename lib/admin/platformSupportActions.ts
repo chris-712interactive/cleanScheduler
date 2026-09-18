@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getAuthContext } from '@/lib/auth/session';
-import { requirePortalAccess } from '@/lib/auth/portalAccess';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isPlatformSupportTicketOpen } from '@/lib/admin/platformSupportLabels';
 
@@ -27,7 +27,7 @@ function revalidateSupportPaths(tenantSlug?: string) {
 }
 
 export async function replyToPlatformSupportTicketAction(formData: FormData): Promise<void> {
-  await requirePortalAccess('admin', '/support');
+  await requirePlatformAdmin('/support');
 
   const ticketId = String(formData.get('ticket_id') ?? '').trim();
   const body = String(formData.get('body') ?? '').trim();
@@ -87,7 +87,7 @@ export async function replyToPlatformSupportTicketAction(formData: FormData): Pr
 }
 
 export async function updatePlatformSupportTicketStatusAction(formData: FormData): Promise<void> {
-  await requirePortalAccess('admin', '/support');
+  await requirePlatformAdmin('/support');
 
   const ticketId = String(formData.get('ticket_id') ?? '').trim();
   const status = String(formData.get('status') ?? '').trim();
@@ -139,7 +139,7 @@ export async function updatePlatformSupportTicketStatusAction(formData: FormData
 }
 
 export async function assignPlatformSupportTicketAction(formData: FormData): Promise<void> {
-  await requirePortalAccess('admin', '/support');
+  await requirePlatformAdmin('/support');
 
   const ticketId = String(formData.get('ticket_id') ?? '').trim();
   const returnTo = String(formData.get('return_to') ?? '/support').trim() || '/support';

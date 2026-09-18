@@ -98,6 +98,18 @@ describe('resolvePostLoginDestination', () => {
     expect(result.ctaLabel).toBe('Open admin');
   });
 
+  it('routes sales closers without membership to admin', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'sales',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: '/',
+      currentOrigin: 'http://lvh.me:3000',
+    });
+    expect(result.kind).toBe('admin');
+    expect(result.url).toBe('http://admin.lvh.me:3000/');
+  });
+
   it('prefers current_tenant_id when multiple memberships exist', () => {
     const result = resolvePostLoginDestination({
       appRole: 'admin',

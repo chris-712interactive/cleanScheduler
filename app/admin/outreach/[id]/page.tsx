@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { addOutreachRecipientToPipelineAction } from '@/lib/admin/salesActions';
 import {
   cancelOutreachCampaignAction,
   deleteOutreachCampaignAction,
@@ -498,6 +499,13 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
                               >
                                 {isPreview ? 'Viewing' : 'Preview'}
                               </Button>
+                              <form action={addOutreachRecipientToPipelineAction}>
+                                <input type="hidden" name="recipientId" value={row.id} />
+                                <input type="hidden" name="campaignId" value={campaign.id} />
+                                <Button type="submit" variant="secondary" size="sm">
+                                  Pipeline
+                                </Button>
+                              </form>
                               {canEditDraft ? (
                                 <form action={deleteOutreachRecipientAction}>
                                   <input type="hidden" name="recipientId" value={row.id} />

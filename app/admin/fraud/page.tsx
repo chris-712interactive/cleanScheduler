@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createAdminClient } from '@/lib/supabase/server';
 import { loadAdminFraudAlerts, type FraudAlertKind } from '@/lib/admin/loadAdminFraudAlerts';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import styles from '../tenants/tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,7 @@ function labelForKind(kind: FraudAlertKind): string {
 }
 
 export default async function AdminFraudAlertsPage() {
+  await requirePlatformAdmin('/fraud');
   const admin = createAdminClient();
   const alerts = await loadAdminFraudAlerts(admin, { limit: 100 });
 

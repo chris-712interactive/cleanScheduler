@@ -7,7 +7,7 @@
 
 Review access for:
 
-- Platform admin accounts (`super_admin`, `admin` in Supabase Auth)
+- Platform admin accounts (`super_admin`, `admin`, `sales` in Supabase Auth)
 - Open masquerade sessions (`masquerade_sessions` where `ended_at` is null)
 - GitHub, Vercel, Supabase, Stripe, Plaid dashboard membership
 - Production environment variables and service role key custody
@@ -17,7 +17,7 @@ Review access for:
 
 1. Open founder admin audit log: `admin.<domain>/audit`
 2. Export or note last 90 days of `masquerade.start` / `masquerade.end` events
-3. List all Supabase users with `app_role` in (`super_admin`, `admin`)
+3. List all Supabase users with `app_role` in (`super_admin`, `admin`, `sales`)
 4. Verify each platform admin still requires access; remove stale accounts
 5. Confirm all infrastructure dashboard users have MFA enabled
 6. Check for masquerade sessions older than 60 minutes still open (should auto-expire)

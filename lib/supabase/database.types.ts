@@ -4691,10 +4691,163 @@ export type Database = {
         };
         Relationships: [];
       };
+      platform_sales_leads: {
+        Row: {
+          id: string;
+          business_name: string;
+          owner_name: string | null;
+          email: string | null;
+          email_normalized: string | null;
+          phone: string | null;
+          website: string | null;
+          city: string | null;
+          county: string | null;
+          state: string | null;
+          source: string;
+          stage: string;
+          assigned_to_user_id: string | null;
+          outreach_recipient_id: string | null;
+          tenant_id: string | null;
+          last_contacted_at: string | null;
+          demo_at: string | null;
+          lost_reason: string | null;
+          notes: string | null;
+          created_by_user_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_name: string;
+          owner_name?: string | null;
+          email?: string | null;
+          email_normalized?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          city?: string | null;
+          county?: string | null;
+          state?: string | null;
+          source?: string;
+          stage?: string;
+          assigned_to_user_id?: string | null;
+          outreach_recipient_id?: string | null;
+          tenant_id?: string | null;
+          last_contacted_at?: string | null;
+          demo_at?: string | null;
+          lost_reason?: string | null;
+          notes?: string | null;
+          created_by_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_name?: string;
+          owner_name?: string | null;
+          email?: string | null;
+          email_normalized?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          city?: string | null;
+          county?: string | null;
+          state?: string | null;
+          source?: string;
+          stage?: string;
+          assigned_to_user_id?: string | null;
+          outreach_recipient_id?: string | null;
+          tenant_id?: string | null;
+          last_contacted_at?: string | null;
+          demo_at?: string | null;
+          lost_reason?: string | null;
+          notes?: string | null;
+          created_by_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      platform_sales_activities: {
+        Row: {
+          id: string;
+          lead_id: string;
+          actor_user_id: string | null;
+          kind: string;
+          title: string;
+          body: string | null;
+          demo_at: string | null;
+          demo_outcome: string | null;
+          occurred_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          lead_id: string;
+          actor_user_id?: string | null;
+          kind: string;
+          title: string;
+          body?: string | null;
+          demo_at?: string | null;
+          demo_outcome?: string | null;
+          occurred_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          lead_id?: string;
+          actor_user_id?: string | null;
+          kind?: string;
+          title?: string;
+          body?: string | null;
+          demo_at?: string | null;
+          demo_outcome?: string | null;
+          occurred_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      platform_sales_tasks: {
+        Row: {
+          id: string;
+          lead_id: string;
+          assigned_to_user_id: string | null;
+          kind: string;
+          title: string;
+          due_at: string;
+          completed_at: string | null;
+          created_from: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          lead_id: string;
+          assigned_to_user_id?: string | null;
+          kind?: string;
+          title: string;
+          due_at: string;
+          completed_at?: string | null;
+          created_from?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          lead_id?: string;
+          assigned_to_user_id?: string | null;
+          kind?: string;
+          title?: string;
+          due_at?: string;
+          completed_at?: string | null;
+          created_from?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       user_profiles: {
         Row: {
           user_id: string;
-          app_role: 'super_admin' | 'admin' | 'employee' | 'customer';
+          app_role: 'super_admin' | 'admin' | 'sales' | 'employee' | 'customer';
           display_name: string | null;
           first_name: string | null;
           last_name: string | null;
@@ -4704,7 +4857,7 @@ export type Database = {
         };
         Insert: {
           user_id: string;
-          app_role?: 'super_admin' | 'admin' | 'employee' | 'customer';
+          app_role?: 'super_admin' | 'admin' | 'sales' | 'employee' | 'customer';
           display_name?: string | null;
           first_name?: string | null;
           last_name?: string | null;
@@ -4714,7 +4867,7 @@ export type Database = {
         };
         Update: {
           user_id?: string;
-          app_role?: 'super_admin' | 'admin' | 'employee' | 'customer';
+          app_role?: 'super_admin' | 'admin' | 'sales' | 'employee' | 'customer';
           display_name?: string | null;
           first_name?: string | null;
           last_name?: string | null;
@@ -4781,7 +4934,7 @@ export type Database = {
     };
     Enums: {
       bank_link_status: 'active' | 'login_required' | 'disconnected';
-      app_role: 'super_admin' | 'admin' | 'employee' | 'customer';
+      app_role: 'super_admin' | 'admin' | 'sales' | 'employee' | 'customer';
       tenant_role: 'owner' | 'admin' | 'employee' | 'viewer';
       tenant_billing_status: 'trialing' | 'active' | 'past_due' | 'canceled';
       platform_plan_tier: 'starter' | 'pro' | 'business';

@@ -3,11 +3,13 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { createAdminClient } from '@/lib/supabase/server';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import styles from '../tenants/tenants.module.scss';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminAuditLogPage() {
+  await requirePlatformAdmin('/audit');
   const admin = createAdminClient();
   const { data: rows, error } = await admin
     .from('audit_log_entries')

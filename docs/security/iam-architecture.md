@@ -4,13 +4,13 @@
 
 ## Identity types
 
-| Type           | Store                                    | Used for                           |
-| -------------- | ---------------------------------------- | ---------------------------------- |
-| Platform user  | Supabase Auth + `user_profiles.app_role` | Founder admin, cross-portal access |
-| Tenant member  | `tenant_memberships` + JWT `tenant_role` | Workspace operations portal        |
-| Customer user  | Supabase Auth + `customer_identities`    | Branded customer portal            |
-| Machine (API)  | `tenant_api_keys` (hashed)               | Tenant REST API (Pro plan)         |
-| Machine (cron) | `CRON_SECRET` env                        | Scheduled maintenance routes       |
+| Type           | Store                                    | Used for                                         |
+| -------------- | ---------------------------------------- | ------------------------------------------------ |
+| Platform user  | Supabase Auth + `user_profiles.app_role` | Founder admin, sales closer, cross-portal access |
+| Tenant member  | `tenant_memberships` + JWT `tenant_role` | Workspace operations portal                      |
+| Customer user  | Supabase Auth + `customer_identities`    | Branded customer portal                          |
+| Machine (API)  | `tenant_api_keys` (hashed)               | Tenant REST API (Pro plan)                       |
+| Machine (cron) | `CRON_SECRET` env                        | Scheduled maintenance routes                     |
 
 ## Authentication flow
 
@@ -29,7 +29,7 @@
 
 ## JWT claims (app_metadata)
 
-- `app_role` — platform role (`super_admin`, `admin`, `employee`, `customer`)
+- `app_role` — platform role (`super_admin`, `admin`, `sales`, `employee`, `customer`)
 - `tenant_role` — workspace role (`owner`, `admin`, `employee`, `viewer`)
 - `current_tenant_id` — active workspace context
 - `masquerade_target_tenant_id` — support masquerade target
@@ -43,6 +43,7 @@ Claims are synchronized via `lib/auth/syncUserAuthClaims.ts` on role changes.
 ## Privileged access
 
 - Platform admin: `admin.<domain>` portal, masquerade, audit log.
+- Platform sales: `admin.<domain>` portal limited to Outreach, Pipeline, and Settings. MFA required. No masquerade, tenant purge, fraud, or accounting.
 - Plaid/bank: owner/admin only, MFA required, Business+ plan.
 - Integrations: owner/admin for API key create/revoke (audited).
 
