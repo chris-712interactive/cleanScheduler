@@ -152,7 +152,7 @@ function homeForRole(input: ResolvePostLoginDestinationInput): PostLoginDestinat
     };
   }
 
-  if (input.appRole === 'super_admin' || input.appRole === 'admin') {
+  if (input.appRole === 'super_admin' || input.appRole === 'admin' || input.appRole === 'sales') {
     return {
       url: joinOriginPath(getPublicOrigin('admin'), '/'),
       kind: 'admin',

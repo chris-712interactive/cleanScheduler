@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requirePortalAccess } from '@/lib/auth/portalAccess';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import { getSeoTaskById } from '@/lib/admin/seoTasks';
 import { createAdminClient } from '@/lib/supabase/server';
 
@@ -10,7 +10,7 @@ function parseCompletedFlag(value: FormDataEntryValue | null): boolean {
 }
 
 export async function toggleSeoTaskAction(formData: FormData): Promise<void> {
-  const auth = await requirePortalAccess('admin', '/seo');
+  const auth = await requirePlatformAdmin('/seo');
   const taskId = String(formData.get('taskId') ?? '').trim();
   const completed = parseCompletedFlag(formData.get('completed'));
 

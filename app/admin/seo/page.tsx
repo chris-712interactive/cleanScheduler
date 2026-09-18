@@ -6,11 +6,13 @@ import { loadSeoTaskChecklist } from '@/lib/admin/seoTasks';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { createAdminClient } from '@/lib/supabase/server';
 import { SeoTaskChecklist } from './SeoTaskChecklist';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import styles from './seo.module.scss';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminSeoPage() {
+  await requirePlatformAdmin('/seo');
   const admin = createAdminClient();
   const checklist = await loadSeoTaskChecklist(admin);
   const publicOrigin = getPublicOrigin(null);

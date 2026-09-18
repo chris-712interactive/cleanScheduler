@@ -16,6 +16,7 @@ import {
   ACCOUNT_TENANT_OWNER_CREATED,
   recordAccountCreationAudit,
 } from '@/lib/audit/accountCreationAudit';
+import { upsertSalesLeadFromTrialSignup } from '@/lib/admin/salesLeadFromTrial';
 import { requestFingerprintFromHeaders } from '@/lib/audit/requestFingerprint';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
@@ -261,6 +262,16 @@ export async function createTenantAndOwner(
       team_size: teamSize || null,
       business_type: businessType || null,
     },
+  });
+
+  await upsertSalesLeadFromTrialSignup(admin, {
+    tenantId,
+    businessName,
+    ownerName: displayName,
+    email,
+    phone: ownerPhone || companyPhone || null,
+    website: companyWebsite || null,
+    serviceArea: serviceArea || null,
   });
 
   const requestOrigin = resolveRequestOrigin(requestHeaders);

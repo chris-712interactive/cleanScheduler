@@ -4,6 +4,7 @@ import { Container } from '@/components/layout/Container';
 import { Card } from '@/components/ui/Card';
 import { createAdminClient } from '@/lib/supabase/server';
 import { listSignupEmailBlocks } from '@/lib/admin/platformSignupEmailBlocks';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import { SignupEmailBlocksPanel } from './SignupEmailBlocksPanel';
 import styles from '../../tenants/tenants.module.scss';
 
@@ -14,6 +15,7 @@ export default async function AdminSignupEmailBlocksPage({
 }: {
   searchParams: Promise<{ emailBlock?: string }>;
 }) {
+  await requirePlatformAdmin('/fraud/signup-blocks');
   const params = await searchParams;
   const admin = createAdminClient();
   const blocks = await listSignupEmailBlocks(admin, { limit: 200 });

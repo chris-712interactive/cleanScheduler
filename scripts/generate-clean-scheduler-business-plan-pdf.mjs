@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates Clean Scheduler 5-Year Business & Growth Plan PDF.
+ * Generates Clean Scheduler sales partner briefing PDF.
  * Run: node scripts/generate-clean-scheduler-business-plan-pdf.mjs
  */
 
@@ -158,13 +158,13 @@ async function generatePdf() {
       width: CONTENT_WIDTH,
     });
     doc.moveDown(0.4);
-    doc.fontSize(20).text('5-Year Business & Growth Plan', { width: CONTENT_WIDTH });
+    doc.fontSize(20).text('Sales Partner Briefing', { width: CONTENT_WIDTH });
     doc.moveDown(1.2);
     doc
       .fillColor(COLORS.muted)
       .font('Helvetica')
       .fontSize(11)
-      .text('Multi-tenant operations platform for residential and commercial cleaning businesses', {
+      .text('Commission closer terms, product, and growth path — for a potential sales partner', {
         width: CONTENT_WIDTH,
         lineGap: 2,
       });
@@ -175,66 +175,135 @@ async function generatePdf() {
         width: CONTENT_WIDTH,
       },
     );
-    doc.text('Horizon: 2026 – 2030', { width: CONTENT_WIDTH });
+    doc.text('Audience: independent sales partner (1099)', { width: CONTENT_WIDTH });
 
     doc.addPage();
 
-    writeSection(doc, 'Executive Summary', [
-      'Clean Scheduler is a vertical SaaS platform purpose-built for residential and commercial cleaning companies. The product consolidates quoting, crew scheduling, invoicing, customer communication, payroll-ready reporting, and a branded customer portal into one workspace — replacing the patchwork of spreadsheets, group texts, and generic field-service tools that most cleaning operators use today.',
-      'The company operates a tiered subscription model (Starter $39/mo, Business $129/mo, Pro $299/mo) with a 7-day free trial. v1.x is live in production with core revenue workflows operational: quotes-to-schedule, recurring visits, Stripe Connect payments, month-end close, and growing differentiation through cleaning-specific features such as bank deposit reconciliation, proof-of-service photos, referral programs, and an integrated marketing website CMS.',
-      'This plan outlines a five-year path from early commercial traction to category leadership in cleaning-industry operations software, targeting $15M+ ARR by 2030 through focused vertical GTM, product depth competitors cannot easily replicate, and expansion into adjacent revenue streams (payments, SMS, and add-on seats).',
+    writeSection(doc, 'The ask', [
+      'Own pipeline, demo, and close for residential and commercial cleaning companies. The product is live; the constraint is selling it. The founder owns product and every customer setup call. You are paid only on accounts you close. Written terms before the first demo. 90-day trial: continue if you close at least 4 paying Business logos (or cash equivalent).',
     ]);
 
-    writeSection(doc, 'Company & Product Overview', [
-      'Mission: Give every cleaning business — from solo operators to multi-location franchises — one operational system that is lean to run and professional for customers.',
-      'Product architecture: Single Next.js deployment serving marketing site, tenant operations portal, unified customer portal, and founder admin — multi-tenancy enforced via Postgres Row-Level Security on Supabase.',
+    writeSection(doc, 'What you sell', [
+      'Clean Scheduler is the operating console for cleaning businesses: quotes, crew schedule, invoices, customer portal, and bookkeeper month-end in one place. It wins against Jobber / Housecall Pro on cleaning-specific depth and flat pricing with no per-job fees. Buyer is the owner or office manager at a 2–30 person cleaning company.',
+      'Lead SKU is Business annual ($1,236 / $103 effective monthly). Trial is 7 days with a booked setup call. Stripe Connect (card payments) is on paid plans only.',
+    ]);
+    writeTable(
+      doc,
+      ['Plan', 'Monthly', 'Annual (preferred)', 'Who it is for'],
+      [
+        ['Starter', '$39', '$374', 'Solo / price objection. Fallback only.'],
+        ['Business', '$129', '$1,236', 'Default close. Implementation included.'],
+        ['Pro', '$299', '$2,870', 'Multi-location or heavier ops. White-glove.'],
+      ],
+      { columnWidths: [90, 72, 120, CONTENT_WIDTH - 282] },
+    );
+
+    writeSection(doc, 'How you are paid', [
+      'Independent 1099. No salary, no set hours. Shared outreach lists plus your own tools. Customer success is hired at $8k company MRR; until then the founder implements every logo.',
+    ]);
+    writeTable(
+      doc,
+      ['Term', 'Structure'],
+      [
+        ['Close commission', '25% of first-year cash collected on accounts you close.'],
+        [
+          'Residual',
+          '10% of that account’s list MRR for 12 months, then 0% (or renegotiate at $8k company MRR).',
+        ],
+        ['Inbound', 'Same rates if you work the lead to close. Founder-closed accounts: $0.'],
+        ['Clawback', 'Reversed if the tenant refunds or churns within 90 days.'],
+        ['Not in the role', 'Onboarding, support, and product. Founder runs the setup call.'],
+        ['Trial', '90 days. Continue if you close ≥4 paying Business logos (or cash equivalent).'],
+        [
+          'Later',
+          'At $8k company MRR: option to convert to W-2 (base + lower commission) or stay 1099.',
+        ],
+      ],
+      { columnWidths: [132, CONTENT_WIDTH - 132] },
+    );
+
+    writeSection(doc, 'Pay on one Business annual', [
+      '$1,236 collected → $309 at close (25%). Residual: $129 list MRR × 10% × 12 months = $155. Year-1 total on that logo: $464.',
     ]);
 
-    writeSection(doc, 'Core capabilities (shipped or in active rollout)', [], { level: 3 });
+    writeSection(doc, 'What this pays at different volumes', [
+      'Rows 2–3 are annualized after 12 months at that pace (residual book full). Eight closes a month is stretch, not the company base forecast. Plan on other income during ramp. Monthly Business pays slightly more commission (higher cash collected); annual is still the close we want.',
+    ]);
+    writeTable(
+      doc,
+      ['Volume', 'Close cash (25%)', 'Residual (book full)', 'Annualized', 'Read'],
+      [
+        [
+          '4 Business annual in 90 days',
+          '$1,236',
+          '$619',
+          '$1,855 year-1',
+          'Pass the trial. Side partnership.',
+        ],
+        [
+          '2 Business annual / month',
+          '$7.4k / yr',
+          '$3.7k / yr',
+          '~$11k / yr',
+          'Serious part-time once residuals catch up.',
+        ],
+        [
+          '8 Business annual / month',
+          '$29.7k / yr',
+          '$14.9k / yr',
+          '~$45k / yr',
+          'Full-time equivalent on commission.',
+        ],
+      ],
+      { columnWidths: [128, 88, 100, 88, CONTENT_WIDTH - 404] },
+    );
+
+    writeSection(doc, 'Split of work', []);
     writeBulletList(doc, [
-      'Quotes pipeline with Kanban stages, line items, and quote-to-schedule automation',
-      'Day/week schedule with recurring visit rules, crew assignment, and customer reschedule requests',
-      'Invoicing, manual payment recording, and Stripe Connect (cards + ACH)',
-      'Branded customer portal with invoices, visit history, and messaging',
-      'Email campaigns, customer promotions, and referral program',
-      'Payroll exports, compensation rules, tips/commissions (job costing)',
-      'Bank deposit reconciliation via Plaid (Zelle/ACH matching)',
-      'Tenant marketing website CMS with SEO pages and inbound lead capture',
-      'Custom roles/permissions, platform support tickets, and founder accounting views',
+      'You: list, outreach, demo, negotiate, collect first payment.',
+      'Founder: live setup (import, next week’s schedule, first invoice), product, support.',
+      'Company: prospect lists already in the product; one metro at a time.',
     ]);
 
     writeSection(
       doc,
-      'Market Opportunity',
+      'How we sell',
       [
-        'The U.S. cleaning services industry includes tens of thousands of residential and commercial operators, most under 50 employees. Field-service incumbents (Jobber, Housecall Pro, ServiceTitan) serve broad trades; none optimize end-to-end for cleaning workflows — recurring visit logic separate from billing, consultation-to-quote flows, proof-of-service, and bookkeeper-friendly month-end close.',
-        'Vertical SaaS in niche trades consistently achieves higher retention and willingness-to-pay than horizontal tools. Cleaning businesses spend on software when it directly reduces no-shows, speeds quoting, and improves cash collection. TAM for U.S. cleaning ops software is estimated at $500M–$1B annually; SAM focuses on 50,000–100,000 businesses with 2+ employees and digital billing needs.',
+        'Default close: Business annual with implementation included. If they stall: monthly Business plus $299 setup. Starter only for solo operators with fewer than five field staff.',
+        'Motion: personalized outbound in one metro. Demo, then founder on a 45-minute setup. A quote sent and a visit on the calendar within 7 days predicts a paid conversion.',
+        'Talk track: “Run your cleaning business from one console.” Speak to owners, office managers, and bookkeepers. Do not lead with Starter. Win on cleaning ops and month-end close, not Jobber feature count.',
       ],
       { newPage: true },
     );
 
-    writeSection(doc, 'Competitive Positioning', [
-      'Clean Scheduler competes on depth for cleaning operators, not breadth for all home services. Key differentiators: (1) quote-to-recurring-schedule in one flow, (2) bookkeeper-grade reconciliation and month-end close, (3) customer portal + marketing site under one brand, (4) transparent flat pricing without per-job fees, (5) operational lean design — fewer clicks for daily office work.',
-      'Primary alternatives: Jobber/Housecall Pro (generalist, higher price at scale), spreadsheets + QuickBooks (cheap but fragile), and pen-and-paper (majority of micro-operators). Win strategy: dominate cleaning-specific SEO, community partnerships (franchise networks, supplier co-marketing), and case-study-driven proof of ROI.',
+    writeSection(doc, '90-day scoreboard (shared with founder)', [
+      'Founder keeps selling during the 90 days. Your personal bar to continue is 4 paying Business logos (or equivalent cash), not the full company scoreboard.',
     ]);
+    writeTable(
+      doc,
+      ['Weeks', 'Activity', 'Company target'],
+      [
+        ['1–2', 'Close live trials; every trial has a setup call', 'Pipeline clean'],
+        ['3–6', 'One metro; 3 demos/week; Business annual', '8–12 paying · $1.0k–$1.6k MRR'],
+        ['7–10', 'Same metro; bookkeeper intros', '15–20 paying · $2.0k–$2.6k MRR'],
+        ['11–13', 'Second metro if demo-to-close ≥15%', '$2.5k–$4k MRR'],
+      ],
+      { columnWidths: [56, 220, CONTENT_WIDTH - 276] },
+    );
 
-    writeSection(doc, 'Business Model', [
-      'Revenue: Monthly/annual SaaS subscriptions by tier. Annual billing offers ~20% discount. Future add-ons: extra office/field seats, SMS/message packs, additional marketing site pages, and white-glove onboarding.',
-      'Payments: Stripe Connect platform fees on tenant customer transactions (optional revenue stream as GMV scales).',
-      'Unit economics targets (Year 3 steady state): CAC payback < 12 months, gross margin 80%+, net revenue retention 105%+, logo churn < 3% monthly on Business+ tiers.',
+    writeSection(doc, 'Company trajectory', [
+      'Base case is founder-paced. Stretch is what production from this role can add. Mix: 25% Starter / 60% Business / 15% Pro (~$132 blended ARPU). Vendor infra is about $250/mo today. Founder covers product and onboarding until customer success is hired at $8k MRR. Equity is not part of this offer.',
     ]);
-
-    writeSection(doc, 'Five-Year Growth Targets', [], { newPage: true });
     const yearColumnWidth = (CONTENT_WIDTH - 148) / 5;
     writeTable(
       doc,
       ['Metric', '2026', '2027', '2028', '2029', '2030'],
       [
-        ['Paying tenants', '150', '500', '1,500', '3,500', '7,000'],
-        ['ARR ($M)', '$0.4', '$1.2', '$3.5', '$8.0', '$15.0'],
-        ['Avg revenue/tenant/mo', '$95', '$105', '$115', '$120', '$125'],
-        ['Team (FTE)', '3', '8', '18', '35', '55'],
-        ['NPS target', '40+', '45+', '50+', '50+', '55+'],
+        ['Paying tenants (base)', '20', '80', '220', '500', '1,000'],
+        ['MRR (base)', '$2.6k', '$10.6k', '$29k', '$66k', '$132k'],
+        ['ARR (base)', '$32k', '$127k', '$348k', '$792k', '$1.58M'],
+        ['Paying if this role produces', '35', '150', '450', '1,200', '2,500'],
+        ['MRR if this role produces', '$4.6k', '$20k', '$59k', '$158k', '$330k'],
       ],
       {
         columnWidths: [
@@ -248,138 +317,32 @@ async function generatePdf() {
       },
     );
 
-    writeSection(doc, 'Year-by-Year Plan', [], { level: 2, newPage: true });
-
-    writeSection(doc, '2026 — Foundation & First 150 Customers', [], { level: 3 });
-    writeBulletList(doc, [
-      'Complete G2, Capterra, and cleaning-community launch; publish 10+ customer case studies',
-      'Ship SMS (Pro), Plaid reconciliation GA, marketing site custom domains, mobile PWA for field staff',
-      'Establish inside sales + self-serve trial funnel; target 40% trial-to-paid conversion',
-      'Founder-led customer success for first 50 accounts; document repeatable onboarding playbook',
-      'Apply SOC 2 Type I readiness; column encryption for tenant PII',
-    ]);
-
-    writeSection(doc, '2027 — Scale GTM & Business Tier Dominance', [], { level: 3 });
-    writeBulletList(doc, [
-      'Hire 2 SDRs + 1 marketing lead; invest in cleaning-specific SEO content hub (500+ pages)',
-      'Launch partner program: cleaning franchises, chemical/supply distributors, bookkeeping firms',
-      'Ship API/webhooks GA, advanced analytics dashboard, and scheduled email campaigns',
-      'Introduce seat/add-on billing in product; expand to Canada (English) as first international market',
-      'Target Business tier as 60%+ of new ARR; Pro for 10–20 crew operations',
-    ]);
-
-    writeSection(doc, '2028 — Product Moat & Mid-Market', [], { level: 3, newPage: true });
-    writeBulletList(doc, [
-      'Multi-location controls, franchise rollup reporting, and consolidated billing views',
-      'AI-assisted quoting (square footage / room-based estimates) and schedule optimization',
-      'Marketplace integrations: QuickBooks Online bi-sync, Gusto/ADP deep links, Angi/HomeAdvisor lead import',
-      'Customer community + certification program (“Clean Scheduler Certified Operator”)',
-      'Expand CS team; launch Pro concierge onboarding package ($2,500 one-time)',
-    ]);
-
-    writeSection(doc, '2029 — Category Leadership', [], { level: 3 });
-    writeBulletList(doc, [
-      '1,500+ paying tenants; recognized top-3 in cleaning software review sites',
-      'Launch mobile apps (iOS/Android) for field check-in, photos, and offline schedule',
-      'Explore commercial/janitorial module: work orders, inspection checklists, client portals per building',
-      'Payments GMV milestone: $50M+ annual processed volume through Stripe Connect',
-      'Series A or profitable growth decision based on NRR and CAC efficiency',
-    ]);
-
-    writeSection(doc, '2030 — Platform & Ecosystem', [], { level: 3 });
-    writeBulletList(doc, [
-      '7,000 paying tenants; $15M ARR; path to $25M ARR visible through upsell and international',
-      'Third-party app marketplace (background check, insurance, supply ordering)',
-      'White-label / franchise edition for master franchise brands',
-      'Evaluate UK/AU expansion; hire regional success leads',
-      'M&A optionality: acquire complementary tools (review management, hiring) or strategic partnership',
-    ]);
-
-    writeSection(
-      doc,
-      'Go-to-Market Strategy',
-      [
-        'Primary channels: (1) Product-led growth via 7-day free trial and in-app upgrade prompts, (2) SEO/content targeting “cleaning business software,” scheduling, and invoicing keywords, (3) Review site presence (G2, Capterra), (4) Referrals from accountants and cleaning coaches, (5) Paid search on high-intent terms once LTV:CAC > 3:1.',
-        'Sales motion: Self-serve for Starter; light-touch demo for Business; white-glove for Pro. No enterprise field sales in Years 1–3 — focus on businesses with 2–30 employees.',
-        'Brand: “Run your cleaning business from one console.” Emphasize bookkeeper and office-manager personas alongside owner.',
-      ],
-      { newPage: true },
-    );
-
-    writeSection(doc, 'Product Roadmap Themes (2026–2030)', []);
+    writeSection(doc, 'What is already true', []);
     writeTable(
       doc,
-      ['Theme', 'Priority years', 'Outcome'],
-      [
-        ['Core ops excellence', '2026', 'Best-in-class quote → schedule → invoice loop'],
-        ['Customer experience', '2026–27', 'Portal, SMS, marketing site, proof photos'],
-        ['Financial ops', '2026–28', 'Reconciliation, tax, payroll, multi-entity reporting'],
-        ['Growth tools', '2027–28', 'Campaigns, referrals, promos, lead capture'],
-        ['Platform & API', '2027–29', 'Integrations, webhooks, partner ecosystem'],
-        ['Mobile & field', '2028–30', 'Native apps, offline, GPS/check-in'],
-        ['Commercial / janitorial', '2029–30', 'Expand TAM beyond residential'],
-      ],
-      { columnWidths: [132, 92, CONTENT_WIDTH - 224] },
-    );
-
-    writeSection(doc, 'Organization & Hiring Plan', [
-      'Years 1–2: Founding team + first engineer, customer success, and marketing generalist. Stay remote-first with async culture; prioritize tenant support response SLAs by tier.',
-      'Years 3–4: Engineering pod (platform, product, mobile), dedicated support tiers, data/analytics hire, partnerships manager.',
-      'Year 5: VP Sales/Marketing, regional success, compliance/security lead as customer count and PII scope grow.',
-    ]);
-
-    writeSection(doc, 'Key Metrics & Milestones', []);
-    writeBulletList(doc, [
-      'North star: Weekly active tenant operators (office users logging in 3+ days/week)',
-      'Activation: First quote sent + first visit scheduled within 14 days of signup',
-      'Retention: 90-day logo retention > 85% on paid plans',
-      'Expansion: 25%+ of Business tenants upgrade to Pro within 24 months',
-      'Support: Median first response < 4 hours (Business), < 1 hour (Pro)',
-    ]);
-
-    writeSection(
-      doc,
-      'Financial Outlook (Summary)',
-      [
-        'Assumptions: 70% Starter / 25% Business / 5% Pro mix shifting to 40/45/15 by 2030; 15% annual price increases on new signups; infrastructure COGS ~8% of revenue at scale.',
-        'Break-even target: Month 30–36 on operating expenses excluding founder below-market comp. Funding: bootstrap through $1M ARR; evaluate $2–4M seed/Series A if growth rate exceeds 15% MoM and payback stays under 12 months.',
-        'Use of funds (if raised): 50% GTM, 30% product/engineering, 15% CS/onboarding, 5% compliance.',
-      ],
-      { newPage: true },
-    );
-
-    writeSection(doc, 'Risks & Mitigations', []);
-    writeTable(
-      doc,
-      ['Risk', 'Mitigation'],
+      ['Item', 'Status'],
       [
         [
-          'Slow trial conversion',
-          'In-app onboarding checklist, concierge calls for Business trials',
+          'Product',
+          'Live. Quotes → schedule → invoice, portal, Connect on paid plans, month-end close.',
         ],
+        ['Who implements', 'Founder, on every logo, until CS hire at $8k MRR.'],
+        ['Prospecting', 'Outreach lists in-product. One metro at a time.'],
+        ['Equity', 'Not part of this offer. Separate conversation if ever.'],
         [
-          'Incumbent price pressure',
-          'Vertical depth, bookkeeper partnerships, switching cost via portal',
+          'Agreement',
+          'Non-solicit, customer ownership, clawback, and termination — in writing before demo one.',
         ],
-        [
-          'Support load at scale',
-          'Help center, AI support triage, tiered SLAs, CS hire ahead of growth',
-        ],
-        [
-          'Payment/compliance burden',
-          'Stripe Connect abstraction; SOC 2; legal review for SMS/PII',
-        ],
-        ['Feature sprawl', 'Roadmap tied to cleaning personas; say no to non-vertical requests'],
       ],
-      { columnWidths: [148, CONTENT_WIDTH - 148] },
+      { columnWidths: [120, CONTENT_WIDTH - 120] },
     );
 
-    writeSection(doc, 'Conclusion', [
-      'Clean Scheduler is positioned to become the operating system for cleaning businesses by staying narrow, going deep, and earning trust with office managers and bookkeepers — not just owners. The next five years focus on repeatable acquisition, product moats that horizontal competitors cannot copy quickly, and disciplined expansion into payments, mobile, and mid-market commercial workflows.',
-      'Success in 2030 looks like: thousands of cleaning companies running daily operations on Clean Scheduler, strong word-of-mouth in cleaning communities, and a platform ecosystem that makes switching unthinkable.',
+    writeSection(doc, 'Next step', [
+      'Sign the 90-day 1099 terms. First metro, first list, first three demos on the calendar. Continue if four Business logos (or equivalent) are paying at day 90.',
     ]);
 
     doc.end();
+
     stream.on('finish', () => resolve(OUTPUT_FILE));
     stream.on('error', reject);
   });

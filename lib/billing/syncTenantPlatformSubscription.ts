@@ -8,6 +8,7 @@ import {
   resolvePlatformTierFromStripePriceId,
 } from '@/lib/billing/platformPlans';
 import type { Database } from '@/lib/supabase/database.types';
+import { markSalesLeadWonForTenant } from '@/lib/admin/salesTrialExpiryTasks';
 import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 
 type Admin = SupabaseClient<Database>;
@@ -182,6 +183,10 @@ export async function syncTenantFromStripeSubscription(
 
   if (billingError) {
     throw new Error(`tenant_billing_accounts update failed: ${billingError.message}`);
+  }
+
+  if (mappedStatus === 'active' && !isCanceled) {
+    await markSalesLeadWonForTenant(admin, tenantId);
   }
 
   const { data: tenantFlags } = await admin

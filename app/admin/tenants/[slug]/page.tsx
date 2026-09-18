@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
 import {
   PLATFORM_PLAN_LABELS,
   parsePlatformPlanTier,
@@ -50,6 +51,7 @@ interface PageProps {
 }
 
 export default async function AdminTenantDetailPage({ params, searchParams }: PageProps) {
+  await requirePlatformAdmin('/tenants');
   const { slug: rawSlug } = await params;
   const sp = await searchParams;
   const slug = rawSlug.trim().toLowerCase();
