@@ -20,6 +20,7 @@
 
 ## In progress / high-value gaps
 
+- **Tenant customer CSV import** (Jobber-first, then ZenMaid / Housecall Pro / Launch27 / generic) — spec: `docs/product/tenant-customer-import.md`. Marketing compare pages already tell switchers to import active customers; the tenant CRM path does not exist yet.
 - Platform **`plans` / `plan_features` / `tenant_addons`** DB catalog + add-on checkout
 - Setup Intent / saved PM UX beyond Stripe portal
 - Consolidated **cross-tenant customer billing rollup**
