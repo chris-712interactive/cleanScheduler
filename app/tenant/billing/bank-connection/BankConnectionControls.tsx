@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui/Button';
 import { disconnectBankLinkAction, syncBankTransactionsAction } from './actions';
-import { finishBankConnectionAction } from './finishBankConnectionAction';
+import { useFinishBankConnectionAction } from './finishBankConnectionAction';
 
 interface BankConnectionControlsProps {
   tenantSlug: string;
@@ -11,6 +11,7 @@ interface BankConnectionControlsProps {
 }
 
 export function SyncBankButton({ tenantSlug, size = 'sm' }: BankConnectionControlsProps) {
+  const finishBankConnectionAction = useFinishBankConnectionAction();
   const [pending, setPending] = useState(false);
 
   return (
@@ -39,6 +40,7 @@ export function DisconnectBankButton({
   size = 'sm',
   variant = 'ghost',
 }: BankConnectionControlsProps & { variant?: ButtonVariant }) {
+  const finishBankConnectionAction = useFinishBankConnectionAction();
   const [pending, setPending] = useState(false);
 
   return (

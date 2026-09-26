@@ -5,7 +5,7 @@ import { usePlaidLink } from 'react-plaid-link';
 import { Button } from '@/components/ui/Button';
 import { PLAID_CONSENT_REQUIRED_ERROR } from '@/lib/plaid/plaidConsentCopy';
 import { connectBankFromPlaidAction, fetchPlaidLinkTokenAction } from './actions';
-import { finishBankConnectionAction } from './finishBankConnectionAction';
+import { useFinishBankConnectionAction } from './finishBankConnectionAction';
 import { PlaidPreLinkConsent } from './PlaidPreLinkConsent';
 import styles from './bank-connection.module.scss';
 
@@ -25,6 +25,7 @@ export function PlaidLinkButton({
   size = 'md',
   consentFlow = 'inline',
 }: PlaidLinkButtonProps) {
+  const finishBankConnectionAction = useFinishBankConnectionAction();
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentStepOpen, setConsentStepOpen] = useState(consentFlow === 'inline');
   const [linkToken, setLinkToken] = useState<string | null>(null);

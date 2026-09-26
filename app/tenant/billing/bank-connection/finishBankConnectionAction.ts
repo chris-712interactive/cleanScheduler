@@ -1,16 +1,30 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+
 export type BankConnectionActionResult = { ok: true } | { error: string };
 
 export type BankConnectionSuccessParam =
   'connected' | 'synced' | 'matched' | 'dismissed' | 'disconnected';
 
-export function finishBankConnectionAction(
+export function bankConnectionResultHref(
   result: BankConnectionActionResult,
   successParam: BankConnectionSuccessParam,
-): void {
+): string {
   if ('error' in result) {
-    window.location.assign(`/billing/bank-connection?error=${encodeURIComponent(result.error)}`);
-    return;
+    return `/billing/bank-connection?error=${encodeURIComponent(result.error)}`;
   }
+  return `/billing/bank-connection?${successParam}=1`;
+}
 
-  window.location.assign(`/billing/bank-connection?${successParam}=1`);
+export function useFinishBankConnectionAction() {
+  const router = useRouter();
+  return useCallback(
+    (result: BankConnectionActionResult, successParam: BankConnectionSuccessParam) => {
+      router.push(bankConnectionResultHref(result, successParam));
+      router.refresh();
+    },
+    [router],
+  );
 }
