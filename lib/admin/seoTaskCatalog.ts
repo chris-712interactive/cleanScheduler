@@ -59,10 +59,20 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     category: 'near-win-pages',
     title: 'Verify Stripe integration page is live',
     detail:
-      'Confirm title, meta description, payment-processing section, and Stripe FAQs render on the public page. Target query: “cleaning company software with stripe integration”.',
+      'Confirm exact-match title, CTR-focused meta, “built for cleaning companies” section, and Stripe FAQs. Target query: “cleaning company software with stripe integration” (near page one — prioritize CTR).',
     href: '/features/stripe-integration',
     cadence: 'once',
     sortOrder: 10,
+  },
+  {
+    id: 'near-win-mobile',
+    category: 'near-win-pages',
+    title: 'Verify cleaning crew mobile software page',
+    detail:
+      'Confirm title/headline lead with “cleaning crew mobile software”, browser-based field workflow, and FAQ. Declining query target (pos ~34).',
+    href: '/features/mobile-scheduling-for-cleaners',
+    cadence: 'once',
+    sortOrder: 11,
   },
   {
     id: 'near-win-launch27',
@@ -72,17 +82,17 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
       'Confirm “Launch27 alternative” appears in title, headline, and FAQ. Target query: “launch27 alternative”.',
     href: '/compare/vs-launch27',
     cadence: 'once',
-    sortOrder: 11,
+    sortOrder: 12,
   },
   {
     id: 'near-win-spreadsheet',
     category: 'near-win-pages',
     title: 'Verify spreadsheet replacement compare page',
     detail:
-      'Confirm migration checklist, “replace cleaning spreadsheet software” FAQ, and links to scheduling + Stripe pages.',
+      'Confirm migration checklist, “replace cleaning spreadsheet” meta, and links to scheduling + Stripe + mobile pages.',
     href: '/compare/spreadsheets-and-texts',
     cadence: 'once',
-    sortOrder: 12,
+    sortOrder: 13,
   },
   {
     id: 'near-win-commercial-accounts',
@@ -92,7 +102,7 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
       'Confirm prospecting steps, commercial-accounts FAQ, and cross-links from /for/commercial-cleaning-companies.',
     href: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
     cadence: 'once',
-    sortOrder: 13,
+    sortOrder: 14,
   },
   {
     id: 'near-win-janitorial',
@@ -102,37 +112,47 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
       'Confirm employee-scheduling FAQ and links to dispatch + crew-management guides. Target query: “janitorial scheduling and timekeeping”.',
     href: '/features/crew-scheduling-and-timekeeping',
     cadence: 'once',
-    sortOrder: 14,
+    sortOrder: 15,
   },
   {
     id: 'near-win-payments',
     category: 'near-win-pages',
     title: 'Verify online payments feature page',
     detail:
-      'Confirm credit-card processing section, invoice-software FAQ, and Stripe cross-links. Target query: “online payments for cleaning companies”.',
+      'Confirm check/bank deposit matching section, check-payment FAQ, and Stripe cross-links. Top page by clicks — improve CTR.',
     href: '/features/invoicing-and-payments',
-    cadence: 'once',
-    sortOrder: 15,
-  },
-  {
-    id: 'near-win-dispatch',
-    category: 'near-win-pages',
-    title: 'Verify dispatch software help article',
-    detail:
-      'Confirm title uses “dispatch software for cleaning companies” and links from the scheduling feature page.',
-    href: '/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners',
     cadence: 'once',
     sortOrder: 16,
   },
   {
-    id: 'near-win-mobile',
+    id: 'near-win-dispatch',
     category: 'near-win-pages',
-    title: 'Verify mobile app for cleaning employees page',
+    title: 'Verify dispatch & scheduling help article',
     detail:
-      'Confirm mobile-employee phrasing in title, lead, and FAQ. Target queries: “mobile app for cleaning employees”, “cleaning crew mobile software”.',
-    href: '/features/mobile-scheduling-for-cleaners',
+      'Confirm title uses “Cleaning & janitorial dispatch and scheduling” and links from the scheduling feature page. Near-page-one CTR opportunity.',
+    href: '/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners',
     cadence: 'once',
     sortOrder: 17,
+  },
+  {
+    id: 'near-win-housecall-pro',
+    category: 'near-win-pages',
+    title: 'Verify Housecall Pro compare page',
+    detail:
+      'Confirm cleaning-company framing in title/meta and Stripe + mobile cross-links. GSC top page with 0 CTR at ~pos 23.',
+    href: '/compare/vs-housecall-pro',
+    cadence: 'once',
+    sortOrder: 18,
+  },
+  {
+    id: 'near-win-scheduling',
+    category: 'near-win-pages',
+    title: 'Verify best scheduling / booking software page',
+    detail:
+      'Confirm “best scheduling software for cleaning businesses” meta and cleaning booking software section/FAQ.',
+    href: '/features/scheduling-and-dispatch',
+    cadence: 'once',
+    sortOrder: 19,
   },
 
   // Post-deploy validation
@@ -234,7 +254,8 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     id: 'gsc-indexing-compare-pages',
     category: 'gsc-indexing',
     title: 'Request indexing — compare pages',
-    detail: 'Request indexing for /compare/spreadsheets-and-texts and /compare/vs-launch27.',
+    detail:
+      'Request indexing for /compare, /compare/spreadsheets-and-texts, /compare/vs-housecall-pro, and /compare/vs-launch27.',
     href: GSC_URL,
     external: true,
     cadence: 'once',
@@ -245,7 +266,7 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     category: 'gsc-indexing',
     title: 'Request indexing — priority help guides',
     detail:
-      'Request indexing for /help/cleaning-businesses/how-to-get-commercial-cleaning-accounts, /help/cleaning-businesses/schedule-cleaning-crews, and /help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners.',
+      'Request indexing for /help/cleaning-businesses/how-to-get-commercial-cleaning-accounts, /help/cleaning-businesses/schedule-cleaning-crews, /help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners, and /help/cleaning-businesses/get-paid-zelle-and-cards.',
     href: GSC_URL,
     external: true,
     cadence: 'once',
@@ -258,7 +279,7 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     category: 'ongoing-monitoring',
     title: 'Export GSC query report and compare to baseline',
     detail:
-      'Export the Queries report (28-day window). Compare positions for near-win terms: Stripe integration, Launch27 alternative, spreadsheet replacement, commercial accounts, janitorial scheduling, online payments. Baseline: ~178 impressions, 0 clicks, July 2026.',
+      'Export the Queries report (28-day window). Compare positions and CTR for: cleaning company software with stripe integration, cleaning crew mobile software, cleaning & janitorial dispatch, online payments, best scheduling software. Baseline Jul 2026: 6 clicks, 1,823 impressions, CTR 0.33%.',
     href: GSC_URL,
     external: true,
     cadence: 'monthly',

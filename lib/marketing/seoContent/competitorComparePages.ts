@@ -480,12 +480,12 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
   {
     slug: 'vs-housecall-pro',
     path: '/compare/vs-housecall-pro',
-    metaTitle: 'Clean Scheduler vs Housecall Pro for cleaning businesses',
+    metaTitle: 'Clean Scheduler vs Housecall Pro for cleaning companies',
     metaDescription:
-      'Compare Clean Scheduler and Housecall Pro for residential and commercial cleaning companies. Features, pricing, pros and cons. 7-day free trial.',
+      'Clean Scheduler vs Housecall Pro for cleaning companies — cleaning-first scheduling, quotes, Stripe payments, and AR vs a multi-trade home-service platform. Free 7-day trial.',
     eyebrow: 'Compare',
-    headline: 'Clean Scheduler vs Housecall Pro',
-    lead: 'Housecall Pro is a popular all-in-one platform for home service businesses. Here is how it compares to Clean Scheduler for cleaning companies that need quote-to-invoice workflows and bookkeeper-friendly AR.',
+    headline: 'Clean Scheduler vs Housecall Pro for cleaning companies',
+    lead: 'Housecall Pro is a popular all-in-one platform for home service businesses. Here is how it compares to Clean Scheduler for cleaning companies that need quote-to-invoice workflows, cleaning crew mobile software, and bookkeeper-friendly AR.',
     comparisonTable: {
       competitorName: 'Housecall Pro',
       lastVerified: PRICING_VERIFIED,
@@ -597,6 +597,14 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
     relatedLinks: [
       { href: '/compare/vs-jobber', label: 'vs Jobber' },
       { href: '/compare/vs-swept', label: 'vs Swept' },
+      {
+        href: '/features/stripe-integration',
+        label: 'Cleaning company software with Stripe integration',
+      },
+      {
+        href: '/features/mobile-scheduling-for-cleaners',
+        label: 'Cleaning crew mobile software',
+      },
       { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning software' },
       { href: '/pricing', label: 'Pricing' },
     ],
