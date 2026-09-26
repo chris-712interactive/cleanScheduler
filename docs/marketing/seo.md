@@ -2,6 +2,8 @@
 
 Developer reference for public-site search optimization on cleanscheduler.com.
 
+**Execution plan:** `docs/marketing/seo-implementation-plan.md` — phased website polish, GSC ops, and data-driven follow-ups based on the recommendations below.
+
 ## Architecture
 
 - Marketing routes live under `app/marketing/*` and are served at apex paths via `proxy.ts` rewrites (`/pricing` → `/marketing/pricing`).
@@ -104,6 +106,8 @@ Use the **admin SEO checklist** at `admin.<apex>/seo` for checkable tasks with p
 4. Monitor target queries over 6–8 weeks.
 
 See `docs/product/platform-seo-tasks.md` for the admin checklist implementation.
+
+See `docs/marketing/seo-implementation-plan.md` for what is shipped vs remaining (footer near-win links, indexing requests, monitoring cadence).
 
 ## Adding new SEO pages
 

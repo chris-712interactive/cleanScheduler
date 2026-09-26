@@ -139,6 +139,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Service zones            | `docs/product/service-zones.md`                   |
 | Tenant customer import   | `docs/product/tenant-customer-import.md`          |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |
+| SEO execution plan       | `docs/marketing/seo-implementation-plan.md`       |
 
 ---
 
