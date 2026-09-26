@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-09-18  
+**Last updated:** 2026-09-26  
 **Branch:** `dev`  
-**Latest polish:** Platform sales closer role + pipeline (`0091`–`0092`) — outreach, demos, trial-expiry tasks — see `docs/product/platform-sales-pipeline.md`
+**Latest polish:** Platform sales closer role + pipeline (`0091`–`0092`) — outreach, demos, trial-expiry tasks — see `docs/product/platform-sales-pipeline.md`. **Proposed:** tenant customer CSV import (Jobber-first) — `docs/product/tenant-customer-import.md`.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -113,12 +113,13 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 1. **Commit + PR** — merge `feat/bucket-b-phase2` → `dev` after review
 2. **Apply migrations** 0073–0075 on linked Supabase projects
 3. **Plaid prod keys** + bank reports when link active
-4. **Customer email** when provider replies (messaging follow-up)
-5. **Founder email** on new platform support ticket
-6. Platform **`plans` / `plan_features` / `tenant_addons`** DB catalog + add-on checkout
-7. **pgsodium / Vault** column encryption
-8. RLS CI (pg_tap, ephemeral DB), Playwright in CI, Sentry sourcemaps
-9. Phase 3: masquerade polish, PWA, campaign scheduled sends
+4. **Tenant customer CSV import** (Jobber-first) — spec only: `docs/product/tenant-customer-import.md`
+5. **Customer email** when provider replies (messaging follow-up)
+6. **Founder email** on new platform support ticket
+7. Platform **`plans` / `plan_features` / `tenant_addons`** DB catalog + add-on checkout
+8. **pgsodium / Vault** column encryption
+9. RLS CI (pg_tap, ephemeral DB), Playwright in CI, Sentry sourcemaps
+10. Phase 3: masquerade polish, PWA, campaign scheduled sends
 
 ---
 
@@ -136,6 +137,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Customer messaging       | `docs/product/customer-support-messaging.md`      |
 | Tenant reports           | `docs/product/tenant-reports.md`                  |
 | Service zones            | `docs/product/service-zones.md`                   |
+| Tenant customer import   | `docs/product/tenant-customer-import.md`          |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |
 
 ---

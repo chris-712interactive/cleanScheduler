@@ -116,6 +116,9 @@ todos:
   - id: phase3Pwa
     content: "Phase 3: PWA polish for employees in the field, offline-tolerant schedule view."
     status: pending
+  - id: tenantCustomerCsvImport
+    content: "Tenant CRM CSV import so switchers can load customers + service properties from competitor exports. Jobber-first source profiles (property-per-row grain, subset mapping, preview, no portal invites). Spec: docs/product/tenant-customer-import.md. Later: ZenMaid, Housecall Pro, Launch27, generic mapper."
+    status: pending
 isProject: false
 ---
 

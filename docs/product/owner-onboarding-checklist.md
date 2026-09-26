@@ -106,15 +106,15 @@ Steps are defined in code (`OWNER_ONBOARDING_STEPS` constant). Completion is com
 
 ### Required (trial-friendly)
 
-| ID         | Title                     | Complete when                                                                                        | Route                                                       |
-| ---------- | ------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `business` | Complete business profile | `tenants.timezone` set **and** (`business_email` or `business_phone`) **and** address line 1 or city | `/settings/business`                                        |
-| `customer` | Add a customer            | ≥1 active customer                                                                                   | `/customers/new`                                            |
-| `quote`    | Create your first quote   | ≥1 non-superseded quote                                                                              | `/quotes/new`                                               |
-| `visit`    | Schedule a visit          | ≥1 scheduled visit                                                                                   | `/schedule/new`                                             |
-| `connect`  | Set up online payments    | `tenants.stripe_connect_status = complete`                                                           | `/billing/payment-setup` (locked → `/billing` during trial) |
-| `invoice`  | Send a customer invoice   | ≥1 invoice (any status except void)                                                                  | `/billing/invoices/new`                                     |
-| `team`     | Invite a teammate         | >1 active membership **or** pending invite                                                           | `/employees/new`                                            |
+| ID         | Title                     | Complete when                                                                                        | Route                                                                                              |
+| ---------- | ------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `business` | Complete business profile | `tenants.timezone` set **and** (`business_email` or `business_phone`) **and** address line 1 or city | `/settings/business`                                                                               |
+| `customer` | Add a customer            | ≥1 active customer                                                                                   | `/customers/new` (future: also `/customers/import` — see `docs/product/tenant-customer-import.md`) |
+| `quote`    | Create your first quote   | ≥1 non-superseded quote                                                                              | `/quotes/new`                                                                                      |
+| `visit`    | Schedule a visit          | ≥1 scheduled visit                                                                                   | `/schedule/new`                                                                                    |
+| `connect`  | Set up online payments    | `tenants.stripe_connect_status = complete`                                                           | `/billing/payment-setup` (locked → `/billing` during trial)                                        |
+| `invoice`  | Send a customer invoice   | ≥1 invoice (any status except void)                                                                  | `/billing/invoices/new`                                                                            |
+| `team`     | Invite a teammate         | >1 active membership **or** pending invite                                                           | `/employees/new`                                                                                   |
 
 **Removed from required vs today:** none — same seven concepts, stricter `business` detection.
 
