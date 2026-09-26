@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { confirmPaymentMatchAction, dismissPaymentMatchAction } from './actions';
-import { finishBankConnectionAction } from './finishBankConnectionAction';
+import { useFinishBankConnectionAction } from './finishBankConnectionAction';
 import styles from './bank-connection.module.scss';
 
 export interface MatchSuggestionRow {
@@ -44,6 +44,7 @@ export function MatchSuggestionsPanel({
   canManage = true,
   reconnectNeeded = false,
 }: MatchSuggestionsPanelProps) {
+  const finishBankConnectionAction = useFinishBankConnectionAction();
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   if (reconnectNeeded) {

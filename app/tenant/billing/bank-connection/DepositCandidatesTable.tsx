@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { manualMatchBankDepositAction } from './actions';
-import { finishBankConnectionAction } from './finishBankConnectionAction';
+import { useFinishBankConnectionAction } from './finishBankConnectionAction';
 import styles from './bank-connection.module.scss';
 
 export interface DepositCandidateRow {
@@ -94,6 +94,7 @@ export function DepositCandidatesTable({
   reconnectNeeded = false,
   hasConnection = true,
 }: DepositCandidatesTableProps) {
+  const finishBankConnectionAction = useFinishBankConnectionAction();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [selectedInvoiceByTx, setSelectedInvoiceByTx] = useState<Record<string, string>>({});

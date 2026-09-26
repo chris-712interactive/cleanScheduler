@@ -31,6 +31,17 @@ CI `npm audit --omit=dev --audit-level=high` required:
 - Override transitive **`axios`** (via `plaid`) to `^1.18.1`.
 - Override nested **`postcss`** to `^8.5.18` (GHSA-r28c-9q8g-f849 path traversal via source map auto-loading; Next still nests an older postcss).
 
+## Security follow-ups (Sep 2026)
+
+CI `npm audit --omit=dev --audit-level=high` required again after new production advisories:
+
+- Bump `next` / `eslint-config-next` to **16.3.6** (GHSA-p293-qw3h-jr36 Windows RCE; GHSA-2xp9-vwfh-vxw4 AVIF image-optimization RCE). Patched floor is **16.3.3**; 16.2.x has no backport.
+- Bump **`sharp`** (direct + override) to `^0.35.4` (libheif advisories GHSA-rgj7-g3m4-5g8c).
+- Override transitive **`nanoid`** to `^3.3.18` (GHSA-2v37-7h3g-55p8 infinite loop).
+- Override transitive **`immutable`** (sass via Next) to `^5.1.8` (GHSA-xvcm-6775-5m9r hash-collision DoS).
+
+Moderate `baseline-browser-mapping` remains; CI `--audit-level=high` does not fail on it.
+
 ## Deferred (from #164)
 
 | Package              | Why hold                                                                                                                                                        |
