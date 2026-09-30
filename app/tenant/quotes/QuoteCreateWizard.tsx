@@ -431,9 +431,12 @@ export function QuoteCreateWizard({
       ref={formRef}
       action={formAction}
       className={styles.wizardForm}
+      noValidate
       onSubmit={handleFormSubmit}
       onKeyDown={handleFormKeyDown}
     >
+      {/* Earlier steps stay mounted but hidden. Native required fields there
+          (line_service_template_id) are not focusable, which blocks submit. */}
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_source" value={customerSource} />
       <input type="hidden" name="property_source" value={propertySource} />
