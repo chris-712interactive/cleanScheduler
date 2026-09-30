@@ -325,7 +325,7 @@ export function WebsitePageEditor({
             ) : null}
 
             <div className={styles.pageEditorSaveBar}>
-              <SettingsSaveButton pending={pending} />
+              <SettingsSaveButton pending={pending} saved={Boolean(state.success)} />
             </div>
           </div>
 

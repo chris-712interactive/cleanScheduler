@@ -1,7 +1,7 @@
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { applyDurationToVisitWindow } from '@/lib/schedule/visitDuration';
-import type { WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
-import { DEFAULT_WORK_WEEK_DAYS } from '@/lib/tenant/tenantBusinessSettings';
+import type { WorkDayWindow, WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
+import { resolveWorkDayWindow } from '@/lib/tenant/tenantBusinessSettings';
 
 const WEEKDAY_SHORT_TO_KEY: Record<string, WorkWeekDayKey> = {
   Mon: 'mon',
@@ -100,6 +100,7 @@ export function computeNextWorkDayVisitWindow(input: {
   workWeekDays?: WorkWeekDayKey[];
   workDayStart: string;
   workDayEnd: string;
+  workDayHours?: Partial<Record<WorkWeekDayKey, WorkDayWindow>> | null;
   now?: Date;
   /** Skip this many calendar days before searching for the next work day (stagger multi-line scheduling). */
   startAfterDays?: number;
@@ -107,19 +108,16 @@ export function computeNextWorkDayVisitWindow(input: {
   durationHours?: number;
 }): { startsAt: string; endsAt: string } {
   const timeZone = safeTimeZone(input.timezone);
-  const workWeekDays =
-    input.workWeekDays && input.workWeekDays.length > 0
-      ? input.workWeekDays
-      : [...DEFAULT_WORK_WEEK_DAYS];
-  const startHm = parseHm(input.workDayStart);
-  const endHm = parseHm(input.workDayEnd);
   const now = input.now ?? new Date();
   const startAfterDays = Math.max(0, input.startAfterDays ?? 0);
 
   for (let offset = startAfterDays; offset < startAfterDays + 14; offset += 1) {
     const probe = new Date(now.getTime() + offset * 24 * 3_600_000);
     const cal = calendarPartsInTimeZone(probe, timeZone);
-    if (!workWeekDays.includes(cal.dayKey)) continue;
+    const dayWindow = resolveWorkDayWindow(cal.dayKey, input);
+    if (!dayWindow) continue;
+    const startHm = parseHm(dayWindow.start);
+    const endHm = parseHm(dayWindow.end);
 
     const startsAt =
       localWallClockInTimeZoneToUtcIso(timeZone, {

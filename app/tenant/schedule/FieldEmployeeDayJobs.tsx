@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ChevronRight, MapPin, Phone } from 'lucide-react';
+import { googleMapsDirectionsUrl } from '@/lib/geo/googleMapsDirectionsUrl';
 import { formatVisitTimeRange } from './scheduleTimelineUtils';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import type { ScheduleVisitVM } from './TenantScheduleClient';
@@ -55,9 +56,7 @@ export function FieldEmployeeDayJobs({
           visit.status === 'scheduled' &&
           new Date(visit.ends_at).getTime() >= Date.now();
         const action = primaryAction(visit);
-        const mapsQuery = visit.siteLine?.trim()
-          ? `https://maps.google.com/?q=${encodeURIComponent(visit.siteLine)}`
-          : null;
+        const mapsQuery = visit.siteLine?.trim() ? googleMapsDirectionsUrl(visit.siteLine) : null;
         const phoneHref = visit.customerPhone
           ? `tel:${visit.customerPhone.replace(/\s/g, '')}`
           : null;
@@ -87,7 +86,13 @@ export function FieldEmployeeDayJobs({
               {visit.siteLine ? (
                 <p className={styles.fieldJobCardMeta}>
                   <MapPin size={16} aria-hidden className={styles.fieldJobCardIcon} />
-                  {visit.siteLine}
+                  {mapsQuery ? (
+                    <a href={mapsQuery} target="_blank" rel="noopener noreferrer">
+                      {visit.siteLine}
+                    </a>
+                  ) : (
+                    visit.siteLine
+                  )}
                 </p>
               ) : null}
               {visit.customerPhone ? (

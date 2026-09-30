@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-09-30  
 **Branch:** `dev`  
-**Latest polish:** Tenant customer CSV import (Jobber Clients export) at `/customers/import`. Spec: `docs/product/tenant-customer-import.md`. Sales closer pipeline remains in `docs/product/platform-sales-pipeline.md`.
+**Latest polish:** Business settings use a color picker (hex or RGB) and per-day hours. Jobber import creates a service property from the service address. Quote entry codes are office-only, and consultation scheduling shows validation errors beside a narrower date field. Admins can still extend a free trial from the tenant billing card.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

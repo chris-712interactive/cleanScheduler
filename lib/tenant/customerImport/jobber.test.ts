@@ -145,6 +145,25 @@ describe('customer import matching', () => {
     expect(dispositions[0]?.action).toBe('skip');
     expect(dispositions[0]?.skipReason).toBe('archived');
   });
+
+  it('turns service address columns into a linked property', () => {
+    const drafts = jobberDrafts(
+      [
+        'J-ID,First Name,Last Name,Service Property Name,Service Address,Service City,Service Province,Service Zip code',
+        '900_1,Riley,Chen,Lake house,88 Lake Rd,Naples,FL,34102',
+      ].join('\n'),
+    );
+    expect(drafts[0]?.properties).toEqual([
+      expect.objectContaining({
+        label: 'Lake house',
+        addressLine1: '88 Lake Rd',
+        city: 'Naples',
+        state: 'FL',
+        postalCode: '34102',
+        isPrimary: true,
+      }),
+    ]);
+  });
 });
 
 describe('customer import plan limit', () => {

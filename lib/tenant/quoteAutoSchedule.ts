@@ -16,7 +16,10 @@ import {
   type JobTypeCatalogEntry,
 } from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
-import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
+import {
+  openWorkDayHours,
+  tenantBusinessSnapshotFromRow,
+} from '@/lib/tenant/tenantBusinessSettings';
 import {
   avoidSameDayRecurringStart,
   maxIsoTimestamp,
@@ -110,7 +113,7 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
       admin
         .from('tenants')
         .select(
-          'timezone, work_week_days, work_day_start, work_day_end, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
+          'timezone, work_week_days, work_day_start, work_day_end, work_day_hours, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
         )
         .eq('id', input.tenantId)
         .maybeSingle(),
@@ -169,6 +172,7 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
     work_week_days: tenantRow.work_week_days,
     work_day_start: tenantRow.work_day_start,
     work_day_end: tenantRow.work_day_end,
+    work_day_hours: tenantRow.work_day_hours,
   });
 
   const scheduleSettings: QuoteAutoScheduleSettings = {
@@ -295,6 +299,7 @@ async function scheduleFlaggedLineVisits(
     workWeekDays: ctx.business.workWeekDays,
     workDayStart: ctx.business.workDayStart,
     workDayEnd: ctx.business.workDayEnd,
+    workDayHours: openWorkDayHours(ctx.business.workDays),
     startAfterDays: options.lineIndex,
     durationHours,
   });
@@ -342,6 +347,7 @@ async function scheduleFlaggedLineVisits(
       workWeekDays: ctx.business.workWeekDays,
       workDayStart: ctx.business.workDayStart,
       workDayEnd: ctx.business.workDayEnd,
+      workDayHours: openWorkDayHours(ctx.business.workDays),
       durationHours,
       startAfterDays: sequence === 0 ? options.lineIndex : 0,
       searchNotBefore,

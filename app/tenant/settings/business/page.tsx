@@ -5,7 +5,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import {
-  WORK_WEEK_DAY_LABEL,
+  summarizeWorkDaySchedule,
   tenantBusinessSnapshotFromRow,
 } from '@/lib/tenant/tenantBusinessSettings';
 import { BusinessAddressForm } from './BusinessAddressForm';
@@ -41,7 +41,8 @@ export default async function TenantBusinessSettingsPage() {
       country,
       work_week_days,
       work_day_start,
-      work_day_end
+      work_day_end,
+      work_day_hours
     `,
     )
     .eq('id', membership.tenantId)
@@ -64,7 +65,7 @@ export default async function TenantBusinessSettingsPage() {
   }
 
   const snapshot = tenantBusinessSnapshotFromRow(tenantRow);
-  const workDayLabels = snapshot.workWeekDays.map((day) => WORK_WEEK_DAY_LABEL[day]).join(', ');
+  const workDayLabels = summarizeWorkDaySchedule(snapshot.workDays);
   const addressSummary = [snapshot.city, snapshot.state].filter(Boolean).join(', ');
 
   return (
@@ -112,7 +113,7 @@ export default async function TenantBusinessSettingsPage() {
               Branding
             </a>
             <a className={layoutStyles.sectionNavLink} href="#business-hours">
-              Work week
+              Hours
             </a>
             <a className={layoutStyles.sectionNavLink} href="#business-address">
               Address
@@ -168,10 +169,11 @@ export default async function TenantBusinessSettingsPage() {
           >
             <header className={layoutStyles.sectionHeader}>
               <h3 id="business-hours-heading" className={layoutStyles.sectionTitle}>
-                Work week
+                Hours of operation
               </h3>
               <p className={layoutStyles.sectionLead}>
-                Default days and hours for scheduling new visits and crew availability.
+                Open days and the hours for each day. Scheduling uses these hours when it looks for
+                the next available visit.
               </p>
             </header>
             <div className={layoutStyles.formWrap}>

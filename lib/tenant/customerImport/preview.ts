@@ -20,6 +20,19 @@ function displayName(disposition: CustomerImportDisposition): string {
   return name || 'Unnamed';
 }
 
+function propertySummary(disposition: CustomerImportDisposition): string {
+  const properties =
+    disposition.action === 'skip' ? disposition.draft.properties : disposition.propertiesToAdd;
+  return properties
+    .map((property) =>
+      [property.addressLine1, property.city, property.state, property.postalCode]
+        .filter(Boolean)
+        .join(', '),
+    )
+    .filter(Boolean)
+    .join('; ');
+}
+
 function toPreviewRow(disposition: CustomerImportDisposition): CustomerImportPreviewRow {
   const propertyCount =
     disposition.action === 'create'
@@ -33,6 +46,7 @@ function toPreviewRow(disposition: CustomerImportDisposition): CustomerImportPre
     email: disposition.draft.email,
     phone: disposition.draft.phone,
     propertyCount,
+    propertySummary: propertySummary(disposition),
     status: disposition.draft.status,
     action: disposition.action,
     skipReason: disposition.skipReason,

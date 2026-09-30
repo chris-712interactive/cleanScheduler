@@ -227,18 +227,12 @@ export function QuoteCreateWizard({
         done: scopeInclusions.length > 0 || scopeExclusions.trim().length > 0,
       },
       {
-        id: 'access',
-        label: 'Access / pets captured or marked N/A',
-        done: accessNotes.trim().length > 0,
-      },
-      {
         id: 'valid',
         label: 'Valid until set',
         done: Boolean(validUntil.trim()),
       },
     ],
     [
-      accessNotes,
       customerId,
       customerSource,
       hasServiceAddress,
@@ -784,7 +778,7 @@ export function QuoteCreateWizard({
               </div>
             </div>
             <label className={styles.label} htmlFor="access_notes">
-              Access, parking, pets, alarm, supplies
+              Access notes (optional, shown to the customer)
             </label>
             <textarea
               id="access_notes"
@@ -793,8 +787,38 @@ export function QuoteCreateWizard({
               rows={4}
               value={accessNotes}
               onChange={(e) => setAccessNotes(e.target.value)}
-              placeholder="Keypad entry, friendly dogs in laundry room, supplies under sink…"
+              placeholder="Parking, pets, supplies under the sink…"
             />
+            <h3 className={styles.wizardSubheading}>Entry codes (office only)</h3>
+            <p className={styles.hint}>
+              Optional. Saved on the quote for your team. These codes are not included on the
+              customer quote.
+            </p>
+            <div className={styles.wizardGridFour}>
+              <div>
+                <label className={styles.label} htmlFor="gate_code">
+                  Gate code
+                </label>
+                <input id="gate_code" name="gate_code" className={styles.input} maxLength={80} />
+              </div>
+              <div>
+                <label className={styles.label} htmlFor="door_code">
+                  Door code
+                </label>
+                <input id="door_code" name="door_code" className={styles.input} maxLength={80} />
+              </div>
+              <div>
+                <label className={styles.label} htmlFor="garage_code">
+                  Garage code
+                </label>
+                <input
+                  id="garage_code"
+                  name="garage_code"
+                  className={styles.input}
+                  maxLength={80}
+                />
+              </div>
+            </div>
           </section>
 
           <section

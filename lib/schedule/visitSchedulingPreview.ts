@@ -13,7 +13,10 @@ import {
 } from '@/lib/schedule/visitAssigneeConflicts';
 import { resolveVisitDurationForVisit } from '@/lib/schedule/resolveVisitDurationForVisit';
 import { firstNameFromDisplayName } from '@/lib/profile/displayName';
-import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
+import {
+  openWorkDayHours,
+  tenantBusinessSnapshotFromRow,
+} from '@/lib/tenant/tenantBusinessSettings';
 
 type Admin = SupabaseClient<Database>;
 
@@ -65,7 +68,7 @@ export async function buildVisitSchedulingPreview(
   const { data: tenantRow } = await admin
     .from('tenants')
     .select(
-      'name, timezone, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country, work_week_days, work_day_start, work_day_end',
+      'name, timezone, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country, work_week_days, work_day_start, work_day_end, work_day_hours',
     )
     .eq('id', tenantId)
     .maybeSingle();
@@ -142,6 +145,7 @@ export async function buildVisitSchedulingPreview(
       workWeekDays: business.workWeekDays,
       workDayStart: business.workDayStart,
       workDayEnd: business.workDayEnd,
+      workDayHours: openWorkDayHours(business.workDays),
       durationHours: durationResolution.durationHours,
       searchNotBefore,
       assigneeUserIds: assigneeUserIds.length > 0 ? assigneeUserIds : undefined,

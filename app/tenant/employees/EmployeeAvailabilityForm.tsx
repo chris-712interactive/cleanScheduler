@@ -10,7 +10,12 @@ import {
   createDefaultMemberDayWindows,
   summarizeMemberDayWindows,
 } from '@/lib/tenant/memberAvailabilityDays';
-import { WORK_WEEK_DAY_LABEL, buildWorkTimeOptions } from '@/lib/tenant/tenantBusinessSettings';
+import {
+  WORK_WEEK_DAY_LABEL,
+  buildWorkTimeOptions,
+  openWorkDayHours,
+  summarizeWorkDaySchedule,
+} from '@/lib/tenant/tenantBusinessSettings';
 import {
   updateMemberAvailabilityAction,
   type MemberAvailabilityActionState,
@@ -56,9 +61,7 @@ export function EmployeeAvailabilityForm({
     submitServerActionForm(event, formAction);
   };
 
-  const tenantSummary = `${tenantDefaults.workWeekDays
-    .map((d) => WORK_WEEK_DAY_LABEL[d])
-    .join(', ')} · ${tenantDefaults.workDayStart}–${tenantDefaults.workDayEnd}`;
+  const tenantSummary = summarizeWorkDaySchedule(tenantDefaults.workDays);
 
   return (
     <form onSubmit={handleSubmit} className={styles.availabilityForm}>
@@ -90,6 +93,7 @@ export function EmployeeAvailabilityForm({
                     enabledWeekdays: tenantDefaults.workWeekDays,
                     startsAt: tenantDefaults.workDayStart,
                     endsAt: tenantDefaults.workDayEnd,
+                    dayHours: openWorkDayHours(tenantDefaults.workDays),
                   })
                 : profile.days,
             });

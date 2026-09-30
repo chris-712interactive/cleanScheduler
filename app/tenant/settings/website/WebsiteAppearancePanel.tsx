@@ -37,7 +37,12 @@ export function WebsiteAppearancePanel({
             <h2 className={styles.sectionTitle}>Appearance</h2>
             <p className={styles.sectionLead}>Layout template and accent color.</p>
           </div>
-          <SettingsSaveButton pending={pending} idleLabel="Save" pendingLabel="Saving…" />
+          <SettingsSaveButton
+            pending={pending}
+            saved={Boolean(state.success)}
+            idleLabel="Save"
+            pendingLabel="Saving…"
+          />
         </header>
 
         <div className={styles.appearanceGroup}>

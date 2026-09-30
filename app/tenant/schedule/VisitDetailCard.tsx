@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapPin, Phone } from 'lucide-react';
+import { googleMapsDirectionsUrl } from '@/lib/geo/googleMapsDirectionsUrl';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
@@ -74,6 +75,7 @@ export type VisitDetailSnapshot = {
   customerPhone: string | null;
   customerEmail: string;
   siteLine: string;
+  mapsAddress: string;
   preferredPaymentMethod: TenantPaymentMethod | null;
   quoteTitle: string | null;
   quoteId: string | null;
@@ -298,7 +300,17 @@ export function VisitDetailCard({
                   <dt className={styles.metaLabel}>Location</dt>
                   <dd className={styles.metaValue}>
                     <MapPin size={14} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
-                    {visit.siteLine}
+                    {visit.mapsAddress ? (
+                      <a
+                        href={googleMapsDirectionsUrl(visit.mapsAddress)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {visit.siteLine}
+                      </a>
+                    ) : (
+                      visit.siteLine
+                    )}
                   </dd>
                 </div>
               ) : null}
