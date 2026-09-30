@@ -545,6 +545,57 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
     sitemapPriority: 0.68,
     changeFrequency: 'monthly',
   },
+  {
+    slug: 'import-customers',
+    path: '/help/cleaning-businesses/import-customers',
+    title: 'Import customers from Jobber',
+    description:
+      'Export your Jobber client list and import names, contact details, and service properties into Clean Scheduler.',
+    sections: [
+      {
+        title: 'Export clients from Jobber',
+        paragraphs: [
+          'In Jobber, open Clients and use the client-list export. Do not export jobs, invoices, or quotes. Clean Scheduler reads the Clients CSV: one row per property, with a J-ID that ties properties to the same person.',
+        ],
+      },
+      {
+        title: 'Import the file',
+        paragraphs: [
+          'In Clean Scheduler, open Customers and choose Import. Upload the CSV, review the preview, then confirm. Customers who are already in the workspace are skipped. A second upload of the same file does not create duplicates.',
+        ],
+        bullets: [
+          'Names, one email, one phone, and service addresses are kept',
+          'Extra emails and useful notes land in internal notes',
+          'Archived Jobber clients are skipped unless you turn that option off',
+          'Portal invites are not sent during import',
+        ],
+      },
+      {
+        title: 'What stays behind',
+        paragraphs: [
+          'Visits, quotes, invoices, and saved cards are not in this import. Finish open balances in Jobber, then schedule new work and send new invoices from Clean Scheduler.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Will importing email my customers?',
+        answer:
+          'No. Import creates the customer record only. Send a portal invite later from the customer profile if you want them to sign in.',
+      },
+      {
+        question: 'What if I import the same Jobber file twice?',
+        answer:
+          'Clients already matched by their Jobber id, email, or phone plus last name are skipped. New service addresses on an existing client can still be added.',
+      },
+    ],
+    relatedLinks: [
+      { href: '/compare/vs-jobber', label: 'Clean Scheduler vs Jobber' },
+      { href: '/start-trial', label: 'Start free trial' },
+    ],
+    sitemapPriority: 0.65,
+    changeFrequency: 'monthly',
+  },
 ];
 
 export function getCleaningBusinessArticle(slug: string): HelpGuideArticle | undefined {

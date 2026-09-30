@@ -133,7 +133,7 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
   {
     key: 'customers.manage',
     label: 'Manage customers',
-    description: 'Create and edit customers, properties, and portal access.',
+    description: 'Create and edit customers, properties, and portal access, including CSV import.',
     group: 'Customers',
   },
   {

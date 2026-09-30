@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-09-26  
+**Last updated:** 2026-09-30  
 **Branch:** `dev`  
-**Latest polish:** Platform sales closer role + pipeline (`0091`–`0092`) — outreach, demos, trial-expiry tasks — see `docs/product/platform-sales-pipeline.md`. **Proposed:** tenant customer CSV import (Jobber-first) — `docs/product/tenant-customer-import.md`.
+**Latest polish:** Tenant customer CSV import (Jobber Clients export) at `/customers/import`. Spec: `docs/product/tenant-customer-import.md`. Sales closer pipeline remains in `docs/product/platform-sales-pipeline.md`.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
