@@ -1,0 +1,7 @@
+J-ID,First Name,Last Name,Display Name,Company Name,Is Company?,E-mails,Main Phone #s,Service Property Name,Service Street 1,Service Street 2,Service City,Service State,Service Zip,Archived,CFT[Door Code and Trim Code],Billing Street 1
+100_1,Agnas  Gura,Smith,Agnas Smith,,"false","a@example.com, b@example.com, c@example.com",2395550100,Home,10 Palm St,Apt 2,Naples,Florida,"33957 (Gulfside Place)",false,01137/2016,
+100_2,Agnas,Smith,Agnas Smith,,false,a@example.com,,Beach house,20 Gulf Dr,,Naples,Fl.,33940,false,Gate (Trade Win) code 1789,
+200_1,,,Hajoca Corp,Hajoca Corp,true,corp@example.com,2395550199,HQ,1 Industrial Way,,Fort Myers,FL,33901,false,,
+300_1,Pat,Lee,Pat Lee,Garage 1553,false,pat@example.com,2395550188,House,15 Oak St,gate code 4412,Naples,FL,34102,false,01137/2016,9 Billing Rd
+400_1,,,,,,,,,,,,,,,,
+500_1,Archived,Client,Archived Client,,false,arch@example.com,,Site,8 Quiet Ln,,Naples,FL,34103,true,,

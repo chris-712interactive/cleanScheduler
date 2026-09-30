@@ -30,7 +30,7 @@ todos:
     content: "Baseline shipped in `0001` + onboarding. **0075:** `tenant_roles`, `tenant_role_permissions`, `tenant_memberships.role_id` with system-role seed + backfill; app resolves grants via `resolveMembershipPermissions`. JWT still carries `base_role` enum for RLS; fine-grained checks in server actions. **Still missing:** pgsodium/Vault; RLS policies keyed on individual permission keys."
     status: in_progress
   - id: customerModel
-    content: "Core shipped in `0001` + CRM/property/portal migrations (`0010`\u2013`0014`, etc.): `customer_identities`, `customers`, links, portal invites, tenant customer profiles/properties. **Gap:** pgsodium/Vault column encryption for PII not present in migrations yet; invite/claim flows exist but encryption story is still TODO."
+    content: "Core shipped in `0001` + CRM/property/portal migrations (`0010`\u2013`0014`, etc.): `customer_identities`, `customers`, links, portal invites, tenant customer profiles/properties. **Jobber Clients CSV import** is live at `/customers/import` (preview, dedupe, no portal invites). **Gap:** pgsodium/Vault column encryption for PII not present in migrations yet; invite/claim flows exist but encryption story is still TODO."
     status: in_progress
   - id: schedulingQuotes
     content: "Shipped: tenant quotes + scheduled visits through **0021** (Kanban, line items, tax/discount, e-sign, notifications, expiry cron). **1.1.0:** wire `tenant_operational_settings` into acceptance (payment methods, prepay invoice, prompt-staff queue). **Auto-schedule on accept** shipped when ops mode is `auto_schedule` + line-item flags (`quoteAutoSchedule`, job catalog **0071**)."

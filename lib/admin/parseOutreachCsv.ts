@@ -1,4 +1,5 @@
 import { isValidOutreachEmail, normalizeOutreachEmail } from '@/lib/admin/outreachTypes';
+import { splitCsvLine, splitCsvRecords } from '@/lib/csv/parseCsv';
 
 export interface ParsedOutreachRow {
   businessName: string | null;
@@ -24,59 +25,8 @@ export interface ParseOutreachCsvResult {
   error?: string;
 }
 
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i]!;
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-    if (ch === ',' && !inQuotes) {
-      cells.push(current.trim());
-      current = '';
-      continue;
-    }
-    current += ch;
-  }
-  cells.push(current.trim());
-  return cells;
-}
-
-/** Split CSV text into rows while respecting quoted newlines. */
 function splitCsvRows(text: string): string[] {
-  const rows: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i]!;
-    if (ch === '"') {
-      if (inQuotes && text[i + 1] === '"') {
-        current += '""';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-        current += ch;
-      }
-      continue;
-    }
-    if ((ch === '\n' || ch === '\r') && !inQuotes) {
-      if (ch === '\r' && text[i + 1] === '\n') i += 1;
-      if (current.trim()) rows.push(current);
-      current = '';
-      continue;
-    }
-    current += ch;
-  }
-  if (current.trim()) rows.push(current);
-  return rows;
+  return splitCsvRecords(text);
 }
 
 function findColumn(headers: string[], candidates: string[]): number {

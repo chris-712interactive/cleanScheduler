@@ -1,3 +1,5 @@
+import { splitCsvLine } from '@/lib/csv/parseCsv';
+
 export interface ParsedBankStatementRow {
   postedDate: string;
   amountCents: number;
@@ -38,32 +40,6 @@ function parseAmountCents(raw: string): number | null {
   if (!Number.isFinite(value) || value === 0) return null;
   const cents = Math.round(Math.abs(value) * 100);
   return negative || numeric.startsWith('-') ? -cents : cents;
-}
-
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i]!;
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-    if (ch === ',' && !inQuotes) {
-      cells.push(current.trim());
-      current = '';
-      continue;
-    }
-    current += ch;
-  }
-  cells.push(current.trim());
-  return cells;
 }
 
 function findColumn(headers: string[], candidates: string[]): number {

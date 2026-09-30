@@ -102,7 +102,7 @@ export function buildOwnerOnboardingChecklist(
     {
       id: 'customer',
       title: 'Add a customer',
-      detail: 'Add someone you can quote and schedule for',
+      detail: 'Add someone you can quote and schedule for, or import a Jobber client list',
       href: '/customers/new',
       complete: counts.hasCustomers,
     },

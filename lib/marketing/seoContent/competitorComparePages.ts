@@ -117,9 +117,13 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         title: 'Switching from Jobber',
         paragraphs: [
-          'Most owners migrate active customers first, import the next two weeks of visits, and run new quotes and invoices from Clean Scheduler while finishing open AR in Jobber. You do not need a big-bang cutover on day one.',
+          'Most owners start by importing their Jobber Clients export from Customers → Import. That brings over names, contact details, and service properties. Then schedule new visits in Clean Scheduler and finish open invoices in Jobber. You do not need a big-bang cutover on day one.',
           'If your bookkeeper spends hours matching Zelle screenshots to invoices, bank deposit matching alone can justify a parallel trial.',
         ],
+        link: {
+          href: '/help/cleaning-businesses/import-customers',
+          label: 'How to import Jobber customers',
+        },
       },
     ],
     faq: [

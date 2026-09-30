@@ -2,6 +2,10 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
+import {
+  hasPermission,
+  resolveMembershipPermissions,
+} from '@/lib/tenant/resolveMembershipPermissions';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -88,6 +92,26 @@ function toDirectoryRow(
   };
 }
 
+function customerDirectoryActions(canImport: boolean) {
+  return (
+    <>
+      {canImport ? (
+        <Button variant="secondary" as="a" href="/customers/import">
+          Import
+        </Button>
+      ) : null}
+      <Button
+        variant="primary"
+        as="a"
+        href="/customers/new"
+        iconLeft={<Plus size={18} aria-hidden />}
+      >
+        Add customer
+      </Button>
+    </>
+  );
+}
+
 const TAB_LINKS: { key: CustomerDirectoryStatusParam; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
@@ -116,6 +140,8 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/customers');
   const admin = createAdminClient();
+  const permissions = await resolveMembershipPermissions(admin, membership);
+  const canImport = hasPermission(permissions, 'customers.manage');
   const serviceZones = await loadServiceZonesForAssignment(admin, membership.tenantId);
   const zoneNameById = new Map(serviceZones.map((z) => [z.id, z.name]));
 
@@ -161,16 +187,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
           <PageHeader
             title="Customers"
             titleHint="Residential and commercial accounts you serve under this workspace."
-            actions={
-              <Button
-                variant="primary"
-                as="a"
-                href="/customers/new"
-                iconLeft={<Plus size={18} aria-hidden />}
-              >
-                Add customer
-              </Button>
-            }
+            actions={customerDirectoryActions(canImport)}
           />
           <div className={styles.errorPanel}>
             <p className={styles.empty} role="alert">
@@ -200,26 +217,24 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       <PageHeader
         title="Customers"
         titleHint="Search, filter, and open any account. Works whether you have a handful or thousands."
-        actions={
-          <Button
-            variant="primary"
-            as="a"
-            href="/customers/new"
-            iconLeft={<Plus size={18} aria-hidden />}
-          >
-            Add customer
-          </Button>
-        }
+        actions={customerDirectoryActions(canImport)}
       />
 
       {showEmptyWorkspace ? (
         <EmptyState
           title="No customers yet"
-          description="Add your first customer to start scheduling, quoting, and billing."
+          description="Add your first customer, or import a Jobber Clients export, to start scheduling, quoting, and billing."
           action={
-            <Button as={Link} href="/customers/new" variant="primary">
-              Add customer
-            </Button>
+            <div className={styles.emptyActions}>
+              {canImport ? (
+                <Button as={Link} href="/customers/import" variant="secondary">
+                  Import from Jobber
+                </Button>
+              ) : null}
+              <Button as={Link} href="/customers/new" variant="primary">
+                Add customer
+              </Button>
+            </div>
           }
         />
       ) : (

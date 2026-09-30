@@ -1,10 +1,10 @@
 # Tenant customer list import
 
-**Status:** Proposed — Jobber-first, source-profile architecture  
+**Status:** Implemented (2026-09-30) — Jobber Clients CSV at `/customers/import`  
 **Audience:** Tenant owners and office staff (`customers.manage`)  
 **Related:** Customer CRM (`customer_identities` / `customers` / profiles / properties), owner onboarding checklist, compare pages (`/compare/vs-jobber` and siblings)
 
-Marketing already tells switchers to “import active customers.” There is no tenant CRM import today. This spec is the plan to add one, starting with a real Jobber **Clients** CSV export.
+Marketing already tells switchers to “import active customers.” Jobber Clients CSV import is live at `/customers/import`. This spec started as the plan for that import.
 
 ## Purpose
 
