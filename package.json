@@ -20,7 +20,8 @@
     "check:engines": "node scripts/check-engines.mjs",
     "marketing:screenshots": "playwright test -c playwright.config.ts",
     "db:types": "supabase gen types typescript --linked --schema public",
-    "db:prod-baseline": "bash supabase/scripts/build-prod-baseline.sh"
+    "db:prod-baseline": "bash supabase/scripts/build-prod-baseline.sh",
+    "briefing:pdf": "node scripts/generate-sales-partner-briefing-pdf.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

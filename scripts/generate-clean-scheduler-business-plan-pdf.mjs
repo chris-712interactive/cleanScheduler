@@ -208,7 +208,7 @@ async function generatePdf() {
         ['Close commission', '25% of first-year cash collected on accounts you close.'],
         [
           'Residual',
-          '10% of that account’s list MRR for 12 months, then 0% (or renegotiate at $8k company MRR).',
+          '10% of that account’s list MRR for 24 months, then 0% (or renegotiate at $8k company MRR).',
         ],
         ['Inbound', 'Same rates if you work the lead to close. Founder-closed accounts: $0.'],
         ['Clawback', 'Reversed if the tenant refunds or churns within 90 days.'],
@@ -223,11 +223,15 @@ async function generatePdf() {
     );
 
     writeSection(doc, 'Pay on one Business annual', [
-      '$1,236 collected → $309 at close (25%). Residual: $129 list MRR × 10% × 12 months = $155. Year-1 total on that logo: $464.',
+      '$1,236 collected → $309 at close (25%). Residual: $129 list MRR × 10% × 24 months = $310. Year-1 total on that logo: $464. Two-year total if they stay: $619.',
+    ]);
+
+    writeSection(doc, 'Pay on one Business monthly', [
+      'Same rates, paid when cash collects. $129/mo → $32.25 close commission each month for 12 months ($387 if they stay the year) plus $12.90 residual for 24 months. Year-1 total if they stay: $542. Two-year total: $697. Cancel in month 6 (after the 90-day clawback window): about $271 vs about $386 on annual. Annual is still the close we want — partner is paid faster, churn is lower.',
     ]);
 
     writeSection(doc, 'What this pays at different volumes', [
-      'Rows 2–3 are annualized after 12 months at that pace (residual book full). Eight closes a month is stretch, not the company base forecast. Plan on other income during ramp. Monthly Business pays slightly more commission (higher cash collected); annual is still the close we want.',
+      'Rows 2–3 are annualized after 24 months at that pace (residual book full). Eight closes a month is stretch, not the company base forecast. Plan on other income during ramp. Monthly Business: 25% of each year-one invoice as it collects ($32.25/mo on $129) plus the same $12.90 list-MRR residual for 24 months. That pays a little more if they stay, but cash arrives slower. Annual is still the close we want.',
     ]);
     writeTable(
       doc,
@@ -243,15 +247,15 @@ async function generatePdf() {
         [
           '2 Business annual / month',
           '$7.4k / yr',
-          '$3.7k / yr',
-          '~$11k / yr',
+          '$7.4k / yr',
+          '~$15k / yr',
           'Serious part-time once residuals catch up.',
         ],
         [
           '8 Business annual / month',
           '$29.7k / yr',
-          '$14.9k / yr',
-          '~$45k / yr',
+          '$29.7k / yr',
+          '~$59k / yr',
           'Full-time equivalent on commission.',
         ],
       ],
