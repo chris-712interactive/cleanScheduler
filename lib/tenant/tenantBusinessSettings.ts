@@ -1,4 +1,5 @@
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
+import { parseCssColorToHex } from '@/lib/ui/parseCssColor';
 
 export const DEFAULT_BRAND_COLOR = '#0D9488';
 
@@ -98,10 +99,7 @@ export function parseTenantTimezone(raw: string): string {
 }
 
 export function parseBrandColor(raw: string): string | null {
-  const value = raw.trim();
-  if (!value) return null;
-  if (/^#[0-9A-Fa-f]{6}$/.test(value)) return value.toUpperCase();
-  return null;
+  return parseCssColorToHex(raw);
 }
 
 export function parseWorkWeekDaysFromForm(formData: FormData): WorkWeekDayKey[] | null {
@@ -122,6 +120,147 @@ export function parseWorkTimeFromForm(raw: string): string | null {
   const value = raw.trim();
   if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(value)) return null;
   return value;
+}
+
+export type WorkDayWindow = { start: string; end: string };
+
+export type WorkDaySchedule = {
+  weekday: WorkWeekDayKey;
+  enabled: boolean;
+  start: string;
+  end: string;
+};
+
+export function openWorkDayHours(
+  days: WorkDaySchedule[],
+): Partial<Record<WorkWeekDayKey, WorkDayWindow>> {
+  const hours: Partial<Record<WorkWeekDayKey, WorkDayWindow>> = {};
+  for (const day of days) {
+    if (!day.enabled) continue;
+    hours[day.weekday] = { start: day.start, end: day.end };
+  }
+  return hours;
+}
+
+export function resolveWorkDayWindow(
+  dayKey: WorkWeekDayKey,
+  input: {
+    workWeekDays?: WorkWeekDayKey[];
+    workDayStart: string;
+    workDayEnd: string;
+    workDayHours?: Partial<Record<WorkWeekDayKey, WorkDayWindow>> | null;
+  },
+): WorkDayWindow | null {
+  if (input.workDayHours && Object.keys(input.workDayHours).length > 0) {
+    return input.workDayHours[dayKey] ?? null;
+  }
+  const workWeekDays =
+    input.workWeekDays && input.workWeekDays.length > 0
+      ? input.workWeekDays
+      : [...DEFAULT_WORK_WEEK_DAYS];
+  if (!workWeekDays.includes(dayKey)) return null;
+  return { start: input.workDayStart, end: input.workDayEnd };
+}
+
+function isWorkDayWindow(value: unknown): value is WorkDayWindow {
+  if (!value || typeof value !== 'object') return false;
+  const window = value as { start?: unknown; end?: unknown };
+  return (
+    typeof window.start === 'string' &&
+    typeof window.end === 'string' &&
+    parseWorkTimeFromForm(window.start) === window.start &&
+    parseWorkTimeFromForm(window.end) === window.end &&
+    window.start < window.end
+  );
+}
+
+export function parseStoredWorkDayHours(
+  raw: unknown,
+): Partial<Record<WorkWeekDayKey, WorkDayWindow>> | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const record = raw as Record<string, unknown>;
+  const hours: Partial<Record<WorkWeekDayKey, WorkDayWindow>> = {};
+  for (const day of WORK_WEEK_DAY_KEYS) {
+    const window = record[day];
+    if (!isWorkDayWindow(window)) continue;
+    hours[day] = { start: window.start, end: window.end };
+  }
+  return Object.keys(hours).length > 0 ? hours : null;
+}
+
+export function workDaySchedulesFromHours(input: {
+  workWeekDays: WorkWeekDayKey[];
+  workDayStart: string;
+  workDayEnd: string;
+  workDayHours: Partial<Record<WorkWeekDayKey, WorkDayWindow>> | null;
+}): WorkDaySchedule[] {
+  const enabled = new Set(input.workWeekDays);
+  return WORK_WEEK_DAY_KEYS.map((weekday) => {
+    const stored = input.workDayHours?.[weekday];
+    const open = input.workDayHours ? Boolean(stored) : enabled.has(weekday);
+    return {
+      weekday,
+      enabled: open,
+      start: stored?.start ?? input.workDayStart,
+      end: stored?.end ?? input.workDayEnd,
+    };
+  });
+}
+
+export function parseWorkDaySchedulesFromForm(
+  formData: FormData,
+): { ok: true; days: WorkDaySchedule[] } | { ok: false; error: string } {
+  const days: WorkDaySchedule[] = [];
+  for (const weekday of WORK_WEEK_DAY_KEYS) {
+    const enabled = formData.get(`work_day_${weekday}`) === 'on';
+    const start = parseWorkTimeFromForm(String(formData.get(`work_day_${weekday}_start`) ?? ''));
+    const end = parseWorkTimeFromForm(String(formData.get(`work_day_${weekday}_end`) ?? ''));
+    if (enabled && (!start || !end)) {
+      return {
+        ok: false,
+        error: `Choose a start and end time for ${WORK_WEEK_DAY_LABEL[weekday]}.`,
+      };
+    }
+    if (enabled && start && end && start >= end) {
+      return { ok: false, error: `${WORK_WEEK_DAY_LABEL[weekday]} must end after it starts.` };
+    }
+    days.push({
+      weekday,
+      enabled,
+      start: start ?? '08:00',
+      end: end ?? '17:00',
+    });
+  }
+  if (!days.some((day) => day.enabled)) {
+    return { ok: false, error: 'Open at least one day.' };
+  }
+  return { ok: true, days };
+}
+
+export function legacyWorkWeekFromSchedules(days: WorkDaySchedule[]): {
+  workWeekDays: WorkWeekDayKey[];
+  workDayStart: string;
+  workDayEnd: string;
+  workDayHours: Partial<Record<WorkWeekDayKey, WorkDayWindow>>;
+} {
+  const open = days.filter((day) => day.enabled);
+  return {
+    workWeekDays: open.map((day) => day.weekday),
+    workDayStart: open[0]?.start ?? '08:00',
+    workDayEnd: open[0]?.end ?? '17:00',
+    workDayHours: openWorkDayHours(days),
+  };
+}
+
+export function summarizeWorkDaySchedule(days: WorkDaySchedule[]): string {
+  const open = days.filter((day) => day.enabled);
+  if (open.length === 0) return 'No open days';
+  const sameHours = open.every((day) => day.start === open[0]?.start && day.end === open[0]?.end);
+  const labels = open.map((day) => WORK_WEEK_DAY_LABEL[day.weekday]).join(', ');
+  if (sameHours && open[0]) return `${labels} · ${open[0].start}–${open[0].end}`;
+  return open
+    .map((day) => `${WORK_WEEK_DAY_LABEL[day.weekday]} ${day.start}–${day.end}`)
+    .join(', ');
 }
 
 export function buildWorkTimeOptions(): { value: string; label: string }[] {
@@ -161,6 +300,7 @@ export interface TenantBusinessSnapshot {
   workWeekDays: WorkWeekDayKey[];
   workDayStart: string;
   workDayEnd: string;
+  workDays: WorkDaySchedule[];
 }
 
 /** Accept empty or https:// review URLs only. */
@@ -192,10 +332,20 @@ export function tenantBusinessSnapshotFromRow(row: {
   work_week_days: string[] | null;
   work_day_start: string | null;
   work_day_end: string | null;
+  work_day_hours?: unknown;
 }): TenantBusinessSnapshot {
   const workWeekDays = (row.work_week_days ?? DEFAULT_WORK_WEEK_DAYS).filter(
     (day): day is WorkWeekDayKey => WORK_WEEK_DAY_KEYS.includes(day as WorkWeekDayKey),
   );
+  const openDays = workWeekDays.length > 0 ? workWeekDays : [...DEFAULT_WORK_WEEK_DAYS];
+  const workDayStart = normalizeWorkTimeValue(row.work_day_start);
+  const workDayEnd = normalizeWorkTimeValue(row.work_day_end);
+  const workDays = workDaySchedulesFromHours({
+    workWeekDays: openDays,
+    workDayStart,
+    workDayEnd,
+    workDayHours: parseStoredWorkDayHours(row.work_day_hours),
+  });
 
   return {
     name: row.name?.trim() || '',
@@ -210,8 +360,9 @@ export function tenantBusinessSnapshotFromRow(row: {
     state: row.state?.trim() || '',
     postalCode: row.postal_code?.trim() || '',
     country: row.country?.trim() || 'US',
-    workWeekDays: workWeekDays.length > 0 ? workWeekDays : [...DEFAULT_WORK_WEEK_DAYS],
-    workDayStart: normalizeWorkTimeValue(row.work_day_start),
-    workDayEnd: normalizeWorkTimeValue(row.work_day_end),
+    workWeekDays: workDays.filter((day) => day.enabled).map((day) => day.weekday),
+    workDayStart,
+    workDayEnd,
+    workDays,
   };
 }

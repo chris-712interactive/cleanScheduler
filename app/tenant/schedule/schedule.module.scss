@@ -1149,6 +1149,10 @@
   min-width: 0;
 }
 
+.datetimeInput {
+  width: min(100%, 16rem);
+}
+
 .formActions {
   display: flex;
   flex-wrap: wrap;
@@ -1723,6 +1727,12 @@
   font-size: var(--font-size-sm);
   line-height: 1.45;
   color: var(--color-text-muted);
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+    text-decoration: underline;
+  }
 }
 
 .fieldJobCardIcon {

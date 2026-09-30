@@ -3,8 +3,8 @@ import {
   findAvailableEmployees,
   pickAutoAssignEmployee,
 } from '@/lib/schedule/employeeAvailability';
-import type { WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
-import { DEFAULT_WORK_WEEK_DAYS } from '@/lib/tenant/tenantBusinessSettings';
+import type { WorkDayWindow, WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
+import { resolveWorkDayWindow } from '@/lib/tenant/tenantBusinessSettings';
 import { localWallClockInTimeZoneToUtcIso } from '@/lib/schedule/nextWorkDayVisitWindow';
 import { applyDurationToVisitWindow } from '@/lib/schedule/visitDuration';
 import type { Database } from '@/lib/supabase/database.types';
@@ -90,6 +90,7 @@ export type FindStaffedVisitWindowInput = {
   workWeekDays?: WorkWeekDayKey[];
   workDayStart: string;
   workDayEnd: string;
+  workDayHours?: Partial<Record<WorkWeekDayKey, WorkDayWindow>> | null;
   durationHours: number;
   now?: Date;
   /** Skip this many calendar days before searching. */
@@ -158,14 +159,6 @@ export async function findStaffedVisitWindows(
   input: FindStaffedVisitWindowInput,
 ): Promise<StaffedVisitWindow[]> {
   const timeZone = safeTimeZone(input.timezone);
-  const workWeekDays =
-    input.workWeekDays && input.workWeekDays.length > 0
-      ? input.workWeekDays
-      : [...DEFAULT_WORK_WEEK_DAYS];
-  const workStart = parseHm(input.workDayStart);
-  const workEnd = parseHm(input.workDayEnd);
-  const workStartMin = minutesSinceMidnight(workStart.hour, workStart.minute);
-  const workEndMin = minutesSinceMidnight(workEnd.hour, workEnd.minute);
   const durationMin = Math.round(Math.max(0.25, input.durationHours) * 60);
   const slotStepMinutes = Math.max(15, input.slotStepMinutes ?? 15);
   const now = input.now ?? new Date();
@@ -173,9 +166,13 @@ export async function findStaffedVisitWindows(
   const startAfterDays = Math.max(0, input.startAfterDays ?? 0);
   const searchHorizonDays = Math.max(7, input.searchHorizonDays ?? 28);
   const limit = Math.min(5, Math.max(1, input.limit ?? 5));
-
-  if (durationMin > workEndMin - workStartMin) {
-    return [];
+  const usesPerDayHours = Boolean(input.workDayHours && Object.keys(input.workDayHours).length > 0);
+  if (!usesPerDayHours) {
+    const workStart = parseHm(input.workDayStart);
+    const workEnd = parseHm(input.workDayEnd);
+    const workStartMin = minutesSinceMidnight(workStart.hour, workStart.minute);
+    const workEndMin = minutesSinceMidnight(workEnd.hour, workEnd.minute);
+    if (durationMin > workEndMin - workStartMin) return [];
   }
 
   const results: StaffedVisitWindow[] = [];
@@ -188,7 +185,13 @@ export async function findStaffedVisitWindows(
   ) {
     const probe = new Date(now.getTime() + offset * 24 * 3_600_000);
     const cal = calendarPartsInTimeZone(probe, timeZone);
-    if (!workWeekDays.includes(cal.dayKey)) continue;
+    const dayWindow = resolveWorkDayWindow(cal.dayKey, input);
+    if (!dayWindow) continue;
+    const workStart = parseHm(dayWindow.start);
+    const workEnd = parseHm(dayWindow.end);
+    const workStartMin = minutesSinceMidnight(workStart.hour, workStart.minute);
+    const workEndMin = minutesSinceMidnight(workEnd.hour, workEnd.minute);
+    if (durationMin > workEndMin - workStartMin) continue;
 
     for (
       let startMin = workStartMin;

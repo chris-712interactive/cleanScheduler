@@ -77,7 +77,7 @@ export default async function TenantAccountSettingsPage() {
       ? admin
           .from('tenants')
           .select(
-            'timezone, work_week_days, work_day_start, work_day_end, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
+            'timezone, work_week_days, work_day_start, work_day_end, work_day_hours, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
           )
           .eq('id', membership.tenantId)
           .maybeSingle()
@@ -104,6 +104,7 @@ export default async function TenantAccountSettingsPage() {
           country: tenantRow.country ?? 'US',
           work_week_days: tenantRow.work_week_days ?? null,
           work_day_start: tenantRow.work_day_start ?? null,
+          work_day_hours: tenantRow.work_day_hours ?? null,
           work_day_end: tenantRow.work_day_end ?? null,
         })
       : null;

@@ -122,7 +122,7 @@ export function BusinessProfileForm({
       </select>
       <p className={styles.fieldHint}>This timezone is used for scheduling, jobs, and reports.</p>
 
-      {!readOnly ? <SettingsSaveButton pending={pending} /> : null}
+      {!readOnly ? <SettingsSaveButton pending={pending} saved={Boolean(state.success)} /> : null}
     </form>
   );
 }

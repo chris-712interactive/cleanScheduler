@@ -29,17 +29,22 @@ export function createDefaultMemberDayWindows(input?: {
   enabledWeekdays?: WorkWeekDayKey[];
   startsAt?: string;
   endsAt?: string;
+  dayHours?: Partial<Record<WorkWeekDayKey, { start: string; end: string }>>;
 }): MemberDayWindow[] {
-  const enabled = new Set(input?.enabledWeekdays ?? DEFAULT_WORK_WEEK_DAYS);
   const startsAt = normalizeWorkTimeValue(input?.startsAt ?? '08:00');
   const endsAt = normalizeWorkTimeValue(input?.endsAt ?? '17:00');
+  const enabled = new Set(input?.enabledWeekdays ?? DEFAULT_WORK_WEEK_DAYS);
+  const hasDayHours = Boolean(input?.dayHours && Object.keys(input.dayHours).length > 0);
 
-  return WORK_WEEK_DAY_KEYS.map((weekday) => ({
-    weekday,
-    enabled: enabled.has(weekday),
-    startsAt,
-    endsAt,
-  }));
+  return WORK_WEEK_DAY_KEYS.map((weekday) => {
+    const hours = input?.dayHours?.[weekday];
+    return {
+      weekday,
+      enabled: hasDayHours ? Boolean(hours) : enabled.has(weekday),
+      startsAt: hours?.start ?? startsAt,
+      endsAt: hours?.end ?? endsAt,
+    };
+  });
 }
 
 export function memberDayWindowsFromDbRows(

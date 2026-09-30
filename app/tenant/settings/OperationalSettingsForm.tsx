@@ -762,7 +762,11 @@ export function OperationalSettingsForm({
       {!readOnly ? (
         <div className={styles.saveBar}>
           <p className={styles.saveBarHint}>Save once after updating any sections above.</p>
-          <SettingsSaveButton pending={pending} idleLabel="Save operations settings" />
+          <SettingsSaveButton
+            pending={pending}
+            saved={Boolean(state.success)}
+            idleLabel="Save operations settings"
+          />
         </div>
       ) : null}
     </form>

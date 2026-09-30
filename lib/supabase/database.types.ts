@@ -4632,6 +4632,7 @@ export type Database = {
           work_week_days: string[];
           work_day_start: string;
           work_day_end: string;
+          work_day_hours: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -4659,6 +4660,7 @@ export type Database = {
           work_week_days?: string[];
           work_day_start?: string;
           work_day_end?: string;
+          work_day_hours?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -4686,6 +4688,7 @@ export type Database = {
           work_week_days?: string[];
           work_day_start?: string;
           work_day_end?: string;
+          work_day_hours?: Json | null;
           created_at?: string;
           updated_at?: string;
         };

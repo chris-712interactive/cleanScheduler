@@ -4,11 +4,11 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import {
+  legacyWorkWeekFromSchedules,
   parseBrandColor,
   parseCustomerReviewUrl,
   parseTenantTimezone,
-  parseWorkTimeFromForm,
-  parseWorkWeekDaysFromForm,
+  parseWorkDaySchedulesFromForm,
   type TenantBusinessSnapshot,
 } from '@/lib/tenant/tenantBusinessSettings';
 
@@ -92,38 +92,30 @@ export async function updateWorkWeekAction(
 
   try {
     const membership = await requireBusinessSettingsAccess(slug);
-    const workWeekDays = parseWorkWeekDaysFromForm(formData);
-    if (!workWeekDays) {
-      return { error: 'Select at least one work day.' };
-    }
-
-    const workDayStart = parseWorkTimeFromForm(String(formData.get('work_day_start') ?? ''));
-    const workDayEnd = parseWorkTimeFromForm(String(formData.get('work_day_end') ?? ''));
-    if (!workDayStart || !workDayEnd) {
-      return { error: 'Choose valid start and end times.' };
-    }
-    if (workDayStart >= workDayEnd) {
-      return { error: 'End time must be after start time.' };
-    }
+    const parsed = parseWorkDaySchedulesFromForm(formData);
+    if (!parsed.ok) return { error: parsed.error };
+    const hours = legacyWorkWeekFromSchedules(parsed.days);
 
     const admin = createAdminClient();
     const { error } = await admin
       .from('tenants')
       .update({
-        work_week_days: workWeekDays,
-        work_day_start: workDayStart,
-        work_day_end: workDayEnd,
+        work_week_days: hours.workWeekDays,
+        work_day_start: hours.workDayStart,
+        work_day_end: hours.workDayEnd,
+        work_day_hours: hours.workDayHours,
         updated_at: new Date().toISOString(),
       })
       .eq('id', membership.tenantId);
 
     if (error) return { error: error.message };
     return {
-      success: 'Work week saved.',
+      success: 'Hours of operation saved.',
       businessPatch: {
-        workWeekDays,
-        workDayStart,
-        workDayEnd,
+        workWeekDays: hours.workWeekDays,
+        workDayStart: hours.workDayStart,
+        workDayEnd: hours.workDayEnd,
+        workDays: parsed.days,
       },
     };
   } catch (err) {
@@ -144,7 +136,7 @@ export async function updateBrandingAction(
     const membership = await requireBusinessSettingsAccess(slug);
     const brandColor = parseBrandColor(String(formData.get('brand_color') ?? ''));
     if (!brandColor) {
-      return { error: 'Enter a valid hex brand color (e.g. #0D9488).' };
+      return { error: 'Enter a hex code or RGB value, such as #0D9488 or rgb(13, 148, 136).' };
     }
 
     const admin = createAdminClient();

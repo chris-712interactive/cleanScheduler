@@ -131,7 +131,7 @@ export function BusinessAddressForm({
         ))}
       </select>
 
-      {!readOnly ? <SettingsSaveButton pending={pending} /> : null}
+      {!readOnly ? <SettingsSaveButton pending={pending} saved={Boolean(state.success)} /> : null}
     </form>
   );
 }

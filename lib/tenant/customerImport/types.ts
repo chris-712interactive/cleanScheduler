@@ -62,6 +62,7 @@ export type CustomerImportPreviewRow = {
   email: string | null;
   phone: string | null;
   propertyCount: number;
+  propertySummary: string;
   status: 'active' | 'inactive';
   action: CustomerImportAction;
   skipReason: CustomerImportSkipReason | null;

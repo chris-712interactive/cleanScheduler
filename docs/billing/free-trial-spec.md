@@ -429,3 +429,8 @@ Reply with choices (or edits) before implementation.
 - Tier entitlements doc: `docs/billing/tier-entitlements.md`
 - Expire cron: `lib/billing/expireStaleTrials.ts`
 - Auto-purge: `lib/billing/tenantPurge.ts`
+- Admin trial extension: `lib/billing/extendTenantTrial.ts` (Admin → Tenants → tenant → Billing)
+
+## Admin trial extension
+
+Platform admins can add 1–90 days from **Admin → Tenants → [workspace] → Billing**. Days are added after the current `trial_ends_at`, or from today if that date has passed. An expired database-only trial (`status=canceled`, never activated, no Stripe subscription) is set back to `trialing` and the workspace is marked active again. Paid or Stripe-managed subscriptions are not changed here. The action is audited as `tenant.trial_extended`.

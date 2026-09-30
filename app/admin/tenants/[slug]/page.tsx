@@ -28,8 +28,10 @@ import {
   PLATFORM_SUPPORT_STATUS_LABEL,
 } from '@/lib/admin/platformSupportLabels';
 import { AdminDeleteTenantPanel } from '../AdminDeleteTenantPanel';
+import { AdminExtendTrialPanel } from '../AdminExtendTrialPanel';
 import { AdminTenantRiskPanel } from '../AdminTenantRiskPanel';
 import { CONNECT_VELOCITY_BLOCKED_AUDIT_ACTION } from '@/lib/billing/connectPaymentVelocity';
+import { trialExtensionBlockReason } from '@/lib/billing/extendTenantTrial';
 import { isSignupEmailBlocked } from '@/lib/admin/platformSignupEmailBlocks';
 import styles from '../tenants.module.scss';
 
@@ -56,6 +58,7 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
   const sp = await searchParams;
   const slug = rawSlug.trim().toLowerCase();
   const riskFlash = firstParam(sp.risk);
+  const trialFlash = firstParam(sp.trial);
 
   const admin = createAdminClient();
   const { data: tenant, error } = await admin
@@ -200,6 +203,11 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
                   : 'Signup email block updated.'}
             </p>
           ) : null}
+          {trialFlash === 'extended' ? (
+            <p className={styles.bannerSuccess} role="status">
+              Trial extended. The workspace can keep using the portal until the new end date.
+            </p>
+          ) : null}
 
           <Card title="Fraud & risk controls">
             <AdminTenantRiskPanel
@@ -334,6 +342,22 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
             ) : (
               <p className={styles.empty}>No billing row.</p>
             )}
+            <AdminExtendTrialPanel
+              tenantId={tenant.id}
+              tenantSlug={tenant.slug}
+              trialEndsAt={billing?.trial_ends_at ? String(billing.trial_ends_at) : null}
+              blockedReason={trialExtensionBlockReason(
+                billing
+                  ? {
+                      status: billing.status,
+                      trial_ends_at: billing.trial_ends_at,
+                      trial_started_at: billing.trial_started_at,
+                      activated_at: billing.activated_at,
+                      stripe_subscription_id: billing.stripe_subscription_id,
+                    }
+                  : null,
+              )}
+            />
           </Card>
 
           <Card title="Entitlements">

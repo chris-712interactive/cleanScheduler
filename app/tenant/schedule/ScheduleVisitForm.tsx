@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { shiftEndFromStartAndDuration } from '@/lib/datetime/shiftVisitEndFromStart';
 import {
@@ -58,6 +58,8 @@ export function ScheduleVisitForm({
   returnTo?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
+  const [clientError, setClientError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
 
   const [customerId, setCustomerId] = useState(defaults?.customerId ?? '');
   const [crewFilter, setCrewFilter] = useState('');
@@ -130,9 +132,46 @@ export function ScheduleVisitForm({
   }, [employeeOptions, crewFilter]);
 
   const consultationDurationLabel = formatConsultationDurationLabel(consultationDurationMinutes);
+  const visibleError = clientError || state.error || null;
+
+  useEffect(() => {
+    if (!visibleError) return;
+    errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [visibleError]);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const formData = new FormData(event.currentTarget);
+    const propertyId = String(formData.get('property_id') ?? '').trim();
+    const serviceTypeId = String(formData.get('consultation_service_template_id') ?? '').trim();
+    const messages: string[] = [];
+
+    if (!customerId) messages.push('Select a customer.');
+    if (isConsultation && propertyOptions.length > 1 && !propertyId) {
+      messages.push('Select a location for this consultation.');
+    }
+    if (isConsultation && consultationServiceTypes.length === 0) {
+      messages.push('Add a service type under Settings → Service types before scheduling.');
+    } else if (isConsultation && !serviceTypeId) {
+      messages.push('Select the service type for this consultation.');
+    }
+    if (!startsAt) {
+      messages.push('Choose a start date and time. Use the calendar icon in the date field.');
+    }
+    if (!isConsultation && !endsAt) messages.push('Choose an end date and time.');
+    if (!isConsultation && startsAt && endsAt && new Date(endsAt) <= new Date(startsAt)) {
+      messages.push('End time must be after the start time.');
+    }
+
+    if (messages.length > 0) {
+      event.preventDefault();
+      setClientError(messages.join(' '));
+      return;
+    }
+    setClientError(null);
+  };
 
   return (
-    <form action={formAction} className={styles.formCompact}>
+    <form action={formAction} className={styles.formCompact} noValidate onSubmit={handleSubmit}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input
         type="hidden"
@@ -157,9 +196,9 @@ export function ScheduleVisitForm({
       {confirmUnavailable ? (
         <input type="hidden" name="confirm_unavailable" value="true" readOnly />
       ) : null}
-      {state.error ? (
+      {visibleError ? (
         <p className={styles.error} role="alert">
-          {state.error}
+          {visibleError}
         </p>
       ) : null}
       {state.needsOverlapConfirm && !confirmUnavailable ? (
@@ -219,7 +258,6 @@ export function ScheduleVisitForm({
                 className={styles.select}
                 defaultValue={defaults?.propertyId ?? ''}
                 disabled={!customerId}
-                required
               >
                 <option value="" disabled>
                   Select a location
@@ -286,7 +324,6 @@ export function ScheduleVisitForm({
               id="consultation_service_type"
               name="consultation_service_template_id"
               className={styles.select}
-              required
               defaultValue=""
             >
               <option value="" disabled>
@@ -366,15 +403,16 @@ export function ScheduleVisitForm({
             <input
               id="visit_starts"
               name="starts_at"
-              className={styles.input}
+              className={`${styles.input} ${styles.datetimeInput}`}
               type="datetime-local"
-              required
               value={startsAt}
               onChange={(e) => {
                 setConfirmUnavailable(false);
+                setClientError(null);
                 setStartsAt(e.target.value);
               }}
             />
+            <p className={styles.crewHint}>Use the calendar icon to pick the date and time.</p>
           </div>
           <input type="hidden" name="ends_at" value={endsAt} />
           <p className={styles.crewHint}>
@@ -393,7 +431,6 @@ export function ScheduleVisitForm({
               name="starts_at"
               className={styles.input}
               type="datetime-local"
-              required
               value={startsAt}
               onChange={(e) => {
                 setConfirmUnavailable(false);
@@ -410,7 +447,6 @@ export function ScheduleVisitForm({
               name="ends_at"
               className={styles.input}
               type="datetime-local"
-              required
               value={endsAt}
               onChange={(e) => {
                 setConfirmUnavailable(false);
@@ -494,11 +530,12 @@ export function ScheduleVisitForm({
       </div>
 
       <div className={styles.formActions}>
-        <button
-          type="submit"
-          className={styles.submit}
-          disabled={pending || (isConsultation && !endsAt)}
-        >
+        {visibleError ? (
+          <p ref={errorRef} className={styles.error} role="alert">
+            {visibleError}
+          </p>
+        ) : null}
+        <button type="submit" className={styles.submit} disabled={pending}>
           {pending ? 'Saving…' : isConsultation ? 'Schedule consultation' : 'Add visit'}
         </button>
       </div>

@@ -124,8 +124,9 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
     row.customers?.tenant_customer_profiles?.preferred_payment_method ?? null;
   const quoteAmountRaw = row.tenant_quotes?.amount_cents;
   const prop = row.tenant_customer_properties;
+  const mapsAddress = prop ? formatPropertyAddressLine(prop) : '';
   const siteLine = prop
-    ? [prop.label?.trim(), formatPropertyAddressLine(prop)].filter(Boolean).join(' — ')
+    ? [prop.label?.trim(), mapsAddress].filter(Boolean).join(' — ')
     : '';
   const assignees = normalizeAssigneeRows(
     row.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
@@ -233,6 +234,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           customerPhone,
           customerEmail,
           siteLine,
+          mapsAddress,
           preferredPaymentMethod,
           quoteTitle: row.tenant_quotes?.title ?? null,
           quoteId: row.quote_id,

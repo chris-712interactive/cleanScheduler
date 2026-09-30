@@ -5,6 +5,7 @@ import { useActionState, useCallback, useEffect, useRef, useState, type FormEven
 import { Upload } from 'lucide-react';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
+import { ColorField } from '@/components/ui/ColorField';
 import { SettingsSaveButton } from '../SettingsSaveButton';
 import type { TenantBusinessSnapshot } from '@/lib/tenant/tenantBusinessSettings';
 import {
@@ -26,12 +27,10 @@ function BrandColorForm({
   initialBrandColor: string;
   readOnly?: boolean;
 }) {
-  const [savedBrandColor, setSavedBrandColor] = useState(initialBrandColor);
   const [swatchColor, setSwatchColor] = useState(initialBrandColor);
   const [state, action, pending] = useActionState(updateBrandingAction, brandingInitial);
 
   useEffect(() => {
-    setSavedBrandColor(initialBrandColor);
     setSwatchColor(initialBrandColor);
   }, [initialBrandColor]);
 
@@ -39,10 +38,7 @@ function BrandColorForm({
     state.success,
     state.businessPatch,
     useCallback((patch: Partial<TenantBusinessSnapshot>) => {
-      if (patch.brandColor) {
-        setSavedBrandColor(patch.brandColor);
-        setSwatchColor(patch.brandColor);
-      }
+      if (patch.brandColor) setSwatchColor(patch.brandColor);
     }, []),
   );
 
@@ -64,28 +60,17 @@ function BrandColorForm({
         </p>
       ) : null}
 
-      <label className={styles.fieldLabel} htmlFor="brand_color">
-        Brand color
-      </label>
-      <div className={styles.colorFieldRow}>
-        <span className={styles.colorSwatch} style={{ backgroundColor: swatchColor }} aria-hidden />
-        <input
-          id="brand_color"
-          key={savedBrandColor}
-          name="brand_color"
-          type="text"
-          className={styles.fieldInput}
-          defaultValue={savedBrandColor}
-          onInput={(event) => setSwatchColor(event.currentTarget.value)}
-          pattern="^#[0-9A-Fa-f]{6}$"
-          disabled={readOnly}
-        />
-      </div>
-      <p className={styles.fieldHint}>
-        This color will be used for buttons, highlights, and branding elements.
-      </p>
+      <ColorField
+        id="brand_color"
+        name="brand_color"
+        label="Brand color"
+        value={swatchColor}
+        onChange={setSwatchColor}
+        disabled={readOnly}
+        hint="Pick a color, or type a hex code or RGB value. Used for buttons, highlights, and branding."
+      />
 
-      {!readOnly ? <SettingsSaveButton pending={pending} /> : null}
+      {!readOnly ? <SettingsSaveButton pending={pending} saved={Boolean(state.success)} /> : null}
     </form>
   );
 }
@@ -158,7 +143,13 @@ function LogoUploadForm({
           <Upload size={24} aria-hidden />
           <span className={styles.logoDropzoneTitle}>Upload your logo</span>
           <span className={styles.logoDropzoneHint}>PNG, JPG or SVG (max. 2MB)</span>
-          <SettingsSaveButton pending={pending} idleLabel="Upload logo" pendingLabel="Uploading…" />
+          <SettingsSaveButton
+            pending={pending}
+            saved={Boolean(state.success)}
+            idleLabel="Upload logo"
+            pendingLabel="Uploading…"
+            savedLabel="Uploaded"
+          />
         </label>
       ) : null}
     </form>

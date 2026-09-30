@@ -5,15 +5,23 @@ import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import { SettingsSaveButton } from '../SettingsSaveButton';
 import {
-  WORK_WEEK_DAY_KEYS,
   WORK_WEEK_DAY_LABEL,
   buildWorkTimeOptions,
   type TenantBusinessSnapshot,
+  type WorkDaySchedule,
 } from '@/lib/tenant/tenantBusinessSettings';
 import { updateWorkWeekAction, type BusinessSettingsActionState } from './businessActions';
 import styles from '../settings.module.scss';
 
 const initial: BusinessSettingsActionState = {};
+
+function updateDay(
+  days: WorkDaySchedule[],
+  weekday: WorkDaySchedule['weekday'],
+  patch: Partial<WorkDaySchedule>,
+): WorkDaySchedule[] {
+  return days.map((day) => (day.weekday === weekday ? { ...day, ...patch } : day));
+}
 
 export function WorkWeekForm({
   tenantSlug,
@@ -24,17 +32,16 @@ export function WorkWeekForm({
   snapshot: TenantBusinessSnapshot;
   readOnly?: boolean;
 }) {
-  const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const [days, setDays] = useState(initialSnapshot.workDays);
   const [state, formAction, pending] = useActionState(updateWorkWeekAction, initial);
   const timeOptions = buildWorkTimeOptions();
-  const selectedDays = new Set(snapshot.workWeekDays);
 
   useEffect(() => {
-    setSnapshot(initialSnapshot);
+    setDays(initialSnapshot.workDays);
   }, [initialSnapshot]);
 
   const onBusinessPatch = useCallback((patch: Partial<TenantBusinessSnapshot>) => {
-    setSnapshot((current) => ({ ...current, ...patch }));
+    if (patch.workDays) setDays(patch.workDays);
   }, []);
 
   useServerActionSnapshot(state.success, state.businessPatch, onBusinessPatch);
@@ -57,61 +64,68 @@ export function WorkWeekForm({
         </p>
       ) : null}
 
-      <span className={styles.fieldLabel}>Work week</span>
-      <div className={styles.dayToggleRow} role="group" aria-label="Work week">
-        {WORK_WEEK_DAY_KEYS.map((day) => (
-          <label key={day} className={styles.dayToggle}>
-            <input
-              type="checkbox"
-              name={`work_day_${day}`}
-              defaultChecked={selectedDays.has(day)}
-              disabled={readOnly}
-            />
-            <span>{WORK_WEEK_DAY_LABEL[day]}</span>
-          </label>
+      <span className={styles.fieldLabel}>Hours of operation</span>
+      <p className={styles.fieldHint}>
+        Set each day on its own. A closed day is left unchecked and is not given the same hours as
+        the other days.
+      </p>
+      <ul className={styles.hoursDayList}>
+        {days.map((day) => (
+          <li key={day.weekday} className={styles.hoursDayRow}>
+            <label className={styles.hoursDayToggle}>
+              <input
+                type="checkbox"
+                name={`work_day_${day.weekday}`}
+                checked={day.enabled}
+                disabled={readOnly}
+                onChange={(event) =>
+                  setDays((current) =>
+                    updateDay(current, day.weekday, { enabled: event.target.checked }),
+                  )
+                }
+              />
+              <span>{WORK_WEEK_DAY_LABEL[day.weekday]}</span>
+            </label>
+            <select
+              name={`work_day_${day.weekday}_start`}
+              className={styles.fieldSelect}
+              value={day.start}
+              disabled={readOnly || !day.enabled}
+              aria-label={`${WORK_WEEK_DAY_LABEL[day.weekday]} start`}
+              onChange={(event) =>
+                setDays((current) => updateDay(current, day.weekday, { start: event.target.value }))
+              }
+            >
+              {timeOptions.map((option) => (
+                <option key={`${day.weekday}-start-${option.value}`} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <span className={styles.hoursDayDash} aria-hidden>
+              –
+            </span>
+            <select
+              name={`work_day_${day.weekday}_end`}
+              className={styles.fieldSelect}
+              value={day.end}
+              disabled={readOnly || !day.enabled}
+              aria-label={`${WORK_WEEK_DAY_LABEL[day.weekday]} end`}
+              onChange={(event) =>
+                setDays((current) => updateDay(current, day.weekday, { end: event.target.value }))
+              }
+            >
+              {timeOptions.map((option) => (
+                <option key={`${day.weekday}-end-${option.value}`} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <div className={styles.timeGrid}>
-        <div>
-          <label className={styles.fieldLabel} htmlFor="work_day_start">
-            Default start time
-          </label>
-          <select
-            id="work_day_start"
-            name="work_day_start"
-            className={styles.fieldSelect}
-            defaultValue={snapshot.workDayStart}
-            disabled={readOnly}
-          >
-            {timeOptions.map((option) => (
-              <option key={`start-${option.value}`} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={styles.fieldLabel} htmlFor="work_day_end">
-            Default end time
-          </label>
-          <select
-            id="work_day_end"
-            name="work_day_end"
-            className={styles.fieldSelect}
-            defaultValue={snapshot.workDayEnd}
-            disabled={readOnly}
-          >
-            {timeOptions.map((option) => (
-              <option key={`end-${option.value}`} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {!readOnly ? <SettingsSaveButton pending={pending} /> : null}
+      {!readOnly ? <SettingsSaveButton pending={pending} saved={Boolean(state.success)} /> : null}
     </form>
   );
 }

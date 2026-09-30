@@ -34,11 +34,18 @@ const MAPPED_HEADERS = [
   'E-mails',
   ...PHONE_HEADERS,
   'Service Property Name',
+  'Property Name',
   'Service Street 1',
+  'Service Street',
+  'Service Address',
   'Service Street 2',
+  'Service Address 2',
   'Service City',
   'Service State',
+  'Service Province',
   'Service Zip',
+  'Service Zip code',
+  'Service Postal Code',
   'Is Company?',
   'Company Name',
   'Archived',
@@ -61,7 +68,10 @@ const HANDLED_CUSTOM_FIELDS = new Set([
 export function isJobberClientExport(headers: string[]): boolean {
   const hasClientId = findHeaderIndex(headers, 'J-ID') >= 0;
   const hasGrain =
-    findHeaderIndex(headers, 'Service Street 1') >= 0 || findHeaderIndex(headers, 'E-mails') >= 0;
+    findHeaderIndex(headers, 'Service Street 1') >= 0 ||
+    findHeaderIndex(headers, 'Service Street') >= 0 ||
+    findHeaderIndex(headers, 'Service Address') >= 0 ||
+    findHeaderIndex(headers, 'E-mails') >= 0;
   return hasClientId && hasGrain;
 }
 
@@ -88,6 +98,14 @@ export function jobberColumnReport(headers: string[]): {
 
 function cell(headers: string[], row: string[], name: string): string {
   return headerCell(headers, row, name);
+}
+
+function firstCell(headers: string[], row: string[], names: string[]): string {
+  for (const name of names) {
+    const value = cell(headers, row, name);
+    if (value) return value;
+  }
+  return '';
 }
 
 function jobberClientId(jid: string): string | null {
@@ -226,11 +244,17 @@ function mapJobberGroup(
       warnings.push('Company name kept as site notes');
     }
 
-    const street = collapseWhitespace(cell(headers, row, 'Service Street 1'));
-    const line2 = classifyAddressLine2(cell(headers, row, 'Service Street 2'));
+    const street = collapseWhitespace(
+      firstCell(headers, row, ['Service Street 1', 'Service Street', 'Service Address']),
+    );
+    const line2 = classifyAddressLine2(
+      firstCell(headers, row, ['Service Street 2', 'Service Address 2']),
+    );
     const city = collapseWhitespace(cell(headers, row, 'Service City'));
-    const state = parseServiceState(cell(headers, row, 'Service State'));
-    const postal = parsePostalCode(cell(headers, row, 'Service Zip'));
+    const state = parseServiceState(firstCell(headers, row, ['Service State', 'Service Province']));
+    const postal = parsePostalCode(
+      firstCell(headers, row, ['Service Zip', 'Service Zip code', 'Service Postal Code']),
+    );
     const door = doorCodeNote(cell(headers, row, 'CFT[Door Code and Trim Code]'));
     const office = collapseWhitespace(cell(headers, row, 'PFT[office]'));
     const custom = unmatchedCustomNotes(headers, row, includeUnmatchedCustomFields);
@@ -238,7 +262,7 @@ function mapJobberGroup(
 
     if (street) {
       const label =
-        collapseWhitespace(cell(headers, row, 'Service Property Name')) ||
+        collapseWhitespace(firstCell(headers, row, ['Service Property Name', 'Property Name'])) ||
         street ||
         city ||
         'Service location';

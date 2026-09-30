@@ -9,7 +9,11 @@ import {
   type MemberScheduleProfile,
 } from '@/lib/tenant/memberAvailabilityDays';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
-import { type WorkWeekDayKey, WORK_WEEK_DAY_KEYS } from '@/lib/tenant/tenantBusinessSettings';
+import {
+  openWorkDayHours,
+  type WorkWeekDayKey,
+  WORK_WEEK_DAY_KEYS,
+} from '@/lib/tenant/tenantBusinessSettings';
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
 
 type Admin = SupabaseClient<Database>;
@@ -22,8 +26,16 @@ function tenantDayWindowsFromBusiness(business: {
   workWeekDays: WorkWeekDayKey[];
   workDayStart: string;
   workDayEnd: string;
+  workDays?: Array<{ weekday: WorkWeekDayKey; enabled: boolean; start: string; end: string }>;
 }): EffectiveMemberSchedule['dayWindows'] {
   const dayWindows: EffectiveMemberSchedule['dayWindows'] = {};
+  if (business.workDays && business.workDays.some((day) => day.enabled)) {
+    for (const day of business.workDays) {
+      if (!day.enabled) continue;
+      dayWindows[day.weekday] = { startsAt: day.start, endsAt: day.end };
+    }
+    return dayWindows;
+  }
   for (const weekday of business.workWeekDays) {
     dayWindows[weekday] = {
       startsAt: business.workDayStart,
@@ -37,7 +49,7 @@ async function loadTenantBusiness(admin: Admin, tenantId: string) {
   const { data: tenantRow } = await admin
     .from('tenants')
     .select(
-      'timezone, work_week_days, work_day_start, work_day_end, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
+      'timezone, work_week_days, work_day_start, work_day_end, work_day_hours, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
     )
     .eq('id', tenantId)
     .maybeSingle();
@@ -59,6 +71,7 @@ async function loadTenantBusiness(admin: Admin, tenantId: string) {
     work_week_days: tenantRow.work_week_days,
     work_day_start: tenantRow.work_day_start,
     work_day_end: tenantRow.work_day_end,
+    work_day_hours: tenantRow.work_day_hours,
   });
 }
 
@@ -125,6 +138,7 @@ export async function loadMemberScheduleProfile(
     enabledWeekdays: business?.workWeekDays,
     startsAt: business?.workDayStart,
     endsAt: business?.workDayEnd,
+    dayHours: business ? openWorkDayHours(business.workDays) : undefined,
   });
 
   const [{ data: profileRow }, customDays] = await Promise.all([

@@ -28,7 +28,11 @@ import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import { QuoteAutoScheduleBanner } from '../QuoteAutoScheduleBanner';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
-import { parseQuoteScopeSnapshot } from '@/lib/tenant/quoteStructuredFields';
+import {
+  formatOfficeAccessCodes,
+  parseQuotePropertySnapshot,
+  parseQuoteScopeSnapshot,
+} from '@/lib/tenant/quoteStructuredFields';
 import { quoteHeaderPricingDefaultsFromQuote } from '@/lib/tenant/quoteHeaderPricingDefaults';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
@@ -263,6 +267,8 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   const versionRows = versionsRes.data ?? [];
 
   const scopeSnapshot = parseQuoteScopeSnapshot(row.scope_snapshot);
+  const propertySnapshot = parseQuotePropertySnapshot(row.property_snapshot);
+  const officeAccessCodes = formatOfficeAccessCodes(propertySnapshot);
 
   const summaryItems = [
     { key: 'Quote ID', value: row.id },
@@ -298,6 +304,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     ...(scopeSnapshot.inclusions.length > 0
       ? [{ key: 'Scope items', value: String(scopeSnapshot.inclusions.length) }]
       : []),
+    ...(officeAccessCodes ? [{ key: 'Entry codes (office only)', value: officeAccessCodes }] : []),
     ...(row.internal_notes ? [{ key: 'Office notes', value: row.internal_notes }] : []),
   ];
 
