@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-09-30  
+**Last updated:** 2026-10-01  
 **Branch:** `dev`  
-**Latest polish:** Property gate, door, and garage codes are encrypted on the service location (`PROPERTY_ACCESS_CODE_KEY`) and are not stored on the quote. Business settings use a color picker and per-day hours. Jobber import creates a service property from the service address. Consultation scheduling shows validation errors beside a narrower date field. Admins can still extend a free trial from the tenant billing card.
+**Latest polish:** The customer detail page uses a two-column layout, and location fields sit in rows with Save and Delete on one bar. Property gate, door, and garage codes are encrypted on the service location (`PROPERTY_ACCESS_CODE_KEY`) and are not stored on the quote. Business settings use a color picker and per-day hours. Jobber import creates a service property from the service address. Consultation scheduling shows validation errors beside a narrower date field. Admins can still extend a free trial from the tenant billing card.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

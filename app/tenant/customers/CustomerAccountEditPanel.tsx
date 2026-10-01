@@ -22,11 +22,6 @@ export function CustomerAccountEditPanel({
   }
 
   return (
-    <div className={styles.collapsibleFormBlock}>
-      <CustomerEditForm tenantSlug={tenantSlug} snapshot={snapshot} />
-      <button type="button" className={styles.secondaryBtn} onClick={() => setOpen(false)}>
-        Cancel
-      </button>
-    </div>
+    <CustomerEditForm tenantSlug={tenantSlug} snapshot={snapshot} onCancel={() => setOpen(false)} />
   );
 }
