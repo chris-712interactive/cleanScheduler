@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useActionState, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useServerActionPropertiesPatch } from '@/lib/hooks/useServerActionPropertiesPatch';
 import {
   applyCustomerPropertiesPatch,
@@ -29,6 +29,31 @@ function zoneLabel(zones: ServiceZoneOption[], zoneId: string | null): string | 
   return zones.find((z) => z.id === zoneId)?.name ?? null;
 }
 
+function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+  return (
+    <div className={styles.field}>
+      <label className={styles.label} htmlFor={id}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function PropertyKindField({ id, defaultValue }: { id: string; defaultValue: string }) {
+  return (
+    <Field id={id} label="Property type">
+      <select id={id} name="property_kind" className={styles.input} defaultValue={defaultValue}>
+        {PROPERTY_KIND_OPTIONS.map(({ value, label }) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
 function ServiceZoneSelect({
   id,
   zones,
@@ -41,10 +66,7 @@ function ServiceZoneSelect({
   if (zones.length === 0) return null;
 
   return (
-    <>
-      <label className={styles.label} htmlFor={id}>
-        Service zone
-      </label>
+    <Field id={id} label="Service zone">
       <select
         id={id}
         name="service_zone_id"
@@ -59,7 +81,7 @@ function ServiceZoneSelect({
           </option>
         ))}
       </select>
-    </>
+    </Field>
   );
 }
 
@@ -138,29 +160,6 @@ export function CustomerPropertySection({
                 </summary>
 
                 <div className={styles.propertyBody}>
-                  {p.site_notes ? (
-                    <p className={styles.propertySiteNotes}>
-                      <strong>Site notes:</strong> {p.site_notes}
-                    </p>
-                  ) : null}
-
-                  <div className={styles.propertyActions}>
-                    {!p.is_primary ? (
-                      <SetPrimaryForm
-                        tenantSlug={tenantSlug}
-                        customerId={customerId}
-                        propertyId={p.id}
-                        onPropertiesPatch={onPropertiesPatch}
-                      />
-                    ) : null}
-                    <DeletePropertyForm
-                      tenantSlug={tenantSlug}
-                      customerId={customerId}
-                      propertyId={p.id}
-                      onPropertiesPatch={onPropertiesPatch}
-                    />
-                  </div>
-
                   <EditPropertyForm
                     tenantSlug={tenantSlug}
                     customerId={customerId}
@@ -173,6 +172,24 @@ export function CustomerPropertySection({
                       }
                     }
                     onPropertiesPatch={onPropertiesPatch}
+                    secondaryActions={
+                      <>
+                        {!p.is_primary ? (
+                          <SetPrimaryForm
+                            tenantSlug={tenantSlug}
+                            customerId={customerId}
+                            propertyId={p.id}
+                            onPropertiesPatch={onPropertiesPatch}
+                          />
+                        ) : null}
+                        <DeletePropertyForm
+                          tenantSlug={tenantSlug}
+                          customerId={customerId}
+                          propertyId={p.id}
+                          onPropertiesPatch={onPropertiesPatch}
+                        />
+                      </>
+                    }
                   />
                 </div>
               </details>
@@ -190,14 +207,8 @@ export function CustomerPropertySection({
             serviceZones={serviceZones}
             onPropertiesPatch={onPropertiesPatch}
             onAdded={() => setAddLocationOpen(false)}
+            onCancel={() => setAddLocationOpen(false)}
           />
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={() => setAddLocationOpen(false)}
-          >
-            Cancel
-          </button>
         </div>
       ) : (
         <button
@@ -229,49 +240,50 @@ function AccessCodeFields({ idPrefix, view }: { idPrefix: string; view: Property
   }
 
   return (
-    <>
+    <div className={styles.codeBlock}>
       <input type="hidden" name="save_access_codes" value="1" />
-      <span className={styles.label}>Entry codes</span>
-      <p className={styles.sectionDescription}>
-        Optional. Encrypted in the database. Your office and crew can see them. Customers cannot.
-      </p>
-      <label className={styles.label} htmlFor={`${idPrefix}_gate`}>
-        Gate code
-      </label>
-      <input
-        id={`${idPrefix}_gate`}
-        name="gate_code"
-        className={styles.input}
-        maxLength={80}
-        autoComplete="off"
-        spellCheck={false}
-        defaultValue={view.codes.gateCode}
-      />
-      <label className={styles.label} htmlFor={`${idPrefix}_door`}>
-        Door code
-      </label>
-      <input
-        id={`${idPrefix}_door`}
-        name="door_code"
-        className={styles.input}
-        maxLength={80}
-        autoComplete="off"
-        spellCheck={false}
-        defaultValue={view.codes.doorCode}
-      />
-      <label className={styles.label} htmlFor={`${idPrefix}_garage`}>
-        Garage code
-      </label>
-      <input
-        id={`${idPrefix}_garage`}
-        name="garage_code"
-        className={styles.input}
-        maxLength={80}
-        autoComplete="off"
-        spellCheck={false}
-        defaultValue={view.codes.garageCode}
-      />
-    </>
+      <div className={styles.codeBlockHeader}>
+        <span className={styles.label}>Entry codes</span>
+        <p className={styles.sectionDescription}>
+          Optional. Encrypted. Office and crew can see them. Customers cannot.
+        </p>
+      </div>
+      <div className={styles.codeGrid}>
+        <Field id={`${idPrefix}_gate`} label="Gate code">
+          <input
+            id={`${idPrefix}_gate`}
+            name="gate_code"
+            className={styles.input}
+            maxLength={80}
+            autoComplete="off"
+            spellCheck={false}
+            defaultValue={view.codes.gateCode}
+          />
+        </Field>
+        <Field id={`${idPrefix}_door`} label="Door code">
+          <input
+            id={`${idPrefix}_door`}
+            name="door_code"
+            className={styles.input}
+            maxLength={80}
+            autoComplete="off"
+            spellCheck={false}
+            defaultValue={view.codes.doorCode}
+          />
+        </Field>
+        <Field id={`${idPrefix}_garage`} label="Garage code">
+          <input
+            id={`${idPrefix}_garage`}
+            name="garage_code"
+            className={styles.input}
+            maxLength={80}
+            autoComplete="off"
+            spellCheck={false}
+            defaultValue={view.codes.garageCode}
+          />
+        </Field>
+      </div>
+    </div>
   );
 }
 
@@ -334,6 +346,7 @@ function EditPropertyForm({
   serviceZones,
   accessCodes,
   onPropertiesPatch,
+  secondaryActions,
 }: {
   tenantSlug: string;
   customerId: string;
@@ -341,115 +354,103 @@ function EditPropertyForm({
   serviceZones: ServiceZoneOption[];
   accessCodes: PropertyAccessCodeView;
   onPropertiesPatch: PatchHandler;
+  secondaryActions?: ReactNode;
 }) {
   const [state, action, pending] = useActionState(updateCustomerProperty, initial);
   useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
+  const id = property.id;
+  const formId = `edit-property-${id}`;
   return (
-    <form action={action} className={styles.form}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="customer_id" value={customerId} />
-      <input type="hidden" name="property_id" value={property.id} />
-      <PropertyActionMessages state={state} />
+    <>
+      <form id={formId} action={action} className={styles.detailForm}>
+        <input type="hidden" name="tenant_slug" value={tenantSlug} />
+        <input type="hidden" name="customer_id" value={customerId} />
+        <input type="hidden" name="property_id" value={id} />
 
-      <label className={styles.label} htmlFor={`pl_${property.id}`}>
-        Label
-      </label>
-      <input
-        id={`pl_${property.id}`}
-        name="label"
-        className={styles.input}
-        defaultValue={property.label ?? ''}
-        placeholder="Oak St Airbnb, HQ, etc."
-      />
+        <div className={serviceZones.length > 0 ? styles.fieldRow3 : styles.fieldRow}>
+          <Field id={`pl_${id}`} label="Label">
+            <input
+              id={`pl_${id}`}
+              name="label"
+              className={styles.input}
+              defaultValue={property.label ?? ''}
+              placeholder="Oak St Airbnb, HQ, etc."
+            />
+          </Field>
+          <PropertyKindField id={`pk_${id}`} defaultValue={property.property_kind} />
+          <ServiceZoneSelect
+            id={`sz_${id}`}
+            zones={serviceZones}
+            defaultValue={property.service_zone_id}
+          />
+        </div>
 
-      <label className={styles.label} htmlFor={`pk_${property.id}`}>
-        Property type
-      </label>
-      <select
-        id={`pk_${property.id}`}
-        name="property_kind"
-        className={styles.input}
-        defaultValue={property.property_kind}
-      >
-        {PROPERTY_KIND_OPTIONS.map(({ value, label }) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
+        <div className={styles.fieldRow}>
+          <Field id={`a1_${id}`} label="Address line 1">
+            <input
+              id={`a1_${id}`}
+              name="address_line1"
+              className={styles.input}
+              defaultValue={property.address_line1 ?? ''}
+            />
+          </Field>
+          <Field id={`a2_${id}`} label="Address line 2">
+            <input
+              id={`a2_${id}`}
+              name="address_line2"
+              className={styles.input}
+              defaultValue={property.address_line2 ?? ''}
+            />
+          </Field>
+        </div>
 
-      <ServiceZoneSelect
-        id={`sz_${property.id}`}
-        zones={serviceZones}
-        defaultValue={property.service_zone_id}
-      />
+        <div className={styles.fieldRowCity}>
+          <Field id={`city_${id}`} label="City">
+            <input
+              id={`city_${id}`}
+              name="city"
+              className={styles.input}
+              defaultValue={property.city ?? ''}
+            />
+          </Field>
+          <Field id={`st_${id}`} label="State">
+            <input
+              id={`st_${id}`}
+              name="state"
+              className={styles.input}
+              defaultValue={property.state ?? ''}
+            />
+          </Field>
+          <Field id={`zip_${id}`} label="Postal code">
+            <input
+              id={`zip_${id}`}
+              name="postal_code"
+              className={styles.input}
+              defaultValue={property.postal_code ?? ''}
+            />
+          </Field>
+        </div>
 
-      <label className={styles.label} htmlFor={`a1_${property.id}`}>
-        Address line 1
-      </label>
-      <input
-        id={`a1_${property.id}`}
-        name="address_line1"
-        className={styles.input}
-        defaultValue={property.address_line1 ?? ''}
-      />
+        <Field id={`sn_${id}`} label="Site notes">
+          <textarea
+            id={`sn_${id}`}
+            name="site_notes"
+            className={styles.textareaCompact}
+            defaultValue={property.site_notes ?? ''}
+            placeholder="Access, parking, pets"
+          />
+        </Field>
 
-      <label className={styles.label} htmlFor={`a2_${property.id}`}>
-        Address line 2
-      </label>
-      <input
-        id={`a2_${property.id}`}
-        name="address_line2"
-        className={styles.input}
-        defaultValue={property.address_line2 ?? ''}
-      />
-
-      <label className={styles.label} htmlFor={`city_${property.id}`}>
-        City
-      </label>
-      <input
-        id={`city_${property.id}`}
-        name="city"
-        className={styles.input}
-        defaultValue={property.city ?? ''}
-      />
-
-      <label className={styles.label} htmlFor={`st_${property.id}`}>
-        State / region
-      </label>
-      <input
-        id={`st_${property.id}`}
-        name="state"
-        className={styles.input}
-        defaultValue={property.state ?? ''}
-      />
-
-      <label className={styles.label} htmlFor={`zip_${property.id}`}>
-        Postal code
-      </label>
-      <input
-        id={`zip_${property.id}`}
-        name="postal_code"
-        className={styles.input}
-        defaultValue={property.postal_code ?? ''}
-      />
-
-      <label className={styles.label} htmlFor={`sn_${property.id}`}>
-        Site notes (access, parking)
-      </label>
-      <textarea
-        id={`sn_${property.id}`}
-        name="site_notes"
-        className={styles.textarea}
-        defaultValue={property.site_notes ?? ''}
-      />
-
-      <AccessCodeFields idPrefix={`codes_${property.id}`} view={accessCodes} />
-
-      <button type="submit" className={styles.submit} disabled={pending}>
-        {pending ? 'Saving…' : 'Save location'}
-      </button>
-    </form>
+        <AccessCodeFields idPrefix={`codes_${id}`} view={accessCodes} />
+      </form>
+      <div className={styles.formFooter}>
+        <button type="submit" form={formId} className={styles.submit} disabled={pending}>
+          {pending ? 'Saving…' : 'Save location'}
+        </button>
+        <PropertyActionMessages state={state} />
+        {secondaryActions ? <div className={styles.formFooterEnd}>{secondaryActions}</div> : null}
+      </div>
+    </>
   );
 }
 
@@ -460,6 +461,7 @@ function AddPropertyForm({
   serviceZones,
   onPropertiesPatch,
   onAdded,
+  onCancel,
 }: {
   tenantSlug: string;
   customerId: string;
@@ -467,6 +469,7 @@ function AddPropertyForm({
   serviceZones: ServiceZoneOption[];
   onPropertiesPatch: PatchHandler;
   onAdded: () => void;
+  onCancel: () => void;
 }) {
   const [state, action, pending] = useActionState(addCustomerProperty, initial);
   useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
@@ -485,68 +488,52 @@ function AddPropertyForm({
           Commercial accounts and short-term rentals usually need multiple sites under one customer.
         </p>
       </header>
-      <form action={action} className={styles.form}>
+      <form action={action} className={styles.detailForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         <input type="hidden" name="customer_id" value={customerId} />
-        <PropertyActionMessages state={state} />
 
-        <label className={styles.label} htmlFor="new_prop_label">
-          Label
-        </label>
-        <input
-          id="new_prop_label"
-          name="label"
-          className={styles.input}
-          placeholder="e.g. Branch office · Unit 4"
-        />
+        <div className={serviceZones.length > 0 ? styles.fieldRow3 : styles.fieldRow}>
+          <Field id="new_prop_label" label="Label">
+            <input
+              id="new_prop_label"
+              name="label"
+              className={styles.input}
+              placeholder="e.g. Branch office · Unit 4"
+            />
+          </Field>
+          <PropertyKindField id="new_prop_kind" defaultValue="residential" />
+          <ServiceZoneSelect id="new_service_zone" zones={serviceZones} defaultValue={null} />
+        </div>
 
-        <label className={styles.label} htmlFor="new_prop_kind">
-          Property type
-        </label>
-        <select
-          id="new_prop_kind"
-          name="property_kind"
-          className={styles.input}
-          defaultValue="residential"
-        >
-          {PROPERTY_KIND_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <div className={styles.fieldRow}>
+          <Field id="new_a1" label="Address line 1">
+            <input id="new_a1" name="address_line1" className={styles.input} />
+          </Field>
+          <Field id="new_a2" label="Address line 2">
+            <input id="new_a2" name="address_line2" className={styles.input} />
+          </Field>
+        </div>
 
-        <ServiceZoneSelect id="new_service_zone" zones={serviceZones} defaultValue={null} />
+        <div className={styles.fieldRowCity}>
+          <Field id="new_city" label="City">
+            <input id="new_city" name="city" className={styles.input} />
+          </Field>
+          <Field id="new_state" label="State">
+            <input id="new_state" name="state" className={styles.input} />
+          </Field>
+          <Field id="new_zip" label="Postal code">
+            <input id="new_zip" name="postal_code" className={styles.input} />
+          </Field>
+        </div>
 
-        <label className={styles.label} htmlFor="new_a1">
-          Address line 1
-        </label>
-        <input id="new_a1" name="address_line1" className={styles.input} />
-
-        <label className={styles.label} htmlFor="new_a2">
-          Address line 2
-        </label>
-        <input id="new_a2" name="address_line2" className={styles.input} />
-
-        <label className={styles.label} htmlFor="new_city">
-          City
-        </label>
-        <input id="new_city" name="city" className={styles.input} />
-
-        <label className={styles.label} htmlFor="new_state">
-          State / region
-        </label>
-        <input id="new_state" name="state" className={styles.input} />
-
-        <label className={styles.label} htmlFor="new_zip">
-          Postal code
-        </label>
-        <input id="new_zip" name="postal_code" className={styles.input} />
-
-        <label className={styles.label} htmlFor="new_site">
-          Site notes
-        </label>
-        <textarea id="new_site" name="site_notes" className={styles.textarea} />
+        <Field id="new_site" label="Site notes">
+          <textarea
+            id="new_site"
+            name="site_notes"
+            className={styles.textareaCompact}
+            placeholder="Access, parking, pets"
+          />
+        </Field>
 
         <AccessCodeFields
           idPrefix="new_codes"
@@ -560,9 +547,15 @@ function AddPropertyForm({
           </label>
         ) : null}
 
-        <button type="submit" className={styles.submit} disabled={pending}>
-          {pending ? 'Adding…' : 'Add location'}
-        </button>
+        <div className={styles.formFooter}>
+          <button type="submit" className={styles.submit} disabled={pending}>
+            {pending ? 'Adding…' : 'Add location'}
+          </button>
+          <button type="button" className={styles.secondaryBtn} onClick={onCancel}>
+            Cancel
+          </button>
+          <PropertyActionMessages state={state} />
+        </div>
       </form>
     </div>
   );

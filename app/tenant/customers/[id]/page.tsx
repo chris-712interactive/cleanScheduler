@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
-import { Stack } from '@/components/layout/Stack';
 import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -226,108 +225,109 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         }
       />
 
-      <Stack gap={6}>
-        <Card
-          title="Customer overview"
-          description="Everything your team needs at a glance. Edit customer only when something changes."
-        >
-          <div className={styles.customerOverview}>
-            <CustomerProfileSummary
-              customerId={customer.id}
-              createdAt={customer.created_at}
-              status={customer.status}
-              identity={identity}
-              profile={profile}
-              primaryProperty={primary}
-            />
-            <div className={styles.customerOverviewActions}>
-              <CustomerAccountEditPanel
-                tenantSlug={membership.tenantSlug}
-                snapshot={{
-                  customerId: customer.id,
-                  firstName: identity.first_name ?? '',
-                  lastName: identity.last_name ?? '',
-                  email,
-                  phone,
-                  status: customer.status,
-                  companyName: profile?.company_name ?? '',
-                  preferredContactMethod: profile?.preferred_contact_method ?? '',
-                  preferredPaymentMethod: profile?.preferred_payment_method ?? 'card',
-                  internalNotes: profile?.internal_notes ?? '',
-                  marketingEmailOptIn: profile?.marketing_email_opt_in ?? false,
-                }}
-              />
-            </div>
-          </div>
-        </Card>
-
-        <CustomerActivityPanel tenantId={membership.tenantId} customerId={customer.id} />
-
-        {promotionsEnabled ? (
+      <div className={styles.detailLayout}>
+        <div className={styles.detailMain}>
           <Card
-            title="Account credit"
-            description="Wallet balance and credit-code redemption for this customer."
+            title="Customer overview"
+            description="Contact, billing preference, and the primary service location."
           >
-            <CustomerWalletPanel
+            <div className={styles.customerOverview}>
+              <CustomerProfileSummary
+                customerId={customer.id}
+                createdAt={customer.created_at}
+                status={customer.status}
+                identity={identity}
+                profile={profile}
+                primaryProperty={primary}
+              />
+              <div className={styles.customerOverviewActions}>
+                <CustomerAccountEditPanel
+                  tenantSlug={membership.tenantSlug}
+                  snapshot={{
+                    customerId: customer.id,
+                    firstName: identity.first_name ?? '',
+                    lastName: identity.last_name ?? '',
+                    email,
+                    phone,
+                    status: customer.status,
+                    companyName: profile?.company_name ?? '',
+                    preferredContactMethod: profile?.preferred_contact_method ?? '',
+                    preferredPaymentMethod: profile?.preferred_payment_method ?? 'card',
+                    internalNotes: profile?.internal_notes ?? '',
+                    marketingEmailOptIn: profile?.marketing_email_opt_in ?? false,
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            title="Service locations"
+            description="Quotes and scheduled visits can target a specific site under this customer."
+          >
+            <CustomerPropertySection
               tenantSlug={membership.tenantSlug}
               customerId={customer.id}
-              balanceCents={walletBalanceCents}
-              canEdit={canEditPromotions}
+              properties={properties}
+              serviceZones={serviceZones}
+              accessCodesByPropertyId={accessCodesByPropertyId}
             />
           </Card>
-        ) : null}
+        </div>
 
-        {referralsEnabled ? (
-          <Card title="Referrals" description="Referral attribution and rewards for this customer.">
-            <CustomerReferralAttributionPanel
-              tenantSlug={membership.tenantSlug}
-              customerId={customer.id}
-              canEdit={canEditPromotions}
-              asReferee={referralAttribution.asReferee}
-              asReferrer={referralAttribution.asReferrer}
-            />
+        <div className={styles.detailAside}>
+          <CustomerActivityPanel tenantId={membership.tenantId} customerId={customer.id} />
+
+          {promotionsEnabled ? (
+            <Card title="Account credit" description="Wallet balance and credit codes.">
+              <CustomerWalletPanel
+                tenantSlug={membership.tenantSlug}
+                customerId={customer.id}
+                balanceCents={walletBalanceCents}
+                canEdit={canEditPromotions}
+              />
+            </Card>
+          ) : null}
+
+          {referralsEnabled ? (
+            <Card title="Referrals" description="Attribution and rewards for this customer.">
+              <CustomerReferralAttributionPanel
+                tenantSlug={membership.tenantSlug}
+                customerId={customer.id}
+                canEdit={canEditPromotions}
+                asReferee={referralAttribution.asReferee}
+                asReferrer={referralAttribution.asReferrer}
+              />
+            </Card>
+          ) : null}
+
+          <Card
+            title="Customer portal"
+            description="Invite this customer so they can sign in and view their portal."
+          >
+            {customerPortalEnabled ? (
+              <CustomerPortalInvitePanel
+                tenantSlug={membership.tenantSlug}
+                customerId={customer.id}
+                customerEmail={email}
+                portalLinked={portalLinked}
+                emailReady={emailReady}
+              />
+            ) : (
+              <FeatureUpgradePanel
+                title="Upgrade to unlock the customer portal"
+                description={`${minimumTierLabelForFeature('customerPortal')} plans let customers view visits, pay invoices, accept quotes, and request reschedules online.`}
+              />
+            )}
           </Card>
-        ) : null}
 
-        <Card
-          title="Customer portal access"
-          description="Invite this customer by email so they can create a login and view their portal on my."
-        >
-          {customerPortalEnabled ? (
-            <CustomerPortalInvitePanel
-              tenantSlug={membership.tenantSlug}
-              customerId={customer.id}
-              customerEmail={email}
-              portalLinked={portalLinked}
-              emailReady={emailReady}
-            />
-          ) : (
-            <FeatureUpgradePanel
-              title="Upgrade to unlock the customer portal"
-              description={`${minimumTierLabelForFeature('customerPortal')} plans let customers view visits, pay invoices, accept quotes, and request reschedules online.`}
-            />
-          )}
-        </Card>
-
-        <RecurringBillingPanel
-          tenantSlug={membership.tenantSlug}
-          tenantId={membership.tenantId}
-          customerId={customer.id}
-        />
-
-        <Card
-          title="Service locations"
-          description="Quotes and scheduled visits can target a specific site under this customer."
-        >
-          <CustomerPropertySection
+          <RecurringBillingPanel
             tenantSlug={membership.tenantSlug}
+            tenantId={membership.tenantId}
             customerId={customer.id}
-            properties={properties}
-            serviceZones={serviceZones}
-            accessCodesByPropertyId={accessCodesByPropertyId}
           />
-        </Card>
-      </Stack>
+        </div>
+      </div>
     </>
   );
 }
