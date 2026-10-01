@@ -567,7 +567,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
           'Names, one email, one phone, and service addresses are kept',
           'Extra emails and useful notes land in internal notes',
           'Archived Jobber clients are skipped unless you turn that option off',
-          'Portal invites are not sent during import',
+          'Check “email a portal invite” to email new customers who have an address. Leave it off and no one is emailed',
         ],
       },
       {
@@ -581,7 +581,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       {
         question: 'Will importing email my customers?',
         answer:
-          'No. Import creates the customer record only. Send a portal invite later from the customer profile if you want them to sign in.',
+          'Only if you check “Email a portal invite to each new customer who has an email address” before you confirm. That option is off unless you turn it on. Customers already in the workspace, and new customers with no email, are not emailed. You can still send an invite later from the customer profile.',
       },
       {
         question: 'What if I import the same Jobber file twice?',

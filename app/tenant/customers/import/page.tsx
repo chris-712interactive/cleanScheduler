@@ -3,6 +3,8 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { isResendApiConfigured } from '@/lib/email/resend';
 import { createAdminClient } from '@/lib/supabase/server';
 import {
   hasPermission,
@@ -12,6 +14,7 @@ import { CustomerImportWizard } from './CustomerImportWizard';
 import styles from '../customers.module.scss';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export default async function TenantCustomerImportPage() {
   const { tenantSlug } = await getPortalContext();
@@ -19,6 +22,8 @@ export default async function TenantCustomerImportPage() {
   const admin = createAdminClient();
   const permissions = await resolveMembershipPermissions(admin, membership);
   const canImport = hasPermission(permissions, 'customers.manage');
+  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const portalInvitesAvailable = isFeatureEnabled(tier, 'customerPortal');
 
   return (
     <>
@@ -34,7 +39,11 @@ export default async function TenantCustomerImportPage() {
       />
       {canImport ? (
         <Card title="Jobber CSV" description="Preview the file before anything is saved.">
-          <CustomerImportWizard tenantSlug={membership.tenantSlug} />
+          <CustomerImportWizard
+            tenantSlug={membership.tenantSlug}
+            portalInvitesAvailable={portalInvitesAvailable}
+            emailReady={isResendApiConfigured()}
+          />
         </Card>
       ) : (
         <Card title="Import unavailable">

@@ -36,6 +36,8 @@ export type CustomerImportDraft = {
 export type CustomerImportOptions = {
   skipArchived: boolean;
   includeUnmatchedCustomFields: boolean;
+  /** When true, email a portal invite to each newly created customer who has an email. */
+  sendPortalInvites: boolean;
 };
 
 export type ExistingCustomerRecord = {
@@ -94,6 +96,14 @@ export type CustomerImportPreview = {
 
 export type CustomerImportPreviewResult = CustomerImportPreview | { ok: false; error: string };
 
+export type CustomerImportInviteSummary = {
+  emailed: number;
+  skippedNoEmail: number;
+  alreadyLinked: number;
+  failed: number;
+  error?: string;
+};
+
 export type CustomerImportCommitResult = {
   ok: boolean;
   error?: string;
@@ -102,6 +112,7 @@ export type CustomerImportCommitResult = {
   propertiesAdded?: number;
   skipped?: number;
   failed?: number;
+  invites?: CustomerImportInviteSummary;
 };
 
 export type ParsedCustomerCsv = {
