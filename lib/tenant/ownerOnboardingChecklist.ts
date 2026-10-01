@@ -42,9 +42,10 @@ export function getNextIncompleteRequiredSteps(
 }
 
 export function hasCompletedCoreOnboardingSteps(checklist: OwnerOnboardingChecklist): boolean {
-  return CORE_ONBOARDING_STEP_IDS.every(
-    (id) => checklist.steps.find((step) => step.id === id)?.complete ?? false,
-  );
+  const ids = checklist.steps.some((step) => step.id === 'consultation')
+    ? (['business', 'customer', 'consultation', 'quote', 'visit'] as const)
+    : CORE_ONBOARDING_STEP_IDS;
+  return ids.every((id) => checklist.steps.find((step) => step.id === id)?.complete ?? false);
 }
 
 export interface OwnerOnboardingChecklistInput {
@@ -76,6 +77,8 @@ export function buildOwnerOnboardingChecklist(
     hasQuotes: boolean;
     hasCustomers: boolean;
     hasVisits: boolean;
+    requireConsultationBeforeQuote: boolean;
+    hasConsultations: boolean;
     hasInvoices: boolean;
     hasTeam: boolean;
     hasCompensation: boolean;
@@ -106,10 +109,23 @@ export function buildOwnerOnboardingChecklist(
       href: '/customers/new',
       complete: counts.hasCustomers,
     },
+    ...(counts.requireConsultationBeforeQuote
+      ? [
+          {
+            id: 'consultation',
+            title: 'Schedule your first consultation',
+            detail: 'Book a consultation before you create a quote',
+            href: '/schedule/new?purpose=consultation',
+            complete: counts.hasConsultations,
+          },
+        ]
+      : []),
     {
       id: 'quote',
       title: 'Create your first quote',
-      detail: 'Price a job for a customer before scheduling or invoicing',
+      detail: counts.requireConsultationBeforeQuote
+        ? 'Price the job after the consultation'
+        : 'Price a job for a customer before scheduling or invoicing',
       href: '/quotes/new',
       complete: counts.hasQuotes,
     },
@@ -222,6 +238,7 @@ export async function getOwnerOnboardingChecklist(
     quotesRes,
     customersRes,
     visitsRes,
+    consultationsRes,
     invoicesRes,
     membersRes,
     invitesRes,
@@ -243,7 +260,14 @@ export async function getOwnerOnboardingChecklist(
     db
       .from('tenant_scheduled_visits')
       .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', input.tenantId),
+      .eq('tenant_id', input.tenantId)
+      .eq('visit_purpose', 'service'),
+    db
+      .from('tenant_scheduled_visits')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', input.tenantId)
+      .eq('visit_purpose', 'consultation')
+      .neq('status', 'cancelled'),
     db
       .from('tenant_invoices')
       .select('*', { count: 'exact', head: true })
@@ -279,7 +303,9 @@ export async function getOwnerOnboardingChecklist(
       .maybeSingle(),
     db
       .from('tenant_operational_settings')
-      .select('email_notify_visit_reminder, email_notify_on_my_way, email_notify_review_request')
+      .select(
+        'email_notify_visit_reminder, email_notify_on_my_way, email_notify_review_request, require_consultation_before_quote',
+      )
       .eq('tenant_id', input.tenantId)
       .maybeSingle(),
   ]);
@@ -298,6 +324,8 @@ export async function getOwnerOnboardingChecklist(
     hasQuotes: (quotesRes.count ?? 0) > 0,
     hasCustomers: (customersRes.count ?? 0) > 0,
     hasVisits: (visitsRes.count ?? 0) > 0,
+    requireConsultationBeforeQuote: ops?.require_consultation_before_quote ?? true,
+    hasConsultations: (consultationsRes.count ?? 0) > 0,
     hasInvoices: (invoicesRes.count ?? 0) > 0,
     hasTeam: (membersRes.count ?? 0) > 1 || (invitesRes.count ?? 0) > 0,
     hasCompensation: (compensationRes.count ?? 0) > 0,

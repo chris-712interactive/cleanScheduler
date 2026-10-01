@@ -11,6 +11,7 @@ import styles from './dashboard.module.scss';
 const STEP_ACTION_LABELS: Record<string, string> = {
   business: 'Complete profile',
   quote: 'Create quote',
+  consultation: 'Schedule consultation',
   customer: 'Add customer',
   visit: 'Schedule visit',
   connect: 'Set up payments',
@@ -32,11 +33,16 @@ export function OwnerOnboardingDashboardHero({
   if (!primary) return null;
 
   const secondary = nextSteps[1];
+  const includesConsultation = checklist.steps.some((step) => step.id === 'consultation');
 
   return (
     <Card
       title="Next up"
-      titleHint="Work through these in order — customer, quote, then schedule."
+      titleHint={
+        includesConsultation
+          ? 'Work through these in order — customer, consultation, quote, then schedule.'
+          : 'Work through these in order — customer, quote, then schedule.'
+      }
       className={styles.nextStepCard}
     >
       <div className={styles.nextStepHero}>
