@@ -12,6 +12,7 @@ import {
 } from '@/lib/tenant/quoteScopeTemplates';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
 import { createTenantQuote, type QuoteFormState } from './actions';
+import { loadPropertyAccessCodesAction } from './propertyAccessCodeActions';
 import {
   QuoteLineItemsEditor,
   createEmptyQuoteLineDraft,
@@ -128,6 +129,45 @@ export function QuoteCreateWizard({
   const [quotePropertyBathrooms, setQuotePropertyBathrooms] = useState('');
   const [quotePropertyStories, setQuotePropertyStories] = useState('');
   const [accessNotes, setAccessNotes] = useState('');
+  const [gateCode, setGateCode] = useState('');
+  const [doorCode, setDoorCode] = useState('');
+  const [garageCode, setGarageCode] = useState('');
+  const [accessCodesReady, setAccessCodesReady] = useState(false);
+  const [accessCodeNotice, setAccessCodeNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (propertySource === 'new' || !propertyId) {
+      setGateCode('');
+      setDoorCode('');
+      setGarageCode('');
+      setAccessCodeNotice(null);
+      setAccessCodesReady(propertySource === 'new');
+      return;
+    }
+
+    let cancelled = false;
+    setAccessCodesReady(false);
+    setAccessCodeNotice(null);
+    void loadPropertyAccessCodesAction(tenantSlug, propertyId).then((result) => {
+      if (cancelled) return;
+      if (result.error) {
+        setGateCode('');
+        setDoorCode('');
+        setGarageCode('');
+        setAccessCodeNotice(result.error);
+        setAccessCodesReady(false);
+        return;
+      }
+      setGateCode(result.codes.gateCode);
+      setDoorCode(result.codes.doorCode);
+      setGarageCode(result.codes.garageCode);
+      setAccessCodesReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [propertyId, propertySource, tenantSlug]);
 
   const [scopeTemplateId, setScopeTemplateId] =
     useState<QuoteScopeTemplateId>('residential_standard');
@@ -789,23 +829,47 @@ export function QuoteCreateWizard({
               onChange={(e) => setAccessNotes(e.target.value)}
               placeholder="Parking, pets, supplies under the sink…"
             />
-            <h3 className={styles.wizardSubheading}>Entry codes (office only)</h3>
+            <h3 className={styles.wizardSubheading}>Entry codes</h3>
             <p className={styles.hint}>
-              Optional. Saved on the quote for your team. These codes are not included on the
-              customer quote.
+              Optional. Saved on the service location for your office and crew, encrypted in the
+              database, and left off the customer quote.
             </p>
+            {accessCodeNotice ? (
+              <p className={styles.error} role="alert">
+                {accessCodeNotice}
+              </p>
+            ) : null}
+            <input type="hidden" name="save_access_codes" value={accessCodesReady ? '1' : ''} />
             <div className={styles.wizardGridFour}>
               <div>
                 <label className={styles.label} htmlFor="gate_code">
                   Gate code
                 </label>
-                <input id="gate_code" name="gate_code" className={styles.input} maxLength={80} />
+                <input
+                  id="gate_code"
+                  name="gate_code"
+                  className={styles.input}
+                  maxLength={80}
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={gateCode}
+                  onChange={(event) => setGateCode(event.target.value)}
+                />
               </div>
               <div>
                 <label className={styles.label} htmlFor="door_code">
                   Door code
                 </label>
-                <input id="door_code" name="door_code" className={styles.input} maxLength={80} />
+                <input
+                  id="door_code"
+                  name="door_code"
+                  className={styles.input}
+                  maxLength={80}
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={doorCode}
+                  onChange={(event) => setDoorCode(event.target.value)}
+                />
               </div>
               <div>
                 <label className={styles.label} htmlFor="garage_code">
@@ -816,6 +880,10 @@ export function QuoteCreateWizard({
                   name="garage_code"
                   className={styles.input}
                   maxLength={80}
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={garageCode}
+                  onChange={(event) => setGarageCode(event.target.value)}
                 />
               </div>
             </div>

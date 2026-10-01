@@ -37,6 +37,8 @@ import { autoScheduleSkippedMessage } from '@/lib/tenant/quoteAutoScheduleReason
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
+import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
+import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
 import { loadQuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import {
@@ -656,6 +658,16 @@ export async function createTenantQuote(
     propertyId,
     structured.propertySnapshot,
   );
+
+  if (propertyId && formData.get('save_access_codes') === '1') {
+    const savedCodes = await savePropertyAccessCodes(
+      admin,
+      membership.tenantId,
+      propertyId,
+      parsePropertyAccessCodesFromForm(formData),
+    );
+    if (!savedCodes.ok) return { error: savedCodes.error };
+  }
 
   const rpc = await admin.rpc('tenant_quote_create_with_line_items', {
     p_tenant_id: membership.tenantId,

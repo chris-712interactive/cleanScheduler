@@ -76,6 +76,7 @@ export type VisitDetailSnapshot = {
   customerEmail: string;
   siteLine: string;
   mapsAddress: string;
+  accessCodesText: string | null;
   preferredPaymentMethod: TenantPaymentMethod | null;
   quoteTitle: string | null;
   quoteId: string | null;
@@ -311,6 +312,14 @@ export function VisitDetailCard({
                     ) : (
                       visit.siteLine
                     )}
+                  </dd>
+                </div>
+              ) : null}
+              {visit.accessCodesText ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Entry codes</dt>
+                  <dd className={styles.metaValue} style={{ whiteSpace: 'pre-line' }}>
+                    {visit.accessCodesText}
                   </dd>
                 </div>
               ) : null}

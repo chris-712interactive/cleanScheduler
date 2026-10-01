@@ -46,6 +46,7 @@ export const INFORMATION_SECURITY_POLICY_SECTIONS: PolicySection[] = [
     title: '4. Encryption and transmission security',
     paragraphs: [
       'All web traffic to Clean Scheduler uses HTTPS (TLS). Database and object storage encryption at rest is provided by Supabase. Payment card data is processed by Stripe; Clean Scheduler does not store full card numbers.',
+      'Property entry codes (gate, door, and garage) are encrypted in the application before they are stored. The encryption key is an environment secret and is not stored in the database, so a database copy does not reveal those codes.',
       'Plaid bank connection tokens are stored server-side only and are not exposed to browser clients or non-admin tenant roles.',
     ],
   },

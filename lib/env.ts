@@ -174,6 +174,8 @@ const serverEnvSchema = z.object({
    * Supabase project ref). Prevents accidental reads/writes against prod from a dev build.
    */
   SUPABASE_DISALLOW_PROJECT_REF: z.string().optional(),
+  /** Optional. 32-byte base64 key for property gate, door, and garage codes. Never stored in the database. */
+  PROPERTY_ACCESS_CODE_KEY: z.string().optional(),
 });
 
 // We lazy-instantiate so importing this module from a client component does

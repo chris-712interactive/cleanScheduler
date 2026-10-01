@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  composeCustomerQuoteNotes,
-  formatOfficeAccessCodes,
-  parseQuoteWizardStructuredFromForm,
-} from '@/lib/tenant/quoteStructuredFields';
+import { parseQuoteWizardStructuredFromForm } from '@/lib/tenant/quoteStructuredFields';
 
-describe('quote office access codes', () => {
-  it('keeps gate, door, and garage codes off the customer quote', () => {
+describe('quote access notes', () => {
+  it('keeps customer-visible access notes and does not store entry codes on the quote', () => {
     const form = new FormData();
     form.set('gate_code', '4412');
     form.set('door_code', '19');
@@ -15,17 +11,10 @@ describe('quote office access codes', () => {
     form.set('scope_inclusions', '[]');
 
     const structured = parseQuoteWizardStructuredFromForm(form);
-    expect(formatOfficeAccessCodes(structured.propertySnapshot)).toBe(
-      'Gate code: 4412\nDoor code: 19\nGarage code: 1553',
-    );
+    expect(structured.propertySnapshot.access_notes).toBe('Dogs in the laundry room');
+    expect(JSON.stringify(structured.propertySnapshot)).not.toContain('4412');
     expect(structured.customerNotes).toContain('Dogs in the laundry room');
     expect(structured.customerNotes).not.toContain('4412');
     expect(structured.customerNotes).not.toContain('1553');
-    expect(
-      composeCustomerQuoteNotes({
-        scope: structured.scopeSnapshot,
-        property: structured.propertySnapshot,
-      }),
-    ).not.toContain('Gate code');
   });
 });
