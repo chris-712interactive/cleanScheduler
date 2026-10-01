@@ -12,6 +12,7 @@ export type CustomerImportWriteResult = {
   created: number;
   propertiesAdded: number;
   failed: number;
+  createdCustomerIds: string[];
   error?: string;
 };
 
@@ -35,7 +36,7 @@ async function insertCreateBatch(
   admin: Admin,
   tenantId: string,
   batch: CustomerImportDisposition[],
-): Promise<{ created: number; propertiesAdded: number; error?: string }> {
+): Promise<{ created: number; propertiesAdded: number; customerIds: string[]; error?: string }> {
   const prepared = batch.map((disposition) => {
     const identityId = randomUUID();
     const customerId = randomUUID();
@@ -56,7 +57,7 @@ async function insertCreateBatch(
     })),
   );
   if (identityInsert.error) {
-    return { created: 0, propertiesAdded: 0, error: identityInsert.error.message };
+    return { created: 0, propertiesAdded: 0, customerIds: [], error: identityInsert.error.message };
   }
 
   const customerInsert = await admin.from('customers').insert(
@@ -74,7 +75,7 @@ async function insertCreateBatch(
       [],
       prepared.map((row) => row.identityId),
     );
-    return { created: 0, propertiesAdded: 0, error: customerInsert.error.message };
+    return { created: 0, propertiesAdded: 0, customerIds: [], error: customerInsert.error.message };
   }
 
   const linkInsert = await admin.from('customer_tenant_links').insert(
@@ -91,7 +92,7 @@ async function insertCreateBatch(
       prepared.map((row) => row.customerId),
       prepared.map((row) => row.identityId),
     );
-    return { created: 0, propertiesAdded: 0, error: linkInsert.error.message };
+    return { created: 0, propertiesAdded: 0, customerIds: [], error: linkInsert.error.message };
   }
 
   const profileInsert = await admin.from('tenant_customer_profiles').insert(
@@ -111,7 +112,7 @@ async function insertCreateBatch(
       prepared.map((row) => row.customerId),
       prepared.map((row) => row.identityId),
     );
-    return { created: 0, propertiesAdded: 0, error: profileInsert.error.message };
+    return { created: 0, propertiesAdded: 0, customerIds: [], error: profileInsert.error.message };
   }
 
   const propertyRows = prepared.flatMap(({ disposition, customerId }) =>
@@ -138,11 +139,20 @@ async function insertCreateBatch(
         prepared.map((row) => row.customerId),
         prepared.map((row) => row.identityId),
       );
-      return { created: 0, propertiesAdded: 0, error: propertyInsert.error.message };
+      return {
+        created: 0,
+        propertiesAdded: 0,
+        customerIds: [],
+        error: propertyInsert.error.message,
+      };
     }
   }
 
-  return { created: prepared.length, propertiesAdded: propertyRows.length };
+  return {
+    created: prepared.length,
+    propertiesAdded: propertyRows.length,
+    customerIds: prepared.map((row) => row.customerId),
+  };
 }
 
 export async function commitCustomerImport(input: {
@@ -155,6 +165,7 @@ export async function commitCustomerImport(input: {
   let created = 0;
   let propertiesAdded = 0;
   let failed = 0;
+  const createdCustomerIds: string[] = [];
   let error: string | undefined;
 
   for (let index = 0; index < creates.length; index += BATCH_SIZE) {
@@ -165,6 +176,8 @@ export async function commitCustomerImport(input: {
     if (result.error) {
       failed += batch.length;
       error = result.error;
+    } else {
+      createdCustomerIds.push(...result.customerIds);
     }
   }
 
@@ -195,5 +208,5 @@ export async function commitCustomerImport(input: {
     }
   }
 
-  return { created, propertiesAdded, failed, error };
+  return { created, propertiesAdded, failed, createdCustomerIds, error };
 }

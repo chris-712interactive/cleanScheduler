@@ -52,7 +52,7 @@ That book fits a **synchronous** preview + commit on the server. Starter’s `ma
 2. Collapse Jobber’s property-per-row grain into one customer with many `tenant_customer_properties`.
 3. Show a **preview** (creates / skips / duplicates / plan-limit) before writing.
 4. Be **re-runnable**: a second upload of the same Jobber file should not clone customers (`customers.external_ref`).
-5. Stay **safe**: no portal invites, no SMS/marketing opt-in, no junk custom fields copied blindly.
+5. Stay **safe**: portal invites only when the import option is checked, no SMS/marketing opt-in, no junk custom fields copied blindly.
 6. Leave a plug for ZenMaid, Housecall Pro, Launch27, and a generic mapper without rewriting the wizard.
 
 ## Non-goals (v1)
@@ -63,7 +63,7 @@ That book fits a **synchronous** preview + commit on the server. Starter’s `ma
 - Customer tags (we do not have a tags table)
 - Billing-address fields (we store **service** addresses only)
 - Auto-assigning service zones (leave `service_zone_id` null; owner maps later)
-- Auto-inviting the customer portal
+- Sending portal invites unless the importer checks that option (new customers with an email only)
 - Copying Jobber “text message enabled” / reminder flags into `sms_transactional_opt_in` or `marketing_email_opt_in` (those require our own consent capture)
 - Admin/founder import of a tenant’s book
 - Spreadsheet URL import (file upload only)
@@ -74,17 +74,17 @@ Create stack is the same as `/customers/new`:
 
 `customer_identities` → `customers` → `customer_tenant_links` → `tenant_customer_profiles` → `tenant_customer_properties` (one or more)
 
-| Our field                                     | Required today        | Notes                                |
-| --------------------------------------------- | --------------------- | ------------------------------------ |
-| `first_name`                                  | Yes                   | Only required field on manual create |
-| `last_name`, `email`, `phone`                 | No                    | Single values on the identity        |
-| `company_name`, `internal_notes`              | No                    | Profile                              |
-| `preferred_contact_method`                    | No                    | `email` \| `phone` \| `sms`          |
-| Property address + `label` + `site_notes`     | No                    | Multi-property; one `is_primary`     |
-| `property_kind`                               | Default `residential` | `commercial` when we are confident   |
-| `customers.external_ref`                      | Unused in UI          | Use for competitor client id         |
-| `customers.status`                            | `active` / `inactive` | Map Jobber `Archived`                |
-| Portal invite / SMS opt-in / marketing opt-in | Explicit UX           | **Do not set on import**             |
+| Our field                                     | Required today        | Notes                                                                                                                                  |
+| --------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `first_name`                                  | Yes                   | Only required field on manual create                                                                                                   |
+| `last_name`, `email`, `phone`                 | No                    | Single values on the identity                                                                                                          |
+| `company_name`, `internal_notes`              | No                    | Profile                                                                                                                                |
+| `preferred_contact_method`                    | No                    | `email` \| `phone` \| `sms`                                                                                                            |
+| Property address + `label` + `site_notes`     | No                    | Multi-property; one `is_primary`                                                                                                       |
+| `property_kind`                               | Default `residential` | `commercial` when we are confident                                                                                                     |
+| `customers.external_ref`                      | Unused in UI          | Use for competitor client id                                                                                                           |
+| `customers.status`                            | `active` / `inactive` | Map Jobber `Archived`                                                                                                                  |
+| Portal invite / SMS opt-in / marketing opt-in | Explicit UX           | SMS and marketing stay off. Portal invite emails go out only when the import checkbox is on, and only for new customers with an email. |
 
 `createTenantCustomer` sends a portal invite when an email is present. Import **must not** reuse that action as-is.
 
@@ -159,7 +159,7 @@ Upload CSV
     → groupByCustomer() → CustomerImportDraft[] (1 customer + N properties)
     → matchExisting() + validate + plan-limit
     → preview (no writes)
-    → commit in batches (no portal invites)
+    → commit in batches (portal invites only if that option is checked)
 ```
 
 ### Canonical draft (source-agnostic)

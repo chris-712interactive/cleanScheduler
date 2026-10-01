@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { assertMeteredLimit, checkLimit, isLimitExceededError } from '@/lib/billing/checkLimit';
 import { parseCustomerImportCsv } from '@/lib/tenant/customerImport/parseCustomerImportCsv';
@@ -12,6 +13,7 @@ import {
   customerImportExceedsPlan,
 } from '@/lib/tenant/customerImport/preview';
 import { commitCustomerImport as writeCustomerImport } from '@/lib/tenant/customerImport/commit';
+import { sendPortalInvitesForImportedCustomers } from '@/lib/tenant/customerImport/sendImportPortalInvites';
 import {
   CUSTOMER_IMPORT_MAX_BYTES,
   type CustomerImportCommitResult,
@@ -28,6 +30,7 @@ function readOptions(formData: FormData): CustomerImportOptions {
   return {
     skipArchived: String(formData.get('skip_archived') ?? 'on') !== 'off',
     includeUnmatchedCustomFields: String(formData.get('include_custom_fields') ?? '') === 'on',
+    sendPortalInvites: String(formData.get('send_portal_invites') ?? '') === 'on',
   };
 }
 
@@ -132,6 +135,15 @@ export async function commitCustomerImport(
     });
 
     const skipped = dispositions.filter((row) => row.action === 'skip').length;
+    const invites =
+      options.sendPortalInvites && written.createdCustomerIds.length > 0
+        ? await sendPortalInvitesForImportedCustomers({
+            admin,
+            tenantId: membership.tenantId,
+            customerIds: written.createdCustomerIds,
+            invitedByUserId: (await getAuthContext())?.user.id ?? null,
+          })
+        : undefined;
 
     if (written.created === 0 && written.propertiesAdded === 0 && written.failed > 0) {
       return {
@@ -155,6 +167,7 @@ export async function commitCustomerImport(
       skipped,
       failed: written.failed,
       error: written.failed > 0 ? written.error : undefined,
+      invites,
     };
   } catch (error) {
     if (isLimitExceededError(error)) {

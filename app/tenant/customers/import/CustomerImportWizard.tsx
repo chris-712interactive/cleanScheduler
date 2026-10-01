@@ -24,10 +24,20 @@ function actionLabel(
   return 'Skip';
 }
 
-export function CustomerImportWizard({ tenantSlug }: { tenantSlug: string }) {
+export function CustomerImportWizard({
+  tenantSlug,
+  portalInvitesAvailable,
+  emailReady,
+}: {
+  tenantSlug: string;
+  portalInvitesAvailable: boolean;
+  emailReady: boolean;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [skipArchived, setSkipArchived] = useState(true);
   const [includeCustomFields, setIncludeCustomFields] = useState(false);
+  const [sendPortalInvites, setSendPortalInvites] = useState(false);
+  const canEmailInvites = portalInvitesAvailable && emailReady;
   const [pending, setPending] = useState<'preview' | 'commit' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<CustomerImportPreview | null>(null);
@@ -44,6 +54,7 @@ export function CustomerImportWizard({ tenantSlug }: { tenantSlug: string }) {
     data.set('file', file);
     data.set('skip_archived', skipArchived ? 'on' : 'off');
     data.set('include_custom_fields', includeCustomFields ? 'on' : 'off');
+    data.set('send_portal_invites', sendPortalInvites && canEmailInvites ? 'on' : 'off');
     return data;
   }
 
@@ -104,7 +115,8 @@ export function CustomerImportWizard({ tenantSlug }: { tenantSlug: string }) {
 
       <p className={styles.hint}>
         In Jobber, open Clients and export that list. Do not export jobs or invoices. We create
-        customers and service properties only — no portal invites, visits, or invoices.
+        customers and service properties. Visits and invoices stay out. Portal invites are sent only
+        when that option is checked.
       </p>
 
       <label className={styles.hint} htmlFor="customer-import-file">
@@ -146,6 +158,27 @@ export function CustomerImportWizard({ tenantSlug }: { tenantSlug: string }) {
           />
           <span>Include extra Jobber custom fields in notes</span>
         </label>
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            checked={sendPortalInvites && canEmailInvites}
+            disabled={!canEmailInvites}
+            onChange={(event) => setSendPortalInvites(event.target.checked)}
+          />
+          <span>Email a portal invite to each new customer who has an email address</span>
+        </label>
+        {!canEmailInvites ? (
+          <p className={styles.hint}>
+            {portalInvitesAvailable
+              ? 'Email is not configured, so portal invites cannot be sent from import.'
+              : 'Portal invites are available on the Business plan.'}
+          </p>
+        ) : sendPortalInvites ? (
+          <p className={styles.hint}>
+            Existing customers are not emailed. New customers without an email are imported and
+            skipped for the invite.
+          </p>
+        ) : null}
       </div>
 
       {error ? (
@@ -261,7 +294,19 @@ export function CustomerImportWizard({ tenantSlug }: { tenantSlug: string }) {
             Imported {result.created ?? 0} customers and {result.propertiesAdded ?? 0} properties.
             {result.skipped ? ` Skipped ${result.skipped}.` : ''}
             {result.failed ? ` ${result.failed} could not be saved.` : ''}
+            {result.invites
+              ? ` Sent ${result.invites.emailed} portal invite${result.invites.emailed === 1 ? '' : 's'}.`
+              : ''}
+            {result.invites && result.invites.skippedNoEmail > 0
+              ? ` ${result.invites.skippedNoEmail} new customer${result.invites.skippedNoEmail === 1 ? '' : 's'} had no email, so no invite was sent.`
+              : ''}
+            {result.invites && result.invites.failed > 0
+              ? ` ${result.invites.failed} invite${result.invites.failed === 1 ? '' : 's'} could not be sent.`
+              : ''}
           </p>
+          {result.invites?.error && result.invites.failed > 0 ? (
+            <p className={styles.error}>{result.invites.error}</p>
+          ) : null}
           {result.error ? <p className={styles.error}>{result.error}</p> : null}
           <Link href="/customers">Back to customers</Link>
         </section>
