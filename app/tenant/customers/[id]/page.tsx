@@ -15,6 +15,7 @@ import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
 import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
 import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
+import { loadPropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { loadServiceZonesForAssignment } from '@/lib/tenant/serviceZones';
 import { RecurringBillingPanel } from '../RecurringBillingPanel';
@@ -135,6 +136,19 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   }
   const profile = customer.tenant_customer_profiles;
   const properties = customer.tenant_customer_properties ?? [];
+  const accessCodeLoads = await Promise.all(
+    properties.map(async (property) => {
+      const loaded = await loadPropertyAccessCodes(admin, membership.tenantId, property.id);
+      return [
+        property.id,
+        {
+          codes: loaded.codes,
+          unreadable: loaded.unreadable,
+        },
+      ] as const;
+    }),
+  );
+  const accessCodesByPropertyId = Object.fromEntries(accessCodeLoads);
   const primary = properties.find((p) => p.is_primary);
   const serviceZones = await loadServiceZonesForAssignment(
     admin,
@@ -310,6 +324,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
             customerId={customer.id}
             properties={properties}
             serviceZones={serviceZones}
+            accessCodesByPropertyId={accessCodesByPropertyId}
           />
         </Card>
       </Stack>

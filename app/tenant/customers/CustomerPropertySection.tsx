@@ -10,6 +10,10 @@ import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import type { ServiceZoneOption } from '@/lib/tenant/serviceZones';
 import {
+  emptyPropertyAccessCodes,
+  type PropertyAccessCodes,
+} from '@/lib/tenant/propertyAccessCodes';
+import {
   addCustomerProperty,
   updateCustomerProperty,
   setPrimaryCustomerProperty,
@@ -81,11 +85,13 @@ export function CustomerPropertySection({
   customerId,
   properties: initialProperties,
   serviceZones,
+  accessCodesByPropertyId,
 }: {
   tenantSlug: string;
   customerId: string;
   properties: CustomerPropertyVM[];
   serviceZones: ServiceZoneOption[];
+  accessCodesByPropertyId: Record<string, PropertyAccessCodeView>;
 }) {
   const [properties, setProperties] = useState(initialProperties);
   const [addLocationOpen, setAddLocationOpen] = useState(false);
@@ -160,6 +166,12 @@ export function CustomerPropertySection({
                     customerId={customerId}
                     property={p}
                     serviceZones={serviceZones}
+                    accessCodes={
+                      accessCodesByPropertyId[p.id] ?? {
+                        codes: emptyPropertyAccessCodes(),
+                        unreadable: false,
+                      }
+                    }
                     onPropertiesPatch={onPropertiesPatch}
                   />
                 </div>
@@ -201,6 +213,67 @@ export function CustomerPropertySection({
 }
 
 type PatchHandler = (patch: Parameters<typeof applyCustomerPropertiesPatch>[1]) => void;
+
+export type PropertyAccessCodeView = {
+  codes: PropertyAccessCodes;
+  unreadable: boolean;
+};
+
+function AccessCodeFields({ idPrefix, view }: { idPrefix: string; view: PropertyAccessCodeView }) {
+  if (view.unreadable) {
+    return (
+      <p className={styles.error} role="alert">
+        Entry codes are saved for this location but could not be read.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <input type="hidden" name="save_access_codes" value="1" />
+      <span className={styles.label}>Entry codes</span>
+      <p className={styles.sectionDescription}>
+        Optional. Encrypted in the database. Your office and crew can see them. Customers cannot.
+      </p>
+      <label className={styles.label} htmlFor={`${idPrefix}_gate`}>
+        Gate code
+      </label>
+      <input
+        id={`${idPrefix}_gate`}
+        name="gate_code"
+        className={styles.input}
+        maxLength={80}
+        autoComplete="off"
+        spellCheck={false}
+        defaultValue={view.codes.gateCode}
+      />
+      <label className={styles.label} htmlFor={`${idPrefix}_door`}>
+        Door code
+      </label>
+      <input
+        id={`${idPrefix}_door`}
+        name="door_code"
+        className={styles.input}
+        maxLength={80}
+        autoComplete="off"
+        spellCheck={false}
+        defaultValue={view.codes.doorCode}
+      />
+      <label className={styles.label} htmlFor={`${idPrefix}_garage`}>
+        Garage code
+      </label>
+      <input
+        id={`${idPrefix}_garage`}
+        name="garage_code"
+        className={styles.input}
+        maxLength={80}
+        autoComplete="off"
+        spellCheck={false}
+        defaultValue={view.codes.garageCode}
+      />
+    </>
+  );
+}
 
 function SetPrimaryForm({
   tenantSlug,
@@ -259,12 +332,14 @@ function EditPropertyForm({
   customerId,
   property,
   serviceZones,
+  accessCodes,
   onPropertiesPatch,
 }: {
   tenantSlug: string;
   customerId: string;
   property: CustomerPropertyVM;
   serviceZones: ServiceZoneOption[];
+  accessCodes: PropertyAccessCodeView;
   onPropertiesPatch: PatchHandler;
 }) {
   const [state, action, pending] = useActionState(updateCustomerProperty, initial);
@@ -369,6 +444,8 @@ function EditPropertyForm({
         defaultValue={property.site_notes ?? ''}
       />
 
+      <AccessCodeFields idPrefix={`codes_${property.id}`} view={accessCodes} />
+
       <button type="submit" className={styles.submit} disabled={pending}>
         {pending ? 'Saving…' : 'Save location'}
       </button>
@@ -470,6 +547,11 @@ function AddPropertyForm({
           Site notes
         </label>
         <textarea id="new_site" name="site_notes" className={styles.textarea} />
+
+        <AccessCodeFields
+          idPrefix="new_codes"
+          view={{ codes: emptyPropertyAccessCodes(), unreadable: false }}
+        />
 
         {hasAny ? (
           <label className={styles.checkboxRow}>

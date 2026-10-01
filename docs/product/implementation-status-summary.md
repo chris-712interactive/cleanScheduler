@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-09-30  
 **Branch:** `dev`  
-**Latest polish:** Business settings use a color picker (hex or RGB) and per-day hours. Jobber import creates a service property from the service address. Quote entry codes are office-only, and consultation scheduling shows validation errors beside a narrower date field. Admins can still extend a free trial from the tenant billing card.
+**Latest polish:** Property gate, door, and garage codes are encrypted on the service location (`PROPERTY_ACCESS_CODE_KEY`) and are not stored on the quote. Business settings use a color picker and per-day hours. Jobber import creates a service property from the service address. Consultation scheduling shows validation errors beside a narrower date field. Admins can still extend a free trial from the tenant billing card.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

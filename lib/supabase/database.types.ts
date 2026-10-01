@@ -1824,6 +1824,7 @@ export type Database = {
           state: string | null;
           postal_code: string | null;
           site_notes: string | null;
+          access_codes_ciphertext: string | null;
           is_primary: boolean;
           bedrooms: number | null;
           bathrooms: number | null;
@@ -1845,6 +1846,7 @@ export type Database = {
           state?: string | null;
           postal_code?: string | null;
           site_notes?: string | null;
+          access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;
           bathrooms?: number | null;
@@ -1866,6 +1868,7 @@ export type Database = {
           state?: string | null;
           postal_code?: string | null;
           site_notes?: string | null;
+          access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;
           bathrooms?: number | null;

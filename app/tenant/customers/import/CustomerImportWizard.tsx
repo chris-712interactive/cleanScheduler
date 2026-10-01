@@ -231,7 +231,9 @@ export function CustomerImportWizard({ tenantSlug }: { tenantSlug: string }) {
                     <td>{row.name}</td>
                     <td>{row.email ?? '—'}</td>
                     <td>{row.phone ?? '—'}</td>
-                    <td>{row.propertySummary || (row.propertyCount > 0 ? row.propertyCount : '—')}</td>
+                    <td>
+                      {row.propertySummary || (row.propertyCount > 0 ? row.propertyCount : '—')}
+                    </td>
                     <td>
                       {actionLabel(row.action, row.skipReason)}
                       {row.warnings.slice(0, 2).map((warning) => (

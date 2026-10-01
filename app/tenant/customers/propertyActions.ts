@@ -10,6 +10,8 @@ import {
   type CustomerPropertyVM,
 } from '@/lib/tenant/customerPropertyPatch';
 import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
+import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
+import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
 
 export interface PropertyFormState {
   error?: string;
@@ -119,6 +121,16 @@ export async function addCustomerProperty(
     return { error: ins.error?.message ?? 'Could not add location.' };
   }
 
+  if (formData.get('save_access_codes') === '1') {
+    const savedCodes = await savePropertyAccessCodes(
+      admin,
+      membership.tenantId,
+      ins.data.id,
+      parsePropertyAccessCodesFromForm(formData),
+    );
+    if (!savedCodes.ok) return { error: savedCodes.error };
+  }
+
   await revalidateCustomerPaths(customerId);
   return {
     success: true,
@@ -194,6 +206,16 @@ export async function updateCustomerProperty(
 
   if (upd.error || !upd.data) {
     return { error: upd.error?.message ?? 'Could not update location.' };
+  }
+
+  if (formData.get('save_access_codes') === '1') {
+    const savedCodes = await savePropertyAccessCodes(
+      admin,
+      membership.tenantId,
+      propertyId,
+      parsePropertyAccessCodesFromForm(formData),
+    );
+    if (!savedCodes.ok) return { error: savedCodes.error };
   }
 
   await revalidateCustomerPaths(customerId);

@@ -28,11 +28,16 @@ import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import { QuoteAutoScheduleBanner } from '../QuoteAutoScheduleBanner';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
+import { parseQuoteScopeSnapshot } from '@/lib/tenant/quoteStructuredFields';
 import {
-  formatOfficeAccessCodes,
-  parseQuotePropertySnapshot,
-  parseQuoteScopeSnapshot,
-} from '@/lib/tenant/quoteStructuredFields';
+  absorbLegacyQuoteAccessCodes,
+  loadPropertyAccessCodes,
+  propertyAccessCodeReadError,
+} from '@/lib/security/propertyAccessCodeCrypto';
+import {
+  emptyPropertyAccessCodes,
+  formatPropertyAccessCodes,
+} from '@/lib/tenant/propertyAccessCodes';
 import { quoteHeaderPricingDefaultsFromQuote } from '@/lib/tenant/quoteHeaderPricingDefaults';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
@@ -267,8 +272,19 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   const versionRows = versionsRes.data ?? [];
 
   const scopeSnapshot = parseQuoteScopeSnapshot(row.scope_snapshot);
-  const propertySnapshot = parseQuotePropertySnapshot(row.property_snapshot);
-  const officeAccessCodes = formatOfficeAccessCodes(propertySnapshot);
+  await absorbLegacyQuoteAccessCodes(
+    admin,
+    membership.tenantId,
+    row.property_id,
+    row.id,
+    row.property_snapshot,
+  );
+  const loadedAccessCodes = row.property_id
+    ? await loadPropertyAccessCodes(admin, membership.tenantId, row.property_id)
+    : { codes: emptyPropertyAccessCodes(), unreadable: false };
+  const officeAccessCodes = loadedAccessCodes.unreadable
+    ? propertyAccessCodeReadError()
+    : formatPropertyAccessCodes(loadedAccessCodes.codes);
 
   const summaryItems = [
     { key: 'Quote ID', value: row.id },
@@ -304,7 +320,14 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     ...(scopeSnapshot.inclusions.length > 0
       ? [{ key: 'Scope items', value: String(scopeSnapshot.inclusions.length) }]
       : []),
-    ...(officeAccessCodes ? [{ key: 'Entry codes (office only)', value: officeAccessCodes }] : []),
+    ...(officeAccessCodes
+      ? [
+          {
+            key: 'Entry codes (property)',
+            value: <span style={{ whiteSpace: 'pre-line' }}>{officeAccessCodes}</span>,
+          },
+        ]
+      : []),
     ...(row.internal_notes ? [{ key: 'Office notes', value: row.internal_notes }] : []),
   ];
 

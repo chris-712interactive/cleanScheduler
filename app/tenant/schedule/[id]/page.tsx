@@ -16,6 +16,14 @@ import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
 import { VisitDetailCard } from '../VisitDetailCard';
 import { createAdminClient } from '@/lib/supabase/server';
+import {
+  loadPropertyAccessCodes,
+  propertyAccessCodeReadError,
+} from '@/lib/security/propertyAccessCodeCrypto';
+import {
+  emptyPropertyAccessCodes,
+  formatPropertyAccessCodes,
+} from '@/lib/tenant/propertyAccessCodes';
 import { resolveVisitDurationForVisit } from '@/lib/schedule/resolveVisitDurationForVisit';
 import { DEFAULT_VISIT_DURATION_HOURS } from '@/lib/schedule/visitDuration';
 import { SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
@@ -66,6 +74,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       status,
       notes,
       customer_id,
+      property_id,
       checked_in_at,
       checked_in_by_user_id,
       check_in_lat,
@@ -125,9 +134,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   const quoteAmountRaw = row.tenant_quotes?.amount_cents;
   const prop = row.tenant_customer_properties;
   const mapsAddress = prop ? formatPropertyAddressLine(prop) : '';
-  const siteLine = prop
-    ? [prop.label?.trim(), mapsAddress].filter(Boolean).join(' — ')
-    : '';
+  const siteLine = prop ? [prop.label?.trim(), mapsAddress].filter(Boolean).join(' — ') : '';
   const assignees = normalizeAssigneeRows(
     row.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
   );
@@ -145,6 +152,12 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   });
 
   const admin = createAdminClient();
+  const loadedAccessCodes = row.property_id
+    ? await loadPropertyAccessCodes(admin, membership.tenantId, row.property_id)
+    : null;
+  const accessCodesText = loadedAccessCodes?.unreadable
+    ? propertyAccessCodeReadError()
+    : formatPropertyAccessCodes(loadedAccessCodes?.codes ?? emptyPropertyAccessCodes());
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const canUseProofPhotos = isFeatureEnabled(tier, 'proofOfServicePhotos');
   const canUseGpsCheckIn = isFeatureEnabled(tier, 'gpsVerifiedCheckIn');
@@ -235,6 +248,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           customerEmail,
           siteLine,
           mapsAddress,
+          accessCodesText,
           preferredPaymentMethod,
           quoteTitle: row.tenant_quotes?.title ?? null,
           quoteId: row.quote_id,

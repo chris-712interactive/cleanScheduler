@@ -15,10 +15,6 @@ export type QuotePropertySnapshot = {
   bathrooms?: number | null;
   stories?: number | null;
   access_notes?: string | null;
-  /** Office-only. Never included on the customer quote. */
-  gate_code?: string | null;
-  door_code?: string | null;
-  garage_code?: string | null;
 };
 
 export function emptyQuoteScopeSnapshot(): QuoteScopeSnapshot {
@@ -72,25 +68,7 @@ export function parseQuotePropertySnapshot(raw: unknown): QuotePropertySnapshot 
       o.access_notes == null || o.access_notes === ''
         ? null
         : String(o.access_notes).trim() || null,
-    gate_code: optionalCode(o.gate_code),
-    door_code: optionalCode(o.door_code),
-    garage_code: optionalCode(o.garage_code),
   };
-}
-
-function optionalCode(value: unknown): string | null {
-  if (value == null || value === '') return null;
-  const code = String(value).trim();
-  return code ? code.slice(0, 80) : null;
-}
-
-export function formatOfficeAccessCodes(snapshot: QuotePropertySnapshot): string | null {
-  const lines = [
-    snapshot.gate_code ? `Gate code: ${snapshot.gate_code}` : '',
-    snapshot.door_code ? `Door code: ${snapshot.door_code}` : '',
-    snapshot.garage_code ? `Garage code: ${snapshot.garage_code}` : '',
-  ].filter(Boolean);
-  return lines.length > 0 ? lines.join('\n') : null;
 }
 
 export function parseOptionalSmallInt(raw: string): number | null {
@@ -192,9 +170,6 @@ export function parseQuoteWizardStructuredFromForm(formData: FormData): {
     bathrooms: parseOptionalDecimal(String(formData.get('quote_property_bathrooms') ?? '')),
     stories: parseOptionalSmallInt(String(formData.get('quote_property_stories') ?? '')),
     access_notes: String(formData.get('access_notes') ?? '').trim() || null,
-    gate_code: optionalCode(formData.get('gate_code')),
-    door_code: optionalCode(formData.get('door_code')),
-    garage_code: optionalCode(formData.get('garage_code')),
   };
 
   const internalNotes = String(formData.get('office_notes') ?? '').trim() || null;
