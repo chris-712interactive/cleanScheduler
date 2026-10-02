@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
-import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
+import { shouldAutoConfirmInvitedEmployeeEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { TenantRole } from '@/lib/auth/types';
@@ -251,13 +251,6 @@ export async function acceptEmployeeInviteAction(
     return { error: 'Passwords do not match.' };
   }
 
-  if (!shouldAutoConfirmEmail()) {
-    return {
-      error:
-        'Automatic email confirmation is off for this environment. Set ONBOARDING_EMAIL_CONFIRM_MODE to auto or disabled for dev, or use “Link my account”.',
-    };
-  }
-
   const admin = createAdminClient();
   const loaded = await loadActiveEmployeeInvite(admin, token);
   if (!loaded.ok) {
@@ -273,7 +266,7 @@ export async function acceptEmployeeInviteAction(
   const created = await admin.auth.admin.createUser({
     email,
     password,
-    email_confirm: true,
+    email_confirm: shouldAutoConfirmInvitedEmployeeEmail(),
     app_metadata: {
       app_role: nextAppRole,
       tenant_role: invitedRole,
