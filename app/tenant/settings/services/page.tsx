@@ -24,8 +24,8 @@ export default async function TenantServicesSettingsPage() {
   return (
     <>
       <PageHeader
-        title="Service types & durations"
-        titleHint="Default visit lengths and crew checklists used when scheduling work."
+        title="Job types"
+        titleHint="Built-in and custom types used when you schedule a job, plus default durations and checklists."
         backHref="/settings"
         backLabel="Settings"
       />
@@ -33,7 +33,7 @@ export default async function TenantServicesSettingsPage() {
       <Stack gap={6}>
         {!canEdit ? (
           <p className={styles.readOnlyNotice} role="status">
-            You can view service types here. Only owners and admins can make changes.
+            You can view job types here. Only owners and admins can make changes.
           </p>
         ) : null}
 

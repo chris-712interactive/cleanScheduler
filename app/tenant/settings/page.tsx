@@ -68,8 +68,8 @@ const HUB_GROUPS: HubGroup[] = [
       },
       {
         href: '/settings/services',
-        label: 'Service types',
-        description: 'Default visit durations by job type for auto-scheduling.',
+        label: 'Job types',
+        description: 'Built-in and custom job types, durations, and checklists for the schedule.',
         icon: ClipboardList,
       },
       {

@@ -42,6 +42,7 @@ export function CustomerProfileSummary({
   const phone = identity.phone?.trim() ?? '';
   const company = profile?.company_name?.trim() ?? '';
   const internalNotes = profile?.internal_notes?.trim() ?? '';
+  const fieldNotes = profile?.field_notes?.trim() ?? '';
   const preferred = formatPreferredContact(profile?.preferred_contact_method);
   const preferredBilling = formatCustomerPreferredBilling(profile?.preferred_payment_method);
   const primaryLine = formatPropertyAddressLine(primaryProperty);
@@ -123,15 +124,30 @@ export function CustomerProfileSummary({
         <p className={styles.profileSummaryLocationAddress}>
           {primaryLine || 'No address on file'}
         </p>
+        {primaryProperty?.community_name?.trim() ? (
+          <p className={styles.profileSummaryLocationLabel}>
+            Community · {primaryProperty.community_name.trim()}
+          </p>
+        ) : null}
       </div>
 
       {internalNotes ? (
         <div className={styles.profileSummaryNotes}>
           <div className={styles.profileSummaryNotesHeader}>
             <MessageSquareText size={16} aria-hidden />
-            <span>Internal notes</span>
+            <span>Office notes</span>
           </div>
           <p className={styles.profileSummaryNotesBody}>{internalNotes}</p>
+        </div>
+      ) : null}
+
+      {fieldNotes ? (
+        <div className={styles.profileSummaryNotes}>
+          <div className={styles.profileSummaryNotesHeader}>
+            <MessageSquareText size={16} aria-hidden />
+            <span>Crew notes</span>
+          </div>
+          <p className={styles.profileSummaryNotesBody}>{fieldNotes}</p>
         </div>
       ) : null}
 

@@ -222,7 +222,7 @@ function AutoScheduleFields({
           <p className={styles.lineItemAutoScheduleHint}>
             Optional override for this customer. Leave blank to use the default from{' '}
             <a href="/settings/services" className={styles.inlineLink}>
-              Service types
+              Job types
             </a>
             .
           </p>

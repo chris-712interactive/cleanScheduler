@@ -9,6 +9,7 @@ export type CustomerEditSnapshot = {
   preferredContactMethod: string;
   preferredPaymentMethod: string;
   internalNotes: string;
+  fieldNotes: string;
   marketingEmailOptIn: boolean;
 };
 
@@ -23,6 +24,7 @@ export function buildCustomerEditSnapshot(input: {
   preferredContactMethod: string;
   preferredPaymentMethod: string;
   internalNotes: string;
+  fieldNotes: string;
   marketingEmailOptIn: boolean;
 }): CustomerEditSnapshot {
   return {
@@ -36,6 +38,7 @@ export function buildCustomerEditSnapshot(input: {
     preferredContactMethod: input.preferredContactMethod,
     preferredPaymentMethod: input.preferredPaymentMethod,
     internalNotes: input.internalNotes,
+    fieldNotes: input.fieldNotes,
     marketingEmailOptIn: input.marketingEmailOptIn,
   };
 }

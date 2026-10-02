@@ -83,6 +83,17 @@ export function FieldEmployeeDayJobs({
                   Job amount: ${formatCentsAsDollars(visit.expectedAmountCents)}
                 </p>
               ) : null}
+              {visit.communityName ? (
+                <p className={styles.fieldJobCardMeta}>Community: {visit.communityName}</p>
+              ) : null}
+              {visit.notes ? (
+                <p className={styles.fieldJobCardMeta}>Job notes: {visit.notes}</p>
+              ) : null}
+              {visit.customerFieldNotes ? (
+                <p className={styles.fieldJobCardMeta}>
+                  Customer notes: {visit.customerFieldNotes}
+                </p>
+              ) : null}
               {visit.siteLine ? (
                 <p className={styles.fieldJobCardMeta}>
                   <MapPin size={16} aria-hidden className={styles.fieldJobCardIcon} />

@@ -12,6 +12,7 @@ import {
 import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
+import { normalizeCommunityName } from '@/lib/tenant/communityName';
 
 export interface PropertyFormState {
   error?: string;
@@ -55,6 +56,7 @@ export async function addCustomerProperty(
   const state = String(formData.get('state') ?? '').trim();
   const postal = String(formData.get('postal_code') ?? '').trim();
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
+  const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
   const wantPrimary = String(formData.get('set_primary') ?? '') === 'on';
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
 
@@ -111,6 +113,7 @@ export async function addCustomerProperty(
       state: state || null,
       postal_code: postal || null,
       site_notes: siteNotes || null,
+      community_name: communityName,
       service_zone_id: zoneResolved.zoneId,
       is_primary: makePrimary,
     })
@@ -158,6 +161,7 @@ export async function updateCustomerProperty(
   const state = String(formData.get('state') ?? '').trim();
   const postal = String(formData.get('postal_code') ?? '').trim();
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
+  const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
 
   if (!slug || !customerId || !propertyId) {
@@ -197,6 +201,7 @@ export async function updateCustomerProperty(
       state: state || null,
       postal_code: postal || null,
       site_notes: siteNotes || null,
+      community_name: communityName,
       service_zone_id: zoneResolved.zoneId,
     })
     .eq('id', propertyId)

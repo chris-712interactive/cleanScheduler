@@ -31,16 +31,23 @@ type VisitListRow = {
       full_name: string | null;
       phone: string | null;
     } | null;
+    tenant_customer_profiles: { field_notes: string | null } | null;
     tenant_customer_properties:
       | Pick<
           Tables<'tenant_customer_properties'>,
-          'is_primary' | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+          | 'is_primary'
+          | 'address_line1'
+          | 'address_line2'
+          | 'city'
+          | 'state'
+          | 'postal_code'
+          | 'community_name'
         >[]
       | null;
   } | null;
   tenant_customer_properties: Pick<
     Tables<'tenant_customer_properties'>,
-    'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
+    'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code' | 'community_name'
   > | null;
   tenant_quotes: { title: string; amount_cents: number | null } | null;
   tenant_scheduled_visit_assignees:
@@ -60,6 +67,11 @@ function mapVisitRows(rows: VisitListRow[]): ScheduleVisitVM[] {
       v.tenant_customer_properties,
       v.customers?.tenant_customer_properties,
     );
+    const visitCommunity = v.tenant_customer_properties?.community_name?.trim() || '';
+    const fallbackProperty =
+      v.customers?.tenant_customer_properties?.find((property) => property.is_primary) ??
+      v.customers?.tenant_customer_properties?.[0];
+    const communityName = visitCommunity || fallbackProperty?.community_name?.trim() || null;
     const assignees = normalizeAssigneeRows(
       v.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
     );
@@ -70,6 +82,8 @@ function mapVisitRows(rows: VisitListRow[]): ScheduleVisitVM[] {
       ends_at: v.ends_at,
       status: v.status,
       notes: v.notes,
+      customerFieldNotes: v.customers?.tenant_customer_profiles?.field_notes?.trim() || null,
+      communityName,
       customerName: who,
       customerPhone: ident?.phone?.trim() || null,
       siteLine: site,
@@ -118,13 +132,17 @@ export async function loadScheduleVisits(params: {
           full_name,
           phone
         ),
+        tenant_customer_profiles (
+          field_notes
+        ),
         tenant_customer_properties (
           is_primary,
           address_line1,
           address_line2,
           city,
           state,
-          postal_code
+          postal_code,
+          community_name
         )
       ),
       tenant_customer_properties (
@@ -132,7 +150,8 @@ export async function loadScheduleVisits(params: {
         address_line2,
         city,
         state,
-        postal_code
+        postal_code,
+        community_name
       ),
       tenant_quotes (
         title,

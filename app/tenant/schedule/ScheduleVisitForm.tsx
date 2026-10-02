@@ -37,6 +37,7 @@ export function ScheduleVisitForm({
   isConsultation = false,
   consultationDurationMinutes = 60,
   consultationServiceTypes = [],
+  jobTypeLabels = [],
   returnTo = null,
 }: {
   tenantSlug: string;
@@ -55,6 +56,7 @@ export function ScheduleVisitForm({
   isConsultation?: boolean;
   consultationDurationMinutes?: number;
   consultationServiceTypes?: ConsultationServiceTypeOption[];
+  jobTypeLabels?: string[];
   returnTo?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
@@ -67,6 +69,8 @@ export function ScheduleVisitForm({
   const [endsAt, setEndsAt] = useState('');
   const [crewAvailability, setCrewAvailability] = useState<CrewAvailabilityRow[]>([]);
   const [confirmUnavailable, setConfirmUnavailable] = useState(false);
+  const [jobTitle, setJobTitle] = useState(defaults?.title?.trim() || 'Visit');
+  const [selectedJobType, setSelectedJobType] = useState('');
 
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
@@ -150,7 +154,7 @@ export function ScheduleVisitForm({
       messages.push('Select a location for this consultation.');
     }
     if (isConsultation && consultationServiceTypes.length === 0) {
-      messages.push('Add a service type under Settings → Service types before scheduling.');
+      messages.push('Add a job type under Settings → Job types before scheduling.');
     } else if (isConsultation && !serviceTypeId) {
       messages.push('Select the service type for this consultation.');
     }
@@ -336,7 +340,7 @@ export function ScheduleVisitForm({
               ))}
             </select>
             <p className={styles.crewHint}>
-              Chooses the consultation checklist for this walkthrough (Settings → Service types).
+              Chooses the consultation checklist for this walkthrough (Settings → Job types).
             </p>
           </div>
         </div>
@@ -363,16 +367,54 @@ export function ScheduleVisitForm({
             <div className={styles.formField} aria-hidden />
           </div>
 
+          {jobTypeLabels.length > 0 ? (
+            <div className={styles.formGridFull}>
+              <div className={styles.formField}>
+                <label className={styles.label} htmlFor="visit_job_type">
+                  Job type
+                </label>
+                <select
+                  id="visit_job_type"
+                  className={styles.select}
+                  value={selectedJobType}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setSelectedJobType(next);
+                    setJobTitle((current) => {
+                      if (!next) return current;
+                      if (!current.trim() || current === 'Visit' || current === selectedJobType) {
+                        return next;
+                      }
+                      return current;
+                    });
+                  }}
+                >
+                  <option value="">Custom title</option>
+                  {jobTypeLabels.map((label) => (
+                    <option key={label} value={label}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <p className={styles.crewHint}>
+                  Built-in types are included for every business. Custom types are added in Settings
+                  → Job types.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           <div className={styles.formGridTwo}>
             <div className={styles.formField}>
               <label className={styles.label} htmlFor="visit_title">
-                Title
+                Job title
               </label>
               <input
                 id="visit_title"
                 name="title"
                 className={styles.input}
-                defaultValue={defaults?.title?.trim() || 'Visit'}
+                value={jobTitle}
+                onChange={(event) => setJobTitle(event.target.value)}
               />
             </div>
             <div className={styles.formField}>
@@ -515,7 +557,7 @@ export function ScheduleVisitForm({
 
       <div className={styles.formGridFull}>
         <label className={styles.label} htmlFor="visit_notes">
-          Notes
+          Job notes
         </label>
         <textarea
           id="visit_notes"
@@ -524,9 +566,10 @@ export function ScheduleVisitForm({
           placeholder={
             isConsultation
               ? 'Access, parking, pets, condition, square footage cues…'
-              : 'Crew notes, supplies…'
+              : 'Supplies, special requests, what the crew should know for this visit'
           }
         />
+        <p className={styles.crewHint}>Field employees see these notes on the job.</p>
       </div>
 
       <div className={styles.formActions}>

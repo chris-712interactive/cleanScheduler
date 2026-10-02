@@ -692,6 +692,69 @@ export async function updateVisitJobPrice(
   };
 }
 
+export async function updateVisitJobDetails(
+  _prev: ScheduleFormState,
+  formData: FormData,
+): Promise<ScheduleFormState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const visitId = String(formData.get('visit_id') ?? '').trim();
+  const titleRaw = String(formData.get('title') ?? '').trim();
+  const notes = sanitizeConsultationNotes(String(formData.get('notes') ?? ''));
+
+  if (!slug || !visitId) {
+    return { error: 'Missing visit.' };
+  }
+
+  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  const actorRole = membership.role as TenantRole;
+  if (actorRole !== 'owner' && actorRole !== 'admin') {
+    return { error: 'Only owners and admins can update job notes.' };
+  }
+
+  const title = titleRaw.slice(0, 160) || 'Visit';
+
+  const admin = createAdminClient();
+  const { data: visit, error: loadErr } = await admin
+    .from('tenant_scheduled_visits')
+    .select('id, status, visit_purpose')
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+
+  if (loadErr || !visit) {
+    return { error: 'Visit not found.' };
+  }
+
+  if (visit.status !== 'scheduled') {
+    return { error: 'Job notes can only be updated on scheduled visits.' };
+  }
+
+  const nextTitle = visit.visit_purpose === 'consultation' ? CONSULTATION_VISIT_TITLE : title;
+
+  const { error: upErr } = await admin
+    .from('tenant_scheduled_visits')
+    .update({
+      title: nextTitle,
+      notes: notes || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId);
+
+  if (upErr) {
+    return { error: upErr.message };
+  }
+
+  revalidatePath('/schedule');
+  revalidatePath(`/schedule/${visitId}`);
+  return {
+    success: true,
+    visitPatch: { title: nextTitle, notes: notes || null },
+  };
+}
+
 export async function updateScheduledVisitAssignees(
   _prev: ScheduleFormState,
   formData: FormData,

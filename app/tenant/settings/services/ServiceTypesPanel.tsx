@@ -262,13 +262,13 @@ export function ServiceTypesPanel({
   return (
     <div className={styles.stack}>
       <header className={styles.hero}>
-        <h2 className={styles.heroTitle}>Default visit durations by job type</h2>
+        <h2 className={styles.heroTitle}>Job types for the schedule</h2>
         <p className={styles.heroLead}>
-          These defaults feed auto-scheduling and crew availability. When you flag quote lines for
-          auto-schedule, visit duration comes from here. Schedule role tells the app whether a job
-          type is an initial visit, recurring visit, or standard when quotes are accepted with
-          automatic scheduling enabled in Operations. Visit and consultation checklists are edited
-          per row below.
+          These types appear when you schedule a job. Built-in types are included for every
+          business. Durations feed auto-scheduling and crew availability. Schedule role tells the
+          app whether a job type is an initial visit, recurring visit, or standard when quotes are
+          accepted with automatic scheduling enabled in Operations. Visit and consultation
+          checklists are edited per row below.
         </p>
       </header>
 
@@ -345,7 +345,7 @@ export function ServiceTypesPanel({
       {canEdit ? (
         customTypesEnabled ? (
           <div className={styles.setupCard}>
-            <p className={styles.setupTitle}>Add a custom service type (Pro)</p>
+            <p className={styles.setupTitle}>Add a custom job type (Pro)</p>
             {createState.error ? (
               <p className={styles.bannerError} role="alert">
                 {createState.error}
@@ -354,7 +354,7 @@ export function ServiceTypesPanel({
             <form action={createAction} className={styles.formGrid}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <label className={styles.field}>
-                <span className={styles.fieldLabel}>Service name</span>
+                <span className={styles.fieldLabel}>Job type name</span>
                 <input
                   className={styles.textInput}
                   name="service_label"
@@ -409,15 +409,15 @@ export function ServiceTypesPanel({
               </label>
               <div className={styles.field}>
                 <Button type="submit" disabled={createPending}>
-                  {createPending ? 'Adding…' : 'Add custom type'}
+                  {createPending ? 'Adding…' : 'Add job type'}
                 </Button>
               </div>
             </form>
           </div>
         ) : (
           <FeatureUpgradePanel
-            title="Create custom service types on Pro"
-            description="All plans include the built-in library with editable durations. Pro lets you add your own service names beyond the defaults."
+            title="Create custom job types on Pro"
+            description="All plans include the built-in job types with editable durations. Pro lets you add your own names, such as post-construction or move-in cleans, and use them when scheduling."
           />
         )
       ) : null}

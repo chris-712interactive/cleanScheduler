@@ -159,14 +159,32 @@ export function CustomerEditForm({
 
       <div className={styles.field}>
         <label className={styles.label} htmlFor="edit_internal_notes">
-          Internal notes
+          Office notes
         </label>
         <textarea
           id="edit_internal_notes"
           name="internal_notes"
           className={styles.textareaCompact}
           defaultValue={snapshot.internalNotes}
+          placeholder="Billing preferences, account history, office-only context"
         />
+        <p className={styles.sectionHint}>
+          Visible to the office only. Field employees do not see these.
+        </p>
+      </div>
+
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor="edit_field_notes">
+          Crew notes
+        </label>
+        <textarea
+          id="edit_field_notes"
+          name="field_notes"
+          className={styles.textareaCompact}
+          defaultValue={snapshot.fieldNotes}
+          placeholder="Pets, parking, preferred arrival window, supplies to bring"
+        />
+        <p className={styles.sectionHint}>Shown to field employees on this customer’s jobs.</p>
       </div>
 
       <label className={styles.checkboxRow} htmlFor="edit_marketing_email_opt_in">

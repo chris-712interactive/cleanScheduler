@@ -154,7 +154,8 @@ export function CustomerPropertySection({
                   </span>
                   <span className={styles.propertyMeta}>
                     {PROPERTY_KIND_LABEL[p.property_kind]}
-                    {zoneName ? ` · ${zoneName}` : ''} ·{' '}
+                    {zoneName ? ` · ${zoneName}` : ''}
+                    {p.community_name?.trim() ? ` · ${p.community_name.trim()}` : ''} ·{' '}
                     {formatPropertyAddressLine(p) || 'No address on file'}
                   </span>
                 </summary>
@@ -404,6 +405,20 @@ function EditPropertyForm({
           </Field>
         </div>
 
+        <Field id={`community_${id}`} label="Community name (optional)">
+          <input
+            id={`community_${id}`}
+            name="community_name"
+            className={styles.input}
+            defaultValue={property.community_name ?? ''}
+            placeholder="Oakridge Estates"
+          />
+        </Field>
+        <p className={styles.sectionHint}>
+          Use this when the home is in a gated community or named neighborhood. It is shown to field
+          employees and is not part of the street address.
+        </p>
+
         <div className={styles.fieldRowCity}>
           <Field id={`city_${id}`} label="City">
             <input
@@ -513,6 +528,18 @@ function AddPropertyForm({
             <input id="new_a2" name="address_line2" className={styles.input} />
           </Field>
         </div>
+
+        <Field id="new_community" label="Community name (optional)">
+          <input
+            id="new_community"
+            name="community_name"
+            className={styles.input}
+            placeholder="Oakridge Estates"
+          />
+        </Field>
+        <p className={styles.sectionHint}>
+          Gated community or neighborhood name. Shown on jobs for field employees.
+        </p>
 
         <div className={styles.fieldRowCity}>
           <Field id="new_city" label="City">

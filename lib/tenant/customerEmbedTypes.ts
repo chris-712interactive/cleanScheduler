@@ -14,6 +14,7 @@ type ProfilePick = Pick<
   | 'preferred_contact_method'
   | 'preferred_payment_method'
   | 'internal_notes'
+  | 'field_notes'
   | 'marketing_email_opt_in'
 >;
 
@@ -28,6 +29,7 @@ type PropertyPick = Pick<
   | 'state'
   | 'postal_code'
   | 'site_notes'
+  | 'community_name'
   | 'is_primary'
   | 'service_zone_id'
 >;

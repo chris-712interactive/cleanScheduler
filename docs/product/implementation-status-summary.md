@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-10-01  
+**Last updated:** 2026-10-02  
 **Branch:** `dev`  
-**Latest polish:** Getting started asks for a consultation before the first quote when that operations setting is on. CSV import can email a portal invite to each new customer with an email when that option is checked. The customer detail page uses a two-column layout, and location fields sit in rows with Save and Delete on one bar. Property gate, door, and garage codes are encrypted on the service location (`PROPERTY_ACCESS_CODE_KEY`) and are not stored on the quote. Business settings use a color picker and per-day hours. Jobber import creates a service property from the service address. Consultation scheduling shows validation errors beside a narrower date field. Admins can still extend a free trial from the tenant billing card.
+**Latest polish:** Job notes on a visit are editable by the office and shown to field employees. Customers have office-only notes and separate crew notes. Service locations have an optional community name for gated neighborhoods (`0095`). Scheduling a job picks a job type from Settings → Job types; custom names stay on Pro. The field-employee Request time off button uses white text on the brand background.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -137,6 +137,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Customer messaging       | `docs/product/customer-support-messaging.md`      |
 | Tenant reports           | `docs/product/tenant-reports.md`                  |
 | Service zones            | `docs/product/service-zones.md`                   |
+| Job notes and job types  | `docs/product/job-notes-and-job-types.md`         |
 | Tenant customer import   | `docs/product/tenant-customer-import.md`          |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |
 

@@ -1760,6 +1760,7 @@ export type Database = {
           preferred_contact_method: 'email' | 'phone' | 'sms' | null;
           preferred_payment_method: Database['public']['Enums']['tenant_payment_method'];
           internal_notes: string | null;
+          field_notes: string | null;
           marketing_email_opt_in: boolean;
           sms_transactional_opt_in: boolean;
           sms_transactional_opt_in_at: string | null;
@@ -1774,6 +1775,7 @@ export type Database = {
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
           preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
+          field_notes?: string | null;
           marketing_email_opt_in?: boolean;
           sms_transactional_opt_in?: boolean;
           sms_transactional_opt_in_at?: string | null;
@@ -1788,6 +1790,7 @@ export type Database = {
           preferred_contact_method?: 'email' | 'phone' | 'sms' | null;
           preferred_payment_method?: Database['public']['Enums']['tenant_payment_method'];
           internal_notes?: string | null;
+          field_notes?: string | null;
           marketing_email_opt_in?: boolean;
           sms_transactional_opt_in?: boolean;
           sms_transactional_opt_in_at?: string | null;
@@ -1824,6 +1827,7 @@ export type Database = {
           state: string | null;
           postal_code: string | null;
           site_notes: string | null;
+          community_name: string | null;
           access_codes_ciphertext: string | null;
           is_primary: boolean;
           bedrooms: number | null;
@@ -1846,6 +1850,7 @@ export type Database = {
           state?: string | null;
           postal_code?: string | null;
           site_notes?: string | null;
+          community_name?: string | null;
           access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;
@@ -1868,6 +1873,7 @@ export type Database = {
           state?: string | null;
           postal_code?: string | null;
           site_notes?: string | null;
+          community_name?: string | null;
           access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;

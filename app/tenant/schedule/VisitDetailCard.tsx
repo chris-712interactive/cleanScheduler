@@ -44,6 +44,7 @@ import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
 import { VisitChecklistPanel } from './VisitChecklistPanel';
 import { VisitScheduleEditPanel } from './VisitScheduleEditPanel';
 import { VisitJobPriceForm } from './VisitJobPriceForm';
+import { VisitJobDetailsForm } from './VisitJobDetailsForm';
 import type { EmployeeOption } from './ScheduleVisitForm';
 import styles from './visitDetail.module.scss';
 
@@ -82,6 +83,9 @@ export type VisitDetailSnapshot = {
   quoteId: string | null;
   quoteAmountCents: number | null;
   notes: string | null;
+  customerFieldNotes: string | null;
+  communityName: string | null;
+  siteNotes: string | null;
   assignees: ScheduleAssigneeChip[];
   assigneeUserIds: string[];
   actorUserId: string;
@@ -117,11 +121,13 @@ export function VisitDetailCard({
   employeeOptions = [],
   relatedRecords,
   scrollToFieldActions = false,
+  jobTypeLabels = [],
 }: {
   initial: VisitDetailSnapshot;
   employeeOptions?: EmployeeOption[];
   relatedRecords?: RelatedRecordsSnapshot | null;
   scrollToFieldActions?: boolean;
+  jobTypeLabels?: string[];
 }) {
   const [visit, setVisit] = useState(initial);
 
@@ -166,6 +172,7 @@ export function VisitDetailCard({
   const showComplete = canCompleteVisit(fieldParams);
   const canManage = canManageScheduledVisit(visit.actorRole);
   const canDelete = canManage;
+  const canEditJobDetails = canManage && !visit.isFieldEmployee && visit.status === 'scheduled';
   const showScheduleEdit =
     visit.status === 'scheduled' && !visit.checkedInAt && canManage && !visit.isFieldEmployee;
   const showFieldWork = showCheckIn || showComplete;
@@ -315,6 +322,12 @@ export function VisitDetailCard({
                   </dd>
                 </div>
               ) : null}
+              {visit.communityName ? (
+                <div className={styles.metaRow}>
+                  <dt className={styles.metaLabel}>Community</dt>
+                  <dd className={styles.metaValue}>{visit.communityName}</dd>
+                </div>
+              ) : null}
               {visit.accessCodesText ? (
                 <div className={styles.metaRow}>
                   <dt className={styles.metaLabel}>Entry codes</dt>
@@ -437,12 +450,45 @@ export function VisitDetailCard({
             </section>
           ) : null}
 
-          {visit.notes ? (
+          {canEditJobDetails ? (
             <section className={styles.panel} aria-labelledby="notes-heading">
               <h2 id="notes-heading" className={styles.panelTitle}>
-                Notes
+                Job details
+              </h2>
+              <VisitJobDetailsForm
+                tenantSlug={visit.tenantSlug}
+                visitId={visit.visitId}
+                title={visit.title}
+                notes={visit.notes ?? ''}
+                jobTypeLabels={jobTypeLabels}
+                isConsultation={isConsultation}
+                onVisitPatch={onVisitPatch}
+              />
+            </section>
+          ) : visit.notes ? (
+            <section className={styles.panel} aria-labelledby="notes-heading">
+              <h2 id="notes-heading" className={styles.panelTitle}>
+                Job notes
               </h2>
               <p className={styles.notesBlock}>{visit.notes}</p>
+            </section>
+          ) : null}
+
+          {visit.customerFieldNotes ? (
+            <section className={styles.panel} aria-labelledby="crew-notes-heading">
+              <h2 id="crew-notes-heading" className={styles.panelTitle}>
+                Customer notes
+              </h2>
+              <p className={styles.notesBlock}>{visit.customerFieldNotes}</p>
+            </section>
+          ) : null}
+
+          {visit.siteNotes ? (
+            <section className={styles.panel} aria-labelledby="site-notes-heading">
+              <h2 id="site-notes-heading" className={styles.panelTitle}>
+                Location notes
+              </h2>
+              <p className={styles.notesBlock}>{visit.siteNotes}</p>
             </section>
           ) : null}
 

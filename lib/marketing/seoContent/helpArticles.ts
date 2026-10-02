@@ -422,6 +422,17 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
         ],
       },
       {
+        title: 'Tell the crew what the job needs',
+        paragraphs: [
+          'When you schedule or edit a job, add job notes the assigned cleaners can read on their schedule and on the job. Customer crew notes travel with every job for that customer. Office notes stay in the office and are not shown to field staff.',
+        ],
+        bullets: [
+          'Pick a job type when scheduling. Built-in types are included; Pro plans can add custom names under Settings → Job types.',
+          'Add an optional community name on the service location for gated neighborhoods.',
+          'Job notes are specific to that visit. Crew notes are specific to the customer.',
+        ],
+      },
+      {
         title: 'Handle call-outs and reassignments',
         paragraphs: [
           'When a cleaner calls in sick, reassign their visits on the day view or filter by employee to see the full impact. For customer-initiated changes, use the reschedule inbox (Business+) instead of playing phone tag.',
