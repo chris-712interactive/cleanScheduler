@@ -13,7 +13,7 @@ import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { createAdminClient } from '@/lib/supabase/server';
 import { loadConsultationDurationMinutes } from '@/lib/tenant/consultationDuration';
 import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
-import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
+import { loadJobTypeCatalog, uniqueJobTypeLabels } from '@/lib/tenant/jobTypeCatalog';
 import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
 import { ScheduleVisitForm } from '../ScheduleVisitForm';
 import styles from '../schedule.module.scss';
@@ -129,9 +129,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
     isConsultation
       ? loadConsultationDurationMinutes(admin, membership.tenantId)
       : Promise.resolve(60),
-    isConsultation
-      ? loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true })
-      : Promise.resolve([]),
+    loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
   ]);
 
   const membersRes = await supabase
@@ -221,6 +219,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
           isConsultation={isConsultation}
           consultationDurationMinutes={consultationDurationMinutes}
           consultationServiceTypes={consultationServiceTypes}
+          jobTypeLabels={isConsultation ? [] : uniqueJobTypeLabels(jobTypeCatalog)}
           returnTo={returnTo}
           defaults={{
             customerId: defaultCustomerId,

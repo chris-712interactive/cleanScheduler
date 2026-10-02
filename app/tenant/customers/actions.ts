@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { normalizeCommunityName } from '@/lib/tenant/communityName';
+import { sanitizeConsultationNotes } from '@/lib/visits/consultationNotes';
 import { getAuthContext } from '@/lib/auth/session';
 import { assertMeteredLimit, isLimitExceededError } from '@/lib/billing/checkLimit';
 import type { Tables } from '@/lib/supabase/database.types';
@@ -61,6 +63,8 @@ export async function createTenantCustomer(
     parseCustomerPreferredPaymentMethod(String(formData.get('preferred_payment_method') ?? '')) ??
     'card';
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
+  const fieldNotes = sanitizeConsultationNotes(String(formData.get('field_notes') ?? ''));
+  const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
   const marketingEmailOptIn = formData.get('marketing_email_opt_in') === 'on';
   const referrerEmail = String(formData.get('referrer_email') ?? '')
     .trim()
@@ -147,6 +151,7 @@ export async function createTenantCustomer(
     preferred_contact_method: preferredContactMethod,
     preferred_payment_method: preferredPaymentMethod,
     internal_notes: internalNotes || null,
+    field_notes: fieldNotes || null,
     marketing_email_opt_in: marketingEmailOptIn,
   });
 
@@ -167,6 +172,7 @@ export async function createTenantCustomer(
     city: serviceCity || null,
     state: serviceState || null,
     postal_code: servicePostalCode || null,
+    community_name: communityName,
     service_zone_id: zoneResolved.zoneId,
     is_primary: true,
   });
@@ -248,6 +254,7 @@ export async function updateTenantCustomer(
     parseCustomerPreferredPaymentMethod(String(formData.get('preferred_payment_method') ?? '')) ??
     'card';
   const internalNotes = String(formData.get('internal_notes') ?? '').trim();
+  const fieldNotes = sanitizeConsultationNotes(String(formData.get('field_notes') ?? ''));
   const marketingEmailOptIn = formData.get('marketing_email_opt_in') === 'on';
 
   if (!slug || !customerId || !firstName) {
@@ -303,6 +310,7 @@ export async function updateTenantCustomer(
       preferred_contact_method: preferredContactMethod,
       preferred_payment_method: preferredPaymentMethod as TenantPaymentMethod,
       internal_notes: internalNotes || null,
+      field_notes: fieldNotes || null,
       marketing_email_opt_in: marketingEmailOptIn,
     },
     { onConflict: 'customer_id' },
@@ -327,6 +335,7 @@ export async function updateTenantCustomer(
       preferredContactMethod: preferredContactMethod ?? '',
       preferredPaymentMethod,
       internalNotes,
+      fieldNotes,
       marketingEmailOptIn,
     }),
   };

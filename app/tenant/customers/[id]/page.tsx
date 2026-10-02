@@ -102,6 +102,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         preferred_contact_method,
         preferred_payment_method,
         internal_notes,
+        field_notes,
         marketing_email_opt_in
       ),
       tenant_customer_properties (
@@ -114,6 +115,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         state,
         postal_code,
         site_notes,
+        community_name,
         is_primary,
         service_zone_id
       )
@@ -254,6 +256,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
                     preferredContactMethod: profile?.preferred_contact_method ?? '',
                     preferredPaymentMethod: profile?.preferred_payment_method ?? 'card',
                     internalNotes: profile?.internal_notes ?? '',
+                    fieldNotes: profile?.field_notes ?? '',
                     marketingEmailOptIn: profile?.marketing_email_opt_in ?? false,
                   }}
                 />

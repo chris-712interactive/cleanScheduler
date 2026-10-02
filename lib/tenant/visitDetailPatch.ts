@@ -7,6 +7,8 @@ export type CheckInLocationStatus = Database['public']['Enums']['visit_check_in_
 export type VisitDetailPatch = {
   startsAt?: string;
   endsAt?: string;
+  title?: string;
+  notes?: string | null;
   assignees?: ScheduleAssigneeChip[];
   assigneeUserIds?: string[];
   expectedAmountCents?: number | null;

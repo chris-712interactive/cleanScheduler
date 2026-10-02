@@ -27,6 +27,7 @@ import {
 import { resolveVisitDurationForVisit } from '@/lib/schedule/resolveVisitDurationForVisit';
 import { DEFAULT_VISIT_DURATION_HOURS } from '@/lib/schedule/visitDuration';
 import { SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
+import { loadJobTypeCatalog, uniqueJobTypeLabels } from '@/lib/tenant/jobTypeCatalog';
 import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
 import { ensureVisitChecklistState } from '@/lib/visits/visitChecklistState';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
@@ -100,7 +101,8 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           email
         ),
         tenant_customer_profiles (
-          preferred_payment_method
+          preferred_payment_method,
+          field_notes
         )
       ),
       tenant_customer_properties (
@@ -109,7 +111,9 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
         address_line2,
         city,
         state,
-        postal_code
+        postal_code,
+        community_name,
+        site_notes
       ),
       tenant_quotes ( title, amount_cents ),
       tenant_scheduled_visit_assignees (
@@ -135,6 +139,9 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   const prop = row.tenant_customer_properties;
   const mapsAddress = prop ? formatPropertyAddressLine(prop) : '';
   const siteLine = prop ? [prop.label?.trim(), mapsAddress].filter(Boolean).join(' — ') : '';
+  const communityName = prop?.community_name?.trim() || null;
+  const siteNotes = prop?.site_notes?.trim() || null;
+  const customerFieldNotes = row.customers?.tenant_customer_profiles?.field_notes?.trim() || null;
   const assignees = normalizeAssigneeRows(
     row.tenant_scheduled_visit_assignees as Parameters<typeof normalizeAssigneeRows>[0],
   );
@@ -213,6 +220,12 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
     }));
   }
 
+  const jobTypeLabels = isFieldEmployee
+    ? []
+    : uniqueJobTypeLabels(
+        await loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
+      );
+
   return (
     <>
       <header className={styles.visitPageHeader}>
@@ -234,6 +247,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
 
       <VisitDetailCard
         employeeOptions={employeeOptions}
+        jobTypeLabels={jobTypeLabels}
         relatedRecords={!isFieldEmployee ? relatedRecords : null}
         scrollToFieldActions={fieldAction === 'checkin' || fieldAction === 'complete'}
         initial={{
@@ -254,6 +268,9 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           quoteId: row.quote_id,
           quoteAmountCents: quoteAmountRaw ?? null,
           notes: row.notes,
+          customerFieldNotes,
+          communityName,
+          siteNotes,
           assignees,
           assigneeUserIds,
           actorUserId,

@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronUp, ClipboardList, FileText, Phone } from 'lucide-react';
+import { ChevronDown, ChevronUp, ClipboardList, FileText, MapPin, Phone } from 'lucide-react';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import { formatVisitTime } from '@/lib/datetime/formatInTimeZone';
 import { resolveVisitExpandDirection } from './scheduleTimelineUtils';
@@ -198,8 +198,26 @@ export function ScheduleVisitBlock({
               <li className={styles.visitDetailItem}>
                 <FileText size={16} className={styles.visitDetailIcon} aria-hidden="true" />
                 <div className={styles.visitDetailCopy}>
-                  <span className={styles.visitDetailLabel}>Notes</span>
+                  <span className={styles.visitDetailLabel}>Job notes</span>
                   <span className={styles.visitDetailValue}>{visit.notes}</span>
+                </div>
+              </li>
+            ) : null}
+            {visit.customerFieldNotes ? (
+              <li className={styles.visitDetailItem}>
+                <FileText size={16} className={styles.visitDetailIcon} aria-hidden="true" />
+                <div className={styles.visitDetailCopy}>
+                  <span className={styles.visitDetailLabel}>Customer notes</span>
+                  <span className={styles.visitDetailValue}>{visit.customerFieldNotes}</span>
+                </div>
+              </li>
+            ) : null}
+            {visit.communityName ? (
+              <li className={styles.visitDetailItem}>
+                <MapPin size={16} className={styles.visitDetailIcon} aria-hidden="true" />
+                <div className={styles.visitDetailCopy}>
+                  <span className={styles.visitDetailLabel}>Community</span>
+                  <span className={styles.visitDetailValue}>{visit.communityName}</span>
                 </div>
               </li>
             ) : null}

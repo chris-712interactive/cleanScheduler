@@ -137,6 +137,8 @@ The settings tab will look different depending on the type of user and will be i
 
 **Implementation note (2026-06-08):** **`/settings/services`** — owners edit service types including **schedule role** per catalog entry.
 
+**Implementation note (2026-10-02):** Settings label is **Job types**. The new-appointment form picks a job type (built-in on every plan; custom names on Pro) and stores it as the visit title. Job notes on the visit are office-edited and visible to assigned field employees. Customer **office notes** stay internal; **crew notes** (`tenant_customer_profiles.field_notes`) show on the job. Service locations have an optional **community name** (`0095`).
+
 - Admins
   - Personal Settings
     - Light Mode/Dark Mode

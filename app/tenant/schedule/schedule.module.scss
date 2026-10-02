@@ -1313,7 +1313,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-brand-primary);
-  color: var(--color-on-brand);
+  color: var(--color-text-on-brand);
   font-weight: 600;
   cursor: pointer;
 }
@@ -1727,6 +1727,7 @@
   font-size: var(--font-size-sm);
   line-height: 1.45;
   color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 
   a {
     color: var(--color-brand-primary);

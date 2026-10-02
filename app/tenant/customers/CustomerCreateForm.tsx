@@ -185,6 +185,19 @@ export function CustomerCreateForm({
             placeholder="37203"
           />
 
+          <label className={styles.label} htmlFor="community_name">
+            Community name (optional)
+          </label>
+          <input
+            id="community_name"
+            name="community_name"
+            className={styles.input}
+            placeholder="Oakridge Estates"
+          />
+          <p className={styles.sectionHint}>
+            Gated community or neighborhood. Shown on jobs and not used as the street address.
+          </p>
+
           {serviceZones.length > 0 ? (
             <>
               <label className={styles.label} htmlFor="service_zone_id">
@@ -249,14 +262,26 @@ export function CustomerCreateForm({
           </select>
 
           <label className={styles.label} htmlFor="internal_notes">
-            Internal notes
+            Office notes
           </label>
           <textarea
             id="internal_notes"
             name="internal_notes"
             className={styles.textarea}
-            placeholder="Gate code, pets, parking, preferred arrival window…"
+            placeholder="Billing preferences, account history, office-only context"
           />
+          <p className={styles.sectionHint}>Visible to the office only.</p>
+
+          <label className={styles.label} htmlFor="field_notes">
+            Crew notes
+          </label>
+          <textarea
+            id="field_notes"
+            name="field_notes"
+            className={styles.textarea}
+            placeholder="Pets, parking, preferred arrival window, supplies to bring"
+          />
+          <p className={styles.sectionHint}>Shown to field employees on this customer’s jobs.</p>
           <label className={styles.checkboxRow} htmlFor="marketing_email_opt_in">
             <input id="marketing_email_opt_in" name="marketing_email_opt_in" type="checkbox" />
             <span>Customer opted in to marketing emails</span>

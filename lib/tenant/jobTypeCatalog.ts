@@ -107,6 +107,22 @@ export async function loadJobTypeCatalog(
     }));
 }
 
+/** One label per job type name. Catalog rows repeat the same name per property kind. */
+export function uniqueJobTypeLabels(
+  catalog: Pick<JobTypeCatalogEntry, 'service_label'>[],
+): string[] {
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const entry of catalog) {
+    const label = entry.service_label.trim();
+    const key = label.toLowerCase();
+    if (!label || seen.has(key)) continue;
+    seen.add(key);
+    labels.push(label);
+  }
+  return labels;
+}
+
 export function findCatalogEntry(
   catalog: JobTypeCatalogEntry[],
   input: {

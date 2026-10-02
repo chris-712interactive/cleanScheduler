@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   findCatalogEntry,
   resolveVisitDurationHours,
+  uniqueJobTypeLabels,
   type JobTypeCatalogEntry,
 } from '@/lib/tenant/jobTypeCatalog';
 
@@ -31,6 +32,12 @@ const catalog: JobTypeCatalogEntry[] = [
     schedule_role: 'initial',
   },
 ];
+
+describe('uniqueJobTypeLabels', () => {
+  it('keeps one label when the same job type exists for several property kinds', () => {
+    expect(uniqueJobTypeLabels(catalog)).toEqual(['Deep cleaning']);
+  });
+});
 
 describe('findCatalogEntry', () => {
   it('matches by template id first', () => {

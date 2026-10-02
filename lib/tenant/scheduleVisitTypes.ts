@@ -7,6 +7,8 @@ export type ScheduleVisitVM = {
   ends_at: string;
   status: 'scheduled' | 'completed' | 'cancelled';
   notes: string | null;
+  customerFieldNotes: string | null;
+  communityName: string | null;
   customerName: string;
   customerPhone: string | null;
   siteLine: string;
