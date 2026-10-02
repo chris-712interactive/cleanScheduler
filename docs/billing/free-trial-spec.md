@@ -45,7 +45,8 @@ Marketing onboarding form (/start-trial)
 ```
 
 **Auth note:** Trial owners are never blocked on a Supabase confirmation email.
-Invite/employee flows may still honor `ONBOARDING_EMAIL_CONFIRM_MODE`.
+Employee invite acceptance also confirms at create (the invite link is the confirmation).
+Customer portal invites and referral referee signup may still honor `ONBOARDING_EMAIL_CONFIRM_MODE`.
 
 **Post-login routing:** Signing in on any host (apex, wrong tenant, etc.) resolves the
 correct portal from role/membership (`resolvePostLoginDestination`) and redirects

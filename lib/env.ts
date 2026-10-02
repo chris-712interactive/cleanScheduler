@@ -143,10 +143,11 @@ const serverEnvSchema = z.object({
   RESEND_CUSTOMER_INVITE_TEMPLATE_ID: z.string().min(1).optional(),
   /** Resend — Svix signing secret for `/api/webhooks/resend` (whsec_… from Resend dashboard). */
   RESEND_WEBHOOK_SECRET: z.string().optional(),
-  // onboarding create-user behavior:
+  // Customer portal invites and referral referee signup:
   // auto     -> dev/local auto-confirm, prod requires confirmation
   // required -> always require email confirmation before first sign-in
   // disabled -> always auto-confirm on signup
+  // Trial owners and employee invites always auto-confirm (invite link / signup form).
   ONBOARDING_EMAIL_CONFIRM_MODE: z.enum(['auto', 'required', 'disabled']).default('auto'),
   /** Vercel Cron / manual GET `/api/cron/materialize-recurring-visits` — `Authorization: Bearer …`. */
   CRON_SECRET: z.string().optional(),
