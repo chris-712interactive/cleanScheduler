@@ -16,6 +16,7 @@ import {
   currentTimeLinePct,
   formatVisitTimeRange,
   hourLabels,
+  layoutVisitColumns,
   layoutVisitOnCalendarDay,
   resolveTimelineWindow,
   visitOverlapsCalendarDay,
@@ -96,7 +97,6 @@ export function TenantScheduleClient({
     normalizeLocationFilter(initialLocationFilter),
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
   const [nowLinePct, setNowLinePct] = useState<number | null>(null);
   const fetchSeq = useRef(0);
 
@@ -115,10 +115,6 @@ export function TenantScheduleClient({
     initialEmployeeFilter,
     initialLocationFilter,
   ]);
-
-  useEffect(() => {
-    setExpandedVisitId(null);
-  }, [dateKey, view]);
 
   useEffect(() => {
     endPortalInteraction(PORTAL_INTERACTION_FLOWS.navSchedule, {
@@ -247,6 +243,8 @@ export function TenantScheduleClient({
         .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
     [filteredVisits, dateKey, tenantTimezone],
   );
+
+  const visitColumns = useMemo(() => layoutVisitColumns(dayVisits), [dayVisits]);
 
   const timelineWindow = useMemo(
     () => resolveTimelineWindow(dateKey, dayVisits, tenantTimezone),
@@ -443,9 +441,7 @@ export function TenantScheduleClient({
 
       {view === 'day' && !showingFieldJobs ? (
         <div
-          className={[styles.dayBoard, expandedVisitId ? styles.dayBoardExpanded : '']
-            .filter(Boolean)
-            .join(' ')}
+          className={styles.dayBoard}
           style={{
             minHeight: `${Math.max(480, hours.length * 56)}px`,
             ['--timeline-hours' as string]: hours.length,
@@ -458,11 +454,7 @@ export function TenantScheduleClient({
               </div>
             ))}
           </div>
-          <div
-            className={[styles.timelineTrack, expandedVisitId ? styles.timelineTrackExpanded : '']
-              .filter(Boolean)
-              .join(' ')}
-          >
+          <div className={styles.timelineTrack}>
             {hours.map((h) => (
               <div key={h.hour} className={styles.hourLine} />
             ))}
@@ -479,6 +471,7 @@ export function TenantScheduleClient({
                 timelineWindow,
               );
               if (!visible) return null;
+              const placement = visitColumns.get(v.id) ?? { column: 0, columnCount: 1 };
               return (
                 <ScheduleVisitBlock
                   key={v.id}
@@ -486,8 +479,8 @@ export function TenantScheduleClient({
                   tenantTimezone={tenantTimezone}
                   topPct={topPct}
                   heightPct={heightPct}
-                  expanded={expandedVisitId === v.id}
-                  onToggle={() => setExpandedVisitId((current) => (current === v.id ? null : v.id))}
+                  column={placement.column}
+                  columnCount={placement.columnCount}
                 />
               );
             })}
