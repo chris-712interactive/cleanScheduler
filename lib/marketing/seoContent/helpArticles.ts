@@ -413,7 +413,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       {
         title: 'Assign crews without double-booking',
         paragraphs: [
-          'Use day views filtered by employee to see who is available. When assigning a one-off visit, check for conflicts on the same date. For commercial routes, assign default crews to each property under a billing contact.',
+          'Use day views filtered by employee to see who is available. When two jobs share a time, the day view shows them side by side. Click a job to open the full appointment. For commercial routes, assign default crews to each property under a billing contact.',
         ],
         bullets: [
           'Employee filters on day, week, and month views',

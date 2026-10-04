@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-10-02  
+**Last updated:** 2026-10-04  
 **Branch:** `dev`  
-**Latest polish:** Job notes on a visit are editable by the office and shown to field employees. Customers have office-only notes and separate crew notes. Service locations have an optional community name for gated neighborhoods (`0095`). Scheduling a job picks a job type from Settings → Job types; custom names stay on Pro. The field-employee Request time off button uses white text on the brand background.
+**Latest polish:** Day view shows overlapping appointments side by side in narrower cards. Clicking a card opens the full appointment page. Job notes, crew notes, community name, and job types from the 2026-10-02 work are unchanged.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

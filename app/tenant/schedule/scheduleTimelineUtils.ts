@@ -168,23 +168,70 @@ export function currentTimeLinePct(
   return ((t - slotStartMs) / totalMs) * 100;
 }
 
-/** Minimum timeline % we want free when expanding in a direction. */
-const EXPAND_PANEL_MIN_PCT = 32;
+export type VisitColumnPlacement = {
+  column: number;
+  columnCount: number;
+};
+
+type ColumnVisit = { id: string; starts_at: string; ends_at: string };
 
 /**
- * Pick whether an expanded visit card should grow down (from start time)
- * or up (anchored to end of the scheduled slot).
+ * Place overlapping visits in side-by-side columns.
+ * Visits that do not overlap keep a single column so the card stays narrow.
  */
-export function resolveVisitExpandDirection(topPct: number, heightPct: number): 'up' | 'down' {
-  const spaceAbove = topPct;
-  const spaceBelowFromEnd = 100 - topPct - heightPct;
-  const spaceBelowFromStart = 100 - topPct;
+export function layoutVisitColumns(visits: ColumnVisit[]): Map<string, VisitColumnPlacement> {
+  const sorted = [...visits].sort((a, b) => {
+    const byStart = a.starts_at.localeCompare(b.starts_at);
+    if (byStart !== 0) return byStart;
+    return a.ends_at.localeCompare(b.ends_at) || a.id.localeCompare(b.id);
+  });
 
-  if (spaceAbove < EXPAND_PANEL_MIN_PCT) return 'down';
-  if (spaceBelowFromEnd < EXPAND_PANEL_MIN_PCT || spaceBelowFromStart < EXPAND_PANEL_MIN_PCT + 6) {
-    return 'up';
+  type Placed = { id: string; start: number; end: number; column: number };
+  const placed: Placed[] = [];
+  const columnEnds: number[] = [];
+
+  for (const visit of sorted) {
+    const start = new Date(visit.starts_at).getTime();
+    const end = new Date(visit.ends_at).getTime();
+    let column = columnEnds.findIndex((busyUntil) => busyUntil <= start);
+    if (column === -1) {
+      column = columnEnds.length;
+      columnEnds.push(end);
+    } else {
+      columnEnds[column] = end;
+    }
+    placed.push({ id: visit.id, start, end, column });
   }
-  return 'down';
+
+  const result = new Map<string, VisitColumnPlacement>();
+  const seen = new Set<string>();
+
+  for (const item of placed) {
+    if (seen.has(item.id)) continue;
+
+    const cluster: Placed[] = [];
+    const stack = [item];
+    seen.add(item.id);
+
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      cluster.push(current);
+      for (const other of placed) {
+        if (seen.has(other.id)) continue;
+        const overlaps = current.start < other.end && other.start < current.end;
+        if (!overlaps) continue;
+        seen.add(other.id);
+        stack.push(other);
+      }
+    }
+
+    const columnCount = Math.max(...cluster.map((member) => member.column)) + 1;
+    for (const member of cluster) {
+      result.set(member.id, { column: member.column, columnCount });
+    }
+  }
+
+  return result;
 }
 
 export function hourLabels(window: TimelineWindow = DEFAULT_TIMELINE_WINDOW): {
