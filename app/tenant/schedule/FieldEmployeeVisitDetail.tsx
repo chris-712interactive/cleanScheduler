@@ -1,6 +1,7 @@
 'use client';
 
 import { MapPin, Navigation, Phone } from 'lucide-react';
+import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { googleMapsDirectionsUrl } from '@/lib/geo/googleMapsDirectionsUrl';
 import { formatDateTimeInTimeZone, formatVisitTime } from '@/lib/datetime/formatInTimeZone';
 import { VisitChecklistPanel } from './VisitChecklistPanel';
@@ -64,6 +65,8 @@ export function FieldEmployeeVisitDetail({
   ].filter((note): note is { label: string; text: string } => note != null);
   const arrivedAt = clockTime(visit.checkedInAt, visit.tenantTimezone);
   const finishedAt = clockTime(visit.completedAt, visit.tenantTimezone);
+  const showAmountDue =
+    Boolean(visit.checkedInAt) && visit.status !== 'cancelled' && defaultAmountCents != null;
 
   return (
     <div className={styles.fieldVisit}>
@@ -111,6 +114,13 @@ export function FieldEmployeeVisitDetail({
             </a>
           ) : null}
         </div>
+      ) : null}
+
+      {showAmountDue ? (
+        <section className={styles.fieldVisitAmount} aria-label="Amount due">
+          <h2>{visit.status === 'completed' ? 'Job amount' : 'Amount due'}</h2>
+          <p>${formatCentsAsDollars(defaultAmountCents ?? 0)}</p>
+        </section>
       ) : null}
 
       {showFieldWork ? (
