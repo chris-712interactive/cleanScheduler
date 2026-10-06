@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { visitIsMissingJobPrice } from '@/lib/billing/resolveVisitExpectedAmount';
 import { visitTimeRangesOverlap } from '@/lib/schedule/visitAssigneeConflicts';
+import { assigneeHasOverlappingTimeOff } from '@/lib/schedule/timeOffVisitConflicts';
 import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
@@ -10,11 +11,12 @@ import {
 export const SCHEDULE_ISSUES_TAB_HREF = '/schedule?tab=issues';
 
 export type ScheduleIssueKind =
-  'needs_staffing' | 'schedule_conflict' | 'unpriced' | 'pending_reschedule';
+  'needs_staffing' | 'schedule_conflict' | 'time_off_conflict' | 'unpriced' | 'pending_reschedule';
 
 export const SCHEDULE_ISSUE_LABEL: Record<ScheduleIssueKind, string> = {
   needs_staffing: 'No crew assigned',
   schedule_conflict: 'Crew conflict',
+  time_off_conflict: 'Time off overlap',
   unpriced: 'Missing job price',
   pending_reschedule: 'Reschedule requested',
 };
@@ -134,6 +136,19 @@ export async function listScheduleIssues(
 
   const pendingRescheduleVisitIds = new Set((pendingRescheduleRows ?? []).map((r) => r.visit_id));
 
+  const { data: approvedTimeOffRows } = await admin
+    .from('tenant_member_time_off')
+    .select('user_id, starts_at, ends_at')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'approved')
+    .gt('ends_at', nowIso);
+
+  const approvedTimeOff = (approvedTimeOffRows ?? []).map((row) => ({
+    userId: row.user_id,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+  }));
+
   const conflictVisitIds = findVisitIdsWithAssigneeConflicts(
     rows.map((row) => ({
       visitId: row.id,
@@ -153,6 +168,16 @@ export async function listScheduleIssues(
     }
     if (conflictVisitIds.has(row.id)) {
       issues.push('schedule_conflict');
+    }
+    if (
+      assigneeHasOverlappingTimeOff(
+        (row.tenant_scheduled_visit_assignees ?? []).map((assignee) => assignee.user_id),
+        row.starts_at,
+        row.ends_at,
+        approvedTimeOff,
+      )
+    ) {
+      issues.push('time_off_conflict');
     }
     if (
       visitIsMissingJobPrice({

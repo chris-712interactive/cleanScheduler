@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-10-04  
+**Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** Day view shows overlapping appointments side by side in narrower cards. Clicking a card opens the full appointment page. Job notes, crew notes, community name, and job types from the 2026-10-02 work are unchanged.
+**Latest polish:** Owners and admins are emailed when a team member requests time off. Approving time off that overlaps scheduled jobs emails those conflicts and lists them on schedule Issues until they are moved.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -138,6 +138,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Tenant reports           | `docs/product/tenant-reports.md`                  |
 | Service zones            | `docs/product/service-zones.md`                   |
 | Job notes and job types  | `docs/product/job-notes-and-job-types.md`         |
+| Time off notifications   | `docs/product/time-off-notifications.md`          |
 | Tenant customer import   | `docs/product/tenant-customer-import.md`          |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |
 

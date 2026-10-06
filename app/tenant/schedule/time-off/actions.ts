@@ -6,6 +6,11 @@ import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
 import type { TenantRole } from '@/lib/auth/types';
+import {
+  notifyOfficeOfTimeOffConflicts,
+  notifyOfficeOfTimeOffRequest,
+} from '@/lib/email/timeOffNotifications';
+import { listVisitsOverlappingTimeOff } from '@/lib/schedule/timeOffVisitConflicts';
 import { canReviewTimeOff } from '@/lib/tenant/timeOffPermissions';
 
 export interface TimeOffActionState {
@@ -57,12 +62,25 @@ export async function submitTimeOffRequestAction(
 
   if (error) return { error: error.message };
 
+  const notified = await notifyOfficeOfTimeOffRequest(admin, {
+    tenantId: membership.tenantId,
+    requesterUserId: auth.user.id,
+    startsAt,
+    endsAt,
+    requestNote,
+  });
+
   revalidatePath('/schedule/time-off');
   revalidatePath('/schedule/time-off-requests');
   revalidatePath('/schedule');
   revalidatePath('/dashboard');
 
-  return { success: 'Time off request submitted for review.' };
+  return {
+    success:
+      notified.emailed > 0
+        ? 'Time off request submitted. Owners and admins were emailed to review it.'
+        : 'Time off request submitted for review.',
+  };
 }
 
 export async function reviewTimeOffRequestAction(
@@ -90,7 +108,7 @@ export async function reviewTimeOffRequestAction(
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from('tenant_member_time_off')
     .update({
       status: decision,
@@ -100,9 +118,32 @@ export async function reviewTimeOffRequestAction(
     })
     .eq('id', requestId)
     .eq('tenant_id', membership.tenantId)
-    .eq('status', 'pending');
+    .eq('status', 'pending')
+    .select('user_id, starts_at, ends_at')
+    .maybeSingle();
 
   if (error) return { error: error.message };
+  if (!updated) return { error: 'That request is no longer pending.' };
+
+  let conflictCount = 0;
+  if (decision === 'approved') {
+    const conflicts = await listVisitsOverlappingTimeOff(admin, {
+      tenantId: membership.tenantId,
+      userId: updated.user_id,
+      startsAt: updated.starts_at,
+      endsAt: updated.ends_at,
+    });
+    conflictCount = conflicts.length;
+    if (conflictCount > 0) {
+      await notifyOfficeOfTimeOffConflicts(admin, {
+        tenantId: membership.tenantId,
+        employeeUserId: updated.user_id,
+        startsAt: updated.starts_at,
+        endsAt: updated.ends_at,
+        conflicts,
+      });
+    }
+  }
 
   revalidatePath('/schedule/time-off-requests');
   revalidatePath('/schedule/time-off');
@@ -110,7 +151,12 @@ export async function reviewTimeOffRequestAction(
   revalidatePath('/dashboard');
 
   return {
-    success: decision === 'approved' ? 'Time off approved.' : 'Time off request denied.',
+    success:
+      decision === 'denied'
+        ? 'Time off request denied.'
+        : conflictCount === 0
+          ? 'Time off approved.'
+          : `Time off approved. ${conflictCount} scheduled job${conflictCount === 1 ? '' : 's'} overlap this time and still need to be rescheduled.`,
   };
 }
 
