@@ -43,6 +43,7 @@ import {
 } from '@/lib/tenant/visitDetailPatch';
 import { formatCheckInLocationProof } from '@/lib/schedule/checkInLocation';
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
+import { FieldEmployeeVisitDetail } from './FieldEmployeeVisitDetail';
 import { DeleteVisitButton } from './DeleteVisitButton';
 import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
 import { VisitChecklistPanel } from './VisitChecklistPanel';
@@ -205,6 +206,20 @@ export function VisitDetailCard({
           accuracyM: visit.checkInAccuracyM,
         })
       : null;
+
+  if (visit.isFieldEmployee) {
+    return (
+      <FieldEmployeeVisitDetail
+        visit={visit}
+        showFieldWork={showFieldWork}
+        showCheckIn={showCheckIn}
+        showComplete={showComplete}
+        defaultAmountCents={defaultAmountCents}
+        hasBillableAmount={hasBillableAmount}
+        onVisitPatch={onVisitPatch}
+      />
+    );
+  }
 
   return (
     <div className={styles.workspace}>

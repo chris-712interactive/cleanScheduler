@@ -49,7 +49,7 @@
 }
 
 @media (min-width: 641px) {
-  .completeTrigger {
+  .completeTrigger:not([data-full-width]) {
     width: auto;
   }
 }

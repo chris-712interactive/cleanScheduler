@@ -128,7 +128,12 @@ export function VisitFieldWorkPanel({
       <form action={onOurWayAction}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         <input type="hidden" name="visit_id" value={visitId} />
-        <Button type="submit" variant="secondary" disabled={onOurWayPending}>
+        <Button
+          type="submit"
+          variant="secondary"
+          fullWidth={isFieldEmployee}
+          disabled={onOurWayPending}
+        >
           {onOurWayPending ? 'Sending…' : 'On our way'}
         </Button>
       </form>
@@ -142,7 +147,12 @@ export function VisitFieldWorkPanel({
     >
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="visit_id" value={visitId} />
-      <Button type="submit" variant={compact ? 'secondary' : 'primary'} disabled={submitting}>
+      <Button
+        type="submit"
+        variant={compact && !isFieldEmployee ? 'secondary' : 'primary'}
+        fullWidth={isFieldEmployee}
+        disabled={submitting}
+      >
         {checkInButtonLabel}
       </Button>
     </form>
@@ -187,6 +197,20 @@ export function VisitFieldWorkPanel({
       ) : null}
     </>
   );
+
+  if (compact && isFieldEmployee) {
+    return (
+      <div className={styles.fieldWorkStack}>
+        {onOurWaySent && showOnOurWay ? (
+          <p className={styles.fieldVisitMoment}>Customer knows you are on the way.</p>
+        ) : null}
+        {onOurWayForm}
+        {checkInForm}
+        {completeModal}
+        {feedback}
+      </div>
+    );
+  }
 
   if (compact) {
     return (

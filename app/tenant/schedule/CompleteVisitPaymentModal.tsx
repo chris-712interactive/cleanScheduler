@@ -220,7 +220,12 @@ export function CompleteVisitPaymentModal({
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger asChild>
-        <Button type="button" variant="secondary" className={styles.completeTrigger}>
+        <Button
+          type="button"
+          variant={isFieldEmployee ? 'primary' : 'secondary'}
+          fullWidth={isFieldEmployee}
+          className={styles.completeTrigger}
+        >
           {isConsultation ? 'Complete consultation' : 'Complete job'}
         </Button>
       </Dialog.Trigger>
