@@ -2,7 +2,7 @@
 
 ## Job notes
 
-Office owners and admins set **job notes** when scheduling a visit and when editing a scheduled visit. Assigned field employees see those notes on the day card and on the job. Office-only customer notes are not included.
+Office owners and admins set **job notes** when scheduling a visit and when editing a scheduled visit. Assigned field employees see those notes on the day card (a short note under the address) and on the job. Office-only customer notes are not included. The day card leads with directions and check-in; notes stay visible without replacing those actions.
 
 ## Customer notes
 

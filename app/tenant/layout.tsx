@@ -126,7 +126,11 @@ export default async function TenantLayout({ children }: { children: React.React
 
     const sessionNotices: ReactNode[] = [];
     if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
-    if (shouldShowTrialPurchaseBanner(subscriptionAccess) && !subscriptionLocked) {
+    if (
+      shouldShowTrialPurchaseBanner(subscriptionAccess) &&
+      !subscriptionLocked &&
+      !isFieldEmployeeRole(membership.role)
+    ) {
       sessionNotices.push(
         <TrialSubscriptionBanner
           key="trial"

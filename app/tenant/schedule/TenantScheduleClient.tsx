@@ -230,11 +230,37 @@ export function TenantScheduleClient({
       day: 'numeric',
       year: 'numeric',
     });
-    if (showingFieldJobs) {
-      return isLocalToday ? `Today · ${long}` : long;
-    }
     return isLocalToday ? `Today, ${long}` : long;
-  }, [dateKey, isLocalToday, showingFieldJobs]);
+  }, [dateKey, isLocalToday]);
+
+  const fieldNav = useMemo(() => {
+    const anchor = new Date(`${dateKey}T12:00:00`);
+    if (view === 'month') {
+      return {
+        kicker: 'Month',
+        date: anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+      };
+    }
+    const weekStartKey = weekDayKeys[0];
+    const weekEndKey = weekDayKeys[weekDayKeys.length - 1];
+    if (view === 'week' && weekStartKey && weekEndKey) {
+      const start = new Date(`${weekStartKey}T12:00:00`);
+      const end = new Date(`${weekEndKey}T12:00:00`);
+      const startMonth = start.toLocaleDateString(undefined, { month: 'short' });
+      const endMonth = end.toLocaleDateString(undefined, { month: 'short' });
+      const date =
+        startMonth === endMonth
+          ? `${startMonth} ${start.getDate()} – ${end.getDate()}`
+          : `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}`;
+      return { kicker: 'Week', date };
+    }
+    const weekday = anchor.toLocaleDateString(undefined, { weekday: 'long' });
+    const monthDay = anchor.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    if (isLocalToday) {
+      return { kicker: 'Today', date: `${weekday}, ${monthDay}` };
+    }
+    return { kicker: weekday, date: monthDay };
+  }, [dateKey, isLocalToday, view, weekDayKeys]);
 
   const dayVisits = useMemo(
     () =>
@@ -287,61 +313,120 @@ export function TenantScheduleClient({
         .join(' ')}
       aria-busy={isLoading}
     >
-      <div className={styles.scheduleControlBar}>
-        <div className={styles.scheduleDateNav}>
-          <button
-            type="button"
-            className={styles.iconNavBtn}
-            aria-label={prevLabel}
-            onClick={goPrev}
-            disabled={isLoading}
-          >
-            <ChevronLeft size={20} aria-hidden="true" />
-          </button>
-          <div className={styles.scheduleDateCenter}>
-            <span className={styles.scheduleDateLabel}>{centerLabel}</span>
-            {!isLocalToday ? (
-              <button
-                type="button"
-                className={styles.todayLink}
-                onClick={() => push({ date: todayKey, view: fieldEmployeeMode ? 'today' : view })}
-                disabled={isLoading}
-              >
-                Jump to today
-              </button>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            className={styles.iconNavBtn}
-            aria-label={nextLabel}
-            onClick={goNext}
-            disabled={isLoading}
-          >
-            <ChevronRight size={20} aria-hidden="true" />
-          </button>
-        </div>
-
-        {fieldEmployeeMode ? (
-          <div className={styles.viewToggle} role="group" aria-label="Schedule view">
+      {fieldEmployeeMode ? (
+        <div className={styles.fieldDayNav}>
+          <div className={styles.fieldDayNavRow}>
             <button
               type="button"
-              className={view === 'today' ? styles.viewToggleBtnActive : styles.viewToggleBtn}
-              onClick={() => push({ view: 'today', date: isLocalToday ? dateKey : todayKey })}
+              className={styles.iconNavBtn}
+              aria-label={prevLabel}
+              onClick={goPrev}
               disabled={isLoading}
             >
-              My jobs
+              <ChevronLeft size={22} aria-hidden="true" />
             </button>
+            <div className={styles.fieldDayNavLabel} aria-live="polite">
+              <p className={styles.fieldDayNavKicker}>{fieldNav.kicker}</p>
+              <p className={styles.fieldDayNavDate}>{fieldNav.date}</p>
+              {!isLocalToday && view === 'today' ? (
+                <button
+                  type="button"
+                  className={styles.todayLink}
+                  onClick={() => push({ date: todayKey, view: 'today' })}
+                  disabled={isLoading}
+                >
+                  Back to today
+                </button>
+              ) : null}
+            </div>
             <button
               type="button"
-              className={view !== 'today' ? styles.viewToggleBtnActive : styles.viewToggleBtn}
+              className={styles.iconNavBtn}
+              aria-label={nextLabel}
+              onClick={goNext}
+              disabled={isLoading}
+            >
+              <ChevronRight size={22} aria-hidden="true" />
+            </button>
+          </div>
+          {view === 'today' ? (
+            <button
+              type="button"
+              className={styles.fieldCalendarLink}
               onClick={() => push({ view: 'week' })}
               disabled={isLoading}
             >
               Calendar
             </button>
+          ) : (
+            <div className={styles.fieldViewSwitch} role="group" aria-label="Calendar range">
+              <button
+                type="button"
+                className={styles.fieldViewSwitchBtn}
+                onClick={() => push({ view: 'today' })}
+                disabled={isLoading}
+              >
+                Jobs
+              </button>
+              <button
+                type="button"
+                className={
+                  view === 'week' ? styles.fieldViewSwitchBtnActive : styles.fieldViewSwitchBtn
+                }
+                onClick={() => push({ view: 'week' })}
+                disabled={isLoading}
+              >
+                Week
+              </button>
+              <button
+                type="button"
+                className={
+                  view === 'month' ? styles.fieldViewSwitchBtnActive : styles.fieldViewSwitchBtn
+                }
+                onClick={() => push({ view: 'month' })}
+                disabled={isLoading}
+              >
+                Month
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className={styles.scheduleControlBar}>
+          <div className={styles.scheduleDateNav}>
+            <button
+              type="button"
+              className={styles.iconNavBtn}
+              aria-label={prevLabel}
+              onClick={goPrev}
+              disabled={isLoading}
+            >
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <div className={styles.scheduleDateCenter}>
+              <span className={styles.scheduleDateLabel}>{centerLabel}</span>
+              {!isLocalToday ? (
+                <button
+                  type="button"
+                  className={styles.todayLink}
+                  onClick={() => push({ date: todayKey })}
+                  disabled={isLoading}
+                >
+                  Jump to today
+                </button>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={styles.iconNavBtn}
+              aria-label={nextLabel}
+              onClick={goNext}
+              disabled={isLoading}
+            >
+              <ChevronRight size={20} aria-hidden="true" />
+            </button>
           </div>
-        ) : (
+
           <div className={styles.viewToggle} role="group" aria-label="Calendar view">
             {(['day', 'week', 'month'] as const).map((v) => (
               <button
@@ -355,39 +440,8 @@ export function TenantScheduleClient({
               </button>
             ))}
           </div>
-        )}
-      </div>
-
-      {showingFieldCalendar ? (
-        <div className={styles.fieldBrowseBar}>
-          <button
-            type="button"
-            className={styles.fieldBrowseBack}
-            onClick={() => push({ view: 'today' })}
-            disabled={isLoading}
-          >
-            ← Back to job list
-          </button>
-          <div className={styles.fieldBrowseViews} role="group" aria-label="Calendar range">
-            <button
-              type="button"
-              className={view === 'week' ? styles.fieldBrowseViewActive : styles.fieldBrowseView}
-              onClick={() => push({ view: 'week' })}
-              disabled={isLoading}
-            >
-              Week
-            </button>
-            <button
-              type="button"
-              className={view === 'month' ? styles.fieldBrowseViewActive : styles.fieldBrowseView}
-              onClick={() => push({ view: 'month' })}
-              disabled={isLoading}
-            >
-              Month
-            </button>
-          </div>
         </div>
-      ) : null}
+      )}
 
       {!fieldEmployeeMode ? (
         <div className={styles.scheduleFilters}>

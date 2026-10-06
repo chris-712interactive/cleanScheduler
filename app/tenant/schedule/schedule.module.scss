@@ -334,6 +334,33 @@
   }
 }
 
+.schedulePageHeaderField.schedulePageHeaderField {
+  margin-bottom: 0;
+
+  :global(h1) {
+    @include a11y.visually-hidden;
+  }
+
+  @include mq.up(md) {
+    margin-bottom: var(--space-4);
+
+    :global(h1) {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+      clip-path: none;
+      white-space: normal;
+      color: var(--color-text);
+      font-size: var(--font-size-xl);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+  }
+}
+
 .scheduleSubtitle {
   display: block;
   color: color-mix(in srgb, var(--color-brand-primary) 70%, var(--color-text-muted));
@@ -1423,26 +1450,146 @@
   color: var(--color-text-muted);
 }
 
-// Field employee — job list + calendar browse
+// Field employee — day stepper + job cards
+.fieldDayNav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+
+  @include mq.up(md) {
+    max-width: 28rem;
+  }
+
+  .iconNavBtn {
+    width: 44px;
+    height: 44px;
+    color: var(--color-text);
+  }
+}
+
+.fieldDayNavRow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+}
+
+.fieldDayNavLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.fieldDayNavKicker {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-primary);
+}
+
+.fieldDayNavDate {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.fieldCalendarLink {
+  align-self: center;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-brand-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-md);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.fieldViewSwitch {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.fieldViewSwitchBtn,
+.fieldViewSwitchBtnActive {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.fieldViewSwitchBtnActive {
+  border-color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+  color: var(--color-brand-primary);
+}
+
 .fieldJobList {
   display: grid;
   gap: var(--space-3);
   list-style: none;
   margin: 0;
   padding: 0;
+
+  @include mq.up(md) {
+    max-width: 28rem;
+  }
 }
 
 .fieldJobCard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   padding: var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
   color: inherit;
-  position: relative;
 }
 
 .fieldJobCardShell {
@@ -1452,24 +1599,23 @@
 .fieldJobStatusChip {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
+  flex-shrink: 0;
+  min-height: 26px;
   padding: 0 var(--space-2);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
 
-  &[data-status='scheduled'][data-checked-in='false'] {
-    background: color-mix(in srgb, var(--color-info) 14%, transparent);
-    color: var(--color-info);
+  &[data-next='true'] {
+    background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+    color: var(--color-brand-primary);
   }
 
   &[data-status='scheduled'][data-checked-in='true'] {
-    background: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
-    color: var(--color-brand-primary);
+    background: color-mix(in srgb, var(--color-info) 14%, transparent);
+    color: var(--color-info);
   }
 
   &[data-status='completed'] {
@@ -1480,20 +1626,25 @@
 
 .fieldJobCardActions {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
+
+  &:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
 }
 
+.fieldJobDirections,
 .fieldJobPrimaryAction {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   min-height: 48px;
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  background: var(--color-brand-primary);
-  color: var(--color-text-on-brand);
+  font-size: var(--font-size-sm);
   font-weight: 700;
   text-decoration: none;
 
@@ -1503,25 +1654,58 @@
   }
 }
 
-.fieldJobSecondaryActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.fieldJobSecondaryAction {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
+.fieldJobDirections {
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   color: var(--color-text);
+
+  &:hover {
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+    text-decoration: none;
+  }
+}
+
+.fieldJobPrimaryAction {
+  border: 1px solid var(--color-brand-primary);
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-brand);
+
+  &:hover {
+    background: var(--color-brand-primary-hover);
+    border-color: var(--color-brand-primary-hover);
+    color: var(--color-text-on-brand);
+    text-decoration: none;
+  }
+}
+
+.fieldJobLinks {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-5);
+  margin-top: var(--space-1);
+}
+
+.fieldJobLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 40px;
+  color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 600;
   text-decoration: none;
+
+  &:hover {
+    color: var(--color-brand-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 }
 
 .fieldJobCardHeader {
@@ -1529,19 +1713,22 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .fieldJobCardTime {
+  margin: 0;
   font-size: var(--font-size-sm);
   font-weight: 700;
-  color: var(--color-brand-primary);
+  color: var(--color-text);
 }
 
 .fieldJobCardCustomer {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: 700;
-  line-height: 1.25;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .fieldJobCardService {
@@ -1550,67 +1737,66 @@
   color: var(--color-text-muted);
 }
 
-.fieldJobCardMeta {
+.fieldJobAddress {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  margin: 0;
+  margin: var(--space-3) 0 0;
   font-size: var(--font-size-sm);
-  line-height: 1.45;
-  color: var(--color-text-muted);
-  overflow-wrap: anywhere;
+  line-height: 1.4;
+  color: var(--color-text);
 
-  a {
-    color: var(--color-brand-primary);
-    font-weight: 600;
-    text-decoration: underline;
+  span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
+}
+
+.fieldJobCommunity {
+  font-weight: 700;
 }
 
 .fieldJobCardIcon {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--color-brand-primary);
 }
 
-.fieldJobCardFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
-}
+.fieldJobNotes {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
 
-.fieldJobNextBadge {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-brand-primary);
-  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
-}
+  p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    color: var(--color-text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 
-.fieldJobOpen {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin-left: auto;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-brand-primary);
+    & + p {
+      margin-top: var(--space-1);
+    }
+  }
 }
 
 .fieldJobEmpty {
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-8) var(--space-4);
   text-align: center;
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+
+  @include mq.up(md) {
+    max-width: 28rem;
+  }
 }
 
 .fieldJobEmptyTitle {
@@ -1620,50 +1806,9 @@
 }
 
 .fieldJobEmptyHint {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 18rem;
   font-size: var(--font-size-sm);
   line-height: 1.45;
   color: var(--color-text-muted);
-}
-
-.fieldBrowseBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.fieldBrowseBack {
-  min-height: 40px;
-  padding: 0 var(--space-3);
-  border: none;
-  background: none;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-brand-primary);
-  cursor: pointer;
-}
-
-.fieldBrowseViews {
-  display: inline-flex;
-  gap: var(--space-2);
-}
-
-.fieldBrowseView,
-.fieldBrowseViewActive {
-  min-height: 36px;
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  cursor: pointer;
-}
-
-.fieldBrowseViewActive {
-  border-color: var(--color-brand-primary);
-  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
-  color: var(--color-brand-primary);
 }

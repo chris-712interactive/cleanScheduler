@@ -138,19 +138,13 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const subtitle =
     tab === 'issues'
       ? 'Appointments that need crew, pricing, or schedule fixes.'
-      : isFieldEmployee
-        ? view === 'today'
-          ? isLocalCalendarToday(dateKey)
-            ? 'Tap a job to check in, add photos, and mark complete.'
-            : 'Jobs assigned to you on this day.'
-          : 'Browse upcoming weeks — tap a job to open it.'
-        : view === 'day' && isLocalCalendarToday(dateKey)
-          ? "Today's appointments"
-          : view === 'day'
-            ? 'Day view — appointments on the timeline below.'
-            : view === 'week'
-              ? 'Week view — scan the crew grid at a glance.'
-              : 'Month view — tap a day to open the day timeline.';
+      : view === 'day' && isLocalCalendarToday(dateKey)
+        ? "Today's appointments"
+        : view === 'day'
+          ? 'Day view — appointments on the timeline below.'
+          : view === 'week'
+            ? 'Week view — scan the crew grid at a glance.'
+            : 'Month view — tap a day to open the day timeline.';
 
   const tabLinks: { key: ScheduleTab; label: string; href: string }[] = [
     { key: 'schedule', label: 'Schedule', href: scheduleHref },
@@ -164,15 +158,13 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   return (
     <div className={styles.schedulePage}>
       <PageHeader
-        className={styles.schedulePageHeader}
+        className={isFieldEmployee ? styles.schedulePageHeaderField : styles.schedulePageHeader}
         title={isFieldEmployee ? (view === 'today' ? 'My jobs' : 'My schedule') : 'Schedule'}
-        description={<span className={styles.scheduleSubtitle}>{subtitle}</span>}
+        description={
+          isFieldEmployee ? undefined : <span className={styles.scheduleSubtitle}>{subtitle}</span>
+        }
         actions={
-          isFieldEmployee ? (
-            <Button as="a" href="/schedule/time-off" variant="secondary">
-              Time off
-            </Button>
-          ) : (
+          isFieldEmployee ? undefined : (
             <div className={styles.scheduleHeaderActions}>
               <Button as="a" href="/schedule/time-off-requests" variant="secondary">
                 Time off requests

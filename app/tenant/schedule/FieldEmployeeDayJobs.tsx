@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, MapPin, Phone } from 'lucide-react';
+import { MapPin, Navigation, Phone } from 'lucide-react';
 import { googleMapsDirectionsUrl } from '@/lib/geo/googleMapsDirectionsUrl';
 import { formatVisitTimeRange } from './scheduleTimelineUtils';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
@@ -38,110 +38,111 @@ export function FieldEmployeeDayJobs({
     return (
       <div className={styles.fieldJobEmpty}>
         <p className={styles.fieldJobEmptyTitle}>
-          {isLocalToday ? 'No jobs scheduled for today' : 'No jobs on this day'}
+          {isLocalToday ? 'Nothing scheduled today' : 'No jobs on this day'}
         </p>
         <p className={styles.fieldJobEmptyHint}>
-          When your office assigns visits to you, they appear here as easy-to-tap cards.
+          Use the arrows to check another day. Assigned visits show up here.
         </p>
       </div>
     );
   }
 
+  const nextUpId = isLocalToday
+    ? (visits.find(
+        (visit) =>
+          visit.status === 'scheduled' &&
+          !visit.checkedInAt &&
+          new Date(visit.ends_at).getTime() >= Date.now(),
+      )?.id ?? null)
+    : null;
+
   return (
     <ul className={styles.fieldJobList}>
       {visits.map((visit) => {
         const serviceLabel = visit.quoteTitle?.trim() || visit.title?.trim() || 'Cleaning visit';
-        const isNextUp =
-          isLocalToday &&
-          visit.status === 'scheduled' &&
-          new Date(visit.ends_at).getTime() >= Date.now();
         const action = primaryAction(visit);
         const mapsQuery = visit.siteLine?.trim() ? googleMapsDirectionsUrl(visit.siteLine) : null;
         const phoneHref = visit.customerPhone
-          ? `tel:${visit.customerPhone.replace(/\s/g, '')}`
+          ? `tel:${visit.customerPhone.replace(/[^\d+]/g, '')}`
           : null;
+        const isNextUp = visit.id === nextUpId;
+        const statusLabel = isNextUp ? 'Up next' : fieldStatusLabel(visit);
 
         return (
           <li key={visit.id} className={styles.fieldJobCardShell}>
-            <div className={styles.fieldJobCard}>
+            <article className={styles.fieldJobCard}>
               <div className={styles.fieldJobCardHeader}>
-                <div className={styles.fieldJobCardTime}>
+                <p className={styles.fieldJobCardTime}>
                   {formatVisitTimeRange(visit.starts_at, visit.ends_at, tenantTimezone)}
-                </div>
+                </p>
                 <span
                   className={styles.fieldJobStatusChip}
                   data-status={visit.status}
                   data-checked-in={visit.checkedInAt ? 'true' : 'false'}
+                  data-next={isNextUp ? 'true' : 'false'}
                 >
-                  {fieldStatusLabel(visit)}
+                  {statusLabel}
                 </span>
               </div>
+
               <h3 className={styles.fieldJobCardCustomer}>{visit.customerName}</h3>
-              <p className={styles.fieldJobCardService}>{serviceLabel}</p>
-              {visit.expectedAmountCents != null ? (
-                <p className={styles.fieldJobCardMeta}>
-                  Job amount: ${formatCentsAsDollars(visit.expectedAmountCents)}
+              <p className={styles.fieldJobCardService}>
+                {serviceLabel}
+                {visit.expectedAmountCents != null
+                  ? ` · $${formatCentsAsDollars(visit.expectedAmountCents)}`
+                  : ''}
+              </p>
+
+              {visit.siteLine || visit.communityName ? (
+                <p className={styles.fieldJobAddress}>
+                  <MapPin size={18} aria-hidden className={styles.fieldJobCardIcon} />
+                  <span>
+                    {visit.communityName ? (
+                      <span className={styles.fieldJobCommunity}>{visit.communityName}</span>
+                    ) : null}
+                    {visit.siteLine ? <span>{visit.siteLine}</span> : null}
+                  </span>
                 </p>
               ) : null}
-              {visit.communityName ? (
-                <p className={styles.fieldJobCardMeta}>Community: {visit.communityName}</p>
+
+              {visit.notes || visit.customerFieldNotes ? (
+                <div className={styles.fieldJobNotes}>
+                  {visit.notes ? <p>{visit.notes}</p> : null}
+                  {visit.customerFieldNotes ? <p>{visit.customerFieldNotes}</p> : null}
+                </div>
               ) : null}
-              {visit.notes ? (
-                <p className={styles.fieldJobCardMeta}>Job notes: {visit.notes}</p>
-              ) : null}
-              {visit.customerFieldNotes ? (
-                <p className={styles.fieldJobCardMeta}>
-                  Customer notes: {visit.customerFieldNotes}
-                </p>
-              ) : null}
-              {visit.siteLine ? (
-                <p className={styles.fieldJobCardMeta}>
-                  <MapPin size={16} aria-hidden className={styles.fieldJobCardIcon} />
-                  {mapsQuery ? (
-                    <a href={mapsQuery} target="_blank" rel="noopener noreferrer">
-                      {visit.siteLine}
-                    </a>
-                  ) : (
-                    visit.siteLine
-                  )}
-                </p>
-              ) : null}
-              {visit.customerPhone ? (
-                <p className={styles.fieldJobCardMeta}>
-                  <Phone size={16} aria-hidden className={styles.fieldJobCardIcon} />
-                  <span>{visit.customerPhone}</span>
-                </p>
-              ) : null}
+
               <div className={styles.fieldJobCardActions}>
+                {mapsQuery ? (
+                  <a
+                    href={mapsQuery}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.fieldJobDirections}
+                  >
+                    <Navigation size={18} aria-hidden />
+                    Directions
+                  </a>
+                ) : null}
                 {action ? (
                   <Link href={action.href} className={styles.fieldJobPrimaryAction}>
                     {action.label}
-                    <ChevronRight size={16} aria-hidden />
                   </Link>
                 ) : null}
-                <div className={styles.fieldJobSecondaryActions}>
-                  {phoneHref ? (
-                    <a href={phoneHref} className={styles.fieldJobSecondaryAction}>
-                      Call
-                    </a>
-                  ) : null}
-                  {mapsQuery ? (
-                    <a
-                      href={mapsQuery}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.fieldJobSecondaryAction}
-                    >
-                      Maps
-                    </a>
-                  ) : null}
-                  <Link href={`/schedule/${visit.id}`} className={styles.fieldJobSecondaryAction}>
-                    Details
-                  </Link>
-                </div>
               </div>
-              {isNextUp ? <span className={styles.fieldJobNextBadge}>Up next</span> : null}
-            </div>
+
+              <div className={styles.fieldJobLinks}>
+                {phoneHref ? (
+                  <a href={phoneHref} className={styles.fieldJobLink}>
+                    <Phone size={16} aria-hidden />
+                    Call
+                  </a>
+                ) : null}
+                <Link href={`/schedule/${visit.id}`} className={styles.fieldJobLink}>
+                  Details
+                </Link>
+              </div>
+            </article>
           </li>
         );
       })}
