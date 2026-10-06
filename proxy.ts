@@ -56,6 +56,7 @@ const PUBLIC_MARKETING_PATHS = new Set([
   '/sign-in',
   '/sign-in/mfa',
   '/auth/callback',
+  '/auth/continue',
   '/access-denied',
   '/complete-employee-invite',
   '/start-trial',
@@ -97,6 +98,7 @@ const UNIFIED_SITE_RESERVED_PREFIXES = [
   '/portal',
   '/sign-in',
   '/auth/callback',
+  '/auth/continue',
   '/access-denied',
   '/complete-employee-invite',
 ];
