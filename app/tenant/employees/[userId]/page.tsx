@@ -14,9 +14,25 @@ import {
 } from '@/lib/tenant/employeePermissions';
 import { EmployeeMemberEditForm } from '../EmployeeMemberEditForm';
 import { EmployeeAvailabilityForm } from '../EmployeeAvailabilityForm';
+import { calendarDateKeyInTimeZone } from '@/lib/datetime/tenantCalendarDay';
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
+import {
+  buildEmployeeWeekDays,
+  employeeWeekDateKeys,
+  employeeWeekShift,
+  formatEmployeeDayHeading,
+  nextTimeOffOutsideWeek,
+  type EmployeeScheduleTimeOff,
+  type EmployeeScheduleVisit,
+} from '@/lib/schedule/employeeWeekSchedule';
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
+import { shiftDateKey } from '@/lib/tenant/scheduleDateRange';
+import {
+  customerHasAnyNameParts,
+  formatCustomerDisplayName,
+} from '@/lib/tenant/customerIdentityName';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
+import { EmployeeWeekSchedule } from '../EmployeeWeekSchedule';
 import styles from '../employeeEdit.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -25,10 +41,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 
 interface PageProps {
   params: Promise<{ userId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function TenantEmployeeEditPage({ params }: PageProps) {
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function weekAnchor(raw: string | string[] | undefined, todayKey: string): string {
+  const value = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? '';
+  return DATE_RE.test(value) ? value : todayKey;
+}
+
+export default async function TenantEmployeeEditPage({ params, searchParams }: PageProps) {
   const { userId: rawUserId } = await params;
+  const sp = await searchParams;
   const targetUserId = rawUserId.trim();
   if (!UUID_RE.test(targetUserId)) {
     notFound();
@@ -131,12 +156,90 @@ export default async function TenantEmployeeEditPage({ params }: PageProps) {
   });
 
   const showAccess = (canChangeRole || canToggleActive) && targetRole !== 'owner';
+  const tenantTimezone = tenantDefaults.timezone;
+  const todayKey = calendarDateKeyInTimeZone(tenantTimezone);
+  const anchor = weekAnchor(sp.week, todayKey);
+  const weekDateKeys = employeeWeekDateKeys(anchor);
+  const weekStart = weekDateKeys[0] ?? anchor;
+  const weekEnd = weekDateKeys[6] ?? anchor;
+  const rangeStart = `${shiftDateKey(weekStart, -1)}T00:00:00.000Z`;
+  const rangeEnd = `${shiftDateKey(weekEnd, 1)}T23:59:59.999Z`;
+
+  const [{ data: visitRows }, { data: timeOffRows }] = await Promise.all([
+    admin
+      .from('tenant_scheduled_visits')
+      .select(
+        `
+        id,
+        title,
+        starts_at,
+        ends_at,
+        customers (
+          customer_identities (
+            first_name,
+            last_name,
+            full_name
+          )
+        ),
+        tenant_scheduled_visit_assignees!inner ( user_id )
+      `,
+      )
+      .eq('tenant_id', membership.tenantId)
+      .eq('tenant_scheduled_visit_assignees.user_id', targetUserId)
+      .neq('status', 'cancelled')
+      .lte('starts_at', rangeEnd)
+      .gte('ends_at', rangeStart)
+      .order('starts_at', { ascending: true }),
+    admin
+      .from('tenant_member_time_off')
+      .select('id, starts_at, ends_at, status, request_note')
+      .eq('tenant_id', membership.tenantId)
+      .eq('user_id', targetUserId)
+      .in('status', ['pending', 'approved'])
+      .gte('ends_at', rangeStart)
+      .order('starts_at', { ascending: true }),
+  ]);
+
+  const visits: EmployeeScheduleVisit[] = (visitRows ?? []).map((row) => {
+    const ident = row.customers?.customer_identities;
+    const customerName =
+      ident && customerHasAnyNameParts(ident) ? formatCustomerDisplayName(ident) : 'Customer';
+    return {
+      id: row.id,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      title: row.title.trim(),
+      customerName,
+    };
+  });
+
+  const timeOff: EmployeeScheduleTimeOff[] = (timeOffRows ?? []).flatMap((row) => {
+    if (row.status !== 'pending' && row.status !== 'approved') return [];
+    return [
+      {
+        id: row.id,
+        startsAt: row.starts_at,
+        endsAt: row.ends_at,
+        status: row.status,
+        note: row.request_note.trim(),
+      },
+    ];
+  });
+
+  const scheduleDays = buildEmployeeWeekDays({
+    weekDateKeys,
+    todayKey,
+    timeZone: tenantTimezone,
+    visits,
+    timeOff,
+  });
+  const later = nextTimeOffOutsideWeek(timeOff, weekDateKeys, tenantTimezone);
 
   return (
     <>
       <PageHeader
         title={displayName}
-        titleHint="Profile, workspace access, and scheduling availability."
+        titleHint="Profile, workspace access, and this person's jobs and time off."
         backHref="/employees"
         backLabel="Team"
       />
@@ -154,7 +257,27 @@ export default async function TenantEmployeeEditPage({ params }: PageProps) {
           <a className={styles.sectionNavLink} href="#member-schedule">
             Schedule
           </a>
+          <a className={styles.sectionNavLink} href="#member-availability">
+            Availability
+          </a>
         </nav>
+
+        <EmployeeWeekSchedule
+          displayName={displayName}
+          userId={targetUserId}
+          weekLabel={`${formatEmployeeDayHeading(weekStart)} – ${formatEmployeeDayHeading(weekEnd)}`}
+          prevWeek={employeeWeekShift(anchor, -1)}
+          nextWeek={employeeWeekShift(anchor, 1)}
+          days={scheduleDays}
+          laterTimeOff={
+            later
+              ? {
+                  dateKey: calendarDateKeyInTimeZone(tenantTimezone, new Date(later.startsAt)),
+                  status: later.status,
+                }
+              : null
+          }
+        />
 
         <div className={styles.detailLayout}>
           <EmployeeMemberEditForm
@@ -171,12 +294,12 @@ export default async function TenantEmployeeEditPage({ params }: PageProps) {
           />
 
           <section
-            id="member-schedule"
+            id="member-availability"
             className={styles.availabilityPanel}
-            aria-labelledby="schedule-heading"
+            aria-labelledby="availability-heading"
           >
             <header className={styles.panelHeader}>
-              <h3 id="schedule-heading" className={styles.panelTitle}>
+              <h3 id="availability-heading" className={styles.panelTitle}>
                 Work availability
               </h3>
               <p className={styles.panelLead}>

@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** Owners and admins are emailed when a team member requests time off. Approving time off that overlaps scheduled jobs emails those conflicts and lists them on schedule Issues until they are moved.
+**Latest polish:** A team member's page shows their week of jobs plus approved and requested time off. Requested time off uses a dotted outline. Owners and admins are still emailed when time off is requested or overlaps scheduled jobs.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
