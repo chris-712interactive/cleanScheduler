@@ -8,7 +8,7 @@ import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
-import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
+import { formatPropertyAddressLine, formatVisitSiteLine } from '@/lib/tenant/formatPropertyAddress';
 import { normalizeAssigneeRows } from '@/lib/schedule/mapAssigneeChips';
 import { isVisitAssignee } from '@/lib/schedule/visitFieldWork';
 import type { TenantRole } from '@/lib/auth/types';
@@ -138,7 +138,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   const quoteAmountRaw = row.tenant_quotes?.amount_cents;
   const prop = row.tenant_customer_properties;
   const mapsAddress = prop ? formatPropertyAddressLine(prop) : '';
-  const siteLine = prop ? [prop.label?.trim(), mapsAddress].filter(Boolean).join(' — ') : '';
+  const siteLine = prop ? formatVisitSiteLine(prop.label, mapsAddress) : '';
   const communityName = prop?.community_name?.trim() || null;
   const siteNotes = prop?.site_notes?.trim() || null;
   const customerFieldNotes = row.customers?.tenant_customer_profiles?.field_notes?.trim() || null;

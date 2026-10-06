@@ -10,6 +10,11 @@
   align-items: flex-start;
   gap: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
+
+  @include mq.down(sm) {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
 }
 
 .visitPageTitles {
@@ -63,6 +68,11 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
+
+  @include mq.down(md) {
+    display: grid;
+    gap: var(--space-3);
+  }
 }
 
 .summaryItem {
@@ -72,6 +82,35 @@
   min-width: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text);
+
+  @include mq.down(md) {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.whenDate,
+.whenTime {
+  display: inline;
+}
+
+.whenDate {
+  @include mq.up(md) {
+    &::after {
+      content: ' · ';
+    }
+  }
+
+  @include mq.down(md) {
+    display: block;
+  }
+}
+
+.whenTime {
+  @include mq.down(md) {
+    display: block;
+  }
 }
 
 .summaryLabel {
@@ -93,6 +132,10 @@
   height: 1.25rem;
   background: var(--color-border);
   flex-shrink: 0;
+
+  @include mq.down(md) {
+    display: none;
+  }
 }
 
 .summaryMuted {
@@ -163,7 +206,7 @@
   margin: 0;
   font-size: var(--font-size-sm);
   line-height: 1.45;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 
   a {
     color: var(--color-brand-primary);
@@ -216,6 +259,11 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+
+  @include mq.down(sm) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .fieldWorkCopy {
@@ -224,12 +272,26 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   line-height: 1.45;
+
+  @include mq.down(sm) {
+    flex: none;
+  }
 }
 
 .fieldWorkActions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+
+  @include mq.down(sm) {
+    display: grid;
+    width: 100%;
+
+    form,
+    button {
+      width: 100%;
+    }
+  }
 }
 
 .error {

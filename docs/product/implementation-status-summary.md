@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** A team member's page shows their week of jobs plus approved and requested time off. Requested time off uses a dotted outline. Owners and admins are still emailed when time off is requested or overlaps scheduled jobs.
+**Latest polish:** The field job screen stacks the appointment time, check-in action, and address on a phone, and no longer repeats a street that is also the location name. A team member's page still shows their week of jobs plus approved and requested time off.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compactCalendarAddress } from '@/lib/tenant/formatPropertyAddress';
+import { compactCalendarAddress, formatVisitSiteLine } from '@/lib/tenant/formatPropertyAddress';
 
 describe('compactCalendarAddress', () => {
   it('drops a trailing state and ZIP so the calendar line stays short', () => {
@@ -14,6 +14,18 @@ describe('compactCalendarAddress', () => {
   it('keeps a unit when the street already has one', () => {
     expect(compactCalendarAddress('123 Main St, Apt 2, Fort Myers, FL, 33913-1234')).toBe(
       '123 Main St, Apt 2, Fort Myers',
+    );
+  });
+
+  it('does not repeat a property name that is already the street', () => {
+    expect(
+      formatVisitSiteLine('775 Forest View Ln', '775 Forest View Ln, Tuckaseegee, NC, 28783'),
+    ).toBe('775 Forest View Ln, Tuckaseegee, NC, 28783');
+  });
+
+  it('keeps a real location name in front of the address', () => {
+    expect(formatVisitSiteLine('Lake house', '775 Forest View Ln, Tuckaseegee, NC, 28783')).toBe(
+      'Lake house — 775 Forest View Ln, Tuckaseegee, NC, 28783',
     );
   });
 
