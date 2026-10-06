@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
 import { signInWithGoogle, signInWithPassword, type SignInState } from './actions';
+import { PasskeySignInButton } from './PasskeySignInButton';
 import styles from './sign-in.module.scss';
 
 const initialState: SignInState = {};
@@ -79,6 +80,12 @@ export function SignInForm({
         to create a workspace — you&apos;ll be signed in right away (no confirmation email
         required).
       </p>
+
+      <div className={styles.divider}>
+        <span>or</span>
+      </div>
+
+      <PasskeySignInButton nextPath={nextPath} />
 
       <div className={styles.divider}>
         <span>or</span>

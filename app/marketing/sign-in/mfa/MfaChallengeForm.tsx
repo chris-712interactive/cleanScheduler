@@ -2,16 +2,35 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { passkeyErrorMessage } from '@/lib/auth/passkeyErrorMessage';
+import type { MfaMethod } from '@/lib/auth/tenantAuthPolicy';
 import { createClient } from '@/lib/supabase/browser';
 import styles from '../sign-in.module.scss';
 
-export function MfaChallengeForm({ nextPath }: { nextPath: string }) {
+function continueTo(nextPath: string, router: ReturnType<typeof useRouter>) {
+  if (nextPath.startsWith('http://') || nextPath.startsWith('https://')) {
+    window.location.assign(nextPath);
+    return;
+  }
+  router.push(nextPath);
+  router.refresh();
+}
+
+export function MfaChallengeForm({
+  nextPath,
+  methods,
+}: {
+  nextPath: string;
+  methods: MfaMethod[];
+}) {
   const router = useRouter();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const showTotp = methods.includes('totp');
+  const showPasskey = methods.includes('passkey');
 
-  const submit = async (e: React.FormEvent) => {
+  const submitCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -51,42 +70,62 @@ export function MfaChallengeForm({ nextPath }: { nextPath: string }) {
       return;
     }
 
-    // Absolute URLs (cross-subdomain portal routing) need a full navigation.
-    if (nextPath.startsWith('http://') || nextPath.startsWith('https://')) {
-      window.location.assign(nextPath);
+    continueTo(nextPath, router);
+  };
+
+  const verifyPasskey = async () => {
+    setSubmitting(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: passkeyError } = await supabase.auth.signInWithPasskey();
+    if (passkeyError) {
+      setError(passkeyErrorMessage(passkeyError));
+      setSubmitting(false);
       return;
     }
-
-    router.push(nextPath);
-    router.refresh();
+    continueTo(nextPath, router);
   };
 
   return (
-    <form className={styles.form} onSubmit={(e) => void submit(e)}>
+    <div className={styles.form}>
       {error ? (
         <p className={styles.error} role="alert">
           {error}
         </p>
       ) : null}
-      <label className={styles.label} htmlFor="mfa-code">
-        Authenticator code
-      </label>
-      <input
-        id="mfa-code"
-        type="text"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9]{6}"
-        maxLength={6}
-        required
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        className={styles.input}
-        placeholder="000000"
-      />
-      <button type="submit" className={styles.submit} disabled={submitting || code.length < 6}>
-        {submitting ? 'Verifying…' : 'Verify and continue'}
-      </button>
-    </form>
+      {showTotp ? (
+        <form className={styles.form} onSubmit={(e) => void submitCode(e)}>
+          <label className={styles.label} htmlFor="mfa-code">
+            Authenticator code
+          </label>
+          <input
+            id="mfa-code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            required
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className={styles.input}
+            placeholder="000000"
+          />
+          <button type="submit" className={styles.submit} disabled={submitting || code.length < 6}>
+            {submitting ? 'Verifying…' : 'Verify and continue'}
+          </button>
+        </form>
+      ) : null}
+      {showPasskey ? (
+        <button
+          type="button"
+          className={styles.submit}
+          disabled={submitting}
+          onClick={() => void verifyPasskey()}
+        >
+          {submitting ? 'Waiting for passkey…' : 'Use a passkey'}
+        </button>
+      ) : null}
+    </div>
   );
 }

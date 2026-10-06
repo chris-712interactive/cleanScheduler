@@ -11,6 +11,7 @@ import {
   enforceFieldEmployeeRouteAccess,
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
+import { enforceTenantAuthPolicy } from './enforceTenantAuthPolicy';
 import { requirePortalAccess } from './portalAccess';
 import type { TenantRole } from './types';
 
@@ -172,6 +173,15 @@ export async function requireTenantPortalAccess(
       memberRole: membership.role,
       bypassAdminSuspension: isPlatformAdmin,
     });
+
+    if (!isPlatformAdmin) {
+      await enforceTenantAuthPolicy({
+        tenantId: membership.tenantId,
+        userId: auth.user.id,
+        browserPathname: mergedOptions.browserPathname ?? mergedOptions.internalPathname,
+        bypass: false,
+      });
+    }
 
     let subscriptionLocked = false;
     if (isFieldEmployeeRole(membership.role)) {

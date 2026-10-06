@@ -27,7 +27,7 @@ function protectionMeta(status: ProtectionStatus): {
         tone: 'success',
         pillLabel: 'Protected',
         title: 'Your account is protected',
-        lead: 'Sign-in requires a code from your authenticator app in addition to your password.',
+        lead: 'Password and Google sign-in also ask for a code from your authenticator app. A passkey sign-in skips that code unless this workspace requires the app.',
       };
     case 'setup_in_progress':
       return {

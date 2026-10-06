@@ -14,10 +14,11 @@
 
 ## Authentication flow
 
-1. User signs in via Supabase Auth (password or Google OAuth).
+1. User signs in via Supabase Auth (password, passkey, or Google OAuth).
 2. Middleware refreshes session cookies on each request.
 3. Portal layout calls `requirePortalAccess` and `requireTenantPortalAccess`.
-4. Server actions enforce role and feature gates before mutations.
+4. Tenant workspaces enforce `tenant_operational_settings` passkey and 2FA policy (`lib/auth/enforceTenantAuthPolicy.ts`).
+5. Server actions enforce role and feature gates before mutations.
 
 ## Authorization layers
 

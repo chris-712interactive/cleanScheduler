@@ -16,7 +16,7 @@ cleanScheduler applies **zero trust principles** to its cloud-native SaaS archit
 
 ## Control mapping
 
-- **Application:** Supabase JWT sessions, MFA (TOTP) for owner/admin, field-employee route allowlist.
+- **Application:** Supabase JWT sessions, passkeys, optional workspace 2FA (authenticator app and/or passkey), TOTP for owner/admin bank linking, field-employee route allowlist.
 - **API:** `/api/*` excluded from middleware auth; each route implements its own verification (cron secret, webhook signatures, API keys).
 - **Data:** Postgres RLS + application tenant scoping on service-role queries.
 - **Operations:** Workforce MFA on infrastructure dashboards (GitHub, Vercel, Supabase, Stripe, Plaid) per workforce runbook.

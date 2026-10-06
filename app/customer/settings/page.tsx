@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { SignOutButton } from '@/components/auth/SignOutButton';
+import { PasskeySettingsPanel } from '@/components/auth/PasskeySettingsPanel';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -56,6 +57,13 @@ export default async function CustomerSettingsPage() {
           ) : (
             <p className={styles.muted}>No customer identity is linked to this login yet.</p>
           )}
+        </Card>
+
+        <Card
+          title="Passkey"
+          description="Sign in next time with Face ID, a fingerprint, or this device’s PIN instead of a password."
+        >
+          <PasskeySettingsPanel />
         </Card>
 
         <Card title="Account" description="End your session on this device.">

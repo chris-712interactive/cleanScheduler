@@ -3,8 +3,11 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Stack } from '@/components/layout/Stack';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { MfaSettingsPanel } from '@/components/auth/MfaSettingsPanel';
+import { PasskeySettingsPanel } from '@/components/auth/PasskeySettingsPanel';
+import { Alert } from '@/components/ui/Alert';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { loadTenantAuthPolicy } from '@/lib/auth/enforceTenantAuthPolicy';
 import { getAuthContext } from '@/lib/auth/session';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getTenantPurgeStatus } from '@/lib/billing/tenantPurge';
@@ -28,7 +31,11 @@ import styles from './account-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TenantAccountSettingsPage() {
+export default async function TenantAccountSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/settings/account', {
     browserPathname: '/settings/account',
@@ -86,6 +93,9 @@ export default async function TenantAccountSettingsPage() {
       ? loadMemberScheduleProfile(admin, membership.tenantId, userId)
       : Promise.resolve(null),
   ]);
+  const params = await searchParams;
+  const mfaRequiredNotice = params.mfa === 'required';
+  const authPolicy = await loadTenantAuthPolicy(membership.tenantId);
   const purgeStatus = getTenantPurgeStatus(billing);
 
   const tenantDefaults =
@@ -113,15 +123,14 @@ export default async function TenantAccountSettingsPage() {
     { href: '#account-profile', label: 'Profile' },
     { href: '#account-appearance', label: 'Appearance' },
     ...(canSetScheduleAvailability ? [{ href: '#account-schedule', label: 'Schedule' }] : []),
-    ...(requiresMfaForPlaid ? [{ href: '#account-security', label: 'Security' }] : []),
+    { href: '#account-security', label: 'Security' },
     { href: '#account-workspace', label: 'Workspace' },
     { href: '#account-session', label: 'Session' },
     ...(isOwner ? [{ href: '#account-danger', label: 'Delete' }] : []),
   ];
 
   const hasSideColumn =
-    (canSetScheduleAvailability && memberProfile != null && tenantDefaults != null && userId) ||
-    requiresMfaForPlaid;
+    canSetScheduleAvailability && memberProfile != null && tenantDefaults != null && userId;
 
   return (
     <>
@@ -133,6 +142,15 @@ export default async function TenantAccountSettingsPage() {
       />
 
       <Stack gap={4}>
+        {mfaRequiredNotice ? (
+          <Alert variant="warning">
+            This workspace requires{' '}
+            {authPolicy.mfaAllowedMethods
+              .map((method) => (method === 'totp' ? 'an authenticator app' : 'a passkey'))
+              .join(' or ')}{' '}
+            before you can use the rest of the app. Add one below, then open the schedule again.
+          </Alert>
+        ) : null}
         <nav className={styles.sectionNav} aria-label="Account sections">
           {navItems.map((item) => (
             <a key={item.href} className={styles.sectionNavLink} href={item.href}>
@@ -201,6 +219,29 @@ export default async function TenantAccountSettingsPage() {
             </section>
 
             <section
+              id="account-security"
+              className={styles.panel}
+              aria-labelledby="security-heading"
+            >
+              <header className={styles.panelHeader}>
+                <h3 id="security-heading" className={styles.panelTitle}>
+                  Sign-in
+                </h3>
+                <p className={styles.panelLead}>
+                  Use a passkey on this device instead of a password, and optionally add an
+                  authenticator app.
+                </p>
+              </header>
+              <PasskeySettingsPanel
+                workspaceAllowsPasskeys={authPolicy.allowPasskeySignIn}
+                countsAsSecondFactor={
+                  authPolicy.mfaRequired && authPolicy.mfaAllowedMethods.includes('passkey')
+                }
+              />
+              <MfaSettingsPanel requiredForPlaid={requiresMfaForPlaid} />
+            </section>
+
+            <section
               id="account-session"
               className={styles.panel}
               aria-labelledby="session-heading"
@@ -242,16 +283,6 @@ export default async function TenantAccountSettingsPage() {
                     profile={memberProfile}
                     tenantDefaults={tenantDefaults}
                   />
-                </section>
-              ) : null}
-
-              {requiresMfaForPlaid ? (
-                <section
-                  id="account-security"
-                  className={[styles.panel, styles.sidePanel].join(' ')}
-                  aria-label="Security"
-                >
-                  <MfaSettingsPanel requiredForPlaid />
                 </section>
               ) : null}
             </div>

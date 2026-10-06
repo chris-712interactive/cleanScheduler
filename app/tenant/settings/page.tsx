@@ -12,6 +12,7 @@ import {
   Map,
   MapPin,
   Percent,
+  KeyRound,
   Shield,
   SlidersHorizontal,
   Tag,
@@ -153,8 +154,14 @@ const HUB_GROUPS: HubGroup[] = [
       {
         href: '/settings/account',
         label: 'Account',
-        description: 'Your profile, appearance, and sign-in preferences.',
+        description: 'Your profile, appearance, passkeys, and authenticator app.',
         icon: UserRound,
+      },
+      {
+        href: '/settings/security',
+        label: 'Sign-in security',
+        description: 'Allow passkeys and choose which second steps this workspace requires.',
+        icon: KeyRound,
       },
       {
         href: '/settings/roles',

@@ -609,6 +609,42 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
     sitemapPriority: 0.65,
     changeFrequency: 'monthly',
   },
+  {
+    slug: 'sign-in-with-a-passkey',
+    path: '/help/cleaning-businesses/sign-in-with-a-passkey',
+    title: 'Sign in with a passkey or require two-factor authentication',
+    description:
+      'Let the office and field team use Face ID or a fingerprint instead of a password, and choose which second step your workspace requires.',
+    sections: [
+      {
+        title: 'Add a passkey for yourself',
+        paragraphs: [
+          'Sign in with your password once. Open Settings, then Account, and choose Add a passkey. Your phone asks for Face ID, a fingerprint, or a PIN. The next visit to the sign-in page can use Sign in with a passkey.',
+          'Password and Google sign-in stay available. Remove a passkey from the same Account page if you lose the device.',
+        ],
+      },
+      {
+        title: 'Set the rule for the whole workspace',
+        paragraphs: [
+          'Owners and admins open Settings, then Sign-in security. Leave passkeys on so anyone who adds one can skip the password. Turn passkeys off if this workspace should only accept a password or Google.',
+          'Turn on Require two-factor authentication and pick the steps you accept: an authenticator app, a passkey, or both. One accepted step is enough. People who have not set one up can still open Account to add it. Connecting a bank account still asks owners and admins for an authenticator app.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does a passkey replace two-factor authentication?',
+        answer:
+          'Only if you accept passkeys as a second step. Signing in with a passkey already checks the device. If you accept only an authenticator app, people still enter that code after a password, and a passkey sign-in is not enough.',
+      },
+    ],
+    relatedLinks: [
+      { href: '/help/cleaning-businesses', label: 'Cleaning business guides' },
+      { href: '/start-trial', label: 'Start free trial' },
+    ],
+    sitemapPriority: 0.6,
+    changeFrequency: 'monthly',
+  },
 ];
 
 export function getCleaningBusinessArticle(slug: string): HelpGuideArticle | undefined {
