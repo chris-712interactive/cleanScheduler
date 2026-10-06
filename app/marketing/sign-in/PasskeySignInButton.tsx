@@ -1,28 +1,28 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/browser';
-import { passkeyErrorMessage } from '@/lib/auth/passkeyErrorMessage';
+import { signInWithDevicePasskey } from '@/lib/auth/passkeyBrowser';
 import { Button } from '@/components/ui/Button';
 import styles from './sign-in.module.scss';
 
 export function PasskeySignInButton({ nextPath }: { nextPath: string }) {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const signIn = async () => {
     setPending(true);
     setError(null);
-    const supabase = createClient();
-    const { error: passkeyError } = await supabase.auth.signInWithPasskey();
-    if (passkeyError) {
-      setError(passkeyErrorMessage(passkeyError));
+    const message = await signInWithDevicePasskey();
+    if (message) {
+      setError(message);
       setPending(false);
       return;
     }
 
-    const continueUrl = `/auth/continue?next=${encodeURIComponent(nextPath)}`;
-    window.location.assign(continueUrl);
+    router.push(`/auth/continue?next=${encodeURIComponent(nextPath)}`);
+    router.refresh();
   };
 
   return (

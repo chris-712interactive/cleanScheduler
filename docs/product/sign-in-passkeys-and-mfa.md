@@ -10,7 +10,7 @@ People can sign in with a passkey instead of a password. A workspace owner or ad
 2. Open **Settings → Account** and choose **Add a passkey**. The phone or computer asks for Face ID, a fingerprint, or a PIN.
 3. Next time, on the sign-in page, choose **Sign in with a passkey**.
 
-Customers can add a passkey from **Settings** in the customer portal. Platform staff can add one from admin **Settings**.
+Customers can add a passkey from **Settings** on `my.cleanscheduler.com`. The passkey button is hidden on a white-label custom domain, because that address cannot use a `cleanscheduler.com` passkey. Platform staff can add one from admin **Settings**.
 
 Removing a passkey does not delete the password. Password and Google sign-in stay available unless the person simply chooses the passkey button.
 
@@ -30,14 +30,14 @@ Bank connection for owners and admins still requires an authenticator app. A pas
 
 While someone still needs to enroll or verify, they can open **Account** and **Sign-in security**. The rest of the workspace redirects them.
 
-## Supabase setup
+## Passkey setup
 
-Passkeys stay off in the hosted project until Authentication → Passkeys is enabled. Set the relying party to the parent domain (`cleanscheduler.com` in production) and list every origin that serves sign-in, including `https://cleanscheduler.com` and tenant subdomains you use. Changing the relying party id later invalidates existing passkeys.
+Passkeys are checked by Clean Scheduler, then a normal Supabase session is opened for that user. They are not Supabase Auth passkeys, so the five-origin dashboard limit does not apply.
 
-Local `http://lvh.me` is not a secure context, so the browser will not offer a passkey there. Use `http://localhost` or HTTPS.
+The relying party id is the parent domain (`cleanscheduler.com` in production, `localhost` for local http). Every `https://{slug}.cleanscheduler.com` address can use the same passkey. A white-label custom domain cannot, and the passkey buttons stay hidden there.
 
-The app opts in with `auth.experimental.passkey` on the Supabase clients (`lib/supabase/authOptions.ts`).
+Apply migration `0097_user_passkeys.sql`. The public key is stored in `user_passkeys`. `user_passkey_sessions` marks the Supabase session that followed a successful check, which is how a passkey counts as a second step.
 
 ## Data
 
-Migration `0096_tenant_auth_policy.sql` adds `allow_passkey_sign_in`, `mfa_required`, and `mfa_allowed_methods` on `tenant_operational_settings`.
+Migration `0096_tenant_auth_policy.sql` adds `allow_passkey_sign_in`, `mfa_required`, and `mfa_allowed_methods` on `tenant_operational_settings`. Migration `0097_user_passkeys.sql` stores passkey credentials and the sessions opened after a passkey check.

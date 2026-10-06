@@ -6,6 +6,7 @@ import { SignOutButton } from '@/components/auth/SignOutButton';
 import { PasskeySettingsPanel } from '@/components/auth/PasskeySettingsPanel';
 import { KeyValueList } from '@/components/ui/KeyValueList';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
+import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import styles from './settings.module.scss';
@@ -14,6 +15,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function CustomerSettingsPage() {
   const auth = await requirePortalAccess('customer', '/settings');
+  const portal = await getPortalContext();
+  const showPasskey = !portal.whiteLabelHostname;
   const admin = createAdminClient();
   const { data: identity } = await admin
     .from('customer_identities')
@@ -59,12 +62,14 @@ export default async function CustomerSettingsPage() {
           )}
         </Card>
 
-        <Card
-          title="Passkey"
-          description="Sign in next time with Face ID, a fingerprint, or this device’s PIN instead of a password."
-        >
-          <PasskeySettingsPanel />
-        </Card>
+        {showPasskey ? (
+          <Card
+            title="Passkey"
+            description="Sign in next time with Face ID, a fingerprint, or this device’s PIN instead of a password."
+          >
+            <PasskeySettingsPanel />
+          </Card>
+        ) : null}
 
         <Card title="Account" description="End your session on this device.">
           <p className={styles.muted}>Signed in as {auth.user.email?.trim() || 'your account'}.</p>

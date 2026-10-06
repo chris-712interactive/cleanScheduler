@@ -4865,6 +4865,87 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_passkeys: {
+        Row: {
+          id: string;
+          user_id: string;
+          credential_id: string;
+          public_key: string;
+          counter: number;
+          transports: string[];
+          friendly_name: string;
+          created_at: string;
+          last_used_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          credential_id: string;
+          public_key: string;
+          counter?: number;
+          transports?: string[];
+          friendly_name?: string;
+          created_at?: string;
+          last_used_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          credential_id?: string;
+          public_key?: string;
+          counter?: number;
+          transports?: string[];
+          friendly_name?: string;
+          created_at?: string;
+          last_used_at?: string | null;
+        };
+        Relationships: [];
+      };
+      user_passkey_challenges: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          challenge: string;
+          kind: 'registration' | 'authentication';
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          challenge: string;
+          kind: 'registration' | 'authentication';
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          challenge?: string;
+          kind?: 'registration' | 'authentication';
+          expires_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_passkey_sessions: {
+        Row: {
+          session_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          session_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          user_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       user_profiles: {
         Row: {
           user_id: string;
