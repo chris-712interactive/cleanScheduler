@@ -11,6 +11,7 @@ import styles from './schedule.module.scss';
 const ISSUE_TONE: Record<ScheduleIssueKind, 'warning' | 'danger' | 'info' | 'neutral'> = {
   needs_staffing: 'warning',
   schedule_conflict: 'danger',
+  time_off_conflict: 'warning',
   unpriced: 'warning',
   pending_reschedule: 'info',
 };
@@ -34,7 +35,7 @@ export function ScheduleIssuesList({
     return (
       <EmptyState
         title="No scheduling issues"
-        description="Upcoming appointments with missing crew, conflicts, or other problems will appear here."
+        description="Upcoming appointments with missing crew, time off overlaps, or other problems will appear here."
       />
     );
   }

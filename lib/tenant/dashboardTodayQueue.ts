@@ -117,7 +117,7 @@ export async function getDashboardTodayQueue(
     items.push({
       id: 'schedule-issues',
       label: `${scheduleIssueCount} appointment${scheduleIssueCount === 1 ? '' : 's'} need attention`,
-      detail: 'Missing crew, pricing, conflicts, or open reschedule requests on visits',
+      detail: 'Missing crew, pricing, conflicts, time off overlaps, or open reschedule requests',
       href: SCHEDULE_ISSUES_TAB_HREF,
       tone: 'warn',
     });

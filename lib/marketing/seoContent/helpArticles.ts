@@ -436,6 +436,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
         title: 'Handle call-outs and reassignments',
         paragraphs: [
           'When a cleaner calls in sick, reassign their visits on the day view or filter by employee to see the full impact. For customer-initiated changes, use the reschedule inbox (Business+) instead of playing phone tag.',
+          'Field staff request time off from their schedule. Owners and admins get an email with a link to approve or deny it. If you approve time that still has that person’s jobs on the calendar, you get a second email listing those jobs. They also stay on the schedule Issues list until you move them or assign someone else.',
         ],
         tip: 'Document backup assignees for your busiest routes before flu season — it saves panic on Monday mornings.',
       },
