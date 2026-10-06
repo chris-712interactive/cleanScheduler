@@ -20,26 +20,33 @@ function formatVisitWhen(startsAt: string): string {
   });
 }
 
+export type OnMyWayEmailResult =
+  | { sent: true }
+  | {
+      sent: false;
+      reason: 'not_configured' | 'plan' | 'disabled' | 'already_sent' | 'no_email' | 'failed';
+    };
+
 /**
- * Fire-and-forget: email the customer when crew checks in ("we're on our way").
- * Never throws to the caller — check-in must succeed even if email fails.
+ * Email the customer that the crew is heading to the appointment.
+ * Never throws — callers decide how to surface a skipped or failed send.
  */
 export async function maybeSendVisitOnMyWayEmail(
   admin: Admin,
   params: { tenantId: string; visitId: string; customerId: string },
-): Promise<void> {
+): Promise<OnMyWayEmailResult> {
   try {
-    if (!isResendConfigured()) return;
+    if (!isResendConfigured()) return { sent: false, reason: 'not_configured' };
 
     const plan = await resolveTenantEntitlementPlan(admin, params.tenantId);
-    if (!isFeatureEnabled(plan, 'emailOnMyWay')) return;
+    if (!isFeatureEnabled(plan, 'emailOnMyWay')) return { sent: false, reason: 'plan' };
 
     const { data: ops } = await admin
       .from('tenant_operational_settings')
       .select('email_notify_on_my_way')
       .eq('tenant_id', params.tenantId)
       .maybeSingle();
-    if (!ops?.email_notify_on_my_way) return;
+    if (!ops?.email_notify_on_my_way) return { sent: false, reason: 'disabled' };
 
     if (
       await visitCustomerEmailAlreadyLogged(admin, {
@@ -48,11 +55,11 @@ export async function maybeSendVisitOnMyWayEmail(
         kind: 'on_my_way',
       })
     ) {
-      return;
+      return { sent: false, reason: 'already_sent' };
     }
 
     const contact = await customerContactForVisit(admin, params.customerId);
-    if (!contact.email) return;
+    if (!contact.email) return { sent: false, reason: 'no_email' };
 
     const [{ data: tenant }, { data: visit }] = await Promise.all([
       admin
@@ -77,7 +84,7 @@ export async function maybeSendVisitOnMyWayEmail(
     const textLines = [
       `Hi,`,
       ``,
-      `Our team from ${tenantName} has checked in and is on the way for ${title}.`,
+      `Our team from ${tenantName} is on the way for ${title}.`,
       when ? `Scheduled for: ${when}` : null,
       phone ? `Questions? Call us at ${phone}.` : null,
       ``,
@@ -87,26 +94,29 @@ export async function maybeSendVisitOnMyWayEmail(
 
     const html = `
       <p>Hi,</p>
-      <p>Our team from <strong>${escapeHtml(tenantName)}</strong> has checked in and is on the way for ${escapeHtml(title)}.</p>
+      <p>Our team from <strong>${escapeHtml(tenantName)}</strong> is on the way for ${escapeHtml(title)}.</p>
       ${when ? `<p>Scheduled for: ${escapeHtml(when)}</p>` : ''}
       ${phone ? `<p>Questions? Call us at ${escapeHtml(phone)}.</p>` : ''}
       <p>Thank you,<br/>${escapeHtml(tenantName)}</p>
     `.trim();
 
-    await sendTransactionalEmail({
+    const delivered = await sendTransactionalEmail({
       to: contact.email,
       subject,
       text: textLines.join('\n'),
       html,
     });
+    if (!delivered.ok) return { sent: false, reason: 'failed' };
 
     await logVisitCustomerEmail(admin, {
       tenantId: params.tenantId,
       visitId: params.visitId,
       kind: 'on_my_way',
     });
+    return { sent: true };
   } catch (err) {
     console.error('[visitOnMyWayEmail]', err);
+    return { sent: false, reason: 'failed' };
   }
 }
 
