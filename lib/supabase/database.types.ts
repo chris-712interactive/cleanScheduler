@@ -3269,6 +3269,7 @@ export type Database = {
           staffing_status: Database['public']['Enums']['visit_staffing_status'];
           notes: string | null;
           consultation_service_template_id: string | null;
+          consultation_intake: Json | null;
           recurring_rule_id: string | null;
           checked_in_at: string | null;
           checked_in_by_user_id: string | null;
@@ -3304,6 +3305,7 @@ export type Database = {
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           consultation_service_template_id?: string | null;
+          consultation_intake?: Json | null;
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
           checked_in_by_user_id?: string | null;
@@ -3339,6 +3341,7 @@ export type Database = {
           staffing_status?: Database['public']['Enums']['visit_staffing_status'];
           notes?: string | null;
           consultation_service_template_id?: string | null;
+          consultation_intake?: Json | null;
           recurring_rule_id?: string | null;
           checked_in_at?: string | null;
           checked_in_by_user_id?: string | null;

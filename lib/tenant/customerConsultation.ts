@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import {
+  consultationIntakeErrors,
+  parseStoredConsultationIntake,
+  quotePrefillFromConsultation,
+  type ConsultationQuotePrefill,
+} from '@/lib/visits/consultationIntake';
 
 type Admin = SupabaseClient<Database>;
 
@@ -100,6 +106,30 @@ export async function customerHasCompletedConsultation(
 ): Promise<boolean> {
   const { status } = await resolveCustomerConsultationStatus(admin, tenantId, customerId);
   return status === 'not_required' || status === 'completed';
+}
+
+export async function loadConsultationQuotePrefill(
+  admin: Admin,
+  tenantId: string,
+  customerId: string,
+  propertyId?: string | null,
+): Promise<ConsultationQuotePrefill | null> {
+  const { data } = await admin
+    .from('tenant_scheduled_visits')
+    .select('consultation_intake, property_id, starts_at')
+    .eq('tenant_id', tenantId)
+    .eq('customer_id', customerId)
+    .eq('visit_purpose', 'consultation')
+    .neq('status', 'cancelled')
+    .not('consultation_intake', 'is', null)
+    .order('starts_at', { ascending: false })
+    .limit(8);
+
+  const rows = data ?? [];
+  const match = (propertyId ? rows.find((row) => row.property_id === propertyId) : null) ?? rows[0];
+  const intake = parseStoredConsultationIntake(match?.consultation_intake);
+  if (!intake || consultationIntakeErrors(intake).length > 0) return null;
+  return quotePrefillFromConsultation(intake);
 }
 
 export function buildScheduleConsultationPath(

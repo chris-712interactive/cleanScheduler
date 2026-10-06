@@ -10,6 +10,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import {
   canCheckInToVisit,
   canCompleteVisit,
+  canManageScheduledVisit,
   isVisitAssignee,
 } from '@/lib/schedule/visitFieldWork';
 import { applyVisitCompletionBilling } from '@/lib/billing/completeVisitWithBilling';
@@ -34,6 +35,16 @@ import {
   mergeConsultationNotesIntoSiteNotes,
   sanitizeConsultationNotes,
 } from '@/lib/visits/consultationNotes';
+import {
+  consultationIntakeErrors,
+  consultationUsesCommercialFields,
+  formatConsultationIntakeSummary,
+  isConsultationIntakeComplete,
+  parseConsultationIntakeForm,
+  parseStoredConsultationIntake,
+} from '@/lib/visits/consultationIntake';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import type { Json } from '@/lib/supabase/database.types';
 
 export interface VisitFieldActionState {
   error?: string;
@@ -49,7 +60,7 @@ async function loadVisitForActor(
   const { data: visit, error } = await admin
     .from('tenant_scheduled_visits')
     .select(
-      'id, status, checked_in_at, checked_in_by_user_id, customer_id, property_id, quote_id, expected_amount_cents, title, visit_purpose, notes',
+      'id, status, checked_in_at, checked_in_by_user_id, customer_id, property_id, quote_id, expected_amount_cents, title, visit_purpose, notes, consultation_intake',
     )
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
@@ -131,6 +142,85 @@ export async function notifyCustomerOnOurWayAction(
 
   revalidateVisitPaths(visitId);
   return { success: 'Customer notified that you are on the way.' };
+}
+
+export async function saveConsultationIntakeAction(
+  _prev: VisitFieldActionState,
+  formData: FormData,
+): Promise<VisitFieldActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const visitId = String(formData.get('visit_id') ?? '').trim();
+  if (!slug || !visitId) return { error: 'Missing visit.' };
+
+  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  const auth = await getAuthContext();
+  if (!auth) return { error: 'Not signed in.' };
+
+  const admin = createAdminClient();
+  const loaded = await loadVisitForActor(admin, membership.tenantId, visitId);
+  if (loaded.error || !loaded.visit) return { error: loaded.error ?? 'Visit not found.' };
+  if (loaded.visit.visit_purpose !== 'consultation') {
+    return { error: 'This visit is not a consultation.' };
+  }
+  if (loaded.visit.status === 'cancelled') {
+    return { error: 'This consultation was cancelled.' };
+  }
+
+  const actorRole = membership.role as TenantRole;
+  const canEdit =
+    canManageScheduledVisit(actorRole) || isVisitAssignee(loaded.assigneeIds, auth.user.id);
+  if (!canEdit) return { error: 'You cannot update this consultation.' };
+
+  let propertyKind: CustomerPropertyKind = 'residential';
+  if (loaded.visit.property_id) {
+    const { data: property } = await admin
+      .from('tenant_customer_properties')
+      .select('property_kind')
+      .eq('id', loaded.visit.property_id)
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle();
+    if (property?.property_kind) propertyKind = property.property_kind;
+  }
+
+  const intake = parseConsultationIntakeForm(formData, propertyKind);
+  const errors = consultationIntakeErrors(intake);
+  if (errors.length > 0) return { error: errors[0] };
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await admin
+    .from('tenant_scheduled_visits')
+    .update({
+      consultation_intake: intake as unknown as Json,
+      updated_at: now,
+    })
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId);
+  if (updateError) return { error: updateError.message };
+
+  if (loaded.visit.property_id) {
+    const propertyPatch: Database['public']['Tables']['tenant_customer_properties']['Update'] = {};
+    if (intake.sqft != null) propertyPatch.sqft = intake.sqft;
+    if (consultationUsesCommercialFields(propertyKind)) {
+      if (intake.storiesOrSuites != null) propertyPatch.stories = intake.storiesOrSuites;
+    } else {
+      if (intake.bedrooms != null) propertyPatch.bedrooms = intake.bedrooms;
+      if (intake.bathrooms != null) propertyPatch.bathrooms = intake.bathrooms;
+      if (intake.stories != null) propertyPatch.stories = intake.stories;
+    }
+    if (Object.keys(propertyPatch).length > 0) {
+      await admin
+        .from('tenant_customer_properties')
+        .update(propertyPatch)
+        .eq('id', loaded.visit.property_id)
+        .eq('tenant_id', membership.tenantId);
+    }
+  }
+
+  revalidateVisitPaths(visitId);
+  revalidatePath(`/customers/${loaded.visit.customer_id}`);
+  return { success: 'Consultation details saved.' };
 }
 
 export async function checkInToVisitAction(
@@ -306,8 +396,26 @@ export async function completeVisitWithPaymentAction(
       })()
     : null;
 
+  const storedIntake =
+    loaded.visit.visit_purpose === 'consultation'
+      ? parseStoredConsultationIntake(loaded.visit.consultation_intake)
+      : null;
+  if (
+    loaded.visit.visit_purpose === 'consultation' &&
+    !isConsultationIntakeComplete(storedIntake)
+  ) {
+    return {
+      error: 'Save the consultation details before marking this visit complete.',
+    };
+  }
+
   const consultationNotes = consultationComplete
-    ? notesFromForm || sanitizeConsultationNotes(loaded.visit.notes ?? '')
+    ? [
+        storedIntake ? formatConsultationIntakeSummary(storedIntake) : '',
+        notesFromForm || sanitizeConsultationNotes(loaded.visit.notes ?? ''),
+      ]
+        .filter(Boolean)
+        .join('\n\n')
     : null;
 
   const patch: Database['public']['Tables']['tenant_scheduled_visits']['Update'] = {

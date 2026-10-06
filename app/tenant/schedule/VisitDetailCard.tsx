@@ -50,6 +50,9 @@ import { VisitChecklistPanel } from './VisitChecklistPanel';
 import { VisitScheduleEditPanel } from './VisitScheduleEditPanel';
 import { VisitJobPriceForm } from './VisitJobPriceForm';
 import { VisitJobDetailsForm } from './VisitJobDetailsForm';
+import { ConsultationIntakeForm } from './ConsultationIntakeForm';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import type { ConsultationIntake } from '@/lib/visits/consultationIntake';
 import type { EmployeeOption } from './ScheduleVisitForm';
 import styles from './visitDetail.module.scss';
 
@@ -118,6 +121,8 @@ export type VisitDetailSnapshot = {
   completionCheckNumber: string | null;
   completionInvoiceId: string | null;
   visitPurpose: 'service' | 'consultation';
+  propertyKind: CustomerPropertyKind;
+  consultationIntake: ConsultationIntake | null;
   checklistItems: VisitChecklistItem[];
   onOurWayEnabled: boolean;
   onOurWayAlreadySent: boolean;
@@ -261,6 +266,16 @@ export function VisitDetailCard({
 
       <div className={styles.workspaceGrid}>
         <div className={styles.workspaceMain}>
+          {visit.visitPurpose === 'consultation' ? (
+            <ConsultationIntakeForm
+              tenantSlug={visit.tenantSlug}
+              visitId={visit.visitId}
+              propertyKind={visit.propertyKind}
+              initial={visit.consultationIntake}
+              canEdit={canManage && visit.status !== 'cancelled'}
+            />
+          ) : null}
+
           {showScheduleEdit ? (
             <VisitScheduleEditPanel
               tenantSlug={visit.tenantSlug}

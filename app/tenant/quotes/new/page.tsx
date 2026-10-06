@@ -11,7 +11,10 @@ import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { createAdminClient } from '@/lib/supabase/server';
-import { loadQuoteConsultationPromptsByCustomer } from '@/lib/tenant/customerConsultation';
+import {
+  loadConsultationQuotePrefill,
+  loadQuoteConsultationPromptsByCustomer,
+} from '@/lib/tenant/customerConsultation';
 import { QuoteCreateWizard } from '../QuoteCreateWizard';
 import type { CustomerPropertyGroup } from '../quoteFormTypes';
 import styles from '../quotes.module.scss';
@@ -113,6 +116,14 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
 
   const admin = createAdminClient();
+  const consultationPrefill = defaultCustomerId
+    ? await loadConsultationQuotePrefill(
+        admin,
+        membership.tenantId,
+        defaultCustomerId,
+        defaultPropertyId || null,
+      )
+    : null;
   const [jobTypeCatalog, ops, consultationByCustomerId] = await Promise.all([
     loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
     loadTenantOperationalSettings(admin, membership.tenantId),
@@ -148,6 +159,7 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
           defaults={{
             customerId: defaultCustomerId,
             propertyId: defaultPropertyId,
+            consultationPrefill,
           }}
         />
       </Stack>

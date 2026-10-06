@@ -32,6 +32,8 @@ import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
 import { ensureVisitChecklistState } from '@/lib/visits/visitChecklistState';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { visitCustomerEmailAlreadyLogged } from '@/lib/email/visitCustomerEmailLog';
+import { parseStoredConsultationIntake } from '@/lib/visits/consultationIntake';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import styles from '../visitDetail.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -93,6 +95,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       quote_id,
       expected_amount_cents,
       visit_purpose,
+      consultation_intake,
       customers (
         customer_identities (
           first_name,
@@ -114,7 +117,8 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
         state,
         postal_code,
         community_name,
-        site_notes
+        site_notes,
+        property_kind
       ),
       tenant_quotes ( title, amount_cents ),
       tenant_scheduled_visit_assignees (
@@ -278,6 +282,11 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           title:
             row.title || (row.visit_purpose === 'consultation' ? 'Consultation' : 'Cleaning visit'),
           visitPurpose: row.visit_purpose ?? 'service',
+          propertyKind: (prop?.property_kind as CustomerPropertyKind | undefined) ?? 'residential',
+          consultationIntake:
+            row.visit_purpose === 'consultation'
+              ? parseStoredConsultationIntake(row.consultation_intake)
+              : null,
           customerName,
           customerPhone,
           customerEmail,
