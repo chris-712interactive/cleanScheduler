@@ -377,3 +377,196 @@
   font-size: var(--font-size-sm);
   color: var(--color-danger);
 }
+
+.fieldVisit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 28rem;
+}
+
+.fieldVisitWhen {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.fieldVisitDate {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-brand-primary);
+}
+
+.fieldVisitTime {
+  margin: 2px 0 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.fieldVisitStatus {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 26px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+
+  &[data-status='scheduled'][data-checked-in='false'] {
+    background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+    color: var(--color-brand-primary);
+  }
+
+  &[data-status='scheduled'][data-checked-in='true'] {
+    background: color-mix(in srgb, var(--color-info) 14%, transparent);
+    color: var(--color-info);
+  }
+
+  &[data-status='completed'] {
+    background: color-mix(in srgb, var(--color-success) 14%, transparent);
+    color: var(--color-success);
+  }
+}
+
+.fieldVisitAddress {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--color-brand-primary);
+  }
+
+  > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.fieldVisitQuickActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+
+  &:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fieldVisitDirections,
+.fieldVisitCall {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+.fieldWorkStack {
+  display: grid;
+  gap: var(--space-2);
+
+  form {
+    display: grid;
+  }
+}
+
+.fieldVisitMoment {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.fieldVisitCodes {
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border));
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+
+  h2 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-brand-primary);
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+    white-space: pre-line;
+  }
+}
+
+.fieldVisitNotes {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+
+  h2 {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+}
+
+.fieldVisitNoteLabel {
+  margin: 0 0 2px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.fieldVisitNoteText {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
