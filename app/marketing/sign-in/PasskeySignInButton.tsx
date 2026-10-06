@@ -1,13 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { signInWithDevicePasskey } from '@/lib/auth/passkeyBrowser';
 import { Button } from '@/components/ui/Button';
 import styles from './sign-in.module.scss';
 
 export function PasskeySignInButton({ nextPath }: { nextPath: string }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,8 +19,9 @@ export function PasskeySignInButton({ nextPath }: { nextPath: string }) {
       return;
     }
 
-    router.push(`/auth/continue?next=${encodeURIComponent(nextPath)}`);
-    router.refresh();
+    const continueUrl = new URL('/auth/continue', window.location.origin);
+    continueUrl.searchParams.set('next', nextPath);
+    window.location.assign(continueUrl.href);
   };
 
   return (
