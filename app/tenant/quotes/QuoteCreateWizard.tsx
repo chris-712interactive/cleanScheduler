@@ -27,6 +27,7 @@ import { QuoteLiveTotalSidebar } from './QuoteLiveTotalSidebar';
 import type { CustomerPropertyGroup, QuoteCustomerOption } from './quoteFormTypes';
 import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import type { ConsultationQuotePrefill } from '@/lib/visits/consultationIntake';
 import {
   QuoteConsultationPrompt,
   type QuoteConsultationPromptInfo,
@@ -73,8 +74,10 @@ export function QuoteCreateWizard({
   defaults?: {
     customerId?: string;
     propertyId?: string;
+    consultationPrefill?: ConsultationQuotePrefill | null;
   };
 }) {
+  const consultationPrefill = defaults?.consultationPrefill ?? null;
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
   const navigatedToQuoteRef = useRef(false);
@@ -123,12 +126,20 @@ export function QuoteCreateWizard({
   const [inlinePostal, setInlinePostal] = useState('');
   const [inlinePropertyKind, setInlinePropertyKind] = useState('residential');
 
-  const [quotePropertyType, setQuotePropertyType] = useState('residential');
-  const [quotePropertySqft, setQuotePropertySqft] = useState('');
-  const [quotePropertyBedrooms, setQuotePropertyBedrooms] = useState('');
-  const [quotePropertyBathrooms, setQuotePropertyBathrooms] = useState('');
-  const [quotePropertyStories, setQuotePropertyStories] = useState('');
-  const [accessNotes, setAccessNotes] = useState('');
+  const [quotePropertyType, setQuotePropertyType] = useState<string>(
+    consultationPrefill?.propertyKind ?? 'residential',
+  );
+  const [quotePropertySqft, setQuotePropertySqft] = useState(consultationPrefill?.sqft ?? '');
+  const [quotePropertyBedrooms, setQuotePropertyBedrooms] = useState(
+    consultationPrefill?.bedrooms ?? '',
+  );
+  const [quotePropertyBathrooms, setQuotePropertyBathrooms] = useState(
+    consultationPrefill?.bathrooms ?? '',
+  );
+  const [quotePropertyStories, setQuotePropertyStories] = useState(
+    consultationPrefill?.stories ?? '',
+  );
+  const [accessNotes, setAccessNotes] = useState(consultationPrefill?.accessNotes ?? '');
   const [gateCode, setGateCode] = useState('');
   const [doorCode, setDoorCode] = useState('');
   const [garageCode, setGarageCode] = useState('');
@@ -169,24 +180,37 @@ export function QuoteCreateWizard({
     };
   }, [propertyId, propertySource, tenantSlug]);
 
-  const [scopeTemplateId, setScopeTemplateId] =
-    useState<QuoteScopeTemplateId>('residential_standard');
-  const [scopeInclusions, setScopeInclusions] = useState<string[]>(
-    () => QUOTE_SCOPE_TEMPLATES[0]?.inclusions ?? [],
+  const [scopeTemplateId, setScopeTemplateId] = useState<QuoteScopeTemplateId>(
+    consultationPrefill?.scopeInclusions.length ? 'custom' : 'residential_standard',
+  );
+  const [scopeInclusions, setScopeInclusions] = useState<string[]>(() =>
+    consultationPrefill?.scopeInclusions.length
+      ? consultationPrefill.scopeInclusions
+      : (QUOTE_SCOPE_TEMPLATES[0]?.inclusions ?? []),
   );
   const [scopeExclusions, setScopeExclusions] = useState(
-    () => QUOTE_SCOPE_TEMPLATES[0]?.defaultExclusions ?? '',
+    () => consultationPrefill?.scopeExclusions ?? QUOTE_SCOPE_TEMPLATES[0]?.defaultExclusions ?? '',
   );
 
-  const [lineRows, setLineRows] = useState<QuoteLineItemDraft[]>(() => [
-    createEmptyQuoteLineDraft(),
-  ]);
+  const [lineRows, setLineRows] = useState<QuoteLineItemDraft[]>(() => {
+    const row = createEmptyQuoteLineDraft();
+    if (!consultationPrefill) return [row];
+    return [
+      {
+        ...row,
+        service_label: consultationPrefill.serviceLabel,
+        frequency: consultationPrefill.frequency,
+        frequency_detail: consultationPrefill.frequencyDetail,
+        estimated_hours: consultationPrefill.estimatedHours,
+      },
+    ];
+  });
   const [pricing, setPricing] = useState<QuoteHeaderPricingValues>(() =>
     defaultQuoteHeaderPricingValues(),
   );
 
   const [validUntil, setValidUntil] = useState(defaultValidUntil);
-  const [officeNotes, setOfficeNotes] = useState('');
+  const [officeNotes, setOfficeNotes] = useState(consultationPrefill?.officeNotes ?? '');
   const formRef = useRef<HTMLFormElement>(null);
 
   const propertyOptions = useMemo(() => {
@@ -739,8 +763,9 @@ export function QuoteCreateWizard({
           >
             <h2 className={styles.wizardStepTitle}>Property details</h2>
             <p className={styles.hint}>
-              Pricing inputs for this quote. Stored on the quote notes until dedicated property
-              snapshot fields ship.
+              {consultationPrefill
+                ? 'Filled from the saved consultation. Adjust anything before you price the quote.'
+                : 'Pricing inputs for this quote. Stored on the quote notes until dedicated property snapshot fields ship.'}
             </p>
             <div className={styles.wizardGridFour}>
               <div>

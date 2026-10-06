@@ -8,6 +8,7 @@ import { VisitChecklistPanel } from './VisitChecklistPanel';
 import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
+import { ConsultationIntakeForm } from './ConsultationIntakeForm';
 import type { VisitDetailSnapshot } from './VisitDetailCard';
 import styles from './visitDetail.module.scss';
 
@@ -114,6 +115,16 @@ export function FieldEmployeeVisitDetail({
             </a>
           ) : null}
         </div>
+      ) : null}
+
+      {visit.visitPurpose === 'consultation' ? (
+        <ConsultationIntakeForm
+          tenantSlug={visit.tenantSlug}
+          visitId={visit.visitId}
+          propertyKind={visit.propertyKind}
+          initial={visit.consultationIntake}
+          canEdit={visit.status !== 'cancelled'}
+        />
       ) : null}
 
       {showAmountDue ? (
