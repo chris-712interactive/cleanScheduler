@@ -4,6 +4,7 @@ import { Stack } from '@/components/layout/Stack';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { MfaSettingsPanel } from '@/components/auth/MfaSettingsPanel';
+import { PasskeySettingsPanel } from '@/components/auth/PasskeySettingsPanel';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
@@ -46,6 +47,13 @@ export default async function AdminSettingsPage({ searchParams }: PageProps) {
         <Card title="Account" description="Signed-in platform user.">
           <p className={styles.muted}>{email}</p>
           <SignOutButton variant="settings" />
+        </Card>
+
+        <Card
+          title="Passkeys"
+          description="Sign in with Face ID, a fingerprint, or a device PIN instead of a password."
+        >
+          <PasskeySettingsPanel />
         </Card>
 
         <Card title="Two-factor authentication" description="Required for admin and sales access.">

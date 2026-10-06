@@ -1680,6 +1680,9 @@ export type Database = {
           allow_same_day_initial_recurring: boolean;
           messaging_channels: string[];
           public_booking_request_enabled: boolean;
+          allow_passkey_sign_in: boolean;
+          mfa_required: boolean;
+          mfa_allowed_methods: string[];
           created_at: string;
           updated_at: string;
         };
@@ -1709,6 +1712,9 @@ export type Database = {
           allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           public_booking_request_enabled?: boolean;
+          allow_passkey_sign_in?: boolean;
+          mfa_required?: boolean;
+          mfa_allowed_methods?: string[];
           created_at?: string;
           updated_at?: string;
         };
@@ -1738,6 +1744,9 @@ export type Database = {
           allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           public_booking_request_enabled?: boolean;
+          allow_passkey_sign_in?: boolean;
+          mfa_required?: boolean;
+          mfa_allowed_methods?: string[];
           created_at?: string;
           updated_at?: string;
         };

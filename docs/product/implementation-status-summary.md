@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** A scheduled job can show an On our way button that emails the customer before check-in, when that notice is turned on under Settings → Operations. The field job screen still stacks cleanly on a phone.
+**Latest polish:** Workspace sign-in can use a passkey instead of a password. Owners and admins choose that under Settings → Sign-in security, and can require an authenticator app, a passkey, or either as a second step. A scheduled job can still show an On our way button that emails the customer before check-in when that notice is turned on.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -139,6 +139,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Service zones            | `docs/product/service-zones.md`                   |
 | Job notes and job types  | `docs/product/job-notes-and-job-types.md`         |
 | Time off notifications   | `docs/product/time-off-notifications.md`          |
+| Sign-in passkeys and 2FA | `docs/product/sign-in-passkeys-and-mfa.md`        |
 | Tenant customer import   | `docs/product/tenant-customer-import.md`          |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |
 

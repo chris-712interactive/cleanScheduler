@@ -16,6 +16,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { publicEnv, serverEnv } from '@/lib/env';
+import { supabaseAuthOptions } from './authOptions';
 import type { Database } from './database.types';
 import type { CookieOptions } from '@supabase/ssr';
 
@@ -34,6 +35,7 @@ export async function createClient() {
             cache: 'no-store',
           }),
       },
+      auth: supabaseAuthOptions,
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -65,6 +67,7 @@ export function createAdminClient() {
     serverEnv.SUPABASE_SERVICE_ROLE_KEY,
     {
       auth: {
+        ...supabaseAuthOptions,
         autoRefreshToken: false,
         persistSession: false,
       },

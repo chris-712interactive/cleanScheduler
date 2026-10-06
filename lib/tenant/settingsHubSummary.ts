@@ -36,6 +36,7 @@ export async function getSettingsHubCardSummaries(options: {
     { data: portalDomain },
     { data: siteSettings },
     { data: tenantRow },
+    { data: authPolicy },
     mfaStatus,
   ] = await Promise.all([
     admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
@@ -50,6 +51,11 @@ export async function getSettingsHubCardSummaries(options: {
       .eq('tenant_id', tenantId)
       .maybeSingle(),
     admin.from('tenants').select('logo_url').eq('id', tenantId).maybeSingle(),
+    admin
+      .from('tenant_operational_settings')
+      .select('mfa_required')
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
     getMfaStatus(),
   ]);
 
@@ -72,6 +78,15 @@ export async function getSettingsHubCardSummaries(options: {
     summaries['/settings/account'] = {
       href: '/settings/account',
       status: { label: '2FA on', tone: 'success' },
+    };
+  }
+
+  if (hasMinimumTenantRole(role, 'admin')) {
+    summaries['/settings/security'] = {
+      href: '/settings/security',
+      status: authPolicy?.mfa_required
+        ? { label: '2FA required', tone: 'success' }
+        : { label: '2FA optional', tone: 'neutral' },
     };
   }
 

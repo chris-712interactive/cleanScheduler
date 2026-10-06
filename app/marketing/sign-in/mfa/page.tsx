@@ -5,7 +5,12 @@ import { headers } from 'next/headers';
 import { Container } from '@/components/layout/Container';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
-import { needsMfaChallenge } from '@/lib/auth/mfa';
+import { getSessionFactors } from '@/lib/auth/sessionFactors';
+import {
+  parseMfaAllowedMethods,
+  sessionUsedPasskey,
+  type MfaMethod,
+} from '@/lib/auth/tenantAuthPolicy';
 import { resolvePostLoginDestinationForUser } from '@/lib/auth/resolvePostLoginDestination';
 import { getAuthContext } from '@/lib/auth/session';
 import { MfaChallengeForm } from './MfaChallengeForm';
@@ -48,19 +53,48 @@ export default async function SignInMfaPage({ searchParams }: PageProps) {
     currentOrigin: getOriginFromHeaders(h),
   });
 
-  const needsChallenge = await needsMfaChallenge();
-  if (!needsChallenge) {
+  const rawFactors = sp.factors;
+  const factorParam =
+    typeof rawFactors === 'string'
+      ? rawFactors
+      : Array.isArray(rawFactors)
+        ? (rawFactors[0] ?? '')
+        : '';
+  const requested = parseMfaAllowedMethods(
+    factorParam
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  const session = await getSessionFactors();
+  const usedPasskey = sessionUsedPasskey(session.amrMethods);
+  const methods: MfaMethod[] =
+    requested.length > 0
+      ? requested
+      : session.authenticatorEnrolled && !session.authenticatorVerifiedThisSession
+        ? ['totp']
+        : [];
+
+  const satisfied =
+    methods.length === 0 ||
+    (methods.includes('totp') && session.authenticatorVerifiedThisSession) ||
+    (methods.includes('passkey') && usedPasskey);
+
+  if (satisfied) {
     redirect(destination.url);
   }
+
+  const description = methods.includes('passkey')
+    ? methods.includes('totp')
+      ? 'Use your authenticator app or confirm with a passkey on this device.'
+      : 'Confirm with the passkey on this device. Phones will ask for Face ID, fingerprint, or a PIN.'
+    : 'Enter the 6-digit code from your authenticator app.';
 
   return (
     <main className={styles.page}>
       <Container size="sm">
-        <PageHeader
-          title="Two-factor verification"
-          description="Enter the 6-digit code from your authenticator app."
-        />
-        <MfaChallengeForm nextPath={destination.url} />
+        <PageHeader title="Two-factor verification" description={description} />
+        <MfaChallengeForm nextPath={destination.url} methods={methods} />
         <p className={styles.trialPrompt} style={{ marginTop: 'var(--space-4)' }}>
           <Link href="/sign-in">Back to sign in</Link>
         </p>
