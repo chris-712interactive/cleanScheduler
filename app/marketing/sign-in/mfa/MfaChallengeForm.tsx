@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { passkeyErrorMessage } from '@/lib/auth/passkeyErrorMessage';
+import { signInWithDevicePasskey } from '@/lib/auth/passkeyBrowser';
 import type { MfaMethod } from '@/lib/auth/tenantAuthPolicy';
 import { createClient } from '@/lib/supabase/browser';
 import styles from '../sign-in.module.scss';
@@ -76,10 +76,9 @@ export function MfaChallengeForm({
   const verifyPasskey = async () => {
     setSubmitting(true);
     setError(null);
-    const supabase = createClient();
-    const { error: passkeyError } = await supabase.auth.signInWithPasskey();
-    if (passkeyError) {
-      setError(passkeyErrorMessage(passkeyError));
+    const message = await signInWithDevicePasskey({ requireCurrentUser: true });
+    if (message) {
+      setError(message);
       setSubmitting(false);
       return;
     }

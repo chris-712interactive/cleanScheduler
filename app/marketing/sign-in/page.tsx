@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { getAuthContext } from '@/lib/auth/session';
+import { getPortalContext } from '@/lib/portal';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { SignInForm } from './SignInForm';
 import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
@@ -42,6 +43,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     rawError && AUTHORIZATION_QUERY_ERRORS.has(rawError) ? undefined : rawError;
 
   const defaultEmail = firstParam(params.email)?.trim().toLowerCase() ?? '';
+  const portal = await getPortalContext();
+  const showPasskey = !portal.whiteLabelHostname;
 
   return (
     <>
@@ -49,9 +52,18 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <Container size="sm">
           <Card
             title="Sign in to Clean Scheduler"
-            description="Use your password, a passkey on this device, or Google. We’ll send you to your workspace, customer portal, or admin."
+            description={
+              showPasskey
+                ? 'Use your password, a passkey on this device, or Google. We’ll send you to your workspace, customer portal, or admin.'
+                : 'Use your password or Google. We’ll send you to your account.'
+            }
           >
-            <SignInForm nextPath={nextPath} urlError={signInUrlError} defaultEmail={defaultEmail} />
+            <SignInForm
+              nextPath={nextPath}
+              urlError={signInUrlError}
+              defaultEmail={defaultEmail}
+              showPasskey={showPasskey}
+            />
             <p className={styles.helpText}>
               Need the public site instead? <Link href="/">Return to homepage</Link>.
             </p>

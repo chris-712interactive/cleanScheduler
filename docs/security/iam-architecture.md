@@ -14,7 +14,7 @@
 
 ## Authentication flow
 
-1. User signs in via Supabase Auth (password, passkey, or Google OAuth).
+1. User signs in via Supabase Auth (password, passkey, or Google OAuth). A passkey is checked by Clean Scheduler, then a Supabase session is issued.
 2. Middleware refreshes session cookies on each request.
 3. Portal layout calls `requirePortalAccess` and `requireTenantPortalAccess`.
 4. Tenant workspaces enforce `tenant_operational_settings` passkey and 2FA policy (`lib/auth/enforceTenantAuthPolicy.ts`).

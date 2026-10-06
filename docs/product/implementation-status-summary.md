@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** Workspace sign-in can use a passkey instead of a password. Owners and admins choose that under Settings → Sign-in security, and can require an authenticator app, a passkey, or either as a second step. A scheduled job can still show an On our way button that emails the customer before check-in when that notice is turned on.
+**Latest polish:** Passkeys are checked by Clean Scheduler for every `cleanscheduler.com` subdomain, then a Supabase session is opened. Owners and admins still choose that under Settings → Sign-in security, and can require an authenticator app, a passkey, or either as a second step.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

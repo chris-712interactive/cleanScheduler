@@ -13,6 +13,7 @@ import {
 } from '@/lib/auth/tenantAuthPolicy';
 import { resolvePostLoginDestinationForUser } from '@/lib/auth/resolvePostLoginDestination';
 import { getAuthContext } from '@/lib/auth/session';
+import { getPortalContext } from '@/lib/portal';
 import { MfaChallengeForm } from './MfaChallengeForm';
 import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
 import styles from '../sign-in.module.scss';
@@ -68,12 +69,23 @@ export default async function SignInMfaPage({ searchParams }: PageProps) {
   );
   const session = await getSessionFactors();
   const usedPasskey = sessionUsedPasskey(session.amrMethods);
-  const methods: MfaMethod[] =
+  const portal = await getPortalContext();
+  const hidePasskey = Boolean(portal.whiteLabelHostname);
+  const requestedMethods: MfaMethod[] =
     requested.length > 0
       ? requested
       : session.authenticatorEnrolled && !session.authenticatorVerifiedThisSession
         ? ['totp']
         : [];
+  const methods = hidePasskey
+    ? requestedMethods.filter((method) => method !== 'passkey')
+    : requestedMethods;
+
+  if (hidePasskey && requestedMethods.includes('passkey') && methods.length === 0 && !usedPasskey) {
+    redirect(
+      `/sign-in?next=${encodeURIComponent(nextPath)}&error=${encodeURIComponent('Passkeys are not available on this address. Sign in with your password.')}`,
+    );
+  }
 
   const satisfied =
     methods.length === 0 ||

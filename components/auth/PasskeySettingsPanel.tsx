@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { passkeyErrorMessage } from '@/lib/auth/passkeyErrorMessage';
-import { createClient } from '@/lib/supabase/browser';
+import { addPasskeyOnThisDevice } from '@/lib/auth/passkeyBrowser';
+import { deleteMyPasskey, listMyPasskeys } from '@/lib/auth/passkeyCeremony';
 import { Button } from '@/components/ui/Button';
 import styles from './passkeySettings.module.scss';
 
@@ -29,21 +29,14 @@ export function PasskeySettingsPanel({
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const { data, error: listError } = await supabase.auth.passkey.list();
-    if (listError) {
-      setError(passkeyErrorMessage(listError));
+    const result = await listMyPasskeys();
+    if (result.error) {
+      setError(result.error);
       setPasskeys([]);
       setLoading(false);
       return;
     }
-    setPasskeys(
-      (data ?? []).map((passkey) => ({
-        id: passkey.id,
-        friendlyName: passkey.friendly_name?.trim() || 'Passkey',
-        createdAt: passkey.created_at,
-      })),
-    );
+    setPasskeys(result.passkeys);
     setLoading(false);
   }, []);
 
@@ -55,10 +48,9 @@ export function PasskeySettingsPanel({
     setSubmitting(true);
     setError(null);
     setSuccess(null);
-    const supabase = createClient();
-    const { error: registerError } = await supabase.auth.registerPasskey();
-    if (registerError) {
-      setError(passkeyErrorMessage(registerError));
+    const message = await addPasskeyOnThisDevice();
+    if (message) {
+      setError(message);
       setSubmitting(false);
       return;
     }
@@ -71,10 +63,9 @@ export function PasskeySettingsPanel({
     setSubmitting(true);
     setError(null);
     setSuccess(null);
-    const supabase = createClient();
-    const { error: deleteError } = await supabase.auth.passkey.delete({ passkeyId });
-    if (deleteError) {
-      setError(passkeyErrorMessage(deleteError));
+    const result = await deleteMyPasskey(passkeyId);
+    if (result.error) {
+      setError(result.error);
       setSubmitting(false);
       return;
     }

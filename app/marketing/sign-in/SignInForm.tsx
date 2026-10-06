@@ -17,11 +17,14 @@ export function SignInForm({
   nextPath,
   urlError,
   defaultEmail,
+  showPasskey = true,
 }: {
   nextPath: string;
   /** Auth failures only (wrong password, OAuth). Authorization issues use /access-denied. */
   urlError?: string | null;
   defaultEmail?: string;
+  /** White-label customer portals cannot use a cleanscheduler.com passkey. */
+  showPasskey?: boolean;
 }) {
   const [returnOrigin, setReturnOrigin] = useState('');
 
@@ -81,11 +84,14 @@ export function SignInForm({
         required).
       </p>
 
-      <div className={styles.divider}>
-        <span>or</span>
-      </div>
-
-      <PasskeySignInButton nextPath={nextPath} />
+      {showPasskey ? (
+        <>
+          <div className={styles.divider}>
+            <span>or</span>
+          </div>
+          <PasskeySignInButton nextPath={nextPath} />
+        </>
+      ) : null}
 
       <div className={styles.divider}>
         <span>or</span>
