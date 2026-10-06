@@ -1,6 +1,5 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -50,6 +49,8 @@ export interface VisitFieldActionState {
   error?: string;
   success?: string;
   visitPatch?: VisitDetailPatch;
+  /** Client navigates here. A server `redirect()` from this action crashes the visit page. */
+  redirectTo?: string;
 }
 
 async function loadVisitForActor(
@@ -551,7 +552,14 @@ export async function completeVisitWithPaymentAction(
       revalidateVisitPaths(visitId);
       revalidatePath('/quotes/new', 'page');
       revalidatePath('/customers', 'page');
-      redirect(buildCreateQuotePath(loaded.visit.customer_id, loaded.visit.property_id ?? null));
+      return {
+        success: 'Consultation marked complete.',
+        visitPatch,
+        redirectTo: buildCreateQuotePath(
+          loaded.visit.customer_id,
+          loaded.visit.property_id ?? null,
+        ),
+      };
     }
     return { success: 'Consultation marked complete.', visitPatch };
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/Button';
 import {
@@ -88,6 +89,7 @@ export function CompleteVisitPaymentModal({
   const [proofPhotos, setProofPhotos] = useState<ProofPhotoCaptureItem[]>([]);
   const [locating, setLocating] = useState(false);
 
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(completeVisitWithPaymentAction, initial);
   useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
@@ -124,6 +126,11 @@ export function CompleteVisitPaymentModal({
   }
 
   useEffect(() => {
+    if (state.redirectTo) {
+      endPortalInteraction(PORTAL_INTERACTION_FLOWS.visitComplete, { success: true });
+      router.push(state.redirectTo);
+      return;
+    }
     if (state.success) {
       endPortalInteraction(PORTAL_INTERACTION_FLOWS.visitComplete, { success: true });
       setOpen(false);
@@ -134,7 +141,7 @@ export function CompleteVisitPaymentModal({
         error: state.error,
       });
     }
-  }, [state.success, state.error, pending, resetFlow]);
+  }, [state.success, state.error, state.redirectTo, pending, resetFlow, router]);
 
   function validateCurrentStep(): string | null {
     if (currentStep === 'collected') {

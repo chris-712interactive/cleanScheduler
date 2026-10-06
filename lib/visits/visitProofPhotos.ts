@@ -95,6 +95,6 @@ export async function listVisitProofPhotos(
     .eq('visit_id', visitId)
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(error.message);
+  if (error) return [];
   return data ?? [];
 }

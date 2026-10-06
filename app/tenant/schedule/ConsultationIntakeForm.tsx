@@ -465,7 +465,7 @@ export function ConsultationIntakeForm({
                 type="checkbox"
                 name="addons"
                 value={option.value}
-                defaultChecked={initial?.addons.includes(option.value)}
+                defaultChecked={(initial?.addons ?? []).includes(option.value)}
               />
               {option.label}
             </label>
@@ -479,7 +479,7 @@ export function ConsultationIntakeForm({
                 type="checkbox"
                 name="floor_types"
                 value={option.value}
-                defaultChecked={initial?.floorTypes.includes(option.value)}
+                defaultChecked={(initial?.floorTypes ?? []).includes(option.value)}
               />
               {option.label}
             </label>
