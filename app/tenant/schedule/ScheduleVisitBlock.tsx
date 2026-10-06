@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import { formatVisitTime } from '@/lib/datetime/formatInTimeZone';
+import { compactCalendarAddress } from '@/lib/tenant/formatPropertyAddress';
 import type { ScheduleVisitVM } from './TenantScheduleClient';
 import styles from './schedule.module.scss';
 
@@ -27,6 +28,7 @@ export function ScheduleVisitBlock({
   columnCount: number;
 }) {
   const timeLabel = formatTimeRange(visit.starts_at, visit.ends_at, tenantTimezone);
+  const addressLabel = visit.siteLine ? compactCalendarAddress(visit.siteLine) : '';
   const cardWidth = `min(17rem, calc((100% - (${columnCount} + 1) * var(--space-2)) / ${columnCount}))`;
   const position: CSSProperties = {
     top: `${topPct}%`,
@@ -47,11 +49,12 @@ export function ScheduleVisitBlock({
         <div className={styles.visitCardInfo}>
           <span className={styles.visitCustomer}>{visit.customerName}</span>
           <span
-            className={[styles.visitAddress, !visit.siteLine ? styles.visitAddressEmpty : '']
+            className={[styles.visitAddress, !addressLabel ? styles.visitAddressEmpty : '']
               .filter(Boolean)
               .join(' ')}
+            title={visit.siteLine || undefined}
           >
-            {visit.siteLine || 'No address on file'}
+            {addressLabel || 'No address on file'}
           </span>
           <span className={styles.visitTime}>{timeLabel}</span>
         </div>

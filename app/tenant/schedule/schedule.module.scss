@@ -618,7 +618,7 @@
   display: flex;
   align-items: stretch;
   box-sizing: border-box;
-  padding: var(--space-2) var(--space-2) var(--space-2) calc(var(--space-2) + 4px);
+  padding: var(--space-1) var(--space-2) var(--space-1) calc(var(--space-2) + 4px);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -669,7 +669,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
   overflow: hidden;
 }
 
@@ -690,8 +690,8 @@
 
 .visitCustomer {
   font-weight: 700;
-  font-size: var(--font-size-sm);
-  line-height: 1.3;
+  font-size: 0.8125rem;
+  line-height: 1.15;
   color: var(--color-text);
   min-width: 0;
   overflow: hidden;
@@ -700,14 +700,13 @@
 }
 
 .visitAddress {
-  font-size: var(--font-size-xs);
+  font-size: 0.6875rem;
   color: var(--color-text-muted);
-  line-height: 1.35;
+  line-height: 1.15;
+  min-width: 0;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .visitAddressEmpty {
@@ -716,9 +715,9 @@
 }
 
 .visitTime {
-  font-size: var(--font-size-xs);
+  font-size: 0.6875rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.15;
   color: var(--color-brand-primary);
   overflow: hidden;
   text-overflow: ellipsis;
