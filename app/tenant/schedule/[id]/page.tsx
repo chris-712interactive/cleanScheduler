@@ -33,6 +33,7 @@ import { ensureVisitChecklistState } from '@/lib/visits/visitChecklistState';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { visitCustomerEmailAlreadyLogged } from '@/lib/email/visitCustomerEmailLog';
 import { parseStoredConsultationIntake } from '@/lib/visits/consultationIntake';
+import { loadConsultationRequiredFields } from '@/lib/tenant/customerConsultation';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import styles from '../visitDetail.module.scss';
 
@@ -245,6 +246,11 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
     onOurWayAlreadySent = alreadySent;
   }
 
+  const consultationRequiredFields =
+    row.visit_purpose === 'consultation'
+      ? await loadConsultationRequiredFields(admin, membership.tenantId)
+      : [];
+
   const jobTypeLabels = isFieldEmployee
     ? []
     : uniqueJobTypeLabels(
@@ -287,6 +293,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
             row.visit_purpose === 'consultation'
               ? parseStoredConsultationIntake(row.consultation_intake)
               : null,
+          consultationRequiredFields,
           customerName,
           customerPhone,
           customerEmail,

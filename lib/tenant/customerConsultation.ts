@@ -2,9 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import {
-  consultationIntakeErrors,
+  formatConsultationIntakeSummary,
+  parseConsultationRequiredFields,
   parseStoredConsultationIntake,
   quotePrefillFromConsultation,
+  type ConsultationIntakeFieldKey,
   type ConsultationQuotePrefill,
 } from '@/lib/visits/consultationIntake';
 
@@ -29,6 +31,18 @@ export type CustomerConsultationRow = {
 
 const CONSULTATION_VISIT_SELECT =
   'id, starts_at, ends_at, status, title, visit_purpose, customer_id, tenant_id';
+
+export async function loadConsultationRequiredFields(
+  admin: Admin,
+  tenantId: string,
+): Promise<ConsultationIntakeFieldKey[]> {
+  const { data } = await admin
+    .from('tenant_operational_settings')
+    .select('consultation_required_fields')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  return parseConsultationRequiredFields(data?.consultation_required_fields);
+}
 
 export async function loadRequireConsultationBeforeQuote(
   admin: Admin,
@@ -128,7 +142,7 @@ export async function loadConsultationQuotePrefill(
   const rows = data ?? [];
   const match = (propertyId ? rows.find((row) => row.property_id === propertyId) : null) ?? rows[0];
   const intake = parseStoredConsultationIntake(match?.consultation_intake);
-  if (!intake || consultationIntakeErrors(intake).length > 0) return null;
+  if (!intake || !formatConsultationIntakeSummary(intake).trim()) return null;
   return quotePrefillFromConsultation(intake);
 }
 

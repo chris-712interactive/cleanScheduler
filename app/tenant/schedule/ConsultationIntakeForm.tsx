@@ -17,6 +17,7 @@ import {
   consultationUsesCommercialFields,
   formatConsultationIntakeSummary,
   type ConsultationIntake,
+  type ConsultationIntakeFieldKey,
 } from '@/lib/visits/consultationIntake';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
@@ -55,17 +56,21 @@ export function ConsultationIntakeForm({
   propertyKind,
   initial,
   canEdit,
+  requiredFields = [],
 }: {
   tenantSlug: string;
   visitId: string;
   propertyKind: CustomerPropertyKind;
   initial: ConsultationIntake | null;
   canEdit: boolean;
+  requiredFields?: readonly ConsultationIntakeFieldKey[];
 }) {
   const [state, action, pending] = useActionState(saveConsultationIntakeAction, {});
   const [frequency, setFrequency] = useState(initial?.frequency ?? '');
   const [pets, setPets] = useState(initial?.pets ?? '');
   const commercial = consultationUsesCommercialFields(propertyKind);
+  const required = new Set<string>(requiredFields);
+  const req = (key: ConsultationIntakeFieldKey) => required.has(key);
 
   if (!canEdit) {
     return (
@@ -87,19 +92,23 @@ export function ConsultationIntakeForm({
       <div>
         <h2>Consultation details</h2>
         <p className={styles.intakeHint}>
-          {PROPERTY_KIND_LABEL[propertyKind]}. Required fields are marked. Save this before
-          completing the consultation so the office can price the quote.
+          {PROPERTY_KIND_LABEL[propertyKind]}. Fields marked with * are required by this company.
+          Save the details the office needs to price the quote.
         </p>
       </div>
 
       <fieldset className={styles.intakeGroup}>
         <legend>The job</legend>
-        <Field label="Service requested" htmlFor="service_requested" required>
+        <Field
+          label="Service requested"
+          htmlFor="service_requested"
+          required={req('service_requested')}
+        >
           <select
             id="service_requested"
             name="service_requested"
             defaultValue={initial?.serviceRequested ?? ''}
-            required
+            required={req('service_requested')}
           >
             <option value="">Select</option>
             {CONSULTATION_SERVICES.map((option) => (
@@ -109,12 +118,12 @@ export function ConsultationIntakeForm({
             ))}
           </select>
         </Field>
-        <Field label="How often" htmlFor="frequency" required>
+        <Field label="How often" htmlFor="frequency" required={req('frequency')}>
           <select
             id="frequency"
             name="frequency"
             value={frequency}
-            required
+            required={req('frequency')}
             onChange={(event) => setFrequency(event.target.value)}
           >
             <option value="">Select</option>
@@ -136,18 +145,23 @@ export function ConsultationIntakeForm({
             />
           </Field>
         ) : null}
-        <Field label="Square footage" htmlFor="sqft" required>
+        <Field label="Square footage" htmlFor="sqft" required={req('sqft')}>
           <input
             id="sqft"
             name="sqft"
             inputMode="numeric"
             defaultValue={initial?.sqft ?? ''}
-            required
+            required={req('sqft')}
             placeholder="1800"
           />
         </Field>
-        <Field label="Current condition" htmlFor="condition" required>
-          <select id="condition" name="condition" defaultValue={initial?.condition ?? ''} required>
+        <Field label="Current condition" htmlFor="condition" required={req('condition')}>
+          <select
+            id="condition"
+            name="condition"
+            defaultValue={initial?.condition ?? ''}
+            required={req('condition')}
+          >
             <option value="">Select</option>
             {CONSULTATION_CONDITIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -156,8 +170,13 @@ export function ConsultationIntakeForm({
             ))}
           </select>
         </Field>
-        <Field label="Supplies" htmlFor="supplies" required>
-          <select id="supplies" name="supplies" defaultValue={initial?.supplies ?? ''} required>
+        <Field label="Supplies" htmlFor="supplies" required={req('supplies')}>
+          <select
+            id="supplies"
+            name="supplies"
+            defaultValue={initial?.supplies ?? ''}
+            required={req('supplies')}
+          >
             <option value="">Select</option>
             {CONSULTATION_SUPPLIES.map((option) => (
               <option key={option.value} value={option.value}>
@@ -166,31 +185,35 @@ export function ConsultationIntakeForm({
             ))}
           </select>
         </Field>
-        <Field label="Preferred start" htmlFor="preferred_start" required>
+        <Field label="Preferred start" htmlFor="preferred_start" required={req('preferred_start')}>
           <input
             id="preferred_start"
             name="preferred_start"
             type="date"
             defaultValue={initial?.preferredStart ?? ''}
-            required
+            required={req('preferred_start')}
           />
         </Field>
-        <Field label="Areas in scope" htmlFor="areas_in_scope" required>
+        <Field label="Areas in scope" htmlFor="areas_in_scope" required={req('areas_in_scope')}>
           <textarea
             id="areas_in_scope"
             name="areas_in_scope"
             rows={3}
-            required
+            required={req('areas_in_scope')}
             defaultValue={initial?.areasInScope ?? ''}
             placeholder="One area per line"
           />
         </Field>
-        <Field label="Areas out of scope" htmlFor="areas_out_of_scope" required>
+        <Field
+          label="Areas out of scope"
+          htmlFor="areas_out_of_scope"
+          required={req('areas_out_of_scope')}
+        >
           <textarea
             id="areas_out_of_scope"
             name="areas_out_of_scope"
             rows={2}
-            required
+            required={req('areas_out_of_scope')}
             defaultValue={initial?.areasOutOfScope ?? ''}
           />
         </Field>
@@ -199,12 +222,12 @@ export function ConsultationIntakeForm({
       {commercial ? (
         <fieldset className={styles.intakeGroup}>
           <legend>The space</legend>
-          <Field label="Space type" htmlFor="space_type" required>
+          <Field label="Space type" htmlFor="space_type" required={req('space_type')}>
             <select
               id="space_type"
               name="space_type"
               defaultValue={initial?.spaceType ?? ''}
-              required
+              required={req('space_type')}
             >
               <option value="">Select</option>
               {CONSULTATION_SPACE_TYPES.map((option) => (
@@ -214,39 +237,51 @@ export function ConsultationIntakeForm({
               ))}
             </select>
           </Field>
-          <Field label="Restrooms" htmlFor="restrooms" required>
+          <Field label="Restrooms" htmlFor="restrooms" required={req('restrooms')}>
             <input
               id="restrooms"
               name="restrooms"
               inputMode="numeric"
               defaultValue={initial?.restrooms ?? ''}
-              required
+              required={req('restrooms')}
             />
           </Field>
-          <Field label="Break rooms or kitchens" htmlFor="break_rooms" required>
+          <Field
+            label="Break rooms or kitchens"
+            htmlFor="break_rooms"
+            required={req('break_rooms')}
+          >
             <input
               id="break_rooms"
               name="break_rooms"
               inputMode="numeric"
               defaultValue={initial?.breakRooms ?? ''}
-              required
+              required={req('break_rooms')}
             />
           </Field>
-          <Field label="Stories or suites" htmlFor="stories_or_suites" required>
+          <Field
+            label="Stories or suites"
+            htmlFor="stories_or_suites"
+            required={req('stories_or_suites')}
+          >
             <input
               id="stories_or_suites"
               name="stories_or_suites"
               inputMode="numeric"
               defaultValue={initial?.storiesOrSuites ?? ''}
-              required
+              required={req('stories_or_suites')}
             />
           </Field>
-          <Field label="When the crew can be on site" htmlFor="on_site_window" required>
+          <Field
+            label="When the crew can be on site"
+            htmlFor="on_site_window"
+            required={req('on_site_window')}
+          >
             <select
               id="on_site_window"
               name="on_site_window"
               defaultValue={initial?.onSiteWindow ?? ''}
-              required
+              required={req('on_site_window')}
             >
               <option value="">Select</option>
               {CONSULTATION_ON_SITE.map((option) => (
@@ -256,12 +291,16 @@ export function ConsultationIntakeForm({
               ))}
             </select>
           </Field>
-          <Field label="After-hours access" htmlFor="after_hours_access" required>
+          <Field
+            label="After-hours access"
+            htmlFor="after_hours_access"
+            required={req('after_hours_access')}
+          >
             <select
               id="after_hours_access"
               name="after_hours_access"
               defaultValue={initial?.afterHoursAccess ?? ''}
-              required
+              required={req('after_hours_access')}
             >
               <option value="">Select</option>
               {CONSULTATION_AFTER_HOURS_ACCESS.map((option) => (
@@ -309,39 +348,39 @@ export function ConsultationIntakeForm({
       ) : (
         <fieldset className={styles.intakeGroup}>
           <legend>The home</legend>
-          <Field label="Bedrooms" htmlFor="bedrooms" required>
+          <Field label="Bedrooms" htmlFor="bedrooms" required={req('bedrooms')}>
             <input
               id="bedrooms"
               name="bedrooms"
               inputMode="numeric"
               defaultValue={initial?.bedrooms ?? ''}
-              required
+              required={req('bedrooms')}
             />
           </Field>
-          <Field label="Bathrooms" htmlFor="bathrooms" required>
+          <Field label="Bathrooms" htmlFor="bathrooms" required={req('bathrooms')}>
             <input
               id="bathrooms"
               name="bathrooms"
               inputMode="decimal"
               defaultValue={initial?.bathrooms ?? ''}
-              required
+              required={req('bathrooms')}
               placeholder="2.5"
             />
           </Field>
-          <Field label="Stories" htmlFor="stories" required>
+          <Field label="Stories" htmlFor="stories" required={req('stories')}>
             <input
               id="stories"
               name="stories"
               inputMode="numeric"
               defaultValue={initial?.stories ?? ''}
-              required
+              required={req('stories')}
             />
           </Field>
-          <Field label="Pets" htmlFor="pets" required>
+          <Field label="Pets" htmlFor="pets" required={req('pets')}>
             <select
               id="pets"
               name="pets"
-              required
+              required={req('pets')}
               value={pets}
               onChange={(event) => setPets(event.target.value)}
             >
@@ -364,12 +403,16 @@ export function ConsultationIntakeForm({
               />
             </Field>
           ) : null}
-          <Field label="Home occupied during the clean" htmlFor="occupied_during_clean" required>
+          <Field
+            label="Home occupied during the clean"
+            htmlFor="occupied_during_clean"
+            required={req('occupied_during_clean')}
+          >
             <select
               id="occupied_during_clean"
               name="occupied_during_clean"
               defaultValue={yesNoDefault(initial?.occupiedDuringClean)}
-              required
+              required={req('occupied_during_clean')}
             >
               <option value="">Select</option>
               <option value="yes">Yes</option>

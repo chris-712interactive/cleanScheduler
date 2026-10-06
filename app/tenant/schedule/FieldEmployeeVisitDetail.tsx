@@ -123,6 +123,7 @@ export function FieldEmployeeVisitDetail({
           visitId={visit.visitId}
           propertyKind={visit.propertyKind}
           initial={visit.consultationIntake}
+          requiredFields={visit.consultationRequiredFields}
           canEdit={visit.status !== 'cancelled'}
         />
       ) : null}
