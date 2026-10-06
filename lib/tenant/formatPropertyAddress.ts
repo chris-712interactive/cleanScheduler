@@ -8,6 +8,32 @@ type AddressLineInput = Partial<
   >
 >;
 
+/**
+ * Visit location label. Skips a property name that only repeats the street,
+ * so "775 Forest View Ln — 775 Forest View Ln, …" becomes the address once.
+ */
+export function formatVisitSiteLine(
+  label: string | null | undefined,
+  addressLine: string | null | undefined,
+): string {
+  const name = label?.trim() ?? '';
+  const address = addressLine?.trim() ?? '';
+  if (!name) return address;
+  if (!address) return name;
+
+  const nameKey = name.toLowerCase();
+  const addressKey = address.toLowerCase();
+  if (
+    addressKey === nameKey ||
+    addressKey.startsWith(`${nameKey},`) ||
+    addressKey.startsWith(`${nameKey} `)
+  ) {
+    return address;
+  }
+
+  return `${name} — ${address}`;
+}
+
 /** Single-line mailing-style address for lists and summaries. */
 export function formatPropertyAddressLine(row: AddressLineInput | null | undefined): string {
   if (!row) return '';

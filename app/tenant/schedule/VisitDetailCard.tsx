@@ -20,7 +20,11 @@ import {
   resolveExpectedAmountCentsSync,
   visitHasBillableAmount,
 } from '@/lib/billing/resolveVisitExpectedAmount';
-import { formatVisitDuration, formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
+import {
+  formatDateTimeInTimeZone,
+  formatVisitDuration,
+  formatVisitTime,
+} from '@/lib/datetime/formatInTimeZone';
 import {
   canCheckInToVisit,
   canCompleteVisit,
@@ -177,7 +181,13 @@ export function VisitDetailCard({
     visit.status === 'scheduled' && !visit.checkedInAt && canManage && !visit.isFieldEmployee;
   const showFieldWork = showCheckIn || showComplete;
   const durationLabel = formatVisitDuration(visit.startsAt, visit.endsAt);
-  const whenLabel = formatVisitWhenRange(visit.startsAt, visit.endsAt, visit.tenantTimezone);
+  const whenDateLabel = formatDateTimeInTimeZone(visit.startsAt, visit.tenantTimezone, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const whenTimeLabel = `${formatVisitTime(visit.startsAt, visit.tenantTimezone)} – ${formatVisitTime(visit.endsAt, visit.tenantTimezone)}`;
   const priceLabel = isConsultation
     ? 'Consultation'
     : hasBillableAmount
@@ -201,8 +211,15 @@ export function VisitDetailCard({
         <span className={styles.summaryDivider} aria-hidden />
         <div className={styles.summaryItem}>
           <span className={styles.summaryLabel}>When</span>
-          <span className={styles.summaryValue}>{whenLabel}</span>
-          {durationLabel ? <span className={styles.summaryMuted}>({durationLabel})</span> : null}
+          <span className={styles.summaryValue}>
+            <span className={styles.whenDate}>{whenDateLabel}</span>
+            <span className={styles.whenTime}>
+              {whenTimeLabel}
+              {durationLabel ? (
+                <span className={styles.summaryMuted}> · {durationLabel}</span>
+              ) : null}
+            </span>
+          </span>
         </div>
         <span className={styles.summaryDivider} aria-hidden />
         <div className={styles.summaryItem}>
