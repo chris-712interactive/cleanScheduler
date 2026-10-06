@@ -12,6 +12,7 @@ import {
   type AcceptedQuoteScheduleMode,
   type TenantInvoiceExpectation,
 } from '@/lib/tenant/operationalSettings';
+import { CONSULTATION_INTAKE_FIELDS } from '@/lib/visits/consultationIntake';
 import { SettingsSaveButton } from './SettingsSaveButton';
 import { updateTenantOperationalSettings, enableCustomerUpdateEmailsFormAction } from './actions';
 import { operationalSettingsFormInitial } from './operationalSettingsFormState';
@@ -252,6 +253,39 @@ export function OperationalSettingsForm({
           <p className={styles.technicalNote}>
             Used to set the end time when scheduling consultations. Allowed range is 15–480 minutes.
           </p>
+          <p className={styles.subsectionTitle}>Required consultation answers</p>
+          <p className={styles.technicalNote}>
+            Every consultation question is optional until you check it here. Checked answers must be
+            saved before that consultation can be marked complete. A custom cadence still needs a
+            description, and a pet count is still required when the home has pets.
+          </p>
+          {(
+            [
+              ['all', 'Every consultation'],
+              ['home', 'Homes and short-term rentals'],
+              ['commercial', 'Commercial spaces'],
+            ] as const
+          ).map(([appliesTo, title]) => (
+            <div key={appliesTo}>
+              <p className={styles.subsectionTitle}>{title}</p>
+              <div className={styles.paymentGrid}>
+                {CONSULTATION_INTAKE_FIELDS.filter((field) => field.appliesTo === appliesTo).map(
+                  (field) => (
+                    <label key={field.key} className={styles.paymentToggle}>
+                      <input
+                        type="checkbox"
+                        name="consultation_required_fields"
+                        value={field.key}
+                        defaultChecked={snapshot.consultation_required_fields.includes(field.key)}
+                        disabled={readOnly}
+                      />
+                      <span>{field.label}</span>
+                    </label>
+                  ),
+                )}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div>

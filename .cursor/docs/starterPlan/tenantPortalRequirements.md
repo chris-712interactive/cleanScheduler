@@ -76,6 +76,8 @@ The schedule view will look different depending on the type of user who is looki
 - Employees
   - They should be able to only see their schedule and no one else's. Any appointment assigned directly to them they can see but nothing else.
 
+**Implementation note (2026-10-06, consultation answers):** Consultation walkthrough questions are optional unless the company marks them required in Settings → Operations. Those rules live on the tenant. A custom cadence and a pet count stay required when the person filling the form chooses those answers.
+
 **Implementation note (2026-10-06):** Field employees land on **My jobs** (`/schedule?view=today`). On a phone the day stepper is the main control (previous day, next day, back to today). Each visit is one card: time, customer, service, address, then **Directions** and **Check in** (or Complete / Open job). Call and job details sit under those. Job notes and crew notes still show on the card. Calendar (week or month) is a secondary link. Time off stays in the bottom nav and sidebar, and the trial purchase banner is hidden for this role. The job page for this role drops the office summary (crew, email, billing, quote). It shows the time, address, **Directions**, **Call**, then **On our way** / **Check in** / **Complete**. After check-in, **Amount due** is shown so the crew can match a check before completing the job. Entry codes, notes, the checklist, and proof photos stay on the page.
 
 When it comes to the scheduling view, when a user clicks on the schedule navigation, it should default to the current day's schedule as this would be the most important to any business. All types of services should be able to be scheduled and/or adjusted from this view.

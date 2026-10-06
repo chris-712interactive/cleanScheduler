@@ -17,6 +17,7 @@ import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
 import type { OperationalSettingsFormState } from './operationalSettingsFormState';
 import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
 import { parseConsultationDurationMinutes } from '@/lib/tenant/consultationDuration';
+import { parseConsultationRequiredFields } from '@/lib/visits/consultationIntake';
 
 /** Form-compatible one-click enable for customer update emails. */
 export async function enableCustomerUpdateEmailsFormAction(formData: FormData): Promise<void> {
@@ -105,6 +106,9 @@ export async function updateTenantOperationalSettings(
     check_hold_through_deposit: checkHoldThroughDeposit,
     require_consultation_before_quote: formData.get('require_consultation_before_quote') === 'on',
     consultation_duration_minutes: consultationDurationMinutes,
+    consultation_required_fields: parseConsultationRequiredFields(
+      formData.getAll('consultation_required_fields'),
+    ),
     recurring_starts_after_initial: formData.get('recurring_starts_after_initial') === 'on',
     allow_same_day_initial_recurring: formData.get('allow_same_day_initial_recurring') === 'on',
     messaging_channels: messagingChannels,
@@ -142,6 +146,7 @@ export async function updateTenantOperationalSettings(
     check_hold_through_deposit: checkHoldThroughDeposit,
     require_consultation_before_quote: row.require_consultation_before_quote ?? true,
     consultation_duration_minutes: consultationDurationMinutes,
+    consultation_required_fields: row.consultation_required_fields ?? [],
     recurring_starts_after_initial: row.recurring_starts_after_initial ?? true,
     allow_same_day_initial_recurring: row.allow_same_day_initial_recurring ?? false,
     messaging_channels: messagingChannels,

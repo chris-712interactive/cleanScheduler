@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   consultationIntakeErrors,
   formatConsultationIntakeSummary,
+  isConsultationIntakeComplete,
   parseConsultationIntakeForm,
+  parseConsultationRequiredFields,
   parseStoredConsultationIntake,
   quotePrefillFromConsultation,
 } from '@/lib/visits/consultationIntake';
@@ -38,12 +40,23 @@ describe('consultation intake', () => {
     expect(intake.petCount).toBe(1);
   });
 
+  it('treats every field as optional until the tenant marks it required', () => {
+    const intake = parseConsultationIntakeForm(new FormData(), 'residential');
+    expect(consultationIntakeErrors(intake)).toEqual([]);
+    expect(isConsultationIntakeComplete(null)).toBe(true);
+    expect(consultationIntakeErrors(intake, ['sqft', 'bedrooms'])).toEqual([
+      'Square footage is required.',
+      'Bedrooms is required.',
+    ]);
+    expect(parseConsultationRequiredFields(['sqft', 'not-a-field', 4])).toEqual(['sqft']);
+  });
+
   it('requires a pet count when pets are present', () => {
     const intake = parseConsultationIntakeForm(residentialForm({ pet_count: '' }), 'residential');
     expect(consultationIntakeErrors(intake)).toContain('Pet count is required.');
   });
 
-  it('requires commercial space details', () => {
+  it('requires commercial space details only when the tenant asks for them', () => {
     const form = new FormData();
     form.set('service_requested', 'recurring');
     form.set('frequency', 'weekly');
@@ -54,13 +67,15 @@ describe('consultation intake', () => {
     form.set('areas_in_scope', 'Open office');
     form.set('areas_out_of_scope', 'Server room');
     const intake = parseConsultationIntakeForm(form, 'commercial');
-    expect(consultationIntakeErrors(intake)).toEqual(
+    expect(consultationIntakeErrors(intake)).toEqual([]);
+    expect(consultationIntakeErrors(intake, ['space_type', 'restrooms', 'on_site_window'])).toEqual(
       expect.arrayContaining([
         'Space type is required.',
         'Restrooms is required.',
         'When the crew can be on site is required.',
       ]),
     );
+    expect(consultationIntakeErrors(intake, ['bedrooms'])).toEqual([]);
   });
 
   it('requires a custom cadence description', () => {

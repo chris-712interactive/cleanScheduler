@@ -52,7 +52,10 @@ import { VisitJobPriceForm } from './VisitJobPriceForm';
 import { VisitJobDetailsForm } from './VisitJobDetailsForm';
 import { ConsultationIntakeForm } from './ConsultationIntakeForm';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
-import type { ConsultationIntake } from '@/lib/visits/consultationIntake';
+import type {
+  ConsultationIntake,
+  ConsultationIntakeFieldKey,
+} from '@/lib/visits/consultationIntake';
 import type { EmployeeOption } from './ScheduleVisitForm';
 import styles from './visitDetail.module.scss';
 
@@ -123,6 +126,7 @@ export type VisitDetailSnapshot = {
   visitPurpose: 'service' | 'consultation';
   propertyKind: CustomerPropertyKind;
   consultationIntake: ConsultationIntake | null;
+  consultationRequiredFields: ConsultationIntakeFieldKey[];
   checklistItems: VisitChecklistItem[];
   onOurWayEnabled: boolean;
   onOurWayAlreadySent: boolean;
@@ -272,6 +276,7 @@ export function VisitDetailCard({
               visitId={visit.visitId}
               propertyKind={visit.propertyKind}
               initial={visit.consultationIntake}
+              requiredFields={visit.consultationRequiredFields}
               canEdit={canManage && visit.status !== 'cancelled'}
             />
           ) : null}

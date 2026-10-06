@@ -39,10 +39,10 @@ import {
   consultationIntakeErrors,
   consultationUsesCommercialFields,
   formatConsultationIntakeSummary,
-  isConsultationIntakeComplete,
   parseConsultationIntakeForm,
   parseStoredConsultationIntake,
 } from '@/lib/visits/consultationIntake';
+import { loadConsultationRequiredFields } from '@/lib/tenant/customerConsultation';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import type { Json } from '@/lib/supabase/database.types';
 
@@ -185,7 +185,8 @@ export async function saveConsultationIntakeAction(
   }
 
   const intake = parseConsultationIntakeForm(formData, propertyKind);
-  const errors = consultationIntakeErrors(intake);
+  const requiredFields = await loadConsultationRequiredFields(admin, membership.tenantId);
+  const errors = consultationIntakeErrors(intake, requiredFields);
   if (errors.length > 0) return { error: errors[0] };
 
   const now = new Date().toISOString();
@@ -396,17 +397,24 @@ export async function completeVisitWithPaymentAction(
       })()
     : null;
 
-  const storedIntake =
-    loaded.visit.visit_purpose === 'consultation'
-      ? parseStoredConsultationIntake(loaded.visit.consultation_intake)
-      : null;
-  if (
-    loaded.visit.visit_purpose === 'consultation' &&
-    !isConsultationIntakeComplete(storedIntake)
-  ) {
-    return {
-      error: 'Save the consultation details before marking this visit complete.',
-    };
+  const storedIntake = consultationComplete
+    ? parseStoredConsultationIntake(loaded.visit.consultation_intake)
+    : null;
+  if (consultationComplete) {
+    let propertyKind: CustomerPropertyKind = 'residential';
+    if (loaded.visit.property_id) {
+      const { data: property } = await admin
+        .from('tenant_customer_properties')
+        .select('property_kind')
+        .eq('id', loaded.visit.property_id)
+        .eq('tenant_id', membership.tenantId)
+        .maybeSingle();
+      if (property?.property_kind) propertyKind = property.property_kind;
+    }
+    const intake = storedIntake ?? parseConsultationIntakeForm(new FormData(), propertyKind);
+    const requiredFields = await loadConsultationRequiredFields(admin, membership.tenantId);
+    const intakeErrors = consultationIntakeErrors(intake, requiredFields);
+    if (intakeErrors.length > 0) return { error: intakeErrors[0] };
   }
 
   const consultationNotes = consultationComplete

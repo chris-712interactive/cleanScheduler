@@ -154,6 +154,56 @@ export function consultationUsesCommercialFields(kind: CustomerPropertyKind): bo
   return kind === 'commercial';
 }
 
+export const CONSULTATION_INTAKE_FIELDS = [
+  { key: 'service_requested', label: 'Service requested', appliesTo: 'all' },
+  { key: 'frequency', label: 'How often', appliesTo: 'all' },
+  { key: 'sqft', label: 'Square footage', appliesTo: 'all' },
+  { key: 'condition', label: 'Current condition', appliesTo: 'all' },
+  { key: 'supplies', label: 'Supplies', appliesTo: 'all' },
+  { key: 'preferred_start', label: 'Preferred start', appliesTo: 'all' },
+  { key: 'areas_in_scope', label: 'Areas in scope', appliesTo: 'all' },
+  { key: 'areas_out_of_scope', label: 'Areas out of scope', appliesTo: 'all' },
+  { key: 'bedrooms', label: 'Bedrooms', appliesTo: 'home' },
+  { key: 'bathrooms', label: 'Bathrooms', appliesTo: 'home' },
+  { key: 'stories', label: 'Stories', appliesTo: 'home' },
+  { key: 'pets', label: 'Pets', appliesTo: 'home' },
+  { key: 'occupied_during_clean', label: 'Home occupied during the clean', appliesTo: 'home' },
+  { key: 'kids_at_home', label: 'Kids at home', appliesTo: 'home' },
+  { key: 'home_office', label: 'Home office', appliesTo: 'home' },
+  { key: 'same_cleaner', label: 'Same cleaner each visit', appliesTo: 'home' },
+  { key: 'space_type', label: 'Space type', appliesTo: 'commercial' },
+  { key: 'restrooms', label: 'Restrooms', appliesTo: 'commercial' },
+  { key: 'break_rooms', label: 'Break rooms or kitchens', appliesTo: 'commercial' },
+  { key: 'stories_or_suites', label: 'Stories or suites', appliesTo: 'commercial' },
+  { key: 'on_site_window', label: 'When the crew can be on site', appliesTo: 'commercial' },
+  { key: 'after_hours_access', label: 'After-hours access', appliesTo: 'commercial' },
+  { key: 'occupant_count', label: 'Employee or occupant count', appliesTo: 'commercial' },
+  { key: 'trash_locations', label: 'Trash and recycling locations', appliesTo: 'commercial' },
+  { key: 'restock_restrooms', label: 'Restock paper and soap', appliesTo: 'commercial' },
+  { key: 'crew_headcount', label: 'Requested crew size', appliesTo: 'commercial' },
+  { key: 'addons', label: 'Add-ons', appliesTo: 'all' },
+  { key: 'floor_types', label: 'Floor types', appliesTo: 'all' },
+  { key: 'last_professional_clean', label: 'Last professional clean', appliesTo: 'all' },
+  { key: 'parking_and_entry', label: 'Parking and entry', appliesTo: 'all' },
+  { key: 'special_requests', label: 'Special requests', appliesTo: 'all' },
+  { key: 'photo_notes', label: 'Photo notes', appliesTo: 'all' },
+  { key: 'crew_estimate_hours', label: 'Crew estimate (hours)', appliesTo: 'all' },
+] as const;
+
+export type ConsultationIntakeFieldKey = (typeof CONSULTATION_INTAKE_FIELDS)[number]['key'];
+
+const CONSULTATION_INTAKE_FIELD_KEYS = new Set<string>(
+  CONSULTATION_INTAKE_FIELDS.map((field) => field.key),
+);
+
+export function parseConsultationRequiredFields(raw: unknown): ConsultationIntakeFieldKey[] {
+  const values = Array.isArray(raw) ? raw : [];
+  return values.filter(
+    (value): value is ConsultationIntakeFieldKey =>
+      typeof value === 'string' && CONSULTATION_INTAKE_FIELD_KEYS.has(value),
+  );
+}
+
 function labelFor(options: Option, value: string | null | undefined): string {
   if (!value) return '';
   return options.find((option) => option.value === value)?.label ?? value;
@@ -263,35 +313,65 @@ function requireNumber(errors: string[], value: number | null, label: string) {
   if (value == null) errors.push(`${label} is required.`);
 }
 
-export function consultationIntakeErrors(intake: ConsultationIntake): string[] {
+export function consultationIntakeErrors(
+  intake: ConsultationIntake,
+  requiredFields: readonly string[] = [],
+): string[] {
+  const required = new Set(requiredFields);
+  const need = (key: ConsultationIntakeFieldKey) => required.has(key);
   const errors: string[] = [];
-  if (!intake.serviceRequested) errors.push('Service requested is required.');
-  if (!intake.frequency) errors.push('How often is required.');
-  if (intake.frequency === 'custom')
+  const commercial = consultationUsesCommercialFields(intake.propertyKind);
+
+  if (need('service_requested') && !intake.serviceRequested) {
+    errors.push('Service requested is required.');
+  }
+  if (need('frequency') && !intake.frequency) errors.push('How often is required.');
+  if (intake.frequency === 'custom') {
     requireText(errors, intake.frequencyDetail ?? '', 'Custom cadence');
-  if (intake.sqft == null || !Number.isInteger(intake.sqft) || intake.sqft <= 0) {
+  }
+  if (need('sqft') && (intake.sqft == null || !Number.isInteger(intake.sqft) || intake.sqft <= 0)) {
     errors.push('Square footage is required.');
   }
-  if (!intake.condition) errors.push('Current condition is required.');
-  if (!intake.supplies) errors.push('Supplies is required.');
-  if (!intake.preferredStart || !/^\d{4}-\d{2}-\d{2}$/.test(intake.preferredStart)) {
+  if (need('condition') && !intake.condition) errors.push('Current condition is required.');
+  if (need('supplies') && !intake.supplies) errors.push('Supplies is required.');
+  if (
+    need('preferred_start') &&
+    (!intake.preferredStart || !/^\d{4}-\d{2}-\d{2}$/.test(intake.preferredStart))
+  ) {
     errors.push('Preferred start date is required.');
   }
-  requireText(errors, intake.areasInScope, 'Areas in scope');
-  requireText(errors, intake.areasOutOfScope, 'Areas out of scope');
+  if (need('areas_in_scope')) requireText(errors, intake.areasInScope, 'Areas in scope');
+  if (need('areas_out_of_scope')) requireText(errors, intake.areasOutOfScope, 'Areas out of scope');
 
-  if (consultationUsesCommercialFields(intake.propertyKind)) {
-    if (!intake.spaceType) errors.push('Space type is required.');
-    requireNumber(errors, intake.restrooms, 'Restrooms');
-    requireNumber(errors, intake.breakRooms, 'Break rooms or kitchens');
-    requireNumber(errors, intake.storiesOrSuites, 'Stories or suites');
-    if (!intake.onSiteWindow) errors.push('When the crew can be on site is required.');
-    if (!intake.afterHoursAccess) errors.push('After-hours access is required.');
+  if (commercial) {
+    if (need('space_type') && !intake.spaceType) errors.push('Space type is required.');
+    if (need('restrooms')) requireNumber(errors, intake.restrooms, 'Restrooms');
+    if (need('break_rooms')) requireNumber(errors, intake.breakRooms, 'Break rooms or kitchens');
+    if (need('stories_or_suites')) {
+      requireNumber(errors, intake.storiesOrSuites, 'Stories or suites');
+    }
+    if (need('on_site_window') && !intake.onSiteWindow) {
+      errors.push('When the crew can be on site is required.');
+    }
+    if (need('after_hours_access') && !intake.afterHoursAccess) {
+      errors.push('After-hours access is required.');
+    }
+    if (need('occupant_count'))
+      requireNumber(errors, intake.occupantCount, 'Employee or occupant count');
+    if (need('trash_locations')) {
+      requireText(errors, intake.trashLocations ?? '', 'Trash and recycling locations');
+    }
+    if (need('restock_restrooms') && intake.restockRestrooms == null) {
+      errors.push('Restock paper and soap is required.');
+    }
+    if (need('crew_headcount')) requireNumber(errors, intake.crewHeadcount, 'Requested crew size');
   } else {
-    requireNumber(errors, intake.bedrooms, 'Bedrooms');
-    if (intake.bathrooms == null || intake.bathrooms <= 0) errors.push('Bathrooms is required.');
-    requireNumber(errors, intake.stories, 'Stories');
-    if (!intake.pets) errors.push('Pets is required.');
+    if (need('bedrooms')) requireNumber(errors, intake.bedrooms, 'Bedrooms');
+    if (need('bathrooms') && (intake.bathrooms == null || intake.bathrooms <= 0)) {
+      errors.push('Bathrooms is required.');
+    }
+    if (need('stories')) requireNumber(errors, intake.stories, 'Stories');
+    if (need('pets') && !intake.pets) errors.push('Pets is required.');
     if (
       intake.pets &&
       intake.pets !== 'none' &&
@@ -299,17 +379,43 @@ export function consultationIntakeErrors(intake: ConsultationIntake): string[] {
     ) {
       errors.push('Pet count is required.');
     }
-    if (intake.occupiedDuringClean == null) {
+    if (need('occupied_during_clean') && intake.occupiedDuringClean == null) {
       errors.push('Home occupied during the clean is required.');
     }
+    if (need('kids_at_home') && intake.kidsAtHome == null) errors.push('Kids at home is required.');
+    if (need('home_office') && intake.homeOffice == null) errors.push('Home office is required.');
+    if (need('same_cleaner') && intake.sameCleaner == null) {
+      errors.push('Same cleaner each visit is required.');
+    }
+  }
+
+  if (need('addons') && intake.addons.length === 0) errors.push('Add-ons is required.');
+  if (need('floor_types') && intake.floorTypes.length === 0)
+    errors.push('Floor types is required.');
+  if (need('last_professional_clean') && !intake.lastProfessionalClean) {
+    errors.push('Last professional clean is required.');
+  }
+  if (need('parking_and_entry')) {
+    requireText(errors, intake.parkingAndEntry ?? '', 'Parking and entry');
+  }
+  if (need('special_requests'))
+    requireText(errors, intake.specialRequests ?? '', 'Special requests');
+  if (need('photo_notes')) requireText(errors, intake.photoNotes ?? '', 'Photo notes');
+  if (need('crew_estimate_hours') && intake.crewEstimateHours == null) {
+    errors.push('Crew estimate (hours) is required.');
   }
 
   return errors;
 }
 
-export function isConsultationIntakeComplete(raw: unknown): boolean {
-  const intake = parseStoredConsultationIntake(raw);
-  return intake != null && consultationIntakeErrors(intake).length === 0;
+export function isConsultationIntakeComplete(
+  raw: unknown,
+  requiredFields: readonly string[] = [],
+  propertyKind: CustomerPropertyKind = 'residential',
+): boolean {
+  const intake =
+    parseStoredConsultationIntake(raw) ?? parseConsultationIntakeForm(new FormData(), propertyKind);
+  return consultationIntakeErrors(intake, requiredFields).length === 0;
 }
 
 export function parseStoredConsultationIntake(raw: unknown): ConsultationIntake | null {
@@ -385,24 +491,30 @@ function yesNo(value: boolean | null): string {
 
 export function formatConsultationIntakeSummary(intake: ConsultationIntake): string {
   const lines = [
-    `Service: ${labelFor(CONSULTATION_SERVICES, intake.serviceRequested)}`,
-    `How often: ${labelFor(CONSULTATION_FREQUENCIES, intake.frequency)}${intake.frequencyDetail ? ` (${intake.frequencyDetail})` : ''}`,
-    `Square footage: ${intake.sqft ?? '—'}`,
-    `Condition: ${labelFor(CONSULTATION_CONDITIONS, intake.condition)}`,
-    `Supplies: ${labelFor(CONSULTATION_SUPPLIES, intake.supplies)}`,
+    intake.serviceRequested
+      ? `Service: ${labelFor(CONSULTATION_SERVICES, intake.serviceRequested)}`
+      : '',
+    intake.frequency
+      ? `How often: ${labelFor(CONSULTATION_FREQUENCIES, intake.frequency)}${intake.frequencyDetail ? ` (${intake.frequencyDetail})` : ''}`
+      : '',
+    intake.sqft != null ? `Square footage: ${intake.sqft}` : '',
+    intake.condition ? `Condition: ${labelFor(CONSULTATION_CONDITIONS, intake.condition)}` : '',
+    intake.supplies ? `Supplies: ${labelFor(CONSULTATION_SUPPLIES, intake.supplies)}` : '',
     intake.preferredStart ? `Preferred start: ${intake.preferredStart}` : '',
-    `In scope:\n${intake.areasInScope}`,
-    `Out of scope:\n${intake.areasOutOfScope}`,
+    intake.areasInScope.trim() ? `In scope:\n${intake.areasInScope}` : '',
+    intake.areasOutOfScope.trim() ? `Out of scope:\n${intake.areasOutOfScope}` : '',
   ];
 
   if (consultationUsesCommercialFields(intake.propertyKind)) {
     lines.push(
-      `Space: ${labelFor(CONSULTATION_SPACE_TYPES, intake.spaceType)}`,
-      `Restrooms: ${intake.restrooms ?? '—'}`,
-      `Break rooms or kitchens: ${intake.breakRooms ?? '—'}`,
-      `Stories or suites: ${intake.storiesOrSuites ?? '—'}`,
-      `On site: ${labelFor(CONSULTATION_ON_SITE, intake.onSiteWindow)}`,
-      `Access: ${labelFor(CONSULTATION_AFTER_HOURS_ACCESS, intake.afterHoursAccess)}`,
+      intake.spaceType ? `Space: ${labelFor(CONSULTATION_SPACE_TYPES, intake.spaceType)}` : '',
+      intake.restrooms != null ? `Restrooms: ${intake.restrooms}` : '',
+      intake.breakRooms != null ? `Break rooms or kitchens: ${intake.breakRooms}` : '',
+      intake.storiesOrSuites != null ? `Stories or suites: ${intake.storiesOrSuites}` : '',
+      intake.onSiteWindow ? `On site: ${labelFor(CONSULTATION_ON_SITE, intake.onSiteWindow)}` : '',
+      intake.afterHoursAccess
+        ? `Access: ${labelFor(CONSULTATION_AFTER_HOURS_ACCESS, intake.afterHoursAccess)}`
+        : '',
       intake.occupantCount != null ? `Occupants: ${intake.occupantCount}` : '',
       intake.trashLocations ? `Trash and recycling: ${intake.trashLocations}` : '',
       intake.restockRestrooms != null ? `Restock restrooms: ${yesNo(intake.restockRestrooms)}` : '',
@@ -410,11 +522,15 @@ export function formatConsultationIntakeSummary(intake: ConsultationIntake): str
     );
   } else {
     lines.push(
-      `Bedrooms: ${intake.bedrooms ?? '—'}`,
-      `Bathrooms: ${intake.bathrooms ?? '—'}`,
-      `Stories: ${intake.stories ?? '—'}`,
-      `Pets: ${labelFor(CONSULTATION_PETS, intake.pets)}${intake.petCount ? ` (${intake.petCount})` : ''}`,
-      `Occupied during clean: ${yesNo(intake.occupiedDuringClean)}`,
+      intake.bedrooms != null ? `Bedrooms: ${intake.bedrooms}` : '',
+      intake.bathrooms != null ? `Bathrooms: ${intake.bathrooms}` : '',
+      intake.stories != null ? `Stories: ${intake.stories}` : '',
+      intake.pets
+        ? `Pets: ${labelFor(CONSULTATION_PETS, intake.pets)}${intake.petCount ? ` (${intake.petCount})` : ''}`
+        : '',
+      intake.occupiedDuringClean != null
+        ? `Occupied during clean: ${yesNo(intake.occupiedDuringClean)}`
+        : '',
       intake.kidsAtHome != null ? `Kids at home: ${yesNo(intake.kidsAtHome)}` : '',
       intake.homeOffice != null ? `Home office: ${yesNo(intake.homeOffice)}` : '',
       intake.sameCleaner != null ? `Same cleaner each visit: ${yesNo(intake.sameCleaner)}` : '',
