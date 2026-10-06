@@ -527,7 +527,7 @@ export function OperationalSettingsForm({
                   </td>
                 </tr>
                 <tr>
-                  <th scope="row">Crew checks in (on my way)</th>
+                  <th scope="row">On our way email</th>
                   <td>
                     {onMyWayEmailEditable ? (
                       <label className={styles.notifyToggle}>

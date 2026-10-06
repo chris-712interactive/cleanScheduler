@@ -13,7 +13,11 @@ import {
   appendCheckInLocationToFormData,
   captureDeviceLocation,
 } from '@/lib/schedule/captureDeviceLocation';
-import { checkInToVisitAction, type VisitFieldActionState } from './visitFieldActions';
+import {
+  checkInToVisitAction,
+  notifyCustomerOnOurWayAction,
+  type VisitFieldActionState,
+} from './visitFieldActions';
 import { CompleteVisitPaymentModal } from './CompleteVisitPaymentModal';
 import styles from './visitDetail.module.scss';
 
@@ -37,6 +41,8 @@ export function VisitFieldWorkPanel({
   initialNotes = '',
   onVisitPatch,
   compact = false,
+  onOurWayEnabled = false,
+  onOurWayAlreadySent = false,
 }: {
   tenantSlug: string;
   visitId: string;
@@ -55,9 +61,16 @@ export function VisitFieldWorkPanel({
   initialNotes?: string;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
   compact?: boolean;
+  /** Workspace has on-our-way email turned on. */
+  onOurWayEnabled?: boolean;
+  onOurWayAlreadySent?: boolean;
 }) {
   const [checkInState, checkInAction, checkInPending] = useActionState(
     checkInToVisitAction,
+    initial,
+  );
+  const [onOurWayState, onOurWayAction, onOurWayPending] = useActionState(
+    notifyCustomerOnOurWayAction,
     initial,
   );
   const [locating, setLocating] = useState(false);
@@ -70,15 +83,22 @@ export function VisitFieldWorkPanel({
     ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE
     : OFFICE_NO_PRICE_MESSAGE;
   const submitting = checkInPending || locating;
+  const showOnOurWay = canCheckIn && onOurWayEnabled;
+  const onOurWaySent = onOurWayAlreadySent || Boolean(onOurWayState.success);
 
+  const arrivalHint = canUseGpsCheckIn
+    ? 'Check in on arrival (we’ll capture location proof when allowed), then complete the job when finished.'
+    : 'Check in on arrival, then complete the job when finished.';
   const checkedInLabel = checkedInAt
     ? `Checked in ${new Date(checkedInAt).toLocaleString(undefined, {
         dateStyle: 'medium',
         timeStyle: 'short',
       })}`
-    : canUseGpsCheckIn
-      ? 'Check in on arrival (we’ll capture location proof when allowed), then complete the job when finished.'
-      : 'Check in on arrival, then complete the job when finished.';
+    : showOnOurWay
+      ? onOurWaySent
+        ? 'The customer knows you are on the way. Check in when you arrive.'
+        : 'Email the customer that you are heading over, then check in when you arrive.'
+      : arrivalHint;
 
   async function handleCheckInSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -102,6 +122,17 @@ export function VisitFieldWorkPanel({
     : compact
       ? 'Check in'
       : 'Check in at property';
+
+  const onOurWayForm =
+    showOnOurWay && !onOurWaySent ? (
+      <form action={onOurWayAction}>
+        <input type="hidden" name="tenant_slug" value={tenantSlug} />
+        <input type="hidden" name="visit_id" value={visitId} />
+        <Button type="submit" variant="secondary" disabled={onOurWayPending}>
+          {onOurWayPending ? 'Sending…' : 'On our way'}
+        </Button>
+      </form>
+    ) : null;
 
   const checkInForm = canCheckIn ? (
     <form
@@ -137,6 +168,12 @@ export function VisitFieldWorkPanel({
 
   const feedback = (
     <>
+      {onOurWayState.error ? (
+        <p className={styles.error} role="alert">
+          {onOurWayState.error}
+        </p>
+      ) : null}
+      {onOurWayState.success ? <p className={styles.ok}>{onOurWayState.success}</p> : null}
       {checkInState.error ? (
         <p className={styles.error} role="alert">
           {checkInState.error}
@@ -156,6 +193,7 @@ export function VisitFieldWorkPanel({
       <div className={styles.fieldWork}>
         <p className={styles.fieldWorkCopy}>{checkedInLabel}</p>
         <div className={styles.fieldWorkActions}>
+          {onOurWayForm}
           {checkInForm}
           {completeModal}
         </div>
@@ -183,6 +221,7 @@ export function VisitFieldWorkPanel({
         </p>
       )}
 
+      {onOurWayForm}
       {checkInForm}
       {feedback}
 

@@ -31,6 +31,7 @@ import { loadJobTypeCatalog, uniqueJobTypeLabels } from '@/lib/tenant/jobTypeCat
 import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
 import { ensureVisitChecklistState } from '@/lib/visits/visitChecklistState';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { visitCustomerEmailAlreadyLogged } from '@/lib/email/visitCustomerEmailLog';
 import styles from '../visitDetail.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -220,6 +221,26 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
     }));
   }
 
+  const onOurWayFeature = isFeatureEnabled(tier, 'emailOnMyWay');
+  let onOurWayEnabled = false;
+  let onOurWayAlreadySent = false;
+  if (onOurWayFeature && row.status === 'scheduled' && !row.checked_in_at) {
+    const [{ data: opsRow }, alreadySent] = await Promise.all([
+      admin
+        .from('tenant_operational_settings')
+        .select('email_notify_on_my_way')
+        .eq('tenant_id', membership.tenantId)
+        .maybeSingle(),
+      visitCustomerEmailAlreadyLogged(admin, {
+        tenantId: membership.tenantId,
+        visitId,
+        kind: 'on_my_way',
+      }),
+    ]);
+    onOurWayEnabled = Boolean(opsRow?.email_notify_on_my_way);
+    onOurWayAlreadySent = alreadySent;
+  }
+
   const jobTypeLabels = isFieldEmployee
     ? []
     : uniqueJobTypeLabels(
@@ -281,6 +302,8 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           proofPhotosSharedWithCustomers,
           proofPhotos,
           checklistItems,
+          onOurWayEnabled,
+          onOurWayAlreadySent,
           startsAt: row.starts_at,
           endsAt: row.ends_at,
           durationHours,

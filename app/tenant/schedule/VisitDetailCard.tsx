@@ -118,6 +118,8 @@ export type VisitDetailSnapshot = {
   completionInvoiceId: string | null;
   visitPurpose: 'service' | 'consultation';
   checklistItems: VisitChecklistItem[];
+  onOurWayEnabled: boolean;
+  onOurWayAlreadySent: boolean;
 };
 
 export function VisitDetailCard({
@@ -286,6 +288,8 @@ export function VisitDetailCard({
                 isConsultation={isConsultation}
                 initialNotes={visit.notes ?? ''}
                 onVisitPatch={onVisitPatch}
+                onOurWayEnabled={visit.onOurWayEnabled}
+                onOurWayAlreadySent={visit.onOurWayAlreadySent}
                 compact
               />
             </section>

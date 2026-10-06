@@ -4,9 +4,9 @@ Transactional Resend emails available on **all plans** (including Starter). Opt-
 
 ## On-my-way (`emailOnMyWay`)
 
-- **When:** Crew (or office) successfully checks in via `checkInToVisitAction`.
-- **Not sent:** Silent check-in that happens only when completing a visit without a prior check-in.
-- **Toggle:** `tenant_operational_settings.email_notify_on_my_way` (default off).
+- **When:** Crew or office taps **On our way** on a scheduled visit that has not been checked in yet (`notifyCustomerOnOurWayAction`).
+- **Not sent:** Check-in does not send this email. Arrival is a separate action.
+- **Toggle:** `tenant_operational_settings.email_notify_on_my_way` (default off). The button is hidden when the toggle is off.
 - **Sender:** `lib/email/visitOnMyWayEmail.ts` → `maybeSendVisitOnMyWayEmail`.
 - **Dedupe:** `tenant_visit_customer_email_log` kind `on_my_way`.
 

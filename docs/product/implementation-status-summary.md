@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** The field job screen stacks the appointment time, check-in action, and address on a phone, and no longer repeats a street that is also the location name. A team member's page still shows their week of jobs plus approved and requested time off.
+**Latest polish:** A scheduled job can show an On our way button that emails the customer before check-in, when that notice is turned on under Settings → Operations. The field job screen still stacks cleanly on a phone.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

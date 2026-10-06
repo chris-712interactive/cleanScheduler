@@ -76,6 +76,63 @@ function revalidateVisitPaths(visitId: string) {
   revalidatePath('/dashboard');
 }
 
+export async function notifyCustomerOnOurWayAction(
+  _prev: VisitFieldActionState,
+  formData: FormData,
+): Promise<VisitFieldActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const visitId = String(formData.get('visit_id') ?? '').trim();
+  if (!slug || !visitId) return { error: 'Missing visit.' };
+
+  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  const auth = await getAuthContext();
+  if (!auth) return { error: 'Not signed in.' };
+
+  const admin = createAdminClient();
+  const loaded = await loadVisitForActor(admin, membership.tenantId, visitId);
+  if (loaded.error || !loaded.visit) return { error: loaded.error ?? 'Visit not found.' };
+
+  const actorRole = membership.role as TenantRole;
+  if (
+    !canCheckInToVisit({
+      status: loaded.visit.status,
+      checkedInAt: loaded.visit.checked_in_at,
+      actorUserId: auth.user.id,
+      assigneeUserIds: loaded.assigneeIds,
+      actorRole,
+    })
+  ) {
+    return { error: 'You cannot notify the customer for this visit.' };
+  }
+
+  const result = await maybeSendVisitOnMyWayEmail(admin, {
+    tenantId: membership.tenantId,
+    visitId,
+    customerId: loaded.visit.customer_id,
+  });
+
+  if (!result.sent) {
+    if (result.reason === 'already_sent') {
+      return { success: 'The customer was already notified that you are on the way.' };
+    }
+    if (result.reason === 'no_email') {
+      return { error: 'This customer does not have an email on file.' };
+    }
+    if (result.reason === 'disabled' || result.reason === 'plan') {
+      return { error: 'On our way emails are turned off for this workspace.' };
+    }
+    if (result.reason === 'not_configured') {
+      return { error: 'Email is not set up for this workspace yet.' };
+    }
+    return { error: 'Could not send the on our way email. Try again.' };
+  }
+
+  revalidateVisitPaths(visitId);
+  return { success: 'Customer notified that you are on the way.' };
+}
+
 export async function checkInToVisitAction(
   _prev: VisitFieldActionState,
   formData: FormData,
@@ -127,12 +184,6 @@ export async function checkInToVisitAction(
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId);
   if (upErr) return { error: upErr.message };
-
-  void maybeSendVisitOnMyWayEmail(admin, {
-    tenantId: membership.tenantId,
-    visitId,
-    customerId: loaded.visit.customer_id,
-  });
 
   revalidateVisitPaths(visitId);
   return {
