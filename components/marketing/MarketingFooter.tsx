@@ -41,6 +41,9 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/features/crew-scheduling-and-timekeeping">
               Crew scheduling
             </Link>
+            <Link className={styles.link} href="/features/mobile-scheduling-for-cleaners">
+              Cleaning crew mobile software
+            </Link>
             <Link
               className={styles.link}
               href="/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts"
