@@ -142,6 +142,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Sign-in passkeys and 2FA | `docs/product/sign-in-passkeys-and-mfa.md`        |
 | Tenant customer import   | `docs/product/tenant-customer-import.md`          |
 | Latency plan             | `docs/performance/interaction-latency-plan.md`    |
+| SEO execution plan       | `docs/marketing/seo-implementation-plan.md`       |
 
 ---
 

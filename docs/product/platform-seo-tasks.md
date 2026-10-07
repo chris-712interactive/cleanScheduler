@@ -2,7 +2,7 @@
 
 **Status:** Implemented  
 **Audience:** Platform admins only (`admin.<apex>`)  
-**Related:** Public SEO architecture in `docs/marketing/seo.md`.
+**Related:** Public SEO architecture in `docs/marketing/seo.md`. Execution sequencing in `docs/marketing/seo-implementation-plan.md`.
 
 ## Purpose
 
