@@ -128,7 +128,7 @@ export function CompleteVisitPaymentModal({
   useEffect(() => {
     if (state.redirectTo) {
       endPortalInteraction(PORTAL_INTERACTION_FLOWS.visitComplete, { success: true });
-      router.push(state.redirectTo);
+      router.replace(state.redirectTo);
       return;
     }
     if (state.success) {
@@ -252,8 +252,8 @@ export function CompleteVisitPaymentModal({
                 Mark this consultation complete when the walkthrough is finished. No payment or
                 invoice is collected for consultations.
                 {isFieldEmployee
-                  ? ' Your office can create a quote once this is marked complete.'
-                  : " You'll open a new quote for this customer next."}
+                  ? ' You’ll go back to today’s jobs when this is saved.'
+                  : ' You’ll open a new quote for this customer next.'}
                 {canUseGpsCheckIn
                   ? ' Your phone may ask for location so the office gets arrival proof.'
                   : null}
