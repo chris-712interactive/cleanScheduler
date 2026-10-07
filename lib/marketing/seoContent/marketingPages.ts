@@ -82,7 +82,11 @@ export const FOR_PAGES: SeoMarketingPage[] = [
     ],
     relatedLinks: [
       { href: '/features/scheduling-and-dispatch', label: 'Cleaning scheduling software' },
-      { href: '/features/mobile-scheduling-for-cleaners', label: 'Mobile scheduling for cleaners' },
+      { href: '/features/mobile-scheduling-for-cleaners', label: 'Cleaning crew mobile software' },
+      {
+        href: '/features/stripe-integration',
+        label: 'Cleaning company software with Stripe integration',
+      },
       { href: '/compare/vs-zenmaid', label: 'vs ZenMaid' },
       { href: '/compare/vs-launch27', label: 'vs Launch27' },
       { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning software' },
@@ -95,12 +99,12 @@ export const FOR_PAGES: SeoMarketingPage[] = [
   {
     slug: 'commercial-cleaning-companies',
     path: '/for/commercial-cleaning-companies',
-    metaTitle: 'Commercial cleaning scheduling software',
+    metaTitle: 'Software for janitorial companies managing cleaning schedules',
     metaDescription:
-      'Commercial cleaning scheduling software for janitorial teams: multi-site crew routes, recurring visit rules, quotes, invoicing, and AR. 7-day free trial.',
+      'Software for janitorial companies managing cleaning schedules — multi-site crew routes, recurring visit rules, quotes, invoicing, and AR. Free 7-day trial.',
     eyebrow: 'Commercial cleaning',
     headline: 'Commercial cleaning scheduling software for janitorial teams',
-    lead: 'Schedule crews across multi-site contracts, assign recurring janitorial routes, and keep accounts receivable visible — without losing context across locations or billing contacts. New to commercial sales? Read our guide on how to get commercial cleaning accounts.',
+    lead: 'The best software for janitorial companies managing cleaning schedules keeps multi-site contracts, recurring routes, and AR in one workspace — without losing context across locations or billing contacts. New to commercial sales? Read our guide on how to get commercial cleaning accounts.',
     sections: [
       {
         title: 'Schedule crews across sites',
@@ -150,6 +154,11 @@ export const FOR_PAGES: SeoMarketingPage[] = [
     ],
     faq: [
       {
+        question: 'What is the best software for janitorial companies managing cleaning schedules?',
+        answer:
+          'Look for software built for recurring janitorial routes, multi-property accounts, crew assignment, and month-end AR — not generic field-service ticket dispatch. Clean Scheduler is software for janitorial companies managing cleaning schedules with commercial and residential mixed books. Try the 7-day free trial on your next commercial route.',
+      },
+      {
         question: 'What is the best scheduling software for commercial cleaning companies?',
         answer:
           'The best fit depends on your team size and billing workflow. Clean Scheduler is built for janitorial operators who need recurring crew scheduling, multi-property accounts, and bookkeeper-friendly AR — not generic field service dispatch. Try the 7-day free trial on your next commercial route.',
@@ -171,12 +180,19 @@ export const FOR_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
-      { href: '/features/scheduling-and-dispatch', label: 'Cleaning schedule software' },
+      {
+        href: '/features/scheduling-and-dispatch',
+        label: 'Best scheduling software for cleaning businesses',
+      },
       {
         href: '/help/cleaning-businesses/how-to-get-commercial-cleaning-accounts',
         label: 'How to get commercial cleaning accounts',
       },
       { href: '/features/crew-scheduling-and-timekeeping', label: 'Crew scheduling & timekeeping' },
+      {
+        href: '/features/mobile-scheduling-for-cleaners',
+        label: 'Cleaning crew mobile software',
+      },
       { href: '/for/residential-cleaning-companies', label: 'Residential cleaning software' },
       { href: '/features/invoicing-and-payments', label: 'Invoicing & payments' },
       { href: '/pricing', label: 'View pricing' },
@@ -190,9 +206,9 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
   {
     slug: 'scheduling-and-dispatch',
     path: '/features/scheduling-and-dispatch',
-    metaTitle: 'Cleaning scheduling software for cleaning businesses',
+    metaTitle: 'Best scheduling software for cleaning businesses',
     metaDescription:
-      'Cleaning scheduling software for residential and commercial teams — recurring visit rules, cleaning staff scheduling, crew assignment, and mobile field views. Try free for 7 days.',
+      'Best scheduling software for cleaning businesses — recurring visit rules, cleaning booking workflows, crew assignment, and mobile field views. Free 7-day trial, no card required.',
     eyebrow: 'Scheduling',
     headline: 'Cleaning scheduling software built for recurring routes',
     lead: 'Plan recurring routes, assign cleaning staff, and handle customer schedule changes — without double-booking your team or rebuilding the calendar every week.',
@@ -254,7 +270,22 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         ],
         link: {
           href: '/features/mobile-scheduling-for-cleaners',
-          label: 'Mobile app for cleaning employees',
+          label: 'Cleaning crew mobile software',
+        },
+      },
+      {
+        title: 'Cleaning booking software that ties quotes to the calendar',
+        paragraphs: [
+          'Cleaning booking software should not stop at a public form. Clean Scheduler connects accepted quotes to the first visit, then keeps recurring rules on the same calendar your office and field crews use — so booking, scheduling, and dispatch stay in one workflow.',
+        ],
+        bullets: [
+          'Quote acceptance can prefill the first visit',
+          'Recurring rules keep weekly and bi-weekly clients booked',
+          'Customer reschedule requests without phone tag (Business+)',
+        ],
+        link: {
+          href: '/help/cleaning-businesses/recurring-cleaning-schedule',
+          label: 'Set up recurring cleaning schedules',
         },
       },
       {
@@ -269,7 +300,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         ],
         link: {
           href: '/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners',
-          label: 'Dispatch software for cleaning companies',
+          label: 'Cleaning & janitorial dispatch and scheduling',
         },
       },
     ],
@@ -277,7 +308,12 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         question: 'What is the best scheduling software for a cleaning business?',
         answer:
-          'The best fit depends on whether you run residential homes, commercial routes, or both. Clean Scheduler is built for recurring cleaning schedules, crew assignment, and customer reschedule handling — not generic HVAC or lawn dispatch. Compare plans and try a 7-day free trial on your actual routes.',
+          'The best scheduling software for a cleaning business depends on whether you run residential homes, commercial routes, or both. Clean Scheduler is built for recurring cleaning schedules, crew assignment, cleaning booking workflows, and customer reschedule handling — not generic HVAC or lawn dispatch. Compare plans and try a 7-day free trial on your actual routes.',
+      },
+      {
+        question: 'Is Clean Scheduler cleaning booking software?',
+        answer:
+          'Yes for cleaning companies that need quote-to-schedule booking, recurring visit rules, and crew assignment. Public booking requests and customer reschedule flows sit on the same calendar as office scheduling — not a standalone appointment widget disconnected from invoices.',
       },
       {
         question: 'What is cleaning schedule software?',
@@ -310,12 +346,16 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       },
       {
         href: '/features/mobile-scheduling-for-cleaners',
-        label: 'Mobile app for cleaning employees',
+        label: 'Cleaning crew mobile software',
       },
       { href: '/features/invoicing-and-payments', label: 'Online payments for cleaning companies' },
       {
+        href: '/features/stripe-integration',
+        label: 'Cleaning company software with Stripe integration',
+      },
+      {
         href: '/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners',
-        label: 'Dispatch software for cleaning companies',
+        label: 'Cleaning & janitorial dispatch and scheduling',
       },
       {
         href: '/help/cleaning-businesses/schedule-cleaning-crews',
@@ -331,10 +371,10 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
     path: '/features/invoicing-and-payments',
     metaTitle: 'Online payments for cleaning companies',
     metaDescription:
-      'Online payments for cleaning companies — Stripe card and ACH checkout, invoice pay links, cash and check recording, and Zelle deposit matching. Built for cleaning company AR.',
+      'Online payments for cleaning companies — Stripe pay links, cash & check recording, and bank deposit matching so check and Zelle payments hit the right invoice. Free 7-day trial.',
     eyebrow: 'Payments',
     headline: 'Online payments for cleaning companies',
-    lead: 'Send professional invoices, accept online payments when you are ready, and track every payment method your customers actually use — including Zelle and checks.',
+    lead: 'Send professional invoices, accept online payments when you are ready, and track every payment method your customers actually use — including cards, ACH, Zelle, cash, and checks.',
     sections: [
       {
         title: 'From accepted quote to paid invoice',
@@ -363,7 +403,22 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         ],
         link: {
           href: '/features/stripe-integration',
-          label: 'Stripe integration for cleaning companies',
+          label: 'Cleaning company software with Stripe integration',
+        },
+      },
+      {
+        title: 'Record checks and match deposits to your bank account',
+        paragraphs: [
+          'Cleaning clients still pay by check. Record check (and cash) payments when crews collect on site or when mail arrives at the office. On Business+, link your business bank account and match deposits so check payments that clear to your bank — plus Zelle, ACH, and wires — tie back to the right open invoice without spreadsheet chase.',
+        ],
+        bullets: [
+          'Manual check and cash payment recording',
+          'Payment audits for offline collections (Business+)',
+          'Bank deposit matching for checks, Zelle, ACH, and wires',
+        ],
+        link: {
+          href: '/help/cleaning-businesses/get-paid-zelle-and-cards',
+          label: 'Get paid with cards, Zelle, and checks',
         },
       },
       {
@@ -400,6 +455,11 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
           'Most cleaning companies accept cards via Stripe Connect, record cash and checks in the field, and match Zelle or bank deposits on Business+. Clean Scheduler tracks all payment methods in one ledger — no separate payment app required.',
       },
       {
+        question: 'Can I automate check payments to a bank account for cleaning business clients?',
+        answer:
+          'Record check payments when they are collected, then use bank deposit matching on Business+ to tie cleared check deposits (and Zelle/ACH) to open invoices. Clean Scheduler does not remotely deposit physical checks — it helps you track and reconcile them against your bank account.',
+      },
+      {
         question: 'Is there invoice software for cleaning companies?',
         answer:
           'Yes. Clean Scheduler converts completed visits and accepted quotes into professional invoices with email delivery, PDF attachments, and online pay links. Track open balances and month-end AR from your billing hub.',
@@ -412,7 +472,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler integrate with Stripe?',
         answer:
-          'Yes. Stripe Connect lets you accept card and ACH payments on invoices. Your Clean Scheduler subscription is billed separately from customer payments collected through your connected Stripe account.',
+          'Yes. Stripe Connect lets you accept card and ACH payments on invoices. Your Clean Scheduler subscription is billed separately from customer payments collected through your connected Stripe account. See cleaning company software with Stripe integration for details.',
       },
       {
         question: 'Is Stripe required?',
@@ -432,13 +492,17 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       },
       { href: '/features/scheduling-and-dispatch', label: 'Cleaning scheduling software' },
       {
+        href: '/features/mobile-scheduling-for-cleaners',
+        label: 'Cleaning crew mobile software',
+      },
+      {
         href: '/help/cleaning-businesses/customer-portal',
         label: 'Client portal for cleaning companies',
       },
       { href: '/help/cleaning-businesses/get-paid-zelle-and-cards', label: 'Get paid guide' },
       { href: '/pricing', label: 'View pricing' },
     ],
-    sitemapPriority: 0.8,
+    sitemapPriority: 0.85,
     changeFrequency: 'monthly',
   },
   {
@@ -446,11 +510,26 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
     path: '/features/stripe-integration',
     metaTitle: 'Cleaning company software with Stripe integration',
     metaDescription:
-      'Cleaning company software with Stripe integration — accept card and ACH on invoices via Stripe Connect. Separate from platform billing. 7-day free trial, no credit card required.',
+      'Cleaning company software with Stripe integration — add card & ACH pay links to cleaning invoices via Stripe Connect. Funds settle to your account. Free 7-day trial.',
     eyebrow: 'Stripe integration',
     headline: 'Cleaning company software with Stripe integration',
-    lead: 'Accept card and ACH payments on cleaning invoices through Stripe Connect — funds settle to your connected account, separate from your Clean Scheduler subscription.',
+    lead: 'Clean Scheduler is cleaning company software with Stripe integration built in — accept card and ACH on invoices through Stripe Connect, settle funds to your connected account, and keep platform billing separate from client payments.',
     sections: [
+      {
+        title: 'Built for cleaning companies — not generic merchants',
+        paragraphs: [
+          'Cleaning company software with Stripe integration should fit how you bill: quote → visit → invoice → pay link. Clean Scheduler connects Stripe Connect to your cleaning invoices and customer portal so residential and commercial clients pay without a separate merchant portal.',
+        ],
+        bullets: [
+          'Pay links on cleaning invoices and the customer portal',
+          'Works with residential and commercial AR workflows',
+          'Optional — record cash, checks, and Zelle without Connect',
+        ],
+        link: {
+          href: '/features/invoicing-and-payments',
+          label: 'Online payments for cleaning companies',
+        },
+      },
       {
         title: 'Two different Stripe relationships',
         paragraphs: [
@@ -522,6 +601,11 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
     ],
     faq: [
       {
+        question: 'What is cleaning company software with Stripe integration?',
+        answer:
+          'It is cleaning business software that connects Stripe Connect to your invoices so clients can pay by card or ACH. Clean Scheduler is cleaning company software with Stripe integration — pay links on invoices, funds to your connected account, and platform billing kept separate.',
+      },
+      {
         question: 'Does Clean Scheduler have Stripe integration for cleaning companies?',
         answer:
           'Yes. Stripe Connect lets you accept card and ACH payments on cleaning invoices. Your Clean Scheduler subscription is billed separately from customer payments collected through your connected Stripe account.',
@@ -556,13 +640,17 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         href: '/help/cleaning-businesses/get-paid-zelle-and-cards',
         label: 'Payment processing for cleaning companies',
       },
+      {
+        href: '/features/mobile-scheduling-for-cleaners',
+        label: 'Cleaning crew mobile software',
+      },
       { href: '/for/commercial-cleaning-companies', label: 'Commercial cleaning software' },
       { href: '/pricing', label: 'View pricing' },
     ],
     ctaTitle: 'Try Stripe integration on your next invoice',
     ctaLead:
       'Start a 7-day free trial, send a quote, and connect Stripe when you are ready to accept cards.',
-    sitemapPriority: 0.82,
+    sitemapPriority: 0.9,
     changeFrequency: 'monthly',
   },
   {
@@ -602,7 +690,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         ],
         link: {
           href: '/features/mobile-scheduling-for-cleaners',
-          label: 'Mobile scheduling for cleaners',
+          label: 'Cleaning crew mobile software',
         },
       },
       {
@@ -653,12 +741,16 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       { href: '/features/scheduling-and-dispatch', label: 'Cleaning staff scheduling software' },
       { href: '/for/commercial-cleaning-companies', label: 'Commercial janitorial scheduling' },
       {
+        href: '/features/mobile-scheduling-for-cleaners',
+        label: 'Cleaning crew mobile software',
+      },
+      {
         href: '/help/cleaning-businesses/schedule-cleaning-crews',
         label: 'Cleaning crew management guide',
       },
       {
         href: '/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners',
-        label: 'Dispatch software for cleaning companies',
+        label: 'Cleaning & janitorial dispatch and scheduling',
       },
       { href: '/features/invoicing-and-payments', label: 'Online payments for cleaning companies' },
       { href: '/start-trial', label: 'Start free trial' },
@@ -669,17 +761,17 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
   {
     slug: 'mobile-scheduling-for-cleaners',
     path: '/features/mobile-scheduling-for-cleaners',
-    metaTitle: 'Mobile app for cleaning employees',
+    metaTitle: 'Cleaning crew mobile software',
     metaDescription:
-      'A mobile app for cleaning employees — mobile day views, visit check-in, on-site payment recording, and proof photos. No App Store download required; runs in the mobile browser.',
-    eyebrow: 'Mobile app',
-    headline: 'Mobile app for cleaning employees',
-    lead: 'Give your cleaning crew a mobile-friendly schedule view — check in on site, complete visits, record payments, and capture proof photos without calling the office. No separate App Store download required.',
+      'Cleaning crew mobile software for field cleaners — today’s route, visit check-in, on-site payments, and proof photos in the mobile browser. No App Store download required.',
+    eyebrow: 'Cleaning crew mobile',
+    headline: 'Cleaning crew mobile software for field teams',
+    lead: 'Cleaning crew mobile software that gives your cleaners today’s route on any phone — check in on site, complete visits, record payments, and capture proof photos without calling the office. No separate App Store download required.',
     sections: [
       {
         title: 'Today’s route on any phone',
         paragraphs: [
-          'Field employees sign in to see their assigned visits for the day — addresses, customer notes, and visit status. No separate cleaner app download required; the schedule works in the mobile browser.',
+          'Cleaning crew mobile software should put the day’s stops in every cleaner’s pocket. Field employees sign in to see assigned visits — addresses, customer notes, and visit status — in the mobile browser. No separate cleaner app download required.',
         ],
         bullets: [
           'Mobile-friendly day schedule for field staff',
@@ -694,13 +786,17 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
       {
         title: 'Check in and complete visits on site',
         paragraphs: [
-          'Cleaners mark visits in progress and complete them from the field. Owners and office managers see status updates on the dashboard without a group text chain.',
+          'Cleaners mark visits in progress and complete them from the field. Owners and office managers see status updates on the dashboard without a group text chain. GPS-verified check-in is available on every plan for arrival proof.',
         ],
         bullets: [
           'Visit check-in and completion',
-          'Audit trail for schedule changes',
+          'GPS-verified check-in on every plan',
           'Works for residential and commercial routes',
         ],
+        link: {
+          href: '/features/crew-scheduling-and-timekeeping',
+          label: 'Crew scheduling & timekeeping',
+        },
       },
       {
         title: 'Record payments and proof in the field',
@@ -717,17 +813,33 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
           label: 'Online payments for cleaning companies',
         },
       },
+      {
+        title: 'Mobile app for cleaning employees — without the install friction',
+        paragraphs: [
+          'Many owners search for a mobile app for cleaning employees and then struggle with App Store installs, updates, and device mix. Clean Scheduler’s cleaning crew mobile software runs in the browser so rotating crews can sign in on the phone they already carry.',
+        ],
+        bullets: [
+          'No App Store or Play Store install required',
+          'Works on iOS and Android browsers',
+          'Same visit workflow residential and commercial crews already use',
+        ],
+      },
     ],
     faq: [
+      {
+        question: 'What is cleaning crew mobile software?',
+        answer:
+          'Cleaning crew mobile software lets field employees see today’s route, check in on site, complete visits, and record on-site payments. Clean Scheduler is cleaning crew mobile software that runs in the mobile browser — no separate cleaner app install required.',
+      },
       {
         question: 'Is there a mobile app for cleaning employees to download?',
         answer:
           'Clean Scheduler runs in the mobile browser — field employees sign in and see their schedule without a separate App Store download. This keeps onboarding simple for cleaners who rotate frequently.',
       },
       {
-        question: 'What is cleaning crew mobile software?',
+        question: 'Does cleaning crew mobile software include GPS?',
         answer:
-          'Cleaning crew mobile software lets field employees see today’s route, check in on site, complete visits, and record on-site payments. Clean Scheduler includes this in the mobile browser — no separate cleaner app install required.',
+          'Every plan includes GPS-verified check-in: a one-time location stamp when crews check in to a visit. We do not offer live GPS fleet tracking or continuous dispatch maps.',
       },
       {
         question: 'Can cleaners see the full company calendar?',
@@ -747,10 +859,14 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         label: 'Cleaning crew management software',
       },
       { href: '/features/scheduling-and-dispatch', label: 'Cleaning scheduling software' },
+      {
+        href: '/features/stripe-integration',
+        label: 'Cleaning company software with Stripe integration',
+      },
       { href: '/compare', label: 'Compare cleaning software' },
       { href: '/start-trial', label: 'Start free trial' },
     ],
-    sitemapPriority: 0.78,
+    sitemapPriority: 0.88,
     changeFrequency: 'monthly',
   },
 ];
@@ -759,9 +875,9 @@ export const COMPARE_PAGES: SeoMarketingPage[] = [
   {
     slug: 'spreadsheets-and-texts',
     path: '/compare/spreadsheets-and-texts',
-    metaTitle: 'Replace your cleaning spreadsheet with scheduling software',
+    metaTitle: 'Replace cleaning spreadsheets with scheduling software',
     metaDescription:
-      'Replace cleaning spreadsheet software with quotes, scheduling, and invoicing in one system. Compare spreadsheets and group texts vs Clean Scheduler for cleaning businesses.',
+      'Replace cleaning spreadsheets and group texts with quotes, scheduling, invoicing, and Stripe payments in one system. See when to upgrade — free 7-day trial.',
     eyebrow: 'Compare',
     headline: 'Replace your cleaning spreadsheet before it breaks your schedule',
     lead: 'Many cleaning companies start with free tools. Here is an honest look at when to replace your cleaning spreadsheet — and what changes when you switch to dedicated scheduling software.',
@@ -824,10 +940,17 @@ export const COMPARE_PAGES: SeoMarketingPage[] = [
       },
     ],
     relatedLinks: [
-      { href: '/features/scheduling-and-dispatch', label: 'Cleaning scheduling software' },
+      {
+        href: '/features/scheduling-and-dispatch',
+        label: 'Best scheduling software for cleaning businesses',
+      },
       {
         href: '/features/stripe-integration',
         label: 'Cleaning company software with Stripe integration',
+      },
+      {
+        href: '/features/mobile-scheduling-for-cleaners',
+        label: 'Cleaning crew mobile software',
       },
       { href: '/compare/vs-jobber', label: 'vs Jobber' },
       { href: '/compare/vs-zenmaid', label: 'vs ZenMaid' },

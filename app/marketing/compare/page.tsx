@@ -13,9 +13,9 @@ import { COMPARE_PAGES } from '@/lib/marketing/seoContent';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import styles from '@/components/marketing/SeoMarketingPage.module.scss';
 
-const pageTitle = 'Compare Clean Scheduler';
+const pageTitle = 'Compare cleaning business software';
 const pageDescription =
-  'Honest comparisons of Clean Scheduler vs Jobber, ZenMaid, Launch27 alternative, Housecall Pro, Swept, spreadsheets, and generic field service tools for cleaning businesses.';
+  'Compare cleaning business software: Clean Scheduler vs Jobber, ZenMaid, Housecall Pro, Launch27, Swept, spreadsheets, and generic field service tools. Honest pros, cons, and pricing.';
 
 export const metadata: Metadata = buildMarketingPageMetadata({
   path: '/compare',
@@ -43,10 +43,11 @@ export default function CompareHubPage() {
           <Container size="md">
             <Stack gap={4} align="center">
               <span className={styles.eyebrow}>Compare</span>
-              <h1 className={styles.title}>How Clean Scheduler compares</h1>
+              <h1 className={styles.title}>Compare cleaning business software</h1>
               <p className={styles.lead}>
-                Straightforward comparisons for cleaning business owners evaluating software —
-                including when a competitor might still be the better fit.
+                Straightforward comparisons for cleaning business owners evaluating scheduling,
+                payments, and Stripe-ready software — including when a competitor might still be the
+                better fit.
               </p>
               <div className={styles.heroActions}>
                 <Button size="lg" href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>

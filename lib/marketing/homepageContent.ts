@@ -202,14 +202,29 @@ export const MARKETING_THREE_PORTALS = [
 
 export const MARKETING_FAQ: MarketingFaqItem[] = [
   {
+    question: 'What is Clean Scheduler?',
+    answer:
+      'Clean Scheduler is cleaning scheduling software for residential and commercial cleaning companies — quotes, crew schedules, invoicing, Stripe payments, and month-end AR in one workspace. Start a 7-day free trial with no credit card required.',
+  },
+  {
     question: 'Do you offer cleaning scheduling software?',
     answer:
-      'Yes. Clean Scheduler includes cleaning scheduling software with recurring visit rules, crew assignment, customer reschedule requests, and mobile field views. See our scheduling features page for details.',
+      'Yes. Clean Scheduler includes cleaning scheduling software with recurring visit rules, crew assignment, customer reschedule requests, and cleaning crew mobile software for field views. See our scheduling features page for details.',
   },
   {
     question: 'How do cleaning companies accept online payments?',
     answer:
-      'Connect Stripe to add secure pay links to invoices. Customers pay by card or ACH from the invoice email or customer portal. You can also record cash, checks, and Zelle — see our online payments feature page.',
+      'Connect Stripe to add secure pay links to invoices. Customers pay by card or ACH from the invoice email or customer portal. You can also record cash, checks, and Zelle — see our online payments feature page and Stripe integration page.',
+  },
+  {
+    question: 'Does Clean Scheduler include cleaning company software with Stripe integration?',
+    answer:
+      'Yes. Clean Scheduler is cleaning company software with Stripe integration via Stripe Connect — card and ACH pay links on invoices, funds to your connected account, platform billing kept separate.',
+  },
+  {
+    question: 'Do you have cleaning crew mobile software?',
+    answer:
+      'Yes. Cleaning crew mobile software lets field employees see today’s route, check in, complete visits, and record on-site payments in the mobile browser — no App Store download required.',
   },
   {
     question: 'Should I replace my cleaning spreadsheet?',
@@ -305,7 +320,12 @@ export const MARKETING_SOCIAL_PROOF = {
     {
       label: 'Payments via Stripe',
       detail: 'Accept cards and ACH through Stripe Connect.',
-      href: '/features/invoicing-and-payments',
+      href: '/features/stripe-integration',
+    },
+    {
+      label: 'Cleaning crew mobile',
+      detail: 'Field cleaners check in and complete visits from any phone.',
+      href: '/features/mobile-scheduling-for-cleaners',
     },
     {
       label: 'Security posture',
