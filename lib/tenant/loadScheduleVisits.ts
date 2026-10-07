@@ -21,6 +21,7 @@ type VisitListRow = {
   starts_at: string;
   ends_at: string;
   status: Tables<'tenant_scheduled_visits'>['status'];
+  visit_purpose: Tables<'tenant_scheduled_visits'>['visit_purpose'];
   notes: string | null;
   expected_amount_cents: number | null;
   checked_in_at: string | null;
@@ -81,6 +82,7 @@ function mapVisitRows(rows: VisitListRow[]): ScheduleVisitVM[] {
       starts_at: v.starts_at,
       ends_at: v.ends_at,
       status: v.status,
+      visitPurpose: v.visit_purpose ?? 'service',
       notes: v.notes,
       customerFieldNotes: v.customers?.tenant_customer_profiles?.field_notes?.trim() || null,
       communityName,
@@ -122,6 +124,7 @@ export async function loadScheduleVisits(params: {
       starts_at,
       ends_at,
       status,
+      visit_purpose,
       notes,
       expected_amount_cents,
       checked_in_at,
@@ -187,8 +190,10 @@ export async function loadScheduleVisits(params: {
   let visits = mapVisitRows(visitRows ?? []);
 
   if (params.fieldEmployeeMode && params.currentUserId) {
-    visits = visits.filter((visit) =>
-      isVisitAssignee(visit.assigneeUserIds, params.currentUserId!),
+    visits = visits.filter(
+      (visit) =>
+        isVisitAssignee(visit.assigneeUserIds, params.currentUserId!) &&
+        !(visit.visitPurpose === 'consultation' && visit.status === 'completed'),
     );
   }
 

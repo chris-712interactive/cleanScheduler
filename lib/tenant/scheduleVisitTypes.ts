@@ -6,6 +6,7 @@ export type ScheduleVisitVM = {
   starts_at: string;
   ends_at: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+  visitPurpose: 'service' | 'consultation';
   notes: string | null;
   customerFieldNotes: string | null;
   communityName: string | null;
