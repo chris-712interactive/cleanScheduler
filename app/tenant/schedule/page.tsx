@@ -166,6 +166,14 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         actions={
           isFieldEmployee ? undefined : (
             <div className={styles.scheduleHeaderActions}>
+              <Button
+                as="a"
+                href="/schedule/new"
+                variant="primary"
+                iconLeft={<Plus size={18} aria-hidden />}
+              >
+                New appointment
+              </Button>
               <Button as="a" href="/schedule/time-off-requests" variant="secondary">
                 Time off requests
               </Button>
@@ -174,14 +182,6 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
               </Button>
               <Button as="a" href="/schedule/new?purpose=consultation" variant="secondary">
                 Schedule consultation
-              </Button>
-              <Button
-                as="a"
-                href="/schedule/new"
-                variant="primary"
-                iconLeft={<Plus size={18} aria-hidden />}
-              >
-                New appointment
               </Button>
             </div>
           )

@@ -62,6 +62,42 @@ function normalizeLocationFilter(value: string): string {
   return trimmed && trimmed !== 'all' ? trimmed : 'all';
 }
 
+function formatOfficeDateLabel(
+  dateKey: string,
+  view: ScheduleView,
+  weekDayKeys: string[],
+  isLocalToday: boolean,
+): { primary: string; secondary: string | null } {
+  const anchor = new Date(`${dateKey}T12:00:00`);
+  if (view === 'month') {
+    return {
+      primary: anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+      secondary: null,
+    };
+  }
+  if (view === 'week') {
+    const weekStartKey = weekDayKeys[0] ?? dateKey;
+    const weekEndKey = weekDayKeys[weekDayKeys.length - 1] ?? dateKey;
+    const start = new Date(`${weekStartKey}T12:00:00`);
+    const end = new Date(`${weekEndKey}T12:00:00`);
+    const sameMonth =
+      start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+    const primary = sameMonth
+      ? `${start.toLocaleDateString(undefined, { month: 'long' })} ${start.getDate()}–${end.getDate()}`
+      : `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    return { primary, secondary: String(start.getFullYear()) };
+  }
+  return {
+    primary: isLocalToday ? 'Today' : anchor.toLocaleDateString(undefined, { weekday: 'long' }),
+    secondary: anchor.toLocaleDateString(undefined, {
+      weekday: isLocalToday ? 'long' : undefined,
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+  };
+}
+
 export function TenantScheduleClient({
   visits: initialVisits,
   dateKey: initialDateKey,
@@ -222,16 +258,10 @@ export function TenantScheduleClient({
   const showingFieldJobs = fieldEmployeeMode && view === 'today';
   const showingFieldCalendar = fieldEmployeeMode && view !== 'today';
 
-  const centerLabel = useMemo(() => {
-    const anchor = new Date(`${dateKey}T12:00:00`);
-    const long = anchor.toLocaleDateString(undefined, {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    return isLocalToday ? `Today, ${long}` : long;
-  }, [dateKey, isLocalToday]);
+  const officeDate = useMemo(
+    () => formatOfficeDateLabel(dateKey, view, weekDayKeys, isLocalToday),
+    [dateKey, view, weekDayKeys, isLocalToday],
+  );
 
   const fieldNav = useMemo(() => {
     const anchor = new Date(`${dateKey}T12:00:00`);
@@ -403,8 +433,13 @@ export function TenantScheduleClient({
             >
               <ChevronLeft size={20} aria-hidden="true" />
             </button>
-            <div className={styles.scheduleDateCenter}>
-              <span className={styles.scheduleDateLabel}>{centerLabel}</span>
+            <div className={styles.scheduleDateCenter} aria-live="polite">
+              <span className={styles.scheduleDateLabel}>
+                <span className={styles.scheduleDatePrimary}>{officeDate.primary}</span>
+                {officeDate.secondary ? (
+                  <span className={styles.scheduleDateSecondary}>{officeDate.secondary}</span>
+                ) : null}
+              </span>
               {!isLocalToday ? (
                 <button
                   type="button"

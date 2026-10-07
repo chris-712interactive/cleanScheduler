@@ -37,6 +37,11 @@ Work to make Clean Scheduler feel less early-stage / “vibe coded” and more l
 - Calmer linear hero backgrounds on marketing landing, pricing, SEO pages, and final CTA.
 - Screenshot capture script documents `/campaigns` → `feature-campaigns.png` for future refreshes.
 
+### Office schedule on a phone
+
+- Schedule actions, the Schedule / Issues switch, the date stepper, and Day / Week / Month stack in even rows instead of wrapping into the date label.
+- The date reads as two lines (for example **Today** and **Wednesday, October 7, 2026**), and **Jump to today** stays on one line.
+
 ### Typography
 
 - Source Sans 3 via `next/font` as `--font-source-sans`, consumed by `--font-sans` in the theme token stack.
