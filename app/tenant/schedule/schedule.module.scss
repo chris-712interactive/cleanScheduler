@@ -119,15 +119,22 @@
 }
 
 .scheduleTabs {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
+
+  @include mq.up(md) {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-5);
+  }
 }
 
 .scheduleTab {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: var(--space-2) var(--space-4);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -320,13 +327,22 @@
   min-height: 100%;
 }
 
-.schedulePageHeader {
-  margin-bottom: var(--space-5);
+.schedulePageHeader.schedulePageHeader {
+  margin-bottom: var(--space-4);
 
   :global(h1) {
     color: var(--color-brand-primary);
+    font-size: var(--font-size-2xl);
     font-weight: 700;
     letter-spacing: -0.02em;
+  }
+
+  @include mq.up(md) {
+    margin-bottom: var(--space-5);
+
+    :global(h1) {
+      font-size: var(--font-size-3xl);
+    }
   }
 
   :global(p) {
@@ -370,10 +386,34 @@
 }
 
 .scheduleHeaderActions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
-  align-items: center;
+  width: 100%;
+
+  > :first-child,
+  > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  > * {
+    width: 100%;
+  }
+
+  @include mq.up(md) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+
+    > :first-child {
+      order: 1;
+    }
+
+    > * {
+      width: auto;
+    }
+  }
 }
 
 .scheduleLocationFilter {
@@ -397,7 +437,11 @@
 .scheduleShell {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
+
+  @include mq.up(md) {
+    gap: var(--space-4);
+  }
 }
 
 .scheduleShellLoading {
@@ -408,24 +452,49 @@
 
 .scheduleControlBar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xs);
+
+  @include mq.up(md) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+  }
 }
 
 .scheduleDateNav {
-  flex: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
+  width: 100%;
   min-width: 0;
+
+  .iconNavBtn {
+    width: 44px;
+    height: 44px;
+  }
+
+  @include mq.up(md) {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    width: auto;
+
+    .iconNavBtn {
+      width: 36px;
+      height: 36px;
+    }
+  }
 }
 
 .scheduleDateCenter {
@@ -462,15 +531,26 @@
 }
 
 .scheduleDateLabel {
-  font-weight: 600;
-  font-size: var(--font-size-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
   color: var(--color-text);
   text-align: center;
-  line-height: 1.35;
+  line-height: 1.25;
+}
 
-  @include mq.up(md) {
-    font-size: var(--font-size-md);
-  }
+.scheduleDatePrimary {
+  font-weight: 700;
+  font-size: var(--font-size-md);
+  letter-spacing: -0.02em;
+}
+
+.scheduleDateSecondary {
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .todayLink {
@@ -483,6 +563,7 @@
   cursor: pointer;
   text-decoration: underline;
   line-height: 1.2;
+  white-space: nowrap;
 
   &:hover {
     color: var(--color-brand-primary-hover);
@@ -490,14 +571,28 @@
 }
 
 .viewToggle {
-  display: inline-flex;
-  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
+  width: 100%;
+
+  @include mq.up(md) {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: auto;
+  }
 }
 
 .viewToggleBtn {
-  min-height: 36px;
-  padding: var(--space-2) var(--space-4);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+
+  @include mq.up(md) {
+    width: auto;
+    min-height: 36px;
+    padding: var(--space-2) var(--space-4);
+  }
   font-size: var(--font-size-sm);
   font-weight: 600;
   border: 1px solid var(--color-border);
@@ -518,8 +613,15 @@
 }
 
 .viewToggleBtnActive {
-  min-height: 36px;
-  padding: var(--space-2) var(--space-4);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+
+  @include mq.up(md) {
+    width: auto;
+    min-height: 36px;
+    padding: var(--space-2) var(--space-4);
+  }
   font-size: var(--font-size-sm);
   font-weight: 600;
   border: 1px solid var(--color-brand-primary);
@@ -542,14 +644,19 @@
 }
 
 .scheduleFilters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-3);
+
+  @include mq.up(md) {
+    display: flex;
+    flex-wrap: wrap;
+  }
 }
 
 .filterSelect {
-  min-width: 160px;
-  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
@@ -563,6 +670,17 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
+
+  @include mq.up(md) {
+    min-width: 12rem;
+
+    .filterSelect {
+      width: auto;
+      min-width: 160px;
+      min-height: 40px;
+    }
+  }
 }
 
 .scheduleFilterLabel {
@@ -573,10 +691,15 @@
 
 .dayBoard {
   display: grid;
-  grid-template-columns: 4.75rem 1fr;
+  grid-template-columns: 4.25rem 1fr;
   gap: var(--space-2);
   min-height: 480px;
-  padding: var(--space-3);
+  padding: var(--space-2);
+
+  @include mq.up(md) {
+    grid-template-columns: 4.75rem 1fr;
+    padding: var(--space-3);
+  }
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -595,6 +718,8 @@
 .hourTick {
   border-top: 1px solid transparent;
   padding-top: 2px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .timelineTrack {
@@ -816,14 +941,19 @@
 }
 
 .weekColumnHead {
-  padding: var(--space-2) var(--space-2);
-  font-size: var(--font-size-xs);
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--font-size-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+
+  @include mq.up(md) {
+    padding: var(--space-2);
+    font-size: var(--font-size-xs);
+  }
 }
 
 .weekList {
@@ -833,7 +963,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  min-height: 120px;
+  min-height: 0;
+
+  @include mq.up(md) {
+    min-height: 120px;
+  }
 }
 
 .weekItem {
@@ -893,11 +1027,16 @@
 }
 
 .monthWeekday {
-  padding: var(--space-2);
+  padding: var(--space-1) 0;
   text-align: center;
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: 700;
   color: var(--color-text-muted);
+
+  @include mq.up(md) {
+    padding: var(--space-2);
+    font-size: var(--font-size-xs);
+  }
 }
 
 .monthGrid {
@@ -906,8 +1045,8 @@
 }
 
 .monthCell {
-  min-height: 72px;
-  padding: var(--space-2);
+  min-height: 48px;
+  padding: var(--space-1);
   border: none;
   border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
@@ -925,6 +1064,11 @@
 
   &:hover {
     background: var(--color-bg-muted);
+  }
+
+  @include mq.up(md) {
+    min-height: 72px;
+    padding: var(--space-2);
   }
 }
 
