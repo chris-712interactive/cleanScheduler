@@ -23,7 +23,7 @@ import { featureGateErrorMessage } from '@/lib/billing/tenantFeatureGate';
 import { saveVisitProofPhotosFromForm } from '@/lib/visits/visitProofPhotos';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { buildCreateQuotePath } from '@/lib/tenant/customerConsultation';
-import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
+import { fieldEmployeeHomePath, isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import {
   checkInLocationUpdateFields,
   parseCheckInLocationFromFormData,
@@ -548,20 +548,19 @@ export async function completeVisitWithPaymentAction(
   };
 
   if (consultationComplete) {
-    if (!isFieldEmployeeRole(actorRole)) {
-      revalidateVisitPaths(visitId);
+    const fieldEmployee = isFieldEmployeeRole(actorRole);
+    revalidateVisitPaths(visitId);
+    if (!fieldEmployee) {
       revalidatePath('/quotes/new', 'page');
       revalidatePath('/customers', 'page');
-      return {
-        success: 'Consultation marked complete.',
-        visitPatch,
-        redirectTo: buildCreateQuotePath(
-          loaded.visit.customer_id,
-          loaded.visit.property_id ?? null,
-        ),
-      };
     }
-    return { success: 'Consultation marked complete.', visitPatch };
+    return {
+      success: 'Consultation marked complete.',
+      visitPatch,
+      redirectTo: fieldEmployee
+        ? fieldEmployeeHomePath()
+        : buildCreateQuotePath(loaded.visit.customer_id, loaded.visit.property_id ?? null),
+    };
   }
 
   if ('emailed' in billing && billing.emailed) {
