@@ -414,6 +414,15 @@ function EditPropertyForm({
             placeholder="Oakridge Estates"
           />
         </Field>
+        <Field id={`building_${id}`} label="Building or suite (optional)">
+          <input
+            id={`building_${id}`}
+            name="building_name"
+            className={styles.input}
+            defaultValue={property.building_name ?? ''}
+            placeholder="Tower B, unit 4"
+          />
+        </Field>
         <p className={styles.sectionHint}>
           Use this when the home is in a gated community or named neighborhood. It is shown to field
           employees and is not part of the street address.
@@ -535,6 +544,14 @@ function AddPropertyForm({
             name="community_name"
             className={styles.input}
             placeholder="Oakridge Estates"
+          />
+        </Field>
+        <Field id="new_building" label="Building or suite (optional)">
+          <input
+            id="new_building"
+            name="building_name"
+            className={styles.input}
+            placeholder="Tower B, unit 4"
           />
         </Field>
         <p className={styles.sectionHint}>

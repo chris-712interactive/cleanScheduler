@@ -30,6 +30,7 @@ type PropertyPick = Pick<
   | 'postal_code'
   | 'site_notes'
   | 'community_name'
+  | 'building_name'
   | 'is_primary'
   | 'service_zone_id'
 >;

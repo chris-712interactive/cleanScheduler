@@ -84,7 +84,7 @@ The schedule view will look different depending on the type of user who is looki
 
 When it comes to the scheduling view, when a user clicks on the schedule navigation, it should default to the current day's schedule as this would be the most important to any business. All types of services should be able to be scheduled and/or adjusted from this view.
 
-**Implementation note (2026-10-07):** Owners set what a good day means under **Settings → Scheduling logic**. Each factor (preferred cleaner, drive time, skills, crew size, pets, commercial access hours, workload balance, and others) can be turned off, weighted, or required. `planOptimizedDay` builds one day from those weights. Factors with no data on a job are skipped.
+**Implementation note (2026-10-07):** The day schedule suggests crew for visits that still need someone, using the weights under **Settings → Scheduling logic**. Customer scheduling preferences and a crew scheduling profile supply the rules that need extra fields. US addresses are geocoded for straight-line drive time.
 
 ## Employees
 

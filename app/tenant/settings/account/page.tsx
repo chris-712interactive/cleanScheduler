@@ -17,6 +17,8 @@ import type { TenantRole } from '@/lib/auth/types';
 import { hasMinimumTenantRole } from '@/lib/auth/tenantRoleAccess';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
 import { EmployeeAvailabilityForm } from '@/app/tenant/employees/EmployeeAvailabilityForm';
+import { EmployeeSchedulingProfileForm } from '@/app/tenant/employees/EmployeeSchedulingProfileForm';
+import { crewSchedulingProfileFromRow } from '@/lib/schedule/optimizer/crewProfile';
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
@@ -72,27 +74,36 @@ export default async function TenantAccountSettingsPage({
   const userId = auth?.user.id ?? '';
 
   const admin = createAdminClient();
-  const [{ data: billing }, { data: tenantRow }, memberProfile] = await Promise.all([
-    admin
-      .from('tenant_billing_accounts')
-      .select(
-        'activated_at, trial_ends_at, status, canceled_at, stripe_subscription_id, stripe_customer_id',
-      )
-      .eq('tenant_id', membership.tenantId)
-      .maybeSingle(),
-    canSetScheduleAvailability && userId
-      ? admin
-          .from('tenants')
-          .select(
-            'timezone, work_week_days, work_day_start, work_day_end, work_day_hours, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
-          )
-          .eq('id', membership.tenantId)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    canSetScheduleAvailability && userId
-      ? loadMemberScheduleProfile(admin, membership.tenantId, userId)
-      : Promise.resolve(null),
-  ]);
+  const [{ data: billing }, { data: tenantRow }, memberProfile, { data: crewRow }] =
+    await Promise.all([
+      admin
+        .from('tenant_billing_accounts')
+        .select(
+          'activated_at, trial_ends_at, status, canceled_at, stripe_subscription_id, stripe_customer_id',
+        )
+        .eq('tenant_id', membership.tenantId)
+        .maybeSingle(),
+      canSetScheduleAvailability && userId
+        ? admin
+            .from('tenants')
+            .select(
+              'timezone, work_week_days, work_day_start, work_day_end, work_day_hours, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
+            )
+            .eq('id', membership.tenantId)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      canSetScheduleAvailability && userId
+        ? loadMemberScheduleProfile(admin, membership.tenantId, userId)
+        : Promise.resolve(null),
+      canSetScheduleAvailability && userId
+        ? admin
+            .from('tenant_member_scheduling_profiles')
+            .select('*')
+            .eq('tenant_id', membership.tenantId)
+            .eq('user_id', userId)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
   const params = await searchParams;
   const mfaRequiredNotice = params.mfa === 'required';
   const authPolicy = await loadTenantAuthPolicy(membership.tenantId);
@@ -283,6 +294,12 @@ export default async function TenantAccountSettingsPage({
                     profile={memberProfile}
                     tenantDefaults={tenantDefaults}
                   />
+                  <AccountSchedulingProfile
+                    tenantSlug={membership.tenantSlug}
+                    tenantId={membership.tenantId}
+                    userId={userId}
+                    crewRow={crewRow}
+                  />
                 </section>
               ) : null}
             </div>
@@ -296,6 +313,63 @@ export default async function TenantAccountSettingsPage({
           />
         ) : null}
       </Stack>
+    </>
+  );
+}
+
+async function AccountSchedulingProfile({
+  tenantSlug,
+  tenantId,
+  userId,
+  crewRow,
+}: {
+  tenantSlug: string;
+  tenantId: string;
+  userId: string;
+  crewRow: Parameters<typeof crewSchedulingProfileFromRow>[0];
+}) {
+  const admin = createAdminClient();
+  const [{ data: zones }, { data: teammates }] = await Promise.all([
+    admin
+      .from('tenant_service_zones')
+      .select('id, name')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .order('name'),
+    admin
+      .from('tenant_memberships')
+      .select('user_id')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true),
+  ]);
+  const partnerIds = (teammates ?? [])
+    .map((member) => member.user_id)
+    .filter((id) => id !== userId);
+  const { data: partnerProfiles } =
+    partnerIds.length > 0
+      ? await admin.from('user_profiles').select('user_id, display_name').in('user_id', partnerIds)
+      : { data: [] };
+
+  return (
+    <>
+      <header className={styles.panelHeader}>
+        <h3 className={styles.panelTitle}>Scheduling profile</h3>
+        <p className={styles.panelLead}>
+          Skills, limits, and home base used when the schedule suggests you for a job.
+        </p>
+      </header>
+      <EmployeeSchedulingProfileForm
+        tenantSlug={tenantSlug}
+        targetUserId={userId}
+        profile={crewSchedulingProfileFromRow(crewRow)}
+        zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
+        partners={partnerIds.map((id) => ({
+          id,
+          label:
+            partnerProfiles?.find((profile) => profile.user_id === id)?.display_name?.trim() ||
+            'Team member',
+        }))}
+      />
     </>
   );
 }

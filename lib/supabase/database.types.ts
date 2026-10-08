@@ -1597,6 +1597,178 @@ export type Database = {
           },
         ];
       };
+      tenant_member_scheduling_profiles: {
+        Row: {
+          tenant_id: string;
+          user_id: string;
+          skill_tags: string[];
+          certification_tags: string[];
+          equipment_tags: string[];
+          attribute_tags: string[];
+          language_codes: string[];
+          property_kinds: string[];
+          handles_pets: boolean;
+          handles_chemical_sensitivity: boolean;
+          experience_level: string;
+          max_jobs_per_day: number | null;
+          max_minutes_per_day: number | null;
+          max_drive_minutes: number | null;
+          preferred_zone_ids: string[];
+          preferred_partner_ids: string[];
+          avoid_partner_ids: string[];
+          home_address_line1: string | null;
+          home_city: string | null;
+          home_state: string | null;
+          home_postal_code: string | null;
+          home_latitude: number | null;
+          home_longitude: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          user_id: string;
+          skill_tags?: string[];
+          certification_tags?: string[];
+          equipment_tags?: string[];
+          attribute_tags?: string[];
+          language_codes?: string[];
+          property_kinds?: string[];
+          handles_pets?: boolean;
+          handles_chemical_sensitivity?: boolean;
+          experience_level?: string;
+          max_jobs_per_day?: number | null;
+          max_minutes_per_day?: number | null;
+          max_drive_minutes?: number | null;
+          preferred_zone_ids?: string[];
+          preferred_partner_ids?: string[];
+          avoid_partner_ids?: string[];
+          home_address_line1?: string | null;
+          home_city?: string | null;
+          home_state?: string | null;
+          home_postal_code?: string | null;
+          home_latitude?: number | null;
+          home_longitude?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          user_id?: string;
+          skill_tags?: string[];
+          certification_tags?: string[];
+          equipment_tags?: string[];
+          attribute_tags?: string[];
+          language_codes?: string[];
+          property_kinds?: string[];
+          handles_pets?: boolean;
+          handles_chemical_sensitivity?: boolean;
+          experience_level?: string;
+          max_jobs_per_day?: number | null;
+          max_minutes_per_day?: number | null;
+          max_drive_minutes?: number | null;
+          preferred_zone_ids?: string[];
+          preferred_partner_ids?: string[];
+          avoid_partner_ids?: string[];
+          home_address_line1?: string | null;
+          home_city?: string | null;
+          home_state?: string | null;
+          home_postal_code?: string | null;
+          home_latitude?: number | null;
+          home_longitude?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_member_scheduling_profiles_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_customer_scheduling_preferences: {
+        Row: {
+          tenant_id: string;
+          customer_id: string;
+          preferred_user_ids: string[];
+          required_user_ids: string[];
+          blocked_user_ids: string[];
+          arrival_start: string | null;
+          arrival_end: string | null;
+          access_start: string | null;
+          access_end: string | null;
+          pet_in_home: boolean;
+          chemical_sensitivity: boolean;
+          language_codes: string[];
+          required_attribute_tags: string[];
+          priority: number;
+          required_crew_size: number;
+          required_skill_tags: string[];
+          required_certification_tags: string[];
+          required_equipment_tags: string[];
+          requires_key_pickup: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          customer_id: string;
+          preferred_user_ids?: string[];
+          required_user_ids?: string[];
+          blocked_user_ids?: string[];
+          arrival_start?: string | null;
+          arrival_end?: string | null;
+          access_start?: string | null;
+          access_end?: string | null;
+          pet_in_home?: boolean;
+          chemical_sensitivity?: boolean;
+          language_codes?: string[];
+          required_attribute_tags?: string[];
+          priority?: number;
+          required_crew_size?: number;
+          required_skill_tags?: string[];
+          required_certification_tags?: string[];
+          required_equipment_tags?: string[];
+          requires_key_pickup?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          customer_id?: string;
+          preferred_user_ids?: string[];
+          required_user_ids?: string[];
+          blocked_user_ids?: string[];
+          arrival_start?: string | null;
+          arrival_end?: string | null;
+          access_start?: string | null;
+          access_end?: string | null;
+          pet_in_home?: boolean;
+          chemical_sensitivity?: boolean;
+          language_codes?: string[];
+          required_attribute_tags?: string[];
+          priority?: number;
+          required_crew_size?: number;
+          required_skill_tags?: string[];
+          required_certification_tags?: string[];
+          required_equipment_tags?: string[];
+          requires_key_pickup?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_customer_scheduling_preferences_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_member_time_off: {
         Row: {
           id: string;
@@ -1843,6 +2015,10 @@ export type Database = {
           postal_code: string | null;
           site_notes: string | null;
           community_name: string | null;
+          building_name: string | null;
+          latitude: number | null;
+          longitude: number | null;
+          scheduling_override: Json | null;
           access_codes_ciphertext: string | null;
           is_primary: boolean;
           bedrooms: number | null;
@@ -1866,6 +2042,10 @@ export type Database = {
           postal_code?: string | null;
           site_notes?: string | null;
           community_name?: string | null;
+          building_name?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          scheduling_override?: Json | null;
           access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;
@@ -1889,6 +2069,10 @@ export type Database = {
           postal_code?: string | null;
           site_notes?: string | null;
           community_name?: string | null;
+          building_name?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          scheduling_override?: Json | null;
           access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;
@@ -4655,6 +4839,8 @@ export type Database = {
           city: string | null;
           state: string | null;
           postal_code: string | null;
+          latitude: number | null;
+          longitude: number | null;
           country: string;
           work_week_days: string[];
           work_day_start: string;
@@ -4683,6 +4869,8 @@ export type Database = {
           city?: string | null;
           state?: string | null;
           postal_code?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
           country?: string;
           work_week_days?: string[];
           work_day_start?: string;
@@ -4711,6 +4899,8 @@ export type Database = {
           city?: string | null;
           state?: string | null;
           postal_code?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
           country?: string;
           work_week_days?: string[];
           work_day_start?: string;

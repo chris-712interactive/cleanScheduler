@@ -14,6 +14,8 @@ import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
 import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
 import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
+import { CustomerSchedulingPanel } from '../CustomerSchedulingPanel';
+import { schedulingFactsFromRow } from '@/lib/schedule/optimizer/preferences';
 import { loadPropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { loadServiceZonesForAssignment } from '@/lib/tenant/serviceZones';
@@ -116,6 +118,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         postal_code,
         site_notes,
         community_name,
+        building_name,
         is_primary,
         service_zone_id
       )
@@ -265,6 +268,17 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
           </Card>
 
           <Card
+            title="Scheduling preferences"
+            description="Who should clean, when they can arrive, and what the job requires."
+          >
+            <CustomerSchedulingPreferences
+              tenantSlug={membership.tenantSlug}
+              tenantId={membership.tenantId}
+              customerId={customer.id}
+            />
+          </Card>
+
+          <Card
             title="Service locations"
             description="Quotes and scheduled visits can target a specific site under this customer."
           >
@@ -332,5 +346,60 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         </div>
       </div>
     </>
+  );
+}
+
+async function CustomerSchedulingPreferences({
+  tenantSlug,
+  tenantId,
+  customerId,
+}: {
+  tenantSlug: string;
+  tenantId: string;
+  customerId: string;
+}) {
+  const admin = createAdminClient();
+  const [{ data: prefRow }, { data: properties }, { data: members }] = await Promise.all([
+    admin
+      .from('tenant_customer_scheduling_preferences')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customerId)
+      .maybeSingle(),
+    admin
+      .from('tenant_customer_properties')
+      .select('id, label, scheduling_override')
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customerId)
+      .order('is_primary', { ascending: false }),
+    admin
+      .from('tenant_memberships')
+      .select('user_id')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true),
+  ]);
+  const memberIds = (members ?? []).map((member) => member.user_id);
+  const { data: profiles } =
+    memberIds.length > 0
+      ? await admin.from('user_profiles').select('user_id, display_name').in('user_id', memberIds)
+      : { data: [] };
+
+  return (
+    <CustomerSchedulingPanel
+      tenantSlug={tenantSlug}
+      customerId={customerId}
+      facts={schedulingFactsFromRow(prefRow)}
+      employees={memberIds.map((id) => ({
+        id,
+        label:
+          profiles?.find((profile) => profile.user_id === id)?.display_name?.trim() ||
+          'Team member',
+      }))}
+      properties={(properties ?? []).map((property) => ({
+        id: property.id,
+        label: property.label?.trim() || 'Property',
+        override: property.scheduling_override,
+      }))}
+    />
   );
 }

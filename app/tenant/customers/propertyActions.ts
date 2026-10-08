@@ -12,6 +12,7 @@ import {
 import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
+import { geocodeUsAddress } from '@/lib/geo/censusGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
 
 export interface PropertyFormState {
@@ -57,6 +58,13 @@ export async function addCustomerProperty(
   const postal = String(formData.get('postal_code') ?? '').trim();
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
   const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
+  const buildingName = String(formData.get('building_name') ?? '').trim() || null;
+  const point = await geocodeUsAddress({
+    line1,
+    city,
+    state,
+    postalCode: postal,
+  });
   const wantPrimary = String(formData.get('set_primary') ?? '') === 'on';
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
 
@@ -114,6 +122,9 @@ export async function addCustomerProperty(
       postal_code: postal || null,
       site_notes: siteNotes || null,
       community_name: communityName,
+      building_name: buildingName,
+      latitude: point?.lat ?? null,
+      longitude: point?.lng ?? null,
       service_zone_id: zoneResolved.zoneId,
       is_primary: makePrimary,
     })
@@ -162,6 +173,13 @@ export async function updateCustomerProperty(
   const postal = String(formData.get('postal_code') ?? '').trim();
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
   const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
+  const buildingName = String(formData.get('building_name') ?? '').trim() || null;
+  const point = await geocodeUsAddress({
+    line1,
+    city,
+    state,
+    postalCode: postal,
+  });
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
 
   if (!slug || !customerId || !propertyId) {
@@ -202,6 +220,9 @@ export async function updateCustomerProperty(
       postal_code: postal || null,
       site_notes: siteNotes || null,
       community_name: communityName,
+      building_name: buildingName,
+      latitude: point?.lat ?? null,
+      longitude: point?.lng ?? null,
       service_zone_id: zoneResolved.zoneId,
     })
     .eq('id', propertyId)
