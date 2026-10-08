@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** Passkeys are checked by Clean Scheduler for every `cleanscheduler.com` subdomain, then a Supabase session is opened. Owners and admins still choose that under Settings → Sign-in security, and can require an authenticator app, a passkey, or either as a second step.
+**Latest polish:** Settings → Scheduling logic lets a company weight or turn off the factors that build a day (drive time, preferred cleaners, skills, crew size, commercial access, workload, and the rest). The scorer is `planOptimizedDay`. See `docs/product/schedule-optimizer.md`.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
@@ -137,6 +137,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 | Customer messaging       | `docs/product/customer-support-messaging.md`      |
 | Tenant reports           | `docs/product/tenant-reports.md`                  |
 | Service zones            | `docs/product/service-zones.md`                   |
+| Scheduling logic         | `docs/product/schedule-optimizer.md`              |
 | Job notes and job types  | `docs/product/job-notes-and-job-types.md`         |
 | Time off notifications   | `docs/product/time-off-notifications.md`          |
 | Sign-in passkeys and 2FA | `docs/product/sign-in-passkeys-and-mfa.md`        |

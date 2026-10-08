@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   Map,
   MapPin,
+  Route,
   Percent,
   KeyRound,
   Shield,
@@ -60,6 +61,13 @@ const HUB_GROUPS: HubGroup[] = [
         label: 'Operations',
         description: 'Quotes, scheduling defaults, payments, and notifications.',
         icon: SlidersHorizontal,
+      },
+      {
+        href: '/settings/scheduling',
+        label: 'Scheduling logic',
+        description:
+          'Weight drive time, preferred cleaners, skills, crew size, and the rest of the day plan.',
+        icon: Route,
       },
       {
         href: '/settings/quotes-pipeline',

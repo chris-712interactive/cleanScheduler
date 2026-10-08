@@ -8,6 +8,10 @@ import {
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { countActiveIntegrations } from '@/lib/integrations/integrationLimits';
+import {
+  countEnabledScheduleFactors,
+  resolveScheduleOptimizerPolicy,
+} from '@/lib/schedule/optimizer/policy';
 import type { createAdminClient } from '@/lib/supabase/server';
 
 export type SettingsHubCardStatus = {
@@ -53,11 +57,20 @@ export async function getSettingsHubCardSummaries(options: {
     admin.from('tenants').select('logo_url').eq('id', tenantId).maybeSingle(),
     admin
       .from('tenant_operational_settings')
-      .select('mfa_required')
+      .select('mfa_required, schedule_optimizer_policy')
       .eq('tenant_id', tenantId)
       .maybeSingle(),
     getMfaStatus(),
   ]);
+
+  const schedulingPolicy = resolveScheduleOptimizerPolicy(authPolicy?.schedule_optimizer_policy);
+  summaries['/settings/scheduling'] = {
+    href: '/settings/scheduling',
+    status: {
+      label: `${countEnabledScheduleFactors(schedulingPolicy)} on`,
+      tone: 'info',
+    },
+  };
 
   const billingStatus = (billing?.status ?? 'trialing') as TenantBillingStatus;
   const paid = canUsePaidSubscriptionFeatures(billingStatus);

@@ -84,6 +84,8 @@ The schedule view will look different depending on the type of user who is looki
 
 When it comes to the scheduling view, when a user clicks on the schedule navigation, it should default to the current day's schedule as this would be the most important to any business. All types of services should be able to be scheduled and/or adjusted from this view.
 
+**Implementation note (2026-10-07):** Owners set what a good day means under **Settings → Scheduling logic**. Each factor (preferred cleaner, drive time, skills, crew size, pets, commercial access hours, workload balance, and others) can be turned off, weighted, or required. `planOptimizedDay` builds one day from those weights. Factors with no data on a job are skipped.
+
 ## Employees
 
 The employees tab would be strictly for Super Admins as well as Administrators with the correct permissions. This view would contain every single user within that business. The information that will be stored for each employee will be as follows:
