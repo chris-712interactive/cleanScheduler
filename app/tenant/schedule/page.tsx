@@ -19,6 +19,8 @@ import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { listScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
 import { listScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { TenantScheduleClient } from './TenantScheduleClient';
+import { DaySchedulingSuggestions } from './DaySchedulingSuggestions';
+import { loadDaySchedulingSuggestions } from '@/lib/schedule/optimizer/loadDay';
 import { ScheduleIssuesList } from './ScheduleIssuesList';
 import styles from './schedule.module.scss';
 
@@ -155,6 +157,15 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     },
   ];
 
+  const dayPlan =
+    !isFieldEmployee && tab === 'schedule' && view === 'day'
+      ? await loadDaySchedulingSuggestions(admin, {
+          tenantId: membership.tenantId,
+          dateKey,
+          timeZone: tenantTimezone,
+        }).catch(() => ({ suggestions: [], gaps: [] }))
+      : null;
+
   return (
     <div className={styles.schedulePage}>
       <PageHeader
@@ -227,6 +238,16 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {dayPlan ? (
+        <DaySchedulingSuggestions
+          tenantSlug={membership.tenantSlug}
+          dateKey={dateKey}
+          timeZone={tenantTimezone}
+          suggestions={dayPlan.suggestions}
+          gaps={dayPlan.gaps}
+        />
       ) : null}
 
       {tab === 'issues' && !isFieldEmployee ? (

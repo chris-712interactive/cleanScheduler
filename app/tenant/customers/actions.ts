@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { geocodeUsAddress } from '@/lib/geo/censusGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
 import { sanitizeConsultationNotes } from '@/lib/visits/consultationNotes';
 import { getAuthContext } from '@/lib/auth/session';
@@ -162,6 +163,13 @@ export async function createTenantCustomer(
     return { error: profileInsert.error.message };
   }
 
+  const point = await geocodeUsAddress({
+    line1: serviceAddressLine1,
+    city: serviceCity,
+    state: serviceState,
+    postalCode: servicePostalCode,
+  });
+
   const propertyInsert = await admin.from('tenant_customer_properties').insert({
     tenant_id: membership.tenantId,
     customer_id: customerId,
@@ -173,6 +181,8 @@ export async function createTenantCustomer(
     state: serviceState || null,
     postal_code: servicePostalCode || null,
     community_name: communityName,
+    latitude: point?.lat ?? null,
+    longitude: point?.lng ?? null,
     service_zone_id: zoneResolved.zoneId,
     is_primary: true,
   });

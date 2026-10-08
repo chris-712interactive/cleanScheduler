@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-05  
 **Branch:** `dev`  
-**Latest polish:** Settings → Scheduling logic lets a company weight or turn off the factors that build a day (drive time, preferred cleaners, skills, crew size, commercial access, workload, and the rest). The scorer is `planOptimizedDay`. See `docs/product/schedule-optimizer.md`.
+**Latest polish:** The day schedule suggests crew for unstaffed visits from Scheduling logic weights, customer preferences, and crew profiles. US addresses geocode for straight-line drive time. See `docs/product/schedule-optimizer.md`.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

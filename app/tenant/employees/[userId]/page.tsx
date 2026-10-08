@@ -14,6 +14,8 @@ import {
 } from '@/lib/tenant/employeePermissions';
 import { EmployeeMemberEditForm } from '../EmployeeMemberEditForm';
 import { EmployeeAvailabilityForm } from '../EmployeeAvailabilityForm';
+import { EmployeeSchedulingProfileForm } from '../EmployeeSchedulingProfileForm';
+import { crewSchedulingProfileFromRow } from '@/lib/schedule/optimizer/crewProfile';
 import { calendarDateKeyInTimeZone } from '@/lib/datetime/tenantCalendarDay';
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
 import {
@@ -126,7 +128,13 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
     targetRole,
   });
 
-  const [{ data: tenantRow }, memberProfile] = await Promise.all([
+  const [
+    { data: tenantRow },
+    memberProfile,
+    { data: crewRow },
+    { data: zones },
+    { data: teammates },
+  ] = await Promise.all([
     admin
       .from('tenants')
       .select(
@@ -135,6 +143,23 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
       .eq('id', membership.tenantId)
       .maybeSingle(),
     loadMemberScheduleProfile(admin, membership.tenantId, targetUserId),
+    admin
+      .from('tenant_member_scheduling_profiles')
+      .select('*')
+      .eq('tenant_id', membership.tenantId)
+      .eq('user_id', targetUserId)
+      .maybeSingle(),
+    admin
+      .from('tenant_service_zones')
+      .select('id, name')
+      .eq('tenant_id', membership.tenantId)
+      .eq('is_active', true)
+      .order('name'),
+    admin
+      .from('tenant_memberships')
+      .select('user_id')
+      .eq('tenant_id', membership.tenantId)
+      .eq('is_active', true),
   ]);
 
   const tenantDefaults = tenantBusinessSnapshotFromRow({
@@ -155,6 +180,20 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
     work_day_end: tenantRow?.work_day_end ?? null,
   });
 
+  const partnerIds = (teammates ?? [])
+    .map((member) => member.user_id)
+    .filter((id) => id !== targetUserId);
+  const { data: partnerProfiles } =
+    partnerIds.length > 0
+      ? await admin.from('user_profiles').select('user_id, display_name').in('user_id', partnerIds)
+      : { data: [] };
+  const partners = partnerIds.map((id) => ({
+    id,
+    label:
+      partnerProfiles?.find((profile) => profile.user_id === id)?.display_name?.trim() ||
+      'Team member',
+  }));
+  const crewProfile = crewSchedulingProfileFromRow(crewRow);
   const showAccess = (canChangeRole || canToggleActive) && targetRole !== 'owner';
   const tenantTimezone = tenantDefaults.timezone;
   const todayKey = calendarDateKeyInTimeZone(tenantTimezone);
@@ -260,6 +299,9 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
           <a className={styles.sectionNavLink} href="#member-availability">
             Availability
           </a>
+          <a className={styles.sectionNavLink} href="#member-scheduling">
+            Scheduling
+          </a>
         </nav>
 
         <EmployeeWeekSchedule
@@ -312,6 +354,27 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
               targetUserId={targetUserId}
               profile={memberProfile}
               tenantDefaults={tenantDefaults}
+            />
+          </section>
+          <section
+            id="member-scheduling"
+            className={styles.availabilityPanel}
+            aria-labelledby="scheduling-heading"
+          >
+            <header className={styles.panelHeader}>
+              <h3 id="scheduling-heading" className={styles.panelTitle}>
+                Scheduling profile
+              </h3>
+              <p className={styles.panelLead}>
+                Skills, limits, and home base the day planner uses when it suggests this person.
+              </p>
+            </header>
+            <EmployeeSchedulingProfileForm
+              tenantSlug={membership.tenantSlug}
+              targetUserId={targetUserId}
+              profile={crewProfile}
+              zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
+              partners={partners}
             />
           </section>
         </div>

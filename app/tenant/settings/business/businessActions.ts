@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
+import { geocodeUsAddress } from '@/lib/geo/censusGeocode';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import {
@@ -236,6 +237,13 @@ export async function updateBusinessAddressAction(
     const state = String(formData.get('state') ?? '').trim();
     const postalCode = String(formData.get('postal_code') ?? '').trim();
     const country = String(formData.get('country') ?? 'US').trim() || 'US';
+    const point = await geocodeUsAddress({
+      line1: addressLine1,
+      city,
+      state,
+      postalCode,
+      country,
+    });
 
     const admin = createAdminClient();
     const { error } = await admin
@@ -246,6 +254,8 @@ export async function updateBusinessAddressAction(
         state: state || null,
         postal_code: postalCode || null,
         country,
+        latitude: point?.lat ?? null,
+        longitude: point?.lng ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', membership.tenantId);

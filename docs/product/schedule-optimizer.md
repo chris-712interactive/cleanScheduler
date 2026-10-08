@@ -27,6 +27,19 @@ A factor with nothing to compare (no coordinates, no skill tags, no preferred cl
 
 Crew inputs the scorer already understands include home base, skills, certifications, equipment, languages, property kind, pets, chemical sensitivity, entry tags, daily job and hour caps, preferred zones, partner preferences, experience, and weekend load. Job inputs include blocked and required cleaners, arrival and site-access windows, standing time, recurring cleaner, crew size, building key, priority, and revenue.
 
-## Not wired yet
+## What the planner reads
 
-The settings page stores the policy. The schedule board still assigns crew by hand and the quote auto-scheduler still uses the earlier availability search. Both can call `planOptimizedDay` once customer and crew profiles are collected in the product. Coordinates are not stored on properties yet, so travel factors wait until a home base and a site location exist.
+Settings → Scheduling logic stores the weights. A day suggestion on the schedule loads the rest:
+
+- Work windows, approved time off, and visits already assigned
+- Recurring anchor time, the last cleaner on that rule, and whether the customer has a completed visit
+- Service zone, postal code, building name, and visit price
+- Customer scheduling defaults and a property override: preferred, required, and blocked cleaners, arrival and access hours, pets, sensitivity, languages, entry tags, priority, crew size, skills, certifications, equipment, and key pickup
+- Crew scheduling profile: skills, certifications, equipment, languages, entry tags, property types, pets, sensitivity, experience, daily caps, preferred zones, partners, and home coordinates
+- Latitude and longitude saved when a US address is geocoded (Census). Drive time stays straight-line. Road miles and live traffic are not called.
+
+Applying a suggestion writes the visit time and crew through the existing schedule actions.
+
+## Not in this pass
+
+Paid road routing and live traffic. A factor with an empty field still skips that job.
