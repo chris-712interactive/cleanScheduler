@@ -1,0 +1,165 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.sectionLead {
+  margin: 0;
+  max-width: 42rem;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.presetRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.assumptionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.field,
+.searchField,
+.weight,
+.mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.searchField {
+  max-width: 24rem;
+}
+
+.field input,
+.searchField input,
+.mode select {
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
+}
+
+.factorList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.factor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem);
+  gap: var(--space-3);
+  align-items: start;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+
+  &:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.enable {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  font-size: var(--font-size-sm);
+}
+
+.factorLabel {
+  display: block;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.factorDescription {
+  display: block;
+  margin-top: var(--space-1);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.weight input {
+  width: 100%;
+  accent-color: var(--color-primary, var(--color-text));
+}
+
+.bannerError,
+.bannerSuccess {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  border-radius: var(--radius-md);
+}
+
+.bannerError {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+}
+
+.bannerSuccess {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border: 1px solid color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+}
+
+.readOnlyNotice {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+@media (width <= 720px) {
+  .factor {
+    grid-template-columns: 1fr;
+  }
+}
