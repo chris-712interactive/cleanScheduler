@@ -21,7 +21,8 @@ export function CustomerWalletActivityList({ wallet }: { wallet: CustomerWalletP
           <h3 className={styles.sectionTitle}>Account credit</h3>
           <p className={styles.balanceAmount}>{formatUsdFromCents(wallet.balanceCents)}</p>
           <p className={styles.emptyHint}>
-            Credits from referrals and promo codes will appear here. Use them on quotes or invoices.
+            Credits from referrals and promo codes will appear here. Use them on an open invoice
+            before you pay.
           </p>
         </div>
       </section>

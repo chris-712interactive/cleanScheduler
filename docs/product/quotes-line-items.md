@@ -70,7 +70,7 @@ The existing-customer picker on `/quotes/new` lists active customers who were cr
 
 ## Customer portal
 
-- **Shipped**: `/customer/quotes` and `/customer/quotes/[id]` — version history, acceptance snapshot line table when present (including discount fields), live line items otherwise, **Accept / Decline** when `status === 'sent'` and the quote is not locked (`app/customer/quotes/actions.ts`, `CustomerQuoteResponseForm.tsx`). Accept/decline uses the admin client with ownership checks; DB triggers still set lock + snapshot on **accept**.
+- **Shipped**: `/customer/quotes` and `/customer/quotes/[id]` — version history, acceptance snapshot line table when present (including discount fields), live line items otherwise, **Accept / Decline** when `status === 'sent'` and the quote is not locked (`app/customer/quotes/actions.ts`, `CustomerQuoteResponseForm.tsx`). Accept/decline uses the admin client with ownership checks; DB triggers still set lock + snapshot on **accept**. Promo codes and account credit are applied on an open invoice before payment, not on the quote. Office discounts on the quote stay. A quote that already stored account credit still spends that credit when the customer accepts it.
 - **Remaining**: optional PDF/email; **payment capture** and enforcing **`allowed_customer_payment_methods`** during acceptance.
 
 ## Product decisions (stakeholder input)

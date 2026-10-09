@@ -267,6 +267,12 @@ export function parseWalletCreditDollarsFromForm(raw: string):
   return parseWalletCreditDollars(raw);
 }
 
+/**
+ * Settles promo and wallet already stored on a quote. New quotes no longer
+ * collect those here; customers apply them on an open invoice before payment.
+ * Quotes saved before that change can still carry a credit, and accepting one
+ * spends it so the reduced total matches the wallet.
+ */
 export async function finalizeQuotePromotionsOnAccept(
   admin: Admin,
   input: {
