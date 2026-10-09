@@ -53,9 +53,13 @@ Completely blank rows (empty service, empty amount, no line discount) are **skip
 
 The UI implementation is `QuoteLineItemsEditor` (`app/tenant/quotes/QuoteLineItemsEditor.tsx`). For non-`custom` cadences, the cadence detail control stays in the DOM but is visually hidden and cleared so array indices stay aligned with `getAll()`.
 
+## New quote customer list
+
+The existing-customer picker on `/quotes/new` lists active customers who were created by a customer-list import (`customers.imported_at`) or who have a non-cancelled consultation with saved `consultation_intake` or status `completed`. Creating a new customer on the same form is unchanged. Saving a quote for an existing customer enforces the same rule.
+
 ## Server rules (`app/tenant/quotes/actions.ts`)
 
-- **Create**: Insert the quote (including tax/discount columns and computed `amount_cents`), then insert line items. If line insert fails, the new quote row is deleted (best-effort rollback; not a DB transaction).
+- **Create**: `tenant_quote_create_with_line_items` inserts the quote and line items in one transaction, including `pipeline_stage_id` for the quote status. If that stage is missing, the function seeds the default system stages first.
 - **Update**: Unlocked quotes only: `tenant_quote_save_with_line_items` RPC replaces line items and updates the header (including tax/discount) in **one transaction**. Locked quotes cannot be saved from the tenant form.
 - **Amount resolution**: Parsed lines + header pricing feed **`computeQuoteTotals`**; persisted **`amount_cents`** is the resulting **total** (or null when there are no lines, no header amount, and a zero total — same edge case as before).
 

@@ -250,6 +250,7 @@ Do not merge two existing workspace customers. Do not match across tenants (glob
 - **Do not** call `ensureCustomerPortalInvite`.
 - Leave `sms_transactional_opt_in` and `marketing_email_opt_in` false.
 - Completing import with ≥1 active customer satisfies the onboarding `customer` step (`hasCustomers`).
+- New customer rows set `customers.imported_at`. Those active customers appear on the New quote existing-customer list without a completed consultation form. Customers matched and skipped on re-import keep whatever `imported_at` they already have.
 
 ### Limits and size
 

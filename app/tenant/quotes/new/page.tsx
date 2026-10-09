@@ -15,6 +15,7 @@ import {
   loadConsultationQuotePrefill,
   loadQuoteConsultationPromptsByCustomer,
 } from '@/lib/tenant/customerConsultation';
+import { loadQuotePickerEligibleCustomerIds } from '@/lib/tenant/quoteCustomerPicker';
 import { QuoteCreateWizard } from '../QuoteCreateWizard';
 import type { CustomerPropertyGroup } from '../quoteFormTypes';
 import styles from '../quotes.module.scss';
@@ -70,15 +71,16 @@ interface PageProps {
 
 export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
   const sp = await searchParams;
-  const defaultCustomerId = firstParam(sp.customer_id)?.trim() ?? '';
-  const defaultPropertyId = firstParam(sp.property_id)?.trim() ?? '';
+  const requestedCustomerId = firstParam(sp.customer_id)?.trim() ?? '';
+  const requestedPropertyId = firstParam(sp.property_id)?.trim() ?? '';
 
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug ?? '', '/quotes/new');
 
   const supabase = createTenantPortalDbClient();
+  const admin = createAdminClient();
 
-  const [customersRes, propertiesRes] = await Promise.all([
+  const [customersRes, propertiesRes, eligibleCustomers] = await Promise.all([
     supabase
       .from('customers')
       .select(
@@ -103,10 +105,14 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })
       .overrideTypes<PropertyPickRow[], { merge: false }>(),
+    loadQuotePickerEligibleCustomerIds(admin, membership.tenantId),
   ]);
 
-  const customerRows = customersRes.data ?? [];
-  const propertyRows = propertiesRes.data ?? [];
+  const eligibleIds = eligibleCustomers.ids;
+  const customerRows = (customersRes.data ?? []).filter((row) => eligibleIds.has(row.id));
+  const propertyRows = (propertiesRes.data ?? []).filter((row) => eligibleIds.has(row.customer_id));
+  const defaultCustomerId = eligibleIds.has(requestedCustomerId) ? requestedCustomerId : '';
+  const defaultPropertyId = defaultCustomerId ? requestedPropertyId : '';
 
   const customerOptions = customerRows.map((r) => ({
     id: r.id,
@@ -115,7 +121,6 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
 
   const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
 
-  const admin = createAdminClient();
   const consultationPrefill = defaultCustomerId
     ? await loadConsultationQuotePrefill(
         admin,
@@ -149,6 +154,11 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
       />
 
       <Stack gap={6}>
+        {eligibleCustomers.error ? (
+          <p className={styles.error} role="alert">
+            The customer list could not be loaded. Try again in a moment.
+          </p>
+        ) : null}
         <QuoteCreateWizard
           tenantSlug={membership.tenantSlug}
           customerOptions={customerOptions}

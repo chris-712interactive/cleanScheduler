@@ -29,6 +29,7 @@ import {
 } from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { assertCustomerEligibleForQuoteSend } from '@/lib/tenant/customerConsultation';
+import { customerQualifiesForNewQuote } from '@/lib/tenant/quoteCustomerPicker';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
 import { ensureCustomerPortalInvite } from '@/lib/tenant/customerPortalInvite';
 import { sendQuoteNotificationSms } from '@/lib/sms/quoteNotificationSms';
@@ -540,6 +541,16 @@ export async function createTenantQuote(
     }
     const ok = await assertCustomerInTenant(admin, membership.tenantId, customerRaw);
     if (!ok) return { error: 'Customer not found in this workspace.' };
+    const quoteEligible = await customerQualifiesForNewQuote(
+      admin,
+      membership.tenantId,
+      customerRaw,
+    );
+    if (!quoteEligible) {
+      return {
+        error: 'Choose a customer you imported, or one who has completed a consultation form.',
+      };
+    }
     customerId = customerRaw;
 
     if (propertySource === 'new') {
