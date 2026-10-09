@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-10-05  
+**Last updated:** 2026-10-08  
 **Branch:** `dev`  
-**Latest polish:** The day schedule suggests crew for unstaffed visits from Scheduling logic weights, customer preferences, and crew profiles. US addresses geocode for straight-line drive time. See `docs/product/schedule-optimizer.md`.
+**Latest polish:** Fill schedule places accepted quotes across a day, week, month, or date range at the customer's cadence, and books consultations for new website leads. Crew still comes from Scheduling logic. See `docs/product/schedule-optimizer.md`.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

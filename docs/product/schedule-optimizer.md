@@ -40,6 +40,18 @@ Settings → Scheduling logic stores the weights. A day suggestion on the schedu
 
 Applying a suggestion writes the visit time and crew through the existing schedule actions.
 
+## Fill a day, week, month, or range
+
+**Schedule → Fill schedule** (`/schedule/fill`) writes visits for the period the office picks.
+
+- Service visits come from accepted quotes that have not been replaced. Inactive customers are skipped.
+- Weekly, every-two-weeks, and monthly lines keep that gap from the customer's last visit. A closed day, or a due date a few days before the period, moves onto the next open workday. It does not add an extra visit inside the gap.
+- A one-time line is placed once, on the first open day in the period, and only if that line is not already on the calendar.
+- A custom cadence is treated as weekly until the quote stores a specific interval.
+- New website leads get one consultation. If they named a date, that date is used when it falls in the period. Morning, afternoon, and evening shift the start time. A lead becomes a customer when they do not already have one. Leads that already have a consultation are skipped.
+- Running the same period again does not duplicate a visit that is still inside the cadence.
+- After the visits exist, the day planner assigns crew with the company's scheduling rules. A visit nobody can take stays open for the office.
+
 ## Not in this pass
 
 Paid road routing and live traffic. A factor with an empty field still skips that job.
