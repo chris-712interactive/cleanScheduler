@@ -43,10 +43,6 @@ import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCod
 import { loadQuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import {
-  assertTenantFeatureEnabled,
-  featureGateErrorMessage,
-} from '@/lib/billing/tenantFeatureGate';
-import {
   computeQuotePricingWithPromotions,
   saveQuotePromotionSideEffects,
 } from '@/lib/promotions/saveQuotePromotions';
@@ -379,26 +375,6 @@ function parseQuoteHeaderPricingFromForm(formData: FormData):
   return { ok: true, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value };
 }
 
-async function assertPromotionsFeatureWhenUsed(
-  admin: ReturnType<typeof createAdminClient>,
-  tenantId: string,
-  formData: FormData,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const promoCode = String(formData.get('promo_code') ?? '').trim();
-  const walletRaw = String(formData.get('wallet_credit_dollars') ?? '').trim();
-  if (!promoCode && !walletRaw) return { ok: true };
-
-  try {
-    await assertTenantFeatureEnabled(admin, tenantId, 'customerPromotions');
-  } catch (error) {
-    return {
-      ok: false,
-      error: featureGateErrorMessage(error) ?? 'Promotions require a Business plan or higher.',
-    };
-  }
-  return { ok: true };
-}
-
 function linePayloadFromParsed(lines: ParsedQuoteLineItem[]) {
   return lines.map((l) => ({
     sort_order: l.sort_order,
@@ -628,9 +604,6 @@ export async function createTenantQuote(
   const pricing = parseQuoteHeaderPricingFromForm(formData);
   if (!pricing.ok) return { error: pricing.error };
 
-  const promoGate = await assertPromotionsFeatureWhenUsed(admin, membership.tenantId, formData);
-  if (!promoGate.ok) return { error: promoGate.error };
-
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
   const headerParsed = parseOptionalDollarsToCents(amountRaw);
@@ -652,8 +625,8 @@ export async function createTenantQuote(
       quote_discount_kind: pricing.quote_discount_kind,
       quote_discount_value: pricing.quote_discount_value,
     },
-    rawPromoCode: String(formData.get('promo_code') ?? ''),
-    rawWalletCreditDollars: String(formData.get('wallet_credit_dollars') ?? ''),
+    rawPromoCode: '',
+    rawWalletCreditDollars: '',
   });
   if (!priced.ok) return { error: priced.error };
 
@@ -867,9 +840,6 @@ export async function updateTenantQuote(
   const pricing = parseQuoteHeaderPricingFromForm(formData);
   if (!pricing.ok) return { error: pricing.error };
 
-  const promoGate = await assertPromotionsFeatureWhenUsed(admin, membership.tenantId, formData);
-  if (!promoGate.ok) return { error: promoGate.error };
-
   const headerParsed = parseOptionalDollarsToCents(amountRaw);
   if (!headerParsed.ok) return { error: headerParsed.error };
   const headerSubtotal = quoteLines.length > 0 ? null : headerParsed.cents;
@@ -890,8 +860,8 @@ export async function updateTenantQuote(
       quote_discount_kind: pricing.quote_discount_kind,
       quote_discount_value: pricing.quote_discount_value,
     },
-    rawPromoCode: String(formData.get('promo_code') ?? ''),
-    rawWalletCreditDollars: String(formData.get('wallet_credit_dollars') ?? ''),
+    rawPromoCode: '',
+    rawWalletCreditDollars: '',
   });
   if (!priced.ok) return { error: priced.error };
 
@@ -992,9 +962,7 @@ export async function updateTenantQuote(
     invalidateCustomerQuoteBadge(customerId);
   }
 
-  const quoteSnapshot = await loadQuoteEditSnapshot(admin, membership.tenantId, quoteId, {
-    loadWalletBalance: true,
-  });
+  const quoteSnapshot = await loadQuoteEditSnapshot(admin, membership.tenantId, quoteId);
   if (!quoteSnapshot) {
     return { error: 'Quote saved but could not reload the latest details.' };
   }

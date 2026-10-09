@@ -299,9 +299,9 @@ export function PromotionsPanel({
       <header className={styles.hero}>
         <h2 className={styles.heroTitle}>Discount codes & account credit</h2>
         <p className={styles.heroLead}>
-          Create promo codes your team can apply on quotes. Percent and fixed discounts reduce the
-          quote total; account credit codes add spendable balance to a customer wallet (redeem from
-          the customer profile).
+          Create promo codes customers apply on an open invoice before they pay. Percent and fixed
+          discounts reduce the balance due; account credit codes add spendable balance to a customer
+          wallet (redeem from the customer profile).
         </p>
       </header>
 

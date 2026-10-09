@@ -27,7 +27,8 @@ export function CustomerWalletPanel({
         Available balance: <strong>${(displayBalance / 100).toFixed(2)}</strong>
       </p>
       <p className={styles.sectionHint}>
-        Redeem account-credit promo codes below. Staff can apply the balance when editing a quote.
+        Redeem account-credit promo codes below. The customer applies the balance on an open invoice
+        before paying.
       </p>
 
       {canEdit ? (

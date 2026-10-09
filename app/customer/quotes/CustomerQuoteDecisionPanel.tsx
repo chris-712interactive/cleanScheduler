@@ -7,7 +7,6 @@ import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@/lib/tenant/quoteLabels';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 import type { CustomerQuoteResponsePatch } from '@/lib/tenant/customerQuoteResponsePatch';
 import { CustomerQuoteResponseForm } from './CustomerQuoteResponseForm';
-import { CustomerQuotePromotionPanel } from './CustomerQuotePromotionPanel';
 import styles from './quotes.module.scss';
 
 function formatDate(iso: string | null): string | null {
@@ -73,9 +72,6 @@ export function CustomerQuoteDecisionPanel({
   totalLabel,
   userEmail,
   allowedPaymentMethods,
-  promotionsEnabled = false,
-  walletBalanceCents = 0,
-  promotionDefaults,
 }: {
   quoteId: string;
   tenantName: string;
@@ -89,12 +85,6 @@ export function CustomerQuoteDecisionPanel({
   totalLabel: string;
   userEmail: string | null;
   allowedPaymentMethods: TenantPaymentMethod[];
-  promotionsEnabled?: boolean;
-  walletBalanceCents?: number;
-  promotionDefaults?: {
-    promoCode?: string;
-    walletCreditDollars?: string;
-  };
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [canRespond, setCanRespond] = useState(initialCanRespond);
@@ -144,24 +134,15 @@ export function CustomerQuoteDecisionPanel({
         </div>
 
         {canRespond ? (
-          <>
-            {promotionsEnabled ? (
-              <CustomerQuotePromotionPanel
-                quoteId={quoteId}
-                walletBalanceCents={walletBalanceCents}
-                defaults={promotionDefaults}
-              />
-            ) : null}
-            <CustomerQuoteResponseForm
-              quoteId={quoteId}
-              tenantName={tenantName}
-              totalLabel={totalLabel}
-              userEmail={userEmail}
-              allowedPaymentMethods={allowedPaymentMethods}
-              layout="panel"
-              onQuoteResponse={onQuoteResponse}
-            />
-          </>
+          <CustomerQuoteResponseForm
+            quoteId={quoteId}
+            tenantName={tenantName}
+            totalLabel={totalLabel}
+            userEmail={userEmail}
+            allowedPaymentMethods={allowedPaymentMethods}
+            layout="panel"
+            onQuoteResponse={onQuoteResponse}
+          />
         ) : null}
       </div>
     </aside>

@@ -39,8 +39,6 @@ import {
   formatPropertyAccessCodes,
 } from '@/lib/tenant/propertyAccessCodes';
 import { quoteHeaderPricingDefaultsFromQuote } from '@/lib/tenant/quoteHeaderPricingDefaults';
-import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
-import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
 import styles from '../quotes.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -156,8 +154,6 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   }
 
   const admin = createAdminClient();
-  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
-  const promotionsEnabled = isFeatureEnabled(tier, 'customerPromotions');
   const quotePropertyKind = (row.job_type as CustomerPropertyKind | null) ?? null;
   const [jobTypeCatalog, ops] = await Promise.all([
     loadJobTypeCatalog(admin, membership.tenantId, {
@@ -179,11 +175,6 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
     .eq('id', membership.tenantId)
     .maybeSingle();
   const tenantTimezone = tenantTzRow?.timezone?.trim() || 'America/New_York';
-
-  const walletBalanceCents =
-    promotionsEnabled && row.customer_id
-      ? await getCustomerWalletBalanceCents(admin, membership.tenantId, row.customer_id)
-      : null;
 
   const [customersRes, propertiesRes, snapRes, eSignRes, versionsRes, visitsRes] =
     await Promise.all([
@@ -568,7 +559,6 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
             jobTypeCatalog={jobTypeCatalog}
             quotePropertyKind={quotePropertyKind}
             autoScheduleEnabled={autoScheduleEnabled}
-            promotionsEnabled={promotionsEnabled}
             snapshot={{
               quoteId: row.id,
               title: row.title,
@@ -580,12 +570,6 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
               validUntilYmd: toDateInputValue(row.valid_until),
               lineItems: quoteLineItems,
               headerPricing: quoteHeaderPricingDefaultsFromQuote(row),
-              promoCode: row.applied_promo_code ?? '',
-              walletCreditDollars:
-                (row.wallet_credit_applied_cents ?? 0) > 0
-                  ? ((row.wallet_credit_applied_cents ?? 0) / 100).toFixed(2)
-                  : '',
-              walletBalanceCents,
             }}
           />
         </Card>
