@@ -1,9 +1,11 @@
 import { publicEnv, serverEnv } from '@/lib/env';
 
 /**
- * Customer portal invites and referral referee signup honor `ONBOARDING_EMAIL_CONFIRM_MODE`.
- * Free-trial owners and employee invites always confirm at create — see
- * {@link shouldAutoConfirmTrialOwnerEmail} and {@link shouldAutoConfirmInvitedEmployeeEmail}.
+ * Referral referee signup honors `ONBOARDING_EMAIL_CONFIRM_MODE`.
+ * Free-trial owners, employee invites, and customer portal invites always confirm
+ * at create — see {@link shouldAutoConfirmTrialOwnerEmail},
+ * {@link shouldAutoConfirmInvitedEmployeeEmail}, and
+ * {@link shouldAutoConfirmCustomerPortalInviteEmail}.
  */
 export function shouldAutoConfirmEmail(): boolean {
   const mode = serverEnv.ONBOARDING_EMAIL_CONFIRM_MODE;
@@ -26,5 +28,14 @@ export function shouldAutoConfirmTrialOwnerEmail(): boolean {
  * `ONBOARDING_EMAIL_CONFIRM_MODE`.
  */
 export function shouldAutoConfirmInvitedEmployeeEmail(): boolean {
+  return true;
+}
+
+/**
+ * Customer portal invite acceptance always confirms at create. The invite was
+ * emailed to that address, so the token is the confirmation. Independent of
+ * prod `ONBOARDING_EMAIL_CONFIRM_MODE`.
+ */
+export function shouldAutoConfirmCustomerPortalInviteEmail(): boolean {
   return true;
 }

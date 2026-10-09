@@ -12,7 +12,7 @@ import {
 } from '@/lib/audit/accountCreationAudit';
 import { requestFingerprintFromHeaders } from '@/lib/audit/requestFingerprint';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
-import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
+import { shouldAutoConfirmCustomerPortalInviteEmail } from '@/lib/auth/emailConfirmMode';
 import { getAuthContext } from '@/lib/auth/session';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import {
@@ -239,13 +239,6 @@ export async function acceptCustomerPortalInviteAction(
     return { error: 'Enter a phone number to opt in to SMS.' };
   }
 
-  if (!shouldAutoConfirmEmail()) {
-    return {
-      error:
-        'Automatic email confirmation is off for this environment. Set ONBOARDING_EMAIL_CONFIRM_MODE to auto or disabled for dev, or use “Link my account” if you already signed up with this email.',
-    };
-  }
-
   const admin = createAdminClient();
   const loaded = await loadActiveInvite(admin, token);
   if (!loaded.ok) {
@@ -279,7 +272,7 @@ export async function acceptCustomerPortalInviteAction(
   const created = await admin.auth.admin.createUser({
     email,
     password,
-    email_confirm: true,
+    email_confirm: shouldAutoConfirmCustomerPortalInviteEmail(),
     app_metadata: {
       app_role: 'customer',
     },
