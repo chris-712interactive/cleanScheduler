@@ -558,8 +558,9 @@ export function QuoteCreateWizard({
           >
             <h2 className={styles.wizardStepTitle}>Who is this quote for?</h2>
             <p className={styles.hint}>
-              Customer is required before sending. Search your CRM or create a profile with service
-              address in one pass.
+              Customer is required before sending. The list includes customers you imported and
+              customers who have completed a consultation form. You can also create a profile with a
+              service address in one pass.
             </p>
 
             <div className={styles.customerSourceRow}>
@@ -618,7 +619,7 @@ export function QuoteCreateWizard({
                     setPropertySource('existing');
                   }}
                   placeholder="Search by name, email, phone…"
-                  emptyText="No customers match"
+                  emptyText="No imported or consulted customers match"
                 />
                 {effectiveCustomerId ? (
                   <>

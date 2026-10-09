@@ -1,6 +1,6 @@
 # Quote pipeline stages
 
-Customizable Kanban columns for the tenant quotes board. Migration **0074**.
+Customizable Kanban columns for the tenant quotes board. Migration **0074**. Migration **0103** sets `pipeline_stage_id` inside quote create and save, using the system stage for the quote status (and seeding the default stages if that tenant is missing one).
 
 ## Model
 

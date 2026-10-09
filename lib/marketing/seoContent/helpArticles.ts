@@ -35,6 +35,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
         ],
         bullets: [
           'Add line items with descriptions and quantities',
+          'Pick an imported customer, or one who has finished a consultation form',
           'Move quotes from draft → sent → accepted',
           'Prefill the first visit from an accepted quote',
         ],

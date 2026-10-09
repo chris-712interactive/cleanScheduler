@@ -67,6 +67,7 @@ async function insertCreateBatch(
       customer_identity_id: identityId,
       external_ref: disposition.draft.externalRef,
       status: disposition.draft.status,
+      imported_at: new Date().toISOString(),
     })),
   );
   if (customerInsert.error) {

@@ -1005,6 +1005,7 @@ export type Database = {
           customer_identity_id: string;
           external_ref: string | null;
           status: string;
+          imported_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1014,6 +1015,7 @@ export type Database = {
           customer_identity_id: string;
           external_ref?: string | null;
           status?: string;
+          imported_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1023,6 +1025,7 @@ export type Database = {
           customer_identity_id?: string;
           external_ref?: string | null;
           status?: string;
+          imported_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

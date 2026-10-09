@@ -9,7 +9,7 @@ Crew QA checklists and consultation walkthrough checklists on **all plans** (`vi
 3. **Visit state** — When a visit is opened and a template with items resolves, `tenant_visit_checklist_state` is created.
 4. **Field UI** — Visit detail shows checkboxes; progress is visible to office. Completing a visit is **not** blocked if items remain unchecked.
 5. **Consultation notes** — Schedule and complete forms capture notes. On complete, notes are saved on the visit and merged into the property’s `site_notes` (replace if empty, otherwise append a dated consultation block).
-6. **Consultation details** — The visit page collects the walkthrough answers used to price a quote (service, frequency, square footage, condition, supplies, scope, and residential or commercial space facts). Every answer is optional unless the company checks it under Settings → Operations → Required consultation answers. Checked answers must be saved before the consultation can be marked complete. A custom cadence still needs a description, and a pet count is still required when the home has pets. Square footage, bedrooms, bathrooms, and stories copy onto the service location when they are filled in. After the consultation is marked complete, the office opens a new quote for that customer, and a field employee returns to today’s jobs. That finished consultation is no longer listed as an active job on the employee’s schedule. A new quote starts from the saved answers.
+6. **Consultation details** — The visit page collects the walkthrough answers used to price a quote (service, frequency, square footage, condition, supplies, scope, and residential or commercial space facts). Every answer is optional unless the company checks it under Settings → Operations → Required consultation answers. Checked answers must be saved before the consultation can be marked complete. A custom cadence still needs a description, and a pet count is still required when the home has pets. Square footage, bedrooms, bathrooms, and stories copy onto the service location when they are filled in. After the consultation is marked complete, the office opens a new quote for that customer, and a field employee returns to today’s jobs. That finished consultation is no longer listed as an active job on the employee’s schedule. A new quote starts from the saved answers. On **New quote**, the existing-customer list only includes customers the company imported and customers who have saved that consultation form or whose consultation visit is marked complete.
 7. **Today** — Field job cards deep-link to check-in / complete via `?action=`.
 
 ## Schema
@@ -31,6 +31,10 @@ Migration `0098_consultation_intake.sql`:
 Migration `0099_consultation_required_fields.sql`:
 
 - `tenant_operational_settings.consultation_required_fields` text[] (default empty)
+
+Migration `0102_customer_imported_at.sql`:
+
+- `customers.imported_at` timestamptz (set on customer-list import; Jobber rows with `external_ref` are backfilled)
 
 ## Related
 
