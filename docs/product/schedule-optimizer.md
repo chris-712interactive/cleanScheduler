@@ -42,7 +42,7 @@ Applying a suggestion writes the visit time and crew through the existing schedu
 
 ## Fill a day, week, month, or range
 
-**Schedule → Fill schedule** (`/schedule/fill`) writes visits for the period the office picks.
+**Schedule → Fill schedule** (`/schedule/fill`) writes visits for the period the office picks. **Schedule these** slips to a live status screen: each visit appears as it is saved, crew updates follow day by day, and the finished screen lists what was placed, who has a crew, what stayed open, and what was left off, with links to the schedule, the customer, and any visit that still needs a crew.
 
 - Service visits come from accepted quotes that have not been replaced. Inactive customers are skipped.
 - Weekly, every-two-weeks, and monthly lines keep that gap from the customer's last visit. A closed day, or a due date a few days before the period, moves onto the next open workday. It does not add an extra visit inside the gap.
@@ -51,6 +51,7 @@ Applying a suggestion writes the visit time and crew through the existing schedu
 - New website leads get one consultation. If they named a date, that date is used when it falls in the period. Morning, afternoon, and evening shift the start time. A lead becomes a customer when they do not already have one. Leads that already have a consultation are skipped.
 - Running the same period again does not duplicate a visit that is still inside the cadence.
 - After the visits exist, the day planner assigns crew with the company's scheduling rules. A visit nobody can take stays open for the office.
+- **Undo this run** removes the visits from that fill. A visit that is already finished, cancelled, or checked in stays on the calendar and is listed. Consultations that come off the calendar leave the website lead open to book again. The fill page also offers undo for recent runs that are still scheduled.
 
 ## Not in this pass
 

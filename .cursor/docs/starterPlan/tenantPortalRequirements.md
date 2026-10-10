@@ -84,7 +84,7 @@ The schedule view will look different depending on the type of user who is looki
 
 When it comes to the scheduling view, when a user clicks on the schedule navigation, it should default to the current day's schedule as this would be the most important to any business. All types of services should be able to be scheduled and/or adjusted from this view.
 
-**Implementation note (2026-10-08):** **Fill schedule** on the schedule page places accepted quotes for a day, week, month, or date range at the customer's cadence, and books a consultation for each new website lead. Visits already inside that cadence are left alone. Crew is assigned with Scheduling logic.
+**Implementation note (2026-10-09):** **Fill schedule** on the schedule page places accepted quotes for a day, week, month, or date range at the customer's cadence, and books a consultation for each new website lead. Visits already inside that cadence are left alone. Crew is assigned with Scheduling logic. **Schedule these** slips into a progress screen and ends on a summary with links back to the schedule, the customer, and any visit that still needs a crew. **Undo this run** removes those visits while they are still scheduled.
 
 **Implementation note (2026-10-07):** The day schedule suggests crew for visits that still need someone, using the weights under **Settings → Scheduling logic**. Customer scheduling preferences and a crew scheduling profile supply the rules that need extra fields. US addresses are geocoded for straight-line drive time.
 

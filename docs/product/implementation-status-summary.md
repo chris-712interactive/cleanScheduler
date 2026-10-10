@@ -1,8 +1,8 @@
 # Implementation status summary
 
-**Last updated:** 2026-10-08  
+**Last updated:** 2026-10-09  
 **Branch:** `dev`  
-**Latest polish:** Fill schedule places accepted quotes across a day, week, month, or date range at the customer's cadence, and books consultations for new website leads. Crew still comes from Scheduling logic. See `docs/product/schedule-optimizer.md`.
+**Latest polish:** Fill schedule places accepted quotes across a day, week, month, or date range at the customer's cadence, and books consultations for new website leads. Scheduling those visits opens a live status screen, finishes with a summary of what was placed, and can undo that run while the visits are still scheduled. Crew still comes from Scheduling logic. See `docs/product/schedule-optimizer.md`.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 
