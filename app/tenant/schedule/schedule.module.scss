@@ -16,6 +16,8 @@
 .select,
 .textarea {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border-strong);
@@ -1163,6 +1165,8 @@
 
 .crewFieldset {
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1184,6 +1188,8 @@
 
 .crewSearch {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 40px;
   margin-bottom: var(--space-2);
   padding: var(--space-2) var(--space-3);
@@ -1427,11 +1433,18 @@
 .visitScheduleEditPanel {
   display: grid;
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
   padding: var(--space-4);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-brand-primary) 4%, var(--color-surface));
   box-shadow: var(--shadow-xs);
+
+  > * {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 .visitScheduleEditHeader {
@@ -1497,6 +1510,8 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
   padding: var(--space-3);
   border-radius: var(--radius-md);
@@ -1509,6 +1524,11 @@
     flex-shrink: 0;
     margin-top: 2px;
     color: var(--color-warning);
+  }
+
+  span {
+    min-width: 0;
+    line-height: 1.45;
   }
 }
 
@@ -1544,6 +1564,8 @@
 .scheduleSuggestionsListHorizontal {
   display: flex;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
   padding: 0 0 var(--space-1);
   list-style: none;
