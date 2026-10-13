@@ -442,6 +442,44 @@
   align-items: center;
 }
 
+.invoiceCreateForm {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  width: 100%;
+
+  @include mq.up(md) {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.invoiceCreateSpan {
+  @include mq.up(md) {
+    grid-column: 1 / -1;
+  }
+}
+
+.invoiceCreateForm .field {
+  min-width: 0;
+}
+
+.invoiceCreateForm .input,
+.invoiceCreateForm .select,
+.invoiceCreateForm .textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+.invoiceCreateActions {
+  display: flex;
+  justify-content: flex-start;
+
+  @include mq.up(md) {
+    grid-column: 1 / -1;
+  }
+}
+
 .backLink {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

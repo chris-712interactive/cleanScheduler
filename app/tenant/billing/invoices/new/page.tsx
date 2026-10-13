@@ -1,6 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
-import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -55,76 +54,76 @@ export default async function NewTenantInvoicePage({ searchParams }: PageProps) 
         </Card>
       ) : (
         <Card title="Invoice details">
-          <form action={createTenantInvoiceAction} className={styles.resumeForm}>
+          <form action={createTenantInvoiceAction} className={styles.invoiceCreateForm}>
             <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-            <Stack gap={4} as="div">
-              <label className={styles.field}>
-                <span>Customer</span>
-                <select
-                  name="customer_id"
-                  required
-                  className={styles.select}
-                  defaultValue={defaultCustomerId}
-                >
-                  <option value="">Select…</option>
-                  {(customers ?? []).map((c) => {
-                    const idRow = c.customer_identities as {
-                      first_name: string | null;
-                      last_name: string | null;
-                      full_name: string | null;
-                      email: string | null;
-                    } | null;
-                    const fromName = idRow ? formatCustomerDisplayName(idRow) : 'Unnamed';
-                    const label =
-                      fromName !== 'Unnamed'
-                        ? fromName
-                        : idRow?.email?.trim() || `Customer ${c.id.slice(0, 8)}…`;
-                    return (
-                      <option key={c.id} value={c.id}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-              <label className={styles.field}>
-                <span>Title</span>
-                <input
-                  name="title"
-                  type="text"
-                  className={styles.input}
-                  placeholder="e.g. March deep clean"
-                  defaultValue={defaultTitle}
-                />
-              </label>
-              <label className={styles.field}>
-                <span>Amount (USD)</span>
-                <input
-                  name="amount_dollars"
-                  type="text"
-                  className={styles.input}
-                  placeholder="120.00"
-                  required
-                  defaultValue={defaultAmount}
-                />
-              </label>
-              <label className={styles.field}>
-                <span>Due date (optional)</span>
-                <input name="due_date" type="date" className={styles.input} />
-              </label>
-              <label className={styles.field}>
-                <span>Notes (optional)</span>
-                <textarea
-                  name="notes"
-                  className={styles.textarea}
-                  rows={3}
-                  defaultValue={defaultNotes}
-                />
-              </label>
+            <label className={styles.field}>
+              <span>Customer</span>
+              <select
+                name="customer_id"
+                required
+                className={styles.select}
+                defaultValue={defaultCustomerId}
+              >
+                <option value="">Select…</option>
+                {(customers ?? []).map((c) => {
+                  const idRow = c.customer_identities as {
+                    first_name: string | null;
+                    last_name: string | null;
+                    full_name: string | null;
+                    email: string | null;
+                  } | null;
+                  const fromName = idRow ? formatCustomerDisplayName(idRow) : 'Unnamed';
+                  const label =
+                    fromName !== 'Unnamed'
+                      ? fromName
+                      : idRow?.email?.trim() || `Customer ${c.id.slice(0, 8)}…`;
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+            <label className={styles.field}>
+              <span>Title</span>
+              <input
+                name="title"
+                type="text"
+                className={styles.input}
+                placeholder="e.g. March deep clean"
+                defaultValue={defaultTitle}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Amount (USD)</span>
+              <input
+                name="amount_dollars"
+                type="text"
+                className={styles.input}
+                placeholder="120.00"
+                required
+                defaultValue={defaultAmount}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Due date (optional)</span>
+              <input name="due_date" type="date" className={styles.input} />
+            </label>
+            <label className={`${styles.field} ${styles.invoiceCreateSpan}`}>
+              <span>Notes (optional)</span>
+              <textarea
+                name="notes"
+                className={styles.textarea}
+                rows={3}
+                defaultValue={defaultNotes}
+              />
+            </label>
+            <div className={styles.invoiceCreateActions}>
               <Button type="submit" variant="primary">
                 Create invoice
               </Button>
-            </Stack>
+            </div>
           </form>
         </Card>
       )}
