@@ -1,22 +1,43 @@
 import { cache } from 'react';
-import { amrMethodsFromAccessToken, sessionIdFromAccessToken } from '@/lib/auth/accessTokenAmr';
-import type { SessionFactors } from '@/lib/auth/tenantAuthPolicy';
+import {
+  amrMethodsFromAccessToken,
+  aalFromAccessToken,
+  sessionIdFromAccessToken,
+} from '@/lib/auth/accessTokenAmr';
+import { readRequestAuthGrant } from '@/lib/auth/readRequestAuthGrant';
+import { getAuthContext } from '@/lib/auth/session';
+import { sessionUsedPasskey, type SessionFactors } from '@/lib/auth/tenantAuthPolicy';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 async function loadSessionFactors(): Promise<SessionFactors> {
-  const supabase = await createClient();
-  const admin = createAdminClient();
-  const [{ data: factorsData }, { data: aalData }, { data: sessionData }] = await Promise.all([
-    supabase.auth.mfa.listFactors(),
-    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
-    supabase.auth.getSession(),
-  ]);
+  const grant = await readRequestAuthGrant();
 
-  const accessToken = sessionData.session?.access_token;
-  const amrMethods = amrMethodsFromAccessToken(accessToken);
-  const sessionId = sessionIdFromAccessToken(accessToken);
+  let amrMethods: string[];
+  let authenticatorVerifiedThisSession: boolean;
+  let authenticatorEnrolled: boolean;
+  let sessionId: string | null;
+
+  if (grant) {
+    amrMethods = grant.amr;
+    authenticatorVerifiedThisSession = grant.aal === 'aal2';
+    authenticatorEnrolled = grant.factors.some((factor) => factor.factorType === 'totp');
+    sessionId = grant.sid;
+  } else {
+    const supabase = await createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    sessionId = sessionIdFromAccessToken(accessToken);
+    const auth = await getAuthContext();
+    amrMethods = amrMethodsFromAccessToken(accessToken);
+    authenticatorVerifiedThisSession = aalFromAccessToken(accessToken) === 'aal2';
+    authenticatorEnrolled = (auth?.user.factors ?? []).some(
+      (factor) => factor.factor_type === 'totp' && factor.status === 'verified',
+    );
+  }
+
   let markedPasskey = false;
-  if (sessionId) {
+  if (sessionId && !sessionUsedPasskey(amrMethods)) {
+    const admin = createAdminClient();
     const { data } = await admin
       .from('user_passkey_sessions')
       .select('session_id')
@@ -25,13 +46,11 @@ async function loadSessionFactors(): Promise<SessionFactors> {
     markedPasskey = Boolean(data);
   }
 
-  const verifiedTotp = (factorsData?.totp ?? []).find((factor) => factor.status === 'verified');
-
   return {
     amrMethods:
       markedPasskey && !amrMethods.includes('passkey') ? [...amrMethods, 'passkey'] : amrMethods,
-    authenticatorVerifiedThisSession: aalData?.currentLevel === 'aal2',
-    authenticatorEnrolled: Boolean(verifiedTotp),
+    authenticatorVerifiedThisSession,
+    authenticatorEnrolled,
     passkeyEnrolled: false,
   };
 }

@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **Scope:** cleanScheduler portal UX (tenant, customer, admin) — click-to-response lag  
-**Status:** Phase 0 shipped (measurement); Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3 complete (3.1–3.3c + follow-ups); Phase 4 shipped (layout split + Suspense streaming)
+**Status:** Phase 0 shipped (measurement); Phase 1 shipped (1.2.0); Phase 2 shipped; Phase 3 complete (3.1–3.3c + follow-ups); Phase 4 shipped (layout split + Suspense streaming); Phase 5 shipped (request auth grant + instant route paint)
 
 ---
 
@@ -463,6 +463,21 @@ Forms update local display from action result; business settings actions omit `r
 | White-label cache      | `unstable_cache` (300s) for `host → tenant` mapping in `resolveActiveWhiteLabelCustomerPortal`; `revalidateTag` on domain changes    |
 
 **Implementation:** `components/portal/portalNav/*`, `lib/tenant/loadTenantNavItems.ts`, `lib/customer/loadCustomerNavItems.ts`, `PortalShell` nav/brand/identity slots.
+
+---
+
+### Phase 5 — One auth pass per click ✅
+
+Button clicks were still waiting on repeated Auth and billing work. The proxy already called `getUser()` and loaded membership plus subscription, then the server action and the follow-up page render each did that work again. Session-factor checks also called `getUser()` twice more (`listFactors` and `getAuthenticatorAssuranceLevel`).
+
+| Change             | Detail                                                                                                                                                                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request auth grant | Proxy signs a short-lived snapshot (`x-cs-auth-grant`) bound to the Supabase session id. Layouts and server actions trust it for the same request and skip a second `getUser()`, membership lookup, and billing read. A bad or missing grant falls back to the live checks. |
+| Session factors    | Assurance level and sign-in methods come from the access token. TOTP enrollment comes from the user record already loaded with `getUser()`, or from the grant.                                                                                                              |
+| Auth policy cache  | Workspace MFA policy is cached for 120s and busted when security settings are saved.                                                                                                                                                                                        |
+| Route paint        | Page enter and loading skeletons stay visible (they no longer fade in from fully transparent over 280–420ms).                                                                                                                                                               |
+
+**Files:** `proxy.ts`, `lib/auth/requestAuthGrant.ts`, `lib/auth/readRequestAuthGrant.ts`, `lib/auth/session.ts`, `lib/auth/sessionFactors.ts`, `lib/auth/tenantAccess.ts`, `lib/portal/requestContext.ts`, `components/portal/RouteContentShell.module.scss`.
 
 ---
 

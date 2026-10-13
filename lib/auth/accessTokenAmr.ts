@@ -1,6 +1,7 @@
 type AmrEntry = { method?: unknown };
 
 type AccessTokenPayload = {
+  aal?: unknown;
   amr?: unknown;
   session_id?: unknown;
 };
@@ -16,6 +17,13 @@ function decodeAccessTokenPayload(
   } catch {
     return null;
   }
+}
+
+/** Authenticator assurance level from a Supabase access token, when the claim is present. */
+export function aalFromAccessToken(accessToken: string | null | undefined): 'aal1' | 'aal2' | null {
+  const aal = decodeAccessTokenPayload(accessToken)?.aal;
+  if (aal === 'aal1' || aal === 'aal2') return aal;
+  return null;
 }
 
 /** Reads `amr` method names from a Supabase access token payload. */
