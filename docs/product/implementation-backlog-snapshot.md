@@ -33,4 +33,4 @@
 
 ## Latency plan (separate track)
 
-Phases 0–4 **code-complete**. Remaining: fill `docs/performance/phase-0-baselines.md` on staging after Phase 4 release.
+Phases 0–5 **code-complete**. Phase 5 signs a per-request auth grant in the proxy so portal clicks skip a second Auth round trip and a second membership/billing read. Remaining: fill `docs/performance/phase-0-baselines.md` on staging.

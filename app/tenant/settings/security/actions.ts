@@ -1,9 +1,10 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { parseMfaAllowedMethods } from '@/lib/auth/tenantAuthPolicy';
+import { tenantAuthPolicyTag } from '@/lib/portal/cacheTags';
 import { createAdminClient } from '@/lib/supabase/server';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 
@@ -50,6 +51,7 @@ export async function saveTenantAuthPolicyAction(formData: FormData): Promise<vo
     redirect(returnTo('save'));
   }
 
+  revalidateTag(tenantAuthPolicyTag(membership.tenantId), 'max');
   revalidatePath('/settings/security');
   revalidatePath('/settings/account');
   redirect('/settings/security?saved=1');

@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import {
   isTenantPortalSuspended,
-  isTenantSuspendedEscapePath,
   needsSubscriptionPurchase,
   resolveTenantSubscriptionAccess,
 } from '@/lib/billing/tenantSubscriptionAccess';
@@ -11,9 +10,12 @@ import {
   enforceFieldEmployeeRouteAccess,
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
+import { readRequestAuthGrant } from '@/lib/auth/readRequestAuthGrant';
+import type { RequestAuthGrantTenant } from '@/lib/auth/requestAuthGrant';
+import { decideWorkspaceGate } from '@/lib/auth/workspaceGate';
 import { enforceTenantAuthPolicy } from './enforceTenantAuthPolicy';
 import { requirePortalAccess } from './portalAccess';
-import type { TenantRole } from './types';
+import type { AuthContext, TenantRole } from './types';
 
 export interface TenantMembership {
   tenantId: string;
@@ -113,14 +115,6 @@ async function assertTenantWorkspaceUnlocked(
       .maybeSingle(),
   ]);
 
-  if (tenantRow?.admin_access_suspended_at && options?.bypassAdminSuspension !== true) {
-    redirect('/access-denied?reason=workspace_suspended');
-  }
-
-  const allowWhenSuspended =
-    options?.allowBillingResume === true ||
-    isTenantSuspendedEscapePath(options?.internalPathname, options?.browserPathname);
-
   const access = resolveTenantSubscriptionAccess({
     billingStatus: billingRow?.status,
     trialEndsAt: billingRow?.trial_ends_at,
@@ -128,15 +122,66 @@ async function assertTenantWorkspaceUnlocked(
     stripeSubscriptionId: billingRow?.stripe_subscription_id,
   });
 
-  if (!isTenantPortalSuspended(access)) {
-    return;
+  applyWorkspaceGate({
+    memberRole: options?.memberRole ?? 'owner',
+    adminSuspended: Boolean(tenantRow?.admin_access_suspended_at),
+    subscriptionLocked: isTenantPortalSuspended(access),
+    allowBillingResume: options?.allowBillingResume,
+    internalPathname: options?.internalPathname,
+    browserPathname: options?.browserPathname,
+    bypassAdminSuspension: options?.bypassAdminSuspension,
+  });
+}
+
+function applyWorkspaceGate(input: Parameters<typeof decideWorkspaceGate>[0]): void {
+  const decision = decideWorkspaceGate(input);
+  if (decision === 'workspace_suspended') {
+    redirect('/access-denied?reason=workspace_suspended');
+  }
+  if (decision === 'subscribe_required') {
+    redirect('/billing?subscribe=required');
+  }
+}
+
+function subscriptionLockedForTenant(tenant: RequestAuthGrantTenant): boolean {
+  return isTenantPortalSuspended(
+    resolveTenantSubscriptionAccess({
+      billingStatus: tenant.billingStatus,
+      trialEndsAt: tenant.trialEndsAt,
+      tenantIsActive: tenant.tenantIsActive,
+      stripeSubscriptionId: tenant.stripeSubscriptionId,
+    }),
+  );
+}
+
+async function finishMemberAccess(input: {
+  auth: AuthContext;
+  membership: TenantMembership;
+  isPlatformAdmin: boolean;
+  mergedOptions: TenantPortalAccessOptions;
+  accessOptions?: TenantPortalAccessOptions;
+  nextPath: string;
+  subscriptionLocked: boolean;
+}): Promise<void> {
+  if (!input.isPlatformAdmin) {
+    await enforceTenantAuthPolicy({
+      tenantId: input.membership.tenantId,
+      userId: input.auth.user.id,
+      browserPathname: input.mergedOptions.browserPathname ?? input.mergedOptions.internalPathname,
+      bypass: false,
+    });
   }
 
-  if (allowWhenSuspended) {
-    return;
+  if (input.accessOptions?.skipFieldEmployeeRouteEnforcement !== true && !input.isPlatformAdmin) {
+    const pathForFieldCheck =
+      input.mergedOptions.browserPathname ??
+      (input.nextPath.startsWith('/tenant/') ? null : input.nextPath);
+    if (pathForFieldCheck) {
+      enforceFieldEmployeeRouteAccess(input.membership.role, pathForFieldCheck, {
+        subscriptionLocked: input.subscriptionLocked,
+      });
+    }
   }
-
-  redirect('/billing?subscribe=required');
 }
 
 /**
@@ -164,8 +209,42 @@ export async function requireTenantPortalAccess(
     browserPathname: accessOptions?.browserPathname ?? headerBrowserPath,
   };
 
-  const membership = await lookupMembership(auth.user.id, slug);
   const isPlatformAdmin = auth.claims.appRole === 'super_admin' || auth.claims.appRole === 'admin';
+  const grant = await readRequestAuthGrant();
+  const grantedTenant =
+    grant && grant.uid === auth.user.id && grant.tenant?.tenantSlug === slug ? grant.tenant : null;
+
+  if (grantedTenant) {
+    const subscriptionLocked = subscriptionLockedForTenant(grantedTenant);
+    applyWorkspaceGate({
+      memberRole: grantedTenant.role,
+      adminSuspended: grantedTenant.adminSuspended,
+      subscriptionLocked,
+      allowBillingResume: mergedOptions.allowBillingResume,
+      internalPathname: mergedOptions.internalPathname,
+      browserPathname: mergedOptions.browserPathname,
+      bypassAdminSuspension: isPlatformAdmin,
+    });
+    const membership: TenantMembership = {
+      tenantId: grantedTenant.tenantId,
+      tenantSlug: grantedTenant.tenantSlug,
+      tenantName: grantedTenant.tenantName,
+      role: grantedTenant.role,
+      roleId: grantedTenant.roleId,
+    };
+    await finishMemberAccess({
+      auth,
+      membership,
+      isPlatformAdmin,
+      mergedOptions,
+      accessOptions,
+      nextPath,
+      subscriptionLocked: isFieldEmployeeRole(membership.role) ? subscriptionLocked : false,
+    });
+    return membership;
+  }
+
+  const membership = await lookupMembership(auth.user.id, slug);
 
   if (membership) {
     await assertTenantWorkspaceUnlocked(membership.tenantId, {
@@ -173,15 +252,6 @@ export async function requireTenantPortalAccess(
       memberRole: membership.role,
       bypassAdminSuspension: isPlatformAdmin,
     });
-
-    if (!isPlatformAdmin) {
-      await enforceTenantAuthPolicy({
-        tenantId: membership.tenantId,
-        userId: auth.user.id,
-        browserPathname: mergedOptions.browserPathname ?? mergedOptions.internalPathname,
-        bypass: false,
-      });
-    }
 
     let subscriptionLocked = false;
     if (isFieldEmployeeRole(membership.role)) {
@@ -203,15 +273,15 @@ export async function requireTenantPortalAccess(
       subscriptionLocked = needsSubscriptionPurchase(access);
     }
 
-    if (accessOptions?.skipFieldEmployeeRouteEnforcement !== true && !isPlatformAdmin) {
-      const pathForFieldCheck =
-        mergedOptions.browserPathname ?? (nextPath.startsWith('/tenant/') ? null : nextPath);
-      if (pathForFieldCheck) {
-        enforceFieldEmployeeRouteAccess(membership.role, pathForFieldCheck, {
-          subscriptionLocked,
-        });
-      }
-    }
+    await finishMemberAccess({
+      auth,
+      membership,
+      isPlatformAdmin,
+      mergedOptions,
+      accessOptions,
+      nextPath,
+      subscriptionLocked,
+    });
     return membership;
   }
 

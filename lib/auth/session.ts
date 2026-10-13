@@ -1,9 +1,17 @@
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
+import { readRequestAuthGrant } from '@/lib/auth/readRequestAuthGrant';
+import { userFromGrant } from '@/lib/auth/requestAuthGrant';
 import { createClient } from '@/lib/supabase/server';
 import { extractClaims, type AuthContext } from './types';
 
 async function loadAuthContext(): Promise<AuthContext | null> {
+  const grant = await readRequestAuthGrant();
+  if (grant) {
+    const user = userFromGrant(grant);
+    return { user, claims: extractClaims(user) };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 

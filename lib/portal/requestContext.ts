@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { readRequestAuthGrant } from '@/lib/auth/readRequestAuthGrant';
 import {
   requireTenantPortalAccess,
   type TenantMembership,
@@ -38,6 +39,27 @@ export interface TenantBillingSnapshot {
 /** Tenant + billing rows used by the tenant portal shell (deduped per request). */
 export const getTenantBillingSnapshot = cache(
   async (tenantId: string): Promise<TenantBillingSnapshot> => {
+    const grant = await readRequestAuthGrant();
+    const granted = grant?.tenant?.tenantId === tenantId ? grant.tenant : null;
+    if (granted) {
+      const subscriptionAccess = resolveTenantSubscriptionAccess({
+        billingStatus: granted.billingStatus,
+        trialEndsAt: granted.trialEndsAt,
+        tenantIsActive: granted.tenantIsActive,
+        stripeSubscriptionId: granted.stripeSubscriptionId,
+      });
+      return {
+        connectStatus: granted.connectStatus,
+        tenantIsActive: granted.tenantIsActive,
+        billingStatus: granted.billingStatus,
+        trialEndsAt: granted.trialEndsAt,
+        activatedAt: granted.activatedAt,
+        canceledAt: granted.canceledAt,
+        stripeSubscriptionId: granted.stripeSubscriptionId,
+        subscriptionAccess,
+      };
+    }
+
     const supabase = createTenantPortalDbClient();
     const [{ data: tenantRow }, { data: billingRow }] = await Promise.all([
       supabase

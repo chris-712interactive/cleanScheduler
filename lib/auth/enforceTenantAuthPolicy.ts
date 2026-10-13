@@ -1,5 +1,7 @@
+import { unstable_cache } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSessionFactors, userHasRegisteredPasskey } from '@/lib/auth/sessionFactors';
+import { tenantAuthPolicyTag } from '@/lib/portal/cacheTags';
 import {
   decideWorkspaceAuth,
   sessionUsedPasskey,
@@ -12,7 +14,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 const PASSKEY_DISABLED_MESSAGE =
   'This workspace does not accept passkey sign-in. Sign in with your password or Google.';
 
-export async function loadTenantAuthPolicy(tenantId: string): Promise<TenantAuthPolicy> {
+async function loadTenantAuthPolicyUncached(tenantId: string): Promise<TenantAuthPolicy> {
   const admin = createAdminClient();
   const { data } = await admin
     .from('tenant_operational_settings')
@@ -21,6 +23,15 @@ export async function loadTenantAuthPolicy(tenantId: string): Promise<TenantAuth
     .maybeSingle();
 
   return tenantAuthPolicyFromRow(data);
+}
+
+/** Workspace sign-in policy. Cached briefly; security settings bust the tag on save. */
+export async function loadTenantAuthPolicy(tenantId: string): Promise<TenantAuthPolicy> {
+  return unstable_cache(
+    async () => loadTenantAuthPolicyUncached(tenantId),
+    ['tenant-auth-policy', tenantId],
+    { tags: [tenantAuthPolicyTag(tenantId)], revalidate: 120 },
+  )();
 }
 
 function pathWithoutQuery(path: string | null | undefined): string {

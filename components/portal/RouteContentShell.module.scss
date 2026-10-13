@@ -4,11 +4,11 @@
   &:has([data-route-loading]) {
     opacity: 1;
     transform: none;
-    animation: routeLoadingEnter var(--duration-slower) var(--easing-decelerate) forwards;
+    animation: routeLoadingEnter var(--duration-fast) var(--easing-decelerate) forwards;
   }
 
   &:not(:has([data-route-loading])) {
-    animation: routeContentEnter var(--duration-slow) var(--easing-decelerate) forwards;
+    animation: routeContentEnter var(--duration-fast) var(--easing-decelerate) forwards;
   }
 
   @include a11y.respect-reduced-motion;
@@ -24,8 +24,8 @@
 
 @keyframes routeLoadingEnter {
   from {
-    opacity: 0;
-    transform: translateY(10px);
+    opacity: 0.92;
+    transform: translateY(4px);
   }
 
   to {
@@ -36,8 +36,8 @@
 
 @keyframes routeContentEnter {
   from {
-    opacity: 0;
-    transform: translateY(12px);
+    opacity: 0.92;
+    transform: translateY(4px);
   }
 
   to {

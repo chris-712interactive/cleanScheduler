@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
+import { getSessionFactors } from '@/lib/auth/sessionFactors';
+import { getAuthContext } from '@/lib/auth/session';
 
 export type MfaStatus = {
   enrolled: boolean;
@@ -8,27 +9,22 @@ export type MfaStatus = {
 
 /** Returns MFA enrollment and assurance level for the current session. */
 export async function getMfaStatus(): Promise<MfaStatus> {
-  const supabase = await createClient();
-
-  const [{ data: factorsData }, { data: aalData }] = await Promise.all([
-    supabase.auth.mfa.listFactors(),
-    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
-  ]);
-
-  const verifiedTotp = (factorsData?.totp ?? []).find((f) => f.status === 'verified');
-  const enrolled = Boolean(verifiedTotp);
+  const [factors, auth] = await Promise.all([getSessionFactors(), getAuthContext()]);
+  const verifiedTotp = (auth?.user.factors ?? []).find(
+    (factor) => factor.factor_type === 'totp' && factor.status === 'verified',
+  );
 
   return {
-    enrolled,
-    verifiedThisSession: aalData?.currentLevel === 'aal2',
+    enrolled: Boolean(verifiedTotp),
+    verifiedThisSession: factors.authenticatorVerifiedThisSession,
     factorId: verifiedTotp?.id ?? null,
   };
 }
 
 /** True when the user must complete MFA before the session reaches AAL2. */
 export async function needsMfaChallenge(): Promise<boolean> {
-  const supabase = await createClient();
-  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (!aalData) return false;
-  return aalData.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2';
+  const [factors, auth] = await Promise.all([getSessionFactors(), getAuthContext()]);
+  const anyVerified = (auth?.user.factors ?? []).some((factor) => factor.status === 'verified');
+  if (!anyVerified) return false;
+  return !factors.authenticatorVerifiedThisSession;
 }

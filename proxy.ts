@@ -32,12 +32,15 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import type { User } from '@supabase/supabase-js';
 import { resolveTenantSubscriptionAccessForSlug } from '@/lib/billing/resolveTenantSubscriptionAccessForSlug';
 import {
   isTenantPortalSuspended,
   isTenantSuspendedEscapePath,
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { resolveTenantMembershipForSlug } from '@/lib/auth/resolveTenantMembershipForSlug';
+import { AUTH_GRANT_HEADER, issueRequestAuthGrant } from '@/lib/auth/requestAuthGrant';
+import { serverEnv } from '@/lib/env';
 import {
   fieldEmployeeCanAccessBrowserPath,
   fieldEmployeeLandingPath,
@@ -177,13 +180,15 @@ function buildMarketingUrl(request: NextRequest, pathname: string, nextPath?: st
 
 async function resolveUser(request: NextRequest): Promise<{
   userId: string | null;
+  user: User | null;
+  accessToken: string | null;
   cookiesToSet: CookieToSet[];
 }> {
   const cookiesToSet: CookieToSet[] = [];
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
-    return { userId: null, cookiesToSet };
+    return { userId: null, user: null, accessToken: null, cookiesToSet };
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -208,10 +213,16 @@ async function resolveUser(request: NextRequest): Promise<{
   });
 
   const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    return { userId: null, cookiesToSet };
+  if (error || !data.user) {
+    return { userId: null, user: null, accessToken: null, cookiesToSet };
   }
-  return { userId: data.user?.id ?? null, cookiesToSet };
+  const { data: sessionData } = await supabase.auth.getSession();
+  return {
+    userId: data.user.id,
+    user: data.user,
+    accessToken: sessionData.session?.access_token ?? null,
+    cookiesToSet,
+  };
 }
 
 /** Marketing canonical host is apex (`cleanscheduler.com`), not `www`. */
@@ -374,6 +385,7 @@ export async function proxy(request: NextRequest) {
     }
 
     const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete(AUTH_GRANT_HEADER);
     requestHeaders.set('x-portal', kind);
     if (tenantSlug) {
       requestHeaders.set('x-tenant-slug', tenantSlug);
@@ -413,7 +425,7 @@ export async function proxy(request: NextRequest) {
     // Browser-visible path on tenant host (e.g. /quotes) — used for subscription gating.
     requestHeaders.set('x-tenant-pathname', requestedPath);
 
-    const { userId, cookiesToSet } = await resolveUser(request);
+    const { userId, user, accessToken, cookiesToSet } = await resolveUser(request);
     const refParam = request.nextUrl.searchParams.get('ref')?.trim();
     if (
       !userId &&
@@ -489,6 +501,38 @@ export async function proxy(request: NextRequest) {
           return redirect;
         }
       }
+    }
+
+    if (user && accessToken) {
+      const tenantGrant =
+        kind === 'tenant' &&
+        tenantSlug &&
+        tenantMembership &&
+        tenantSubscription &&
+        tenantMembership.tenantId === tenantSubscription.tenantId
+          ? {
+              tenantId: tenantMembership.tenantId,
+              tenantSlug: tenantMembership.tenantSlug,
+              tenantName: tenantMembership.tenantName,
+              role: tenantMembership.role,
+              roleId: tenantMembership.roleId,
+              adminSuspended: tenantSubscription.adminSuspended,
+              connectStatus: tenantSubscription.connectStatus,
+              tenantIsActive: tenantSubscription.tenantIsActive,
+              billingStatus: tenantSubscription.billingStatus ?? null,
+              trialEndsAt: tenantSubscription.trialEndsAt,
+              activatedAt: tenantSubscription.activatedAt,
+              canceledAt: tenantSubscription.canceledAt,
+              stripeSubscriptionId: tenantSubscription.stripeSubscriptionId,
+            }
+          : null;
+      const grant = issueRequestAuthGrant({
+        user,
+        accessToken,
+        tenant: tenantGrant,
+        secret: serverEnv.SUPABASE_SERVICE_ROLE_KEY,
+      });
+      if (grant) requestHeaders.set(AUTH_GRANT_HEADER, grant);
     }
 
     const rewrite = NextResponse.rewrite(url, {

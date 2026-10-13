@@ -4,6 +4,10 @@ export function tenantNavBadgesTag(tenantId: string): string {
   return `tenant-nav-badges:${tenantId}`;
 }
 
+export function tenantAuthPolicyTag(tenantId: string): string {
+  return `tenant-auth-policy:${tenantId}`;
+}
+
 export function tenantOnboardingTag(tenantId: string): string {
   return `tenant-onboarding:${tenantId}`;
 }
