@@ -125,7 +125,7 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
 
   const remaining = inv.amount_cents - inv.amount_paid_cents;
   if (remaining <= 0) {
-    redirect(`/billing/invoices/${invoiceId}?error=paid`);
+    redirect(`/billing/invoices/${invoiceId}?paid=1`);
   }
 
   const payAmount = Math.min(amountCents, remaining);
