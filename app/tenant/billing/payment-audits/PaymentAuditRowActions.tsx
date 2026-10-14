@@ -1,5 +1,6 @@
 'use client';
 
+import { useTransition } from 'react';
 import { MoreVertical } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
@@ -30,10 +31,20 @@ export function PaymentAuditRowActions({
   method: string;
   invoiceHref: string | null;
 }) {
+  const [pending, startTransition] = useTransition();
   const markReceivedEnabled = canMarkManualPaymentReceived(stage);
   const markDepositedEnabled = canMarkManualPaymentDeposited(stage);
   const markClearedEnabled = canMarkManualPaymentCleared(stage);
   const markBouncedEnabled = canMarkManualPaymentBounced(stage);
+
+  function markPayment(action: (formData: FormData) => Promise<void>) {
+    const formData = new FormData();
+    formData.set('tenant_slug', tenantSlug);
+    formData.set('payment_id', paymentId);
+    startTransition(() => {
+      void action(formData);
+    });
+  }
 
   return (
     <div className={styles.actionsInner}>
@@ -59,92 +70,36 @@ export function PaymentAuditRowActions({
             align="end"
             collisionPadding={8}
           >
-            <form action={markManualPaymentReceived} className={styles.menuItem}>
-              <input type="hidden" name="tenant_slug" value={tenantSlug} />
-              <input type="hidden" name="payment_id" value={paymentId} />
-              <DropdownMenu.Item
-                asChild
-                disabled={!markReceivedEnabled}
-                onSelect={(event) => {
-                  if (!markReceivedEnabled) event.preventDefault();
-                }}
-              >
-                <button
-                  type="submit"
-                  className={styles.menuButton}
-                  disabled={!markReceivedEnabled}
-                  aria-disabled={!markReceivedEnabled}
-                  tabIndex={markReceivedEnabled ? 0 : -1}
-                >
-                  Mark Received
-                </button>
-              </DropdownMenu.Item>
-            </form>
-            <form action={markManualPaymentDeposited} className={styles.menuItem}>
-              <input type="hidden" name="tenant_slug" value={tenantSlug} />
-              <input type="hidden" name="payment_id" value={paymentId} />
-              <DropdownMenu.Item
-                asChild
-                disabled={!markDepositedEnabled}
-                onSelect={(event) => {
-                  if (!markDepositedEnabled) event.preventDefault();
-                }}
-              >
-                <button
-                  type="submit"
-                  className={styles.menuButton}
-                  disabled={!markDepositedEnabled}
-                  aria-disabled={!markDepositedEnabled}
-                  tabIndex={markDepositedEnabled ? 0 : -1}
-                >
-                  Mark Deposited
-                </button>
-              </DropdownMenu.Item>
-            </form>
+            <DropdownMenu.Item
+              className={styles.menuButton}
+              disabled={!markReceivedEnabled || pending}
+              onSelect={() => markPayment(markManualPaymentReceived)}
+            >
+              Mark Received
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={styles.menuButton}
+              disabled={!markDepositedEnabled || pending}
+              onSelect={() => markPayment(markManualPaymentDeposited)}
+            >
+              Mark Deposited
+            </DropdownMenu.Item>
             {method === 'check' ? (
               <>
-                <form action={markManualPaymentCleared} className={styles.menuItem}>
-                  <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                  <input type="hidden" name="payment_id" value={paymentId} />
-                  <DropdownMenu.Item
-                    asChild
-                    disabled={!markClearedEnabled}
-                    onSelect={(event) => {
-                      if (!markClearedEnabled) event.preventDefault();
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      className={styles.menuButton}
-                      disabled={!markClearedEnabled}
-                      aria-disabled={!markClearedEnabled}
-                      tabIndex={markClearedEnabled ? 0 : -1}
-                    >
-                      Mark Cleared
-                    </button>
-                  </DropdownMenu.Item>
-                </form>
-                <form action={markManualPaymentBounced} className={styles.menuItem}>
-                  <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                  <input type="hidden" name="payment_id" value={paymentId} />
-                  <DropdownMenu.Item
-                    asChild
-                    disabled={!markBouncedEnabled}
-                    onSelect={(event) => {
-                      if (!markBouncedEnabled) event.preventDefault();
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      className={styles.menuButton}
-                      disabled={!markBouncedEnabled}
-                      aria-disabled={!markBouncedEnabled}
-                      tabIndex={markBouncedEnabled ? 0 : -1}
-                    >
-                      Mark Bounced
-                    </button>
-                  </DropdownMenu.Item>
-                </form>
+                <DropdownMenu.Item
+                  className={styles.menuButton}
+                  disabled={!markClearedEnabled || pending}
+                  onSelect={() => markPayment(markManualPaymentCleared)}
+                >
+                  Mark Cleared
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  className={styles.menuButton}
+                  disabled={!markBouncedEnabled || pending}
+                  onSelect={() => markPayment(markManualPaymentBounced)}
+                >
+                  Mark Bounced
+                </DropdownMenu.Item>
               </>
             ) : null}
           </DropdownMenu.Content>
