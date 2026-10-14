@@ -480,6 +480,134 @@
   }
 }
 
+.invoiceWorkspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  @include mq.up(lg) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 26rem);
+    align-items: start;
+  }
+}
+
+.invoiceWorkspaceSingle {
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.invoiceMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+
+  @include mq.up(lg) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+
+.invoiceActions {
+  min-width: 0;
+
+  @include mq.up(lg) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+.invoiceBalance {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+
+  strong {
+    display: block;
+    margin-top: var(--space-1);
+    font-size: var(--font-size-xl);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+  }
+}
+
+.invoiceActionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.invoiceActionGroup + .invoiceActionGroup {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-divider);
+}
+
+.invoiceActionLabel {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.invoiceActionHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.invoiceSummaryLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+
+  a {
+    color: var(--color-brand-primary);
+    text-decoration: underline;
+  }
+}
+
+.invoiceRefundForm {
+  margin-top: var(--space-2);
+}
+
+.invoicePaymentList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.invoicePaymentItem {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+
+  &:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.invoicePaymentForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.invoicePaymentForm .field {
+  min-width: 0;
+}
+
+.invoicePaymentForm .input,
+.invoicePaymentForm .select {
+  width: 100%;
+  min-width: 0;
+}
+
 .backLink {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
