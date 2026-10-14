@@ -41,6 +41,7 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
   const db = createTenantPortalDbClient();
 
   const checkoutErr = firstParam(sp.error);
+  const paidNotice = checkoutErr === 'paid' || firstParam(sp.paid) === '1';
   const checkoutOk = firstParam(sp.checkout) === 'success';
   const checkoutCanceled = firstParam(sp.checkout) === 'canceled';
   const emailSent = firstParam(sp.email) === 'sent';
@@ -87,7 +88,12 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
         titleHint={`Invoice · ${inv.status}`}
       />
 
-      {checkoutErr ? (
+      {paidNotice ? (
+        <p className={styles.bannerOk} role="status">
+          Paid
+        </p>
+      ) : null}
+      {checkoutErr && !paidNotice ? (
         <p className={styles.bannerError} role="alert">
           {checkoutErr}
         </p>
