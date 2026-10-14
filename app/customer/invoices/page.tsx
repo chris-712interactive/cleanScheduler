@@ -5,7 +5,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { formatUsdFromCents } from '@/lib/format/money';
@@ -29,10 +29,10 @@ export default async function CustomerInvoicesPage() {
   const ctx = await getCustomerPortalContext(auth.user.id);
   if (!ctx) redirect('/access-denied?reason=no_customer_profile');
 
-  const supabase = await createClient();
+  const admin = createAdminClient();
   const { data: invoices, error } =
     ctx.customerIds.length > 0
-      ? await supabase
+      ? await admin
           .from('tenant_invoices')
           .select(
             `
