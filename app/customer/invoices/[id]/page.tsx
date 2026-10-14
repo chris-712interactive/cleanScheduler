@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { createCustomerInvoicePayCheckoutSessionAction } from '@/app/customer/invoices/invoicePayCheckoutActions';
 import { CustomerInvoicePromotionPanel } from '@/app/customer/invoices/CustomerInvoicePromotionPanel';
@@ -65,8 +65,8 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
   const ctx = await getCustomerPortalContext(auth.user.id);
   if (!ctx?.customerIds.length) redirect('/access-denied?reason=no_customer_profile');
 
-  const supabase = await createClient();
-  const { data: inv, error } = await supabase
+  const admin = createAdminClient();
+  const { data: inv, error } = await admin
     .from('tenant_invoices')
     .select(
       `
@@ -90,11 +90,11 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
     `,
     )
     .eq('id', id)
+    .in('customer_id', ctx.customerIds)
     .maybeSingle();
 
   if (error || !inv) notFound();
   const row = inv as InvoiceDetailRow;
-  if (!ctx.customerIds.includes(row.customer_id)) notFound();
 
   const tenants = row.tenants;
   const connectComplete = tenants?.stripe_connect_status === 'complete';
@@ -107,7 +107,6 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
   const showPromotions =
     !stripeHostedPay && row.status !== 'void' && row.status !== 'paid' && unpaid > 0;
 
-  const admin = createAdminClient();
   const promotionsEnabled = showPromotions
     ? await customerPromotionsEnabledForTenant(admin, row.tenant_id)
     : false;
@@ -121,7 +120,7 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
   const checkoutOk = firstParam(sp.checkout) === 'success';
   const checkoutCanceled = firstParam(sp.checkout) === 'canceled';
 
-  const { data: payments } = await supabase
+  const { data: payments } = await admin
     .from('tenant_invoice_payments')
     .select('id, amount_cents, method, notes, recorded_at, recorded_via')
     .eq('invoice_id', id)
