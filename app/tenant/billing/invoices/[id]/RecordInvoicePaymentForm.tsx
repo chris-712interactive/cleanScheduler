@@ -17,7 +17,7 @@ export function RecordInvoicePaymentForm({
   const [method, setMethod] = useState('cash');
 
   return (
-    <form action={recordInvoicePaymentAction} className={styles.resumeForm}>
+    <form action={recordInvoicePaymentAction} className={styles.invoicePaymentForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="invoice_id" value={invoiceId} />
       <label className={styles.field}>
@@ -61,8 +61,8 @@ export function RecordInvoicePaymentForm({
         <span>Notes (optional)</span>
         <input name="notes" type="text" className={styles.input} />
       </label>
-      <Button type="submit" variant="primary">
-        Apply payment
+      <Button type="submit" variant="primary" fullWidth>
+        Record payment
       </Button>
     </form>
   );
