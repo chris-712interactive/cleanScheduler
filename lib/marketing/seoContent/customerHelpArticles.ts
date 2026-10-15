@@ -45,7 +45,7 @@ export const CUSTOMER_HELP_ARTICLES: HelpGuideArticle[] = [
         title: 'Reply on an open thread',
         paragraphs: [
           'Open any active conversation to read the full history. When the thread is still open, you can type a reply at the bottom and send it.',
-          'Your provider is notified by email when you send or reply (they can turn this off in their settings).',
+          'Your provider is notified by email when you send or reply (they can turn this off in their settings). If someone on their team has the workspace open, they also see a notice right away.',
         ],
         figures: [
           {
@@ -53,6 +53,13 @@ export const CUSTOMER_HELP_ARTICLES: HelpGuideArticle[] = [
             alt: 'Customer portal message thread with transcript and reply box',
             caption: 'Open threads show the full conversation and a reply box at the bottom.',
           },
+        ],
+      },
+      {
+        title: 'When your provider replies',
+        paragraphs: [
+          'If you have the portal open, the conversation updates on its own and a notice appears when the reply is new. On Messages you can turn on browser notifications so that notice still stands out when you are on another page.',
+          'If the portal is closed, the reply is emailed to the address on your account unless your provider turns that off.',
         ],
       },
       {
@@ -67,7 +74,7 @@ export const CUSTOMER_HELP_ARTICLES: HelpGuideArticle[] = [
       {
         question: 'Will I get an email when my provider replies?',
         answer:
-          'You see replies when you sign in to Messages. Email alerts for provider replies are not sent to customers today — check your portal or ask your provider to contact you another way if needed.',
+          'Yes, unless your provider turns reply emails off. The message goes to the email on your account. If you are already in the portal, the conversation updates on its own, and you can allow browser notifications from Messages.',
       },
       {
         question: 'Can I text my provider instead?',

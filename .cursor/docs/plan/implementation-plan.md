@@ -69,7 +69,7 @@ todos:
     content: "Shipped: CSV/OFX bank statement import on `/billing/bank-connection` as Plaid fallback."
     status: completed
   - id: messagingAuditInquiries
-    content: "Shipped v1 + v1.1 (PR #115): tenant/customer `/messages` two-way threads, staff email on customer message (`0072`). **0073:** platform support tickets (founder `/support`, tenant `/settings/support`) — separate from customer threads. Public help at `/help/customers/message-your-provider`. **Still missing:** customer email on provider reply; SMS two-way inbox; generic `conversations` product; founder email on new platform ticket."
+    content: "Shipped v1 + v1.1 (PR #115): tenant/customer `/messages` two-way threads, staff email on customer message (`0072`). **0104:** customer email on staff reply plus live in-portal alerts (notice, optional browser notification, page refresh). **0073:** platform support tickets (founder `/support`, tenant `/settings/support`) — separate from customer threads. Public help at `/help/customers/message-your-provider`. **Still missing:** SMS two-way inbox; generic `conversations` product; founder email on new platform ticket; push when the portal tab is closed."
     status: in_progress
   - id: rlsTestSuite
     content: "Partial: `supabase/tests/rls/tenant_isolation.sql` smoke checks + `npm run check:rls-smoke`. **1.1.0** expands policy coverage. Still missing: pg_tap fixtures, CI integration with ephemeral DB, masquerade scoping tests."

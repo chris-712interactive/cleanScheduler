@@ -14,6 +14,7 @@ import { PortalNavSkeleton } from '@/components/portal/portalNav/PortalNavSkelet
 import { CustomerNavList } from '@/components/portal/portalNav/CustomerNavList';
 import { CustomerWhiteLabelBrand } from '@/components/portal/portalNav/CustomerWhiteLabelBrand';
 import { CustomerIdentityMenu } from '@/components/portal/portalNav/CustomerIdentityMenu';
+import { SupportMessageLiveAlerts } from '@/components/messaging/SupportMessageLiveAlerts';
 import styles from './customer-layout.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -91,7 +92,10 @@ export default async function CustomerLayout({ children }: { children: React.Rea
           }
           environmentBanner={nonProdBanner}
         >
-          <RouteContentShell>{children}</RouteContentShell>
+          <RouteContentShell>
+            <SupportMessageLiveAlerts portal="customer" />
+            {children}
+          </RouteContentShell>
         </PortalShell>
       </>
     );

@@ -1,6 +1,6 @@
 # Customer support messaging — product & implementation
 
-Two-way in-app messaging between customers and tenant staff. Uses the **`0013`** schema (`customer_support_threads`, `customer_support_messages`). Migration **`0072`** adds the staff email notification ops flag.
+Two-way in-app messaging between customers and tenant staff. Uses the **`0013`** schema (`customer_support_threads`, `customer_support_messages`). Migration **`0072`** adds the staff email notification ops flag. Migration **`0104`** emails the customer when staff replies and publishes `customer_support_messages` for live alerts.
 
 ## Scope (v1 — PR #115)
 
@@ -15,6 +15,8 @@ Two-way in-app messaging between customers and tenant staff. Uses the **`0013`**
 **Shipped (Phase 2, 0073):** platform support tickets — founder `/support`, tenant `/settings/support`. Separate from customer `/messages` threads. See `docs/product/platform-support-tickets.md`.
 
 **v1.1 (PR #115 follow-up):** email staff when a customer sends or replies (`email_notify_customer_message` in Operations settings, default on); nav badge counts threads awaiting reply.
+
+**Live alerts:** while either portal is open, a new message from the other side refreshes the page and shows a notice within a few seconds (immediately when Supabase Realtime is available). Messages includes a control to allow browser notifications for that signed-in session. Staff replies also email the customer (`email_notify_staff_reply`, default on) so they hear about it when the portal is closed. Apply **`0104`** before relying on the customer email toggle or live database events.
 
 **Public help:** [`/help/customers/message-your-provider`](/help/customers/message-your-provider) (hub: [`/help/customers`](/help/customers)).
 
@@ -38,17 +40,20 @@ Access helper: `lib/tenant/supportMessagingAccess.ts` → `canReplyToSupportThre
 
 ## Key files
 
-| Path                                                | Purpose                                               |
-| --------------------------------------------------- | ----------------------------------------------------- |
-| `app/tenant/messages/`                              | Tenant inbox page, list, conversation, server actions |
-| `app/customer/messages/`                            | Customer list, thread detail, create + reply actions  |
-| `components/messaging/SupportMessageTranscript.tsx` | Shared transcript UI                                  |
-| `lib/tenant/loadTenantSupportInbox.ts`              | Inbox query + filters                                 |
-| `lib/tenant/loadSupportThreadDetail.ts`             | Thread + messages for tenant or customer              |
-| `lib/tenant/openSupportThreadCount.ts`              | Open thread + awaiting-reply counts                   |
-| `lib/tenant/supportMessageNotifications.ts`         | Staff email on customer message/reply                 |
-| `lib/tenant/buildTenantNavItems.ts`                 | Messages nav item + badge                             |
+| Path                                                | Purpose                                                        |
+| --------------------------------------------------- | -------------------------------------------------------------- |
+| `app/tenant/messages/`                              | Tenant inbox page, list, conversation, server actions          |
+| `app/customer/messages/`                            | Customer list, thread detail, create + reply actions           |
+| `components/messaging/SupportMessageTranscript.tsx` | Shared transcript UI                                           |
+| `lib/tenant/loadTenantSupportInbox.ts`              | Inbox query + filters                                          |
+| `lib/tenant/loadSupportThreadDetail.ts`             | Thread + messages for tenant or customer                       |
+| `lib/tenant/openSupportThreadCount.ts`              | Open thread + awaiting-reply counts                            |
+| `lib/tenant/supportMessageNotifications.ts`         | Staff email on customer message; customer email on staff reply |
+| `components/messaging/SupportMessageLiveAlerts.tsx` | In-portal notice, browser notification, live refresh           |
+| `app/api/messaging/inbound/route.ts`                | Poll for the newest inbound message                            |
+| `lib/tenant/buildTenantNavItems.ts`                 | Messages nav item + badge                                      |
 
 ## Follow-ups (backlog)
 
-- Customer email when provider replies (staff email shipped in v1.1)
+- SMS two-way inbox (sent.dm stays transactional only)
+- Browser push when the portal tab is fully closed (email covers that case today)

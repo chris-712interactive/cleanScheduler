@@ -1847,6 +1847,7 @@ export type Database = {
           email_notify_invoice_overdue: boolean;
           sms_notify_invoice_overdue: boolean;
           email_notify_customer_message: boolean;
+          email_notify_staff_reply: boolean;
           check_reminder_hold_days: number;
           check_hold_through_deposit: boolean;
           require_consultation_before_quote: boolean;
@@ -1881,6 +1882,7 @@ export type Database = {
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           email_notify_customer_message?: boolean;
+          email_notify_staff_reply?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;
@@ -1915,6 +1917,7 @@ export type Database = {
           email_notify_invoice_overdue?: boolean;
           sms_notify_invoice_overdue?: boolean;
           email_notify_customer_message?: boolean;
+          email_notify_staff_reply?: boolean;
           check_reminder_hold_days?: number;
           check_hold_through_deposit?: boolean;
           require_consultation_before_quote?: boolean;

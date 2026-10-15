@@ -62,7 +62,7 @@ The messages view is where staff read and reply to customer support conversation
 - Sidebar nav shows a badge with the count of **open threads awaiting staff reply**
 - Operations settings toggle: email staff when a customer sends or replies (default on; migration **0072**)
 
-**Implementation note (2026-06-08):** Shipped at **`/messages`**. Schema: `customer_support_threads` + `customer_support_messages` (migration **0013**). Staff email notifications shipped in v1.1. Public customer guide: **`/help/customers/message-your-provider`**. No SMS two-way inbox (sent.dm remains transactional only).
+**Implementation note (2026-10-15):** Shipped at **`/messages`**. Schema: `customer_support_threads` + `customer_support_messages` (migration **0013**). Staff email on a customer message shipped in v1.1. **`0104`** emails the customer when staff replies and shows a live notice in both portals while they are signed in. Public customer guide: **`/help/customers/message-your-provider`**. No SMS two-way inbox (sent.dm remains transactional only).
 
 ## Schedule
 

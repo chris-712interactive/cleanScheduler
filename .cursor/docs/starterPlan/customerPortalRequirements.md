@@ -37,7 +37,7 @@ The billing view should show the customer all invoices and payments and any outs
 
 The messages view is an area that allows customers to correspond with the tenant from within the application. It should allow the customer to create new conversations as well as continue existing conversations.
 
-**Implementation note (2026-06-08):** Shipped on **`/messages`**. Customers can start new threads and **reply on open threads** from the thread detail page. Closed threads show a note to start a new message. Tenant staff respond from **`/messages`** in the tenant portal (staff email on customer message shipped v1.1). Public guide: **`/help/customers/message-your-provider`**. Customer hub: **`/help/customers`**.
+**Implementation note (2026-10-15):** Shipped on **`/messages`**. Customers can start new threads and **reply on open threads** from the thread detail page. Closed threads show a note to start a new message. Tenant staff respond from **`/messages`** in the tenant portal. A new message notifies the other side while that portal is open, and staff replies also email the customer (**`0104`**, on by default). Public guide: **`/help/customers/message-your-provider`**. Customer hub: **`/help/customers`**.
 
 ## Settings
 

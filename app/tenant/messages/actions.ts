@@ -7,6 +7,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { tenantNavBadgesTag } from '@/lib/portal/cacheTags';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { canReplyToSupportThreads } from '@/lib/tenant/supportMessagingAccess';
+import { sendStaffSupportReplyNotification } from '@/lib/tenant/supportMessageNotifications';
 
 function revalidateSupportMessaging(tenantId: string, threadId: string, customerId: string) {
   revalidatePath('/messages');
@@ -39,7 +40,7 @@ export async function replyToTenantSupportThreadAction(formData: FormData): Prom
   const supabase = createTenantPortalDbClient();
   const { data: thread, error: threadError } = await supabase
     .from('customer_support_threads')
-    .select('id, tenant_id, customer_id, status')
+    .select('id, tenant_id, customer_id, status, subject')
     .eq('id', threadId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -62,6 +63,14 @@ export async function replyToTenantSupportThreadAction(formData: FormData): Prom
   if (error) {
     redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=send`);
   }
+
+  await sendStaffSupportReplyNotification(supabase, {
+    tenantId: membership.tenantId,
+    threadId,
+    customerId: thread.customer_id,
+    subject: thread.subject,
+    body,
+  });
 
   revalidateSupportMessaging(membership.tenantId, threadId, thread.customer_id);
   redirect(returnTo);

@@ -32,6 +32,7 @@ import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { PortalNavSkeleton } from '@/components/portal/portalNav/PortalNavSkeleton';
 import { TenantNavList } from '@/components/portal/portalNav/TenantNavList';
 import { TenantDeferredSessionNotices } from '@/components/portal/portalNav/TenantDeferredSessionNotices';
+import { SupportMessageLiveAlerts } from '@/components/messaging/SupportMessageLiveAlerts';
 
 const GlobalSearchLazy = nextDynamic(
   () => import('@/components/portal/GlobalSearch').then((m) => ({ default: m.GlobalSearch })),
@@ -189,7 +190,12 @@ export default async function TenantLayout({ children }: { children: React.React
           searchSlot={showGlobalSearch ? <GlobalSearchLazy /> : undefined}
           bottomNavItems={bottomNavItems}
         >
-          <RouteContentShell>{children}</RouteContentShell>
+          <RouteContentShell>
+            {isFieldEmployeeRole(membership.role) ? null : (
+              <SupportMessageLiveAlerts portal="tenant" />
+            )}
+            {children}
+          </RouteContentShell>
         </PortalShell>
       </>
     );

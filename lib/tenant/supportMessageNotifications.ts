@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
+import { escapeEmailAttr, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
+import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
   customerHasAnyNameParts,
@@ -132,5 +134,74 @@ export async function sendCustomerSupportMessageNotification(
 
   if (!sent.ok) {
     console.error('[supportMessageNotifications] email failed:', sent.error);
+  }
+}
+
+async function loadStaffReplyNotifyFlag(admin: Admin, tenantId: string): Promise<boolean> {
+  const { data } = await admin
+    .from('tenant_operational_settings')
+    .select('email_notify_staff_reply')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (!data) return true;
+  return data.email_notify_staff_reply;
+}
+
+/**
+ * Emails the customer when staff replies on an open support thread.
+ * Failures are logged and do not throw.
+ */
+export async function sendStaffSupportReplyNotification(
+  admin: Admin,
+  params: {
+    tenantId: string;
+    threadId: string;
+    customerId: string;
+    subject: string;
+    body: string;
+  },
+): Promise<void> {
+  if (!isResendConfigured()) {
+    console.warn(
+      '[supportMessageNotifications] Skipping customer email: Resend not configured (RESEND_API_KEY / RESEND_FROM_EMAIL).',
+    );
+    return;
+  }
+
+  const enabled = await loadStaffReplyNotifyFlag(admin, params.tenantId);
+  if (!enabled) return;
+
+  const [{ data: tenant }, { data: customer }, inboxUrl] = await Promise.all([
+    admin.from('tenants').select('name').eq('id', params.tenantId).maybeSingle(),
+    admin
+      .from('customers')
+      .select('customer_identities ( email )')
+      .eq('id', params.customerId)
+      .maybeSingle(),
+    customerPortalUrlForTenant(admin, params.tenantId, `/messages/${params.threadId}`),
+  ]);
+
+  const email = (customer?.customer_identities as { email: string | null } | null)?.email?.trim();
+  if (!email) return;
+
+  const provider = tenant?.name?.trim() || 'Your provider';
+  const preview = previewBody(params.body);
+  const subjectLine = `${provider} sent you a message`;
+  const text = `${provider} replied in your customer portal.\n\nSubject: ${params.subject}\n\n${preview}\n\nOpen the conversation: ${inboxUrl}\n`;
+  const html = wrapTransactionalEmailHtml({
+    preheader: `${provider} replied in your portal`,
+    bodyHtml: `<p><strong>${escapeHtml(provider)}</strong> replied in your customer portal.</p><p><strong>${escapeHtml(params.subject)}</strong></p><p>${escapeHtml(preview)}</p><p><a href="${escapeEmailAttr(inboxUrl)}">Open the conversation</a></p>`,
+  });
+
+  const sent = await sendTransactionalEmail({
+    to: email,
+    subject: subjectLine,
+    text,
+    html,
+  });
+
+  if (!sent.ok) {
+    console.error('[supportMessageNotifications] customer email failed:', sent.error);
   }
 }
