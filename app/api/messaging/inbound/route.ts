@@ -1,11 +1,15 @@
+import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/auth/session';
 import { isPlatformAdminRole } from '@/lib/auth/platformRoles';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
+import { publicEnv } from '@/lib/env';
 import { INBOUND_ALERT_WATCH_CURSOR, isAlertCursor } from '@/lib/messaging/inboundSupportAlert';
 import { loadInboundSupportAlert } from '@/lib/messaging/loadInboundSupportAlert';
-import { getPortalContext } from '@/lib/portal';
+import { getPortalContext, type PortalContext } from '@/lib/portal';
+import { inferPortalFromHost } from '@/lib/portal/inferPortalFromHost';
+import { resolveActiveTenantPublicDomain } from '@/lib/portal/resolveTenantPublicDomain';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 
@@ -20,8 +24,37 @@ function json(body: unknown, status = 200) {
   });
 }
 
-export async function GET(request: Request) {
+/**
+ * `/api` is outside the portal rewrite, so `x-portal` is absent and the host
+ * is the only signal for tenant vs customer.
+ */
+async function resolveInboundPortal(): Promise<PortalContext> {
   const portal = await getPortalContext();
+  if (portal.kind === 'tenant' || portal.kind === 'customer') return portal;
+
+  const host = (await headers()).get('host');
+  const inferred = inferPortalFromHost(host, publicEnv.NEXT_PUBLIC_APP_DOMAIN);
+  if (inferred.kind === 'tenant' || inferred.kind === 'customer') {
+    return {
+      ...portal,
+      kind: inferred.kind,
+      tenantSlug: portal.tenantSlug ?? inferred.tenantSlug,
+    };
+  }
+
+  if (!host) return portal;
+  const domain = await resolveActiveTenantPublicDomain(host);
+  if (!domain) return portal;
+  return {
+    kind: 'customer',
+    tenantSlug: domain.tenantSlug,
+    whiteLabelCustomerPortal: true,
+    whiteLabelHostname: domain.hostname,
+  };
+}
+
+export async function GET(request: Request) {
+  const portal = await resolveInboundPortal();
   const url = new URL(request.url);
   const afterParam = url.searchParams.get('after');
   const watch = url.searchParams.get('watch') === '1';
@@ -51,7 +84,9 @@ export async function GET(request: Request) {
       return json({ error: 'Forbidden' }, 403);
     }
 
-    const ctx = await getCustomerPortalContext(auth.user.id);
+    const ctx = await getCustomerPortalContext(auth.user.id, {
+      scopeTenantSlug: portal.whiteLabelCustomerPortal ? portal.tenantSlug : null,
+    });
     if (!ctx) return json(EMPTY);
 
     const mode = !after && !watch ? null : (after ?? INBOUND_ALERT_WATCH_CURSOR);
