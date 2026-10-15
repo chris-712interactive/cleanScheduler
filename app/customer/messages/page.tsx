@@ -7,7 +7,7 @@ import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { createCustomerSupportThreadAction } from './actions';
+import { CustomerNewMessageForm } from './CustomerNewMessageForm';
 import styles from './messages.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -75,35 +75,12 @@ export default async function CustomerMessagesPage({ searchParams }: PageProps) 
       ) : null}
 
       <Card title="New conversation">
-        <form action={createCustomerSupportThreadAction} className={styles.form}>
-          <label className={styles.field}>
-            <span>Provider</span>
-            <select name="customer_id" required className={styles.input}>
-              <option value="">Select…</option>
-              {ctx.links.map((l) => (
-                <option key={l.customerId} value={l.customerId}>
-                  {l.tenantName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span>Subject</span>
-            <input
-              name="subject"
-              type="text"
-              className={styles.input}
-              placeholder="Question about my next visit"
-            />
-          </label>
-          <label className={styles.field}>
-            <span>Message</span>
-            <textarea name="body" required className={styles.textarea} rows={4} />
-          </label>
-          <Button type="submit" variant="primary">
-            Send
-          </Button>
-        </form>
+        <CustomerNewMessageForm
+          providers={ctx.links.map((link) => ({
+            customerId: link.customerId,
+            tenantName: link.tenantName,
+          }))}
+        />
       </Card>
 
       {error ? (

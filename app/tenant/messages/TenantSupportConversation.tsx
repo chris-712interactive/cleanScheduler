@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import { SupportMessageReplyComposer } from '@/components/messaging/SupportMessageReplyComposer';
 import { SupportMessageTranscript } from '@/components/messaging/SupportMessageTranscript';
-import { Button } from '@/components/ui/Button';
 import type { SupportThreadDetail } from '@/lib/tenant/loadSupportThreadDetail';
 import { canReplyToSupportThreads } from '@/lib/tenant/supportMessagingAccess';
 import type { TenantRole } from '@/lib/auth/types';
@@ -75,36 +75,35 @@ export function TenantSupportConversation({
         ) : null}
       </header>
 
-      <SupportMessageTranscript messages={transcript} />
-
       {canReply && isOpen ? (
-        <form action={replyToTenantSupportThreadAction} className={styles.composer}>
-          <input type="hidden" name="tenant_slug" value={tenantSlug} />
-          <input type="hidden" name="thread_id" value={thread.id} />
-          <input type="hidden" name="return_to" value={returnTo} />
-          <label htmlFor="support_reply_body" className={styles.srOnly}>
-            Reply to customer
-          </label>
-          <textarea
-            id="support_reply_body"
-            name="body"
-            required
-            className={styles.textarea}
-            placeholder="Write a reply…"
-            rows={3}
-          />
-          <div className={styles.composerRow}>
-            <span className={styles.conversationSub}>Your customer sees this in their portal.</span>
-            <Button type="submit" variant="primary" size="sm">
-              Send reply
-            </Button>
-          </div>
-        </form>
-      ) : canReply ? (
-        <p className={styles.composerReadonly}>This conversation is closed. Reopen it to reply.</p>
+        <SupportMessageReplyComposer
+          messages={transcript}
+          isFromCustomer={false}
+          senderLabel="Your team"
+          action={replyToTenantSupportThreadAction}
+          hiddenFields={{
+            tenant_slug: tenantSlug,
+            thread_id: thread.id,
+            return_to: returnTo,
+          }}
+          formClassName={styles.composer}
+          textareaClassName={styles.textarea}
+          rowClassName={styles.composerRow}
+          textareaId="support_reply_body"
+          label="Reply to customer"
+          placeholder="Write a reply…"
+          submitLabel="Send reply"
+          footnote="Your customer sees this in their portal."
+        />
       ) : (
+        <SupportMessageTranscript messages={transcript} />
+      )}
+
+      {canReply && isOpen ? null : (
         <p className={styles.composerReadonly}>
-          Viewer accounts can read conversations but not reply.
+          {canReply
+            ? 'This conversation is closed. Reopen it to reply.'
+            : 'Viewer accounts can read conversations but not reply.'}
         </p>
       )}
     </section>

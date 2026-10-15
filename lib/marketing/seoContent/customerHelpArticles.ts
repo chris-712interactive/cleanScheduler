@@ -44,7 +44,7 @@ export const CUSTOMER_HELP_ARTICLES: HelpGuideArticle[] = [
       {
         title: 'Reply on an open thread',
         paragraphs: [
-          'Open any active conversation to read the full history. When the thread is still open, you can type a reply at the bottom and send it.',
+          'Open any active conversation to read the full history. When the thread is still open, type a reply at the bottom and send it. The message shows in the thread right away. Press Command+Enter on a Mac, or Ctrl+Enter on Windows, to send. Enter by itself starts a new line.',
           'Your provider is notified by email when you send or reply (they can turn this off in their settings). If someone on their team has the workspace open, they also see a notice right away.',
         ],
         figures: [

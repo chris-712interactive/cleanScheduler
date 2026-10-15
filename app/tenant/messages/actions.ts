@@ -15,26 +15,27 @@ function revalidateSupportMessaging(tenantId: string, threadId: string, customer
   revalidateTag(tenantNavBadgesTag(tenantId), 'max');
 }
 
-export async function replyToTenantSupportThreadAction(formData: FormData): Promise<void> {
+export async function replyToTenantSupportThreadAction(
+  formData: FormData,
+): Promise<{ error?: string }> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '')
     .trim()
     .toLowerCase();
   const threadId = String(formData.get('thread_id') ?? '').trim();
   const body = String(formData.get('body') ?? '').trim();
-  const returnTo = String(formData.get('return_to') ?? '/messages').trim() || '/messages';
 
   if (!tenantSlug || !threadId || !body) {
-    redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=empty`);
+    return { error: 'Enter a message before sending.' };
   }
 
   const membership = await requireTenantPortalAccess(tenantSlug, '/messages');
   if (!canReplyToSupportThreads(membership.role)) {
-    redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=readonly`);
+    return { error: 'Your role can view conversations but not reply.' };
   }
 
   const auth = await getAuthContext();
   if (!auth?.user.id) {
-    redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=auth`);
+    return { error: 'Sign in again to send this reply.' };
   }
 
   const supabase = createTenantPortalDbClient();
@@ -46,11 +47,11 @@ export async function replyToTenantSupportThreadAction(formData: FormData): Prom
     .maybeSingle();
 
   if (threadError || !thread) {
-    redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=missing`);
+    return { error: 'That conversation could not be found.' };
   }
 
   if (thread.status !== 'open') {
-    redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=closed`);
+    return { error: 'This conversation is closed.' };
   }
 
   const { error } = await supabase.from('customer_support_messages').insert({
@@ -61,7 +62,7 @@ export async function replyToTenantSupportThreadAction(formData: FormData): Prom
   });
 
   if (error) {
-    redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=send`);
+    return { error: 'Could not send your reply. Try again.' };
   }
 
   await sendStaffSupportReplyNotification(supabase, {
@@ -73,7 +74,7 @@ export async function replyToTenantSupportThreadAction(formData: FormData): Prom
   });
 
   revalidateSupportMessaging(membership.tenantId, threadId, thread.customer_id);
-  redirect(returnTo);
+  return {};
 }
 
 export async function closeTenantSupportThreadAction(formData: FormData): Promise<void> {

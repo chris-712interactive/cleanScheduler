@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import styles from './supportMessageTranscript.module.scss';
 
 export type SupportMessageTranscriptItem = {
@@ -8,19 +9,16 @@ export type SupportMessageTranscriptItem = {
   senderLabel: string;
 };
 
-export function SupportMessageTranscript({
-  messages,
-  customerSide = false,
-}: {
-  messages: SupportMessageTranscriptItem[];
-  customerSide?: boolean;
-}) {
-  if (messages.length === 0) {
-    return <p className={styles.empty}>No messages yet.</p>;
+export const SupportMessageTranscript = forwardRef<
+  HTMLDivElement,
+  {
+    messages: SupportMessageTranscriptItem[];
+    customerSide?: boolean;
   }
-
+>(function SupportMessageTranscript({ messages, customerSide = false }, ref) {
   return (
-    <div className={styles.transcript} role="log" aria-live="polite">
+    <div ref={ref} className={styles.transcript} role="log" aria-live="polite">
+      {messages.length === 0 ? <p className={styles.empty}>No messages yet.</p> : null}
       {messages.map((message) => {
         const fromCustomer = message.is_from_customer;
         const outgoing = customerSide ? fromCustomer : !fromCustomer;
@@ -46,4 +44,4 @@ export function SupportMessageTranscript({
       })}
     </div>
   );
-}
+});
