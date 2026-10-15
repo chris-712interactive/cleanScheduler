@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { SupportMessageReplyComposer } from '@/components/messaging/SupportMessageReplyComposer';
 import { SupportMessageTranscript } from '@/components/messaging/SupportMessageTranscript';
-import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { loadCustomerSupportThreadDetail } from '@/lib/tenant/loadSupportThreadDetail';
@@ -75,33 +75,30 @@ export default async function CustomerMessageThreadPage({ params, searchParams }
       ) : null}
 
       <div className={styles.threadPanel}>
-        <SupportMessageTranscript messages={transcript} customerSide />
-
         {isOpen ? (
-          <form action={replyToCustomerSupportThreadAction} className={styles.replyForm}>
-            <input type="hidden" name="thread_id" value={thread.id} />
-            <label htmlFor="customer_reply_body" className={styles.srOnly}>
-              Reply
-            </label>
-            <textarea
-              id="customer_reply_body"
-              name="body"
-              required
-              className={styles.textarea}
-              placeholder="Write a reply…"
-              rows={3}
-            />
-            <div className={styles.replyActions}>
-              <Button type="submit" variant="primary" size="sm">
-                Send
-              </Button>
-            </div>
-          </form>
+          <SupportMessageReplyComposer
+            messages={transcript}
+            customerSide
+            isFromCustomer
+            senderLabel="You"
+            action={replyToCustomerSupportThreadAction}
+            hiddenFields={{ thread_id: thread.id }}
+            formClassName={styles.replyForm}
+            textareaClassName={styles.textarea}
+            rowClassName={styles.replyActions}
+            textareaId="customer_reply_body"
+            label="Reply"
+            placeholder="Write a reply…"
+            submitLabel="Send"
+          />
         ) : (
-          <p className={styles.closedNote}>
-            This conversation is closed. <Link href="/messages">Start a new message</Link> if you
-            need more help.
-          </p>
+          <>
+            <SupportMessageTranscript messages={transcript} customerSide />
+            <p className={styles.closedNote}>
+              This conversation is closed. <Link href="/messages">Start a new message</Link> if you
+              need more help.
+            </p>
+          </>
         )}
       </div>
     </div>

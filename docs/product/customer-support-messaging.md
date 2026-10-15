@@ -37,21 +37,23 @@ Access helper: `lib/tenant/supportMessagingAccess.ts` → `canReplyToSupportThre
 - **Tenant mobile:** list by default; `?thread=<uuid>` shows conversation full-screen.
 - **Nav badge:** count of **open threads awaiting staff reply** (`countSupportThreadsAwaitingReply`, cached via `getCachedOpenSupportThreadCount`).
 - **Closed threads:** customer sees note to start a new message; tenant can reopen.
+- **Sending:** the message appears in the thread immediately. The save and email finish afterward. **⌘/Ctrl + Enter** sends from the reply box (Enter still adds a line). The same shortcut starts a new customer conversation.
 
 ## Key files
 
-| Path                                                | Purpose                                                        |
-| --------------------------------------------------- | -------------------------------------------------------------- |
-| `app/tenant/messages/`                              | Tenant inbox page, list, conversation, server actions          |
-| `app/customer/messages/`                            | Customer list, thread detail, create + reply actions           |
-| `components/messaging/SupportMessageTranscript.tsx` | Shared transcript UI                                           |
-| `lib/tenant/loadTenantSupportInbox.ts`              | Inbox query + filters                                          |
-| `lib/tenant/loadSupportThreadDetail.ts`             | Thread + messages for tenant or customer                       |
-| `lib/tenant/openSupportThreadCount.ts`              | Open thread + awaiting-reply counts                            |
-| `lib/tenant/supportMessageNotifications.ts`         | Staff email on customer message; customer email on staff reply |
-| `components/messaging/SupportMessageLiveAlerts.tsx` | In-portal notice, browser notification, live refresh           |
-| `app/api/messaging/inbound/route.ts`                | Poll for the newest inbound message                            |
-| `lib/tenant/buildTenantNavItems.ts`                 | Messages nav item + badge                                      |
+| Path                                                   | Purpose                                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------- |
+| `app/tenant/messages/`                                 | Tenant inbox page, list, conversation, server actions          |
+| `app/customer/messages/`                               | Customer list, thread detail, create + reply actions           |
+| `components/messaging/SupportMessageTranscript.tsx`    | Shared transcript UI                                           |
+| `components/messaging/SupportMessageReplyComposer.tsx` | Reply box with instant send and ⌘/Ctrl + Enter                 |
+| `lib/tenant/loadTenantSupportInbox.ts`                 | Inbox query + filters                                          |
+| `lib/tenant/loadSupportThreadDetail.ts`                | Thread + messages for tenant or customer                       |
+| `lib/tenant/openSupportThreadCount.ts`                 | Open thread + awaiting-reply counts                            |
+| `lib/tenant/supportMessageNotifications.ts`            | Staff email on customer message; customer email on staff reply |
+| `components/messaging/SupportMessageLiveAlerts.tsx`    | In-portal notice, browser notification, live refresh           |
+| `app/api/messaging/inbound/route.ts`                   | Poll for the newest inbound message                            |
+| `lib/tenant/buildTenantNavItems.ts`                    | Messages nav item + badge                                      |
 
 ## Follow-ups (backlog)
 

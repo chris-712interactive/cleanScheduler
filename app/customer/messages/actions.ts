@@ -14,7 +14,9 @@ function revalidateSupportMessaging(tenantId: string, threadId: string) {
   revalidateTag(tenantNavBadgesTag(tenantId), 'max');
 }
 
-export async function createCustomerSupportThreadAction(formData: FormData): Promise<void> {
+export async function createCustomerSupportThreadAction(
+  formData: FormData,
+): Promise<{ error?: string; threadId?: string }> {
   const auth = await requirePortalAccess('customer', '/messages');
   const ctx = await getCustomerPortalContext(auth.user.id);
   if (!ctx) redirect('/access-denied?reason=no_customer_profile');
@@ -23,12 +25,12 @@ export async function createCustomerSupportThreadAction(formData: FormData): Pro
   const subject = String(formData.get('subject') ?? 'Message').trim() || 'Message';
   const body = String(formData.get('body') ?? '').trim();
   if (!customerId || !body) {
-    redirect('/messages?error=1');
+    return { error: 'Please pick a provider and write a message.' };
   }
 
   const link = ctx.links.find((l) => l.customerId === customerId);
   if (!link) {
-    redirect('/messages?error=1');
+    return { error: 'Please pick a provider and write a message.' };
   }
 
   const supabase = createAdminClient();
@@ -43,7 +45,7 @@ export async function createCustomerSupportThreadAction(formData: FormData): Pro
     .single();
 
   if (tErr || !thread) {
-    redirect('/messages?error=1');
+    return { error: 'Could not start that conversation. Try again.' };
   }
 
   const { error: mErr } = await supabase.from('customer_support_messages').insert({
@@ -54,7 +56,7 @@ export async function createCustomerSupportThreadAction(formData: FormData): Pro
   });
 
   if (mErr) {
-    redirect('/messages?error=1');
+    return { error: 'Could not send your message. Try again.' };
   }
 
   await sendCustomerSupportMessageNotification(supabase, 'thread_created', {
@@ -66,10 +68,12 @@ export async function createCustomerSupportThreadAction(formData: FormData): Pro
   });
 
   revalidateSupportMessaging(link.tenantId, thread.id);
-  redirect(`/messages/${thread.id}`);
+  return { threadId: thread.id };
 }
 
-export async function replyToCustomerSupportThreadAction(formData: FormData): Promise<void> {
+export async function replyToCustomerSupportThreadAction(
+  formData: FormData,
+): Promise<{ error?: string }> {
   const auth = await requirePortalAccess('customer', '/messages');
   const ctx = await getCustomerPortalContext(auth.user.id);
   if (!ctx) redirect('/access-denied?reason=no_customer_profile');
@@ -77,7 +81,7 @@ export async function replyToCustomerSupportThreadAction(formData: FormData): Pr
   const threadId = String(formData.get('thread_id') ?? '').trim();
   const body = String(formData.get('body') ?? '').trim();
   if (!threadId || !body) {
-    redirect(`/messages/${threadId || ''}?error=empty`);
+    return { error: 'Enter a message before sending.' };
   }
 
   const supabase = createAdminClient();
@@ -88,11 +92,11 @@ export async function replyToCustomerSupportThreadAction(formData: FormData): Pr
     .maybeSingle();
 
   if (threadError || !thread || !ctx.customerIds.includes(thread.customer_id)) {
-    redirect('/messages?error=1');
+    return { error: 'That conversation could not be found.' };
   }
 
   if (thread.status !== 'open') {
-    redirect(`/messages/${threadId}?error=closed`);
+    return { error: 'This conversation is closed. Start a new message if you need more help.' };
   }
 
   const { error } = await supabase.from('customer_support_messages').insert({
@@ -103,7 +107,7 @@ export async function replyToCustomerSupportThreadAction(formData: FormData): Pr
   });
 
   if (error) {
-    redirect(`/messages/${threadId}?error=send`);
+    return { error: 'Could not send your message. Try again.' };
   }
 
   await sendCustomerSupportMessageNotification(supabase, 'customer_reply', {
@@ -115,5 +119,5 @@ export async function replyToCustomerSupportThreadAction(formData: FormData): Pr
   });
 
   revalidateSupportMessaging(thread.tenant_id, threadId);
-  redirect(`/messages/${threadId}`);
+  return {};
 }
