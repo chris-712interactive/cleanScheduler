@@ -16,7 +16,7 @@ Two-way in-app messaging between customers and tenant staff. Uses the **`0013`**
 
 **v1.1 (PR #115 follow-up):** email staff when a customer sends or replies (`email_notify_customer_message` in Operations settings, default on); nav badge counts threads awaiting reply.
 
-**Live alerts:** while either portal is open, a new message from the other side refreshes the page and shows a notice within a few seconds (immediately when Supabase Realtime is available). Messages includes a control to allow browser notifications for that signed-in session. Staff replies also email the customer (`email_notify_staff_reply`, default on) so they hear about it when the portal is closed. Apply **`0104`** before relying on the customer email toggle or live database events.
+**Live alerts:** while either portal is open, a new message from the other side refreshes the page and shows a notice within a few seconds (immediately when Supabase Realtime is available). The check is `/api/messaging/inbound`. That path skips the portal rewrite, so the handler reads the host (`acme.…` vs `my.…`, or a white-label customer domain) instead of `x-portal`. Messages includes a control to allow browser notifications for that signed-in session. Staff replies also email the customer (`email_notify_staff_reply`, default on) so they hear about it when the portal is closed. Apply **`0104`** before relying on the customer email toggle or live database events.
 
 **Public help:** [`/help/customers/message-your-provider`](/help/customers/message-your-provider) (hub: [`/help/customers`](/help/customers)).
 
