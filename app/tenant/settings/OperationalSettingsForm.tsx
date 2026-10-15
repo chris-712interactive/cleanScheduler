@@ -135,6 +135,7 @@ export function OperationalSettingsForm({
     if (snapshot.email_notify_quote_declined) count += 1;
     if (snapshot.email_notify_invoice_overdue) count += 1;
     if (snapshot.email_notify_customer_message) count += 1;
+    if (snapshot.email_notify_staff_reply) count += 1;
     if (snapshot.email_notify_visit_reminder) count += 1;
     if (snapshot.email_notify_on_my_way) count += 1;
     if (snapshot.email_notify_review_request) count += 1;
@@ -642,12 +643,30 @@ export function OperationalSettingsForm({
                     <span className={styles.notifyUnavailable}>Not available</span>
                   </td>
                 </tr>
+                <tr>
+                  <th scope="row">You reply in Messages</th>
+                  <td>
+                    <label className={styles.notifyToggle}>
+                      <input
+                        type="checkbox"
+                        name="email_notify_staff_reply"
+                        defaultChecked={snapshot.email_notify_staff_reply}
+                        disabled={readOnly}
+                      />
+                      On
+                    </label>
+                  </td>
+                  <td>
+                    <span className={styles.notifyUnavailable}>Not available</span>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
           <p className={styles.technicalNote}>
-            Email goes to your owner or company address on file. The sidebar badge counts open
-            conversations waiting for your reply.
+            Customer messages email your owner or company address. Your replies email the customer
+            on file. While either portal is open, a notice appears as soon as a message arrives, and
+            each person can turn on browser notifications from Messages.
           </p>
         </div>
 

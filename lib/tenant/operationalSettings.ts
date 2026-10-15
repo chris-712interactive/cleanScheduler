@@ -88,6 +88,7 @@ export function parseQuoteNotifyFromForm(formData: FormData) {
     email_notify_invoice_overdue: formData.get('email_notify_invoice_overdue') === 'on',
     sms_notify_invoice_overdue: formData.get('sms_notify_invoice_overdue') === 'on',
     email_notify_customer_message: formData.get('email_notify_customer_message') === 'on',
+    email_notify_staff_reply: formData.get('email_notify_staff_reply') === 'on',
   };
 }
 

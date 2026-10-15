@@ -15,7 +15,7 @@
 
 - Masquerade polish — consent flow, per-action audit UI (`phase3MasqueradePolish`)
 - PWA / offline field schedule (`phase3Pwa`)
-- Customer email when provider replies (messaging follow-up)
+- Browser push when the Messages portal tab is fully closed (in-portal alerts and reply email shipped in `0104`)
 - Founder email on new platform support ticket
 
 ## In progress / high-value gaps
