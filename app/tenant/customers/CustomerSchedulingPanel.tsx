@@ -32,8 +32,9 @@ export function CustomerSchedulingPanel({
   return (
     <div className={styles.stack}>
       <p className={styles.lead}>
-        These defaults apply to every property. A property can replace them. Blank lists skip that
-        rule instead of blocking the schedule.
+        These defaults apply to every property. A property can replace them. Preferred days and time
+        of day are used when the schedule is filled. Blank lists skip that rule instead of blocking
+        the schedule.
       </p>
       <CustomerForm
         tenantSlug={tenantSlug}

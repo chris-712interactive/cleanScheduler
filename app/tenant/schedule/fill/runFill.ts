@@ -26,6 +26,12 @@ import {
 import { assertMeteredLimit } from '@/lib/billing/checkLimit';
 import { DEFAULT_CONSULTATION_DURATION_MINUTES } from '@/lib/tenant/consultationDuration';
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
+import {
+  effectiveSchedulingFacts,
+  emptySchedulingFacts,
+  schedulingArrivalWindow,
+  schedulingFactsFromRow,
+} from '@/lib/schedule/optimizer/preferences';
 import { WORK_WEEK_DAY_KEYS, type WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
 import type { Database } from '@/lib/supabase/database.types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -172,7 +178,15 @@ async function buildPlan(
   });
   const customerIds = [...new Set(activeQuotes.map((quote) => quote.customer_id as string))];
 
-  const [{ data: visits }, { data: prefs }] = await Promise.all([
+  const propertyIds = [
+    ...new Set(
+      activeQuotes
+        .map((quote) => quote.property_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    ),
+  ];
+
+  const [{ data: visits }, { data: prefs }, { data: properties }] = await Promise.all([
     customerIds.length
       ? admin
           .from('tenant_scheduled_visits')
@@ -181,18 +195,28 @@ async function buildPlan(
           .in('customer_id', customerIds)
           .neq('status', 'cancelled')
           .limit(5000)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as never[] }),
     customerIds.length
       ? admin
           .from('tenant_customer_scheduling_preferences')
-          .select('customer_id, arrival_start')
+          .select('*')
           .eq('tenant_id', tenantId)
           .in('customer_id', customerIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as never[] }),
+    propertyIds.length
+      ? admin
+          .from('tenant_customer_properties')
+          .select('id, scheduling_override')
+          .eq('tenant_id', tenantId)
+          .in('id', propertyIds)
+      : Promise.resolve({ data: [] as never[] }),
   ]);
 
-  const arrivalByCustomer = new Map(
-    (prefs ?? []).map((row) => [row.customer_id, hmToMinutes(row.arrival_start, workStartMin)]),
+  const factsByCustomer = new Map(
+    (prefs ?? []).map((row) => [row.customer_id, schedulingFactsFromRow(row)]),
+  );
+  const overrideByProperty = new Map(
+    (properties ?? []).map((property) => [property.id, property.scheduling_override]),
   );
   const serviceDates = new Map<string, string[]>();
   const lineDates = new Map<string, string[]>();
@@ -223,6 +247,11 @@ async function buildPlan(
     const customerName = identity ? formatCustomerDisplayName(identity) : 'Customer';
     const allDates = serviceDates.get(customerId) ?? [];
     const anchorDateForCustomer = allDates.slice().sort().at(-1) ?? null;
+    const facts = effectiveSchedulingFacts(
+      factsByCustomer.get(customerId) ?? emptySchedulingFacts(),
+      quote.property_id ? overrideByProperty.get(quote.property_id) : null,
+    );
+    const arrival = schedulingArrivalWindow(facts);
     for (const line of quote.tenant_quote_line_items ?? []) {
       const frequency = FREQUENCIES.has(line.frequency as QuoteLineFrequency)
         ? (line.frequency as QuoteLineFrequency)
@@ -240,7 +269,8 @@ async function buildPlan(
           anchorDateForCustomer,
         existingDates: frequency === 'one_time' ? ownDates : allDates,
         fulfilled: frequency === 'one_time' && completedLineIds.has(line.id),
-        arrivalStartMin: arrivalByCustomer.get(customerId) ?? null,
+        arrivalStartMin: arrival?.startMin ?? null,
+        preferredWeekdays: facts.preferredWeekdays,
         quoteId: quote.id,
         lineId: line.id,
         propertyId: quote.property_id,

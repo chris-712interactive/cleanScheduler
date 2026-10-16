@@ -269,7 +269,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
 
           <Card
             title="Scheduling preferences"
-            description="Who should clean, when they can arrive, and what the job requires."
+            description="Preferred days and time of day, who should clean, and what the job requires."
           >
             <CustomerSchedulingPreferences
               tenantSlug={membership.tenantSlug}

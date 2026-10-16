@@ -1716,6 +1716,8 @@ export type Database = {
           required_certification_tags: string[];
           required_equipment_tags: string[];
           requires_key_pickup: boolean;
+          preferred_weekdays: string[];
+          preferred_time_window: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1739,6 +1741,8 @@ export type Database = {
           required_certification_tags?: string[];
           required_equipment_tags?: string[];
           requires_key_pickup?: boolean;
+          preferred_weekdays?: string[];
+          preferred_time_window?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1762,6 +1766,8 @@ export type Database = {
           required_certification_tags?: string[];
           required_equipment_tags?: string[];
           requires_key_pickup?: boolean;
+          preferred_weekdays?: string[];
+          preferred_time_window?: string | null;
           created_at?: string;
           updated_at?: string;
         };
