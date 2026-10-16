@@ -85,6 +85,114 @@ describe('planFillPeriod', () => {
     expect(skipped[0]?.reason).toContain('not due');
   });
 
+  it('omits a one-time clean whose visit is already complete', () => {
+    const { proposals, skipped } = planFillPeriod({
+      ...range,
+      services: [
+        service({
+          frequency: 'one_time',
+          title: 'Deep clean',
+          existingDates: ['2026-09-01'],
+          anchorDate: '2026-09-01',
+          fulfilled: true,
+        }),
+      ],
+      consultations: [],
+    });
+    expect(proposals).toHaveLength(0);
+    expect(skipped).toHaveLength(0);
+  });
+
+  it('starts recurring cleans one full cycle after the initial one-time clean', () => {
+    const period = { ...range, end: '2026-11-30' };
+    const deep = service({
+      key: 'deep',
+      lineId: 'deep',
+      title: 'Deep clean',
+      frequency: 'one_time',
+      anchorDate: null,
+      existingDates: [],
+    });
+    const recurring = (frequency: 'weekly' | 'biweekly' | 'monthly') =>
+      service({
+        key: frequency,
+        lineId: frequency,
+        title: frequency,
+        frequency,
+        anchorDate: null,
+        existingDates: [],
+      });
+
+    const biweekly = planFillPeriod({
+      ...period,
+      services: [recurring('biweekly'), deep],
+      consultations: [],
+    });
+    expect(biweekly.proposals.find((item) => item.lineId === 'deep')?.dateKey).toBe('2026-10-12');
+    expect(
+      biweekly.proposals
+        .filter((item) => item.lineId === 'biweekly')
+        .map((item) => item.dateKey)
+        .sort()[0],
+    ).toBe('2026-10-26');
+
+    const weekly = planFillPeriod({
+      ...period,
+      services: [recurring('weekly'), deep],
+      consultations: [],
+    });
+    expect(
+      weekly.proposals
+        .filter((item) => item.lineId === 'weekly')
+        .map((item) => item.dateKey)
+        .sort()[0],
+    ).toBe('2026-10-19');
+
+    const monthly = planFillPeriod({
+      ...period,
+      services: [recurring('monthly'), deep],
+      consultations: [],
+    });
+    expect(
+      monthly.proposals
+        .filter((item) => item.lineId === 'monthly')
+        .map((item) => item.dateKey)
+        .sort()[0],
+    ).toBe('2026-11-12');
+  });
+
+  it('waits a cycle after a deep clean that is already on the calendar', () => {
+    const { proposals } = planFillPeriod({
+      ...range,
+      end: '2026-11-30',
+      services: [
+        service({
+          key: 'biweekly',
+          lineId: 'biweekly',
+          frequency: 'biweekly',
+          anchorDate: null,
+          existingDates: [],
+        }),
+        service({
+          key: 'deep',
+          lineId: 'deep',
+          title: 'Deep clean',
+          frequency: 'one_time',
+          anchorDate: '2026-10-12',
+          existingDates: ['2026-10-12'],
+        }),
+      ],
+      consultations: [],
+    });
+    expect(proposals.find((item) => item.lineId === 'deep')).toBeUndefined();
+    expect(
+      proposals
+        .filter((item) => item.lineId === 'biweekly')
+        .map((item) => item.dateKey)
+        .sort()[0],
+    ).toBe('2026-10-26');
+  });
+
   it('skips a one-time clean that is already booked', () => {
     const { proposals, skipped } = planFillPeriod({
       ...range,
