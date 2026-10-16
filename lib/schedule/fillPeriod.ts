@@ -117,6 +117,8 @@ export type FillServiceDemand = {
   /** Last scheduled or completed visit, as a date key. */
   anchorDate: string | null;
   existingDates: string[];
+  /** A one-time line whose visit is already completed. It is not placed again and is not listed as left off. */
+  fulfilled?: boolean;
   arrivalStartMin: number | null;
   quoteId: string;
   lineId: string;
@@ -203,6 +205,35 @@ export function preferredWindowStartMin(window: string | null): number | null {
  * Recurring work keeps the customer's gap. One-time work is placed once.
  * A closed weekday moves forward onto the next open day, still inside the gap.
  */
+function cadenceAfter(dateKey: string, frequency: QuoteLineFrequency): string | null {
+  if (frequency === 'monthly') return addMonthsToDateKey(dateKey, 1);
+  const gap = cadenceDays(frequency);
+  if (!gap) return null;
+  return shiftDateKey(dateKey, gap);
+}
+
+/** Latest one-time clean on this quote, already booked or placed earlier in this fill. */
+function latestInitialCleanDate(
+  quoteId: string,
+  services: FillServiceDemand[],
+  placed: FillProposal[],
+): string | null {
+  let latest: string | null = null;
+  const consider = (dateKey: string) => {
+    if (!latest || dateKey > latest) latest = dateKey;
+  };
+  for (const service of services) {
+    if (service.quoteId !== quoteId || service.frequency !== 'one_time') continue;
+    for (const dateKey of service.existingDates) consider(dateKey);
+  }
+  for (const proposal of placed) {
+    if (proposal.quoteId !== quoteId) continue;
+    const source = services.find((service) => service.lineId === proposal.lineId);
+    if (source?.frequency === 'one_time') consider(proposal.dateKey);
+  }
+  return latest;
+}
+
 export function planFillPeriod(input: {
   start: string;
   end: string;
@@ -211,11 +242,20 @@ export function planFillPeriod(input: {
   workEndMin: number;
   services: FillServiceDemand[];
   consultations: FillConsultationDemand[];
+  /** When true, the first recurring visit waits one full cycle after the quote's one-time clean. */
+  recurringStartsAfterInitial?: boolean;
 }): { proposals: FillProposal[]; skipped: FillSkip[] } {
   const open = new Set(input.workDays);
   const proposals: FillProposal[] = [];
   const skipped: FillSkip[] = [];
   const taken = new Map<string, Set<string>>();
+  const deferRecurring = input.recurringStartsAfterInitial !== false;
+  const orderedServices = deferRecurring
+    ? [...input.services].sort((a, b) => {
+        const rank = (frequency: QuoteLineFrequency) => (frequency === 'one_time' ? 0 : 1);
+        return rank(a.frequency) - rank(b.frequency);
+      })
+    : input.services;
 
   const mark = (customerId: string, dateKey: string) => {
     const set = taken.get(customerId) ?? new Set<string>();
@@ -227,12 +267,20 @@ export function planFillPeriod(input: {
     for (const dateKey of service.existingDates) mark(service.customerId, dateKey);
   }
 
-  for (const service of input.services) {
+  for (const service of orderedServices) {
     const occupied = () => [...(taken.get(service.customerId) ?? [])];
     const gap = cadenceDays(service.frequency);
     const dates: string[] = [];
+    const initialClean = deferRecurring
+      ? latestInitialCleanDate(service.quoteId, input.services, proposals)
+      : null;
+    const recurringFloor =
+      service.frequency === 'one_time' || !initialClean
+        ? null
+        : cadenceAfter(initialClean, service.frequency);
 
     if (service.frequency === 'one_time') {
+      if (service.fulfilled) continue;
       if (service.existingDates.length > 0) {
         skipped.push({
           label: service.customerName,
@@ -252,6 +300,7 @@ export function planFillPeriod(input: {
       mark(service.customerId, day);
     } else if (service.frequency === 'monthly') {
       let cursor = service.anchorDate ?? input.start;
+      if (recurringFloor && cursor < recurringFloor) cursor = recurringFloor;
       if (cursor < input.start) {
         while (cursor < input.start) cursor = addMonthsToDateKey(cursor, 1);
       }
@@ -273,6 +322,7 @@ export function planFillPeriod(input: {
       // A visit that fell on a closed day, or a day or two before this period,
       // can move onto the next open day. It cannot jump a whole extra cadence.
       let due = service.anchorDate ? shiftDateKey(service.anchorDate, gap) : input.start;
+      if (recurringFloor && due < recurringFloor) due = recurringFloor;
       let guard = 0;
       while (due <= input.end && guard < 16) {
         guard += 1;

@@ -108,7 +108,7 @@ async function buildPlan(
       .maybeSingle(),
     admin
       .from('tenant_operational_settings')
-      .select('consultation_duration_minutes')
+      .select('consultation_duration_minutes, recurring_starts_after_initial')
       .eq('tenant_id', tenantId)
       .maybeSingle(),
     admin
@@ -196,6 +196,7 @@ async function buildPlan(
   );
   const serviceDates = new Map<string, string[]>();
   const lineDates = new Map<string, string[]>();
+  const completedLineIds = new Set<string>();
   const consultationCustomers = new Set<string>();
   for (const visit of visits ?? []) {
     if (!visit.customer_id) continue;
@@ -211,6 +212,7 @@ async function buildPlan(
       const line = lineDates.get(visit.quote_line_item_id) ?? [];
       line.push(dateKey);
       lineDates.set(visit.quote_line_item_id, line);
+      if (visit.status === 'completed') completedLineIds.add(visit.quote_line_item_id);
     }
   }
 
@@ -237,6 +239,7 @@ async function buildPlan(
           (frequency === 'one_time' ? ownDates : allDates).slice().sort().at(-1) ??
           anchorDateForCustomer,
         existingDates: frequency === 'one_time' ? ownDates : allDates,
+        fulfilled: frequency === 'one_time' && completedLineIds.has(line.id),
         arrivalStartMin: arrivalByCustomer.get(customerId) ?? null,
         quoteId: quote.id,
         lineId: line.id,
@@ -280,6 +283,7 @@ async function buildPlan(
     workEndMin: workEndMin > workStartMin ? workEndMin : workStartMin + 60,
     services,
     consultations,
+    recurringStartsAfterInitial: ops?.recurring_starts_after_initial ?? true,
   });
 
   return {
