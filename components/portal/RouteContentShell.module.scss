@@ -1,5 +1,13 @@
 @use 'mixins/a11y' as a11y;
 
+.wrap:has([data-fill-viewport]) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .wrap {
   &:has([data-route-loading]) {
     opacity: 1;

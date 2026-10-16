@@ -62,3 +62,39 @@
     padding-bottom: var(--space-10);
   }
 }
+
+/* Opt-in pages (Messages) stay inside the viewport. The shell scrolls nowhere;
+   the page scrolls its own panes. Other routes keep the document scroll. */
+.shell:has([data-fill-viewport]) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.shell:has([data-fill-viewport]) .body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell:has([data-fill-viewport]) .sidebar {
+  position: static;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+
+.shell:has([data-fill-viewport]) .main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: var(--space-4);
+}
+
+.shell:has([data-fill-viewport])[data-bottom-nav] .main {
+  padding-bottom: calc(var(--space-4) + 4.5rem + env(safe-area-inset-bottom, 0px));
+
+  @include mq.up(md) {
+    padding-bottom: var(--space-4);
+  }
+}
