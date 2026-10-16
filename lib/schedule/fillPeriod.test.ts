@@ -15,6 +15,7 @@ function service(overrides: Partial<FillServiceDemand> = {}): FillServiceDemand 
     anchorDate: '2026-10-05',
     existingDates: ['2026-10-05'],
     arrivalStartMin: null,
+    preferredWeekdays: [],
     quoteId: 'quote-1',
     lineId: 'line-1',
     propertyId: 'prop-1',
@@ -66,6 +67,26 @@ describe('planFillPeriod', () => {
     workEndMin: 17 * 60,
   };
 
+  it('lands a weekly visit on a preferred weekday inside the cadence', () => {
+    const { proposals } = planFillPeriod({
+      ...range,
+      services: [service({ preferredWeekdays: ['thu'] })],
+      consultations: [],
+    });
+    expect(proposals.map((item) => item.dateKey)).toEqual(['2026-10-15']);
+    expect(proposals[0]?.startMin).toBe(8 * 60);
+  });
+
+  it('uses the next open day when the preferred weekday is closed', () => {
+    const { proposals } = planFillPeriod({
+      ...range,
+      services: [service({ preferredWeekdays: ['sun'], arrivalStartMin: 12 * 60 })],
+      consultations: [],
+    });
+    expect(proposals.map((item) => item.dateKey)).toEqual(['2026-10-12']);
+    expect(proposals[0]?.startMin).toBe(12 * 60);
+  });
+
   it('places the next weekly visit one cadence after the last one', () => {
     const { proposals } = planFillPeriod({
       ...range,
@@ -78,7 +99,9 @@ describe('planFillPeriod', () => {
   it('skips a customer who already has a visit inside the cadence', () => {
     const { proposals, skipped } = planFillPeriod({
       ...range,
-      services: [service({ existingDates: ['2026-10-05', '2026-10-12'], anchorDate: '2026-10-12' })],
+      services: [
+        service({ existingDates: ['2026-10-05', '2026-10-12'], anchorDate: '2026-10-12' }),
+      ],
       consultations: [],
     });
     expect(proposals).toHaveLength(0);

@@ -3,6 +3,7 @@ import {
   timeInputValue,
   type SchedulingFacts,
 } from '@/lib/schedule/optimizer/preferences';
+import { WORK_WEEK_DAY_KEYS, WORK_WEEK_DAY_LABEL } from '@/lib/tenant/tenantBusinessSettings';
 import styles from './scheduling-fields.module.scss';
 
 export function SchedulingPreferenceFields({
@@ -16,6 +17,37 @@ export function SchedulingPreferenceFields({
 }) {
   return (
     <div className={styles.fields}>
+      <fieldset className={styles.people}>
+        <legend>Preferred days</legend>
+        <p className={styles.empty}>Leave unchecked to use any day the business is open.</p>
+        <div className={styles.peopleGrid}>
+          {WORK_WEEK_DAY_KEYS.map((day) => (
+            <label key={`${idPrefix}-day-${day}`}>
+              <input
+                type="checkbox"
+                name="preferred_weekday"
+                value={day}
+                defaultChecked={facts.preferredWeekdays.includes(day)}
+              />
+              {WORK_WEEK_DAY_LABEL[day]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label className={styles.field}>
+        Time of day
+        <select name="preferred_time_window" defaultValue={facts.preferredTimeWindow ?? ''}>
+          <option value="">Any time</option>
+          <option value="morning">Morning</option>
+          <option value="afternoon">Afternoon</option>
+          <option value="evening">Evening</option>
+        </select>
+      </label>
+      <p className={styles.empty}>
+        Fill schedule aims for these days and this part of the day. A specific arrival window below
+        replaces the time of day. Morning starts around 8:00, afternoon around noon, and evening
+        around 4:00.
+      </p>
       <div className={styles.grid}>
         <label className={styles.field}>
           Priority

@@ -34,15 +34,15 @@ export function dateKeyWeekday(dateKey: string): WorkWeekDayKey {
 export function diffDateKeys(later: string, earlier: string): number {
   const [ay, am, ad] = earlier.split('-').map(Number);
   const [by, bm, bd] = later.split('-').map(Number);
-  return Math.round(
-    (Date.UTC(by!, bm! - 1, bd!) - Date.UTC(ay!, am! - 1, ad!)) / 86_400_000,
-  );
+  return Math.round((Date.UTC(by!, bm! - 1, bd!) - Date.UTC(ay!, am! - 1, ad!)) / 86_400_000);
 }
 
 export function addMonthsToDateKey(dateKey: string, months: number): string {
   const [year, month, day] = dateKey.split('-').map(Number);
   const cursor = new Date(Date.UTC(year!, month! - 1 + months, 1));
-  const last = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0)).getUTCDate();
+  const last = new Date(
+    Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0),
+  ).getUTCDate();
   const clamped = Math.min(day!, last);
   const y = cursor.getUTCFullYear();
   const m = String(cursor.getUTCMonth() + 1).padStart(2, '0');
@@ -58,7 +58,10 @@ function monthBounds(dateKey: string): { start: string; end: string } {
   const [year, month] = dateKey.split('-').map(Number);
   const start = `${year}-${String(month).padStart(2, '0')}-01`;
   const last = new Date(Date.UTC(year!, month!, 0)).getUTCDate();
-  return { start, end: `${year}-${String(month).padStart(2, '0')}-${String(last).padStart(2, '0')}` };
+  return {
+    start,
+    end: `${year}-${String(month).padStart(2, '0')}-${String(last).padStart(2, '0')}`,
+  };
 }
 
 export function eachDateKey(start: string, end: string): string[] {
@@ -120,6 +123,8 @@ export type FillServiceDemand = {
   /** A one-time line whose visit is already completed. It is not placed again and is not listed as left off. */
   fulfilled?: boolean;
   arrivalStartMin: number | null;
+  /** Empty means any open workday. */
+  preferredWeekdays: WorkWeekDayKey[];
   quoteId: string;
   lineId: string;
   propertyId: string | null;
@@ -171,13 +176,25 @@ function nextOpenDay(
   rangeEnd: string,
   openDays: ReadonlySet<WorkWeekDayKey>,
   maxLookahead: number,
+  options?: {
+    preferredDays?: ReadonlySet<WorkWeekDayKey>;
+    isTaken?: (dateKey: string) => boolean;
+  },
 ): string | null {
-  let cursor = from;
-  for (let step = 0; step <= maxLookahead && cursor <= rangeEnd; step += 1) {
-    if (openDays.has(dateKeyWeekday(cursor))) return cursor;
-    cursor = shiftDateKey(cursor, 1);
-  }
-  return null;
+  const preferred = options?.preferredDays;
+  const isTaken = options?.isTaken ?? (() => false);
+  const scan = (requirePreferred: boolean): string | null => {
+    let cursor = from;
+    for (let step = 0; step <= maxLookahead && cursor <= rangeEnd; step += 1) {
+      const weekday = dateKeyWeekday(cursor);
+      const preferredOk = !requirePreferred || Boolean(preferred?.has(weekday));
+      if (openDays.has(weekday) && preferredOk && !isTaken(cursor)) return cursor;
+      cursor = shiftDateKey(cursor, 1);
+    }
+    return null;
+  };
+  if (preferred && preferred.size > 0) return scan(true) ?? scan(false);
+  return scan(false);
 }
 
 function placeStartMinute(
@@ -203,7 +220,8 @@ export function preferredWindowStartMin(window: string | null): number | null {
 /**
  * Dates a demand should occupy inside the range.
  * Recurring work keeps the customer's gap. One-time work is placed once.
- * A closed weekday moves forward onto the next open day, still inside the gap.
+ * A closed weekday, or a preferred weekday that is already taken, moves forward
+ * onto the next open day, still inside the gap. Preferred weekdays are tried first.
  */
 function cadenceAfter(dateKey: string, frequency: QuoteLineFrequency): string | null {
   if (frequency === 'monthly') return addMonthsToDateKey(dateKey, 1);
@@ -270,6 +288,9 @@ export function planFillPeriod(input: {
   for (const service of orderedServices) {
     const occupied = () => [...(taken.get(service.customerId) ?? [])];
     const gap = cadenceDays(service.frequency);
+    const preferredDays =
+      service.preferredWeekdays.length > 0 ? new Set(service.preferredWeekdays) : undefined;
+    const dayTaken = (dateKey: string) => Boolean(taken.get(service.customerId)?.has(dateKey));
     const dates: string[] = [];
     const initialClean = deferRecurring
       ? latestInitialCleanDate(service.quoteId, input.services, proposals)
@@ -288,8 +309,11 @@ export function planFillPeriod(input: {
         });
         continue;
       }
-      const day = nextOpenDay(input.start, input.end, open, diffDateKeys(input.end, input.start));
-      if (!day || taken.get(service.customerId)?.has(day)) {
+      const day = nextOpenDay(input.start, input.end, open, diffDateKeys(input.end, input.start), {
+        preferredDays,
+        isTaken: dayTaken,
+      });
+      if (!day) {
         skipped.push({
           label: service.customerName,
           reason: `${service.title} has no open workday in this period.`,
@@ -305,14 +329,11 @@ export function planFillPeriod(input: {
         while (cursor < input.start) cursor = addMonthsToDateKey(cursor, 1);
       }
       while (cursor <= input.end && dates.length < 3) {
-        const day = nextOpenDay(cursor, input.end, open, 6);
-        if (
-          day &&
-          day >= input.start &&
-          day <= input.end &&
-          !tooClose(day, occupied(), 20) &&
-          !taken.get(service.customerId)?.has(day)
-        ) {
+        const day = nextOpenDay(cursor, input.end, open, 6, {
+          preferredDays,
+          isTaken: (dateKey) => dayTaken(dateKey) || tooClose(dateKey, occupied(), 20),
+        });
+        if (day && day >= input.start && day <= input.end) {
           dates.push(day);
           mark(service.customerId, day);
         }
@@ -328,16 +349,13 @@ export function planFillPeriod(input: {
         guard += 1;
         const target = due < input.start ? input.start : due;
         const horizon = shiftDateKey(due, gap - 1);
-        const day = nextOpenDay(target, horizon < input.end ? horizon : input.end, open, gap - 1);
-        const stillThisOccurrence = day != null && diffDateKeys(day, due) < gap && diffDateKeys(day, due) >= 0;
-        if (
-          stillThisOccurrence &&
-          day &&
-          day >= input.start &&
-          day <= input.end &&
-          !tooClose(day, occupied(), gap) &&
-          !taken.get(service.customerId)?.has(day)
-        ) {
+        const day = nextOpenDay(target, horizon < input.end ? horizon : input.end, open, gap - 1, {
+          preferredDays,
+          isTaken: (dateKey) => dayTaken(dateKey) || tooClose(dateKey, occupied(), gap),
+        });
+        const stillThisOccurrence =
+          day != null && diffDateKeys(day, due) < gap && diffDateKeys(day, due) >= 0;
+        if (stillThisOccurrence && day && day >= input.start && day <= input.end) {
           dates.push(day);
           mark(service.customerId, day);
           due = shiftDateKey(day, gap);

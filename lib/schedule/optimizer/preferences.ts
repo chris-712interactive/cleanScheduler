@@ -1,7 +1,19 @@
 import type { Json } from '@/lib/supabase/database.types';
 import type { MinuteInterval } from '@/lib/schedule/optimizer/types';
+import { WORK_WEEK_DAY_KEYS, type WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
+
+export const PREFERRED_TIME_WINDOWS = ['morning', 'afternoon', 'evening'] as const;
+export type PreferredTimeWindow = (typeof PREFERRED_TIME_WINDOWS)[number];
+
+const PREFERRED_TIME_BOUNDS: Record<PreferredTimeWindow, MinuteInterval> = {
+  morning: { startMin: 8 * 60, endMin: 12 * 60 },
+  afternoon: { startMin: 12 * 60, endMin: 16 * 60 },
+  evening: { startMin: 16 * 60, endMin: 20 * 60 },
+};
 
 export type SchedulingFacts = {
+  preferredWeekdays: WorkWeekDayKey[];
+  preferredTimeWindow: PreferredTimeWindow | null;
   preferredUserIds: string[];
   requiredUserIds: string[];
   blockedUserIds: string[];
@@ -37,12 +49,16 @@ export type SchedulingFactsRow = {
   required_certification_tags: string[];
   required_equipment_tags: string[];
   requires_key_pickup: boolean;
+  preferred_weekdays?: string[];
+  preferred_time_window?: string | null;
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function emptySchedulingFacts(): SchedulingFacts {
   return {
+    preferredWeekdays: [],
+    preferredTimeWindow: null,
     preferredUserIds: [],
     requiredUserIds: [],
     blockedUserIds: [],
@@ -117,9 +133,33 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+export function parsePreferredWeekdays(values: unknown): WorkWeekDayKey[] {
+  const raw = Array.isArray(values) ? values : [];
+  const chosen = new Set(
+    raw
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim().toLowerCase()),
+  );
+  return WORK_WEEK_DAY_KEYS.filter((day) => chosen.has(day));
+}
+
+export function parsePreferredTimeWindow(value: unknown): PreferredTimeWindow | null {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return PREFERRED_TIME_WINDOWS.find((window) => window === raw) ?? null;
+}
+
+/** A saved arrival window wins. Otherwise morning, afternoon, or evening becomes the window. */
+export function schedulingArrivalWindow(facts: SchedulingFacts): MinuteInterval | null {
+  if (facts.arrivalWindow) return facts.arrivalWindow;
+  if (!facts.preferredTimeWindow) return null;
+  return { ...PREFERRED_TIME_BOUNDS[facts.preferredTimeWindow] };
+}
+
 export function schedulingFactsFromRow(row: SchedulingFactsRow | null): SchedulingFacts {
   if (!row) return emptySchedulingFacts();
   return {
+    preferredWeekdays: parsePreferredWeekdays(row.preferred_weekdays),
+    preferredTimeWindow: parsePreferredTimeWindow(row.preferred_time_window),
     preferredUserIds: row.preferred_user_ids ?? [],
     requiredUserIds: row.required_user_ids ?? [],
     blockedUserIds: row.blocked_user_ids ?? [],
@@ -145,6 +185,12 @@ export function effectiveSchedulingFacts(
 ): SchedulingFacts {
   if (!isRecord(override)) return customer;
   return {
+    preferredWeekdays: Array.isArray(override.preferredWeekdays)
+      ? parsePreferredWeekdays(override.preferredWeekdays)
+      : customer.preferredWeekdays,
+    preferredTimeWindow: Object.prototype.hasOwnProperty.call(override, 'preferredTimeWindow')
+      ? parsePreferredTimeWindow(override.preferredTimeWindow)
+      : customer.preferredTimeWindow,
     preferredUserIds: asStringArray(override.preferredUserIds ?? customer.preferredUserIds),
     requiredUserIds: asStringArray(override.requiredUserIds ?? customer.requiredUserIds),
     blockedUserIds: asStringArray(override.blockedUserIds ?? customer.blockedUserIds),
@@ -218,6 +264,8 @@ export function schedulingFactsFromForm(
   const priority = Number(formData.get('priority'));
   const crewSize = Number(formData.get('required_crew_size'));
   return {
+    preferredWeekdays: parsePreferredWeekdays(formData.getAll('preferred_weekday')),
+    preferredTimeWindow: parsePreferredTimeWindow(formData.get('preferred_time_window')),
     preferredUserIds: checkedIds(formData, 'preferred_user_id', allowed),
     requiredUserIds: checkedIds(formData, 'required_user_id', allowed),
     blockedUserIds: checkedIds(formData, 'blocked_user_id', allowed),
@@ -242,6 +290,8 @@ export function schedulingFactsFromForm(
 
 export function schedulingFactsToRow(facts: SchedulingFacts): Omit<SchedulingFactsRow, never> {
   return {
+    preferred_weekdays: facts.preferredWeekdays,
+    preferred_time_window: facts.preferredTimeWindow,
     preferred_user_ids: facts.preferredUserIds,
     required_user_ids: facts.requiredUserIds,
     blocked_user_ids: facts.blockedUserIds,
@@ -264,6 +314,8 @@ export function schedulingFactsToRow(facts: SchedulingFacts): Omit<SchedulingFac
 
 export function schedulingFactsToOverride(facts: SchedulingFacts): Json {
   return {
+    preferredWeekdays: facts.preferredWeekdays,
+    preferredTimeWindow: facts.preferredTimeWindow,
     preferredUserIds: facts.preferredUserIds,
     requiredUserIds: facts.requiredUserIds,
     blockedUserIds: facts.blockedUserIds,

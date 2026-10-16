@@ -5,6 +5,7 @@ import { factorLabel, planOptimizedDay, topContributions } from '@/lib/schedule/
 import {
   effectiveSchedulingFacts,
   emptySchedulingFacts,
+  schedulingArrivalWindow,
   schedulingFactsFromRow,
   type SchedulingFacts,
   type SchedulingFactsRow,
@@ -427,7 +428,7 @@ export async function loadDaySchedulingSuggestions(
       petInHome: facts.petInHome,
       chemicalSensitivity: facts.chemicalSensitivity,
       requiredCrewSize: facts.requiredCrewSize,
-      arrivalWindow: facts.arrivalWindow,
+      arrivalWindow: schedulingArrivalWindow(facts),
       accessWindow: facts.accessWindow,
       priority: facts.priority,
       revenueCents: visit.expected_amount_cents ?? 0,
