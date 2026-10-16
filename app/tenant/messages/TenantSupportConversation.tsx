@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SupportMessageReplyComposer } from '@/components/messaging/SupportMessageReplyComposer';
 import { SupportMessageTranscript } from '@/components/messaging/SupportMessageTranscript';
+import { supportMessageSenderLabel } from '@/lib/messaging/supportMessageAuthor';
 import type { SupportThreadDetail } from '@/lib/tenant/loadSupportThreadDetail';
 import { canReplyToSupportThreads } from '@/lib/tenant/supportMessagingAccess';
 import type { TenantRole } from '@/lib/auth/types';
@@ -16,11 +17,13 @@ export function TenantSupportConversation({
   tenantSlug,
   role,
   returnTo,
+  replyAuthorName,
 }: {
   thread: SupportThreadDetail;
   tenantSlug: string;
   role: TenantRole;
   returnTo: string;
+  replyAuthorName: string;
 }) {
   const canReply = canReplyToSupportThreads(role);
   const isOpen = thread.status === 'open';
@@ -30,7 +33,14 @@ export function TenantSupportConversation({
     body: message.body,
     created_at: message.created_at,
     is_from_customer: message.is_from_customer,
-    senderLabel: message.is_from_customer ? thread.customerName : 'Your team',
+    senderLabel: supportMessageSenderLabel({
+      isFromCustomer: message.is_from_customer,
+      authorDisplayName: message.author_display_name,
+      authorUserId: message.author_user_id,
+      customerSide: false,
+      customerName: thread.customerName,
+      tenantName: '',
+    }),
   }));
 
   const backHref = returnTo.includes('customer=')
@@ -79,7 +89,7 @@ export function TenantSupportConversation({
         <SupportMessageReplyComposer
           messages={transcript}
           isFromCustomer={false}
-          senderLabel="Your team"
+          senderLabel={replyAuthorName}
           action={replyToTenantSupportThreadAction}
           hiddenFields={{
             tenant_slug: tenantSlug,

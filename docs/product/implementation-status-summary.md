@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-15  
 **Branch:** `dev`  
-**Latest polish:** Portal messages show in the thread as soon as you send them (⌘/Ctrl + Enter also sends), notify the other side while they are signed in, and email the customer when staff replies. See `docs/product/customer-support-messaging.md`. Fill schedule places accepted quotes across a day, week, month, or date range at the customer's cadence, and books consultations for new website leads. Scheduling those visits opens a live status screen, finishes with a summary of what was placed, and can undo that run while the visits are still scheduled. Crew still comes from Scheduling logic. See `docs/product/schedule-optimizer.md`.
+**Latest polish:** Portal messages show the person who sent each reply, appear in the thread as soon as you send them (⌘/Ctrl + Enter also sends), notify the other side while they are signed in, and email the customer when staff replies. Apply migration **`0105`** for sender names. See `docs/product/customer-support-messaging.md`. Fill schedule places accepted quotes across a day, week, month, or date range at the customer's cadence, and books consultations for new website leads. Scheduling those visits opens a live status screen, finishes with a summary of what was placed, and can undo that run while the visits are still scheduled. Crew still comes from Scheduling logic. See `docs/product/schedule-optimizer.md`.
 
 Use this file as the handoff snapshot for new AI sessions. Detailed specs live under `docs/product/`; YAML todos live in `.cursor/docs/plan/implementation-plan.md`.
 

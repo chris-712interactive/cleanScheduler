@@ -337,6 +337,7 @@ export type Database = {
           id: string;
           thread_id: string;
           author_user_id: string | null;
+          author_display_name: string | null;
           body: string;
           is_from_customer: boolean;
           created_at: string;
@@ -345,6 +346,7 @@ export type Database = {
           id?: string;
           thread_id: string;
           author_user_id?: string | null;
+          author_display_name?: string | null;
           body: string;
           is_from_customer?: boolean;
           created_at?: string;
@@ -353,6 +355,7 @@ export type Database = {
           id?: string;
           thread_id?: string;
           author_user_id?: string | null;
+          author_display_name?: string | null;
           body?: string;
           is_from_customer?: boolean;
           created_at?: string;

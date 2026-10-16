@@ -4,6 +4,7 @@ import { SupportMessageReplyComposer } from '@/components/messaging/SupportMessa
 import { SupportMessageTranscript } from '@/components/messaging/SupportMessageTranscript';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
+import { supportMessageSenderLabel } from '@/lib/messaging/supportMessageAuthor';
 import { loadCustomerSupportThreadDetail } from '@/lib/tenant/loadSupportThreadDetail';
 import { createAdminClient } from '@/lib/supabase/server';
 import { replyToCustomerSupportThreadAction } from '../actions';
@@ -53,7 +54,15 @@ export default async function CustomerMessageThreadPage({ params, searchParams }
     body: message.body,
     created_at: message.created_at,
     is_from_customer: message.is_from_customer,
-    senderLabel: message.is_from_customer ? 'You' : thread.tenantName,
+    senderLabel: supportMessageSenderLabel({
+      isFromCustomer: message.is_from_customer,
+      authorDisplayName: message.author_display_name,
+      authorUserId: message.author_user_id,
+      customerSide: true,
+      currentUserId: auth.user.id,
+      customerName: thread.customerName,
+      tenantName: thread.tenantName,
+    }),
   }));
 
   return (

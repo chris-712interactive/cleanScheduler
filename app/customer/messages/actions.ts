@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { tenantNavBadgesTag } from '@/lib/portal/cacheTags';
+import { loadSupportAuthorDisplayName } from '@/lib/messaging/supportMessageAuthor';
 import { sendCustomerSupportMessageNotification } from '@/lib/tenant/supportMessageNotifications';
 
 function revalidateSupportMessaging(tenantId: string, threadId: string) {
@@ -48,9 +49,11 @@ export async function createCustomerSupportThreadAction(
     return { error: 'Could not start that conversation. Try again.' };
   }
 
+  const authorDisplayName = await loadSupportAuthorDisplayName(supabase, auth.user.id);
   const { error: mErr } = await supabase.from('customer_support_messages').insert({
     thread_id: thread.id,
     author_user_id: auth.user.id,
+    author_display_name: authorDisplayName,
     body,
     is_from_customer: true,
   });
@@ -99,9 +102,11 @@ export async function replyToCustomerSupportThreadAction(
     return { error: 'This conversation is closed. Start a new message if you need more help.' };
   }
 
+  const authorDisplayName = await loadSupportAuthorDisplayName(supabase, auth.user.id);
   const { error } = await supabase.from('customer_support_messages').insert({
     thread_id: threadId,
     author_user_id: auth.user.id,
+    author_display_name: authorDisplayName,
     body,
     is_from_customer: true,
   });

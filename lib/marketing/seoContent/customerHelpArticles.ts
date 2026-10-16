@@ -58,7 +58,7 @@ export const CUSTOMER_HELP_ARTICLES: HelpGuideArticle[] = [
       {
         title: 'When your provider replies',
         paragraphs: [
-          'If you have the portal open, the conversation updates on its own and a notice appears when the reply is new. On Messages you can turn on browser notifications so that notice still stands out when you are on another page.',
+          'If you have the portal open, the conversation updates on its own and a notice appears when the reply is new. The reply shows the name of the person on the team who wrote it. On Messages you can turn on browser notifications so that notice still stands out when you are on another page.',
           'If the portal is closed, the reply is emailed to the address on your account unless your provider turns that off.',
         ],
       },
