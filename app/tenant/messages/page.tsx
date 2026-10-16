@@ -104,7 +104,7 @@ export default async function TenantMessagesPage({ searchParams }: PageProps) {
   });
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-fill-viewport="">
       <div className={styles.compactHeader}>
         <div>
           <h1 className={styles.compactTitle}>Messages</h1>

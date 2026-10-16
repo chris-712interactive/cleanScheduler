@@ -66,7 +66,7 @@ export default async function CustomerMessageThreadPage({ params, searchParams }
   }));
 
   return (
-    <div className={styles.threadPage}>
+    <div className={styles.threadPage} data-fill-viewport="">
       <div className={styles.threadHeader}>
         <Link href="/messages" className={styles.backLink}>
           ← All messages

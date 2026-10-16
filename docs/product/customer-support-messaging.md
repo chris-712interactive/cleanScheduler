@@ -33,7 +33,7 @@ Access helper: `lib/tenant/supportMessagingAccess.ts` → `canReplyToSupportThre
 
 ## UX notes
 
-- **Tenant desktop:** ~240–320px thread list + conversation pane; maximizes transcript space.
+- **Tenant desktop:** ~240–320px thread list + conversation pane; maximizes transcript space. The inbox stays inside the viewport. The thread list and transcript scroll inside the pane.
 - **Tenant mobile:** list by default; `?thread=<uuid>` shows conversation full-screen.
 - **Nav badge:** count of **open threads awaiting staff reply** (`countSupportThreadsAwaitingReply`, cached via `getCachedOpenSupportThreadCount`).
 - **Closed threads:** customer sees note to start a new message; tenant can reopen.

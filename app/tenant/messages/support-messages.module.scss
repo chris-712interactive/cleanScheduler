@@ -7,13 +7,16 @@
 
 .page {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--space-3);
-  min-height: calc(100dvh - 7rem);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .compactHeader {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: baseline;
@@ -33,6 +36,7 @@
 }
 
 .bannerErr {
+  flex-shrink: 0;
   margin: 0;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
@@ -45,6 +49,7 @@
   display: grid;
   flex: 1;
   grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -56,12 +61,14 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
   border-right: 1px solid var(--color-border);
   background: var(--color-surface-muted);
 }
 
 .listToolbar {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
@@ -195,6 +202,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .conversationEmpty {
@@ -209,6 +217,7 @@
 
 .conversationHeader {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
@@ -269,6 +278,7 @@
 
 .composer {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
@@ -277,6 +287,7 @@
 }
 
 .composerReadonly {
+  flex-shrink: 0;
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
@@ -291,6 +302,7 @@
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
+  max-height: 8rem;
   resize: vertical;
 }
 
