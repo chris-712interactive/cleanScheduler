@@ -1,0 +1,13 @@
+---
+description: Required Agents to use based on job
+alwaysApply: true
+---
+
+# Agents for Development
+For agents that are developing code for the project, please continue to use the most up to date version of Grok on High effort.
+
+# Agents for Submitting to Github
+For agents who are submitting or retrieving anything from Github repository, please utilize the most up to date version of Grok on Low effort.
+
+## Agents for all other tasks
+Please utilize the most recent version of Grok on Medium effort if the task does not fall into the above categories.
