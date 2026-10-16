@@ -1,6 +1,6 @@
 # Customer support messaging — product & implementation
 
-Two-way in-app messaging between customers and tenant staff. Uses the **`0013`** schema (`customer_support_threads`, `customer_support_messages`). Migration **`0072`** adds the staff email notification ops flag. Migration **`0104`** emails the customer when staff replies and publishes `customer_support_messages` for live alerts.
+Two-way in-app messaging between customers and tenant staff. Uses the **`0013`** schema (`customer_support_threads`, `customer_support_messages`). Migration **`0072`** adds the staff email notification ops flag. Migration **`0104`** emails the customer when staff replies and publishes `customer_support_messages` for live alerts. Migration **`0105`** saves the sender’s name on each message.
 
 ## Scope (v1 — PR #115)
 
@@ -38,6 +38,7 @@ Access helper: `lib/tenant/supportMessagingAccess.ts` → `canReplyToSupportThre
 - **Nav badge:** count of **open threads awaiting staff reply** (`countSupportThreadsAwaitingReply`, cached via `getCachedOpenSupportThreadCount`).
 - **Closed threads:** customer sees note to start a new message; tenant can reopen.
 - **Sending:** the message appears in the thread immediately. The save and email finish afterward. **⌘/Ctrl + Enter** sends from the reply box (Enter still adds a line). The same shortcut starts a new customer conversation.
+- **Sender name:** each message stores the signed-in person’s name (`author_display_name`, migration **`0105`**). Staff replies show that person, so several teammates can answer the same thread. The customer still sees their own messages as “You.” Apply **`0105`** before opening a thread, or the message query fails.
 
 ## Key files
 

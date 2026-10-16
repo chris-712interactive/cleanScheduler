@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { getAuthContext } from '@/lib/auth/session';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { loadSupportAuthorDisplayName } from '@/lib/messaging/supportMessageAuthor';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import {
   loadTenantSupportInbox,
@@ -86,6 +88,11 @@ export default async function TenantMessagesPage({ searchParams }: PageProps) {
     threads[0]?.id ??
     null;
 
+  const auth = await getAuthContext();
+  const replyAuthorName = auth?.user.id
+    ? ((await loadSupportAuthorDisplayName(supabase, auth.user.id)) ?? 'Team member')
+    : 'Team member';
+
   const threadDetail = effectiveThreadId
     ? await loadTenantSupportThreadDetail(supabase, membership.tenantId, effectiveThreadId)
     : null;
@@ -133,6 +140,7 @@ export default async function TenantMessagesPage({ searchParams }: PageProps) {
               tenantSlug={membership.tenantSlug}
               role={membership.role}
               returnTo={returnTo}
+              replyAuthorName={replyAuthorName}
             />
           ) : (
             <div className={styles.conversationPane}>

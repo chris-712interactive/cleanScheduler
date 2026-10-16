@@ -11,6 +11,7 @@ export type SupportMessageRow = {
   is_from_customer: boolean;
   created_at: string;
   author_user_id: string | null;
+  author_display_name: string | null;
 };
 
 export type SupportThreadDetail = {
@@ -76,7 +77,7 @@ export async function loadTenantSupportThreadDetail(
 
   const { data: messages, error: messagesError } = await supabase
     .from('customer_support_messages')
-    .select('id, body, is_from_customer, created_at, author_user_id')
+    .select('id, body, is_from_customer, created_at, author_user_id, author_display_name')
     .eq('thread_id', threadId)
     .order('created_at', { ascending: true });
 
@@ -132,7 +133,7 @@ export async function loadCustomerSupportThreadDetail(
 
   const { data: messages, error: messagesError } = await admin
     .from('customer_support_messages')
-    .select('id, body, is_from_customer, created_at, author_user_id')
+    .select('id, body, is_from_customer, created_at, author_user_id, author_display_name')
     .eq('thread_id', threadId)
     .order('created_at', { ascending: true });
 

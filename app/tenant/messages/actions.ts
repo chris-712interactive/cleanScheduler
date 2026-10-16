@@ -6,6 +6,7 @@ import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { tenantNavBadgesTag } from '@/lib/portal/cacheTags';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { loadSupportAuthorDisplayName } from '@/lib/messaging/supportMessageAuthor';
 import { canReplyToSupportThreads } from '@/lib/tenant/supportMessagingAccess';
 import { sendStaffSupportReplyNotification } from '@/lib/tenant/supportMessageNotifications';
 
@@ -54,9 +55,11 @@ export async function replyToTenantSupportThreadAction(
     return { error: 'This conversation is closed.' };
   }
 
+  const authorDisplayName = await loadSupportAuthorDisplayName(supabase, auth.user.id);
   const { error } = await supabase.from('customer_support_messages').insert({
     thread_id: threadId,
     author_user_id: auth.user.id,
+    author_display_name: authorDisplayName,
     body,
     is_from_customer: false,
   });
