@@ -52,6 +52,9 @@ export type OptimizerCrewMember = {
   experienceLevel: ExperienceLevel;
   priorWeekendJobs: number;
   isWeekend: boolean;
+  /** Owner or admin can opt out of service visits. Field employees stay true. */
+  schedulesJobs: boolean;
+  schedulesConsultations: boolean;
 };
 
 export type OptimizerJob = {
@@ -85,6 +88,7 @@ export type OptimizerJob = {
   /** Standing local start the customer expects, when they have one. */
   standingStartMin: number | null;
   isFirstVisit: boolean;
+  visitPurpose: 'service' | 'consultation';
   requiresKeyPickup: boolean;
   /** Already-published assignee set. Stability prefers to keep it. */
   lockedAssigneeIds: string[] | null;

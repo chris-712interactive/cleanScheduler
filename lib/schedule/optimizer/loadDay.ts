@@ -19,6 +19,8 @@ import type {
 } from '@/lib/schedule/optimizer/types';
 import { localWallClockInTimeZoneToUtcIso } from '@/lib/schedule/nextWorkDayVisitWindow';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import { schedulesVisitKind } from '@/lib/schedule/scheduleEligibility';
+import type { TenantRole } from '@/lib/auth/types';
 import { shiftDateKey } from '@/lib/tenant/scheduleDateRange';
 import type { WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
 
@@ -192,12 +194,13 @@ export async function loadDaySchedulingSuggestions(
     admin.from('tenants').select('latitude, longitude').eq('id', tenantId).maybeSingle(),
     admin
       .from('tenant_memberships')
-      .select('user_id, role')
+      .select('user_id, role, exclude_from_job_schedule, exclude_from_consultation_schedule')
       .eq('tenant_id', tenantId)
       .eq('is_active', true),
   ]);
 
-  const userIds = [...new Set((members ?? []).map((member) => member.user_id))];
+  const eligibilityByUser = new Map((members ?? []).map((member) => [member.user_id, member]));
+  const userIds = [...eligibilityByUser.keys()];
   if (userIds.length === 0) return empty;
 
   const since = new Date(Date.parse(dayStartIso) - 56 * 24 * 60 * 60 * 1000).toISOString();
@@ -364,6 +367,12 @@ export async function loadDaySchedulingSuggestions(
       profile?.home_latitude != null && profile.home_longitude != null
         ? { lat: profile.home_latitude, lng: profile.home_longitude }
         : null;
+    const stored = eligibilityByUser.get(userId);
+    const eligibility = {
+      role: (stored?.role ?? 'employee') as TenantRole,
+      excludeFromJobs: stored?.exclude_from_job_schedule ?? false,
+      excludeFromConsultations: stored?.exclude_from_consultation_schedule ?? false,
+    };
     return {
       userId,
       home,
@@ -392,6 +401,8 @@ export async function loadDaySchedulingSuggestions(
       experienceLevel: experienceLevel(profile?.experience_level),
       priorWeekendJobs: weekendCounts.get(userId) ?? 0,
       isWeekend: probe.weekday === 'Sat' || probe.weekday === 'Sun',
+      schedulesJobs: schedulesVisitKind(eligibility, 'service'),
+      schedulesConsultations: schedulesVisitKind(eligibility, 'consultation'),
     };
   });
 
@@ -440,6 +451,7 @@ export async function loadDaySchedulingSuggestions(
         : null,
       isFirstVisit:
         visit.visit_purpose === 'consultation' || !customersWithHistory.has(visit.customer_id),
+      visitPurpose: visit.visit_purpose === 'consultation' ? 'consultation' : 'service',
       requiresKeyPickup: facts.requiresKeyPickup,
       lockedAssigneeIds: null,
       lockedStartMin: null,

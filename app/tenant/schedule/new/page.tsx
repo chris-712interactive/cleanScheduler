@@ -15,6 +15,8 @@ import { loadConsultationDurationMinutes } from '@/lib/tenant/consultationDurati
 import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
 import { loadJobTypeCatalog, uniqueJobTypeLabels } from '@/lib/tenant/jobTypeCatalog';
 import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
+import { schedulesVisitKind } from '@/lib/schedule/scheduleEligibility';
+import type { TenantRole } from '@/lib/auth/types';
 import { ScheduleVisitForm } from '../ScheduleVisitForm';
 import styles from '../schedule.module.scss';
 
@@ -134,7 +136,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
 
   const membersRes = await supabase
     .from('tenant_memberships')
-    .select('user_id, role')
+    .select('user_id, role, exclude_from_job_schedule, exclude_from_consultation_schedule')
     .eq('tenant_id', membership.tenantId)
     .eq('is_active', true)
     .order('role', { ascending: true });
@@ -173,10 +175,22 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
     };
   });
 
-  const employeeOptions = (membersRes.data ?? []).map((m) => ({
-    id: m.user_id,
-    label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
-  }));
+  const visitKind = isConsultation ? 'consultation' : 'service';
+  const employeeOptions = (membersRes.data ?? [])
+    .filter((member) =>
+      schedulesVisitKind(
+        {
+          role: member.role as TenantRole,
+          excludeFromJobs: member.exclude_from_job_schedule,
+          excludeFromConsultations: member.exclude_from_consultation_schedule,
+        },
+        visitKind,
+      ),
+    )
+    .map((member) => ({
+      id: member.user_id,
+      label: `${displayByUserId.get(member.user_id)?.trim() || 'Member'} (${member.role})`,
+    }));
 
   const consultationServiceTypes = jobTypeCatalog.map((entry) => ({
     id: entry.id,

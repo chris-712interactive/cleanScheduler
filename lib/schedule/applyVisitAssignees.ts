@@ -13,6 +13,7 @@ import {
   type RawScheduleAssigneeRow,
 } from '@/lib/schedule/mapAssigneeChips';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
+import { ineligibleScheduleMessage } from '@/lib/schedule/scheduleEligibility';
 
 export type ApplyVisitAssigneesResult =
   | { ok: true; assignees: ScheduleAssigneeChip[]; assigneeUserIds: string[] }
@@ -67,7 +68,7 @@ export async function applyVisitAssignees(
 
   const { data: visit, error: vErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status, checked_in_at, starts_at, ends_at')
+    .select('id, status, checked_in_at, starts_at, ends_at, visit_purpose')
     .eq('id', visitId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -93,6 +94,14 @@ export async function applyVisitAssignees(
   if (new Date(windowEndsAt) <= new Date(windowStartsAt)) {
     return { ok: false, error: 'End time must be after start time.' };
   }
+
+  const blocked = await ineligibleScheduleMessage(
+    admin,
+    tenantId,
+    uniqueAssignees,
+    visit.visit_purpose === 'consultation' ? 'consultation' : 'service',
+  );
+  if (blocked) return { ok: false, error: blocked };
 
   for (const uid of uniqueAssignees) {
     if (!(await assertActiveTenantMember(admin, tenantId, uid))) {

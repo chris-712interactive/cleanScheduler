@@ -23,6 +23,8 @@ import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile'
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { canBeScheduledAsCrew } from '@/lib/tenant/employeePermissions';
+import { OfficeScheduleEligibilityForm } from '@/app/tenant/employees/OfficeScheduleEligibilityForm';
+import { officeRoleCanOptOut, schedulingProfileScope } from '@/lib/schedule/scheduleEligibility';
 import {
   AccountAppearancePanel,
   AccountIdentityHero,
@@ -74,36 +76,56 @@ export default async function TenantAccountSettingsPage({
   const userId = auth?.user.id ?? '';
 
   const admin = createAdminClient();
-  const [{ data: billing }, { data: tenantRow }, memberProfile, { data: crewRow }] =
-    await Promise.all([
-      admin
-        .from('tenant_billing_accounts')
-        .select(
-          'activated_at, trial_ends_at, status, canceled_at, stripe_subscription_id, stripe_customer_id',
-        )
-        .eq('tenant_id', membership.tenantId)
-        .maybeSingle(),
-      canSetScheduleAvailability && userId
-        ? admin
-            .from('tenants')
-            .select(
-              'timezone, work_week_days, work_day_start, work_day_end, work_day_hours, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
-            )
-            .eq('id', membership.tenantId)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-      canSetScheduleAvailability && userId
-        ? loadMemberScheduleProfile(admin, membership.tenantId, userId)
-        : Promise.resolve(null),
-      canSetScheduleAvailability && userId
-        ? admin
-            .from('tenant_member_scheduling_profiles')
-            .select('*')
-            .eq('tenant_id', membership.tenantId)
-            .eq('user_id', userId)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+  const [
+    { data: billing },
+    { data: tenantRow },
+    memberProfile,
+    { data: crewRow },
+    { data: eligibilityRow },
+  ] = await Promise.all([
+    admin
+      .from('tenant_billing_accounts')
+      .select(
+        'activated_at, trial_ends_at, status, canceled_at, stripe_subscription_id, stripe_customer_id',
+      )
+      .eq('tenant_id', membership.tenantId)
+      .maybeSingle(),
+    canSetScheduleAvailability && userId
+      ? admin
+          .from('tenants')
+          .select(
+            'timezone, work_week_days, work_day_start, work_day_end, work_day_hours, name, business_email, business_phone, brand_color, logo_url, address_line1, city, state, postal_code, country',
+          )
+          .eq('id', membership.tenantId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    canSetScheduleAvailability && userId
+      ? loadMemberScheduleProfile(admin, membership.tenantId, userId)
+      : Promise.resolve(null),
+    canSetScheduleAvailability && userId
+      ? admin
+          .from('tenant_member_scheduling_profiles')
+          .select('*')
+          .eq('tenant_id', membership.tenantId)
+          .eq('user_id', userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    userId
+      ? admin
+          .from('tenant_memberships')
+          .select('exclude_from_job_schedule, exclude_from_consultation_schedule')
+          .eq('tenant_id', membership.tenantId)
+          .eq('user_id', userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const scheduleScope = schedulingProfileScope({
+    role: membership.role as TenantRole,
+    excludeFromJobs: eligibilityRow?.exclude_from_job_schedule ?? false,
+    excludeFromConsultations: eligibilityRow?.exclude_from_consultation_schedule ?? false,
+  });
+  const isOfficeRole = officeRoleCanOptOut(membership.role as TenantRole);
+  const showScheduleDetails = canSetScheduleAvailability && scheduleScope !== 'hidden';
   const params = await searchParams;
   const mfaRequiredNotice = params.mfa === 'required';
   const authPolicy = await loadTenantAuthPolicy(membership.tenantId);
@@ -133,7 +155,9 @@ export default async function TenantAccountSettingsPage({
   const navItems = [
     { href: '#account-profile', label: 'Profile' },
     { href: '#account-appearance', label: 'Appearance' },
-    ...(canSetScheduleAvailability ? [{ href: '#account-schedule', label: 'Schedule' }] : []),
+    ...(isOfficeRole || showScheduleDetails
+      ? [{ href: '#account-schedule', label: 'Schedule' }]
+      : []),
     { href: '#account-security', label: 'Security' },
     { href: '#account-workspace', label: 'Workspace' },
     { href: '#account-session', label: 'Session' },
@@ -141,7 +165,8 @@ export default async function TenantAccountSettingsPage({
   ];
 
   const hasSideColumn =
-    canSetScheduleAvailability && memberProfile != null && tenantDefaults != null && userId;
+    Boolean(userId) &&
+    (isOfficeRole || (showScheduleDetails && memberProfile != null && tenantDefaults != null));
 
   return (
     <>
@@ -273,33 +298,62 @@ export default async function TenantAccountSettingsPage({
 
           {hasSideColumn ? (
             <div className={styles.sideColumn}>
-              {canSetScheduleAvailability && memberProfile && tenantDefaults && userId ? (
+              {isOfficeRole || (showScheduleDetails && memberProfile && tenantDefaults) ? (
                 <section
                   id="account-schedule"
                   className={[styles.panel, styles.sidePanel].join(' ')}
                   aria-labelledby="schedule-heading"
                 >
-                  <header className={styles.panelHeader}>
-                    <h3 id="schedule-heading" className={styles.panelTitle}>
-                      Work availability
-                    </h3>
-                    <p className={styles.panelLead}>
-                      Hours used when assigning you to visits — including if you work jobs as the
-                      owner or admin.
-                    </p>
-                  </header>
-                  <EmployeeAvailabilityForm
-                    tenantSlug={membership.tenantSlug}
-                    targetUserId={userId}
-                    profile={memberProfile}
-                    tenantDefaults={tenantDefaults}
-                  />
-                  <AccountSchedulingProfile
-                    tenantSlug={membership.tenantSlug}
-                    tenantId={membership.tenantId}
-                    userId={userId}
-                    crewRow={crewRow}
-                  />
+                  {isOfficeRole ? (
+                    <>
+                      <header className={styles.panelHeader}>
+                        <h3 id="schedule-heading" className={styles.panelTitle}>
+                          Scheduling role
+                        </h3>
+                        <p className={styles.panelLead}>
+                          Check a box to stay off that kind of visit. Check both to work in the
+                          office only.
+                        </p>
+                      </header>
+                      <OfficeScheduleEligibilityForm
+                        tenantSlug={membership.tenantSlug}
+                        targetUserId={userId}
+                        excludeFromJobs={eligibilityRow?.exclude_from_job_schedule ?? false}
+                        excludeFromConsultations={
+                          eligibilityRow?.exclude_from_consultation_schedule ?? false
+                        }
+                      />
+                    </>
+                  ) : null}
+                  {showScheduleDetails && memberProfile && tenantDefaults ? (
+                    <>
+                      <header className={styles.panelHeader}>
+                        <h3 className={styles.panelTitle}>
+                          {scheduleScope === 'consultation'
+                            ? 'Consultation availability'
+                            : 'Work availability'}
+                        </h3>
+                        <p className={styles.panelLead}>
+                          {scheduleScope === 'consultation'
+                            ? 'Hours used when assigning you to consultations.'
+                            : 'Hours used when assigning you to visits.'}
+                        </p>
+                      </header>
+                      <EmployeeAvailabilityForm
+                        tenantSlug={membership.tenantSlug}
+                        targetUserId={userId}
+                        profile={memberProfile}
+                        tenantDefaults={tenantDefaults}
+                      />
+                      <AccountSchedulingProfile
+                        tenantSlug={membership.tenantSlug}
+                        tenantId={membership.tenantId}
+                        userId={userId}
+                        crewRow={crewRow}
+                        scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
+                      />
+                    </>
+                  ) : null}
                 </section>
               ) : null}
             </div>
@@ -322,11 +376,13 @@ async function AccountSchedulingProfile({
   tenantId,
   userId,
   crewRow,
+  scope,
 }: {
   tenantSlug: string;
   tenantId: string;
   userId: string;
   crewRow: Parameters<typeof crewSchedulingProfileFromRow>[0];
+  scope: 'full' | 'consultation';
 }) {
   const admin = createAdminClient();
   const [{ data: zones }, { data: teammates }] = await Promise.all([
@@ -355,13 +411,16 @@ async function AccountSchedulingProfile({
       <header className={styles.panelHeader}>
         <h3 className={styles.panelTitle}>Scheduling profile</h3>
         <p className={styles.panelLead}>
-          Skills, limits, and home base used when the schedule suggests you for a job.
+          {scope === 'consultation'
+            ? 'Travel, language, and experience used when the schedule suggests you for a consultation.'
+            : 'Skills, limits, and home base used when the schedule suggests you for a job.'}
         </p>
       </header>
       <EmployeeSchedulingProfileForm
         tenantSlug={tenantSlug}
         targetUserId={userId}
         profile={crewSchedulingProfileFromRow(crewRow)}
+        scope={scope}
         zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
         partners={partnerIds.map((id) => ({
           id,

@@ -1,3 +1,5 @@
+import type { TenantRole } from '@/lib/auth/types';
+import { schedulesVisitKind, type VisitScheduleKind } from '@/lib/schedule/scheduleEligibility';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { visitTimeRangesOverlap } from '@/lib/schedule/visitAssigneeConflicts';
 import type { Database } from '@/lib/supabase/database.types';
@@ -243,16 +245,29 @@ export async function pickAutoAssignEmployee(
     startsAt: string;
     endsAt: string;
     excludeVisitId?: string;
+    visitPurpose?: VisitScheduleKind;
   },
 ): Promise<string | null> {
+  const kind = params.visitPurpose ?? 'service';
   const { data: members } = await admin
     .from('tenant_memberships')
-    .select('user_id, role')
+    .select('user_id, role, exclude_from_job_schedule, exclude_from_consultation_schedule')
     .eq('tenant_id', params.tenantId)
     .eq('is_active', true)
     .in('role', ['employee', 'admin', 'owner']);
 
-  const userIds = (members ?? []).map((m) => m.user_id);
+  const userIds = (members ?? [])
+    .filter((member) =>
+      schedulesVisitKind(
+        {
+          role: member.role as TenantRole,
+          excludeFromJobs: member.exclude_from_job_schedule,
+          excludeFromConsultations: member.exclude_from_consultation_schedule,
+        },
+        kind,
+      ),
+    )
+    .map((member) => member.user_id);
   const available = await findAvailableEmployees(admin, {
     tenantId: params.tenantId,
     startsAt: params.startsAt,

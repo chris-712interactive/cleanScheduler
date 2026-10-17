@@ -94,6 +94,31 @@ export async function updateCrewSchedulingProfileAction(
   };
   const point = await geocodeUsAddress(home);
   const experience = String(formData.get('experience_level') ?? 'standard');
+  const experienceLevel = experience === 'new' || experience === 'lead' ? experience : 'standard';
+
+  if (formData.get('profile_scope') === 'consultation') {
+    const { error } = await admin.from('tenant_member_scheduling_profiles').upsert({
+      tenant_id: membership.tenantId,
+      user_id: targetUserId,
+      language_codes: parseTagList(String(formData.get('language_codes') ?? '')),
+      experience_level: experienceLevel,
+      max_jobs_per_day: optionalCap(formData.get('max_jobs_per_day'), 1, 20),
+      max_minutes_per_day: optionalCap(formData.get('max_minutes_per_day'), 30, 960),
+      max_drive_minutes: optionalCap(formData.get('max_drive_minutes'), 5, 180),
+      preferred_zone_ids: checked(formData, 'preferred_zone_id', zoneIds),
+      home_address_line1: home.line1,
+      home_city: home.city,
+      home_state: home.state,
+      home_postal_code: home.postalCode,
+      home_latitude: point?.lat ?? null,
+      home_longitude: point?.lng ?? null,
+    });
+    if (error) return { error: 'Could not save the scheduling profile.' };
+    revalidatePath(`/tenant/employees/${targetUserId}`, 'page');
+    revalidatePath('/tenant/settings/account', 'page');
+    revalidatePath('/tenant/schedule', 'page');
+    return { success: true };
+  }
 
   const row: Database['public']['Tables']['tenant_member_scheduling_profiles']['Insert'] = {
     tenant_id: membership.tenantId,
@@ -106,7 +131,7 @@ export async function updateCrewSchedulingProfileAction(
     property_kinds: checked(formData, 'property_kind', PROPERTY_KINDS),
     handles_pets: formData.get('handles_pets') === 'on',
     handles_chemical_sensitivity: formData.get('handles_chemical_sensitivity') === 'on',
-    experience_level: experience === 'new' || experience === 'lead' ? experience : 'standard',
+    experience_level: experienceLevel,
     max_jobs_per_day: optionalCap(formData.get('max_jobs_per_day'), 1, 20),
     max_minutes_per_day: optionalCap(formData.get('max_minutes_per_day'), 30, 960),
     max_drive_minutes: optionalCap(formData.get('max_drive_minutes'), 5, 180),

@@ -15,6 +15,8 @@ import {
 import { EmployeeMemberEditForm } from '../EmployeeMemberEditForm';
 import { EmployeeAvailabilityForm } from '../EmployeeAvailabilityForm';
 import { EmployeeSchedulingProfileForm } from '../EmployeeSchedulingProfileForm';
+import { OfficeScheduleEligibilityForm } from '../OfficeScheduleEligibilityForm';
+import { officeRoleCanOptOut, schedulingProfileScope } from '@/lib/schedule/scheduleEligibility';
 import { crewSchedulingProfileFromRow } from '@/lib/schedule/optimizer/crewProfile';
 import { calendarDateKeyInTimeZone } from '@/lib/datetime/tenantCalendarDay';
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
@@ -75,7 +77,7 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
   const admin = createAdminClient();
   const { data: memberRow, error: memberErr } = await admin
     .from('tenant_memberships')
-    .select('role, is_active')
+    .select('role, is_active, exclude_from_job_schedule, exclude_from_consultation_schedule')
     .eq('tenant_id', membership.tenantId)
     .eq('user_id', targetUserId)
     .maybeSingle();
@@ -194,6 +196,12 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
       'Team member',
   }));
   const crewProfile = crewSchedulingProfileFromRow(crewRow);
+  const scheduleScope = schedulingProfileScope({
+    role: targetRole,
+    excludeFromJobs: memberRow.exclude_from_job_schedule,
+    excludeFromConsultations: memberRow.exclude_from_consultation_schedule,
+  });
+  const showOfficeEligibility = officeRoleCanOptOut(targetRole);
   const showAccess = (canChangeRole || canToggleActive) && targetRole !== 'owner';
   const tenantTimezone = tenantDefaults.timezone;
   const todayKey = calendarDateKeyInTimeZone(tenantTimezone);
@@ -296,12 +304,21 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
           <a className={styles.sectionNavLink} href="#member-schedule">
             Schedule
           </a>
-          <a className={styles.sectionNavLink} href="#member-availability">
-            Availability
-          </a>
-          <a className={styles.sectionNavLink} href="#member-scheduling">
-            Scheduling
-          </a>
+          {showOfficeEligibility ? (
+            <a className={styles.sectionNavLink} href="#member-eligibility">
+              Scheduling role
+            </a>
+          ) : null}
+          {scheduleScope !== 'hidden' ? (
+            <a className={styles.sectionNavLink} href="#member-availability">
+              Availability
+            </a>
+          ) : null}
+          {scheduleScope !== 'hidden' ? (
+            <a className={styles.sectionNavLink} href="#member-scheduling">
+              Scheduling
+            </a>
+          ) : null}
         </nav>
 
         <EmployeeWeekSchedule
@@ -335,48 +352,80 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
             canToggleActive={canToggleActive}
           />
 
-          <section
-            id="member-availability"
-            className={styles.availabilityPanel}
-            aria-labelledby="availability-heading"
-          >
-            <header className={styles.panelHeader}>
-              <h3 id="availability-heading" className={styles.panelTitle}>
-                Work availability
-              </h3>
-              <p className={styles.panelLead}>
-                Hours used for auto-scheduling and crew assignment. Overrides the business default
-                when customized.
-              </p>
-            </header>
-            <EmployeeAvailabilityForm
-              tenantSlug={membership.tenantSlug}
-              targetUserId={targetUserId}
-              profile={memberProfile}
-              tenantDefaults={tenantDefaults}
-            />
-          </section>
-          <section
-            id="member-scheduling"
-            className={styles.availabilityPanel}
-            aria-labelledby="scheduling-heading"
-          >
-            <header className={styles.panelHeader}>
-              <h3 id="scheduling-heading" className={styles.panelTitle}>
-                Scheduling profile
-              </h3>
-              <p className={styles.panelLead}>
-                Skills, limits, and home base the day planner uses when it suggests this person.
-              </p>
-            </header>
-            <EmployeeSchedulingProfileForm
-              tenantSlug={membership.tenantSlug}
-              targetUserId={targetUserId}
-              profile={crewProfile}
-              zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
-              partners={partners}
-            />
-          </section>
+          <div className={styles.memberColumn}>
+            {showOfficeEligibility ? (
+              <section
+                id="member-eligibility"
+                className={styles.availabilityPanel}
+                aria-labelledby="eligibility-heading"
+              >
+                <header className={styles.panelHeader}>
+                  <h3 id="eligibility-heading" className={styles.panelTitle}>
+                    Scheduling role
+                  </h3>
+                  <p className={styles.panelLead}>
+                    Choose whether this owner or admin is offered for jobs, consultations, or
+                    neither.
+                  </p>
+                </header>
+                <OfficeScheduleEligibilityForm
+                  tenantSlug={membership.tenantSlug}
+                  targetUserId={targetUserId}
+                  excludeFromJobs={memberRow.exclude_from_job_schedule}
+                  excludeFromConsultations={memberRow.exclude_from_consultation_schedule}
+                />
+              </section>
+            ) : null}
+            {scheduleScope !== 'hidden' ? (
+              <section
+                id="member-availability"
+                className={styles.availabilityPanel}
+                aria-labelledby="availability-heading"
+              >
+                <header className={styles.panelHeader}>
+                  <h3 id="availability-heading" className={styles.panelTitle}>
+                    Work availability
+                  </h3>
+                  <p className={styles.panelLead}>
+                    Hours used for auto-scheduling and crew assignment. Overrides the business
+                    default when customized.
+                  </p>
+                </header>
+                <EmployeeAvailabilityForm
+                  tenantSlug={membership.tenantSlug}
+                  targetUserId={targetUserId}
+                  profile={memberProfile}
+                  tenantDefaults={tenantDefaults}
+                />
+              </section>
+            ) : null}
+            {scheduleScope !== 'hidden' ? (
+              <section
+                id="member-scheduling"
+                className={styles.availabilityPanel}
+                aria-labelledby="scheduling-heading"
+              >
+                <header className={styles.panelHeader}>
+                  <h3 id="scheduling-heading" className={styles.panelTitle}>
+                    Scheduling profile
+                  </h3>
+                  <p className={styles.panelLead}>
+                    {scheduleScope === 'consultation'
+                      ? 'Travel, language, and experience used when suggesting this person for a consultation.'
+                      : 'Skills, limits, and home base the day planner uses when it suggests this person.'}
+                  </p>
+                </header>
+                <EmployeeSchedulingProfileForm
+                  tenantSlug={membership.tenantSlug}
+                  targetUserId={targetUserId}
+                  profile={crewProfile}
+                  zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
+                  partners={partners}
+                  scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
+                />
+              </section>
+            ) : null}
+          </div>
         </div>
       </Stack>
     </>

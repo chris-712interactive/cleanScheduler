@@ -24,12 +24,15 @@ export function EmployeeSchedulingProfileForm({
   profile,
   zones,
   partners,
+  scope = 'full',
 }: {
   tenantSlug: string;
   targetUserId: string;
   profile: CrewSchedulingProfile;
   zones: { id: string; label: string }[];
   partners: { id: string; label: string }[];
+  /** Consultation keeps travel and language. Full includes job skills and crew pairing. */
+  scope?: 'full' | 'consultation';
 }) {
   const [state, action, pending] = useActionState(updateCrewSchedulingProfileAction, initial);
   const kinds = new Set(profile.propertyKinds);
@@ -41,9 +44,13 @@ export function EmployeeSchedulingProfileForm({
     <form action={action} className={styles.stack}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="target_user_id" value={targetUserId} />
+      {scope === 'consultation' ? (
+        <input type="hidden" name="profile_scope" value="consultation" />
+      ) : null}
       <p className={styles.lead}>
-        Used when the schedule suggests who should take a job. Leave a list blank if it does not
-        apply. Home address is turned into a point for straight-line drive time.
+        {scope === 'consultation'
+          ? 'Used when the schedule suggests who should run a consultation. Job skills stay saved and come back if this person is scheduled for jobs again.'
+          : 'Used when the schedule suggests who should take a job. Leave a list blank if it does not apply. Home address is turned into a point for straight-line drive time.'}
       </p>
 
       <div className={styles.grid}>
@@ -56,7 +63,7 @@ export function EmployeeSchedulingProfileForm({
           </select>
         </label>
         <label className={styles.field}>
-          Max jobs per day
+          {scope === 'consultation' ? 'Max consultations per day' : 'Max jobs per day'}
           <input
             type="number"
             name="max_jobs_per_day"
@@ -88,30 +95,34 @@ export function EmployeeSchedulingProfileForm({
             placeholder="Company default"
           />
         </label>
-        <label className={styles.field}>
-          Skills
-          <input
-            name="skill_tags"
-            defaultValue={formatTagList(profile.skillTags)}
-            placeholder="floor-care, deep-clean"
-          />
-        </label>
-        <label className={styles.field}>
-          Certifications
-          <input
-            name="certification_tags"
-            defaultValue={formatTagList(profile.certificationTags)}
-            placeholder="osha"
-          />
-        </label>
-        <label className={styles.field}>
-          Equipment
-          <input
-            name="equipment_tags"
-            defaultValue={formatTagList(profile.equipmentTags)}
-            placeholder="floor-buffer"
-          />
-        </label>
+        {scope === 'full' ? (
+          <>
+            <label className={styles.field}>
+              Skills
+              <input
+                name="skill_tags"
+                defaultValue={formatTagList(profile.skillTags)}
+                placeholder="floor-care, deep-clean"
+              />
+            </label>
+            <label className={styles.field}>
+              Certifications
+              <input
+                name="certification_tags"
+                defaultValue={formatTagList(profile.certificationTags)}
+                placeholder="osha"
+              />
+            </label>
+            <label className={styles.field}>
+              Equipment
+              <input
+                name="equipment_tags"
+                defaultValue={formatTagList(profile.equipmentTags)}
+                placeholder="floor-buffer"
+              />
+            </label>
+          </>
+        ) : null}
         <label className={styles.field}>
           Languages
           <input
@@ -120,48 +131,54 @@ export function EmployeeSchedulingProfileForm({
             placeholder="spanish"
           />
         </label>
-        <label className={styles.field}>
-          Entry tags
-          <input
-            name="attribute_tags"
-            defaultValue={formatTagList(profile.attributeTags)}
-            placeholder="female, non-smoker"
-          />
-        </label>
+        {scope === 'full' ? (
+          <label className={styles.field}>
+            Entry tags
+            <input
+              name="attribute_tags"
+              defaultValue={formatTagList(profile.attributeTags)}
+              placeholder="female, non-smoker"
+            />
+          </label>
+        ) : null}
       </div>
 
-      <fieldset className={styles.people}>
-        <legend>Property types</legend>
-        <p className={styles.lead}>Leave these unchecked to allow every type.</p>
-        <div className={styles.checks}>
-          {KINDS.map((kind) => (
-            <label key={kind.id}>
+      {scope === 'full' ? (
+        <>
+          <fieldset className={styles.people}>
+            <legend>Property types</legend>
+            <p className={styles.lead}>Leave these unchecked to allow every type.</p>
+            <div className={styles.checks}>
+              {KINDS.map((kind) => (
+                <label key={kind.id}>
+                  <input
+                    type="checkbox"
+                    name="property_kind"
+                    value={kind.id}
+                    defaultChecked={kinds.has(kind.id)}
+                  />
+                  {kind.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className={styles.checks}>
+            <label>
+              <input type="checkbox" name="handles_pets" defaultChecked={profile.handlesPets} />{' '}
+              Comfortable with pets
+            </label>
+            <label>
               <input
                 type="checkbox"
-                name="property_kind"
-                value={kind.id}
-                defaultChecked={kinds.has(kind.id)}
-              />
-              {kind.label}
+                name="handles_chemical_sensitivity"
+                defaultChecked={profile.handlesChemicalSensitivity}
+              />{' '}
+              Can run a fragrance-free clean
             </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <div className={styles.checks}>
-        <label>
-          <input type="checkbox" name="handles_pets" defaultChecked={profile.handlesPets} />{' '}
-          Comfortable with pets
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="handles_chemical_sensitivity"
-            defaultChecked={profile.handlesChemicalSensitivity}
-          />{' '}
-          Can run a fragrance-free clean
-        </label>
-      </div>
+          </div>
+        </>
+      ) : null}
 
       <fieldset className={styles.people}>
         <legend>Preferred zones</legend>
@@ -181,39 +198,43 @@ export function EmployeeSchedulingProfileForm({
         </div>
       </fieldset>
 
-      <fieldset className={styles.people}>
-        <legend>Preferred partners</legend>
-        <div className={styles.peopleGrid}>
-          {partners.map((partner) => (
-            <label key={`prefer-${partner.id}`}>
-              <input
-                type="checkbox"
-                name="preferred_partner_id"
-                value={partner.id}
-                defaultChecked={preferred.has(partner.id)}
-              />
-              {partner.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {scope === 'full' ? (
+        <>
+          <fieldset className={styles.people}>
+            <legend>Preferred partners</legend>
+            <div className={styles.peopleGrid}>
+              {partners.map((partner) => (
+                <label key={`prefer-${partner.id}`}>
+                  <input
+                    type="checkbox"
+                    name="preferred_partner_id"
+                    value={partner.id}
+                    defaultChecked={preferred.has(partner.id)}
+                  />
+                  {partner.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
-      <fieldset className={styles.people}>
-        <legend>Avoid pairing with</legend>
-        <div className={styles.peopleGrid}>
-          {partners.map((partner) => (
-            <label key={`avoid-${partner.id}`}>
-              <input
-                type="checkbox"
-                name="avoid_partner_id"
-                value={partner.id}
-                defaultChecked={avoided.has(partner.id)}
-              />
-              {partner.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+          <fieldset className={styles.people}>
+            <legend>Avoid pairing with</legend>
+            <div className={styles.peopleGrid}>
+              {partners.map((partner) => (
+                <label key={`avoid-${partner.id}`}>
+                  <input
+                    type="checkbox"
+                    name="avoid_partner_id"
+                    value={partner.id}
+                    defaultChecked={avoided.has(partner.id)}
+                  />
+                  {partner.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </>
+      ) : null}
 
       <div className={styles.grid}>
         <label className={styles.field}>
