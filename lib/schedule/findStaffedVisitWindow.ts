@@ -7,6 +7,7 @@ import type { WorkDayWindow, WorkWeekDayKey } from '@/lib/tenant/tenantBusinessS
 import { resolveWorkDayWindow } from '@/lib/tenant/tenantBusinessSettings';
 import { localWallClockInTimeZoneToUtcIso } from '@/lib/schedule/nextWorkDayVisitWindow';
 import { applyDurationToVisitWindow } from '@/lib/schedule/visitDuration';
+import type { VisitScheduleKind } from '@/lib/schedule/scheduleEligibility';
 import type { Database } from '@/lib/supabase/database.types';
 
 type Admin = SupabaseClient<Database>;
@@ -107,6 +108,8 @@ export type FindStaffedVisitWindowInput = {
   excludeVisitId?: string;
   /** Maximum windows to return. Default 1. */
   limit?: number;
+  /** Service visits skip people who opted out of jobs. Consultations do the reverse. */
+  visitPurpose?: VisitScheduleKind;
 };
 
 export type StaffedVisitWindow = {
@@ -151,6 +154,7 @@ async function slotMatchesAssignees(
     startsAt: window.startsAt,
     endsAt: window.endsAt,
     excludeVisitId: input.excludeVisitId,
+    visitPurpose: input.visitPurpose,
   });
 }
 

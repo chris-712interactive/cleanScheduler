@@ -24,6 +24,7 @@ import {
   emptyPropertyAccessCodes,
   formatPropertyAccessCodes,
 } from '@/lib/tenant/propertyAccessCodes';
+import { schedulesVisitKind } from '@/lib/schedule/scheduleEligibility';
 import { resolveVisitDurationForVisit } from '@/lib/schedule/resolveVisitDurationForVisit';
 import { DEFAULT_VISIT_DURATION_HOURS } from '@/lib/schedule/visitDuration';
 import { SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
@@ -205,7 +206,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   if (!isFieldEmployee) {
     const membersRes = await supabase
       .from('tenant_memberships')
-      .select('user_id, role')
+      .select('user_id, role, exclude_from_job_schedule, exclude_from_consultation_schedule')
       .eq('tenant_id', membership.tenantId)
       .eq('is_active', true)
       .order('role', { ascending: true });
@@ -220,10 +221,22 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
         : { data: [] as { user_id: string; display_name: string | null }[] };
 
     const displayByUserId = new Map((memberProfiles ?? []).map((p) => [p.user_id, p.display_name]));
-    employeeOptions = (membersRes.data ?? []).map((m) => ({
-      id: m.user_id,
-      label: `${displayByUserId.get(m.user_id)?.trim() || 'Member'} (${m.role})`,
-    }));
+    const visitKind = row.visit_purpose === 'consultation' ? 'consultation' : 'service';
+    employeeOptions = (membersRes.data ?? [])
+      .filter((member) =>
+        schedulesVisitKind(
+          {
+            role: member.role as TenantRole,
+            excludeFromJobs: member.exclude_from_job_schedule,
+            excludeFromConsultations: member.exclude_from_consultation_schedule,
+          },
+          visitKind,
+        ),
+      )
+      .map((member) => ({
+        id: member.user_id,
+        label: `${displayByUserId.get(member.user_id)?.trim() || 'Member'} (${member.role})`,
+      }));
   }
 
   const onOurWayFeature = isFeatureEnabled(tier, 'emailOnMyWay');

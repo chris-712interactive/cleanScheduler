@@ -1426,6 +1426,8 @@ export type Database = {
           role: 'owner' | 'admin' | 'employee' | 'viewer';
           role_id: string | null;
           is_active: boolean;
+          exclude_from_job_schedule: boolean;
+          exclude_from_consultation_schedule: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1436,6 +1438,8 @@ export type Database = {
           role: 'owner' | 'admin' | 'employee' | 'viewer';
           role_id?: string | null;
           is_active?: boolean;
+          exclude_from_job_schedule?: boolean;
+          exclude_from_consultation_schedule?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1446,6 +1450,8 @@ export type Database = {
           role?: 'owner' | 'admin' | 'employee' | 'viewer';
           role_id?: string | null;
           is_active?: boolean;
+          exclude_from_job_schedule?: boolean;
+          exclude_from_consultation_schedule?: boolean;
           created_at?: string;
           updated_at?: string;
         };

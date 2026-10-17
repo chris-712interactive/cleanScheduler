@@ -35,7 +35,7 @@ Settings → Scheduling logic stores the weights. A day suggestion on the schedu
 - Recurring anchor time, the last cleaner on that rule, and whether the customer has a completed visit
 - Service zone, postal code, building name, and visit price
 - Customer scheduling defaults and a property override: preferred weekdays, morning / afternoon / evening, preferred, required, and blocked cleaners, arrival and access hours, pets, sensitivity, languages, entry tags, priority, crew size, skills, certifications, equipment, and key pickup. The customer sets days and time of day in the customer portal under Settings. The office can set the same fields on the customer record. A specific arrival window replaces the time of day. When only a time of day is saved, the day planner treats that block as the arrival window (morning 8:00–12:00, afternoon 12:00–4:00, evening 4:00–8:00).
-- Crew scheduling profile: skills, certifications, equipment, languages, entry tags, property types, pets, sensitivity, experience, daily caps, preferred zones, partners, and home coordinates
+- Crew scheduling profile: skills, certifications, equipment, languages, entry tags, property types, pets, sensitivity, experience, daily caps, preferred zones, partners, and home coordinates. An owner or admin can opt out of jobs, consultations, or both on their profile. Opting out of jobs keeps a shorter consultation profile. Opting out of both hides availability and the scheduling profile, and the planner will not assign them.
 - Latitude and longitude saved when a US address is geocoded (Census). Drive time stays straight-line. Road miles and live traffic are not called.
 
 Applying a suggestion writes the visit time and crew through the existing schedule actions.

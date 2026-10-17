@@ -37,6 +37,8 @@ function crew(
     experienceLevel: 'standard',
     priorWeekendJobs: 0,
     isWeekend: false,
+    schedulesJobs: true,
+    schedulesConsultations: true,
     ...overrides,
   };
 }
@@ -67,6 +69,7 @@ function job(overrides: Partial<OptimizerJob> & Pick<OptimizerJob, 'id'>): Optim
     recurringAnchorUserId: null,
     standingStartMin: null,
     isFirstVisit: false,
+    visitPurpose: 'service',
     requiresKeyPickup: false,
     lockedAssigneeIds: null,
     lockedStartMin: null,
@@ -331,5 +334,26 @@ describe('planOptimizedDay', () => {
     expect(plan.assignments.every((assignment) => assignment.userIds[0] === 'local')).toBe(true);
     const ordered = [...plan.assignments].sort((a, b) => a.startMin - b.startMin);
     expect(ordered[1]!.startMin).toBeGreaterThan(ordered[0]!.endMin);
+  });
+
+  it('keeps an office admin off jobs and a consultation-only admin off cleans', () => {
+    const policy = defaultScheduleOptimizerPolicy();
+    const plan = planOptimizedDay({
+      policy,
+      crew: [
+        crew({ userId: 'office', schedulesJobs: false, schedulesConsultations: false }),
+        crew({ userId: 'walkthrough', schedulesJobs: false, schedulesConsultations: true }),
+        crew({ userId: 'cleaner', schedulesJobs: true, schedulesConsultations: false }),
+      ],
+      jobs: [
+        job({ id: 'clean', visitPurpose: 'service' }),
+        job({ id: 'consult', visitPurpose: 'consultation', durationMinutes: 60 }),
+      ],
+    });
+
+    expect(plan.assignments.find((row) => row.jobId === 'clean')?.userIds).toEqual(['cleaner']);
+    expect(plan.assignments.find((row) => row.jobId === 'consult')?.userIds).toEqual([
+      'walkthrough',
+    ]);
   });
 });

@@ -21,6 +21,7 @@ import {
   type AssigneeConflictInfo,
 } from '@/lib/schedule/visitAssigneeConflicts';
 import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
+import { ineligibleScheduleMessage } from '@/lib/schedule/scheduleEligibility';
 import { recordRecurringOccurrenceSkip } from '@/lib/schedule/recurringOccurrenceSkips';
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
@@ -268,6 +269,16 @@ export async function createScheduledVisit(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x),
     );
   const uniqueAssignees = [...new Set(assigneeIds)];
+  const blocked = await ineligibleScheduleMessage(
+    admin,
+    membership.tenantId,
+    uniqueAssignees,
+    visitPurpose === 'consultation' ? 'consultation' : 'service',
+  );
+  if (blocked) {
+    await admin.from('tenant_scheduled_visits').delete().eq('id', visitId);
+    return { error: blocked };
+  }
 
   for (const uid of uniqueAssignees) {
     if (!(await assertActiveTenantMember(admin, membership.tenantId, uid))) {

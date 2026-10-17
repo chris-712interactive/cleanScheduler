@@ -198,6 +198,13 @@ function personStaticFailure(
   job: OptimizerJob,
   policy: ScheduleOptimizerPolicy,
 ): string | null {
+  const allowed =
+    job.visitPurpose === 'consultation' ? member.schedulesConsultations : member.schedulesJobs;
+  if (!allowed) {
+    return job.visitPurpose === 'consultation'
+      ? 'This person is not scheduled for consultations.'
+      : 'This person is not scheduled for jobs.';
+  }
   if (isHard(policy, 'customer_blocked_crew') && job.blockedUserIds.includes(member.userId)) {
     return 'A blocked cleaner was the only option.';
   }

@@ -342,6 +342,7 @@ async function scheduleFlaggedLineVisits(
     );
 
     const staffed = await findStaffedVisitWindow(ctx.admin, {
+      visitPurpose: 'service',
       tenantId: ctx.input.tenantId,
       timezone: ctx.business.timezone,
       workWeekDays: ctx.business.workWeekDays,
