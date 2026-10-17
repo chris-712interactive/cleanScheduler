@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   toggleVisitChecklistItemAction,
   type VisitChecklistActionState,
@@ -25,6 +26,7 @@ export function VisitChecklistPanel({
   const [items, setItems] = useState(initialItems);
   const [, startTransition] = useTransition();
   const [state, formAction, pending] = useActionState(toggleVisitChecklistItemAction, initial);
+  useFeedbackToast({ error: state.error, pending });
   const progress = checklistProgress(items);
 
   useEffect(() => {
@@ -45,11 +47,6 @@ export function VisitChecklistPanel({
         </h3>
         <span className={styles.checklistProgress}>{progress.label} done</span>
       </div>
-      {state.error ? (
-        <p className={styles.fieldError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <ul className={styles.checklistList}>
         {items.map((item) => (
           <li key={item.id}>

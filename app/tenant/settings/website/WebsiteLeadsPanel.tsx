@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { updateWebsiteLeadStatusAction, type WebsiteActionState } from './actions';
 import styles from './website-settings.module.scss';
@@ -27,6 +28,7 @@ export function WebsiteLeadsPanel({
     updateWebsiteLeadStatusAction,
     {},
   );
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   if (leads.length === 0) {
     return (
@@ -46,17 +48,6 @@ export function WebsiteLeadsPanel({
         <h2 className={styles.sectionTitle}>Leads</h2>
         <p className={styles.sectionLead}>Contact form submissions from your public website.</p>
       </header>
-
-      {state.error ? (
-        <p className={styles.bannerError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.bannerSuccess} role="status">
-          {state.success}
-        </p>
-      ) : null}
 
       <table className={styles.leadsTable}>
         <thead>

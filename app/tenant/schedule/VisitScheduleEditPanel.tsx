@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useMemo, useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { Users } from 'lucide-react';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
 import { isoToLocalDatetimeLocalValue } from '@/lib/datetime/isoToLocalDatetimeLocalValue';
@@ -160,6 +161,20 @@ export function VisitScheduleEditPanel({
     updateScheduledVisitAssignees,
     initial,
   );
+  useFeedbackToast([
+    {
+      error: timeState.error,
+      success: timeState.success,
+      successMessage: 'Visit time saved.',
+      pending: timePending,
+    },
+    {
+      error: crewState.error,
+      success: crewState.success,
+      successMessage: 'Crew assignment saved.',
+      pending: crewPending,
+    },
+  ]);
 
   useServerActionVisitPatch(timeState.success, timeState.visitPatch, onVisitPatch);
   useServerActionVisitPatch(crewState.success, crewState.visitPatch, onVisitPatch);
@@ -309,11 +324,6 @@ export function VisitScheduleEditPanel({
 
           <h3 className={styles.visitScheduleSectionTitle}>Time</h3>
 
-          {timeState.error ? (
-            <p className={styles.error} role="alert">
-              {timeState.error}
-            </p>
-          ) : null}
           {timeState.needsOverlapConfirm &&
           !timeConfirmUnavailable &&
           timeConflicts.length === 0 ? (
@@ -327,11 +337,6 @@ export function VisitScheduleEditPanel({
                 Schedule anyway
               </button>
             </div>
-          ) : null}
-          {timeState.success ? (
-            <p className={styles.success} role="status">
-              Visit time saved.
-            </p>
           ) : null}
 
           <ScheduleOverlapConfirm
@@ -408,11 +413,6 @@ export function VisitScheduleEditPanel({
             {isConsultation ? 'Consultant' : 'Crew'}
           </h3>
 
-          {crewState.error ? (
-            <p className={styles.error} role="alert">
-              {crewState.error}
-            </p>
-          ) : null}
           {crewState.needsOverlapConfirm &&
           !crewConfirmUnavailable &&
           crewConflicts.length === 0 ? (
@@ -426,11 +426,6 @@ export function VisitScheduleEditPanel({
                 Assign anyway
               </button>
             </div>
-          ) : null}
-          {crewState.success ? (
-            <p className={styles.success} role="status">
-              Crew assignment saved.
-            </p>
           ) : null}
 
           <ScheduleOverlapConfirm

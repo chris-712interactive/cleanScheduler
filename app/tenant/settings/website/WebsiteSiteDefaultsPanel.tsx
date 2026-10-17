@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { updateWebsiteSettingsAction, type WebsiteActionState } from './actions';
 import type { TenantSiteSettings } from '@/lib/tenantSite/types';
 import styles from './website-settings.module.scss';
@@ -17,6 +18,11 @@ export function WebsiteSiteDefaultsPanel({
     WebsiteActionState,
     FormData
   >(updateWebsiteSettingsAction, {});
+  useFeedbackToast({
+    error: settingsState.error,
+    success: settingsState.success,
+    pending: settingsPending,
+  });
 
   return (
     <section className={styles.setupCard}>
@@ -82,16 +88,6 @@ export function WebsiteSiteDefaultsPanel({
             />
           </label>
         </div>
-        {settingsState.error ? (
-          <p className={styles.bannerError} role="alert">
-            {settingsState.error}
-          </p>
-        ) : null}
-        {settingsState.success ? (
-          <p className={styles.bannerSuccess} role="status">
-            {settingsState.success}
-          </p>
-        ) : null}
       </form>
     </section>
   );

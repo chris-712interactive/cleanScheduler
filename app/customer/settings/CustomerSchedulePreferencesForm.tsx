@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import type { PreferredTimeWindow } from '@/lib/schedule/optimizer/preferences';
 import {
   WORK_WEEK_DAY_KEYS,
@@ -32,6 +33,12 @@ export function CustomerSchedulePreferencesForm({
   timeWindow: PreferredTimeWindow | null;
 }) {
   const [state, action, pending] = useActionState(updateCustomerSchedulePreferencesAction, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Saved. Your cleaner will aim for these days and times.',
+    pending,
+  });
   const chosen = new Set(weekdays);
 
   return (
@@ -39,17 +46,6 @@ export function CustomerSchedulePreferencesForm({
       <input type="hidden" name="tenant_id" value={tenantId} />
       <input type="hidden" name="customer_id" value={customerId} />
       {showCompanyName ? <p className={styles.companyName}>{tenantName}</p> : null}
-
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.ok} role="status">
-          Saved. Your cleaner will aim for these days and times.
-        </p>
-      ) : null}
 
       <fieldset className={styles.days}>
         <legend>Days that work</legend>

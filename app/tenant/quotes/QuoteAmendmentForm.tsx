@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { createTenantQuoteAmendment, type AmendmentFormState } from './actions';
 import styles from './quotes.module.scss';
 
@@ -16,6 +17,7 @@ export function QuoteAmendmentForm({
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuoteAmendment, initial);
+  useFeedbackToast({ error: state.error, pending });
   const navigatedToQuoteRef = useRef(false);
 
   useEffect(() => {
@@ -28,11 +30,6 @@ export function QuoteAmendmentForm({
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="prior_quote_id" value={priorQuoteId} />
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <label className={styles.label} htmlFor="version_reason">
         Reason for new version <span className={styles.requiredMark}>(required)</span>
       </label>

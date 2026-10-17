@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   extendTenantTrialAction,
   type ExtendTenantTrialFormState,
@@ -22,6 +23,7 @@ export function AdminExtendTrialPanel({
   blockedReason: string | null;
 }) {
   const [state, formAction, pending] = useActionState(extendTenantTrialAction, initialState);
+  useFeedbackToast({ error: state.error, pending });
 
   if (blockedReason) {
     return <p className={styles.hint}>{blockedReason}</p>;
@@ -51,11 +53,6 @@ export function AdminExtendTrialPanel({
         defaultValue={7}
         required
       />
-      {state.error ? (
-        <p className={styles.bannerError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <Button type="submit" variant="secondary" disabled={pending}>
         {pending ? 'Extending…' : 'Extend trial'}
       </Button>

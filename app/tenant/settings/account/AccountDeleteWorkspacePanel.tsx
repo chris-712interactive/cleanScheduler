@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   deleteTenantWorkspaceAction,
   type DeleteWorkspaceFormState,
@@ -20,6 +21,7 @@ export function AccountDeleteWorkspacePanel({
   purgeStatus: TenantPurgeStatus;
 }) {
   const [state, formAction, pending] = useActionState(deleteTenantWorkspaceAction, initial);
+  useFeedbackToast({ error: state.error, pending });
 
   return (
     <section
@@ -66,11 +68,6 @@ export function AccountDeleteWorkspacePanel({
             placeholder={tenantSlug}
           />
         </label>
-        {state.error ? (
-          <p className={styles.bannerError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
         <Button type="submit" variant="secondary" disabled={pending}>
           {pending ? 'Deleting…' : 'Delete workspace permanently'}
         </Button>

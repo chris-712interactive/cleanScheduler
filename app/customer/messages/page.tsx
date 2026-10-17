@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createClient } from '@/lib/supabase/server';
@@ -68,11 +69,16 @@ export default async function CustomerMessagesPage({ searchParams }: PageProps) 
         description="Start a conversation with any provider you are linked to."
       />
 
-      {err ? (
-        <p className={styles.bannerErr} role="alert">
-          Please pick a provider, add a subject, and write a message.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          err
+            ? {
+                title: 'Please pick a provider, add a subject, and write a message.',
+                variant: 'danger',
+              }
+            : null,
+        ]}
+      />
 
       <Card title="New conversation">
         <CustomerNewMessageForm

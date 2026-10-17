@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { UpgradeOrAddOnModal } from '@/components/billing/UpgradeOrAddOnModal';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   PORTAL_INTERACTION_FLOWS,
   endPortalInteraction,
@@ -23,6 +24,10 @@ export function CustomerCreateForm({
   serviceZones?: Array<{ id: string; name: string; is_active: boolean }>;
 }) {
   const [state, formAction, pending] = useActionState(createTenantCustomer, initial);
+  useFeedbackToast({
+    error: state.limitExceeded ? null : state.error,
+    pending,
+  });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const interactionStarted = useRef(false);
 
@@ -60,11 +65,6 @@ export function CustomerCreateForm({
       />
       <form action={formAction} className={styles.form}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
-        {state.error && !state.limitExceeded ? (
-          <p className={styles.error} role="alert">
-            {state.error}
-          </p>
-        ) : null}
         <section className={styles.sectionCard}>
           <header className={styles.sectionHeader}>
             <h4 className={styles.sectionTitle}>Basic customer information</h4>

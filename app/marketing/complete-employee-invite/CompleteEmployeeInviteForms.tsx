@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +33,10 @@ export function CompleteEmployeeInviteForms({
     linkExistingEmployeeInviteAction,
     initial,
   );
+  useFeedbackToast([
+    { error: pwState.error, pending: pwPending },
+    { error: linkState.error, pending: linkPending },
+  ]);
 
   return (
     <Stack gap={6} as="div">
@@ -41,11 +46,6 @@ export function CompleteEmployeeInviteForms({
       >
         <form action={pwAction} className={styles.form}>
           <input type="hidden" name="token" value={token} />
-          {pwState.error ? (
-            <p className={styles.error} role="alert">
-              {pwState.error}
-            </p>
-          ) : null}
           {pwState.duplicateAccount ? (
             <p className={styles.hint}>
               Use <strong>Link my account</strong> below if you already have this password on Clean
@@ -91,11 +91,6 @@ export function CompleteEmployeeInviteForms({
         {hasSession ? (
           <form action={linkAction} className={styles.form}>
             <input type="hidden" name="token" value={token} />
-            {linkState.error ? (
-              <p className={styles.error} role="alert">
-                {linkState.error}
-              </p>
-            ) : null}
             <Button type="submit" variant="secondary" disabled={linkPending}>
               {linkPending ? 'Linking…' : 'Link my account to this workspace'}
             </Button>

@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import type { MemberDayWindow, MemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
@@ -45,6 +46,7 @@ export function EmployeeAvailabilityForm({
 }) {
   const [profile, setProfile] = useState(initialProfile);
   const [state, formAction, pending] = useActionState(updateMemberAvailabilityAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
   const timeOptions = buildWorkTimeOptions();
 
   useEffect(() => {
@@ -67,17 +69,6 @@ export function EmployeeAvailabilityForm({
     <form onSubmit={handleSubmit} className={styles.availabilityForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="target_user_id" value={targetUserId} />
-
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.ok} role="status">
-          {state.success}
-        </p>
-      ) : null}
 
       <label className={styles.checkboxRow}>
         <input

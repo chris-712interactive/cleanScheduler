@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { sendCustomerPortalInviteAction, type CustomerInviteFormState } from './inviteActions';
 import styles from './customers.module.scss';
 
@@ -21,6 +22,7 @@ export function CustomerPortalInvitePanel({
   emailReady: boolean;
 }) {
   const [state, action, pending] = useActionState(sendCustomerPortalInviteAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   if (portalLinked) {
     return <p className={styles.inviteHint}>This customer already has a portal login linked.</p>;
@@ -36,12 +38,6 @@ export function CustomerPortalInvitePanel({
 
   return (
     <div className={styles.inviteBlock}>
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? <p className={styles.success}>{state.success}</p> : null}
       <form action={action} className={styles.inviteForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         <input type="hidden" name="customer_id" value={customerId} />

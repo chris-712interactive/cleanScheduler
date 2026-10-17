@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   createTenantServiceZoneAction,
@@ -42,6 +43,26 @@ export function ServiceZonesPanel({
     deleteTenantServiceZoneAction,
     initialState,
   );
+  useFeedbackToast([
+    {
+      error: createState.error,
+      success: createState.success,
+      successMessage: 'Saved.',
+      pending: createPending,
+    },
+    {
+      error: renameState.error,
+      success: renameState.success,
+      successMessage: 'Saved.',
+      pending: renamePending,
+    },
+    {
+      error: deleteState.error,
+      success: deleteState.success,
+      successMessage: 'Saved.',
+      pending: deletePending,
+    },
+  ]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addFormKey, setAddFormKey] = useState(0);
 
@@ -58,23 +79,9 @@ export function ServiceZonesPanel({
   }, [createState.success]);
 
   const activeCount = zones.filter((zone) => zone.is_active).length;
-  const bannerError = createState.error ?? renameState.error ?? deleteState.error;
-  const bannerSuccess =
-    createState.success || renameState.success || deleteState.success ? 'Saved.' : null;
 
   return (
     <div className={styles.stack}>
-      {bannerError ? (
-        <p className={styles.bannerError} role="alert">
-          {bannerError}
-        </p>
-      ) : null}
-      {bannerSuccess && !bannerError ? (
-        <p className={styles.bannerSuccess} role="status">
-          {bannerSuccess}
-        </p>
-      ) : null}
-
       <header className={styles.intro}>
         <p className={styles.introLead}>
           Labels for communities and areas (e.g. Babcock Ranch). Assign on a customer&rsquo;s

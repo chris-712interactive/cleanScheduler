@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
@@ -30,11 +31,7 @@ export default async function AdminOutreachNewPage({ searchParams }: PageProps) 
         description="Import a mail-merge contact list from a CSV file or a published Google Sheet. Required columns: Email, Subject, Body. Optional: Business Name, Owner Name, Phone, City, County, State, Type, Website, Notes."
       />
 
-      {err ? (
-        <p className={styles.formError} role="alert">
-          {err}
-        </p>
-      ) : null}
+      <FeedbackToasts messages={[err ? { title: err, variant: 'danger' } : null]} />
 
       <Stack gap={5}>
         <Card title="Upload CSV file">

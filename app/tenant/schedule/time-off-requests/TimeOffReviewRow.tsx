@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { reviewTimeOffRequestAction, type TimeOffActionState } from '../time-off/actions';
 import styles from '../time-off/timeOff.module.scss';
 
@@ -20,22 +21,14 @@ export function TimeOffReviewRow({
   requestNote: string;
 }) {
   const [state, formAction, pending] = useActionState(reviewTimeOffRequestAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <li className={styles.row}>
       <strong>{employeeName}</strong>
       <p className={styles.rowMeta}>{windowLabel}</p>
       {requestNote ? <p className={styles.rowMeta}>{requestNote}</p> : null}
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          {state.success}
-        </p>
-      ) : (
+      {state.success ? null : (
         <form action={formAction} className={styles.reviewActions}>
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="request_id" value={requestId} />

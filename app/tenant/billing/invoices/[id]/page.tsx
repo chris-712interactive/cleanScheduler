@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { KeyValueList } from '@/components/ui/KeyValueList';
@@ -88,37 +89,35 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
         titleHint={`Invoice · ${inv.status}`}
       />
 
-      {paidNotice ? (
-        <p className={styles.bannerOk} role="status">
-          Paid
-        </p>
-      ) : null}
-      {checkoutErr && !paidNotice ? (
-        <p className={styles.bannerError} role="alert">
-          {checkoutErr}
-        </p>
-      ) : null}
-      {checkoutOk ? (
-        <p className={styles.bannerOk} role="status">
-          Checkout completed. If the balance did not clear, wait a few seconds and refresh — the
-          webhook records the payment.
-        </p>
-      ) : null}
-      {checkoutCanceled ? (
-        <p className={styles.muted} role="status">
-          Checkout canceled — no charge was made.
-        </p>
-      ) : null}
-      {emailSent ? (
-        <p className={styles.bannerOk} role="status">
-          Invoice email sent to the customer&apos;s address on file.
-        </p>
-      ) : null}
-      {refundOk ? (
-        <p className={styles.bannerOk} role="status">
-          Refund submitted in Stripe and a matching credit was applied to this invoice.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          paidNotice ? { title: 'Paid', variant: 'success' } : null,
+          checkoutErr && !paidNotice ? { title: checkoutErr, variant: 'danger' } : null,
+          checkoutOk
+            ? {
+                title:
+                  'Checkout completed. If the balance did not clear, wait a few seconds and refresh — the webhook records the payment.',
+                variant: 'success',
+              }
+            : null,
+          checkoutCanceled
+            ? { title: 'Checkout canceled — no charge was made.', variant: 'info' }
+            : null,
+          emailSent
+            ? {
+                title: "Invoice email sent to the customer's address on file.",
+                variant: 'success',
+              }
+            : null,
+          refundOk
+            ? {
+                title:
+                  'Refund submitted in Stripe and a matching credit was applied to this invoice.',
+                variant: 'success',
+              }
+            : null,
+        ]}
+      />
 
       <div
         className={

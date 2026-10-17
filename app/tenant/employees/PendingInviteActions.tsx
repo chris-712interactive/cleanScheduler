@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   resendEmployeeInviteAction,
   revokeEmployeeInviteAction,
@@ -20,20 +21,13 @@ export function PendingInviteActions({ tenantSlug, token }: { tenantSlug: string
     revokeEmployeeInviteAction,
     initial,
   );
-
-  const feedback =
-    resendState.error || revokeState.error || resendState.success || revokeState.success;
+  useFeedbackToast([
+    { error: resendState.error, success: resendState.success, pending: resendPending },
+    { error: revokeState.error, success: revokeState.success, pending: revokePending },
+  ]);
 
   return (
     <div className={styles.inviteActions}>
-      {feedback ? (
-        <p
-          className={resendState.error || revokeState.error ? styles.error : styles.success}
-          role="status"
-        >
-          {feedback}
-        </p>
-      ) : null}
       <form action={resendAction} className={styles.inviteActionForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         <input type="hidden" name="token" value={token} />

@@ -5,7 +5,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { MfaSettingsPanel } from '@/components/auth/MfaSettingsPanel';
 import { PasskeySettingsPanel } from '@/components/auth/PasskeySettingsPanel';
-import { Alert } from '@/components/ui/Alert';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
@@ -35,8 +35,12 @@ export default async function AdminSettingsPage({ searchParams }: PageProps) {
       <PageHeader title="Settings" description="Account preferences and session controls." />
 
       <Stack gap={6}>
-        {err ? <Alert variant="danger">{err}</Alert> : null}
-        {notice ? <Alert variant="success">{notice}</Alert> : null}
+        <FeedbackToasts
+          messages={[
+            err ? { title: err, variant: 'danger' } : null,
+            notice ? { title: notice, variant: 'success' } : null,
+          ]}
+        />
         <Card title="Appearance" description="Light, dark, or match your system.">
           <div className={styles.themeRow}>
             <span className={styles.label}>Theme</span>

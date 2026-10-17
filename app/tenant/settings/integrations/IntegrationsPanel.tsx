@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   TENANT_WEBHOOK_EVENT_LABELS,
@@ -125,13 +126,10 @@ export function IntegrationsPanel({
     createTenantWebhookEndpointAction,
     initialState,
   );
-  const [banner, setBanner] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (keyState.error) setBanner(keyState.error);
-    else if (webhookState.error) setBanner(webhookState.error);
-    else if (keyState.success || webhookState.success) setBanner(null);
-  }, [keyState, webhookState]);
+  useFeedbackToast([
+    { error: keyState.error, pending: keyPending },
+    { error: webhookState.error, pending: webhookPending },
+  ]);
 
   const atLimit = integrationUsed >= integrationLimit;
   const activeWebhooks = webhookEndpoints.filter((endpoint) => endpoint.enabled).length;
@@ -142,12 +140,6 @@ export function IntegrationsPanel({
         <p className={styles.readOnlyNotice} role="status">
           You can view integration settings here. Only owners and admins can create or change
           connections.
-        </p>
-      ) : null}
-
-      {banner ? (
-        <p className={styles.bannerError} role="alert">
-          {banner}
         </p>
       ) : null}
 

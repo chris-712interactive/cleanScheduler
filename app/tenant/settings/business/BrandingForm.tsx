@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useActionState, useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Upload } from 'lucide-react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import { ColorField } from '@/components/ui/ColorField';
@@ -29,6 +30,7 @@ function BrandColorForm({
 }) {
   const [swatchColor, setSwatchColor] = useState(initialBrandColor);
   const [state, action, pending] = useActionState(updateBrandingAction, brandingInitial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   useEffect(() => {
     setSwatchColor(initialBrandColor);
@@ -49,16 +51,6 @@ function BrandColorForm({
   return (
     <form onSubmit={handleSubmit} className={styles.settingsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      {state.error ? (
-        <p className={styles.formError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.formSuccess} role="status">
-          {state.success}
-        </p>
-      ) : null}
 
       <ColorField
         id="brand_color"
@@ -87,6 +79,7 @@ function LogoUploadForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
   const [state, action, pending] = useActionState(uploadTenantLogoAction, logoInitial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   useEffect(() => {
     setLogoUrl(initialLogoUrl);
@@ -113,16 +106,6 @@ function LogoUploadForm({
   return (
     <form ref={formRef} onSubmit={handleSubmit} className={styles.settingsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      {state.error ? (
-        <p className={styles.formError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.formSuccess} role="status">
-          {state.success}
-        </p>
-      ) : null}
 
       <span className={styles.fieldLabel}>Logo</span>
       {logoUrl ? (

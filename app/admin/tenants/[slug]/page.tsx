@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Container } from '@/components/layout/Container';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
@@ -146,6 +147,24 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
   const purgeStatus = getTenantPurgeStatus(billing);
   const canAdminPurge = isCanceledForAdminPurge(billing);
   const emailBlockFlash = firstParam(sp.emailBlock);
+  const riskMessage = !riskFlash
+    ? null
+    : riskFlash === 'suspended'
+      ? 'Portal access suspended.'
+      : riskFlash === 'unsuspended'
+        ? 'Portal access restored.'
+        : riskFlash === 'connect_frozen'
+          ? 'Connect charges frozen.'
+          : riskFlash === 'connect_unfrozen'
+            ? 'Connect charges unfrozen.'
+            : 'Risk controls updated.';
+  const emailBlockMessage = !emailBlockFlash
+    ? null
+    : emailBlockFlash === 'blocked'
+      ? 'Owner email blocked from future workspace signups.'
+      : emailBlockFlash === 'unblocked'
+        ? 'Owner email removed from the signup block list.'
+        : 'Signup email block updated.';
 
   const planRaw = billing?.platform_plan;
   const planLabel =
@@ -181,33 +200,19 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
 
       <Container size="md">
         <Stack gap={4}>
-          {riskFlash ? (
-            <p className={styles.bannerSuccess} role="status">
-              {riskFlash === 'suspended'
-                ? 'Portal access suspended.'
-                : riskFlash === 'unsuspended'
-                  ? 'Portal access restored.'
-                  : riskFlash === 'connect_frozen'
-                    ? 'Connect charges frozen.'
-                    : riskFlash === 'connect_unfrozen'
-                      ? 'Connect charges unfrozen.'
-                      : 'Risk controls updated.'}
-            </p>
-          ) : null}
-          {emailBlockFlash ? (
-            <p className={styles.bannerSuccess} role="status">
-              {emailBlockFlash === 'blocked'
-                ? 'Owner email blocked from future workspace signups.'
-                : emailBlockFlash === 'unblocked'
-                  ? 'Owner email removed from the signup block list.'
-                  : 'Signup email block updated.'}
-            </p>
-          ) : null}
-          {trialFlash === 'extended' ? (
-            <p className={styles.bannerSuccess} role="status">
-              Trial extended. The workspace can keep using the portal until the new end date.
-            </p>
-          ) : null}
+          <FeedbackToasts
+            messages={[
+              riskMessage ? { title: riskMessage, variant: 'success' } : null,
+              emailBlockMessage ? { title: emailBlockMessage, variant: 'success' } : null,
+              trialFlash === 'extended'
+                ? {
+                    title:
+                      'Trial extended. The workspace can keep using the portal until the new end date.',
+                    variant: 'success',
+                  }
+                : null,
+            ]}
+          />
 
           <Card title="Fraud & risk controls">
             <AdminTenantRiskPanel

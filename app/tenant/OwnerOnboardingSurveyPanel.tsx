@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { saveOwnerOnboardingSurvey, type OnboardingSurveyState } from './onboardingSurveyActions';
 import { dismissOwnerSurveyAction } from './ownerOnboardingActions';
 import styles from './ownerOnboardingSurveyPanel.module.scss';
@@ -15,6 +16,7 @@ export function OwnerOnboardingSurveyPanel({
   tenantSlug: string;
 }) {
   const [state, formAction, pending] = useActionState(saveOwnerOnboardingSurvey, initialState);
+  useFeedbackToast({ error: state.error, pending });
 
   if (state.success) {
     return null;
@@ -27,12 +29,6 @@ export function OwnerOnboardingSurveyPanel({
     >
       <form action={formAction} className={styles.form}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
-
-        {state.error ? (
-          <p className={styles.error} role="alert">
-            {state.error}
-          </p>
-        ) : null}
 
         <label className={styles.label} htmlFor="survey_service_area">
           Primary service area

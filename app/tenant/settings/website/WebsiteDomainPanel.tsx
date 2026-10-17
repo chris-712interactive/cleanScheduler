@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { updateWebsiteDomainModeAction, type WebsiteActionState } from './actions';
 import styles from './website-settings.module.scss';
 
@@ -21,6 +22,7 @@ export function WebsiteDomainPanel({
     updateWebsiteDomainModeAction,
     {},
   );
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   if (!domainActive) {
     return (
@@ -58,16 +60,6 @@ export function WebsiteDomainPanel({
             <option value="unified">Unified (website at /, portal at /portal)</option>
           </select>
         </label>
-        {state.error ? (
-          <p className={styles.bannerError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p className={styles.bannerSuccess} role="status">
-            {state.success}
-          </p>
-        ) : null}
         <Button type="submit" disabled={pending}>
           Save domain mode
         </Button>

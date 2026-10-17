@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/Button';
 import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
@@ -90,6 +91,10 @@ export function QuoteCreateWizard({
 
   const [step, setStep] = useState<StepId>('who');
   const [stepError, setStepError] = useState<string | null>(null);
+  useFeedbackToast([
+    { error: state.schedulePath ? null : state.error, pending },
+    { error: stepError },
+  ]);
   /** Prevents the Pricing → Terms Continue click from landing on Save draft. */
   const [termsActionsReady, setTermsActionsReady] = useState(false);
   const blockSubmitRef = useRef(false);
@@ -511,16 +516,6 @@ export function QuoteCreateWizard({
           errorMessage={state.error}
           returnTo="/quotes/new"
         />
-      ) : null}
-      {state.error && !state.schedulePath ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {stepError ? (
-        <p className={styles.error} role="alert">
-          {stepError}
-        </p>
       ) : null}
 
       <nav className={styles.wizardNav} aria-label="Quote steps">

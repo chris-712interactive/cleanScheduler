@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
@@ -26,7 +26,7 @@ export default async function NewSalesLeadPage({ searchParams }: PageProps) {
         title="New lead"
         description="Add a prospect you reached out to or who requested a demo."
       />
-      {err ? <Alert variant="danger">{err}</Alert> : null}
+      <FeedbackToasts messages={[err ? { title: err, variant: 'danger' } : null]} />
       <Card>
         <form action={createSalesLeadAction}>
           <div className={styles.formGrid}>

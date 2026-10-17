@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { redeemCustomerCreditCodeAction, type CustomerWalletActionState } from './walletActions';
 import styles from './customers.module.scss';
 
@@ -19,6 +20,12 @@ export function CustomerWalletPanel({
   canEdit: boolean;
 }) {
   const [state, formAction, pending] = useActionState(redeemCustomerCreditCodeAction, initialState);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: `Added $${((state.grantedCents ?? 0) / 100).toFixed(2)} to this customer's wallet.`,
+    pending,
+  });
   const displayBalance = state.balanceAfterCents ?? balanceCents;
 
   return (
@@ -52,16 +59,6 @@ export function CustomerWalletPanel({
               Redeem
             </Button>
           </div>
-          {state.error ? (
-            <p className={styles.bannerError} role="alert">
-              {state.error}
-            </p>
-          ) : null}
-          {state.success ? (
-            <p className={styles.bannerOk} role="status">
-              Added ${((state.grantedCents ?? 0) / 100).toFixed(2)} to this customer&apos;s wallet.
-            </p>
-          ) : null}
         </form>
       ) : null}
     </section>

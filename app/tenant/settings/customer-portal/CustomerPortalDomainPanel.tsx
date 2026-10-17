@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { Globe, Palette } from 'lucide-react';
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import { useActionState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { StatusTone } from '@/components/ui/StatusPill';
 import { customerPortalVerificationRecordName } from '@/lib/portal/customerPortalHostname';
@@ -123,17 +124,28 @@ export function CustomerPortalDomainPanel({
     removeCustomerPortalDomainAction,
     initialState,
   );
-  const [banner, setBanner] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
-
-  useEffect(() => {
-    const error =
-      continueState.error ?? verifyState.error ?? refreshState.error ?? removeState.error;
-    const success =
-      continueState.success ?? verifyState.success ?? refreshState.success ?? removeState.success;
-    if (error) setBanner({ kind: 'error', text: error });
-    else if (success) setBanner({ kind: 'success', text: success });
-    else setBanner(null);
-  }, [continueState, verifyState, refreshState, removeState]);
+  useFeedbackToast([
+    {
+      error: continueState.error,
+      success: continueState.success,
+      pending: continuePending,
+    },
+    {
+      error: verifyState.error,
+      success: verifyState.success,
+      pending: verifyPending,
+    },
+    {
+      error: refreshState.error,
+      success: refreshState.success,
+      pending: refreshPending,
+    },
+    {
+      error: removeState.error,
+      success: removeState.success,
+      pending: removePending,
+    },
+  ]);
 
   const phase = setupPhase(domain);
   const meta = statusMeta(phase);
@@ -176,15 +188,6 @@ export function CustomerPortalDomainPanel({
 
   return (
     <div className={styles.portalStack}>
-      {banner ? (
-        <p
-          className={banner.kind === 'error' ? styles.bannerError : styles.bannerSuccess}
-          role={banner.kind === 'error' ? 'alert' : 'status'}
-        >
-          {banner.text}
-        </p>
-      ) : null}
-
       {!setupAvailable ? (
         <p className={styles.bannerError} role="status">
           Custom domain setup is not available right now. Please contact support for help.

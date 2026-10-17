@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { updateVisitJobDetails, type ScheduleFormState } from './actions';
@@ -26,6 +27,12 @@ export function VisitJobDetailsForm({
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [state, formAction, pending] = useActionState(updateVisitJobDetails, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Job details saved.',
+    pending,
+  });
   useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
   const [jobTitle, setJobTitle] = useState(title);
   const matchedType = jobTypeLabels.includes(jobTitle) ? jobTitle : '';
@@ -92,16 +99,6 @@ export function VisitJobDetailsForm({
           placeholder="Supplies, special requests, what the crew should know for this visit"
         />
       </div>
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Job details saved.
-        </p>
-      ) : null}
       <button type="submit" className={styles.submit} disabled={pending}>
         {pending ? 'Saving…' : 'Save job details'}
       </button>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Calendar, Check, X } from 'lucide-react';
 import { useActionState, useEffect, useState } from 'react';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import type { AssigneeConflictInfo } from '@/lib/schedule/visitAssigneeConflicts';
 import {
   resolveVisitRescheduleRequest,
@@ -30,6 +31,12 @@ export function TenantRescheduleDecisionRow({
   onRequestResolved?: (requestId: string) => void;
 }) {
   const [state, formAction, pending] = useActionState(resolveVisitRescheduleRequest, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Request updated.',
+    pending,
+  });
   const [overlapConfirm, setOverlapConfirm] = useState(false);
 
   useEffect(() => {
@@ -46,7 +53,7 @@ export function TenantRescheduleDecisionRow({
     setOverlapConfirm(false);
   }, [state.error, state.success, state.needsOverlapConfirm]);
 
-  const showMeta = Boolean(state.error || state.success || hasConflicts);
+  const showMeta = hasConflicts;
 
   return (
     <form action={formAction} className={styles.actionsColumn}>
@@ -84,26 +91,14 @@ export function TenantRescheduleDecisionRow({
 
       {showMeta ? (
         <div className={styles.actionsMeta}>
-          {state.error ? (
-            <p className={styles.formError} role="alert">
-              {state.error}
-            </p>
-          ) : null}
-          {state.success ? (
-            <p className={styles.formSuccess} role="status">
-              Request updated.
-            </p>
-          ) : null}
-          {hasConflicts ? (
-            <div className={styles.overlapCompact}>
-              <ScheduleOverlapConfirm
-                conflicts={conflicts}
-                showConfirmField={hasConflicts && canApplyTime}
-                confirmChecked={overlapConfirm}
-                onConfirmChange={setOverlapConfirm}
-              />
-            </div>
-          ) : null}
+          <div className={styles.overlapCompact}>
+            <ScheduleOverlapConfirm
+              conflicts={conflicts}
+              showConfirmField={hasConflicts && canApplyTime}
+              confirmChecked={overlapConfirm}
+              onConfirmChange={setOverlapConfirm}
+            />
+          </div>
         </div>
       ) : null}
 

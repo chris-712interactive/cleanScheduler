@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   blockSignupEmailAction,
   unblockSignupEmailAction,
@@ -24,22 +25,14 @@ export function SignupEmailBlocksPanel(props: {
     unblockSignupEmailAction,
     initialState,
   );
-
-  const formError = blockState.error || unblockState.error;
+  useFeedbackToast([
+    { success: props.flash },
+    { error: blockState.error, pending: blockPending },
+    { error: unblockState.error, pending: unblockPending },
+  ]);
 
   return (
     <div className={styles.riskPanel}>
-      {props.flash ? (
-        <p className={styles.bannerSuccess} role="status">
-          {props.flash}
-        </p>
-      ) : null}
-      {formError ? (
-        <p className={styles.bannerError} role="alert">
-          {formError}
-        </p>
-      ) : null}
-
       <form action={blockAction} className={styles.riskForm}>
         <input type="hidden" name="return_path" value="/fraud/signup-blocks" />
         <input type="hidden" name="source" value="manual" />

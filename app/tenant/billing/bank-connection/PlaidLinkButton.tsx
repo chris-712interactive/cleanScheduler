@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { PLAID_CONSENT_REQUIRED_ERROR } from '@/lib/plaid/plaidConsentCopy';
 import { connectBankFromPlaidAction, fetchPlaidLinkTokenAction } from './actions';
 import { useFinishBankConnectionAction } from './finishBankConnectionAction';
 import { PlaidPreLinkConsent } from './PlaidPreLinkConsent';
-import styles from './bank-connection.module.scss';
 
 interface PlaidLinkButtonProps {
   tenantSlug: string;
@@ -31,6 +31,7 @@ export function PlaidLinkButton({
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loadingToken, setLoadingToken] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useFeedbackToast({ error });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchLinkToken = useCallback(async () => {
@@ -124,15 +125,6 @@ export function PlaidLinkButton({
               ? 'Continue to Plaid'
               : label}
       </Button>
-      {error ? (
-        <p
-          className={styles.muted}
-          style={{ color: 'var(--color-danger)', marginTop: 'var(--space-2)' }}
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }

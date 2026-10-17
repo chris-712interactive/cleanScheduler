@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   applyCustomerInvoicePromotionsAction,
   type CustomerInvoicePromotionActionState,
@@ -28,6 +29,12 @@ export function CustomerInvoicePromotionPanel({
     applyCustomerInvoicePromotionsAction,
     initialState,
   );
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Balance due updated with your promotions.',
+    pending,
+  });
   const refreshedForSuccess = useRef(false);
 
   useEffect(() => {
@@ -54,17 +61,6 @@ export function CustomerInvoicePromotionPanel({
         key={state.success ? 'applied' : 'edit'}
       >
         <input type="hidden" name="invoice_id" value={invoiceId} />
-
-        {state.error ? (
-          <p className={styles.bannerError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p className={styles.bannerOk} role="status">
-            Balance due updated with your promotions.
-          </p>
-        ) : null}
 
         <label className={styles.promotionLabel} htmlFor={`customer_invoice_promo_${invoiceId}`}>
           Promo code

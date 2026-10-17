@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionPropertiesPatch } from '@/lib/hooks/useServerActionPropertiesPatch';
 import {
   applyCustomerPropertiesPatch,
@@ -82,23 +83,6 @@ function ServiceZoneSelect({
         ))}
       </select>
     </Field>
-  );
-}
-
-function PropertyActionMessages({ state }: { state: PropertyFormState }) {
-  return (
-    <>
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Updated.
-        </p>
-      ) : null}
-    </>
   );
 }
 
@@ -300,13 +284,18 @@ function SetPrimaryForm({
   onPropertiesPatch: PatchHandler;
 }) {
   const [state, action, pending] = useActionState(setPrimaryCustomerProperty, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Updated.',
+    pending,
+  });
   useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
   return (
     <form action={action} className={styles.inlineForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_id" value={customerId} />
       <input type="hidden" name="property_id" value={propertyId} />
-      <PropertyActionMessages state={state} />
       <button type="submit" className={styles.secondaryBtn} disabled={pending}>
         {pending ? '…' : 'Set as primary'}
       </button>
@@ -326,13 +315,18 @@ function DeletePropertyForm({
   onPropertiesPatch: PatchHandler;
 }) {
   const [state, action, pending] = useActionState(deleteCustomerProperty, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Updated.',
+    pending,
+  });
   useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
   return (
     <form action={action} className={styles.inlineForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_id" value={customerId} />
       <input type="hidden" name="property_id" value={propertyId} />
-      <PropertyActionMessages state={state} />
       <button type="submit" className={styles.dangerBtn} disabled={pending}>
         {pending ? '…' : 'Delete'}
       </button>
@@ -358,6 +352,12 @@ function EditPropertyForm({
   secondaryActions?: ReactNode;
 }) {
   const [state, action, pending] = useActionState(updateCustomerProperty, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Updated.',
+    pending,
+  });
   useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
   const id = property.id;
   const formId = `edit-property-${id}`;
@@ -471,7 +471,6 @@ function EditPropertyForm({
         <button type="submit" form={formId} className={styles.submit} disabled={pending}>
           {pending ? 'Saving…' : 'Save location'}
         </button>
-        <PropertyActionMessages state={state} />
         {secondaryActions ? <div className={styles.formFooterEnd}>{secondaryActions}</div> : null}
       </div>
     </>
@@ -496,6 +495,12 @@ function AddPropertyForm({
   onCancel: () => void;
 }) {
   const [state, action, pending] = useActionState(addCustomerProperty, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Updated.',
+    pending,
+  });
   useServerActionPropertiesPatch(state.success, state.propertiesPatch, onPropertiesPatch);
 
   useEffect(() => {
@@ -598,7 +603,6 @@ function AddPropertyForm({
           <button type="button" className={styles.secondaryBtn} onClick={onCancel}>
             Cancel
           </button>
-          <PropertyActionMessages state={state} />
         </div>
       </form>
     </div>

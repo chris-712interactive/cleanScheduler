@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { OutreachUsHeatMap } from '@/components/admin/outreach/OutreachUsHeatMap';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
@@ -175,11 +176,7 @@ export default async function AdminOutreachDetailPage({ params, searchParams }: 
         }
       />
 
-      {err ? (
-        <p className={styles.formError} role="alert">
-          {err}
-        </p>
-      ) : null}
+      <FeedbackToasts messages={[err ? { title: err, variant: 'danger' } : null]} />
 
       <div className={styles.metricStrip}>
         <div className={styles.metric}>

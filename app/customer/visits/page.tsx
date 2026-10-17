@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -134,11 +135,16 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
         description="Every scheduled cleaning you have on file with connected providers."
       />
 
-      {rescheduleSent ? (
-        <p className={styles.bannerOk} role="status">
-          Reschedule request sent. Your provider will follow up soon.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          rescheduleSent
+            ? {
+                title: 'Reschedule request sent. Your provider will follow up soon.',
+                variant: 'success',
+              }
+            : null,
+        ]}
+      />
 
       {error ? (
         <Card title="Could not load visits">

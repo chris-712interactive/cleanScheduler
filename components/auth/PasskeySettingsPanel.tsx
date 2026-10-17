@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { addPasskeyOnThisDevice } from '@/lib/auth/passkeyBrowser';
 import { deleteMyPasskey, listMyPasskeys } from '@/lib/auth/passkeyCeremony';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import styles from './passkeySettings.module.scss';
 
 type PasskeyRow = {
@@ -25,6 +26,7 @@ export function PasskeySettingsPanel({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  useFeedbackToast({ error, success, pending: submitting });
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -83,16 +85,6 @@ export function PasskeySettingsPanel({
   return (
     <div className={styles.panel}>
       <p className={styles.lead}>{lead}</p>
-      {error ? (
-        <p className={styles.feedback} data-tone="error" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {success ? (
-        <p className={styles.feedback} data-tone="success" role="status">
-          {success}
-        </p>
-      ) : null}
       {loading ? (
         <p className={styles.meta}>Checking saved passkeys…</p>
       ) : passkeys.length > 0 ? (

@@ -11,6 +11,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -296,17 +297,19 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           </p>
         ) : null}
 
-        {resumeFlag === 'error' && resumeMessage ? (
-          <p className={styles.bannerError} role="alert">
-            {resumeMessage}
-          </p>
-        ) : null}
-
-        {checkoutSuccess ? (
-          <p className={styles.bannerOk} role="status">
-            Checkout completed. Your plan status has been refreshed from Stripe.
-          </p>
-        ) : null}
+        <FeedbackToasts
+          messages={[
+            resumeFlag === 'error' && resumeMessage
+              ? { title: resumeMessage, variant: 'danger' }
+              : null,
+            checkoutSuccess
+              ? {
+                  title: 'Checkout completed. Your plan status has been refreshed from Stripe.',
+                  variant: 'success',
+                }
+              : null,
+          ]}
+        />
 
         {purgeStatus.autoPurgeAt && mustSubscribe ? (
           <p className={styles.bannerError} role="status">

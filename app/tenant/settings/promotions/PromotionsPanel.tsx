@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { PromotionListEntry } from '@/lib/promotions/promotionTypes';
 import {
@@ -192,6 +193,12 @@ function PromotionFormFields({
 
 function CreatePromotionForm({ tenantSlug, canEdit }: { tenantSlug: string; canEdit: boolean }) {
   const [state, formAction, pending] = useActionState(createTenantPromotionAction, initialState);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Promotion created.',
+    pending,
+  });
 
   if (!canEdit) return null;
 
@@ -201,16 +208,6 @@ function CreatePromotionForm({ tenantSlug, canEdit }: { tenantSlug: string; canE
       <form action={formAction} className={styles.stack}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         <PromotionFormFields idPrefix="create" />
-        {state.error ? (
-          <p className={styles.bannerError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p className={styles.bannerSuccess} role="status">
-            Promotion created.
-          </p>
-        ) : null}
         <div className={styles.inlineActions}>
           <Button type="submit" disabled={pending}>
             Create promotion
@@ -231,6 +228,12 @@ function PromotionRow({
   canEdit: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateTenantPromotionAction, initialState);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Saved.',
+    pending,
+  });
   const defaults = promotionRowToFormDefaults(entry);
 
   return (
@@ -255,16 +258,6 @@ function PromotionRow({
             <input type="hidden" name="tenant_slug" value={tenantSlug} />
             <input type="hidden" name="promotion_id" value={entry.id} />
             <PromotionFormFields idPrefix={`edit_${entry.id}`} defaults={defaults} />
-            {state.error ? (
-              <p className={styles.bannerError} role="alert">
-                {state.error}
-              </p>
-            ) : null}
-            {state.success ? (
-              <p className={styles.bannerSuccess} role="status">
-                Saved.
-              </p>
-            ) : null}
             <div className={styles.inlineActions}>
               <Button type="submit" variant="secondary" size="sm" disabled={pending}>
                 Save changes

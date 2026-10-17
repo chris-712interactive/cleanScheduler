@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   cancelTimeOffRequestAction,
   submitTimeOffRequestAction,
@@ -12,6 +13,7 @@ const initial: TimeOffActionState = {};
 
 export function TimeOffRequestForm({ tenantSlug }: { tenantSlug: string }) {
   const [state, formAction, pending] = useActionState(submitTimeOffRequestAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <form action={formAction} className={styles.form}>
@@ -21,16 +23,6 @@ export function TimeOffRequestForm({ tenantSlug }: { tenantSlug: string }) {
         name="client_timezone_offset"
         value={String(new Date().getTimezoneOffset())}
       />
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          {state.success}
-        </p>
-      ) : null}
       <div className={styles.gridTwo}>
         <label className={styles.label}>
           Starts
@@ -65,6 +57,7 @@ export function CancelTimeOffButton({
   requestId: string;
 }) {
   const [state, formAction, pending] = useActionState(cancelTimeOffRequestAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <form action={formAction} className={styles.inlineForm}>
@@ -73,7 +66,6 @@ export function CancelTimeOffButton({
       <button type="submit" className={styles.linkButton} disabled={pending}>
         Cancel
       </button>
-      {state.error ? <span className={styles.inlineError}>{state.error}</span> : null}
     </form>
   );
 }

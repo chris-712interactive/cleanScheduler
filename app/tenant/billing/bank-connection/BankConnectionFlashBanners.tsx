@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import styles from '../billing.module.scss';
 
 export interface BankConnectionFlash {
@@ -69,84 +70,41 @@ export function BankConnectionFlashBanners({
     window.history.replaceState(window.history.state, '', next);
   }, [flash, pathname]);
 
-  const messages: ReactNode[] = [];
+  const imported = visibleFlash.imported ?? 0;
+  const skipped = visibleFlash.skipped ?? 0;
+  useFeedbackToast([
+    { error: visibleFlash.error },
+    {
+      success: visibleFlash.connected
+        ? 'Bank account connected. Initial transaction sync started.'
+        : null,
+    },
+    { success: visibleFlash.synced ? 'Bank transactions refreshed.' : null },
+    {
+      success: visibleFlash.matched ? 'Deposit matched and invoice payment recorded.' : null,
+    },
+    { success: visibleFlash.dismissed ? 'Match suggestion dismissed.' : null },
+    { success: visibleFlash.disconnected ? 'Bank connection removed.' : null },
+    {
+      success:
+        imported > 0
+          ? `Imported ${imported} bank deposit row${imported === 1 ? '' : 's'}${skipped > 0 ? ` (${skipped} duplicate or invalid rows skipped)` : ''}. Match suggestions were refreshed.`
+          : null,
+    },
+  ]);
 
-  if (visibleFlash.error) {
-    messages.push(
-      <p key="error" className={styles.bannerError} role="alert">
-        {visibleFlash.error}
-      </p>,
-    );
-  }
+  if (!mfaBlocksPlaid) return null;
 
-  if (mfaBlocksPlaid) {
-    messages.push(
-      <p key="mfa" className={styles.bannerError} role="alert">
-        Two-factor authentication is required before connecting a bank account.{' '}
-        <Link href="/settings/account">Enable MFA in Account settings</Link>
-        {mfaEnrolled ? (
-          <>
-            {' '}
-            or <Link href="/sign-in/mfa?next=/billing/bank-connection">verify your session</Link>.
-          </>
-        ) : null}
-      </p>,
-    );
-  }
-
-  if (visibleFlash.connected) {
-    messages.push(
-      <p key="connected" className={styles.bannerOk} role="status">
-        Bank account connected. Initial transaction sync started.
-      </p>,
-    );
-  }
-
-  if (visibleFlash.synced) {
-    messages.push(
-      <p key="synced" className={styles.bannerOk} role="status">
-        Bank transactions refreshed.
-      </p>,
-    );
-  }
-
-  if (visibleFlash.matched) {
-    messages.push(
-      <p key="matched" className={styles.bannerOk} role="status">
-        Deposit matched and invoice payment recorded.
-      </p>,
-    );
-  }
-
-  if (visibleFlash.dismissed) {
-    messages.push(
-      <p key="dismissed" className={styles.bannerOk} role="status">
-        Match suggestion dismissed.
-      </p>,
-    );
-  }
-
-  if (visibleFlash.disconnected) {
-    messages.push(
-      <p key="disconnected" className={styles.bannerOk} role="status">
-        Bank connection removed.
-      </p>,
-    );
-  }
-
-  if ((visibleFlash.imported ?? 0) > 0) {
-    const imported = visibleFlash.imported ?? 0;
-    const skipped = visibleFlash.skipped ?? 0;
-    messages.push(
-      <p key="imported" className={styles.bannerOk} role="status">
-        Imported {imported} bank deposit row{imported === 1 ? '' : 's'}
-        {skipped > 0 ? ` (${skipped} duplicate or invalid rows skipped)` : ''}. Match suggestions
-        were refreshed.
-      </p>,
-    );
-  }
-
-  if (messages.length === 0) return null;
-
-  return <>{messages}</>;
+  return (
+    <p className={styles.bannerError} role="alert">
+      Two-factor authentication is required before connecting a bank account.{' '}
+      <Link href="/settings/account">Enable MFA in Account settings</Link>
+      {mfaEnrolled ? (
+        <>
+          {' '}
+          or <Link href="/sign-in/mfa?next=/billing/bank-connection">verify your session</Link>.
+        </>
+      ) : null}
+    </p>
+  );
 }

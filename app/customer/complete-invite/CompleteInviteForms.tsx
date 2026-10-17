@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { SmsOptInCheckboxLabel } from '@/components/legal/SmsOptInCheckboxLabel';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
@@ -35,6 +36,10 @@ export function CompleteInviteForms({
     linkExistingCustomerInviteAction,
     initial,
   );
+  useFeedbackToast([
+    { error: pwState.error, pending: pwPending },
+    { error: linkState.error, pending: linkPending },
+  ]);
 
   return (
     <Stack gap={6} as="div">
@@ -45,11 +50,6 @@ export function CompleteInviteForms({
         <form action={pwAction} className={styles.form}>
           <input type="hidden" name="token" value={token} />
           <input type="hidden" name="next" value={returnPath} />
-          {pwState.error ? (
-            <p className={styles.error} role="alert">
-              {pwState.error}
-            </p>
-          ) : null}
           {pwState.duplicateAccount ? (
             <p className={styles.hint}>
               Use <strong>Link my account</strong> below if you are already signed in with{' '}
@@ -126,11 +126,6 @@ export function CompleteInviteForms({
           <form action={linkAction} className={styles.form}>
             <input type="hidden" name="token" value={token} />
             <input type="hidden" name="next" value={returnPath} />
-            {linkState.error ? (
-              <p className={styles.error} role="alert">
-                {linkState.error}
-              </p>
-            ) : null}
             <Button type="submit" variant="secondary" disabled={linkPending}>
               {linkPending ? 'Linking…' : 'Link my account to this invite'}
             </Button>

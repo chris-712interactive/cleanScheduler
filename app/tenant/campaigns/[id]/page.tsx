@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -126,16 +127,18 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
         }
       />
 
-      {sp?.sent === '1' ? (
-        <p className={styles.bannerOk} role="status">
-          Campaign sent. Metrics will update as recipients open and click your email.
-        </p>
-      ) : null}
-      {sp?.saved === '1' ? (
-        <p className={styles.bannerOk} role="status">
-          Draft saved.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          sp?.sent === '1'
+            ? {
+                title:
+                  'Campaign sent. Metrics will update as recipients open and click your email.',
+                variant: 'success',
+              }
+            : null,
+          sp?.saved === '1' ? { title: 'Draft saved.', variant: 'success' } : null,
+        ]}
+      />
 
       {!isDraft ? (
         <div className={styles.detailGrid}>

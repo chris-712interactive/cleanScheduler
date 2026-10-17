@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { createTenantPortalDbClient, createAdminClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
@@ -192,27 +193,31 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         }
       />
 
-      {errMsg ? (
-        <p className={styles.bannerError} role="alert">
-          {errMsg}
-        </p>
-      ) : null}
-      {subscriptionCheckoutOk ? (
-        <p className={styles.bannerOk} role="status">
-          Checkout completed. The subscription will appear below after Stripe sends the webhook
-          (usually within a few seconds).
-        </p>
-      ) : null}
-      {subscriptionCheckoutCanceled ? (
-        <p className={styles.muted} role="status">
-          Subscription checkout was canceled — no charge was made.
-        </p>
-      ) : null}
-      {subscriptionCancelScheduled ? (
-        <p className={styles.bannerOk} role="status">
-          Stripe will cancel this subscription at the end of the current billing period.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          errMsg ? { title: errMsg, variant: 'danger' } : null,
+          subscriptionCheckoutOk
+            ? {
+                title:
+                  'Checkout completed. The subscription will appear below after Stripe sends the webhook (usually within a few seconds).',
+                variant: 'success',
+              }
+            : null,
+          subscriptionCheckoutCanceled
+            ? {
+                title: 'Subscription checkout was canceled — no charge was made.',
+                variant: 'info',
+              }
+            : null,
+          subscriptionCancelScheduled
+            ? {
+                title:
+                  'Stripe will cancel this subscription at the end of the current billing period.',
+                variant: 'success',
+              }
+            : null,
+        ]}
+      />
 
       <CustomerConsultationBanner
         status={consultation.status}

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
@@ -84,16 +85,12 @@ export default async function TenantCompensationSettingsPage({ searchParams }: P
       />
 
       <Stack gap={6}>
-        {saved ? (
-          <p className={styles.bannerSuccess} role="status">
-            Compensation rule saved.
-          </p>
-        ) : null}
-        {errMsg ? (
-          <p className={styles.bannerError} role="alert">
-            {errMsg}
-          </p>
-        ) : null}
+        <FeedbackToasts
+          messages={[
+            saved ? { title: 'Compensation rule saved.', variant: 'success' } : null,
+            errMsg ? { title: errMsg, variant: 'danger' } : null,
+          ]}
+        />
 
         {!jobCostingEnabled ? (
           <>

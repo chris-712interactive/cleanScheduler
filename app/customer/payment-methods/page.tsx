@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
@@ -53,11 +54,7 @@ export default async function CustomerPaymentMethodsPage({
         description="Manage cards on file with each provider through Stripe's secure billing portal."
       />
 
-      {err ? (
-        <p className={styles.bannerError} role="alert">
-          {err}
-        </p>
-      ) : null}
+      <FeedbackToasts messages={[err ? { title: err, variant: 'danger' } : null]} />
 
       {!portalLinks.length ? (
         <Card title="No providers linked">

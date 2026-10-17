@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   formatSuggestionClock,
   type DaySchedulingGap,
@@ -73,6 +74,12 @@ function SuggestionRow({
   suggestion: DaySchedulingSuggestion;
 }) {
   const [state, action, pending] = useActionState(applyDaySuggestionAction, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Applied.',
+    pending,
+  });
   return (
     <li className={styles.row}>
       <div>
@@ -86,8 +93,6 @@ function SuggestionRow({
         {suggestion.reasons.length > 0 ? (
           <p className={styles.reasons}>{suggestion.reasons.join(' · ')}</p>
         ) : null}
-        {state.error ? <p className={styles.error}>{state.error}</p> : null}
-        {state.success ? <p className={styles.success}>Applied.</p> : null}
       </div>
       <form action={action}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />

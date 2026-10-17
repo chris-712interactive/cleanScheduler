@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ShieldCheck, ShieldOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/browser';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { StatusTone } from '@/components/ui/StatusPill';
 import styles from './mfaSettings.module.scss';
@@ -61,6 +62,7 @@ export function MfaSettingsPanel({ requiredForPlaid = false }: { requiredForPlai
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  useFeedbackToast({ error, success, pending: submitting });
 
   const refreshFactors = useCallback(async () => {
     setLoading(true);
@@ -190,17 +192,6 @@ export function MfaSettingsPanel({ requiredForPlaid = false }: { requiredForPlai
       {requiredForPlaid && !isProtected ? (
         <p className={styles.requirementNotice} role="status">
           Required before you can connect a bank account for deposit matching.
-        </p>
-      ) : null}
-
-      {error ? (
-        <p className={styles.feedback} data-tone="error" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {success ? (
-        <p className={styles.feedback} data-tone="success" role="status">
-          {success}
         </p>
       ) : null}
 

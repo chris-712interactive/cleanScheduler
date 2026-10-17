@@ -3,6 +3,7 @@
 import { useActionState, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { TenantRole } from '@/lib/auth/types';
 import { teamMemberStatusLabel, teamRoleLabel } from '@/lib/tenant/teamMemberDisplay';
@@ -22,24 +23,6 @@ const ROLE_HINTS: Partial<Record<Exclude<TenantRole, 'owner'>, string>> = {
   employee: 'Assigned visits, schedule, and job completion in the field.',
   viewer: 'Read-only access to workspace data.',
 };
-
-function ActionFeedback({ state }: { state: MemberActionState }) {
-  if (state.error) {
-    return (
-      <p className={styles.feedback} data-tone="error" role="alert">
-        {state.error}
-      </p>
-    );
-  }
-  if (state.success) {
-    return (
-      <p className={styles.feedback} data-tone="success" role="status">
-        {state.success}
-      </p>
-    );
-  }
-  return null;
-}
 
 export function EmployeeMemberEditForm({
   tenantSlug,
@@ -81,6 +64,12 @@ export function EmployeeMemberEditForm({
     uploadTeamMemberAvatarAction,
     initial,
   );
+  useFeedbackToast([
+    { error: nameState.error, success: nameState.success, pending: namePending },
+    { error: roleState.error, success: roleState.success, pending: rolePending },
+    { error: activeState.error, success: activeState.success, pending: activePending },
+    { error: avatarState.error, success: avatarState.success, pending: avatarPending },
+  ]);
 
   const label = displayName.trim() || 'Team member';
   const initials =
@@ -116,7 +105,6 @@ export function EmployeeMemberEditForm({
             />
             {avatarPending ? 'Uploading…' : 'Change photo'}
           </label>
-          <ActionFeedback state={avatarState} />
         </form>
 
         <div className={styles.heroIdentity}>
@@ -161,7 +149,6 @@ export function EmployeeMemberEditForm({
             {namePending ? 'Saving…' : 'Save'}
           </Button>
         </form>
-        <ActionFeedback state={nameState} />
       </section>
 
       {showAccess ? (
@@ -204,7 +191,6 @@ export function EmployeeMemberEditForm({
                   {ROLE_HINTS[role as Exclude<TenantRole, 'owner'>]}
                 </p>
               ) : null}
-              <ActionFeedback state={roleState} />
             </>
           ) : null}
 
@@ -227,7 +213,6 @@ export function EmployeeMemberEditForm({
                   {activePending ? '…' : isActive ? 'Deactivate member' : 'Reactivate member'}
                 </Button>
               </form>
-              <ActionFeedback state={activeState} />
             </div>
           ) : null}
         </section>

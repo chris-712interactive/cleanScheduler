@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
@@ -123,6 +124,12 @@ export function OperationalSettingsForm({
     operationalSettingsFormInitial,
   );
   useServerActionSnapshot(state.success, state.settingsSnapshot, onSettingsSnapshot);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Settings saved.',
+    pending,
+  });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     submitServerActionForm(event, formAction);
@@ -158,17 +165,6 @@ export function OperationalSettingsForm({
   return (
     <form onSubmit={handleSubmit} className={styles.opsStack}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
-
-      {state.error ? (
-        <p className={styles.bannerError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.bannerSuccess} role="status">
-          Settings saved.
-        </p>
-      ) : null}
 
       <section className={styles.opsHero} aria-labelledby="ops-overview-heading">
         <h2 id="ops-overview-heading" className={styles.opsHeroTitle}>

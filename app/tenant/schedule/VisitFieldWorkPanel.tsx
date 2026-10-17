@@ -2,6 +2,7 @@
 
 import { useActionState, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { TenantPaymentMethod } from '@/lib/tenant/operationalSettings';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
@@ -75,6 +76,18 @@ export function VisitFieldWorkPanel({
   );
   const [locating, setLocating] = useState(false);
   useServerActionVisitPatch(checkInState.success, checkInState.visitPatch, onVisitPatch);
+  useFeedbackToast([
+    {
+      error: onOurWayState.error,
+      success: onOurWayState.success,
+      pending: onOurWayPending,
+    },
+    {
+      error: checkInState.error,
+      success: checkInState.success,
+      pending: checkInPending,
+    },
+  ]);
 
   if (!canCheckIn && !canComplete) return null;
 
@@ -176,27 +189,11 @@ export function VisitFieldWorkPanel({
       />
     ) : null;
 
-  const feedback = (
-    <>
-      {onOurWayState.error ? (
-        <p className={styles.error} role="alert">
-          {onOurWayState.error}
-        </p>
-      ) : null}
-      {onOurWayState.success ? <p className={styles.ok}>{onOurWayState.success}</p> : null}
-      {checkInState.error ? (
-        <p className={styles.error} role="alert">
-          {checkInState.error}
-        </p>
-      ) : null}
-      {checkInState.success ? <p className={styles.ok}>{checkInState.success}</p> : null}
-      {blockedFromComplete ? (
-        <p className={styles.error} role="alert">
-          {noPriceMessage}
-        </p>
-      ) : null}
-    </>
-  );
+  const feedback = blockedFromComplete ? (
+    <p className={styles.error} role="alert">
+      {noPriceMessage}
+    </p>
+  ) : null;
 
   if (compact && isFieldEmployee) {
     return (

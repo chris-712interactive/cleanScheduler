@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useActionState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
@@ -13,24 +14,6 @@ import {
 import styles from './account-settings.module.scss';
 
 const initial: ProfileActionState = {};
-
-function ActionFeedback({ state }: { state: ProfileActionState }) {
-  if (state.error) {
-    return (
-      <p className={styles.feedback} data-tone="error" role="alert">
-        {state.error}
-      </p>
-    );
-  }
-  if (state.success) {
-    return (
-      <p className={styles.feedback} data-tone="success" role="status">
-        {state.success}
-      </p>
-    );
-  }
-  return null;
-}
 
 export function AccountIdentityHero({
   tenantSlug,
@@ -51,6 +34,7 @@ export function AccountIdentityHero({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(uploadOwnAvatarAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <header className={styles.accountHero} aria-label="Your account">
@@ -79,7 +63,6 @@ export function AccountIdentityHero({
           />
           {pending ? 'Uploading…' : 'Change photo'}
         </label>
-        <ActionFeedback state={state} />
       </form>
 
       <div className={styles.heroIdentity}>
@@ -104,6 +87,7 @@ export function AccountProfilePanel({
   lastName: string;
 }) {
   const [nameState, nameAction, namePending] = useActionState(updateOwnDisplayNameAction, initial);
+  useFeedbackToast({ error: nameState.error, success: nameState.success, pending: namePending });
 
   return (
     <section id="account-profile" className={styles.panel} aria-labelledby="profile-heading">
@@ -148,7 +132,6 @@ export function AccountProfilePanel({
           <Button type="submit" variant="primary" disabled={namePending}>
             {namePending ? 'Saving…' : 'Save name'}
           </Button>
-          <ActionFeedback state={nameState} />
         </div>
       </form>
     </section>

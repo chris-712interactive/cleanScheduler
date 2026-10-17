@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Stack } from '@/components/layout/Stack';
@@ -60,16 +61,17 @@ export default async function QuotePipelineSettingsPage({ searchParams }: PagePr
           />
         ) : null}
 
-        {saved ? (
-          <p className={styles.ok} role="status">
-            Pipeline saved.
-          </p>
-        ) : null}
-        {errorCode === 'in_use' ? (
-          <p className={styles.err} role="alert">
-            Remove all quotes from a custom stage before deleting it.
-          </p>
-        ) : null}
+        <FeedbackToasts
+          messages={[
+            saved ? { title: 'Pipeline saved.', variant: 'success' } : null,
+            errorCode === 'in_use'
+              ? {
+                  title: 'Remove all quotes from a custom stage before deleting it.',
+                  variant: 'danger',
+                }
+              : null,
+          ]}
+        />
 
         <Card title="Pipeline stages">
           <form action={updateQuotePipelineStagesAction} className={styles.form}>

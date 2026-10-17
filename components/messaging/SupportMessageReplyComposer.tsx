@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { isMessageSendShortcut } from '@/lib/messaging/messageSendShortcut';
 import {
   pendingSupportMessages,
@@ -61,6 +62,7 @@ export function SupportMessageReplyComposer({
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<OptimisticSupportMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
+  useFeedbackToast({ error });
   const [, startTransition] = useTransition();
 
   const waiting = pendingSupportMessages(messages, pending);
@@ -162,11 +164,6 @@ export function SupportMessageReplyComposer({
           rows={3}
           aria-keyshortcuts="Meta+Enter Control+Enter"
         />
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
         <div className={rowClassName}>
           <p className={styles.hint}>{footnote ? `${footnote} · ${SEND_HINT}` : SEND_HINT}</p>
           <Button type="submit" variant="primary" size="sm">

@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { toggleWebsitePagePublishAction, type WebsiteActionState } from './actions';
 import styles from './website-settings.module.scss';
@@ -24,6 +25,7 @@ export function WebsitePagePublishToggle({
     toggleWebsitePagePublishAction,
     {},
   );
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   useEffect(() => {
     if (state.success) {
@@ -49,16 +51,6 @@ export function WebsitePagePublishToggle({
           {isPublished ? 'Unpublish page' : 'Publish page'}
         </Button>
       </form>
-      {state.error ? (
-        <p className={styles.bannerError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {!compact && state.success ? (
-        <p className={styles.bannerSuccess} role="status">
-          {state.success}
-        </p>
-      ) : null}
     </div>
   );
 }

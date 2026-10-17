@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   freezeTenantConnectChargesAction,
@@ -62,17 +63,18 @@ export function AdminTenantRiskPanel(props: AdminTenantRiskPanelProps) {
     unblockSignupEmailAction,
     emailBlockInitial,
   );
+  useFeedbackToast([
+    { error: suspendState.error, pending: suspendPending },
+    { error: unsuspendState.error, pending: unsuspendPending },
+    { error: freezeState.error, pending: freezePending },
+    { error: unfreezeState.error, pending: unfreezePending },
+    { error: blockEmailState.error, pending: blockEmailPending },
+    { error: unblockEmailState.error, pending: unblockEmailPending },
+  ]);
 
   const accessSuspended = Boolean(props.adminAccessSuspendedAt);
   const connectFrozen = Boolean(props.connectChargesFrozenAt);
   const ownerEmail = props.ownerEmail?.trim() || null;
-  const formError =
-    suspendState.error ||
-    unsuspendState.error ||
-    freezeState.error ||
-    unfreezeState.error ||
-    blockEmailState.error ||
-    unblockEmailState.error;
 
   return (
     <div className={styles.riskPanel}>
@@ -141,12 +143,6 @@ export function AdminTenantRiskPanel(props: AdminTenantRiskPanelProps) {
           <dd>{props.recentVelocityBlockCount}</dd>
         </div>
       </dl>
-
-      {formError ? (
-        <p className={styles.bannerError} role="alert">
-          {formError}
-        </p>
-      ) : null}
 
       <div className={styles.riskActions}>
         {accessSuspended ? (

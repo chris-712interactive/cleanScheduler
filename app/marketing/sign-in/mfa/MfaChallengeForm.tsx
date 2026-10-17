@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { signInWithDevicePasskey } from '@/lib/auth/passkeyBrowser';
 import type { MfaMethod } from '@/lib/auth/tenantAuthPolicy';
 import { createClient } from '@/lib/supabase/browser';
@@ -27,6 +28,7 @@ export function MfaChallengeForm({
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  useFeedbackToast({ error, pending: submitting });
   const showTotp = methods.includes('totp');
   const showPasskey = methods.includes('passkey');
 
@@ -87,11 +89,6 @@ export function MfaChallengeForm({
 
   return (
     <div className={styles.form}>
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
       {showTotp ? (
         <form className={styles.form} onSubmit={(e) => void submitCode(e)}>
           <label className={styles.label} htmlFor="mfa-code">

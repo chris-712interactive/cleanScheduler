@@ -1,5 +1,5 @@
-import { Alert } from '@/components/ui/Alert';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Stack } from '@/components/layout/Stack';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
@@ -30,6 +30,7 @@ export default async function TenantSecuritySettingsPage({
   const params = await searchParams;
   const errorCode = typeof params.error === 'string' ? params.error : '';
   const saved = params.saved === '1';
+  const errorText = ERRORS[errorCode];
 
   return (
     <>
@@ -40,8 +41,12 @@ export default async function TenantSecuritySettingsPage({
         backLabel="Settings"
       />
       <Stack gap={4}>
-        {saved ? <Alert variant="success">Sign-in policy saved.</Alert> : null}
-        {ERRORS[errorCode] ? <Alert>{ERRORS[errorCode]}</Alert> : null}
+        <FeedbackToasts
+          messages={[
+            saved ? { title: 'Sign-in policy saved.', variant: 'success' } : null,
+            errorText ? { title: errorText, variant: 'danger' } : null,
+          ]}
+        />
         <SecurityPolicyForm tenantSlug={membership.tenantSlug} policy={policy} canEdit={canEdit} />
       </Stack>
     </>

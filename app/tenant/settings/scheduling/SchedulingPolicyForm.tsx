@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   factorIsForcedHard,
   SCHEDULE_FACTORS,
@@ -32,6 +33,7 @@ export function SchedulingPolicyForm({
   readOnly?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateScheduleOptimizerPolicyAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
   const [policy, setPolicy] = useState(initialPolicy);
   const [query, setQuery] = useState('');
 
@@ -254,17 +256,6 @@ export function SchedulingPolicyForm({
           </section>
         );
       })}
-
-      {state.error ? (
-        <p className={styles.bannerError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.bannerSuccess} role="status">
-          Saved.
-        </p>
-      ) : null}
 
       {!readOnly ? (
         <div>

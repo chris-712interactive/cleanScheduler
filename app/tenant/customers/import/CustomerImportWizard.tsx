@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { UpgradeOrAddOnModal } from '@/components/billing/UpgradeOrAddOnModal';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { commitCustomerImport, previewCustomerImport } from '@/app/tenant/customers/importActions';
 import type {
   CustomerImportCommitResult,
@@ -40,6 +41,7 @@ export function CustomerImportWizard({
   const canEmailInvites = portalInvitesAvailable && emailReady;
   const [pending, setPending] = useState<'preview' | 'commit' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useFeedbackToast({ error, pending: pending != null });
   const [preview, setPreview] = useState<CustomerImportPreview | null>(null);
   const [result, setResult] = useState<CustomerImportCommitResult | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -180,12 +182,6 @@ export function CustomerImportWizard({
           </p>
         ) : null}
       </div>
-
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
 
       <div className={styles.actions}>
         <Button
