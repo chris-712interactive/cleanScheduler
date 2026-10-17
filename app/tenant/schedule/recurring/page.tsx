@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
@@ -148,17 +149,18 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
         }
       />
 
-      {created ? (
-        <p className={styles.success} role="status">
-          Rule created. Visits appear after the next cron run (see Vercel Cron or hit the cron route
-          in dev).
-        </p>
-      ) : null}
-      {err ? (
-        <p className={styles.error} role="alert">
-          {err}
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          created
+            ? {
+                title:
+                  'Rule created. Visits appear after the next cron run (see Vercel Cron or hit the cron route in dev).',
+                variant: 'success',
+              }
+            : null,
+          err ? { title: err, variant: 'danger' } : null,
+        ]}
+      />
 
       <p className={styles.rowMeta} style={{ marginBottom: 'var(--space-4)' }}>
         Automation usage: {formatAutomationWorkflowUsage(activeWorkflowCount, tier)}.{' '}

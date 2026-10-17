@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useRef, useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { CAMPAIGN_AUDIENCE_PRESET_LABEL } from '@/lib/campaigns/campaignDisplay';
 import { getCampaignTemplateDefinition } from '@/lib/campaigns/campaignTemplateCatalog';
 import { CAMPAIGN_PREVIEW_MERGE_CONTEXT } from '@/lib/campaigns/campaignMergeTags';
@@ -52,6 +53,10 @@ export function CampaignForm({
     campaignId ? updateCampaignDraftAction : saveCampaignDraftAction,
     initial,
   );
+  useFeedbackToast([
+    { error: sendState.error, pending: sendPending },
+    { error: draftState.error, pending: draftPending },
+  ]);
 
   const startingTemplate = getCampaignTemplateDefinition(initialValues?.templateKey ?? 'promo');
 
@@ -116,12 +121,6 @@ export function CampaignForm({
     <CampaignComposeLayout
       form={
         <>
-          {(sendState.error || draftState.error) && (
-            <p className={styles.formError} role="alert">
-              {sendState.error ?? draftState.error}
-            </p>
-          )}
-
           <form className={styles.sectionCard}>
             <input type="hidden" name="tenant_slug" value={tenantSlug} />
             {campaignId ? <input type="hidden" name="campaign_id" value={campaignId} /> : null}

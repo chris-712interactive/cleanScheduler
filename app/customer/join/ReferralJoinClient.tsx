@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import type { ReferralJoinLandingView } from '@/lib/referrals/loadReferralJoinLanding';
 import {
   continueReferralJoinAction,
@@ -43,11 +44,6 @@ function ReferralJoinEmailStep({
 
       <form action={formAction} className={styles.form}>
         <input type="hidden" name="referral_code" value={landing.referralCode} />
-        {state.error && !state.step ? (
-          <p className={styles.error} role="alert">
-            {state.error}
-          </p>
-        ) : null}
         <label className={styles.label} htmlFor="referral_join_email">
           Your email
         </label>
@@ -92,6 +88,10 @@ export function ReferralJoinClient({
     signupReferralRefereeAction,
     initialState,
   );
+  useFeedbackToast({
+    error: lookupState.step ? null : lookupState.error,
+    pending: lookupPending,
+  });
 
   const showSignup =
     lookupState.step === 'signup' && lookupState.email && lookupState.prefill && lookupState.mode;

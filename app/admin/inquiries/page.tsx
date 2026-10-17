@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
@@ -40,24 +41,20 @@ export default async function AdminInquiriesPage({ searchParams }: PageProps) {
         description="Messages from the marketing contact form and manual follow-ups."
       />
 
-      {purged === 'all' ? (
-        <p className={styles.bannerSuccess} role="status">
-          All inquiries were deleted.
-        </p>
-      ) : purged === '1' ? (
-        <p className={styles.bannerSuccess} role="status">
-          Inquiry deleted.
-        </p>
-      ) : null}
-      {err === 'confirm' ? (
-        <p className={styles.bannerError} role="alert">
-          Type DELETE ALL exactly to confirm a full purge.
-        </p>
-      ) : err === 'purge' ? (
-        <p className={styles.bannerError} role="alert">
-          Could not purge inquiries. Try again.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          purged === 'all'
+            ? { title: 'All inquiries were deleted.', variant: 'success' }
+            : purged === '1'
+              ? { title: 'Inquiry deleted.', variant: 'success' }
+              : null,
+          err === 'confirm'
+            ? { title: 'Type DELETE ALL exactly to confirm a full purge.', variant: 'danger' }
+            : err === 'purge'
+              ? { title: 'Could not purge inquiries. Try again.', variant: 'danger' }
+              : null,
+        ]}
+      />
 
       {error ? (
         <Card title="Could not load inquiries">

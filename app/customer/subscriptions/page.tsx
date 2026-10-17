@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -82,16 +83,18 @@ export default async function CustomerSubscriptionsPage({ searchParams }: PagePr
         description="Recurring services billed through your providers’ Stripe accounts."
       />
 
-      {errMsg ? (
-        <p className={styles.bannerError} role="alert">
-          {errMsg}
-        </p>
-      ) : null}
-      {cancelScheduled ? (
-        <p className={styles.bannerOk} role="status">
-          Your provider was notified — this subscription will end after the current billing period.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          errMsg ? { title: errMsg, variant: 'danger' } : null,
+          cancelScheduled
+            ? {
+                title:
+                  'Your provider was notified — this subscription will end after the current billing period.',
+                variant: 'success',
+              }
+            : null,
+        ]}
+      />
 
       {error ? (
         <Card title="Could not load subscriptions">

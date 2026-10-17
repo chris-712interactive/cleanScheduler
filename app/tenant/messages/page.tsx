@@ -3,6 +3,7 @@ import { getAuthContext } from '@/lib/auth/session';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { loadSupportAuthorDisplayName } from '@/lib/messaging/supportMessageAuthor';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import {
   loadTenantSupportInbox,
@@ -117,11 +118,7 @@ export default async function TenantMessagesPage({ searchParams }: PageProps) {
         ) : null}
       </div>
 
-      {error ? (
-        <p className={styles.bannerErr} role="alert">
-          {error}
-        </p>
-      ) : null}
+      <FeedbackToasts messages={[error ? { title: error, variant: 'danger' } : null]} />
 
       <div className={styles.workspace}>
         <div className={threadId ? styles.listPaneWrapHidden : styles.listPaneWrap}>

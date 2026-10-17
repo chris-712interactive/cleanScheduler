@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent, type KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { isMessageSendShortcut } from '@/lib/messaging/messageSendShortcut';
 import { createCustomerSupportThreadAction } from './actions';
 import styles from './messages.module.scss';
@@ -18,6 +19,7 @@ export function CustomerNewMessageForm({
   const [body, setBody] = useState('');
   const [pendingBody, setPendingBody] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useFeedbackToast({ error });
   const [, startTransition] = useTransition();
   const router = useRouter();
 
@@ -109,11 +111,6 @@ export function CustomerNewMessageForm({
           aria-keyshortcuts="Meta+Enter Control+Enter"
         />
       </label>
-      {error ? (
-        <p className={styles.bannerErr} role="alert">
-          {error}
-        </p>
-      ) : null}
       <div className={styles.formActions}>
         <p className={styles.sendHint}>⌘/Ctrl + Enter to send</p>
         <Button type="submit" variant="primary">

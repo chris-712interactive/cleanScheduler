@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { updateScheduledVisitAssignees, type ScheduleFormState } from './actions';
@@ -35,6 +36,12 @@ export function VisitCrewAssignForm({
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [state, formAction, pending] = useActionState(updateScheduledVisitAssignees, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Crew assignment saved.',
+    pending,
+  });
   useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -111,11 +118,6 @@ export function VisitCrewAssignForm({
         Choose who is scheduled for this visit. Availability reflects the current appointment time.
       </p>
 
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
       {state.needsOverlapConfirm && !confirmUnavailable && conflicts.length === 0 ? (
         <div className={styles.confirmBox} role="status">
           <p>Some selected crew are unavailable at this time.</p>
@@ -127,11 +129,6 @@ export function VisitCrewAssignForm({
             Assign anyway
           </button>
         </div>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Crew assignment saved.
-        </p>
       ) : null}
 
       <ScheduleOverlapConfirm

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Check, Circle, CreditCard } from 'lucide-react';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -140,22 +141,19 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
         titleHint="Add pay-by-card links to customer invoices through Stripe."
       />
 
-      {err ? (
-        <p className={billingStyles.bannerError} role="alert">
-          {err}
-        </p>
-      ) : null}
-      {synced ? (
-        <p className={billingStyles.bannerOk} role="status">
-          Status updated from Stripe.
-        </p>
-      ) : null}
-      {returnedFromStripe && status !== 'complete' ? (
-        <p className={billingStyles.bannerOk} role="status">
-          Welcome back. If Stripe still shows open steps, finish them there, then refresh your
-          status below.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          err ? { title: err, variant: 'danger' } : null,
+          synced ? { title: 'Status updated from Stripe.', variant: 'success' } : null,
+          returnedFromStripe && status !== 'complete'
+            ? {
+                title:
+                  'Welcome back. If Stripe still shows open steps, finish them there, then refresh your status below.',
+                variant: 'success',
+              }
+            : null,
+        ]}
+      />
 
       <Stack gap={6}>
         <section className={styles.connectHero} aria-labelledby="card-payments-heading">

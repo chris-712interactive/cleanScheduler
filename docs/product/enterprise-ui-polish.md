@@ -1,6 +1,6 @@
 # Enterprise UI polish
 
-**Last updated:** 2026-07-14  
+**Last updated:** 2026-10-17  
 **Branch:** `dev`
 
 Work to make Clean Scheduler feel less early-stage / “vibe coded” and more like consistent vertical SaaS.
@@ -15,6 +15,7 @@ Work to make Clean Scheduler feel less early-stage / “vibe coded” and more l
 
 - `Input`, `Textarea`, `Select`, `FormField`, `Alert`, and Radix-backed `Toast` / `ToastProvider` in `components/ui/`.
 - Root layout wraps the app in `ToastProvider`.
+- Save, send, and other action results show as toasts in the lower left (`useFeedbackToast` / `FeedbackToasts`). Standing notices (trial, subscription, setup instructions) stay inline.
 - Sign-in, forgot-password, and trial onboarding use the shared form/alert/button primitives.
 
 ### Product consistency

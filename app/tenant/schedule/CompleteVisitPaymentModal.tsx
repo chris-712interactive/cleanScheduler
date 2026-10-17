@@ -4,6 +4,7 @@ import { useActionState, useCallback, useEffect, useMemo, useState, type FormEve
 import { useRouter } from 'next/navigation';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   ProofPhotoCapture,
   revokeProofPhotoPreviews,
@@ -91,6 +92,7 @@ export function CompleteVisitPaymentModal({
 
   const router = useRouter();
   const [state, formAction, pending] = useActionState(completeVisitWithPaymentAction, initial);
+  useFeedbackToast([{ error: state.error, pending }, { error: stepError }]);
   useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
   const defaultAmountDollars =
@@ -272,11 +274,6 @@ export function CompleteVisitPaymentModal({
               <p className={styles.fieldHint}>
                 Saved on this visit and merged into the property’s site notes for quoting.
               </p>
-              {state.error ? (
-                <p className={styles.error} role="alert">
-                  {state.error}
-                </p>
-              ) : null}
               <div className={styles.actions}>
                 <Dialog.Close asChild>
                   <Button type="button" variant="ghost" disabled={pending || locating}>
@@ -443,17 +440,6 @@ export function CompleteVisitPaymentModal({
                       Stripe.
                     </p>
                   </div>
-                ) : null}
-
-                {stepError ? (
-                  <p className={styles.error} role="alert">
-                    {stepError}
-                  </p>
-                ) : null}
-                {state.error ? (
-                  <p className={styles.error} role="alert">
-                    {state.error}
-                  </p>
                 ) : null}
 
                 <div className={styles.actions}>

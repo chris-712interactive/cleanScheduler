@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import { CUSTOMER_PREFERRED_BILLING_OPTIONS } from '@/lib/tenant/customerBillingPreference';
 import type { CustomerEditSnapshot } from '@/lib/tenant/customerEditSnapshot';
@@ -22,6 +23,12 @@ export function CustomerEditForm({
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [state, formAction, pending] = useActionState(updateTenantCustomer, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Changes saved.',
+    pending,
+  });
 
   useEffect(() => {
     setSnapshot(initialSnapshot);
@@ -205,16 +212,6 @@ export function CustomerEditForm({
           <button type="button" className={styles.secondaryBtn} onClick={onCancel}>
             Cancel
           </button>
-        ) : null}
-        {state.error ? (
-          <p className={styles.error} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p className={styles.success} role="status">
-            Changes saved.
-          </p>
         ) : null}
       </div>
     </form>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import type { PromotionListEntry } from '@/lib/promotions/promotionTypes';
 import { formatPromotionValue, promotionTypeLabel } from '@/lib/promotions/promotionTypes';
 import {
@@ -35,6 +36,12 @@ export function ReferralProgramPanel({
     updateTenantReferralProgramAction,
     initialState,
   );
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Referral program saved.',
+    pending,
+  });
   const [rewardSideMode, setRewardSideMode] = useState(program.reward_side_mode);
 
   const activePromotions = promotions.filter((p) => p.is_active);
@@ -179,17 +186,6 @@ export function ReferralProgramPanel({
               />
             </label>
           </div>
-
-          {state.error ? (
-            <p className={styles.bannerError} role="alert">
-              {state.error}
-            </p>
-          ) : null}
-          {state.success ? (
-            <p className={styles.bannerSuccess} role="status">
-              Referral program saved.
-            </p>
-          ) : null}
 
           {canEdit ? (
             <Button type="submit" disabled={pending || activePromotions.length === 0}>

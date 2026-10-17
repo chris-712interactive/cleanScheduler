@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
 import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
@@ -33,6 +34,12 @@ function ChecklistEditor({
     updateServiceTypeChecklistAction,
     initialState,
   );
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Saved',
+    pending,
+  });
   const defaultValue = (entry.checklist_items ?? []).map((item) => item.label).join('\n');
 
   if (!canEdit) {
@@ -64,16 +71,6 @@ function ChecklistEditor({
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>
         Save checklist
       </Button>
-      {state.error ? (
-        <span className={styles.bannerError} role="alert">
-          {state.error}
-        </span>
-      ) : null}
-      {state.success ? (
-        <span className={styles.bannerSuccess} role="status">
-          Saved
-        </span>
-      ) : null}
     </form>
   );
 }
@@ -91,6 +88,12 @@ function ConsultationChecklistEditor({
     updateServiceTypeConsultationChecklistAction,
     initialState,
   );
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Saved',
+    pending,
+  });
   const defaultValue = (entry.consultation_checklist_items ?? [])
     .map((item) => item.label)
     .join('\n');
@@ -124,16 +127,6 @@ function ConsultationChecklistEditor({
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>
         Save consultation checklist
       </Button>
-      {state.error ? (
-        <span className={styles.bannerError} role="alert">
-          {state.error}
-        </span>
-      ) : null}
-      {state.success ? (
-        <span className={styles.bannerSuccess} role="status">
-          Saved
-        </span>
-      ) : null}
     </form>
   );
 }
@@ -151,6 +144,7 @@ function DurationEditor({
     updateServiceTypeDurationAction,
     initialState,
   );
+  useFeedbackToast({ error: state.error, pending });
 
   if (!canEdit) {
     return <span>{entry.estimated_hours}h</span>;
@@ -172,11 +166,6 @@ function DurationEditor({
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>
         Save
       </Button>
-      {state.error ? (
-        <span className={styles.bannerError} role="alert">
-          {state.error}
-        </span>
-      ) : null}
     </form>
   );
 }
@@ -194,6 +183,7 @@ function ScheduleRoleEditor({
     updateServiceTypeScheduleRoleAction,
     initialState,
   );
+  useFeedbackToast({ error: state.error, pending });
 
   if (!canEdit) {
     return <span>{SCHEDULE_ROLE_LABEL[entry.schedule_role]}</span>;
@@ -223,11 +213,6 @@ function ScheduleRoleEditor({
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>
         Save
       </Button>
-      {state.error ? (
-        <span className={styles.bannerError} role="alert">
-          {state.error}
-        </span>
-      ) : null}
     </form>
   );
 }
@@ -249,6 +234,7 @@ export function ServiceTypesPanel({
     createCustomServiceTypeAction,
     initialState,
   );
+  useFeedbackToast({ error: createState.error, pending: createPending });
 
   const grouped = new Map<string, JobTypeCatalogEntry[]>();
   for (const entry of entries) {
@@ -346,11 +332,6 @@ export function ServiceTypesPanel({
         customTypesEnabled ? (
           <div className={styles.setupCard}>
             <p className={styles.setupTitle}>Add a custom job type (Pro)</p>
-            {createState.error ? (
-              <p className={styles.bannerError} role="alert">
-                {createState.error}
-              </p>
-            ) : null}
             <form action={createAction} className={styles.formGrid}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <label className={styles.field}>

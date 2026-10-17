@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { undoFillScheduleRun } from './actions';
 import { formatFillRange, type FillUndoOffer, type FillUndoResult } from './progress';
 import styles from './fill-schedule.module.scss';
@@ -19,6 +20,7 @@ export function FillScheduleUndo({
   const [confirming, setConfirming] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
+  useFeedbackToast({ error: error || null, pending: working });
   const range = formatFillRange(offer.start, offer.end);
   const visits = `${offer.visitCount} ${offer.visitCount === 1 ? 'visit' : 'visits'}`;
 
@@ -53,7 +55,6 @@ export function FillScheduleUndo({
         Take {visits} from {range} off the calendar? Crew from this run is removed with them. A
         visit someone already started stays put.
       </p>
-      {error ? <p className={styles.error}>{error}</p> : null}
       <div className={styles.resultActions}>
         <Button type="button" variant="danger" onClick={() => void undo()} loading={working}>
           Remove these visits

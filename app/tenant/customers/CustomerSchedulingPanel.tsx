@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   effectiveSchedulingFacts,
   type SchedulingFacts,
@@ -73,13 +74,12 @@ function CustomerForm({
     updateCustomerSchedulingPreferencesAction,
     initial,
   );
+  useFeedbackToast({ error: state.error, success: state.success, pending });
   return (
     <form action={action} className={styles.stack}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_id" value={customerId} />
       <SchedulingPreferenceFields facts={facts} employees={employees} idPrefix="customer" />
-      {state.error ? <p className={styles.bannerError}>{state.error}</p> : null}
-      {state.success ? <p className={styles.bannerSuccess}>Saved.</p> : null}
       <div>
         <Button type="submit" variant="primary" disabled={pending}>
           {pending ? 'Saving…' : 'Save customer defaults'}
@@ -107,6 +107,7 @@ function PropertyOverrideForm({
   employees: { id: string; label: string }[];
 }) {
   const [state, action, pending] = useActionState(updatePropertySchedulingOverrideAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
   return (
     <form action={action} className={styles.propertyBlock}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -117,8 +118,6 @@ function PropertyOverrideForm({
         Custom scheduling for {label}
       </label>
       <SchedulingPreferenceFields facts={facts} employees={employees} idPrefix={propertyId} />
-      {state.error ? <p className={styles.bannerError}>{state.error}</p> : null}
-      {state.success ? <p className={styles.bannerSuccess}>Saved.</p> : null}
       <div>
         <Button type="submit" variant="secondary" size="sm" disabled={pending}>
           {pending ? 'Saving…' : 'Save property'}

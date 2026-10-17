@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import {
   PORTAL_INTERACTION_FLOWS,
@@ -47,6 +48,12 @@ export function CustomerQuoteResponseForm({
   onQuoteResponse?: (patch: CustomerQuoteResponsePatch) => void;
 }) {
   const [state, action, pending] = useActionState(respondToCustomerQuote, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Thank you — your response has been recorded.',
+    pending,
+  });
   useServerActionSnapshot(state.success, state.quoteResponse, onQuoteResponse);
   const interactionStarted = useRef(false);
 
@@ -174,11 +181,7 @@ export function CustomerQuoteResponseForm({
   const defaultPaymentMethod = allowedPaymentMethods.length === 1 ? allowedPaymentMethods[0]! : '';
 
   if (state.success) {
-    return (
-      <p className={styles.responseSuccess} role="status">
-        Thank you — your response has been recorded.
-      </p>
-    );
+    return null;
   }
 
   if (step === 'decision') {
@@ -189,12 +192,6 @@ export function CustomerQuoteResponseForm({
         data-flow-step="decision"
         data-decline-open={declineOpen ? 'true' : 'false'}
       >
-        {state.error ? (
-          <p className={styles.responseError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-
         {declineOpen ? (
           <div className={styles.declineConfirm}>
             <p className={styles.declineConfirmText}>
@@ -264,12 +261,6 @@ export function CustomerQuoteResponseForm({
 
   return (
     <div id={`quote-response-${quoteId}`} className={styles.responseForm} data-flow-step="sign">
-      {state.error ? (
-        <p className={styles.responseError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-
       <p className={styles.signatureStepIntro}>Sign below to accept this quote for {totalLabel}.</p>
 
       <form

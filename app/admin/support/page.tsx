@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { createAdminClient } from '@/lib/supabase/server';
 import { loadPlatformSupportInbox } from '@/lib/admin/loadPlatformSupportInbox';
 import { requirePlatformAdmin } from '@/lib/auth/portalAccess';
@@ -75,11 +76,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
         description="Support tickets from tenants about billing, technical issues, and account questions."
       />
 
-      {error ? (
-        <p className={styles.bannerErr} role="alert">
-          {error}
-        </p>
-      ) : null}
+      <FeedbackToasts messages={[error ? { title: error, variant: 'danger' } : null]} />
 
       <div className={styles.page}>
         <div className={styles.workspace}>

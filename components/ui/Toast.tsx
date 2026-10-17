@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Toast - top-right auto-dismiss notifications via Radix Toast.
- * Use `useToast().toast({...})` for async save/send feedback.
+ * Toast - lower-left auto-dismiss notifications via Radix Toast.
+ * Use `useToast().toast({...})` or `useFeedbackToast()` for save/send feedback.
  */
 import * as RadixToast from '@radix-ui/react-toast';
 import { X } from 'lucide-react';
@@ -13,7 +13,7 @@ export type ToastVariant = 'default' | 'success' | 'danger' | 'info';
 
 export interface ToastInput {
   title: string;
-  description?: string;
+  description?: ReactNode;
   variant?: ToastVariant;
   durationMs?: number;
 }
@@ -29,11 +29,23 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 let toastSeq = 0;
+const recentToastAt = new Map<string, number>();
+
+function toastKey(input: ToastInput): string {
+  const description = typeof input.description === 'string' ? input.description : '';
+  return `${input.variant ?? 'default'}:${input.title}:${description}`;
+}
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
 
   const toast = useCallback((input: ToastInput) => {
+    const key = toastKey(input);
+    const now = Date.now();
+    const previous = recentToastAt.get(key);
+    if (previous != null && now - previous < 500) return;
+    recentToastAt.set(key, now);
+
     toastSeq += 1;
     const id = `toast-${toastSeq}`;
     setItems((prev) => {
@@ -46,7 +58,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   return (
     <ToastContext.Provider value={value}>
-      <RadixToast.Provider swipeDirection="right" duration={5000}>
+      <RadixToast.Provider swipeDirection="left" duration={4500}>
         {children}
         {items.map((item) => (
           <RadixToast.Root

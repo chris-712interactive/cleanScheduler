@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { SettingsSaveButton } from '../SettingsSaveButton';
 import {
   TENANT_SITE_COLOR_SCHEME_OPTIONS,
@@ -26,6 +27,7 @@ export function WebsiteAppearancePanel({
     updateWebsiteAppearanceAction,
     {},
   );
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <section className={styles.setupCard}>
@@ -91,17 +93,6 @@ export function WebsiteAppearancePanel({
             })}
           </div>
         </div>
-
-        {state.error ? (
-          <p className={styles.bannerError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p className={styles.bannerSuccess} role="status">
-            {state.success}
-          </p>
-        ) : null}
       </form>
     </section>
   );

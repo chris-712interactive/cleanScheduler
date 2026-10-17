@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
 import type { SeoPageSection } from '@/lib/marketing/seoContent/types';
 import type { TenantSiteContext, TenantSitePageContent } from '@/lib/tenantSite/types';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { SettingsSaveButton } from '../SettingsSaveButton';
 import { updateWebsitePageAction, type WebsiteActionState } from './actions';
 import { WebsiteFaqEditor } from './WebsiteFaqEditor';
@@ -58,6 +59,7 @@ export function WebsitePageEditor({
     updateWebsitePageAction,
     {},
   );
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   const sectionsJson = useMemo(() => JSON.stringify(sections), [sections]);
   const faqJson = useMemo(() => JSON.stringify(faq), [faq]);
@@ -124,17 +126,6 @@ export function WebsitePageEditor({
         <input type="hidden" name="page_id" value={page.id} />
         <input type="hidden" name="sections_json" value={sectionsJson} />
         <input type="hidden" name="faq_json" value={faqJson} />
-
-        {state.error ? (
-          <p className={styles.bannerError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p className={styles.bannerSuccess} role="status">
-            {state.success}
-          </p>
-        ) : null}
 
         <div className={styles.pageEditorSplit}>
           <div className={styles.pageEditorFields}>

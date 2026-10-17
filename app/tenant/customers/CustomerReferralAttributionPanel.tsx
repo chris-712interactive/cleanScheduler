@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { CustomerReferralAttributionView } from '@/lib/referrals/loadCustomerReferralAttribution';
 import {
@@ -38,6 +39,12 @@ export function CustomerReferralAttributionPanel({
     attributeCustomerReferralAction,
     initialState,
   );
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Referral attributed. Refresh if the summary has not updated yet.',
+    pending,
+  });
 
   return (
     <section className={styles.referralPanel}>
@@ -89,16 +96,6 @@ export function CustomerReferralAttributionPanel({
                 Attribute
               </Button>
             </div>
-            {state.error ? (
-              <p className={styles.bannerError} role="alert">
-                {state.error}
-              </p>
-            ) : null}
-            {state.success ? (
-              <p className={styles.bannerOk} role="status">
-                Referral attributed. Refresh if the summary has not updated yet.
-              </p>
-            ) : null}
           </form>
         </>
       ) : (

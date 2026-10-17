@@ -3,6 +3,7 @@
 import { useCallback, useId, useRef, useState } from 'react';
 import { Camera, ImagePlus, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { compressImageFileForUpload } from '@/lib/images/clientImageCompress';
 import { PROOF_PHOTO_ACCEPT, PROOF_PHOTO_MAX_COUNT } from '@/lib/visits/proofPhotoLimits';
 import styles from './ProofPhotoCapture.module.scss';
@@ -42,6 +43,7 @@ export function ProofPhotoCapture({
   const libraryRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useFeedbackToast({ error, pending: processing });
 
   const remaining = maxCount - photos.length;
   const atLimit = remaining <= 0;
@@ -172,12 +174,6 @@ export function ProofPhotoCapture({
       ) : (
         <p className={styles.emptyHint}>No photos yet — tap Take photo when the job looks ready.</p>
       )}
-
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
     </section>
   );
 }

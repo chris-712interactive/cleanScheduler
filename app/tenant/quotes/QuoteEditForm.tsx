@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionQuoteSnapshot } from '@/lib/hooks/useServerActionQuoteSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
@@ -53,6 +54,12 @@ export function QuoteEditForm({
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [rowsRevision, setRowsRevision] = useState(0);
   const [state, formAction, pending] = useActionState(updateTenantQuote, initial);
+  useFeedbackToast({
+    error: state.schedulePath ? null : state.error,
+    success: state.success,
+    successMessage: 'Saved.',
+    pending,
+  });
 
   useEffect(() => {
     setSnapshot(initialSnapshot);
@@ -117,11 +124,6 @@ export function QuoteEditForm({
           returnTo={`/quotes/${snapshot.quoteId}`}
         />
       ) : null}
-      {state.error && !state.schedulePath ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
       {consultationPrompt && !state.schedulePath ? (
         <QuoteConsultationPrompt
           customerId={customerId}
@@ -129,11 +131,6 @@ export function QuoteEditForm({
           prompt={consultationPrompt}
           returnTo={`/quotes/${snapshot.quoteId}`}
         />
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Saved.
-        </p>
       ) : null}
 
       <label className={styles.label} htmlFor="edit_quote_title">

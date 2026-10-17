@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { updatePublicBookingRequestSettings, type BookingRequestSettingsState } from './actions';
 import styles from '../operations/operations-settings.module.scss';
 
@@ -19,6 +20,7 @@ export function BookingRequestSettingsForm({
   readOnly?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updatePublicBookingRequestSettings, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <form action={formAction} className={styles.opsStack}>
@@ -45,17 +47,6 @@ export function BookingRequestSettingsForm({
           Form is live
         </label>
       </div>
-
-      {state.error ? (
-        <p className={styles.bannerError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.bannerSuccess} role="status">
-          Saved.
-        </p>
-      ) : null}
 
       {!readOnly ? (
         <div>

@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   updateScheduleEligibilityAction,
   type ScheduleEligibilityActionState,
@@ -22,6 +23,7 @@ export function OfficeScheduleEligibilityForm({
   excludeFromConsultations: boolean;
 }) {
   const [state, action, pending] = useActionState(updateScheduleEligibilityAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <form action={action} className={styles.stack}>
@@ -50,8 +52,6 @@ export function OfficeScheduleEligibilityForm({
           Availability and the scheduling profile stay hidden while both are checked.
         </p>
       ) : null}
-      {state.error ? <p className={styles.bannerError}>{state.error}</p> : null}
-      {state.success ? <p className={styles.bannerSuccess}>Saved.</p> : null}
       <div>
         <Button type="submit" variant="primary" disabled={pending}>
           {pending ? 'Saving…' : 'Save scheduling role'}

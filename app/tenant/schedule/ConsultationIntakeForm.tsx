@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState, type ReactNode } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { saveConsultationIntakeAction } from './visitFieldActions';
 import {
   CONSULTATION_ADDONS,
@@ -66,6 +67,7 @@ export function ConsultationIntakeForm({
   requiredFields?: readonly ConsultationIntakeFieldKey[];
 }) {
   const [state, action, pending] = useActionState(saveConsultationIntakeAction, {});
+  useFeedbackToast({ error: state.error, success: state.success, pending });
   const [frequency, setFrequency] = useState(initial?.frequency ?? '');
   const [pets, setPets] = useState(initial?.pets ?? '');
   const commercial = consultationUsesCommercialFields(propertyKind);
@@ -534,12 +536,6 @@ export function ConsultationIntakeForm({
         </Field>
       </fieldset>
 
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? <p className={styles.ok}>{state.success}</p> : null}
       <button type="submit" className={styles.intakeSave} disabled={pending}>
         {pending ? 'Saving…' : 'Save consultation details'}
       </button>

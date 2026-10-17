@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Alert } from '@/components/ui/Alert';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { completeSalesTaskAction } from '@/lib/admin/salesActions';
@@ -57,7 +57,7 @@ export default async function AdminPipelinePage({ searchParams }: PageProps) {
         }
       />
 
-      {err ? <Alert variant="danger">{err}</Alert> : null}
+      <FeedbackToasts messages={[err ? { title: err, variant: 'danger' } : null]} />
 
       <div className={styles.filterRow}>
         <Link href="/pipeline" className={styles.filterLink} data-active={!mine ? '' : undefined}>

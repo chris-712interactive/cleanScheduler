@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useActionState } from 'react';
-import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
 import { signInWithGoogle, signInWithPassword, type SignInState } from './actions';
@@ -38,11 +38,10 @@ export function SignInForm({
   }, []);
 
   const activeError = passwordState.error;
+  useFeedbackToast({ error: activeError ?? urlError, pending: passwordPending });
 
   return (
     <div className={styles.wrapper}>
-      {(urlError || activeError) && <Alert>{activeError ?? urlError}</Alert>}
-
       <form className={styles.form} action={passwordAction}>
         <input type="hidden" name="next" value={nextPath} />
         <input type="hidden" name="return_origin" value={returnOrigin} />

@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { formatTagList } from '@/lib/schedule/optimizer/preferences';
 import type { CrewSchedulingProfile } from '@/lib/schedule/optimizer/crewProfile';
 import {
@@ -35,6 +36,7 @@ export function EmployeeSchedulingProfileForm({
   scope?: 'full' | 'consultation';
 }) {
   const [state, action, pending] = useActionState(updateCrewSchedulingProfileAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
   const kinds = new Set(profile.propertyKinds);
   const zoneIds = new Set(profile.preferredZoneIds);
   const preferred = new Set(profile.preferredPartnerIds);
@@ -255,8 +257,6 @@ export function EmployeeSchedulingProfileForm({
         </label>
       </div>
 
-      {state.error ? <p className={styles.bannerError}>{state.error}</p> : null}
-      {state.success ? <p className={styles.bannerSuccess}>Saved.</p> : null}
       <div>
         <Button type="submit" variant="primary" disabled={pending}>
           {pending ? 'Saving…' : 'Save scheduling profile'}

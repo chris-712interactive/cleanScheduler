@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitTenantSiteLeadAction, type TenantSiteLeadActionState } from '@/app/site/actions';
 import styles from './TenantSitePage.module.scss';
 
@@ -16,6 +17,12 @@ export function TenantSiteContactForm({
     submitTenantSiteLeadAction,
     {},
   );
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Thanks — we received your message and will follow up soon.',
+    pending,
+  });
 
   return (
     <form action={formAction} className={styles.contactForm}>
@@ -27,17 +34,6 @@ export function TenantSiteContactForm({
           <input type="text" name="company" tabIndex={-1} autoComplete="off" />
         </label>
       </div>
-
-      {state.error ? (
-        <p className={styles.formError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.formSuccess} role="status">
-          Thanks — we received your message and will follow up soon.
-        </p>
-      ) : null}
 
       <label className={styles.fieldLabel}>
         Name

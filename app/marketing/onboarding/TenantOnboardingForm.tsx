@@ -5,8 +5,9 @@ import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useActionState } from 'react';
 import zxcvbn from 'zxcvbn';
-import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
+import { useToast } from '@/components/ui/Toast';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -37,6 +38,20 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [stepError, setStepError] = useState<string | null>(null);
+  useFeedbackToast([{ error: state.error, pending }, { error: stepError }]);
+  const { toast } = useToast();
+  useEffect(() => {
+    const success = typeof state.success === 'string' ? state.success.trim() : '';
+    if (!success) return;
+    toast({
+      title: success,
+      description: state.signInUrl ? (
+        <Link href={state.signInUrl}>Open workspace sign-in</Link>
+      ) : undefined,
+      variant: 'success',
+      durationMs: 12000,
+    });
+  }, [state.success, state.signInUrl, toast]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [slugStatus, setSlugStatus] = useState<{
     tone: 'idle' | 'checking' | 'ok' | 'warn' | 'error';
@@ -183,19 +198,6 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
 
   return (
     <form action={formAction} className={styles.form} onSubmit={handleSubmit} noValidate>
-      {state.error ? <Alert variant="danger">{state.error}</Alert> : null}
-      {state.success ? (
-        <Alert variant="success">
-          {state.success}
-          {state.signInUrl ? (
-            <>
-              {' '}
-              <Link href={state.signInUrl}>Open workspace sign-in</Link>
-            </>
-          ) : null}
-        </Alert>
-      ) : null}
-
       <div className={styles.steps} aria-label="Trial setup progress">
         <span data-active={step === 0 || undefined}>1. Workspace</span>
         <span data-active={step === 1 || undefined}>2. Your details</span>
@@ -339,8 +341,6 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
             <option value="both">Both residential and commercial</option>
           </Select>
         </FormField>
-
-        {stepError ? <Alert>{stepError}</Alert> : null}
       </section>
 
       <section
@@ -458,8 +458,6 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
             .
           </span>
         </label>
-
-        {stepError ? <Alert>{stepError}</Alert> : null}
       </section>
 
       <div className={styles.actions}>

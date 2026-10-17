@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Container } from '@/components/layout/Container';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
@@ -290,11 +291,13 @@ export default async function AdminTenantsPage({ searchParams }: PageProps) {
       />
 
       <Container size="lg">
-        {purgedSlug ? (
-          <p className={styles.bannerSuccess} role="status">
-            Deleted canceled tenant <strong>{purgedSlug}</strong>.
-          </p>
-        ) : null}
+        <FeedbackToasts
+          messages={[
+            purgedSlug
+              ? { title: `Deleted canceled tenant ${purgedSlug}.`, variant: 'success' }
+              : null,
+          ]}
+        />
         {needsFraudControlsMigration ? (
           <p className={styles.bannerError} role="status">
             Apply Supabase migration <code>0089_admin_tenant_fraud_controls.sql</code> to enable

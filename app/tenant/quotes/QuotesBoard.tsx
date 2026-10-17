@@ -14,6 +14,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { Check } from 'lucide-react';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import { getQuoteBoardCardDisplay } from '@/lib/tenant/quoteBoardCardDisplay';
 import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
@@ -445,11 +446,7 @@ export function QuotesBoard({
 
   return (
     <div className={styles.boardWrap}>
-      {boardError ? (
-        <p className={styles.boardBannerError} role="alert">
-          {boardError}
-        </p>
-      ) : null}
+      <FeedbackToasts messages={[boardError ? { title: boardError, variant: 'danger' } : null]} />
       {isPending && pendingQuoteId ? (
         <p className={styles.boardBannerMuted} aria-live="polite">
           Updating…

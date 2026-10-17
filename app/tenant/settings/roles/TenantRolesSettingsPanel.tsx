@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import type { PermissionKey } from '@/lib/tenant/permissionCatalog';
 import {
@@ -275,21 +276,13 @@ export function TenantRolesSettingsPanel({
 
   return (
     <div className={styles.stack}>
-      {saved ? (
-        <p className={styles.statusOk} role="status">
-          Role saved.
-        </p>
-      ) : null}
-      {deleted ? (
-        <p className={styles.statusOk} role="status">
-          Custom role deleted.
-        </p>
-      ) : null}
-      {errorMessage ? (
-        <p className={styles.statusErr} role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          saved ? { title: 'Role saved.', variant: 'success' } : null,
+          deleted ? { title: 'Custom role deleted.', variant: 'success' } : null,
+          errorMessage ? { title: errorMessage, variant: 'danger' } : null,
+        ]}
+      />
 
       <header className={styles.hero}>
         <h2 className={styles.heroTitle}>Workspace roles</h2>

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { ScheduleOverlapConfirm } from '@/components/schedule/ScheduleOverlapConfirm';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { isoToLocalDatetimeLocalValue } from '@/lib/datetime/isoToLocalDatetimeLocalValue';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
@@ -26,6 +27,12 @@ export function VisitTimeRescheduleForm({
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [state, formAction, pending] = useActionState(updateScheduledVisitTimes, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Visit time saved.',
+    pending,
+  });
   useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
   const [startsLocal, setStartsLocal] = useState('');
@@ -57,17 +64,6 @@ export function VisitTimeRescheduleForm({
 
       <p className={styles.visitRescheduleTitle}>Change appointment time</p>
       <p className={styles.visitRescheduleHint}>Adjust start and end for this visit.</p>
-
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Visit time saved.
-        </p>
-      ) : null}
 
       <ScheduleOverlapConfirm
         conflicts={conflicts}

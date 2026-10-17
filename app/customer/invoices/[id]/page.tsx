@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { Card } from '@/components/ui/Card';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
@@ -137,21 +138,21 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
         <Link href="/invoices">← All invoices</Link>
       </p>
 
-      {checkoutErr ? (
-        <p className={styles.bannerError} role="alert">
-          {checkoutErr}
-        </p>
-      ) : null}
-      {checkoutOk ? (
-        <p className={styles.bannerOk} role="status">
-          Payment received. If your balance has not updated yet, refresh in a few seconds.
-        </p>
-      ) : null}
-      {checkoutCanceled ? (
-        <p className={styles.muted} role="status">
-          Checkout canceled — no charge was made.
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          checkoutErr ? { title: checkoutErr, variant: 'danger' } : null,
+          checkoutOk
+            ? {
+                title:
+                  'Payment received. If your balance has not updated yet, refresh in a few seconds.',
+                variant: 'success',
+              }
+            : null,
+          checkoutCanceled
+            ? { title: 'Checkout canceled — no charge was made.', variant: 'info' }
+            : null,
+        ]}
+      />
 
       <Card title="Balance">
         <p className={styles.meta}>

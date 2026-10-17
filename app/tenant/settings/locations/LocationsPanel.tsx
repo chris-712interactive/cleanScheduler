@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   createTenantLocationAction,
@@ -28,16 +29,11 @@ export function LocationsPanel({
   }>;
 }) {
   const [state, formAction, pending] = useActionState(createTenantLocationAction, initialState);
+  useFeedbackToast({ error: state.error, pending });
   const activeCount = locations.filter((location) => location.is_active).length;
 
   return (
     <div className={styles.stack}>
-      {state.error ? (
-        <p className={styles.bannerError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-
       <header className={styles.hero}>
         <h2 className={styles.heroTitle}>Organize crews by branch or territory</h2>
         <p className={styles.heroLead}>

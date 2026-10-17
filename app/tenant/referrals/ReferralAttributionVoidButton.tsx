@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { voidReferralAttributionAction, type VoidReferralAttributionActionState } from './actions';
 import styles from './referrals.module.scss';
 
@@ -19,6 +20,16 @@ export function ReferralAttributionVoidButton({
   canEdit: boolean;
 }) {
   const [state, action, pending] = useActionState(voidReferralAttributionAction, initialState);
+  const clawback =
+    state.clawbackCents && state.clawbackCents > 0
+      ? ` · $${(state.clawbackCents / 100).toFixed(2)} clawed back`
+      : '';
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: `Voided${clawback}`,
+    pending,
+  });
 
   if (!canEdit || status === 'voided') {
     return null;
@@ -42,19 +53,6 @@ export function ReferralAttributionVoidButton({
       >
         Void
       </Button>
-      {state.error ? (
-        <span className={styles.voidError} role="alert">
-          {state.error}
-        </span>
-      ) : null}
-      {state.success ? (
-        <span className={styles.voidOk} role="status">
-          Voided
-          {state.clawbackCents && state.clawbackCents > 0
-            ? ` · $${(state.clawbackCents / 100).toFixed(2)} clawed back`
-            : ''}
-        </span>
-      ) : null}
     </form>
   );
 }

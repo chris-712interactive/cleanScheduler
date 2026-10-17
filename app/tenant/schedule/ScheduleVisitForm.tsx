@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useActionState, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { shiftEndFromStartAndDuration } from '@/lib/datetime/shiftVisitEndFromStart';
 import {
@@ -61,7 +62,6 @@ export function ScheduleVisitForm({
 }) {
   const [state, formAction, pending] = useActionState(createScheduledVisit, initial);
   const [clientError, setClientError] = useState<string | null>(null);
-  const errorRef = useRef<HTMLParagraphElement>(null);
 
   const [customerId, setCustomerId] = useState(defaults?.customerId ?? '');
   const [crewFilter, setCrewFilter] = useState('');
@@ -137,11 +137,12 @@ export function ScheduleVisitForm({
 
   const consultationDurationLabel = formatConsultationDurationLabel(consultationDurationMinutes);
   const visibleError = clientError || state.error || null;
-
-  useEffect(() => {
-    if (!visibleError) return;
-    errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [visibleError]);
+  useFeedbackToast({
+    error: visibleError,
+    success: state.success,
+    successMessage: isConsultation ? 'Consultation scheduled.' : 'Visit scheduled.',
+    pending,
+  });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     const formData = new FormData(event.currentTarget);
@@ -200,11 +201,6 @@ export function ScheduleVisitForm({
       {confirmUnavailable ? (
         <input type="hidden" name="confirm_unavailable" value="true" readOnly />
       ) : null}
-      {visibleError ? (
-        <p className={styles.error} role="alert">
-          {visibleError}
-        </p>
-      ) : null}
       {state.needsOverlapConfirm && !confirmUnavailable ? (
         <div className={styles.confirmBox} role="status">
           <p>Some selected crew are unavailable at this time.</p>
@@ -216,11 +212,6 @@ export function ScheduleVisitForm({
             Schedule anyway
           </button>
         </div>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          {isConsultation ? 'Consultation scheduled.' : 'Visit scheduled.'}
-        </p>
       ) : null}
 
       {isConsultation ? (
@@ -573,11 +564,6 @@ export function ScheduleVisitForm({
       </div>
 
       <div className={styles.formActions}>
-        {visibleError ? (
-          <p ref={errorRef} className={styles.error} role="alert">
-            {visibleError}
-          </p>
-        ) : null}
         <button type="submit" className={styles.submit} disabled={pending}>
           {pending ? 'Saving…' : isConsultation ? 'Schedule consultation' : 'Add visit'}
         </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { OFFICE_SET_PRICE_HINT } from '@/lib/billing/resolveVisitExpectedAmount';
@@ -24,6 +25,12 @@ export function VisitJobPriceForm({
   compact?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateVisitJobPrice, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: compact ? 'Saved.' : 'Job price saved.',
+    pending,
+  });
   useServerActionVisitPatch(state.success, state.visitPatch, onVisitPatch);
 
   const [amountDollars, setAmountDollars] = useState(() =>
@@ -61,16 +68,6 @@ export function VisitJobPriceForm({
         <button type="submit" className={styles.visitPriceCompactBtn} disabled={pending}>
           {pending ? 'Saving…' : 'Save'}
         </button>
-        {state.error ? (
-          <p className={styles.error} role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        {state.success ? (
-          <p className={styles.success} role="status">
-            Saved.
-          </p>
-        ) : null}
         <p className={styles.visitPriceCompactHint}>{OFFICE_SET_PRICE_HINT}</p>
       </form>
     );
@@ -83,17 +80,6 @@ export function VisitJobPriceForm({
 
       <p className={styles.visitRescheduleTitle}>Job price</p>
       <p className={styles.visitRescheduleHint}>{OFFICE_SET_PRICE_HINT}</p>
-
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Job price saved.
-        </p>
-      ) : null}
 
       <div className={styles.formField}>
         <label className={styles.label} htmlFor="visit_job_price_edit_full">

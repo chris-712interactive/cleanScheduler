@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useActionState } from 'react';
-import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
 import { requestPasswordReset, type ForgotPasswordState } from './actions';
@@ -15,6 +15,7 @@ const initialState: ForgotPasswordState = {};
 export function ForgotPasswordForm() {
   const [returnOrigin, setReturnOrigin] = useState('');
   const [state, formAction, pending] = useActionState(requestPasswordReset, initialState);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   useEffect(() => {
     setReturnOrigin(window.location.origin);
@@ -23,8 +24,6 @@ export function ForgotPasswordForm() {
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="return_origin" value={returnOrigin} />
-      {state.error ? <Alert>{state.error}</Alert> : null}
-      {state.success ? <Alert variant="success">{state.success}</Alert> : null}
       <FormField label="Email" htmlFor="forgot-email">
         <Input id="forgot-email" name="email" type="email" autoComplete="email" required />
       </FormField>

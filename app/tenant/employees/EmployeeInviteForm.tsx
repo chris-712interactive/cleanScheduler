@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { UpgradeOrAddOnModal } from '@/components/billing/UpgradeOrAddOnModal';
 import { sendEmployeeInviteAction, type EmployeeInviteFormState } from './employeeInviteActions';
 import type { TenantRole } from '@/lib/auth/types';
@@ -26,6 +27,11 @@ export function EmployeeInviteForm({
   emailReady: boolean;
 }) {
   const [state, action, pending] = useActionState(sendEmployeeInviteAction, initial);
+  useFeedbackToast({
+    error: state.limitExceeded ? null : state.error,
+    success: state.success,
+    pending,
+  });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   useEffect(() => {
@@ -49,12 +55,6 @@ export function EmployeeInviteForm({
         }
         onClose={() => setUpgradeOpen(false)}
       />
-      {state.error && !state.limitExceeded ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? <p className={styles.success}>{state.success}</p> : null}
       <form action={action} className={styles.inviteForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
         <label className={styles.field}>

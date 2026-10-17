@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { FillScheduleRun } from './FillScheduleRun';
 import { FillScheduleUndo } from './FillScheduleUndo';
 import { fillScheduleAction } from './actions';
@@ -29,6 +30,7 @@ export function FillScheduleForm({
   undoableRuns: FillUndoOffer[];
 }) {
   const [state, action, pending] = useActionState(fillScheduleAction, INITIAL);
+  useFeedbackToast({ error: state.error, pending });
   const [step, setStep] = useState<'form' | 'status'>('form');
   const [offers, setOffers] = useState(undoableRuns);
   const [undoNote, setUndoNote] = useState('');
@@ -161,8 +163,6 @@ export function FillScheduleForm({
             Schedule these
           </Button>
         </div>
-
-        {state.error ? <p className={styles.error}>{state.error}</p> : null}
 
         {state.proposals ? (
           <div className={styles.preview}>

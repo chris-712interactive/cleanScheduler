@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitCustomerVisitRescheduleRequest, type CustomerRescheduleFormState } from './actions';
 import styles from './reschedule.module.scss';
 
@@ -19,6 +20,7 @@ export function CustomerRescheduleForm({
     submitCustomerVisitRescheduleRequest,
     initial,
   );
+  useFeedbackToast({ error: state.error, pending });
 
   return (
     <form action={formAction} className={styles.form}>
@@ -28,12 +30,6 @@ export function CustomerRescheduleForm({
         name="client_timezone_offset"
         value={String(new Date().getTimezoneOffset())}
       />
-
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
 
       <p className={styles.intro}>
         Your provider confirms all changes to the calendar. Prefer a specific time window? Add it

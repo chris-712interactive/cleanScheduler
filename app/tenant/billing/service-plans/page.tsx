@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
@@ -50,16 +51,12 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
         titleHint="Recurring prices you charge customers through Stripe Connect — separate from calendar recurring visits."
       />
 
-      {created ? (
-        <p className={styles.bannerOk} role="status">
-          Service plan created.
-        </p>
-      ) : null}
-      {errMsg ? (
-        <p className={styles.bannerError} role="alert">
-          {errMsg}
-        </p>
-      ) : null}
+      <FeedbackToasts
+        messages={[
+          created ? { title: 'Service plan created.', variant: 'success' } : null,
+          errMsg ? { title: errMsg, variant: 'danger' } : null,
+        ]}
+      />
 
       <Stack gap={6}>
         <RecurringConceptCallout variant="billing" />

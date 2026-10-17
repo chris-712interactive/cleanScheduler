@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { SupportMessageReplyComposer } from '@/components/messaging/SupportMessageReplyComposer';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { SupportMessageTranscript } from '@/components/messaging/SupportMessageTranscript';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
@@ -77,11 +78,7 @@ export default async function CustomerMessageThreadPage({ params, searchParams }
         </div>
       </div>
 
-      {error ? (
-        <p className={styles.bannerErr} role="alert">
-          {error}
-        </p>
-      ) : null}
+      <FeedbackToasts messages={[error ? { title: error, variant: 'danger' } : null]} />
 
       <div className={styles.threadPanel}>
         {isOpen ? (

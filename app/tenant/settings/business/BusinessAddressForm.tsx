@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionSnapshot } from '@/lib/hooks/useServerActionSnapshot';
 import { SettingsSaveButton } from '../SettingsSaveButton';
@@ -25,6 +26,7 @@ export function BusinessAddressForm({
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [state, formAction, pending] = useActionState(updateBusinessAddressAction, initial);
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   useEffect(() => {
     setSnapshot(initialSnapshot);
@@ -43,16 +45,6 @@ export function BusinessAddressForm({
   return (
     <form onSubmit={handleSubmit} className={styles.settingsForm}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      {state.error ? (
-        <p className={styles.formError} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.formSuccess} role="status">
-          {state.success}
-        </p>
-      ) : null}
 
       <label className={styles.fieldLabel} htmlFor="address_line1">
         Address

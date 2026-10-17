@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/portal/PageHeader';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
@@ -28,6 +29,11 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
   const sp = await searchParams;
   const sent = firstParam(sp.sent) === '1';
   const errorCode = firstParam(sp.error);
+  const contactError = errorCode
+    ? errorCode === 'rate'
+      ? 'Too many messages from this network. Please try again later.'
+      : 'Please fill in name, email, and a short message, then try again.'
+    : null;
 
   return (
     <>
@@ -38,18 +44,17 @@ export default async function MarketingContactPage({ searchParams }: PageProps) 
             description="Questions, demos, or partnership ideas for residential and commercial cleaning teams."
           />
 
-          {sent ? (
-            <p className={styles.bannerOk} role="status">
-              Thanks — we received your message and will follow up by email.
-            </p>
-          ) : null}
-          {errorCode ? (
-            <p className={styles.bannerErr} role="alert">
-              {errorCode === 'rate'
-                ? 'Too many messages from this network. Please try again later.'
-                : 'Please fill in name, email, and a short message, then try again.'}
-            </p>
-          ) : null}
+          <FeedbackToasts
+            messages={[
+              sent
+                ? {
+                    title: 'Thanks — we received your message and will follow up by email.',
+                    variant: 'success',
+                  }
+                : null,
+              contactError ? { title: contactError, variant: 'danger' } : null,
+            ]}
+          />
 
           <Card title="Send a message">
             <form action={submitMarketingInquiryAction} className={styles.form}>

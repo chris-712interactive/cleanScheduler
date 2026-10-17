@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { toggleWebsitePublishAction, type WebsiteActionState } from './actions';
 import styles from './website-settings.module.scss';
@@ -22,6 +23,11 @@ export function WebsitePublishCard({
     WebsiteActionState,
     FormData
   >(toggleWebsitePublishAction, {});
+  useFeedbackToast({
+    error: publishState.error,
+    success: publishState.success,
+    pending: publishPending,
+  });
 
   return (
     <section className={styles.statusBar}>
@@ -46,17 +52,6 @@ export function WebsitePublishCard({
           </Button>
         </form>
       </div>
-
-      {publishState.error ? (
-        <p className={styles.bannerError} role="alert">
-          {publishState.error}
-        </p>
-      ) : null}
-      {publishState.success ? (
-        <p className={styles.bannerSuccess} role="status">
-          {publishState.success}
-        </p>
-      ) : null}
     </section>
   );
 }

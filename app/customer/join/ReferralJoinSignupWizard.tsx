@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { SmsOptInCheckboxLabel } from '@/components/legal/SmsOptInCheckboxLabel';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { Button } from '@/components/ui/Button';
 import type { ReferralJoinLandingView } from '@/lib/referrals/loadReferralJoinLanding';
 import type { ReferralJoinPrefill } from '@/lib/referrals/referralRefereeOnboarding';
@@ -49,7 +50,6 @@ export function ReferralJoinSignupWizard({
   pending: boolean;
 }) {
   const isExisting = mode === 'existing';
-  const errorRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<ReferralSignupStep>('profile');
   const [draft, setDraft] = useState<ReferralSignupDraft>(() => draftFromPrefill(prefill));
   const [stepErrors, setStepErrors] = useState<ReferralSignupFieldErrors>({});
@@ -61,9 +61,6 @@ export function ReferralJoinSignupWizard({
     }
     if (state.error) {
       setStep('account');
-      queueMicrotask(() =>
-        errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }),
-      );
     }
   }, [state.draft, state.error]);
 
@@ -84,7 +81,6 @@ export function ReferralJoinSignupWizard({
     if (!result.ok) {
       setStepErrors(result.errors);
       setStepMessage(result.message);
-      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       return;
     }
 
@@ -103,6 +99,7 @@ export function ReferralJoinSignupWizard({
 
   const stepMeta = REFERRAL_SIGNUP_STEPS[signupStepIndex(step)]!;
   const topError = state.error ?? stepMessage;
+  useFeedbackToast({ error: topError, pending });
 
   return (
     <>
@@ -157,14 +154,6 @@ export function ReferralJoinSignupWizard({
         {draft.marketingEmailOptIn ? (
           <input type="hidden" name="marketing_email_opt_in" value="on" />
         ) : null}
-
-        <div ref={errorRef}>
-          {topError ? (
-            <p className={styles.error} role="alert">
-              {topError}
-            </p>
-          ) : null}
-        </div>
 
         {state.duplicateAccount ? (
           <p className={styles.hint}>

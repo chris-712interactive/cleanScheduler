@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import styles from './referrals.module.scss';
 
 export function CustomerReferralSharePanel({
@@ -13,6 +14,7 @@ export function CustomerReferralSharePanel({
 }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
+  useFeedbackToast({ error: shareError });
 
   useEffect(() => {
     let cancelled = false;
@@ -70,11 +72,6 @@ export function CustomerReferralSharePanel({
           <Button type="button" size="sm" variant="secondary" onClick={() => void handleShare()}>
             Share link
           </Button>
-          {shareError ? (
-            <p className={styles.shareError} role="alert">
-              {shareError}
-            </p>
-          ) : null}
         </div>
       </div>
     </section>

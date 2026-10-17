@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { updatePasswordAfterReset, type ResetPasswordState } from './actions';
 import styles from '../sign-in/sign-in.module.scss';
 
@@ -9,14 +10,10 @@ const initialState: ResetPasswordState = {};
 
 export function ResetPasswordForm() {
   const [state, formAction, pending] = useActionState(updatePasswordAfterReset, initialState);
+  useFeedbackToast({ error: state.error, pending });
 
   return (
     <form action={formAction} className={styles.form}>
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <label className={styles.label} htmlFor="reset-password">
         <span>New password</span>
         <input

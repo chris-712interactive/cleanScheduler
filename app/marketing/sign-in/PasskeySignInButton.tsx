@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { signInWithDevicePasskey } from '@/lib/auth/passkeyBrowser';
 import { Button } from '@/components/ui/Button';
-import styles from './sign-in.module.scss';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 
 export function PasskeySignInButton({ nextPath }: { nextPath: string }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useFeedbackToast({ error, pending });
 
   const signIn = async () => {
     setPending(true);
@@ -26,11 +27,6 @@ export function PasskeySignInButton({ nextPath }: { nextPath: string }) {
 
   return (
     <div>
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
       <Button
         type="button"
         variant="secondary"

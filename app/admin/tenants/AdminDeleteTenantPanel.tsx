@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
   purgeCanceledTenantAction,
   type AdminPurgeTenantFormState,
@@ -22,6 +23,7 @@ export function AdminDeleteTenantPanel({
   purgeStatus: TenantPurgeStatus;
 }) {
   const [state, formAction, pending] = useActionState(purgeCanceledTenantAction, initial);
+  useFeedbackToast({ error: state.error, pending });
 
   return (
     <div className={styles.dangerCard}>
@@ -51,11 +53,6 @@ export function AdminDeleteTenantPanel({
             placeholder={tenantSlug}
           />
         </label>
-        {state.error ? (
-          <p className={styles.bannerError} role="alert">
-            {state.error}
-          </p>
-        ) : null}
         <Button type="submit" variant="secondary" disabled={pending}>
           {pending ? 'Deleting…' : 'Delete canceled tenant permanently'}
         </Button>

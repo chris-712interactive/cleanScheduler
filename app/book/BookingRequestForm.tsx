@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitBookingRequestAction, type BookingRequestActionState } from './actions';
 import styles from './book.module.scss';
 
@@ -9,6 +10,12 @@ const initial: BookingRequestActionState = {};
 
 export function BookingRequestForm({ tenantSlug }: { tenantSlug: string }) {
   const [state, formAction, pending] = useActionState(submitBookingRequestAction, initial);
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Thanks — we received your request and will follow up soon.',
+    pending,
+  });
 
   return (
     <form action={formAction} className={styles.form}>
@@ -19,17 +26,6 @@ export function BookingRequestForm({ tenantSlug }: { tenantSlug: string }) {
           <input type="text" name="company" tabIndex={-1} autoComplete="off" />
         </label>
       </div>
-
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <p className={styles.success} role="status">
-          Thanks — we received your request and will follow up soon.
-        </p>
-      ) : null}
 
       <label className={styles.field}>
         <span>Name</span>

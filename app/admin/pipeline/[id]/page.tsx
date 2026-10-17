@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/portal/PageHeader';
-import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { Card } from '@/components/ui/Card';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
@@ -80,8 +80,12 @@ export default async function SalesLeadDetailPage({ params, searchParams }: Page
         }
       />
 
-      {err ? <Alert variant="danger">{err}</Alert> : null}
-      {notice ? <Alert variant="success">{notice}</Alert> : null}
+      <FeedbackToasts
+        messages={[
+          err ? { title: err, variant: 'danger' } : null,
+          notice ? { title: notice, variant: 'success' } : null,
+        ]}
+      />
 
       <Stack gap={6}>
         <Card

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { createWebsitePageAction, type WebsiteActionState } from './actions';
 import { WebsitePagePublishToggle } from './WebsitePagePublishToggle';
 import styles from './website-settings.module.scss';
@@ -28,6 +29,7 @@ export function WebsitePageListPanel({
     createWebsitePageAction,
     {},
   );
+  useFeedbackToast({ error: state.error, success: state.success, pending });
 
   return (
     <section className={styles.setupCard}>
@@ -79,16 +81,6 @@ export function WebsitePageListPanel({
           <Button type="submit" disabled={pending} size="sm">
             Add page
           </Button>
-          {state.error ? (
-            <p className={styles.bannerError} role="alert">
-              {state.error}
-            </p>
-          ) : null}
-          {state.success ? (
-            <p className={styles.bannerSuccess} role="status">
-              {state.success}
-            </p>
-          ) : null}
         </form>
       ) : null}
     </section>
