@@ -60,16 +60,6 @@ export function SchedulingPreferenceFields({
           </select>
         </label>
         <label className={styles.field}>
-          Crew size
-          <input
-            type="number"
-            name="required_crew_size"
-            min={1}
-            max={8}
-            defaultValue={facts.requiredCrewSize}
-          />
-        </label>
-        <label className={styles.field}>
           Arrival from
           <input
             type="time"

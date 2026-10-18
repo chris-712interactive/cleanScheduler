@@ -16,6 +16,7 @@ export type CustomerPropertyVM = Pick<
   | 'building_name'
   | 'is_primary'
   | 'service_zone_id'
+  | 'required_crew_size'
 >;
 
 export type CustomerPropertiesPatch =
@@ -53,4 +54,4 @@ export function applyCustomerPropertiesPatch(
 }
 
 export const CUSTOMER_PROPERTY_SELECT =
-  'id, label, property_kind, address_line1, address_line2, city, state, postal_code, site_notes, community_name, building_name, is_primary, service_zone_id' as const;
+  'id, label, property_kind, address_line1, address_line2, city, state, postal_code, site_notes, community_name, building_name, is_primary, service_zone_id, required_crew_size' as const;

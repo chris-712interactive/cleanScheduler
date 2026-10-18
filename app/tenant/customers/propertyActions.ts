@@ -14,6 +14,7 @@ import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
 import { geocodeUsAddress } from '@/lib/geo/censusGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
+import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 
 export interface PropertyFormState {
   error?: string;
@@ -67,6 +68,8 @@ export async function addCustomerProperty(
   });
   const wantPrimary = String(formData.get('set_primary') ?? '') === 'on';
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
+  const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
+  if (!crewSize.ok) return { error: crewSize.error };
 
   if (!slug || !customerId) {
     return { error: 'Workspace and customer are required.' };
@@ -126,6 +129,7 @@ export async function addCustomerProperty(
       latitude: point?.lat ?? null,
       longitude: point?.lng ?? null,
       service_zone_id: zoneResolved.zoneId,
+      required_crew_size: crewSize.size,
       is_primary: makePrimary,
     })
     .select(CUSTOMER_PROPERTY_SELECT)
@@ -181,6 +185,8 @@ export async function updateCustomerProperty(
     postalCode: postal,
   });
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
+  const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
+  if (!crewSize.ok) return { error: crewSize.error };
 
   if (!slug || !customerId || !propertyId) {
     return { error: 'Workspace, customer, and property are required.' };
@@ -224,6 +230,7 @@ export async function updateCustomerProperty(
       latitude: point?.lat ?? null,
       longitude: point?.lng ?? null,
       service_zone_id: zoneResolved.zoneId,
+      required_crew_size: crewSize.size,
     })
     .eq('id', propertyId)
     .eq('tenant_id', membership.tenantId)

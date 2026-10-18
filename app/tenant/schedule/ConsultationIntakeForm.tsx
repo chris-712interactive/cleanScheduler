@@ -338,14 +338,6 @@ export function ConsultationIntakeForm({
               <option value="no">No</option>
             </select>
           </Field>
-          <Field label="Requested crew size" htmlFor="crew_headcount">
-            <input
-              id="crew_headcount"
-              name="crew_headcount"
-              inputMode="numeric"
-              defaultValue={initial?.crewHeadcount ?? ''}
-            />
-          </Field>
         </fieldset>
       ) : (
         <fieldset className={styles.intakeGroup}>
@@ -523,6 +515,18 @@ export function ConsultationIntakeForm({
             name="photo_notes"
             rows={2}
             defaultValue={initial?.photoNotes ?? ''}
+          />
+        </Field>
+        <Field label="Crew size" htmlFor="crew_headcount" required={req('crew_headcount')}>
+          <input
+            id="crew_headcount"
+            name="crew_headcount"
+            inputMode="numeric"
+            min={1}
+            max={8}
+            defaultValue={initial?.crewHeadcount ?? ''}
+            placeholder="1"
+            required={req('crew_headcount')}
           />
         </Field>
         <Field label="Crew estimate (hours)" htmlFor="crew_estimate_hours">

@@ -55,6 +55,24 @@ function PropertyKindField({ id, defaultValue }: { id: string; defaultValue: str
   );
 }
 
+function CrewSizeField({ id, defaultValue }: { id: string; defaultValue: number }) {
+  return (
+    <Field id={id} label="Crew size">
+      <input
+        id={id}
+        name="required_crew_size"
+        className={styles.input}
+        type="number"
+        min={1}
+        max={8}
+        step={1}
+        inputMode="numeric"
+        defaultValue={defaultValue}
+      />
+    </Field>
+  );
+}
+
 function ServiceZoneSelect({
   id,
   zones,
@@ -385,6 +403,11 @@ function EditPropertyForm({
             defaultValue={property.service_zone_id}
           />
         </div>
+        <CrewSizeField id={`crew_${id}`} defaultValue={property.required_crew_size} />
+        <p className={styles.sectionHint}>
+          How many cleaners a visit at this location needs. A consultation or quote updates this
+          number.
+        </p>
 
         <div className={styles.fieldRow}>
           <Field id={`a1_${id}`} label="Address line 1">
@@ -533,6 +556,11 @@ function AddPropertyForm({
           <PropertyKindField id="new_prop_kind" defaultValue="residential" />
           <ServiceZoneSelect id="new_service_zone" zones={serviceZones} defaultValue={null} />
         </div>
+        <CrewSizeField id="new_prop_crew" defaultValue={1} />
+        <p className={styles.sectionHint}>
+          How many cleaners a visit at this location needs. A consultation or quote updates this
+          number.
+        </p>
 
         <div className={styles.fieldRow}>
           <Field id="new_a1" label="Address line 1">

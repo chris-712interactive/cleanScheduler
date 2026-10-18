@@ -204,6 +204,9 @@ export async function saveConsultationIntakeAction(
   if (loaded.visit.property_id) {
     const propertyPatch: Database['public']['Tables']['tenant_customer_properties']['Update'] = {};
     if (intake.sqft != null) propertyPatch.sqft = intake.sqft;
+    if (intake.crewHeadcount != null && intake.crewHeadcount >= 1 && intake.crewHeadcount <= 8) {
+      propertyPatch.required_crew_size = intake.crewHeadcount;
+    }
     if (consultationUsesCommercialFields(propertyKind)) {
       if (intake.storiesOrSuites != null) propertyPatch.stories = intake.storiesOrSuites;
     } else {

@@ -33,6 +33,7 @@ type PropertyPick = Pick<
   | 'building_name'
   | 'is_primary'
   | 'service_zone_id'
+  | 'required_crew_size'
 >;
 
 /** Row shape for `customers` + profile + service locations (detail projection). */

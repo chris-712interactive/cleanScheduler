@@ -42,6 +42,7 @@ type PropertyPickRow = Pick<
   | 'state'
   | 'postal_code'
   | 'is_primary'
+  | 'required_crew_size'
 >;
 
 function propertyOptionLabel(p: PropertyPickRow): string {
@@ -51,10 +52,14 @@ function propertyOptionLabel(p: PropertyPickRow): string {
 }
 
 function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyGroup[] {
-  const map = new Map<string, { id: string; label: string }[]>();
+  const map = new Map<string, { id: string; label: string; requiredCrewSize: number }[]>();
   for (const p of rows) {
     const list = map.get(p.customer_id) ?? [];
-    list.push({ id: p.id, label: propertyOptionLabel(p) });
+    list.push({
+      id: p.id,
+      label: propertyOptionLabel(p),
+      requiredCrewSize: p.required_crew_size,
+    });
     map.set(p.customer_id, list);
   }
   return Array.from(map.entries()).map(([customerId, options]) => ({ customerId, options }));
@@ -100,7 +105,7 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
     supabase
       .from('tenant_customer_properties')
       .select(
-        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary, required_crew_size',
       )
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })

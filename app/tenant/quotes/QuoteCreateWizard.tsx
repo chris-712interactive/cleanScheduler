@@ -25,6 +25,7 @@ import {
   type QuoteHeaderPricingValues,
 } from './QuoteHeaderPricingFields';
 import { QuoteLiveTotalSidebar } from './QuoteLiveTotalSidebar';
+import { QuoteCrewSizeField } from './QuoteCrewSizeField';
 import type { CustomerPropertyGroup, QuoteCustomerOption } from './quoteFormTypes';
 import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
@@ -197,6 +198,10 @@ export function QuoteCreateWizard({
     () => consultationPrefill?.scopeExclusions ?? QUOTE_SCOPE_TEMPLATES[0]?.defaultExclusions ?? '',
   );
 
+  const consultationCrew = consultationPrefill?.crewSize ?? '';
+  const [crewSize, setCrewSize] = useState(consultationCrew || '1');
+  const crewSizeTouched = useRef(consultationCrew !== '');
+
   const [lineRows, setLineRows] = useState<QuoteLineItemDraft[]>(() => {
     const row = createEmptyQuoteLineDraft();
     if (!consultationPrefill) return [row];
@@ -221,6 +226,16 @@ export function QuoteCreateWizard({
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
   }, [customerPropertyGroups, customerId]);
+
+  useEffect(() => {
+    if (crewSizeTouched.current) return;
+    if (propertySource !== 'existing' || !propertyId) {
+      setCrewSize('1');
+      return;
+    }
+    const match = propertyOptions.find((option) => option.id === propertyId);
+    setCrewSize(String(match?.requiredCrewSize ?? 1));
+  }, [propertyId, propertyOptions, propertySource]);
 
   useEffect(() => {
     if (customerSource !== 'existing' || !customerId) return;
@@ -995,6 +1010,14 @@ export function QuoteCreateWizard({
               Add priced service lines. Field employees receive amounts from scheduled visits — set
               prices here, not in the field.
             </p>
+            <QuoteCrewSizeField
+              id="quote_crew_size"
+              value={crewSize}
+              onChange={(next) => {
+                crewSizeTouched.current = true;
+                setCrewSize(next);
+              }}
+            />
             <QuoteLineItemsEditor
               layout="cards"
               rows={lineRows}
