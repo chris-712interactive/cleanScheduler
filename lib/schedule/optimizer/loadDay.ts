@@ -455,6 +455,7 @@ export async function loadDaySchedulingSuggestions(
       requiresKeyPickup: facts.requiresKeyPickup,
       lockedAssigneeIds: null,
       lockedStartMin: null,
+      placedStartMin: span.startMin,
     });
     meta.set(visit.id, {
       title: visit.title || 'Visit',
