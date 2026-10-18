@@ -93,6 +93,11 @@ export type OptimizerJob = {
   /** Already-published assignee set. Stability prefers to keep it. */
   lockedAssigneeIds: string[] | null;
   lockedStartMin: number | null;
+  /**
+   * Clock time already saved on the visit. Used when the arrival window cannot
+   * hold the job before the workday ends, so fill can still staff that time.
+   */
+  placedStartMin: number | null;
 };
 
 export type FactorMode = 'hard' | 'soft';

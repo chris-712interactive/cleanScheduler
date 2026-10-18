@@ -173,24 +173,24 @@ function blockBefore(blocks: PlacedBlock[], block: PlacedBlock | null): PlacedBl
   return previous;
 }
 
-function hardWindow(
+/** Arrival windows bound when the visit starts. The job may finish after the window. */
+function arrivalStartBounds(
   job: OptimizerJob,
   policy: ScheduleOptimizerPolicy,
-): {
-  startMin: number;
-  endMin: number;
-} {
-  let startMin = Number.NEGATIVE_INFINITY;
-  let endMin = Number.POSITIVE_INFINITY;
-  if (isHard(policy, 'customer_arrival_window') && job.arrivalWindow) {
-    startMin = Math.max(startMin, job.arrivalWindow.startMin);
-    endMin = Math.min(endMin, job.arrivalWindow.endMin);
+): { startMin: number; endMin: number } | null {
+  if (!isHard(policy, 'customer_arrival_window') || !job.arrivalWindow) return null;
+  return job.arrivalWindow;
+}
+
+/** Access hours bound the whole visit: start and finish must fall inside them. */
+function accessBounds(
+  job: OptimizerJob,
+  policy: ScheduleOptimizerPolicy,
+): { startMin: number; endMin: number } {
+  if (!isHard(policy, 'site_access_hours') || !job.accessWindow) {
+    return { startMin: Number.NEGATIVE_INFINITY, endMin: Number.POSITIVE_INFINITY };
   }
-  if (isHard(policy, 'site_access_hours') && job.accessWindow) {
-    startMin = Math.max(startMin, job.accessWindow.startMin);
-    endMin = Math.min(endMin, job.accessWindow.endMin);
-  }
-  return { startMin, endMin };
+  return job.accessWindow;
 }
 
 function personStaticFailure(
@@ -451,6 +451,14 @@ function windowFit(
   return inside ? 1 : 0;
 }
 
+function startFallsIn(
+  startMin: number,
+  window: { startMin: number; endMin: number } | null,
+): number | null {
+  if (!window) return null;
+  return startMin >= window.startMin && startMin <= window.endMin ? 1 : 0;
+}
+
 function directionScore(
   earlier: PlacedBlock | null,
   prev: PlacedBlock | null,
@@ -674,7 +682,7 @@ function evaluateFactors(ctx: ScoreContext): {
 
   consider(
     'customer_arrival_window',
-    windowFit(ctx.startMin, ctx.endMin, job.arrivalWindow),
+    startFallsIn(ctx.startMin, job.arrivalWindow),
     null,
     'Customer arrival window.',
   );
@@ -845,7 +853,8 @@ function leadSlots(
   const bounds = shiftBounds(lead, policy);
   const blocks = memberJobBlocks(lead, extra);
   const gaps = freeGaps(bounds, occupiedIntervals(lead, extra, policy));
-  const window = hardWindow(job, policy);
+  const arrival = arrivalStartBounds(job, policy);
+  const access = accessBounds(job, policy);
   const slots: Array<{
     startMin: number;
     endMin: number;
@@ -864,10 +873,14 @@ function leadSlots(
     );
     const startMin = Math.max(
       approach.earliest,
-      Number.isFinite(window.startMin) ? window.startMin : gap.lo,
+      Number.isFinite(access.startMin) ? access.startMin : gap.lo,
+      arrival ? arrival.startMin : gap.lo,
     );
-    const endCap = Math.min(gap.hi, Number.isFinite(window.endMin) ? window.endMin : gap.hi);
-    if (startMin + job.durationMinutes > endCap + 0.001) continue;
+    const endCap = Math.min(gap.hi, Number.isFinite(access.endMin) ? access.endMin : gap.hi);
+    const latestStart = arrival
+      ? Math.min(endCap - job.durationMinutes, arrival.endMin)
+      : endCap - job.durationMinutes;
+    if (startMin > latestStart + 0.001) continue;
 
     const next = nextBlock(blocks, startMin + job.durationMinutes);
     if (next) {
@@ -963,6 +976,50 @@ function scoreSlot(
   };
 }
 
+function isBetterChoice(candidate: SlotChoice, best: SlotChoice | null): boolean {
+  if (!best) return true;
+  if (candidate.score > best.score + 1e-9) return true;
+  if (Math.abs(candidate.score - best.score) > 1e-9) return false;
+  if (candidate.travelMinutesBefore < best.travelMinutesBefore) return true;
+  return (
+    candidate.travelMinutesBefore === best.travelMinutesBefore &&
+    candidate.team[0]!.userId.localeCompare(best.team[0]!.userId) < 0
+  );
+}
+
+/**
+ * Fill clips a late preferred start so the job still ends with the workday
+ * (evening 4:00 becomes 3:00–5:00 when the day closes at 5:00). The arrival
+ * window then has no legal start. Staff the time already on the visit when
+ * someone can work it, using the same hours, time off, and overlap checks.
+ */
+function staffAtSavedTime(
+  job: OptimizerJob,
+  teams: OptimizerCrewMember[][],
+  assigned: Map<string, PlacedBlock[]>,
+  policy: ScheduleOptimizerPolicy,
+  busiestLoadMinutes: number,
+): SlotChoice | null {
+  if (job.placedStartMin == null) return null;
+  const startMin = job.placedStartMin;
+  const endMin = startMin + job.durationMinutes;
+  const relaxed: OptimizerJob = { ...job, arrivalWindow: null };
+  let best: SlotChoice | null = null;
+  for (const team of teams) {
+    const scored = scoreSlot(
+      relaxed,
+      team,
+      { startMin, endMin, travel: null, prev: null },
+      assigned,
+      policy,
+      busiestLoadMinutes,
+    );
+    if ('failure' in scored || !isBetterChoice(scored, best)) continue;
+    best = scored;
+  }
+  return best;
+}
+
 function jobSortKey(job: OptimizerJob): [number, number, number, number, string] {
   const locked = job.lockedStartMin != null || (job.lockedAssigneeIds?.length ?? 0) > 0 ? 0 : 1;
   const windowWidth = job.arrivalWindow
@@ -1040,17 +1097,12 @@ export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
           failures.add(scored.failure);
           continue;
         }
-        if (
-          !best ||
-          scored.score > best.score + 1e-9 ||
-          (Math.abs(scored.score - best.score) <= 1e-9 &&
-            (scored.travelMinutesBefore < best.travelMinutesBefore ||
-              (scored.travelMinutesBefore === best.travelMinutesBefore &&
-                scored.team[0]!.userId.localeCompare(best.team[0]!.userId) < 0)))
-        ) {
-          best = scored;
-        }
+        if (isBetterChoice(scored, best)) best = scored;
       }
+    }
+
+    if (!best) {
+      best = staffAtSavedTime(job, teams, assigned, policy, busiestLoadMinutes);
     }
 
     if (!best) {

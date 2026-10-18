@@ -73,6 +73,7 @@ function job(overrides: Partial<OptimizerJob> & Pick<OptimizerJob, 'id'>): Optim
     requiresKeyPickup: false,
     lockedAssigneeIds: null,
     lockedStartMin: null,
+    placedStartMin: null,
     ...overrides,
   };
 }
@@ -244,6 +245,62 @@ describe('planOptimizedDay', () => {
 
     expect(plan.assignments[0]?.startMin).toBe(15 * 60);
     expect(plan.assignments[0]?.endMin).toBe(15 * 60 + 90);
+  });
+
+  it('lets a job run past a short arrival window when the start is inside it', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [crew({ userId: 'alex' })],
+      jobs: [
+        job({
+          id: 'after-school',
+          durationMinutes: 120,
+          arrivalWindow: { startMin: 15 * 60, endMin: 16 * 60 },
+        }),
+      ],
+    });
+
+    expect(plan.unassigned).toEqual([]);
+    expect(plan.assignments[0]?.startMin).toBe(15 * 60);
+    expect(plan.assignments[0]?.endMin).toBe(17 * 60);
+  });
+
+  it('staffs the saved visit time when the preferred block starts too late to finish', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [crew({ userId: 'alex' }), crew({ userId: 'blair' })],
+      jobs: [
+        job({
+          id: 'evening-clean',
+          durationMinutes: 120,
+          arrivalWindow: { startMin: 16 * 60, endMin: 20 * 60 },
+          placedStartMin: 15 * 60,
+        }),
+      ],
+    });
+
+    expect(plan.unassigned).toEqual([]);
+    expect(plan.assignments[0]?.startMin).toBe(15 * 60);
+    expect(plan.assignments[0]?.endMin).toBe(17 * 60);
+    expect(plan.assignments[0]?.userIds).toEqual(['alex']);
+  });
+
+  it('keeps a saved time unassigned when it falls outside working hours', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [crew({ userId: 'alex' })],
+      jobs: [
+        job({
+          id: 'after-close',
+          durationMinutes: 120,
+          arrivalWindow: { startMin: 16 * 60, endMin: 20 * 60 },
+          placedStartMin: 18 * 60,
+        }),
+      ],
+    });
+
+    expect(plan.assignments).toEqual([]);
+    expect(plan.unassigned[0]?.jobId).toBe('after-close');
   });
 
   it('rejects a commercial job when nobody has the required skill', () => {
