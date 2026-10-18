@@ -121,7 +121,8 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         community_name,
         building_name,
         is_primary,
-        service_zone_id
+        service_zone_id,
+        required_crew_size
       )
     `,
     )

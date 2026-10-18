@@ -28,6 +28,7 @@ export type QuoteEditSnapshot = {
   customerId: string;
   propertyId: string;
   amountCents: number | null;
+  requiredCrewSize: number;
   notes: string;
   validUntilYmd: string;
   lineItems: QuoteEditLineItem[];
@@ -56,6 +57,7 @@ export async function loadQuoteEditSnapshot(
       customer_id,
       property_id,
       amount_cents,
+      required_crew_size,
       notes,
       valid_until,
       tax_mode,
@@ -97,6 +99,7 @@ export async function loadQuoteEditSnapshot(
     customerId: row.customer_id ?? '',
     propertyId: row.property_id ?? '',
     amountCents: row.amount_cents,
+    requiredCrewSize: row.required_crew_size,
     notes: row.notes ?? '',
     validUntilYmd: toDateInputValue(row.valid_until),
     lineItems,

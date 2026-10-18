@@ -148,6 +148,7 @@ export type ConsultationQuotePrefill = {
   frequency: ConsultationFrequency;
   frequencyDetail: string;
   estimatedHours: string;
+  crewSize: string;
 };
 
 export function consultationUsesCommercialFields(kind: CustomerPropertyKind): boolean {
@@ -180,7 +181,7 @@ export const CONSULTATION_INTAKE_FIELDS = [
   { key: 'occupant_count', label: 'Employee or occupant count', appliesTo: 'commercial' },
   { key: 'trash_locations', label: 'Trash and recycling locations', appliesTo: 'commercial' },
   { key: 'restock_restrooms', label: 'Restock paper and soap', appliesTo: 'commercial' },
-  { key: 'crew_headcount', label: 'Requested crew size', appliesTo: 'commercial' },
+  { key: 'crew_headcount', label: 'Crew size', appliesTo: 'all' },
   { key: 'addons', label: 'Add-ons', appliesTo: 'all' },
   { key: 'floor_types', label: 'Floor types', appliesTo: 'all' },
   { key: 'last_professional_clean', label: 'Last professional clean', appliesTo: 'all' },
@@ -364,7 +365,6 @@ export function consultationIntakeErrors(
     if (need('restock_restrooms') && intake.restockRestrooms == null) {
       errors.push('Restock paper and soap is required.');
     }
-    if (need('crew_headcount')) requireNumber(errors, intake.crewHeadcount, 'Requested crew size');
   } else {
     if (need('bedrooms')) requireNumber(errors, intake.bedrooms, 'Bedrooms');
     if (need('bathrooms') && (intake.bathrooms == null || intake.bathrooms <= 0)) {
@@ -401,6 +401,10 @@ export function consultationIntakeErrors(
   if (need('special_requests'))
     requireText(errors, intake.specialRequests ?? '', 'Special requests');
   if (need('photo_notes')) requireText(errors, intake.photoNotes ?? '', 'Photo notes');
+  if (need('crew_headcount')) requireNumber(errors, intake.crewHeadcount, 'Crew size');
+  if (intake.crewHeadcount != null && (intake.crewHeadcount < 1 || intake.crewHeadcount > 8)) {
+    errors.push('Crew size must be a whole number from 1 to 8.');
+  }
   if (need('crew_estimate_hours') && intake.crewEstimateHours == null) {
     errors.push('Crew estimate (hours) is required.');
   }
@@ -518,7 +522,6 @@ export function formatConsultationIntakeSummary(intake: ConsultationIntake): str
       intake.occupantCount != null ? `Occupants: ${intake.occupantCount}` : '',
       intake.trashLocations ? `Trash and recycling: ${intake.trashLocations}` : '',
       intake.restockRestrooms != null ? `Restock restrooms: ${yesNo(intake.restockRestrooms)}` : '',
-      intake.crewHeadcount != null ? `Requested crew: ${intake.crewHeadcount}` : '',
     );
   } else {
     lines.push(
@@ -555,6 +558,7 @@ export function formatConsultationIntakeSummary(intake: ConsultationIntake): str
   if (intake.parkingAndEntry) lines.push(`Parking and entry: ${intake.parkingAndEntry}`);
   if (intake.specialRequests) lines.push(`Special requests: ${intake.specialRequests}`);
   if (intake.photoNotes) lines.push(`Photo notes: ${intake.photoNotes}`);
+  if (intake.crewHeadcount != null) lines.push(`Crew size: ${intake.crewHeadcount}`);
   if (intake.crewEstimateHours != null)
     lines.push(`Crew estimate: ${intake.crewEstimateHours} hours`);
 
@@ -583,5 +587,6 @@ export function quotePrefillFromConsultation(intake: ConsultationIntake): Consul
     frequency: intake.frequency ?? 'one_time',
     frequencyDetail: intake.frequencyDetail ?? '',
     estimatedHours: intake.crewEstimateHours != null ? String(intake.crewEstimateHours) : '',
+    crewSize: intake.crewHeadcount != null ? String(intake.crewHeadcount) : '',
   };
 }

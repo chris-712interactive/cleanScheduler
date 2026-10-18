@@ -13,6 +13,7 @@ import type { CustomerPropertyGroup } from './QuoteCreateForm';
 import { QUOTE_STATUS_LABEL, TENANT_QUOTE_STATUS_EDIT_OPTIONS } from '@/lib/tenant/quoteLabels';
 import { QuoteLineItemsEditor } from './QuoteLineItemsEditorLoadable';
 import { QuoteHeaderPricingFields } from './QuoteHeaderPricingFields';
+import { QuoteCrewSizeField } from './QuoteCrewSizeField';
 import {
   QuoteConsultationPrompt,
   type QuoteConsultationPromptInfo,
@@ -206,6 +207,8 @@ export function QuoteEditForm({
       {customerId && propertyOptions.length === 0 ? (
         <p className={styles.hint}>Add service locations on the customer profile first.</p>
       ) : null}
+
+      <QuoteCrewSizeField id="edit_quote_crew_size" defaultValue={snapshot.requiredCrewSize} />
 
       <QuoteLineItemsEditor
         initialRows={snapshot.lineItems}

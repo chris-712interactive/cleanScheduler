@@ -38,6 +38,7 @@ import { autoScheduleSkippedMessage } from '@/lib/tenant/quoteAutoScheduleReason
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
+import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
 import { loadQuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
@@ -393,6 +394,42 @@ function linePayloadFromParsed(lines: ParsedQuoteLineItem[]) {
   }));
 }
 
+async function persistQuotedCrewSize(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  quoteId: string,
+  propertyId: string | null,
+  size: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const quoteUpdate = await admin
+    .from('tenant_quotes')
+    .update({ required_crew_size: size })
+    .eq('id', quoteId)
+    .eq('tenant_id', tenantId);
+  if (quoteUpdate.error) {
+    return {
+      ok: false,
+      error:
+        'The quote was saved, but the crew size could not be stored. Open the quote and save it again.',
+    };
+  }
+  if (!propertyId) return { ok: true };
+
+  const propertyUpdate = await admin
+    .from('tenant_customer_properties')
+    .update({ required_crew_size: size })
+    .eq('id', propertyId)
+    .eq('tenant_id', tenantId);
+  if (propertyUpdate.error) {
+    return {
+      ok: false,
+      error:
+        'The quote was saved, but the location crew size could not be updated. Open the quote and save it again.',
+    };
+  }
+  return { ok: true };
+}
+
 async function syncPropertyFactsFromSnapshot(
   admin: ReturnType<typeof createAdminClient>,
   tenantId: string,
@@ -635,6 +672,8 @@ export async function createTenantQuote(
   const quoteDiscountValue = priced.promotionFields.quote_discount_value;
 
   const linePayload = linePayloadFromParsed(quoteLines);
+  const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
+  if (!crewSize.ok) return { error: crewSize.error };
 
   await syncPropertyFactsFromSnapshot(
     admin,
@@ -703,6 +742,15 @@ export async function createTenantQuote(
 
   await applyQuoteStatusAndStage(admin, membership.tenantId, newId, initialStatus);
 
+  const crewSaved = await persistQuotedCrewSize(
+    admin,
+    membership.tenantId,
+    newId,
+    propertyId,
+    crewSize.size,
+  );
+  if (!crewSaved.ok) return { error: crewSaved.error };
+
   await saveQuotePromotionSideEffects(admin, {
     tenantId: membership.tenantId,
     quoteId: newId,
@@ -735,6 +783,8 @@ export async function createTenantQuote(
 
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath('/tenant/quotes/new', 'page');
+  revalidatePath('/tenant/schedule', 'page');
+  revalidatePath(`/tenant/customers/${customerId}`, 'page');
   if (initialStatus === 'sent') {
     invalidateCustomerQuoteBadge(customerId);
   }
@@ -886,6 +936,8 @@ export async function updateTenantQuote(
   const validUntil = parseOptionalDateIso(validUntilRaw);
 
   const linePayload = linePayloadFromParsed(quoteLines);
+  const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
+  if (!crewSize.ok) return { error: crewSize.error };
 
   const rpc = await admin.rpc('tenant_quote_save_with_line_items', {
     p_quote_id: quoteId,
@@ -926,6 +978,15 @@ export async function updateTenantQuote(
 
   await applyQuoteStatusAndStage(admin, membership.tenantId, quoteId, status);
 
+  const crewSaved = await persistQuotedCrewSize(
+    admin,
+    membership.tenantId,
+    quoteId,
+    propertyId,
+    crewSize.size,
+  );
+  if (!crewSaved.ok) return { error: crewSaved.error };
+
   await saveQuotePromotionSideEffects(admin, {
     tenantId: membership.tenantId,
     quoteId,
@@ -958,6 +1019,8 @@ export async function updateTenantQuote(
 
   revalidatePath('/tenant/quotes', 'page');
   revalidatePath(`/tenant/quotes/${quoteId}`, 'page');
+  revalidatePath('/tenant/schedule', 'page');
+  revalidatePath(`/tenant/customers/${customerId}`, 'page');
   if (priorStatus === 'sent' || status === 'sent') {
     invalidateCustomerQuoteBadge(customerId);
   }
@@ -998,7 +1061,7 @@ export async function createTenantQuoteAmendment(
   const { data: prior, error: priorErr } = await admin
     .from('tenant_quotes')
     .select(
-      'id, tenant_id, customer_id, property_id, title, status, amount_cents, currency, notes, valid_until, quote_group_id, version_number, is_locked, superseded_by_quote_id, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value, job_type, scope_snapshot, property_snapshot, internal_notes',
+      'id, tenant_id, customer_id, property_id, title, status, amount_cents, currency, notes, valid_until, quote_group_id, version_number, is_locked, superseded_by_quote_id, tax_mode, tax_rate_bps, quote_discount_kind, quote_discount_value, job_type, scope_snapshot, property_snapshot, internal_notes, required_crew_size',
     )
     .eq('id', priorQuoteId)
     .eq('tenant_id', membership.tenantId)
@@ -1050,6 +1113,7 @@ export async function createTenantQuoteAmendment(
       scope_snapshot: prior.scope_snapshot,
       property_snapshot: prior.property_snapshot,
       internal_notes: prior.internal_notes,
+      required_crew_size: prior.required_crew_size,
       notes: prior.notes,
       valid_until: prior.valid_until,
       quote_group_id: prior.quote_group_id,

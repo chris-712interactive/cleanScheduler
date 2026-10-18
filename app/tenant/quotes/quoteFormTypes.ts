@@ -5,5 +5,5 @@ export interface QuoteCustomerOption {
 
 export interface CustomerPropertyGroup {
   customerId: string;
-  options: { id: string; label: string }[];
+  options: { id: string; label: string; requiredCrewSize?: number }[];
 }

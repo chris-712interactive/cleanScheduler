@@ -2040,6 +2040,7 @@ export type Database = {
           latitude: number | null;
           longitude: number | null;
           scheduling_override: Json | null;
+          required_crew_size: number;
           access_codes_ciphertext: string | null;
           is_primary: boolean;
           bedrooms: number | null;
@@ -2067,6 +2068,7 @@ export type Database = {
           latitude?: number | null;
           longitude?: number | null;
           scheduling_override?: Json | null;
+          required_crew_size?: number;
           access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;
@@ -2094,6 +2096,7 @@ export type Database = {
           latitude?: number | null;
           longitude?: number | null;
           scheduling_override?: Json | null;
+          required_crew_size?: number;
           access_codes_ciphertext?: string | null;
           is_primary?: boolean;
           bedrooms?: number | null;
@@ -2937,6 +2940,7 @@ export type Database = {
           scope_snapshot: Json;
           property_snapshot: Json;
           internal_notes: string | null;
+          required_crew_size: number;
           quote_group_id: string;
           version_number: number;
           version_reason: string | null;
@@ -2970,6 +2974,7 @@ export type Database = {
           scope_snapshot?: Json;
           property_snapshot?: Json;
           internal_notes?: string | null;
+          required_crew_size?: number;
           quote_group_id?: string;
           version_number?: number;
           version_reason?: string | null;
@@ -3003,6 +3008,7 @@ export type Database = {
           scope_snapshot?: Json;
           property_snapshot?: Json;
           internal_notes?: string | null;
+          required_crew_size?: number;
           quote_group_id?: string;
           version_number?: number;
           version_reason?: string | null;

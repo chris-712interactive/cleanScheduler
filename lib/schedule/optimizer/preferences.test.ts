@@ -23,7 +23,6 @@ const baseRow: SchedulingFactsRow = {
   language_codes: [],
   required_attribute_tags: [],
   priority: 3,
-  required_crew_size: 1,
   required_skill_tags: [],
   required_certification_tags: [],
   required_equipment_tags: [],
@@ -52,7 +51,6 @@ describe('scheduling preferences', () => {
       language_codes: [],
       required_attribute_tags: [],
       priority: 3,
-      required_crew_size: 1,
       required_skill_tags: [],
       required_certification_tags: [],
       required_equipment_tags: [],
@@ -61,13 +59,11 @@ describe('scheduling preferences', () => {
     const override = schedulingFactsToOverride({
       ...emptySchedulingFacts(),
       petInHome: true,
-      requiredCrewSize: 2,
       priority: 5,
     });
 
     const effective = effectiveSchedulingFacts(customer, override);
     expect(effective.petInHome).toBe(true);
-    expect(effective.requiredCrewSize).toBe(2);
     expect(effective.priority).toBe(5);
     expect(effectiveSchedulingFacts(customer, null).arrivalWindow).toEqual({
       startMin: 9 * 60,

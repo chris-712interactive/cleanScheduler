@@ -24,7 +24,6 @@ export type SchedulingFacts = {
   languageCodes: string[];
   requiredAttributeTags: string[];
   priority: number;
-  requiredCrewSize: number;
   requiredSkillTags: string[];
   requiredCertificationTags: string[];
   requiredEquipmentTags: string[];
@@ -44,7 +43,6 @@ export type SchedulingFactsRow = {
   language_codes: string[];
   required_attribute_tags: string[];
   priority: number;
-  required_crew_size: number;
   required_skill_tags: string[];
   required_certification_tags: string[];
   required_equipment_tags: string[];
@@ -69,7 +67,6 @@ export function emptySchedulingFacts(): SchedulingFacts {
     languageCodes: [],
     requiredAttributeTags: [],
     priority: 3,
-    requiredCrewSize: 1,
     requiredSkillTags: [],
     requiredCertificationTags: [],
     requiredEquipmentTags: [],
@@ -170,7 +167,6 @@ export function schedulingFactsFromRow(row: SchedulingFactsRow | null): Scheduli
     languageCodes: row.language_codes ?? [],
     requiredAttributeTags: row.required_attribute_tags ?? [],
     priority: row.priority,
-    requiredCrewSize: row.required_crew_size,
     requiredSkillTags: row.required_skill_tags ?? [],
     requiredCertificationTags: row.required_certification_tags ?? [],
     requiredEquipmentTags: row.required_equipment_tags ?? [],
@@ -217,10 +213,6 @@ export function effectiveSchedulingFacts(
       typeof override.priority === 'number'
         ? Math.min(5, Math.max(1, Math.round(override.priority)))
         : customer.priority,
-    requiredCrewSize:
-      typeof override.requiredCrewSize === 'number'
-        ? Math.min(8, Math.max(1, Math.round(override.requiredCrewSize)))
-        : customer.requiredCrewSize,
     requiredSkillTags: asTagArray(override.requiredSkillTags ?? customer.requiredSkillTags),
     requiredCertificationTags: asTagArray(
       override.requiredCertificationTags ?? customer.requiredCertificationTags,
@@ -262,7 +254,6 @@ export function schedulingFactsFromForm(
   const accessStart = optionalTime(formData, 'access_start');
   const accessEnd = optionalTime(formData, 'access_end');
   const priority = Number(formData.get('priority'));
-  const crewSize = Number(formData.get('required_crew_size'));
   return {
     preferredWeekdays: parsePreferredWeekdays(formData.getAll('preferred_weekday')),
     preferredTimeWindow: parsePreferredTimeWindow(formData.get('preferred_time_window')),
@@ -276,9 +267,6 @@ export function schedulingFactsFromForm(
     languageCodes: parseTagList(String(formData.get('language_codes') ?? '')),
     requiredAttributeTags: parseTagList(String(formData.get('required_attribute_tags') ?? '')),
     priority: Number.isFinite(priority) ? Math.min(5, Math.max(1, Math.round(priority))) : 3,
-    requiredCrewSize: Number.isFinite(crewSize)
-      ? Math.min(8, Math.max(1, Math.round(crewSize)))
-      : 1,
     requiredSkillTags: parseTagList(String(formData.get('required_skill_tags') ?? '')),
     requiredCertificationTags: parseTagList(
       String(formData.get('required_certification_tags') ?? ''),
@@ -304,7 +292,6 @@ export function schedulingFactsToRow(facts: SchedulingFacts): Omit<SchedulingFac
     language_codes: facts.languageCodes,
     required_attribute_tags: facts.requiredAttributeTags,
     priority: facts.priority,
-    required_crew_size: facts.requiredCrewSize,
     required_skill_tags: facts.requiredSkillTags,
     required_certification_tags: facts.requiredCertificationTags,
     required_equipment_tags: facts.requiredEquipmentTags,
@@ -328,7 +315,6 @@ export function schedulingFactsToOverride(facts: SchedulingFacts): Json {
     languageCodes: facts.languageCodes,
     requiredAttributeTags: facts.requiredAttributeTags,
     priority: facts.priority,
-    requiredCrewSize: facts.requiredCrewSize,
     requiredSkillTags: facts.requiredSkillTags,
     requiredCertificationTags: facts.requiredCertificationTags,
     requiredEquipmentTags: facts.requiredEquipmentTags,

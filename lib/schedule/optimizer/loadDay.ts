@@ -293,7 +293,7 @@ export async function loadDaySchedulingSuggestions(
         ? admin
             .from('tenant_customer_properties')
             .select(
-              'id, property_kind, postal_code, service_zone_id, building_name, latitude, longitude, scheduling_override',
+              'id, property_kind, postal_code, service_zone_id, building_name, latitude, longitude, scheduling_override, required_crew_size',
             )
             .in('id', propertyIds)
         : Promise.resolve({ data: [] }),
@@ -438,7 +438,7 @@ export async function loadDaySchedulingSuggestions(
       languageCodes: facts.languageCodes,
       petInHome: facts.petInHome,
       chemicalSensitivity: facts.chemicalSensitivity,
-      requiredCrewSize: facts.requiredCrewSize,
+      requiredCrewSize: property?.required_crew_size ?? 1,
       arrivalWindow: schedulingArrivalWindow(facts),
       accessWindow: facts.accessWindow,
       priority: facts.priority,

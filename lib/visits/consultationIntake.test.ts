@@ -95,6 +95,24 @@ describe('consultation intake', () => {
     expect(prefill.frequency).toBe('biweekly');
     expect(prefill.scopeInclusions).toEqual(['Kitchen', 'Bathrooms']);
     expect(prefill.bedrooms).toBe('3');
+    expect(prefill.crewSize).toBe('');
     expect(formatConsultationIntakeSummary(stored!)).toContain('Pets: Dog (1)');
+  });
+
+  it('prefills a quote with the crew size from any property type', () => {
+    const intake = parseConsultationIntakeForm(
+      residentialForm({ crew_headcount: '2' }),
+      'residential',
+    );
+    expect(consultationIntakeErrors(intake)).toEqual([]);
+    expect(quotePrefillFromConsultation(intake).crewSize).toBe('2');
+    expect(formatConsultationIntakeSummary(intake)).toContain('Crew size: 2');
+    const tooLarge = parseConsultationIntakeForm(
+      residentialForm({ crew_headcount: '9' }),
+      'residential',
+    );
+    expect(consultationIntakeErrors(tooLarge)).toContain(
+      'Crew size must be a whole number from 1 to 8.',
+    );
   });
 });

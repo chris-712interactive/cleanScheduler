@@ -308,6 +308,10 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       key: 'Service location',
       value: siteLine || '—',
     },
+    {
+      key: 'Crew size',
+      value: String(row.required_crew_size),
+    },
     ...(scopeSnapshot.inclusions.length > 0
       ? [{ key: 'Scope items', value: String(scopeSnapshot.inclusions.length) }]
       : []),
@@ -566,6 +570,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
               customerId: row.customer_id ?? '',
               propertyId: row.property_id ?? '',
               amountCents: row.amount_cents,
+              requiredCrewSize: row.required_crew_size,
               notes: row.notes ?? '',
               validUntilYmd: toDateInputValue(row.valid_until),
               lineItems: quoteLineItems,
