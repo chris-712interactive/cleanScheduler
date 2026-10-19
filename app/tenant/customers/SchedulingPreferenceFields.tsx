@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import {
   formatTagList,
   timeInputValue,
@@ -15,6 +18,11 @@ export function SchedulingPreferenceFields({
   employees: { id: string; label: string }[];
   idPrefix: string;
 }) {
+  const [timeOfDay, setTimeOfDay] = useState(facts.preferredTimeWindow ?? '');
+  useEffect(() => {
+    setTimeOfDay(facts.preferredTimeWindow ?? '');
+  }, [facts.preferredTimeWindow]);
+
   return (
     <div className={styles.fields}>
       <fieldset className={styles.people}>
@@ -36,7 +44,11 @@ export function SchedulingPreferenceFields({
       </fieldset>
       <label className={styles.field}>
         Time of day
-        <select name="preferred_time_window" defaultValue={facts.preferredTimeWindow ?? ''}>
+        <select
+          name="preferred_time_window"
+          value={timeOfDay}
+          onChange={(event) => setTimeOfDay(event.target.value)}
+        >
           <option value="">Any time</option>
           <option value="morning">Morning</option>
           <option value="afternoon">Afternoon</option>

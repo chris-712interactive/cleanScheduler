@@ -18,7 +18,7 @@
 .scheduleForm {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-5);
 }
 
 .scheduleForm + .scheduleForm {
@@ -30,74 +30,189 @@
 .companyName {
   margin: 0;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.days {
+.block {
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.days legend {
-  margin-bottom: var(--space-2);
+.legend {
+  margin-bottom: var(--space-3);
+  padding: 0;
   font-size: var(--font-size-sm);
   font-weight: 600;
+  color: var(--color-text);
 }
 
 .dayList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-}
-
-.days label,
-.timeField {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--space-2);
+}
+
+.day {
+  position: relative;
+  display: flex;
   align-items: center;
-  font-size: var(--font-size-sm);
-}
-
-.timeField {
-  flex-direction: column;
-  align-items: flex-start;
-  max-width: 16rem;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--color-text-muted);
-}
-
-.timeField select {
-  width: 100%;
-  min-height: 2.5rem;
-  padding: 0 var(--space-3);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  background: var(--color-surface);
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard);
 
-  &:focus-visible {
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  @media (min-width: 480px) {
+    font-size: var(--font-size-sm);
+  }
+
+  &:hover {
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+  }
+
+  &:has(input:focus-visible) {
     outline: 2px solid var(--color-focus-ring);
-    outline-offset: 1px;
+    outline-offset: 2px;
+  }
+
+  &[data-selected] {
+    color: var(--color-text-on-brand);
+    background: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+  }
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
-.hint,
-.error,
-.ok {
-  margin: 0;
-  font-size: var(--font-size-sm);
+.note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
   line-height: 1.45;
-}
-
-.hint {
   color: var(--color-text-muted);
 }
 
-.error {
-  color: var(--color-danger-600);
+.timeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+
+  @media (min-width: 720px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
-.ok {
-  color: var(--color-success);
+.timeCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 4.75rem;
+  padding: var(--space-3);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &[data-selected] {
+    background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-surface));
+    border-color: var(--color-brand-primary);
+    box-shadow: inset 0 0 0 1px var(--color-brand-primary);
+  }
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.timeTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+
+  .timeCard[data-selected] & {
+    color: var(--color-brand-primary);
+  }
+}
+
+.timeHint {
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.summary {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-md);
+}
+
+.actions {
+  display: flex;
+
+  button {
+    width: 100%;
+  }
+
+  @media (min-width: 480px) {
+    justify-content: flex-end;
+
+    button {
+      width: auto;
+    }
+  }
 }

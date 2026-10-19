@@ -80,7 +80,7 @@ export default async function CustomerSettingsPage() {
 
         <Card
           title="Visit days and times"
-          description="Your cleaner uses this when building the schedule. Leave the days blank if any open day works."
+          description="Your cleaner uses this when building the schedule."
         >
           {links.length === 0 ? (
             <p className={styles.muted}>Your account is not linked to a cleaning company yet.</p>
