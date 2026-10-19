@@ -6,7 +6,9 @@ import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import {
   parsePreferredTimeWindow,
   parsePreferredWeekdays,
+  type PreferredTimeWindow,
 } from '@/lib/schedule/optimizer/preferences';
+import type { WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
 import { createAdminClient } from '@/lib/supabase/server';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -14,6 +16,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 export interface CustomerSchedulePreferenceState {
   error?: string;
   success?: boolean;
+  timeWindow?: PreferredTimeWindow | null;
+  weekdays?: WorkWeekDayKey[];
 }
 
 export async function updateCustomerSchedulePreferencesAction(
@@ -51,5 +55,5 @@ export async function updateCustomerSchedulePreferencesAction(
   revalidatePath('/customer/settings', 'page');
   revalidatePath(`/tenant/customers/${link.customerId}`, 'page');
   revalidatePath('/tenant/schedule', 'page');
-  return { success: true };
+  return { success: true, timeWindow: preferredTimeWindow, weekdays: preferredWeekdays };
 }
