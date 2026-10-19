@@ -1,0 +1,12 @@
+---
+description: After each change, confirm before committing and pushing to dev and main
+alwaysApply: true
+---
+
+# Confirm before shipping
+
+After a set of fixes or changes is done, ask once whether to commit and push to `dev` and `main`. Do not commit or push until the user says yes.
+
+Keep the question short. One question covers the whole set of changes from that turn.
+
+If they say yes, commit on `dev`, push `origin dev`, merge `dev` into `main`, push `origin main`, and return to `dev`. Follow the repo's git safety rules. If they say no, leave the work uncommitted.

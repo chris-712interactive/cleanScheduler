@@ -215,272 +215,286 @@ export function SchedulingPreferenceFields({
 
   return (
     <div className={styles.fields}>
-      <details
-        className={styles.section}
-        open={daysOpen}
-        onToggle={(event) => setDaysOpen(event.currentTarget.open)}
-      >
-        <summary className={styles.sectionSummary}>
-          <span className={styles.sectionTitle}>Days and time</span>
-          <span className={styles.sectionHint}>{whenSummary(days, timeOfDay)}</span>
-        </summary>
-        <div className={styles.sectionBody}>
-          <fieldset className={styles.block}>
-            <legend className={styles.legend}>Days that work</legend>
-            <div className={styles.dayList}>
-              {WORK_WEEK_DAY_KEYS.map((day) => {
-                const selected = days.includes(day);
-                return (
-                  <label
-                    key={`${idPrefix}-day-${day}`}
-                    className={styles.day}
-                    data-selected={selected || undefined}
-                  >
-                    <input
-                      type="checkbox"
-                      name="preferred_weekday"
-                      value={day}
-                      checked={selected}
-                      aria-label={DAY_NAME[day]}
-                      onChange={(event) => setDay(day, event.target.checked)}
-                    />
-                    <span aria-hidden="true">{WORK_WEEK_DAY_LABEL[day]}</span>
-                  </label>
-                );
-              })}
-            </div>
-            <p className={styles.note}>Leave every day off to use any day the business is open.</p>
-          </fieldset>
-          <fieldset className={styles.block}>
-            <legend className={styles.legend}>Time of day</legend>
-            <div className={styles.timeGrid}>
-              {TIME_OPTIONS.map((option) => {
-                const selected = timeOfDay === option.value;
-                return (
-                  <label
-                    key={`${idPrefix}-time-${option.value || 'any'}`}
-                    className={styles.timeCard}
-                    data-selected={selected || undefined}
-                  >
-                    <input
-                      type="radio"
-                      name="preferred_time_window"
-                      value={option.value}
-                      checked={selected}
-                      onChange={() => setTimeOfDay(option.value)}
-                    />
-                    <span className={styles.timeTitle}>{option.title}</span>
-                    <span className={styles.timeHint}>{option.hint}</span>
-                  </label>
-                );
-              })}
+      <div className={styles.sectionWrap}>
+        <details
+          className={styles.section}
+          open={daysOpen}
+          onToggle={(event) => setDaysOpen(event.currentTarget.open)}
+        >
+          <summary className={styles.sectionSummary}>
+            <span className={styles.sectionTitle}>Days and time</span>
+            <span className={styles.sectionHint}>{whenSummary(days, timeOfDay)}</span>
+          </summary>
+          <div className={styles.sectionBody}>
+            <fieldset className={styles.block}>
+              <legend className={styles.legend}>Days that work</legend>
+              <div className={styles.dayList}>
+                {WORK_WEEK_DAY_KEYS.map((day) => {
+                  const selected = days.includes(day);
+                  return (
+                    <label
+                      key={`${idPrefix}-day-${day}`}
+                      className={styles.day}
+                      data-selected={selected || undefined}
+                    >
+                      <input
+                        type="checkbox"
+                        name="preferred_weekday"
+                        value={day}
+                        checked={selected}
+                        aria-label={DAY_NAME[day]}
+                        onChange={(event) => setDay(day, event.target.checked)}
+                      />
+                      <span aria-hidden="true">{WORK_WEEK_DAY_LABEL[day]}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className={styles.note}>
+                Leave every day off to use any day the business is open.
+              </p>
+            </fieldset>
+            <fieldset className={styles.block}>
+              <legend className={styles.legend}>Time of day</legend>
+              <div className={styles.timeGrid}>
+                {TIME_OPTIONS.map((option) => {
+                  const selected = timeOfDay === option.value;
+                  return (
+                    <label
+                      key={`${idPrefix}-time-${option.value || 'any'}`}
+                      className={styles.timeCard}
+                      data-selected={selected || undefined}
+                    >
+                      <input
+                        type="radio"
+                        name="preferred_time_window"
+                        value={option.value}
+                        checked={selected}
+                        onChange={() => setTimeOfDay(option.value)}
+                      />
+                      <span className={styles.timeTitle}>{option.title}</span>
+                      <span className={styles.timeHint}>{option.hint}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className={styles.note}>
+                Fill schedule aims for this part of the day. An arrival window below replaces it.
+              </p>
+            </fieldset>
+          </div>
+        </details>
+      </div>
+
+      <div className={styles.sectionWrap}>
+        <details className={styles.section}>
+          <summary className={styles.sectionSummary}>
+            <span className={styles.sectionTitle}>Arrival and access</span>
+            <span className={styles.sectionHint}>
+              {arrivalSummary(priority, arrivalStart, arrivalEnd, accessStart, accessEnd)}
+            </span>
+          </summary>
+          <div className={styles.sectionBody}>
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                Priority
+                <select
+                  name="priority"
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value)}
+                >
+                  <option value="1">1 — Flexible</option>
+                  <option value="2">2</option>
+                  <option value="3">3 — Standard</option>
+                  <option value="4">4</option>
+                  <option value="5">5 — First in line</option>
+                </select>
+              </label>
+              <label className={styles.field}>
+                Arrival from
+                <input
+                  type="time"
+                  name="arrival_start"
+                  value={arrivalStart}
+                  onChange={(event) => setArrivalStart(event.target.value)}
+                />
+              </label>
+              <label className={styles.field}>
+                Arrival until
+                <input
+                  type="time"
+                  name="arrival_end"
+                  value={arrivalEnd}
+                  onChange={(event) => setArrivalEnd(event.target.value)}
+                />
+              </label>
+              <label className={styles.field}>
+                Site access from
+                <input
+                  type="time"
+                  name="access_start"
+                  value={accessStart}
+                  onChange={(event) => setAccessStart(event.target.value)}
+                />
+              </label>
+              <label className={styles.field}>
+                Site access until
+                <input
+                  type="time"
+                  name="access_end"
+                  value={accessEnd}
+                  onChange={(event) => setAccessEnd(event.target.value)}
+                />
+              </label>
             </div>
             <p className={styles.note}>
-              Fill schedule aims for this part of the day. An arrival window below replaces it.
+              Leave the arrival times blank to keep the time of day above.
             </p>
-          </fieldset>
-        </div>
-      </details>
-
-      <details className={styles.section}>
-        <summary className={styles.sectionSummary}>
-          <span className={styles.sectionTitle}>Arrival and access</span>
-          <span className={styles.sectionHint}>
-            {arrivalSummary(priority, arrivalStart, arrivalEnd, accessStart, accessEnd)}
-          </span>
-        </summary>
-        <div className={styles.sectionBody}>
-          <div className={styles.grid}>
-            <label className={styles.field}>
-              Priority
-              <select
-                name="priority"
-                value={priority}
-                onChange={(event) => setPriority(event.target.value)}
-              >
-                <option value="1">1 — Flexible</option>
-                <option value="2">2</option>
-                <option value="3">3 — Standard</option>
-                <option value="4">4</option>
-                <option value="5">5 — First in line</option>
-              </select>
-            </label>
-            <label className={styles.field}>
-              Arrival from
-              <input
-                type="time"
-                name="arrival_start"
-                value={arrivalStart}
-                onChange={(event) => setArrivalStart(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              Arrival until
-              <input
-                type="time"
-                name="arrival_end"
-                value={arrivalEnd}
-                onChange={(event) => setArrivalEnd(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              Site access from
-              <input
-                type="time"
-                name="access_start"
-                value={accessStart}
-                onChange={(event) => setAccessStart(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              Site access until
-              <input
-                type="time"
-                name="access_end"
-                value={accessEnd}
-                onChange={(event) => setAccessEnd(event.target.value)}
-              />
-            </label>
           </div>
-          <p className={styles.note}>
-            Leave the arrival times blank to keep the time of day above.
-          </p>
-        </div>
-      </details>
+        </details>
+      </div>
 
-      <details className={styles.section}>
-        <summary className={styles.sectionSummary}>
-          <span className={styles.sectionTitle}>Cleaners</span>
-          <span className={styles.sectionHint}>
-            {peopleSummary(preferredIds, requiredIds, blockedIds)}
-          </span>
-        </summary>
-        <div className={styles.sectionBody}>
-          <PeoplePicker
-            idPrefix={idPrefix}
-            label="Preferred cleaners"
-            name="preferred_user_id"
-            employees={employees}
-            selected={preferredIds}
-            onToggle={(id, checked) => setPreferredIds((current) => toggleId(current, id, checked))}
-          />
-          <PeoplePicker
-            idPrefix={idPrefix}
-            label="Required cleaners"
-            name="required_user_id"
-            employees={employees}
-            selected={requiredIds}
-            onToggle={(id, checked) => setRequiredIds((current) => toggleId(current, id, checked))}
-          />
-          <PeoplePicker
-            idPrefix={idPrefix}
-            label="Blocked cleaners"
-            name="blocked_user_id"
-            employees={employees}
-            selected={blockedIds}
-            onToggle={(id, checked) => setBlockedIds((current) => toggleId(current, id, checked))}
-          />
-          <p className={styles.note}>
-            Leave a list empty to skip that rule. It does not block the schedule.
-          </p>
-        </div>
-      </details>
+      <div className={styles.sectionWrap}>
+        <details className={styles.section}>
+          <summary className={styles.sectionSummary}>
+            <span className={styles.sectionTitle}>Cleaners</span>
+            <span className={styles.sectionHint}>
+              {peopleSummary(preferredIds, requiredIds, blockedIds)}
+            </span>
+          </summary>
+          <div className={styles.sectionBody}>
+            <PeoplePicker
+              idPrefix={idPrefix}
+              label="Preferred cleaners"
+              name="preferred_user_id"
+              employees={employees}
+              selected={preferredIds}
+              onToggle={(id, checked) =>
+                setPreferredIds((current) => toggleId(current, id, checked))
+              }
+            />
+            <PeoplePicker
+              idPrefix={idPrefix}
+              label="Required cleaners"
+              name="required_user_id"
+              employees={employees}
+              selected={requiredIds}
+              onToggle={(id, checked) =>
+                setRequiredIds((current) => toggleId(current, id, checked))
+              }
+            />
+            <PeoplePicker
+              idPrefix={idPrefix}
+              label="Blocked cleaners"
+              name="blocked_user_id"
+              employees={employees}
+              selected={blockedIds}
+              onToggle={(id, checked) => setBlockedIds((current) => toggleId(current, id, checked))}
+            />
+            <p className={styles.note}>
+              Leave a list empty to skip that rule. It does not block the schedule.
+            </p>
+          </div>
+        </details>
+      </div>
 
-      <details className={styles.section}>
-        <summary className={styles.sectionSummary}>
-          <span className={styles.sectionTitle}>Skills and home</span>
-          <span className={styles.sectionHint}>
-            {requirementsSummary({
-              skills,
-              certifications,
-              equipment,
-              languages,
-              attributes,
-              pet,
-              sensitive,
-              keyPickup,
-            })}
-          </span>
-        </summary>
-        <div className={styles.sectionBody}>
-          <div className={styles.grid}>
-            <label className={styles.field}>
-              Skills required
-              <input
-                name="required_skill_tags"
-                value={skills}
-                placeholder="floor-care, deep-clean"
-                onChange={(event) => setSkills(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              Certifications required
-              <input
-                name="required_certification_tags"
-                value={certifications}
-                placeholder="osha"
-                onChange={(event) => setCertifications(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              Equipment required
-              <input
-                name="required_equipment_tags"
-                value={equipment}
-                placeholder="floor-buffer"
-                onChange={(event) => setEquipment(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              Languages
-              <input
-                name="language_codes"
-                value={languages}
-                placeholder="spanish"
-                onChange={(event) => setLanguages(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              Who may enter
-              <input
-                name="required_attribute_tags"
-                value={attributes}
-                placeholder="female, non-smoker"
-                onChange={(event) => setAttributes(event.target.value)}
-              />
-            </label>
+      <div className={styles.sectionWrap}>
+        <details className={styles.section}>
+          <summary className={styles.sectionSummary}>
+            <span className={styles.sectionTitle}>Skills and home</span>
+            <span className={styles.sectionHint}>
+              {requirementsSummary({
+                skills,
+                certifications,
+                equipment,
+                languages,
+                attributes,
+                pet,
+                sensitive,
+                keyPickup,
+              })}
+            </span>
+          </summary>
+          <div className={styles.sectionBody}>
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                Skills required
+                <input
+                  name="required_skill_tags"
+                  value={skills}
+                  placeholder="floor-care, deep-clean"
+                  onChange={(event) => setSkills(event.target.value)}
+                />
+              </label>
+              <label className={styles.field}>
+                Certifications required
+                <input
+                  name="required_certification_tags"
+                  value={certifications}
+                  placeholder="osha"
+                  onChange={(event) => setCertifications(event.target.value)}
+                />
+              </label>
+              <label className={styles.field}>
+                Equipment required
+                <input
+                  name="required_equipment_tags"
+                  value={equipment}
+                  placeholder="floor-buffer"
+                  onChange={(event) => setEquipment(event.target.value)}
+                />
+              </label>
+              <label className={styles.field}>
+                Languages
+                <input
+                  name="language_codes"
+                  value={languages}
+                  placeholder="spanish"
+                  onChange={(event) => setLanguages(event.target.value)}
+                />
+              </label>
+              <label className={styles.field}>
+                Who may enter
+                <input
+                  name="required_attribute_tags"
+                  value={attributes}
+                  placeholder="female, non-smoker"
+                  onChange={(event) => setAttributes(event.target.value)}
+                />
+              </label>
+            </div>
+            <div className={styles.checks}>
+              <label className={styles.check} data-selected={pet || undefined}>
+                <input
+                  type="checkbox"
+                  name="pet_in_home"
+                  checked={pet}
+                  onChange={(event) => setPet(event.target.checked)}
+                />
+                Pets in the home
+              </label>
+              <label className={styles.check} data-selected={sensitive || undefined}>
+                <input
+                  type="checkbox"
+                  name="chemical_sensitivity"
+                  checked={sensitive}
+                  onChange={(event) => setSensitive(event.target.checked)}
+                />
+                Fragrance-free or sensitive clean
+              </label>
+              <label className={styles.check} data-selected={keyPickup || undefined}>
+                <input
+                  type="checkbox"
+                  name="requires_key_pickup"
+                  checked={keyPickup}
+                  onChange={(event) => setKeyPickup(event.target.checked)}
+                />
+                Key or fob must be picked up at the office
+              </label>
+            </div>
           </div>
-          <div className={styles.checks}>
-            <label className={styles.check} data-selected={pet || undefined}>
-              <input
-                type="checkbox"
-                name="pet_in_home"
-                checked={pet}
-                onChange={(event) => setPet(event.target.checked)}
-              />
-              Pets in the home
-            </label>
-            <label className={styles.check} data-selected={sensitive || undefined}>
-              <input
-                type="checkbox"
-                name="chemical_sensitivity"
-                checked={sensitive}
-                onChange={(event) => setSensitive(event.target.checked)}
-              />
-              Fragrance-free or sensitive clean
-            </label>
-            <label className={styles.check} data-selected={keyPickup || undefined}>
-              <input
-                type="checkbox"
-                name="requires_key_pickup"
-                checked={keyPickup}
-                onChange={(event) => setKeyPickup(event.target.checked)}
-              />
-              Key or fob must be picked up at the office
-            </label>
-          </div>
-        </div>
-      </details>
+        </details>
+      </div>
     </div>
   );
 }
