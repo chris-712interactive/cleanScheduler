@@ -163,6 +163,7 @@ export function SchedulingPreferenceFields({
   const [pet, setPet] = useState(facts.petInHome);
   const [sensitive, setSensitive] = useState(facts.chemicalSensitivity);
   const [keyPickup, setKeyPickup] = useState(facts.requiresKeyPickup);
+  const [daysOpen, setDaysOpen] = useState(true);
 
   useEffect(() => {
     setDays(savedDays ? (savedDays.split(',') as WorkWeekDayKey[]) : []);
@@ -214,7 +215,11 @@ export function SchedulingPreferenceFields({
 
   return (
     <div className={styles.fields}>
-      <details className={styles.section} defaultOpen>
+      <details
+        className={styles.section}
+        open={daysOpen}
+        onToggle={(event) => setDaysOpen(event.currentTarget.open)}
+      >
         <summary className={styles.sectionSummary}>
           <span className={styles.sectionTitle}>Days and time</span>
           <span className={styles.sectionHint}>{whenSummary(days, timeOfDay)}</span>
