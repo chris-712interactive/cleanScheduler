@@ -31,10 +31,8 @@ export function CustomerSchedulingPanel({
   return (
     <div className={styles.stack}>
       <p className={styles.lead}>
-        These defaults apply to every service location. To use different rules at one site, open
-        that location and turn on custom scheduling. Crew size is set on each location. Preferred
-        days and time of day are used when the schedule is filled. Blank lists skip that rule
-        instead of blocking the schedule.
+        These defaults apply to every service location. Open a location and turn on custom
+        scheduling to replace them there. Crew size stays on the location.
       </p>
       <CustomerForm
         tenantSlug={tenantSlug}
