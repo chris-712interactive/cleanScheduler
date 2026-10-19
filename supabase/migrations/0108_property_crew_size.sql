@@ -49,8 +49,15 @@ alter table public.tenant_quotes
 comment on column public.tenant_quotes.required_crew_size is
   'Crew size priced on this quote. Saving the quote copies it onto the service location.';
 
+-- Copy the property crew size onto existing quotes, including expired rows.
+-- The expired-immutability trigger blocks any UPDATE on those quotes.
+alter table public.tenant_quotes disable trigger tenant_quotes_07_reject_mutations_when_expired;
+
 update public.tenant_quotes q
 set required_crew_size = p.required_crew_size
 from public.tenant_customer_properties p
 where q.property_id = p.id
-  and q.tenant_id = p.tenant_id;
+  and q.tenant_id = p.tenant_id
+  and q.required_crew_size is distinct from p.required_crew_size;
+
+alter table public.tenant_quotes enable trigger tenant_quotes_07_reject_mutations_when_expired;
