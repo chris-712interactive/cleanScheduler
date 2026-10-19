@@ -14,6 +14,7 @@ import {
   emptyPropertyAccessCodes,
   type PropertyAccessCodes,
 } from '@/lib/tenant/propertyAccessCodes';
+import type { SchedulingFacts } from '@/lib/schedule/optimizer/preferences';
 import {
   addCustomerProperty,
   updateCustomerProperty,
@@ -21,6 +22,7 @@ import {
   deleteCustomerProperty,
   type PropertyFormState,
 } from './propertyActions';
+import { PropertySchedulingForm } from './CustomerSchedulingPanel';
 import styles from './customers.module.scss';
 
 const initial: PropertyFormState = {};
@@ -110,12 +112,18 @@ export function CustomerPropertySection({
   properties: initialProperties,
   serviceZones,
   accessCodesByPropertyId,
+  employees,
+  customerScheduling,
+  schedulingOverrides,
 }: {
   tenantSlug: string;
   customerId: string;
   properties: CustomerPropertyVM[];
   serviceZones: ServiceZoneOption[];
   accessCodesByPropertyId: Record<string, PropertyAccessCodeView>;
+  employees: { id: string; label: string }[];
+  customerScheduling: SchedulingFacts;
+  schedulingOverrides: Record<string, unknown>;
 }) {
   const [properties, setProperties] = useState(initialProperties);
   const [addLocationOpen, setAddLocationOpen] = useState(false);
@@ -159,6 +167,7 @@ export function CustomerPropertySection({
                     {zoneName ? ` · ${zoneName}` : ''}
                     {p.community_name?.trim() ? ` · ${p.community_name.trim()}` : ''} ·{' '}
                     {formatPropertyAddressLine(p) || 'No address on file'}
+                    {schedulingOverrides[p.id] != null ? ' · Custom schedule' : ''}
                   </span>
                 </summary>
 
@@ -174,6 +183,9 @@ export function CustomerPropertySection({
                         unreadable: false,
                       }
                     }
+                    employees={employees}
+                    customerScheduling={customerScheduling}
+                    schedulingOverride={schedulingOverrides[p.id] ?? null}
                     onPropertiesPatch={onPropertiesPatch}
                     secondaryActions={
                       <>
@@ -358,6 +370,9 @@ function EditPropertyForm({
   property,
   serviceZones,
   accessCodes,
+  employees,
+  customerScheduling,
+  schedulingOverride,
   onPropertiesPatch,
   secondaryActions,
 }: {
@@ -366,6 +381,9 @@ function EditPropertyForm({
   property: CustomerPropertyVM;
   serviceZones: ServiceZoneOption[];
   accessCodes: PropertyAccessCodeView;
+  employees: { id: string; label: string }[];
+  customerScheduling: SchedulingFacts;
+  schedulingOverride: unknown;
   onPropertiesPatch: PatchHandler;
   secondaryActions?: ReactNode;
 }) {
@@ -496,6 +514,14 @@ function EditPropertyForm({
         </button>
         {secondaryActions ? <div className={styles.formFooterEnd}>{secondaryActions}</div> : null}
       </div>
+      <PropertySchedulingForm
+        tenantSlug={tenantSlug}
+        customerId={customerId}
+        propertyId={id}
+        customerFacts={customerScheduling}
+        override={schedulingOverride}
+        employees={employees}
+      />
     </>
   );
 }

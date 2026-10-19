@@ -172,6 +172,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const subscriptionCheckoutOk = firstParam(sp.subscription_checkout) === 'success';
   const subscriptionCheckoutCanceled = firstParam(sp.subscription_checkout) === 'canceled';
   const subscriptionCancelScheduled = firstParam(sp.subscription_cancel) === 'scheduled';
+  const scheduling = await loadCustomerScheduling(admin, membership.tenantId, customer.id);
 
   return (
     <>
@@ -275,12 +276,13 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
 
           <Card
             title="Scheduling preferences"
-            description="Preferred days and time of day, who should clean, and what the job requires."
+            description="Defaults for every location. A single location can replace them from its own details."
           >
-            <CustomerSchedulingPreferences
+            <CustomerSchedulingPanel
               tenantSlug={membership.tenantSlug}
-              tenantId={membership.tenantId}
               customerId={customer.id}
+              facts={scheduling.facts}
+              employees={scheduling.employees}
             />
           </Card>
 
@@ -294,6 +296,9 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
               properties={properties}
               serviceZones={serviceZones}
               accessCodesByPropertyId={accessCodesByPropertyId}
+              employees={scheduling.employees}
+              customerScheduling={scheduling.facts}
+              schedulingOverrides={scheduling.overrides}
             />
           </Card>
         </div>
@@ -355,16 +360,11 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   );
 }
 
-async function CustomerSchedulingPreferences({
-  tenantSlug,
-  tenantId,
-  customerId,
-}: {
-  tenantSlug: string;
-  tenantId: string;
-  customerId: string;
-}) {
-  const admin = createAdminClient();
+async function loadCustomerScheduling(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  customerId: string,
+) {
   const [{ data: prefRow }, { data: properties }, { data: members }] = await Promise.all([
     admin
       .from('tenant_customer_scheduling_preferences')
@@ -374,10 +374,9 @@ async function CustomerSchedulingPreferences({
       .maybeSingle(),
     admin
       .from('tenant_customer_properties')
-      .select('id, label, scheduling_override')
+      .select('id, scheduling_override')
       .eq('tenant_id', tenantId)
-      .eq('customer_id', customerId)
-      .order('is_primary', { ascending: false }),
+      .eq('customer_id', customerId),
     admin
       .from('tenant_memberships')
       .select('user_id')
@@ -390,22 +389,15 @@ async function CustomerSchedulingPreferences({
       ? await admin.from('user_profiles').select('user_id, display_name').in('user_id', memberIds)
       : { data: [] };
 
-  return (
-    <CustomerSchedulingPanel
-      tenantSlug={tenantSlug}
-      customerId={customerId}
-      facts={schedulingFactsFromRow(prefRow)}
-      employees={memberIds.map((id) => ({
-        id,
-        label:
-          profiles?.find((profile) => profile.user_id === id)?.display_name?.trim() ||
-          'Team member',
-      }))}
-      properties={(properties ?? []).map((property) => ({
-        id: property.id,
-        label: property.label?.trim() || 'Property',
-        override: property.scheduling_override,
-      }))}
-    />
-  );
+  return {
+    facts: schedulingFactsFromRow(prefRow),
+    employees: memberIds.map((id) => ({
+      id,
+      label:
+        profiles?.find((profile) => profile.user_id === id)?.display_name?.trim() || 'Team member',
+    })),
+    overrides: Object.fromEntries(
+      (properties ?? []).map((property) => [property.id, property.scheduling_override]),
+    ) as Record<string, unknown>,
+  };
 }

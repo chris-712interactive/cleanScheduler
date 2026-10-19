@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
@@ -22,21 +22,19 @@ export function CustomerSchedulingPanel({
   customerId,
   facts,
   employees,
-  properties,
 }: {
   tenantSlug: string;
   customerId: string;
   facts: SchedulingFacts;
   employees: { id: string; label: string }[];
-  properties: { id: string; label: string; override: unknown }[];
 }) {
   return (
     <div className={styles.stack}>
       <p className={styles.lead}>
-        These defaults apply to every property. A property can replace them. Crew size is set on
-        each service location, and a consultation or quote updates that location. Preferred days and
-        time of day are used when the schedule is filled. Blank lists skip that rule instead of
-        blocking the schedule.
+        These defaults apply to every service location. To use different rules at one site, open
+        that location and turn on custom scheduling. Crew size is set on each location. Preferred
+        days and time of day are used when the schedule is filled. Blank lists skip that rule
+        instead of blocking the schedule.
       </p>
       <CustomerForm
         tenantSlug={tenantSlug}
@@ -44,18 +42,6 @@ export function CustomerSchedulingPanel({
         facts={facts}
         employees={employees}
       />
-      {properties.map((property) => (
-        <PropertyOverrideForm
-          key={property.id}
-          tenantSlug={tenantSlug}
-          customerId={customerId}
-          propertyId={property.id}
-          label={property.label}
-          facts={effectiveSchedulingFacts(facts, property.override)}
-          customized={property.override != null}
-          employees={employees}
-        />
-      ))}
     </div>
   );
 }
@@ -90,40 +76,61 @@ function CustomerForm({
   );
 }
 
-function PropertyOverrideForm({
+export function PropertySchedulingForm({
   tenantSlug,
   customerId,
   propertyId,
-  label,
-  facts,
-  customized,
+  customerFacts,
+  override,
   employees,
 }: {
   tenantSlug: string;
   customerId: string;
   propertyId: string;
-  label: string;
-  facts: SchedulingFacts;
-  customized: boolean;
+  customerFacts: SchedulingFacts;
+  override: unknown;
   employees: { id: string; label: string }[];
 }) {
+  const customized = override != null;
+  const [custom, setCustom] = useState(customized);
   const [state, action, pending] = useActionState(updatePropertySchedulingOverrideAction, initial);
   useFeedbackToast({ error: state.error, success: state.success, pending });
+  useEffect(() => {
+    setCustom(customized);
+  }, [customized]);
+
+  const facts = effectiveSchedulingFacts(customerFacts, override);
+  const showSave = custom || customized;
+
   return (
-    <form action={action} className={styles.propertyBlock}>
+    <form action={action} className={styles.locationSchedule}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="customer_id" value={customerId} />
       <input type="hidden" name="property_id" value={propertyId} />
-      <label className={styles.checks}>
-        <input type="checkbox" name="use_custom" defaultChecked={customized} />
-        Custom scheduling for {label}
+      <label className={styles.toggle}>
+        <input
+          type="checkbox"
+          name="use_custom"
+          checked={custom}
+          onChange={(event) => setCustom(event.target.checked)}
+        />
+        Custom scheduling for this location
       </label>
-      <SchedulingPreferenceFields facts={facts} employees={employees} idPrefix={propertyId} />
-      <div>
-        <Button type="submit" variant="secondary" size="sm" disabled={pending}>
-          {pending ? 'Saving…' : 'Save property'}
-        </Button>
-      </div>
+      <p className={styles.empty}>
+        {custom
+          ? 'These rules replace the customer defaults for this location only.'
+          : 'This location uses the customer scheduling defaults.'}
+      </p>
+      {custom ? (
+        <SchedulingPreferenceFields facts={facts} employees={employees} idPrefix={propertyId} />
+      ) : null}
+      {showSave ? (
+        <div>
+          <Button type="submit" variant="secondary" size="sm" disabled={pending}>
+            {pending ? 'Saving…' : 'Save scheduling'}
+          </Button>
+        </div>
+      ) : null}
     </form>
   );
 }
