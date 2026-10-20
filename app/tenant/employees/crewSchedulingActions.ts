@@ -99,7 +99,7 @@ export async function updateCrewSchedulingProfileAction(
     state: String(formData.get('home_state') ?? '').trim() || null,
     postalCode: String(formData.get('home_postal_code') ?? '').trim() || null,
   };
-  const point = await resolveGeocodedPoint(
+  const geocoded = await resolveGeocodedPoint(
     home,
     existingHome
       ? {
@@ -129,8 +129,9 @@ export async function updateCrewSchedulingProfileAction(
       home_city: home.city,
       home_state: home.state,
       home_postal_code: home.postalCode,
-      home_latitude: point?.lat ?? null,
-      home_longitude: point?.lng ?? null,
+      home_latitude: geocoded.point?.lat ?? null,
+      home_longitude: geocoded.point?.lng ?? null,
+      home_geocode_reason: geocoded.reason,
     });
     if (error) return { error: 'Could not save the scheduling profile.' };
     revalidatePath(`/tenant/employees/${targetUserId}`, 'page');
@@ -161,8 +162,9 @@ export async function updateCrewSchedulingProfileAction(
     home_city: home.city,
     home_state: home.state,
     home_postal_code: home.postalCode,
-    home_latitude: point?.lat ?? null,
-    home_longitude: point?.lng ?? null,
+    home_latitude: geocoded.point?.lat ?? null,
+    home_longitude: geocoded.point?.lng ?? null,
+    home_geocode_reason: geocoded.reason,
   };
 
   const { error } = await admin.from('tenant_member_scheduling_profiles').upsert(row);

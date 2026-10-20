@@ -1634,6 +1634,7 @@ export type Database = {
           home_postal_code: string | null;
           home_latitude: number | null;
           home_longitude: number | null;
+          home_geocode_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1661,6 +1662,7 @@ export type Database = {
           home_postal_code?: string | null;
           home_latitude?: number | null;
           home_longitude?: number | null;
+          home_geocode_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1688,6 +1690,7 @@ export type Database = {
           home_postal_code?: string | null;
           home_latitude?: number | null;
           home_longitude?: number | null;
+          home_geocode_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -2039,6 +2042,7 @@ export type Database = {
           building_name: string | null;
           latitude: number | null;
           longitude: number | null;
+          geocode_reason: string | null;
           scheduling_override: Json | null;
           required_crew_size: number;
           access_codes_ciphertext: string | null;
@@ -2067,6 +2071,7 @@ export type Database = {
           building_name?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          geocode_reason?: string | null;
           scheduling_override?: Json | null;
           required_crew_size?: number;
           access_codes_ciphertext?: string | null;
@@ -2095,6 +2100,7 @@ export type Database = {
           building_name?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          geocode_reason?: string | null;
           scheduling_override?: Json | null;
           required_crew_size?: number;
           access_codes_ciphertext?: string | null;
@@ -4868,6 +4874,7 @@ export type Database = {
           postal_code: string | null;
           latitude: number | null;
           longitude: number | null;
+          geocode_reason: string | null;
           country: string;
           work_week_days: string[];
           work_day_start: string;
@@ -4898,6 +4905,7 @@ export type Database = {
           postal_code?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          geocode_reason?: string | null;
           country?: string;
           work_week_days?: string[];
           work_day_start?: string;
@@ -4928,6 +4936,7 @@ export type Database = {
           postal_code?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          geocode_reason?: string | null;
           country?: string;
           work_week_days?: string[];
           work_day_start?: string;

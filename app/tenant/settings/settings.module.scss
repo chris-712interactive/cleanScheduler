@@ -426,6 +426,13 @@
   line-height: 1.45;
 }
 
+.geocodeNote {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-warning);
+}
+
 .formError {
   margin: 0;
   font-size: var(--font-size-sm);

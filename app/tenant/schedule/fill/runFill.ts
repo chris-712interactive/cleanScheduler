@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import type { TenantRole } from '@/lib/auth/types';
-import { geocodeUsAddress } from '@/lib/geo/censusGeocode';
+import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import {
@@ -451,7 +451,7 @@ async function ensureLeadCustomer(
     return { error: link.error.message };
   }
 
-  const point = await geocodeUsAddress({
+  const geocoded = await lookupUsAddress({
     line1: lead.service_address_line1 ?? '',
     city: lead.service_city ?? '',
     state: lead.service_state ?? '',
@@ -469,8 +469,9 @@ async function ensureLeadCustomer(
       state: lead.service_state,
       postal_code: lead.service_postal_code,
       community_name: '',
-      latitude: point?.lat ?? null,
-      longitude: point?.lng ?? null,
+      latitude: geocoded.point?.lat ?? null,
+      longitude: geocoded.point?.lng ?? null,
+      geocode_reason: geocoded.reason,
       is_primary: true,
     })
     .select('id')

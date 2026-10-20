@@ -1,3 +1,4 @@
+import { geocodeReasonFromLookups, type GeocodeReason } from '@/lib/geo/geocodeStatus';
 import { geocodeWithGoogle } from '@/lib/geo/googleGeocode';
 
 export type GeocodedPoint = {
@@ -16,6 +17,11 @@ export type GeocodeAddress = {
 export type StoredGeocode = GeocodeAddress & {
   latitude: number | null;
   longitude: number | null;
+};
+
+export type GeocodeResult = {
+  point: GeocodedPoint | null;
+  reason: GeocodeReason | null;
 };
 
 type CensusMatch = {
@@ -61,7 +67,9 @@ export function sameGeocodeAddress(a: GeocodeAddress, b: GeocodeAddress): boolea
   return addressKey(a) === addressKey(b);
 }
 
-async function geocodeWithCensus(address: string): Promise<GeocodedPoint | null> {
+async function censusLookup(
+  address: string,
+): Promise<{ status: 'ok'; point: GeocodedPoint } | { status: 'no_match' | 'failed' }> {
   const url = new URL('https://geocoding.geo.census.gov/geocoder/locations/onelineaddress');
   url.searchParams.set('address', address);
   url.searchParams.set('benchmark', 'Public_AR_Current');
@@ -69,47 +77,63 @@ async function geocodeWithCensus(address: string): Promise<GeocodedPoint | null>
 
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(4000) });
-    if (!response.ok) return null;
-    return pointFromCensusResponse(await response.json());
+    if (!response.ok) return { status: 'failed' };
+    const point = pointFromCensusResponse(await response.json());
+    if (!point) return { status: 'no_match' };
+    return { status: 'ok', point };
   } catch {
-    return null;
+    return { status: 'failed' };
   }
+}
+
+function addressHasText(parts: GeocodeAddress): boolean {
+  return [parts.line1, parts.city, parts.state, parts.postalCode].some(
+    (part) => (part ?? '').trim().length > 0,
+  );
 }
 
 /**
  * Google Geocoding API when `GOOGLE_MAPS_GEOCODING_API_KEY` is set, then the
- * US Census geocoder. Returns null when the address does not resolve, so a
- * save can still succeed.
+ * US Census geocoder. `reason` explains a missing point so the office can show it.
  */
-export async function geocodeUsAddress(parts: GeocodeAddress): Promise<GeocodedPoint | null> {
+export async function lookupUsAddress(parts: GeocodeAddress): Promise<GeocodeResult> {
   const country = parts.country?.trim().toUpperCase();
   if (country && country !== 'US' && country !== 'USA' && country !== 'UNITED STATES') {
-    return null;
+    return { point: null, reason: 'outside_us' };
   }
   const address = formatGeocodeQuery(parts);
-  if (address.length < 8) return null;
+  if (address.length < 8) {
+    return { point: null, reason: addressHasText(parts) ? 'incomplete' : null };
+  }
 
   const google = await geocodeWithGoogle(address);
-  if (google) return google;
-  return geocodeWithCensus(address);
+  if (google.status === 'ok') return { point: google.point, reason: null };
+  const census = await censusLookup(address);
+  if (census.status === 'ok') return { point: census.point, reason: null };
+  return { point: null, reason: geocodeReasonFromLookups(google.status, census.status) };
+}
+
+/** Point only. Saves that do not show a reason can keep calling this. */
+export async function geocodeUsAddress(parts: GeocodeAddress): Promise<GeocodedPoint | null> {
+  return (await lookupUsAddress(parts)).point;
 }
 
 /**
  * Reuses a stored point when the address text is unchanged.
- * A cleared address returns null. A changed address is looked up again.
+ * A cleared or changed address is looked up again, and a miss includes a reason.
  */
 export async function resolveGeocodedPoint(
   next: GeocodeAddress,
   previous: StoredGeocode | null,
-): Promise<GeocodedPoint | null> {
-  if (formatGeocodeQuery(next).length < 8) return null;
+): Promise<GeocodeResult> {
   if (
     previous &&
     sameGeocodeAddress(next, previous) &&
     previous.latitude != null &&
-    previous.longitude != null
+    previous.longitude != null &&
+    formatGeocodeQuery(next).length >= 8
   ) {
-    return { lat: previous.latitude, lng: previous.longitude };
+    return { point: { lat: previous.latitude, lng: previous.longitude }, reason: null };
   }
-  return geocodeUsAddress(next);
+  return lookupUsAddress(next);
 }

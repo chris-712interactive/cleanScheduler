@@ -34,6 +34,9 @@ type PropertyPick = Pick<
   | 'is_primary'
   | 'service_zone_id'
   | 'required_crew_size'
+  | 'latitude'
+  | 'longitude'
+  | 'geocode_reason'
 >;
 
 /** Row shape for `customers` + profile + service locations (detail projection). */

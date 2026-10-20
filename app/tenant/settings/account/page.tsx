@@ -533,6 +533,11 @@ async function AccountSchedulingProfile({
         targetUserId={userId}
         profile={crewSchedulingProfileFromRow(crewRow)}
         scope={scope}
+        homeGeocode={{
+          reason: crewRow?.home_geocode_reason ?? null,
+          latitude: crewRow?.home_latitude ?? null,
+          longitude: crewRow?.home_longitude ?? null,
+        }}
         zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
         partners={partnerIds.map((id) => ({
           id,

@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
+import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import {
@@ -17,6 +18,7 @@ export interface BusinessSettingsActionState {
   error?: string;
   success?: string;
   businessPatch?: Partial<TenantBusinessSnapshot>;
+  geocodeMessage?: string | null;
 }
 
 async function requireBusinessSettingsAccess(slug: string) {
@@ -243,7 +245,7 @@ export async function updateBusinessAddressAction(
       .select('address_line1, city, state, postal_code, country, latitude, longitude')
       .eq('id', membership.tenantId)
       .maybeSingle();
-    const point = await resolveGeocodedPoint(
+    const geocoded = await resolveGeocodedPoint(
       { line1: addressLine1, city, state, postalCode, country },
       current
         ? {
@@ -265,8 +267,9 @@ export async function updateBusinessAddressAction(
         state: state || null,
         postal_code: postalCode || null,
         country,
-        latitude: point?.lat ?? null,
-        longitude: point?.lng ?? null,
+        latitude: geocoded.point?.lat ?? null,
+        longitude: geocoded.point?.lng ?? null,
+        geocode_reason: geocoded.reason,
         updated_at: new Date().toISOString(),
       })
       .eq('id', membership.tenantId);
@@ -274,6 +277,12 @@ export async function updateBusinessAddressAction(
     if (error) return { error: error.message };
     return {
       success: 'Business address saved.',
+      geocodeMessage: missingGeocodeMessage({
+        reason: geocoded.reason,
+        latitude: geocoded.point?.lat ?? null,
+        longitude: geocoded.point?.lng ?? null,
+        addressParts: [addressLine1, city, state, postalCode],
+      }),
       businessPatch: {
         addressLine1,
         city,

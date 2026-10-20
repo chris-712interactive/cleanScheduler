@@ -12,7 +12,7 @@ import {
 import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
-import { geocodeUsAddress, resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
+import { lookupUsAddress, resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 
@@ -60,7 +60,7 @@ export async function addCustomerProperty(
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
   const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
   const buildingName = String(formData.get('building_name') ?? '').trim() || null;
-  const point = await geocodeUsAddress({
+  const geocoded = await lookupUsAddress({
     line1,
     city,
     state,
@@ -126,8 +126,9 @@ export async function addCustomerProperty(
       site_notes: siteNotes || null,
       community_name: communityName,
       building_name: buildingName,
-      latitude: point?.lat ?? null,
-      longitude: point?.lng ?? null,
+      latitude: geocoded.point?.lat ?? null,
+      longitude: geocoded.point?.lng ?? null,
+      geocode_reason: geocoded.reason,
       service_zone_id: zoneResolved.zoneId,
       required_crew_size: crewSize.size,
       is_primary: makePrimary,
@@ -201,7 +202,7 @@ export async function updateCustomerProperty(
     return { error: 'Property not found for this customer.' };
   }
 
-  const point = await resolveGeocodedPoint(
+  const geocoded = await resolveGeocodedPoint(
     { line1, city, state, postalCode: postal },
     {
       line1: row.address_line1,
@@ -233,8 +234,9 @@ export async function updateCustomerProperty(
       site_notes: siteNotes || null,
       community_name: communityName,
       building_name: buildingName,
-      latitude: point?.lat ?? null,
-      longitude: point?.lng ?? null,
+      latitude: geocoded.point?.lat ?? null,
+      longitude: geocoded.point?.lng ?? null,
+      geocode_reason: geocoded.reason,
       service_zone_id: zoneResolved.zoneId,
       required_crew_size: crewSize.size,
     })

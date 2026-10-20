@@ -920,6 +920,24 @@
   padding: 0.1rem 0.35rem;
 }
 
+.geocodeBadge {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+}
+
+.geocodeNote {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-warning);
+}
+
 .propertyMeta {
   display: block;
   margin-top: var(--space-1);
