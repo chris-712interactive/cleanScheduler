@@ -29,11 +29,14 @@ import { OwnerOnboardingProgressCard } from './OwnerOnboardingProgressCard';
 import { OwnerOnboardingSurveyPanel } from './OwnerOnboardingSurveyPanel';
 import { CheckoutCancelledNotice } from './CheckoutCancelledNotice';
 import { needsOnboardingSurvey } from '@/lib/tenant/onboardingSurvey';
+import { buildDashboardCharts } from '@/lib/tenant/dashboardCharts';
 import {
   getTenantCustomersAddedThisMonthCount,
   getTenantPaidInvoicesLast30DaysCents,
+  getTenantQuoteStatusCounts,
   getTenantSentQuotesCount,
 } from '@/lib/tenant/dashboardMetrics';
+import { DashboardCharts } from './DashboardCharts';
 import { DashboardMetricStrip, type DashboardMetricTone } from './DashboardMetricStrip';
 import { DashboardStatSummary } from './DashboardStatSummary';
 import { TodayQueuePanel } from './TodayQueuePanel';
@@ -104,6 +107,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
     customersCountRes,
     quotesCountRes,
     sentQuotesCount,
+    quoteStatusCounts,
     customersAddedThisMonth,
     paidLast30DaysCents,
     outstandingInvoices,
@@ -123,6 +127,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
       .eq('tenant_id', membership.tenantId)
       .is('superseded_by_quote_id', null),
     getTenantSentQuotesCount(supabase, membership.tenantId),
+    getTenantQuoteStatusCounts(supabase, membership.tenantId),
     getTenantCustomersAddedThisMonthCount(supabase, membership.tenantId),
     getTenantPaidInvoicesLast30DaysCents(supabase, membership.tenantId),
     getTenantOutstandingInvoicesSummary(supabase, membership.tenantId),
@@ -169,7 +174,12 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
     invoiceCount: outstandingCount,
     pastDueCount,
   } = outstandingInvoices;
-  const { count: todaysJobCount, scheduledCount: todaysScheduledCount, todayKey } = todaysJobs;
+  const {
+    count: todaysJobCount,
+    scheduledCount: todaysScheduledCount,
+    completedCount: todaysCompletedCount,
+    todayKey,
+  } = todaysJobs;
 
   const quotesBadge =
     quoteCount === 0
@@ -254,6 +264,15 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
       tone: customerTone,
     },
   ];
+  const charts = buildDashboardCharts({
+    quoteStatusCounts,
+    paidLast30DaysCents,
+    outstandingCents,
+    pastDueCount,
+    todaysJobCount,
+    todaysScheduledCount,
+    todaysCompletedCount,
+  });
 
   return (
     <Container size="xl" className={styles.dashboardPage}>
@@ -311,6 +330,7 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
             ) : null}
 
             <DashboardMetricStrip metrics={metrics} />
+            <DashboardCharts charts={charts} />
             <TodayQueuePanel queue={todayQueue} />
 
             {showGetStartedEmptyState ? (
