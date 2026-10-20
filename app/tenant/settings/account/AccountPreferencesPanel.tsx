@@ -81,13 +81,56 @@ export function AccountProfilePanel({
   tenantSlug,
   firstName,
   lastName,
+  embedded = false,
 }: {
   tenantSlug: string;
   firstName: string;
   lastName: string;
+  /** Skip the card chrome when a parent section already supplies the title. */
+  embedded?: boolean;
 }) {
   const [nameState, nameAction, namePending] = useActionState(updateOwnDisplayNameAction, initial);
   useFeedbackToast({ error: nameState.error, success: nameState.success, pending: namePending });
+
+  const form = (
+    <form action={nameAction} className={styles.profileForm}>
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <div className={styles.nameFields}>
+        <label className={styles.fieldLabel} htmlFor="first_name">
+          First name
+          <input
+            id="first_name"
+            name="first_name"
+            type="text"
+            className={styles.textInput}
+            defaultValue={firstName}
+            maxLength={60}
+            autoComplete="given-name"
+            required
+          />
+        </label>
+        <label className={styles.fieldLabel} htmlFor="last_name">
+          Last name
+          <input
+            id="last_name"
+            name="last_name"
+            type="text"
+            className={styles.textInput}
+            defaultValue={lastName}
+            maxLength={60}
+            autoComplete="family-name"
+          />
+        </label>
+      </div>
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={namePending}>
+          {namePending ? 'Saving…' : 'Save name'}
+        </Button>
+      </div>
+    </form>
+  );
+
+  if (embedded) return form;
 
   return (
     <section id="account-profile" className={styles.panel} aria-labelledby="profile-heading">
@@ -99,41 +142,7 @@ export function AccountProfilePanel({
           Name shown to teammates on the schedule and team directory.
         </p>
       </header>
-      <form action={nameAction} className={styles.profileForm}>
-        <input type="hidden" name="tenant_slug" value={tenantSlug} />
-        <div className={styles.nameFields}>
-          <label className={styles.fieldLabel} htmlFor="first_name">
-            First name
-            <input
-              id="first_name"
-              name="first_name"
-              type="text"
-              className={styles.textInput}
-              defaultValue={firstName}
-              maxLength={60}
-              autoComplete="given-name"
-              required
-            />
-          </label>
-          <label className={styles.fieldLabel} htmlFor="last_name">
-            Last name
-            <input
-              id="last_name"
-              name="last_name"
-              type="text"
-              className={styles.textInput}
-              defaultValue={lastName}
-              maxLength={60}
-              autoComplete="family-name"
-            />
-          </label>
-        </div>
-        <div className={styles.formActions}>
-          <Button type="submit" variant="primary" disabled={namePending}>
-            {namePending ? 'Saving…' : 'Save name'}
-          </Button>
-        </div>
-      </form>
+      {form}
     </section>
   );
 }

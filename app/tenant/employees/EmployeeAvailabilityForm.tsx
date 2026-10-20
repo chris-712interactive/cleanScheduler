@@ -22,6 +22,7 @@ import {
   type MemberAvailabilityActionState,
 } from './employeeAvailabilityActions';
 import styles from './employeeEdit.module.scss';
+import sectionStyles from '../customers/scheduling-fields.module.scss';
 
 const initial: MemberAvailabilityActionState = {};
 
@@ -38,13 +39,17 @@ export function EmployeeAvailabilityForm({
   targetUserId,
   profile: initialProfile,
   tenantDefaults,
+  layout = 'plain',
 }: {
   tenantSlug: string;
   targetUserId: string;
   profile: MemberScheduleProfile;
   tenantDefaults: TenantBusinessSnapshot;
+  /** Disclosure keeps the hour editor collapsed until opened. */
+  layout?: 'plain' | 'disclosure';
 }) {
   const [profile, setProfile] = useState(initialProfile);
+  const [hoursOpen, setHoursOpen] = useState(!initialProfile.useTenantDefault);
   const [state, formAction, pending] = useActionState(updateMemberAvailabilityAction, initial);
   useFeedbackToast({ error: state.error, success: state.success, pending });
   const timeOptions = buildWorkTimeOptions();
@@ -64,13 +69,16 @@ export function EmployeeAvailabilityForm({
   };
 
   const tenantSummary = summarizeWorkDaySchedule(tenantDefaults.workDays);
+  const hoursHint = profile.useTenantDefault
+    ? `Company hours · ${tenantSummary}`
+    : summarizeMemberDayWindows(profile.days);
 
-  return (
-    <form onSubmit={handleSubmit} className={styles.availabilityForm}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="target_user_id" value={targetUserId} />
-
-      <label className={styles.checkboxRow}>
+  const fields = (
+    <>
+      <label
+        className={layout === 'disclosure' ? sectionStyles.check : styles.checkboxRow}
+        data-selected={layout === 'disclosure' && profile.useTenantDefault ? true : undefined}
+      >
         <input
           type="checkbox"
           name="use_tenant_default"
@@ -164,9 +172,33 @@ export function EmployeeAvailabilityForm({
         </>
       )}
 
-      <Button type="submit" variant="primary" disabled={pending}>
-        {pending ? 'Saving…' : 'Save availability'}
-      </Button>
+      <div className={styles.saveRow}>
+        <Button type="submit" variant="primary" disabled={pending}>
+          {pending ? 'Saving…' : 'Save hours'}
+        </Button>
+      </div>
+    </>
+  );
+
+  return (
+    <form onSubmit={handleSubmit} className={styles.availabilityForm}>
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="target_user_id" value={targetUserId} />
+      {layout === 'disclosure' ? (
+        <details
+          className={sectionStyles.section}
+          open={hoursOpen}
+          onToggle={(event) => setHoursOpen(event.currentTarget.open)}
+        >
+          <summary className={sectionStyles.sectionSummary}>
+            <span className={sectionStyles.sectionTitle}>Hours</span>
+            <span className={sectionStyles.sectionHint}>{hoursHint}</span>
+          </summary>
+          <div className={sectionStyles.sectionBody}>{fields}</div>
+        </details>
+      ) : (
+        fields
+      )}
     </form>
   );
 }

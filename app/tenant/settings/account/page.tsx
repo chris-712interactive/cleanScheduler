@@ -30,6 +30,7 @@ import {
   AccountIdentityHero,
   AccountProfilePanel,
 } from './AccountPreferencesPanel';
+import { AccountAppearanceDisclosure, AccountDisclosure } from './AccountDisclosure';
 import { AccountDeleteWorkspacePanel } from './AccountDeleteWorkspacePanel';
 import styles from './account-settings.module.scss';
 
@@ -167,6 +168,115 @@ export default async function TenantAccountSettingsPage({
   const hasSideColumn =
     Boolean(userId) &&
     (isOfficeRole || (showScheduleDetails && memberProfile != null && tenantDefaults != null));
+  const roleLabel = teamRoleLabel(membership.role as TenantRole);
+  const showOwnSchedule = showScheduleDetails && memberProfile != null && tenantDefaults != null;
+
+  if (isFieldEmployee) {
+    return (
+      <>
+        <PageHeader
+          title="Account"
+          description="Your name, hours, and what the schedule should know about you."
+        />
+
+        <Stack gap={4}>
+          {mfaRequiredNotice ? (
+            <Alert variant="warning">
+              This workspace requires{' '}
+              {authPolicy.mfaAllowedMethods
+                .map((method) => (method === 'totp' ? 'an authenticator app' : 'a passkey'))
+                .join(' or ')}{' '}
+              before you can use the rest of the app. Add one below, then open the schedule again.
+            </Alert>
+          ) : null}
+
+          <div className={styles.fieldAccount}>
+            <AccountIdentityHero
+              tenantSlug={membership.tenantSlug}
+              displayName={displayName}
+              email={email}
+              roleLabel={roleLabel}
+              tenantName={membership.tenantName}
+              avatarUrl={avatarUrl}
+              initials={(displayName.trim().slice(0, 2) || 'Me').toUpperCase()}
+            />
+
+            <AccountDisclosure id="account-profile" title="Name" hint={displayName}>
+              <AccountProfilePanel
+                embedded
+                tenantSlug={membership.tenantSlug}
+                firstName={firstName}
+                lastName={lastName}
+              />
+            </AccountDisclosure>
+
+            {showOwnSchedule && memberProfile && tenantDefaults ? (
+              <EmployeeAvailabilityForm
+                layout="disclosure"
+                tenantSlug={membership.tenantSlug}
+                targetUserId={userId}
+                profile={memberProfile}
+                tenantDefaults={tenantDefaults}
+              />
+            ) : null}
+
+            {showOwnSchedule ? (
+              <AccountSchedulingProfile
+                headless
+                tenantSlug={membership.tenantSlug}
+                tenantId={membership.tenantId}
+                userId={userId}
+                crewRow={crewRow}
+                scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
+              />
+            ) : null}
+
+            <AccountDisclosure id="account-security" title="Sign-in" hint="Passkey and two-factor">
+              <PasskeySettingsPanel
+                workspaceAllowsPasskeys={authPolicy.allowPasskeySignIn}
+                countsAsSecondFactor={
+                  authPolicy.mfaRequired && authPolicy.mfaAllowedMethods.includes('passkey')
+                }
+              />
+              <MfaSettingsPanel requiredForPlaid={requiresMfaForPlaid} />
+            </AccountDisclosure>
+
+            <AccountAppearanceDisclosure />
+
+            <AccountDisclosure
+              id="account-workspace"
+              title="Workspace"
+              hint={`${membership.tenantName} · ${roleLabel}`}
+            >
+              <dl className={styles.infoList}>
+                <div className={styles.infoRow}>
+                  <dt className={styles.infoLabel}>Name</dt>
+                  <dd className={styles.infoValue}>{membership.tenantName}</dd>
+                </div>
+                <div className={styles.infoRow}>
+                  <dt className={styles.infoLabel}>Slug</dt>
+                  <dd className={styles.infoValue}>{membership.tenantSlug}</dd>
+                </div>
+                <div className={styles.infoRow}>
+                  <dt className={styles.infoLabel}>Your role</dt>
+                  <dd className={styles.infoValue}>{roleLabel}</dd>
+                </div>
+              </dl>
+            </AccountDisclosure>
+
+            <AccountDisclosure id="account-session" title="Session" hint={email || 'Signed in'}>
+              <div className={styles.sessionRow}>
+                <p className={styles.sessionCopy}>
+                  Signed in as <strong>{email || 'your account'}</strong>
+                </p>
+                <SignOutButton variant="settings" />
+              </div>
+            </AccountDisclosure>
+          </div>
+        </Stack>
+      </>
+    );
+  }
 
   return (
     <>
@@ -199,7 +309,7 @@ export default async function TenantAccountSettingsPage({
           tenantSlug={membership.tenantSlug}
           displayName={displayName}
           email={email}
-          roleLabel={teamRoleLabel(membership.role as TenantRole)}
+          roleLabel={roleLabel}
           tenantName={membership.tenantName}
           avatarUrl={avatarUrl}
           initials={(displayName.trim().slice(0, 2) || 'Me').toUpperCase()}
@@ -238,9 +348,7 @@ export default async function TenantAccountSettingsPage({
                 </div>
                 <div className={styles.infoRow}>
                   <dt className={styles.infoLabel}>Your role</dt>
-                  <dd className={styles.infoValue}>
-                    {teamRoleLabel(membership.role as TenantRole)}
-                  </dd>
+                  <dd className={styles.infoValue}>{roleLabel}</dd>
                 </div>
               </dl>
               {!isFieldEmployee ? (
@@ -377,12 +485,14 @@ async function AccountSchedulingProfile({
   userId,
   crewRow,
   scope,
+  headless = false,
 }: {
   tenantSlug: string;
   tenantId: string;
   userId: string;
   crewRow: Parameters<typeof crewSchedulingProfileFromRow>[0];
   scope: 'full' | 'consultation';
+  headless?: boolean;
 }) {
   const admin = createAdminClient();
   const [{ data: zones }, { data: teammates }] = await Promise.all([
@@ -408,14 +518,16 @@ async function AccountSchedulingProfile({
 
   return (
     <>
-      <header className={styles.panelHeader}>
-        <h3 className={styles.panelTitle}>Scheduling profile</h3>
-        <p className={styles.panelLead}>
-          {scope === 'consultation'
-            ? 'Travel, language, and experience used when the schedule suggests you for a consultation.'
-            : 'Skills, limits, and home base used when the schedule suggests you for a job.'}
-        </p>
-      </header>
+      {headless ? null : (
+        <header className={styles.panelHeader}>
+          <h3 className={styles.panelTitle}>Scheduling profile</h3>
+          <p className={styles.panelLead}>
+            {scope === 'consultation'
+              ? 'Travel, language, and experience used when the schedule suggests you for a consultation.'
+              : 'Skills, limits, and home base used when the schedule suggests you for a job.'}
+          </p>
+        </header>
+      )}
       <EmployeeSchedulingProfileForm
         tenantSlug={tenantSlug}
         targetUserId={userId}
