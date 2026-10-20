@@ -369,7 +369,9 @@ async function buildPlan(
     workEndMin: workEndMin > workStartMin ? workEndMin : workStartMin + 60,
     services,
     consultations,
-    recurringStartsAfterInitial: ops?.recurring_starts_after_initial ?? true,
+    // Fill always waits a cycle after the initial clean. The operations toggle
+    // only controls visits created when a quote is accepted.
+    recurringStartsAfterInitial: true,
   });
 
   return {
