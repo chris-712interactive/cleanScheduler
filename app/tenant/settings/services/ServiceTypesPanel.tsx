@@ -4,8 +4,8 @@ import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
-import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
-import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 import {
   createCustomServiceTypeAction,
@@ -21,6 +21,18 @@ import { SCHEDULE_ROLE_LABEL, SCHEDULE_ROLE_OPTIONS } from '@/lib/tenant/schedul
 import styles from './services-settings.module.scss';
 
 const initialState: ServiceTypeActionState = {};
+
+const PROPERTY_KIND_ORDER = new Map<CustomerPropertyKind, number>(
+  PROPERTY_KIND_OPTIONS.map((option, index) => [option.value, index]),
+);
+
+function formatHours(hours: number): string {
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+}
+
+function formatCrew(size: number): string {
+  return `${size} ${size === 1 ? 'person' : 'people'}`;
+}
 
 function ChecklistEditor({
   tenantSlug,
@@ -41,38 +53,46 @@ function ChecklistEditor({
     successMessage: 'Saved',
     pending,
   });
-  const defaultValue = (entry.checklist_items ?? []).map((item) => item.label).join('\n');
-
-  if (!canEdit) {
-    if (!(entry.checklist_items ?? []).length) {
-      return <span className={styles.itemMeta}>No checklist</span>;
-    }
-    return (
-      <ul className={styles.checklistReadonly}>
-        {(entry.checklist_items ?? []).map((item) => (
-          <li key={item.id}>{item.label}</li>
-        ))}
-      </ul>
-    );
-  }
+  const items = entry.checklist_items ?? [];
+  const defaultValue = items.map((item) => item.label).join('\n');
 
   return (
-    <form action={formAction} className={styles.checklistForm}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="template_id" value={entry.id} />
-      <textarea
-        className={styles.checklistTextarea}
-        name="checklist_lines"
-        rows={4}
-        defaultValue={defaultValue}
-        placeholder={'One task per line\ne.g. Kitchen counters wiped'}
-        aria-label={`Checklist for ${entry.service_label}`}
-        disabled={pending}
-      />
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-        Save checklist
-      </Button>
-    </form>
+    <div className={styles.checklistField}>
+      <div className={styles.settingCopy}>
+        <label className={styles.settingLabel} htmlFor={`visit_checklist_${entry.id}`}>
+          Visit checklist
+        </label>
+        <span className={styles.settingHint}>
+          One task per line. The crew sees these on the job.
+        </span>
+      </div>
+      {canEdit ? (
+        <form action={formAction} className={styles.checklistForm}>
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
+          <input type="hidden" name="template_id" value={entry.id} />
+          <textarea
+            id={`visit_checklist_${entry.id}`}
+            className={styles.checklistTextarea}
+            name="checklist_lines"
+            rows={5}
+            defaultValue={defaultValue}
+            placeholder="Kitchen counters wiped"
+            disabled={pending}
+          />
+          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+            Save checklist
+          </Button>
+        </form>
+      ) : items.length ? (
+        <ul className={styles.checklistReadonly}>
+          {items.map((item) => (
+            <li key={item.id}>{item.label}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className={styles.emptyNote}>No visit checklist yet.</p>
+      )}
+    </div>
   );
 }
 
@@ -95,40 +115,44 @@ function ConsultationChecklistEditor({
     successMessage: 'Saved',
     pending,
   });
-  const defaultValue = (entry.consultation_checklist_items ?? [])
-    .map((item) => item.label)
-    .join('\n');
-
-  if (!canEdit) {
-    if (!(entry.consultation_checklist_items ?? []).length) {
-      return <span className={styles.itemMeta}>No checklist</span>;
-    }
-    return (
-      <ul className={styles.checklistReadonly}>
-        {(entry.consultation_checklist_items ?? []).map((item) => (
-          <li key={item.id}>{item.label}</li>
-        ))}
-      </ul>
-    );
-  }
+  const items = entry.consultation_checklist_items ?? [];
+  const defaultValue = items.map((item) => item.label).join('\n');
 
   return (
-    <form action={formAction} className={styles.checklistForm}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="template_id" value={entry.id} />
-      <textarea
-        className={styles.checklistTextarea}
-        name="checklist_lines"
-        rows={4}
-        defaultValue={defaultValue}
-        placeholder={'One item per line\ne.g. Note parking / access'}
-        aria-label={`Consultation checklist for ${entry.service_label}`}
-        disabled={pending}
-      />
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-        Save consultation checklist
-      </Button>
-    </form>
+    <div className={styles.checklistField}>
+      <div className={styles.settingCopy}>
+        <label className={styles.settingLabel} htmlFor={`consult_checklist_${entry.id}`}>
+          Consultation checklist
+        </label>
+        <span className={styles.settingHint}>One item per line. Used on the walkthrough.</span>
+      </div>
+      {canEdit ? (
+        <form action={formAction} className={styles.checklistForm}>
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
+          <input type="hidden" name="template_id" value={entry.id} />
+          <textarea
+            id={`consult_checklist_${entry.id}`}
+            className={styles.checklistTextarea}
+            name="checklist_lines"
+            rows={5}
+            defaultValue={defaultValue}
+            placeholder="Note parking and access"
+            disabled={pending}
+          />
+          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+            Save checklist
+          </Button>
+        </form>
+      ) : items.length ? (
+        <ul className={styles.checklistReadonly}>
+          {items.map((item) => (
+            <li key={item.id}>{item.label}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className={styles.emptyNote}>No consultation checklist yet.</p>
+      )}
+    </div>
   );
 }
 
@@ -147,27 +171,32 @@ function DurationEditor({
   );
   useFeedbackToast({ error: state.error, pending });
 
-  if (!canEdit) {
-    return <span>{entry.estimated_hours}h</span>;
-  }
-
   return (
-    <form action={formAction} className={styles.durationForm}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="template_id" value={entry.id} />
-      <input
-        className={styles.durationInput}
-        name="estimated_hours"
-        inputMode="decimal"
-        defaultValue={String(entry.estimated_hours)}
-        aria-label={`Duration for ${entry.service_label}`}
-        disabled={pending}
-      />
-      <span className={styles.itemMeta}>hours</span>
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-        Save
-      </Button>
-    </form>
+    <div className={styles.setting}>
+      <label className={styles.settingLabel} htmlFor={`duration_${entry.id}`}>
+        Duration
+      </label>
+      {canEdit ? (
+        <form action={formAction} className={styles.controlRow}>
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
+          <input type="hidden" name="template_id" value={entry.id} />
+          <input
+            id={`duration_${entry.id}`}
+            className={styles.numberInput}
+            name="estimated_hours"
+            inputMode="decimal"
+            defaultValue={String(entry.estimated_hours)}
+            disabled={pending}
+          />
+          <span className={styles.unit}>hours</span>
+          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+            Save
+          </Button>
+        </form>
+      ) : (
+        <p className={styles.readout}>{formatHours(entry.estimated_hours)}</p>
+      )}
+    </div>
   );
 }
 
@@ -191,35 +220,36 @@ function CrewSizeEditor({
     pending,
   });
 
-  if (!canEdit) {
-    return (
-      <span>
-        {entry.default_crew_size} {entry.default_crew_size === 1 ? 'person' : 'people'}
-      </span>
-    );
-  }
-
   return (
-    <form action={formAction} className={styles.durationForm}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="template_id" value={entry.id} />
-      <input
-        className={styles.durationInput}
-        name="default_crew_size"
-        type="number"
-        min={1}
-        max={8}
-        step={1}
-        inputMode="numeric"
-        defaultValue={String(entry.default_crew_size)}
-        aria-label={`Minimum crew for ${entry.service_label}`}
-        disabled={pending}
-      />
-      <span className={styles.itemMeta}>people</span>
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-        Save
-      </Button>
-    </form>
+    <div className={styles.setting}>
+      <label className={styles.settingLabel} htmlFor={`crew_${entry.id}`}>
+        Minimum crew
+      </label>
+      {canEdit ? (
+        <form action={formAction} className={styles.controlRow}>
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
+          <input type="hidden" name="template_id" value={entry.id} />
+          <input
+            id={`crew_${entry.id}`}
+            className={styles.numberInput}
+            name="default_crew_size"
+            type="number"
+            min={1}
+            max={8}
+            step={1}
+            inputMode="numeric"
+            defaultValue={String(entry.default_crew_size)}
+            disabled={pending}
+          />
+          <span className={styles.unit}>people</span>
+          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+            Save
+          </Button>
+        </form>
+      ) : (
+        <p className={styles.readout}>{formatCrew(entry.default_crew_size)}</p>
+      )}
+    </div>
   );
 }
 
@@ -237,36 +267,103 @@ function ScheduleRoleEditor({
     initialState,
   );
   useFeedbackToast({ error: state.error, pending });
-
-  if (!canEdit) {
-    return <span>{SCHEDULE_ROLE_LABEL[entry.schedule_role]}</span>;
-  }
+  const roleHint = SCHEDULE_ROLE_OPTIONS.find(
+    (option) => option.value === entry.schedule_role,
+  )?.hint;
 
   return (
-    <form action={formAction} className={styles.scheduleRoleForm}>
-      <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <input type="hidden" name="template_id" value={entry.id} />
-      <label className={styles.srOnly} htmlFor={`schedule_role_${entry.id}`}>
-        Schedule role for {entry.service_label}
+    <div className={styles.setting}>
+      <label className={styles.settingLabel} htmlFor={`schedule_role_${entry.id}`}>
+        Schedule role
       </label>
-      <select
-        id={`schedule_role_${entry.id}`}
-        className={styles.scheduleRoleSelect}
-        name="schedule_role"
-        defaultValue={entry.schedule_role}
-        disabled={pending}
-        aria-label={`Schedule role for ${entry.service_label}`}
-      >
-        {SCHEDULE_ROLE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-        Save
-      </Button>
-    </form>
+      {canEdit ? (
+        <form action={formAction} className={styles.controlRow}>
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
+          <input type="hidden" name="template_id" value={entry.id} />
+          <select
+            id={`schedule_role_${entry.id}`}
+            className={styles.roleSelect}
+            name="schedule_role"
+            defaultValue={entry.schedule_role}
+            disabled={pending}
+          >
+            {SCHEDULE_ROLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+            Save
+          </Button>
+        </form>
+      ) : (
+        <p className={styles.readout}>{SCHEDULE_ROLE_LABEL[entry.schedule_role]}</p>
+      )}
+      {roleHint ? <span className={styles.settingHint}>{roleHint}</span> : null}
+    </div>
+  );
+}
+
+function PropertyTypeRow({
+  tenantSlug,
+  entry,
+  canEdit,
+  customTypesEnabled,
+  checklistsEnabled,
+}: {
+  tenantSlug: string;
+  entry: JobTypeCatalogEntry;
+  canEdit: boolean;
+  customTypesEnabled: boolean;
+  checklistsEnabled: boolean;
+}) {
+  const propertyLabel = PROPERTY_KIND_LABEL[entry.job_type];
+  const facts = `${formatHours(entry.estimated_hours)} · ${formatCrew(entry.default_crew_size)} · ${SCHEDULE_ROLE_LABEL[entry.schedule_role]}`;
+
+  return (
+    <li>
+      <details className={styles.property}>
+        <summary className={styles.propertySummary}>
+          <span className={styles.propertyName}>
+            {propertyLabel}
+            {!entry.is_system_default ? <span className={styles.badge}>Custom</span> : null}
+          </span>
+          <span className={styles.propertyFacts}>{facts}</span>
+        </summary>
+        <div className={styles.propertyBody}>
+          <div className={styles.settingsGrid}>
+            <DurationEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+            <CrewSizeEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+            <ScheduleRoleEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+          </div>
+          {checklistsEnabled ? (
+            <div className={styles.checklistGrid}>
+              <ChecklistEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+              <ConsultationChecklistEditor
+                tenantSlug={tenantSlug}
+                entry={entry}
+                canEdit={canEdit}
+              />
+            </div>
+          ) : null}
+          {canEdit && customTypesEnabled && !entry.is_system_default ? (
+            <div className={styles.propertyFooter}>
+              <p className={styles.footerNote}>
+                Removes {propertyLabel.toLowerCase()} from {entry.service_label}.
+              </p>
+              <form action={deleteCustomServiceTypeAction}>
+                <input type="hidden" name="tenant_slug" value={tenantSlug} />
+                <input type="hidden" name="template_id" value={entry.id} />
+                <Button type="submit" size="sm" variant="danger">
+                  Delete
+                </Button>
+              </form>
+            </div>
+          ) : null}
+        </div>
+      </details>
+    </li>
   );
 }
 
@@ -296,90 +393,57 @@ export function ServiceTypesPanel({
     grouped.set(entry.service_label, list);
   }
 
-  const serviceNames = [...grouped.keys()].sort((a, b) => a.localeCompare(b));
+  const serviceNames = [...grouped.keys()].sort((a, b) => {
+    const aOrder = Math.min(...(grouped.get(a) ?? []).map((entry) => entry.sort_order));
+    const bOrder = Math.min(...(grouped.get(b) ?? []).map((entry) => entry.sort_order));
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.localeCompare(b);
+  });
+
+  const customCount = entries.filter((entry) => !entry.is_system_default).length;
 
   return (
     <div className={styles.stack}>
       <header className={styles.hero}>
-        <h2 className={styles.heroTitle}>Job types for the schedule</h2>
+        <h2 className={styles.heroTitle}>Each job, by property type</h2>
         <p className={styles.heroLead}>
-          These types appear when you schedule a job. Built-in types are included for every
-          business. Durations feed auto-scheduling and crew availability. Minimum crew is how many
-          people a visit of that type needs. The schedule uses that number, or a larger crew already
-          saved on the location. Schedule role tells the app whether a job type is an initial visit,
-          recurring visit, or standard when quotes are accepted with automatic scheduling enabled in
-          Operations. Visit and consultation checklists are edited per row below.
+          A closed row shows the visit length, minimum crew, and schedule role. Open it to change
+          those, or to edit the checklists. The schedule uses this crew, or a larger crew already
+          saved on the location.
         </p>
+        <div className={styles.heroMeta}>
+          <span className={styles.metaChip}>
+            {serviceNames.length} {serviceNames.length === 1 ? 'job type' : 'job types'}
+          </span>
+          {customCount > 0 ? (
+            <span className={styles.metaChip}>
+              {customCount} custom {customCount === 1 ? 'setting' : 'settings'}
+            </span>
+          ) : (
+            <span className={styles.metaChip}>Built-in types</span>
+          )}
+        </div>
       </header>
 
       {serviceNames.map((serviceLabel) => {
-        const rows = grouped.get(serviceLabel) ?? [];
+        const rows = [...(grouped.get(serviceLabel) ?? [])].sort(
+          (a, b) =>
+            (PROPERTY_KIND_ORDER.get(a.job_type) ?? 99) -
+            (PROPERTY_KIND_ORDER.get(b.job_type) ?? 99),
+        );
         return (
-          <section key={serviceLabel}>
-            <h3 className={styles.groupTitle}>{serviceLabel}</h3>
-            <p className={styles.groupHint}>
-              Set duration, minimum crew, and schedule role per property type. Initial and recurring
-              roles control how accepted quotes create the first visit vs ongoing cadence.
-            </p>
-            <ul className={styles.itemList}>
+          <section key={serviceLabel} className={styles.jobType}>
+            <h3 className={styles.jobTypeTitle}>{serviceLabel}</h3>
+            <ul className={styles.propertyList}>
               {rows.map((entry) => (
-                <li key={entry.id} className={styles.itemCard}>
-                  <div className={styles.itemMain}>
-                    <p className={styles.itemTitle}>{PROPERTY_KIND_LABEL[entry.job_type]}</p>
-                    <p className={styles.itemMeta}>
-                      Used when quoting {entry.job_type.replace(/_/g, ' ')} properties
-                      {!entry.is_system_default ? (
-                        <>
-                          {' '}
-                          <span className={styles.badgeCustom}>Custom</span>
-                        </>
-                      ) : null}
-                    </p>
-                  </div>
-                  <div className={styles.itemActions}>
-                    <div className={styles.editorGroup}>
-                      <span className={styles.editorLabel}>Duration</span>
-                      <DurationEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
-                    </div>
-                    <div className={styles.editorGroup}>
-                      <span className={styles.editorLabel}>Minimum crew</span>
-                      <CrewSizeEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
-                    </div>
-                    <div className={styles.editorGroup}>
-                      <span className={styles.editorLabel}>Schedule role</span>
-                      <ScheduleRoleEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
-                    </div>
-                    {checklistsEnabled ? (
-                      <>
-                        <div className={styles.editorGroup}>
-                          <span className={styles.editorLabel}>Visit checklist</span>
-                          <ChecklistEditor
-                            tenantSlug={tenantSlug}
-                            entry={entry}
-                            canEdit={canEdit}
-                          />
-                        </div>
-                        <div className={styles.editorGroup}>
-                          <span className={styles.editorLabel}>Consultation checklist</span>
-                          <ConsultationChecklistEditor
-                            tenantSlug={tenantSlug}
-                            entry={entry}
-                            canEdit={canEdit}
-                          />
-                        </div>
-                      </>
-                    ) : null}
-                    {canEdit && customTypesEnabled && !entry.is_system_default ? (
-                      <form action={deleteCustomServiceTypeAction}>
-                        <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                        <input type="hidden" name="template_id" value={entry.id} />
-                        <Button type="submit" size="sm" variant="danger">
-                          Delete
-                        </Button>
-                      </form>
-                    ) : null}
-                  </div>
-                </li>
+                <PropertyTypeRow
+                  key={entry.id}
+                  tenantSlug={tenantSlug}
+                  entry={entry}
+                  canEdit={canEdit}
+                  customTypesEnabled={customTypesEnabled}
+                  checklistsEnabled={checklistsEnabled}
+                />
               ))}
             </ul>
           </section>
@@ -388,8 +452,12 @@ export function ServiceTypesPanel({
 
       {canEdit ? (
         customTypesEnabled ? (
-          <div className={styles.setupCard}>
-            <p className={styles.setupTitle}>Add a custom job type (Pro)</p>
+          <section className={styles.setupCard}>
+            <h3 className={styles.setupTitle}>Add a custom job type</h3>
+            <p className={styles.setupLead}>
+              Use your own name, such as a post-construction or move-in clean. It shows up when you
+              schedule a job.
+            </p>
             <form action={createAction} className={styles.formGrid}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <label className={styles.field}>
@@ -443,7 +511,7 @@ export function ServiceTypesPanel({
                   disabled={createPending}
                 />
                 <span className={styles.fieldHint}>
-                  How many people this job needs. Deep cleans are often more than one.
+                  How many people this job needs. A deep clean is often more than one.
                 </span>
               </label>
               <label className={styles.field}>
@@ -464,13 +532,13 @@ export function ServiceTypesPanel({
                   Initial and recurring roles apply when automatic scheduling is on.
                 </span>
               </label>
-              <div className={styles.field}>
+              <div className={styles.formActions}>
                 <Button type="submit" disabled={createPending}>
                   {createPending ? 'Adding…' : 'Add job type'}
                 </Button>
               </div>
             </form>
-          </div>
+          </section>
         ) : (
           <FeatureUpgradePanel
             title="Create custom job types on Pro"
