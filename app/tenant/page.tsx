@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { Calendar, ClipboardList, CreditCard, UsersRound } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
@@ -13,7 +13,7 @@ import { getTenantTrialSummaryBySlug } from '@/lib/billing/trial';
 import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingInvoices';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
-import { getDashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
+import { getDashboardTodayQueue, type DashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
 import { resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { getOwnerOnboardingChecklist } from '@/lib/tenant/ownerOnboardingChecklist';
 import {
@@ -34,7 +34,7 @@ import {
   getTenantPaidInvoicesLast30DaysCents,
   getTenantSentQuotesCount,
 } from '@/lib/tenant/dashboardMetrics';
-import { DashboardStatCard } from './DashboardStatCard';
+import { DashboardMetricStrip, type DashboardMetricTone } from './DashboardMetricStrip';
 import { DashboardStatSummary } from './DashboardStatSummary';
 import { TodayQueuePanel } from './TodayQueuePanel';
 import styles from './dashboard.module.scss';
@@ -48,6 +48,15 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function dashboardLead(queue: DashboardTodayQueue): string {
+  const first = queue.items[0];
+  if (!first) {
+    return 'Nothing urgent right now. Open the schedule or billing when you are ready.';
+  }
+  const label = first.label.charAt(0).toLowerCase() + first.label.slice(1);
+  return `Start with ${label}.`;
 }
 
 function getDashboardHeader(
@@ -197,61 +206,61 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
     !onboardingFocusMode &&
     !(onboardingChecklist && onboardingChecklist.incompleteRequiredCount > 0);
 
-  const statGrid = (
-    <div className={styles.statGrid}>
-      <DashboardStatCard
-        icon={<ClipboardList size={20} strokeWidth={2} />}
-        label="Quotes"
-        value={quoteCount}
-        badge={quotesBadge}
-        badgeTone={quoteCount === 0 ? 'muted' : 'brand'}
-        actionLabel={quoteCount === 0 ? 'Go to quotes' : 'View quotes'}
-        actionHref="/quotes"
-      />
-      <DashboardStatCard
-        icon={<Calendar size={20} strokeWidth={2} />}
-        label="Today's jobs"
-        value={todaysJobCount}
-        badge={jobsBadge}
-        badgeTone={todaysJobCount === 0 ? 'muted' : 'brand'}
-        actionLabel={todaysJobCount === 0 ? 'Open schedule' : "View today's jobs"}
-        actionHref={todaysJobCount > 0 ? `/schedule?date=${todayKey}&view=day` : '/schedule'}
-      />
-      <DashboardStatCard
-        icon={<CreditCard size={20} strokeWidth={2} />}
-        label="Outstanding invoices"
-        value={outstandingFormatted}
-        badge={invoicesBadge}
-        badgeTone={outstandingCount === 0 ? 'muted' : pastDueCount > 0 ? 'warn' : 'brand'}
-        actionLabel="View invoices"
-        actionHref="/billing/invoices"
-      />
-      <DashboardStatCard
-        icon={<CreditCard size={20} strokeWidth={2} />}
-        label="Revenue (30 days)"
-        value={revenue30Formatted}
-        badge={paidLast30DaysCents > 0 ? 'Paid invoices' : 'No paid invoices yet'}
-        badgeTone={paidLast30DaysCents > 0 ? 'brand' : 'muted'}
-        actionLabel="View billing"
-        actionHref="/billing"
-      />
-      <DashboardStatCard
-        icon={<UsersRound size={20} strokeWidth={2} />}
-        label="Active customers"
-        value={activeCustomerCount}
-        badge={customersBadge}
-        badgeTone={activeCustomerCount === 0 ? 'muted' : 'brand'}
-        actionLabel={activeCustomerCount === 0 ? 'Add customer' : 'View customers'}
-        actionHref={activeCustomerCount === 0 ? '/customers/new' : '/customers'}
-      />
-    </div>
-  );
+  const quoteTone: DashboardMetricTone = quoteCount === 0 ? 'quiet' : 'default';
+  const jobTone: DashboardMetricTone = todaysJobCount === 0 ? 'quiet' : 'default';
+  const dueTone: DashboardMetricTone =
+    pastDueCount > 0 ? 'warn' : outstandingCount === 0 ? 'quiet' : 'default';
+  const revenueTone: DashboardMetricTone = paidLast30DaysCents > 0 ? 'money' : 'quiet';
+  const customerTone: DashboardMetricTone = activeCustomerCount === 0 ? 'quiet' : 'default';
+  const metrics = [
+    {
+      slot: 'quotes' as const,
+      label: 'Quotes',
+      value: String(quoteCount),
+      context: quotesBadge,
+      href: '/quotes',
+      tone: quoteTone,
+    },
+    {
+      slot: 'jobs' as const,
+      label: "Today's jobs",
+      value: String(todaysJobCount),
+      context: jobsBadge,
+      href: todaysJobCount > 0 ? `/schedule?date=${todayKey}&view=day` : '/schedule',
+      tone: jobTone,
+    },
+    {
+      slot: 'due' as const,
+      label: 'Outstanding invoices',
+      value: outstandingFormatted,
+      context: invoicesBadge,
+      href: '/billing/invoices',
+      tone: dueTone,
+    },
+    {
+      slot: 'revenue' as const,
+      label: 'Revenue (30 days)',
+      value: revenue30Formatted,
+      context: paidLast30DaysCents > 0 ? 'Paid invoices' : 'No paid invoices yet',
+      href: '/billing',
+      tone: revenueTone,
+    },
+    {
+      slot: 'customers' as const,
+      label: 'Active customers',
+      value: String(activeCustomerCount),
+      context: customersBadge,
+      href: activeCustomerCount === 0 ? '/customers/new' : '/customers',
+      tone: customerTone,
+    },
+  ];
 
   return (
     <Container size="xl" className={styles.dashboardPage}>
       <PageHeader
         title={header.title}
         titleHint={header.titleHint}
+        description={onboardingFocusMode ? undefined : dashboardLead(todayQueue)}
         actions={
           <Button as="a" href="/schedule" iconLeft={<Calendar size={16} />}>
             Open schedule
@@ -301,8 +310,8 @@ export default async function TenantDashboardPage({ searchParams }: PageProps) {
               />
             ) : null}
 
+            <DashboardMetricStrip metrics={metrics} />
             <TodayQueuePanel queue={todayQueue} />
-            {statGrid}
 
             {showGetStartedEmptyState ? (
               <Card

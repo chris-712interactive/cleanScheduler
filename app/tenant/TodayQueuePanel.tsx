@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Card } from '@/components/ui/Card';
 import type { DashboardTodayQueue } from '@/lib/tenant/dashboardTodayQueue';
 import styles from './dashboard.module.scss';
 
@@ -20,30 +19,25 @@ export function TodayQueuePanel({
       );
     }
 
-    return (
-      <Card title="Today" titleHint="Your action queue for the day.">
-        <p className={styles.queueEmpty}>
-          Nothing urgent right now — open the schedule or billing hub when you are ready.
-        </p>
-      </Card>
-    );
+    return null;
   }
 
   return (
-    <Card title="Today" titleHint="Start here — exceptions and collections first.">
+    <section className={styles.queue} aria-label="Today">
+      <h2 className={styles.queueTitle}>Today</h2>
       <ul className={styles.queueList}>
         {queue.items.map((item) => (
           <li key={item.id}>
-            <Link
-              href={item.href}
-              className={`${styles.queueItem} ${styles[`queueTone_${item.tone}`]}`}
-            >
-              <span className={styles.queueLabel}>{item.label}</span>
-              <span className={styles.queueDetail}>{item.detail}</span>
+            <Link href={item.href} className={styles.queueRow}>
+              <span className={styles.queueDot} data-tone={item.tone} aria-hidden />
+              <span className={styles.queueCopy}>
+                <span className={styles.queueLabel}>{item.label}</span>
+                <span className={styles.queueDetail}>{item.detail}</span>
+              </span>
             </Link>
           </li>
         ))}
       </ul>
-    </Card>
+    </section>
   );
 }
