@@ -15,6 +15,9 @@ function crew(
 ): OptimizerCrewMember {
   return {
     home: null,
+    homeCity: null,
+    homeState: null,
+    homePostalCode: null,
     office: null,
     availableStartMin: 8 * 60,
     availableEndMin: 17 * 60,
@@ -48,6 +51,8 @@ function job(overrides: Partial<OptimizerJob> & Pick<OptimizerJob, 'id'>): Optim
     durationMinutes: 120,
     location: null,
     zoneId: null,
+    city: null,
+    state: null,
     postalCode: null,
     buildingKey: null,
     propertyKind: 'residential',
@@ -164,6 +169,68 @@ describe('planOptimizedDay', () => {
     expect(plan.assignments[0]?.travelMinutesBefore).toBeGreaterThan(0);
   });
 
+  it('keeps a job in town when home addresses have no map coordinates', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [
+        crew({
+          userId: 'far',
+          homeCity: 'Columbus',
+          homeState: 'Ohio',
+          homePostalCode: '43215',
+        }),
+        crew({
+          userId: 'near-a',
+          homeCity: 'Sarasota',
+          homeState: 'FL',
+          homePostalCode: '34236',
+        }),
+        crew({
+          userId: 'near-b',
+          homeCity: 'Sarasota',
+          homeState: 'Florida',
+          homePostalCode: '34236',
+        }),
+      ],
+      jobs: [
+        job({
+          id: 'local-home',
+          city: 'Sarasota',
+          state: 'FL',
+          postalCode: '34236',
+        }),
+      ],
+    });
+
+    expect(plan.unassigned).toEqual([]);
+    expect(plan.assignments[0]?.userIds[0]).not.toBe('far');
+  });
+
+  it('does not let a home with no town outrank a neighbor', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [
+        crew({ userId: 'unknown' }),
+        crew({
+          userId: 'neighbor',
+          homeCity: 'Sarasota',
+          homeState: 'FL',
+          homePostalCode: '34236',
+        }),
+      ],
+      jobs: [
+        job({
+          id: 'local-home',
+          city: 'Sarasota',
+          state: 'FL',
+          postalCode: '34236',
+        }),
+      ],
+    });
+
+    expect(plan.assignments[0]?.userIds).toEqual(['neighbor']);
+  });
+
   it('keeps the preferred cleaner when that weight is turned all the way up', () => {
     const policy = withWeights(defaultScheduleOptimizerPolicy(), {
       travel_distance: { weight: 1 },
@@ -217,6 +284,8 @@ describe('planOptimizedDay', () => {
               endMin: 16 * 60,
               location: null,
               zoneId: null,
+              city: null,
+              state: null,
               postalCode: null,
               buildingKey: null,
             },

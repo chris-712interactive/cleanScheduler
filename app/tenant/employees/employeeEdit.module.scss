@@ -250,6 +250,10 @@
   gap: var(--space-3);
 }
 
+.saveRow {
+  display: flex;
+}
+
 .availabilityDayList {
   margin: 0;
   padding: 0;

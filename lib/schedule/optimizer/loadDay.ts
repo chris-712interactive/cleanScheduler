@@ -293,7 +293,7 @@ export async function loadDaySchedulingSuggestions(
         ? admin
             .from('tenant_customer_properties')
             .select(
-              'id, property_kind, postal_code, service_zone_id, building_name, latitude, longitude, scheduling_override, required_crew_size',
+              'id, property_kind, city, state, postal_code, service_zone_id, building_name, latitude, longitude, scheduling_override, required_crew_size',
             )
             .in('id', propertyIds)
         : Promise.resolve({ data: [] }),
@@ -349,6 +349,8 @@ export async function loadDaySchedulingSuggestions(
           ? { lat: property.latitude, lng: property.longitude }
           : null,
       zoneId: property?.service_zone_id ?? null,
+      city: property?.city ?? null,
+      state: property?.state ?? null,
       postalCode: property?.postal_code ?? null,
       buildingKey: property?.building_name?.trim() || null,
     };
@@ -376,6 +378,9 @@ export async function loadDaySchedulingSuggestions(
     return {
       userId,
       home,
+      homeCity: profile?.home_city ?? null,
+      homeState: profile?.home_state ?? null,
+      homePostalCode: profile?.home_postal_code ?? null,
       office,
       availableStartMin: window ? hmToMinutes(window.startsAt) : 0,
       availableEndMin: window ? hmToMinutes(window.endsAt) : 0,
@@ -425,6 +430,8 @@ export async function loadDaySchedulingSuggestions(
           ? { lat: property.latitude, lng: property.longitude }
           : null,
       zoneId: property?.service_zone_id ?? null,
+      city: property?.city ?? null,
+      state: property?.state ?? null,
       postalCode: property?.postal_code ?? null,
       buildingKey: property?.building_name?.trim() || null,
       propertyKind: property?.property_kind ?? 'residential',

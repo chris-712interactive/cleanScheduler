@@ -1,9 +1,13 @@
 import { scheduleFactorDefinition, type ScheduleFactorId } from '@/lib/schedule/optimizer/factors';
-import { clamp01, travelMinutesBetween } from '@/lib/schedule/optimizer/geo';
+import {
+  approximateTravelMinutes,
+  clamp01,
+  placeIsComparable,
+  type PlaceHint,
+} from '@/lib/schedule/optimizer/geo';
 import { factorIsActive } from '@/lib/schedule/optimizer/policy';
 import type {
   FactorContribution,
-  LatLng,
   OptimizerCrewMember,
   OptimizerJob,
   OptimizedDayPlan,
@@ -18,8 +22,10 @@ type PlacedBlock = {
   jobId: string;
   startMin: number;
   endMin: number;
-  location: LatLng | null;
+  location: { lat: number; lng: number } | null;
   zoneId: string | null;
+  city: string | null;
+  state: string | null;
   postalCode: string | null;
   buildingKey: string | null;
 };
@@ -98,6 +104,8 @@ function memberJobBlocks(member: OptimizerCrewMember, extra: PlacedBlock[]): Pla
     endMin: job.endMin,
     location: job.location,
     zoneId: job.zoneId,
+    city: job.city,
+    state: job.state,
     postalCode: job.postalCode,
     buildingKey: job.buildingKey,
   }));
@@ -349,6 +357,33 @@ function candidateTeams(job: OptimizerJob, people: OptimizerCrewMember[]): Optim
   return teams;
 }
 
+function homeHint(member: OptimizerCrewMember): PlaceHint {
+  return {
+    point: member.home,
+    city: member.homeCity,
+    state: member.homeState,
+    postalCode: member.homePostalCode,
+  };
+}
+
+function jobHint(job: OptimizerJob): PlaceHint {
+  return {
+    point: job.location,
+    city: job.city,
+    state: job.state,
+    postalCode: job.postalCode,
+  };
+}
+
+function blockHint(block: PlacedBlock): PlaceHint {
+  return {
+    point: block.location,
+    city: block.city,
+    state: block.state,
+    postalCode: block.postalCode,
+  };
+}
+
 function travelInto(
   member: OptimizerCrewMember,
   blocks: PlacedBlock[],
@@ -358,8 +393,8 @@ function travelInto(
   travelSpeedMph: number,
 ): { earliest: number; travel: number | null; prev: PlacedBlock | null } {
   const prev = previousBlock(blocks, gapLo + 0.001);
-  const from = prev?.location ?? member.home;
-  const travel = travelMinutesBetween(from, job.location, travelSpeedMph);
+  const from = prev ? blockHint(prev) : homeHint(member);
+  const travel = approximateTravelMinutes(from, jobHint(job), travelSpeedMph);
   const travelMinutes = travel ?? 0;
   const earliest = prev
     ? Math.max(gapLo, prev.endMin + bufferMinutes + travelMinutes)
@@ -390,8 +425,8 @@ function memberCanHost(
 
   const { assumptions } = policy;
   const prev = previousBlock(blocks, startMin + 0.001);
-  const from = prev?.location ?? member.home;
-  const travel = travelMinutesBetween(from, job.location, assumptions.travelSpeedMph);
+  const from = prev ? blockHint(prev) : homeHint(member);
+  const travel = approximateTravelMinutes(from, jobHint(job), assumptions.travelSpeedMph);
   const departFloor = prev
     ? prev.endMin + assumptions.bufferMinutes + (travel ?? 0)
     : member.availableStartMin + (travel ?? 0);
@@ -402,7 +437,7 @@ function memberCanHost(
   const next = nextBlock(blocks, endMin - 0.001);
   if (next) {
     const onward =
-      travelMinutesBetween(job.location, next.location, assumptions.travelSpeedMph) ?? 0;
+      approximateTravelMinutes(jobHint(job), blockHint(next), assumptions.travelSpeedMph) ?? 0;
     if (endMin + assumptions.bufferMinutes + onward > next.startMin + 0.001) {
       return { ok: false, travel, prev, reason: 'Not enough drive time to the next pinned job.' };
     }
@@ -436,9 +471,21 @@ type ScoreContext = {
   policy: ScheduleOptimizerPolicy;
 };
 
+function jobCanBeLocated(job: OptimizerJob): boolean {
+  return placeIsComparable(jobHint(job));
+}
+
+/** Unknown drive on a job we can locate scores as the company max, so a known neighbor wins. */
+function resolvedTravelMinutes(ctx: ScoreContext): number | null {
+  if (ctx.travelMinutes != null) return ctx.travelMinutes;
+  if (!jobCanBeLocated(ctx.job)) return null;
+  return ctx.policy.assumptions.maxDriveMinutes;
+}
+
 function scoreTravel(ctx: ScoreContext): number | null {
-  if (ctx.travelMinutes == null) return null;
-  return clamp01(1 - ctx.travelMinutes / ctx.policy.assumptions.maxDriveMinutes);
+  const minutes = resolvedTravelMinutes(ctx);
+  if (minutes == null) return null;
+  return clamp01(1 - minutes / ctx.policy.assumptions.maxDriveMinutes);
 }
 
 function windowFit(
@@ -731,8 +778,9 @@ function evaluateFactors(ctx: ScoreContext): {
   consider('travel_distance', travelScore, null, 'Shorter drive into this stop.');
 
   const driveLimit = lead.maxDriveMinutesBetweenStops ?? policy.assumptions.maxDriveMinutes;
-  if (ctx.travelMinutes != null && factorIsActive(policy, 'max_drive_between_stops')) {
-    const within = ctx.travelMinutes <= driveLimit + 0.001;
+  const comparableTravel = resolvedTravelMinutes(ctx);
+  if (comparableTravel != null && factorIsActive(policy, 'max_drive_between_stops')) {
+    const within = comparableTravel <= driveLimit + 0.001;
     consider(
       'max_drive_between_stops',
       within ? 1 : 0,
@@ -789,10 +837,10 @@ function evaluateFactors(ctx: ScoreContext): {
     );
   }
 
-  if (ctx.travelMinutes != null && job.durationMinutes > 0) {
+  if (comparableTravel != null && job.durationMinutes > 0) {
     consider(
       'drive_vs_job_length',
-      clamp01(1 - ctx.travelMinutes / job.durationMinutes),
+      clamp01(1 - comparableTravel / job.durationMinutes),
       null,
       'Drive time compared with job length.',
     );
@@ -885,7 +933,11 @@ function leadSlots(
     const next = nextBlock(blocks, startMin + job.durationMinutes);
     if (next) {
       const onward =
-        travelMinutesBetween(job.location, next.location, policy.assumptions.travelSpeedMph) ?? 0;
+        approximateTravelMinutes(
+          jobHint(job),
+          blockHint(next),
+          policy.assumptions.travelSpeedMph,
+        ) ?? 0;
       const latestEnd = next.startMin - policy.assumptions.bufferMinutes - onward;
       if (startMin + job.durationMinutes > latestEnd + 0.001) continue;
     }
@@ -969,7 +1021,7 @@ function scoreSlot(
     team,
     startMin: slot.startMin,
     endMin: slot.endMin,
-    travelMinutesBefore: travelMinutes ?? 0,
+    travelMinutesBefore: travelMinutes ?? (jobCanBeLocated(job) ? DAY_END_MIN : 0),
     score,
     contributions: evaluated.contributions.sort((a, b) => b.weight - a.weight),
     prev,
@@ -1043,7 +1095,7 @@ function compareKeys(
  * Builds one day's crew plan.
  * Tight arrival windows and already-published visits are placed first.
  * Each open job is inserted into the feasible gap that scores highest under the company policy.
- * Existing jobs stay pinned. People without coordinates still schedule; travel factors skip those hops.
+ * Existing jobs stay pinned. A home and a job in the same town outrank a home in another state, even without map coordinates. Travel factors skip a job that has no town to compare.
  */
 export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
   const { policy } = input;
@@ -1119,6 +1171,8 @@ export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
       endMin: best.endMin,
       location: job.location,
       zoneId: job.zoneId,
+      city: job.city,
+      state: job.state,
       postalCode: job.postalCode,
       buildingKey: job.buildingKey,
     };
