@@ -8,6 +8,7 @@ import {
   countCustomersNeedingConsultationAction,
   CUSTOMERS_NEEDING_CONSULTATION_HREF,
 } from '@/lib/tenant/customerConsultation';
+import { countPropertiesNeedingConsultation } from '@/lib/tenant/propertyConsultationRequest';
 import { countScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 
@@ -49,6 +50,7 @@ export async function getDashboardTodayQueue(
     pendingTimeOffCount,
     scheduleIssueCount,
     consultationActionCount,
+    propertyRequestCount,
   ] = await Promise.all([
     countPendingRescheduleRequests(db, tenantId),
     getTenantTodaysJobsSummary(db, tenantId),
@@ -75,6 +77,7 @@ export async function getDashboardTodayQueue(
     countPendingTimeOffRequests(db, tenantId),
     countScheduleIssues(db, tenantId),
     countCustomersNeedingConsultationAction(db, tenantId),
+    countPropertiesNeedingConsultation(db, tenantId),
   ]);
 
   const awaitingReceiptCount = awaitingReceiptRes.count ?? 0;
@@ -108,6 +111,16 @@ export async function getDashboardTodayQueue(
       id: 'consultations',
       label: `${consultationActionCount} customer${consultationActionCount === 1 ? '' : 's'} need consultation scheduled`,
       detail: 'Schedule a consultation before sending quotes',
+      href: CUSTOMERS_NEEDING_CONSULTATION_HREF,
+      tone: 'warn',
+    });
+  }
+
+  if (propertyRequestCount > 0) {
+    items.push({
+      id: 'property-requests',
+      label: `${propertyRequestCount} new location${propertyRequestCount === 1 ? '' : 's'} need a consultation`,
+      detail: 'Customers asked to add a property',
       href: CUSTOMERS_NEEDING_CONSULTATION_HREF,
       tone: 'warn',
     });

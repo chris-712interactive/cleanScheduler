@@ -110,7 +110,7 @@ export async function moveTenantQuoteStatus(
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
-    .select('id, status, is_locked, customer_id')
+    .select('id, status, is_locked, customer_id, property_id')
     .eq('id', quoteId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -152,6 +152,7 @@ export async function moveTenantQuoteStatus(
       admin,
       membership.tenantId,
       existing.customer_id as string,
+      existing.property_id,
     );
     if (!consultationGate.ok) {
       return {
@@ -629,6 +630,7 @@ export async function createTenantQuote(
       admin,
       membership.tenantId,
       customerId,
+      propertyId,
     );
     if (!consultationGate.ok) {
       return {
@@ -924,6 +926,7 @@ export async function updateTenantQuote(
       admin,
       membership.tenantId,
       customerId,
+      propertyRaw || null,
     );
     if (!consultationGate.ok) {
       return {

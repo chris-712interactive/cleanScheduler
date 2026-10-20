@@ -37,6 +37,7 @@ type PropertyPick = Pick<
   | 'latitude'
   | 'longitude'
   | 'geocode_reason'
+  | 'consultation_requested_at'
 >;
 
 /** Row shape for `customers` + profile + service locations (detail projection). */

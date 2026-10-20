@@ -22,6 +22,7 @@ import {
 } from '@/lib/tenant/customerDirectoryPaging';
 import { fetchCustomerDirectoryPage } from '@/lib/tenant/customerDirectoryFetch';
 import { loadCustomersNeedingConsultation } from '@/lib/tenant/customerConsultation';
+import { loadCustomersNeedingPropertyConsultation } from '@/lib/tenant/propertyConsultationRequest';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import {
   primaryCustomerAddressLine,
@@ -152,21 +153,35 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
   let showEmptyWorkspace = false;
 
   if (consultationFilter) {
-    const consultationRows = await loadCustomersNeedingConsultation(
-      admin,
-      membership.tenantId,
-      200,
-    );
-    directoryRows = consultationRows.map((row) => ({
-      id: row.customerId,
-      status: 'active',
-      name: row.displayName,
-      email: null,
-      phone: null,
-      addressLine: null,
-      zoneName: null,
-      consultationLabel: 'Needs consultation',
-    }));
+    const [consultationRows, propertyRows] = await Promise.all([
+      loadCustomersNeedingConsultation(admin, membership.tenantId, 200),
+      loadCustomersNeedingPropertyConsultation(admin, membership.tenantId),
+    ]);
+    const listed = new Set(consultationRows.map((row) => row.customerId));
+    directoryRows = [
+      ...consultationRows.map((row) => ({
+        id: row.customerId,
+        status: 'active' as const,
+        name: row.displayName,
+        email: null,
+        phone: null,
+        addressLine: null,
+        zoneName: null,
+        consultationLabel: 'Needs consultation',
+      })),
+      ...propertyRows
+        .filter((row) => !listed.has(row.customerId))
+        .map((row) => ({
+          id: row.customerId,
+          status: 'active' as const,
+          name: row.displayName,
+          email: null,
+          phone: null,
+          addressLine: row.addressLine || null,
+          zoneName: null,
+          consultationLabel: 'New location',
+        })),
+    ];
     totalCount = directoryRows.length;
     statusCounts = { all: totalCount, active: totalCount, inactive: 0 };
     safePage = 1;

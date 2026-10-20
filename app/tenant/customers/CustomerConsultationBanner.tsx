@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import type { ConsultationStatus } from '@/lib/tenant/customerConsultation';
 import { buildScheduleConsultationPath } from '@/lib/tenant/customerConsultation';
+import type { PropertyConsultationPrompt } from '@/lib/tenant/propertyConsultationRequest';
 import { formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
 import styles from './customers.module.scss';
 
@@ -60,6 +61,55 @@ export function CustomerConsultationBanner({
           Schedule consultation
         </Button>
       )}
+    </div>
+  );
+}
+
+export function PropertyRequestBanner({
+  customerId,
+  requests,
+}: {
+  customerId: string;
+  requests: Array<{
+    propertyId: string;
+    label: string;
+    phase: PropertyConsultationPrompt['phase'];
+    visitId: string | null;
+  }>;
+}) {
+  const waiting = requests.filter((request) => request.phase === 'needs_scheduling');
+  const booked = requests.filter((request) => request.phase === 'scheduled');
+  if (waiting.length === 0 && booked.length === 0) return null;
+
+  const firstWaiting = waiting[0];
+  const firstBooked = booked.find((request) => request.visitId) ?? booked[0];
+  const names = (waiting.length > 0 ? waiting : booked).map((request) => request.label).join(', ');
+
+  return (
+    <div className={styles.consultationBanner} role="status">
+      <div className={styles.consultationBannerCopy}>
+        <strong>
+          {waiting.length > 0 ? 'New location needs a consultation' : 'Consultation scheduled'}
+        </strong>
+        <p>
+          {waiting.length > 0
+            ? `${names} ${waiting.length === 1 ? 'was' : 'were'} requested by this customer. Schedule a walkthrough before quoting that location.`
+            : `A consultation is already booked for ${names}.`}
+        </p>
+      </div>
+      {firstWaiting ? (
+        <Button
+          as={Link}
+          href={buildScheduleConsultationPath(customerId, firstWaiting.propertyId)}
+          variant="primary"
+        >
+          Schedule consultation
+        </Button>
+      ) : firstBooked?.visitId ? (
+        <Button as={Link} href={`/schedule/${firstBooked.visitId}`} variant="secondary">
+          Open consultation
+        </Button>
+      ) : null}
     </div>
   );
 }

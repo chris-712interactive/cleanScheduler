@@ -22,6 +22,7 @@ export const dynamic = 'force-dynamic';
 const BOTTOM_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
   { label: 'Schedule', href: '/visits', icon: 'visits' },
+  { label: 'Properties', href: '/properties', icon: 'home' },
   { label: 'Billing', href: '/invoices', icon: 'invoices' },
   { label: 'Messages', href: '/messages', icon: 'messages' },
 ];

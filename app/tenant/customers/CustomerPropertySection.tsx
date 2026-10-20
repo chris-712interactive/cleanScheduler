@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionPropertiesPatch } from '@/lib/hooks/useServerActionPropertiesPatch';
@@ -8,6 +9,8 @@ import {
   type CustomerPropertyVM,
 } from '@/lib/tenant/customerPropertyPatch';
 import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
+import { buildScheduleConsultationPath } from '@/lib/tenant/customerConsultation';
+import type { PropertyConsultationPrompt } from '@/lib/tenant/propertyConsultationRequest';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import type { ServiceZoneOption } from '@/lib/tenant/serviceZones';
@@ -116,6 +119,7 @@ export function CustomerPropertySection({
   employees,
   customerScheduling,
   schedulingOverrides,
+  propertyConsultations = {},
 }: {
   tenantSlug: string;
   customerId: string;
@@ -125,6 +129,7 @@ export function CustomerPropertySection({
   employees: { id: string; label: string }[];
   customerScheduling: SchedulingFacts;
   schedulingOverrides: Record<string, unknown>;
+  propertyConsultations?: Record<string, PropertyConsultationPrompt>;
 }) {
   const [properties, setProperties] = useState(initialProperties);
   const [addLocationOpen, setAddLocationOpen] = useState(false);
@@ -162,6 +167,7 @@ export function CustomerPropertySection({
               longitude: p.longitude,
               addressParts: [p.address_line1, p.city, p.state, p.postal_code],
             });
+            const consultation = propertyConsultations[p.id];
             return (
               <details key={p.id} className={styles.propertyCard}>
                 <summary className={styles.propertySummary}>
@@ -170,6 +176,13 @@ export function CustomerPropertySection({
                     {p.is_primary ? <span className={styles.primaryBadge}>Primary</span> : null}
                     {geocodeMessage ? (
                       <span className={styles.geocodeBadge}>Missing map point</span>
+                    ) : null}
+                    {consultation ? (
+                      <span className={styles.geocodeBadge}>
+                        {consultation.phase === 'scheduled'
+                          ? 'Consultation scheduled'
+                          : 'Consultation needed'}
+                      </span>
                     ) : null}
                   </span>
                   <span className={styles.propertyMeta}>
@@ -181,6 +194,19 @@ export function CustomerPropertySection({
                   </span>
                   {geocodeMessage ? (
                     <span className={styles.geocodeNote}>{geocodeMessage}</span>
+                  ) : null}
+                  {consultation?.phase === 'needs_scheduling' ? (
+                    <span className={styles.consultationRequestNote}>
+                      This customer asked to add this location.{' '}
+                      <Link href={buildScheduleConsultationPath(customerId, p.id)}>
+                        Schedule a consultation
+                      </Link>
+                    </span>
+                  ) : consultation?.phase === 'scheduled' && consultation.visitId ? (
+                    <span className={styles.consultationRequestNote}>
+                      A consultation is booked for this location.{' '}
+                      <Link href={`/schedule/${consultation.visitId}`}>Open consultation</Link>
+                    </span>
                   ) : null}
                 </summary>
 

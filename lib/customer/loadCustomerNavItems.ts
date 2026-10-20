@@ -9,6 +9,7 @@ import { customerReferralsNavEnabled } from '@/lib/referrals/loadCustomerReferra
 const CUSTOMER_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'dashboard', exact: true },
   { label: 'Schedule', href: '/visits', icon: 'visits' },
+  { label: 'Properties', href: '/properties', icon: 'home' },
   { label: 'Billing', href: '/invoices', icon: 'invoices' },
   { label: 'Quotes', href: '/quotes', icon: 'quotes' },
   { label: 'Messages', href: '/messages', icon: 'messages' },
@@ -37,7 +38,7 @@ export const loadCustomerNavItemsForShell = cache(async (userId: string): Promis
       ctx.links[0];
 
     if (link && (await customerReferralsNavEnabled(admin, link))) {
-      items = [...items.slice(0, 4), REFERRALS_NAV_ITEM, ...items.slice(4)];
+      items = [...items.slice(0, 5), REFERRALS_NAV_ITEM, ...items.slice(5)];
     }
   }
 

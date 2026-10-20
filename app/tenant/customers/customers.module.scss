@@ -938,6 +938,19 @@
   color: var(--color-warning);
 }
 
+.consultationRequestNote {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text);
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+  }
+}
+
 .propertyMeta {
   display: block;
   margin-top: var(--space-1);
