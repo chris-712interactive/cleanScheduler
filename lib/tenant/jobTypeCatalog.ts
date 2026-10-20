@@ -160,6 +160,34 @@ export function findCatalogEntry(
   return matches[0] ?? null;
 }
 
+function includesPhrase(haystack: string, phrase: string): boolean {
+  const index = haystack.indexOf(phrase);
+  if (index < 0) return false;
+  const before = index === 0 || !/[a-z0-9]/i.test(haystack[index - 1] ?? '');
+  const afterIndex = index + phrase.length;
+  const after = afterIndex === haystack.length || !/[a-z0-9]/i.test(haystack[afterIndex] ?? '');
+  return before && after;
+}
+
+/** Exact job type name, or a quote line that contains that name, such as "Initial Deep Cleaning". */
+export function matchJobTypeByLabel<T extends { service_label: string }>(
+  label: string | null | undefined,
+  entries: T[],
+): T | null {
+  const needle = label?.trim().toLowerCase() ?? '';
+  if (!needle) return null;
+  const exact = entries.find((entry) => entry.service_label.trim().toLowerCase() === needle);
+  if (exact) return exact;
+  return (
+    entries
+      .filter((entry) => {
+        const name = entry.service_label.trim().toLowerCase();
+        return name.length >= 8 && includesPhrase(needle, name);
+      })
+      .sort((a, b) => b.service_label.length - a.service_label.length)[0] ?? null
+  );
+}
+
 export function resolveVisitDurationHours(input: {
   lineEstimatedHours?: number | null;
   catalogEntry?: JobTypeCatalogEntry | null;

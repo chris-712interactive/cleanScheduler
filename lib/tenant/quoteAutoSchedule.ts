@@ -12,6 +12,7 @@ import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import {
   findCatalogEntry,
   loadJobTypeCatalog,
+  matchJobTypeByLabel,
   resolveVisitDurationHours,
   type JobTypeCatalogEntry,
 } from '@/lib/tenant/jobTypeCatalog';
@@ -206,7 +207,11 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
 
   if (scheduleSettings.recurringStartsAfterInitial) {
     const scheduleLines = flaggedLines.map(toScheduleLine);
-    const { initialLines, recurringLines } = partitionAutoScheduleLines(scheduleLines, catalogById);
+    const { initialLines, recurringLines } = partitionAutoScheduleLines(
+      scheduleLines,
+      catalogById,
+      catalog,
+    );
 
     for (const [lineIndex, line] of initialLines.entries()) {
       const flagged = flaggedLines.find((row) => row.id === line.id);
@@ -222,11 +227,17 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
       }
     }
 
+    const propertyInitialIso = await latestPropertyInitialStartIso(ctx);
+    const initialAnchorIso =
+      anchorStartIso && propertyInitialIso
+        ? maxIsoTimestamp(anchorStartIso, propertyInitialIso)
+        : (anchorStartIso ?? propertyInitialIso);
+
     for (const [lineIndex, line] of recurringLines.entries()) {
       const flagged = flaggedLines.find((row) => row.id === line.id);
       if (!flagged) continue;
       let recurringNotBeforeIso = resolveRecurringFirstVisitNotBefore(
-        anchorStartIso,
+        initialAnchorIso,
         flagged.frequency,
         scheduleSettings,
       );
@@ -264,6 +275,62 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
     createdCount,
     alreadyScheduled: createdCount === 0,
   };
+}
+
+/** Latest one-time or initial-job visit already on this property, so a new biweekly waits a cycle. */
+async function latestPropertyInitialStartIso(ctx: ScheduleContext): Promise<string | null> {
+  if (!ctx.quotePropertyId || !ctx.scheduleSettings.recurringStartsAfterInitial) return null;
+
+  const { data: visits } = await ctx.admin
+    .from('tenant_scheduled_visits')
+    .select('starts_at, title, quote_line_item_id, visit_purpose')
+    .eq('tenant_id', ctx.input.tenantId)
+    .eq('property_id', ctx.quotePropertyId)
+    .neq('status', 'cancelled')
+    .limit(500);
+
+  const rows = (visits ?? []).filter((visit) => visit.visit_purpose !== 'consultation');
+  if (rows.length === 0) return null;
+
+  const lineIds = [
+    ...new Set(
+      rows
+        .map((visit) => visit.quote_line_item_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    ),
+  ];
+  const { data: lines } = lineIds.length
+    ? await ctx.admin
+        .from('tenant_quote_line_items')
+        .select('id, frequency, service_label, service_template_id')
+        .in('id', lineIds)
+    : {
+        data: [] as {
+          id: string;
+          frequency: QuoteLineFrequency;
+          service_label: string;
+          service_template_id: string | null;
+        }[],
+      };
+
+  const lineById = new Map((lines ?? []).map((line) => [line.id, line]));
+  let latest: string | null = null;
+  for (const visit of rows) {
+    const line = visit.quote_line_item_id ? lineById.get(visit.quote_line_item_id) : undefined;
+    const entry = line
+      ? (findCatalogEntry(ctx.catalog, {
+          serviceTemplateId: line.service_template_id,
+          serviceLabel: line.service_label,
+          propertyKind: ctx.propertyKind,
+        }) ?? matchJobTypeByLabel(line.service_label, ctx.catalog))
+      : matchJobTypeByLabel(visit.title, ctx.catalog);
+    const initial = line
+      ? line.frequency === 'one_time' || entry?.schedule_role === 'initial'
+      : entry?.schedule_role === 'initial';
+    if (!initial || !visit.starts_at) continue;
+    latest = maxIsoTimestamp(latest, visit.starts_at);
+  }
+  return latest;
 }
 
 async function scheduleFlaggedLineVisits(

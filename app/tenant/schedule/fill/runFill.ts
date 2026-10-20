@@ -25,6 +25,8 @@ import {
 } from '@/lib/schedule/fillPeriod';
 import { assertMeteredLimit } from '@/lib/billing/checkLimit';
 import { DEFAULT_CONSULTATION_DURATION_MINUTES } from '@/lib/tenant/consultationDuration';
+import { matchJobTypeByLabel } from '@/lib/tenant/jobTypeCatalog';
+import type { ServiceTemplateScheduleRole } from '@/lib/tenant/defaultJobTypeCatalog';
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import {
   effectiveSchedulingFacts,
@@ -82,6 +84,31 @@ function durationMinutes(hours: number | null): number {
   return Math.min(480, Math.max(30, Math.round(hours * 60)));
 }
 
+function scheduleRoleForLine(
+  line: { service_template_id: string | null; service_label: string | null },
+  templates: {
+    id: string;
+    service_label: string | null;
+    schedule_role: ServiceTemplateScheduleRole;
+  }[],
+): ServiceTemplateScheduleRole | null {
+  if (line.service_template_id) {
+    const byId = templates.find((template) => template.id === line.service_template_id);
+    if (byId) return byId.schedule_role;
+  }
+  const named = templates.flatMap((template) =>
+    template.service_label
+      ? [
+          {
+            service_label: template.service_label,
+            schedule_role: template.schedule_role,
+          },
+        ]
+      : [],
+  );
+  return matchJobTypeByLabel(line.service_label, named)?.schedule_role ?? null;
+}
+
 function splitPersonName(name: string): { first: string; last: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   return { first: parts[0] || 'Customer', last: parts.slice(1).join(' ') };
@@ -134,7 +161,8 @@ async function buildPlan(
           service_label,
           frequency,
           amount_cents,
-          estimated_hours
+          estimated_hours,
+          service_template_id
         )
       `,
       )
@@ -186,31 +214,39 @@ async function buildPlan(
     ),
   ];
 
-  const [{ data: visits }, { data: prefs }, { data: properties }] = await Promise.all([
-    customerIds.length
-      ? admin
-          .from('tenant_scheduled_visits')
-          .select('customer_id, property_id, quote_line_item_id, starts_at, visit_purpose, status')
-          .eq('tenant_id', tenantId)
-          .in('customer_id', customerIds)
-          .neq('status', 'cancelled')
-          .limit(5000)
-      : Promise.resolve({ data: [] as never[] }),
-    customerIds.length
-      ? admin
-          .from('tenant_customer_scheduling_preferences')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .in('customer_id', customerIds)
-      : Promise.resolve({ data: [] as never[] }),
-    propertyIds.length
-      ? admin
-          .from('tenant_customer_properties')
-          .select('id, address_line1, scheduling_override')
-          .eq('tenant_id', tenantId)
-          .in('id', propertyIds)
-      : Promise.resolve({ data: [] as never[] }),
-  ]);
+  const [{ data: visits }, { data: prefs }, { data: properties }, { data: templates }] =
+    await Promise.all([
+      customerIds.length
+        ? admin
+            .from('tenant_scheduled_visits')
+            .select(
+              'customer_id, property_id, quote_line_item_id, starts_at, visit_purpose, status',
+            )
+            .eq('tenant_id', tenantId)
+            .in('customer_id', customerIds)
+            .neq('status', 'cancelled')
+            .limit(5000)
+        : Promise.resolve({ data: [] as never[] }),
+      customerIds.length
+        ? admin
+            .from('tenant_customer_scheduling_preferences')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .in('customer_id', customerIds)
+        : Promise.resolve({ data: [] as never[] }),
+      propertyIds.length
+        ? admin
+            .from('tenant_customer_properties')
+            .select('id, address_line1, scheduling_override')
+            .eq('tenant_id', tenantId)
+            .in('id', propertyIds)
+        : Promise.resolve({ data: [] as never[] }),
+      admin
+        .from('tenant_service_templates')
+        .select('id, service_label, schedule_role')
+        .eq('tenant_id', tenantId)
+        .eq('kind', 'service_line'),
+    ]);
 
   const factsByCustomer = new Map(
     (prefs ?? []).map((row) => [row.customer_id, schedulingFactsFromRow(row)]),
@@ -293,6 +329,7 @@ async function buildPlan(
         propertyId: quote.property_id,
         addressLine: quote.property_id ? (addressByProperty.get(quote.property_id) ?? null) : null,
         amountCents: line.amount_cents,
+        scheduleRole: scheduleRoleForLine(line, templates ?? []),
       });
     }
   }
