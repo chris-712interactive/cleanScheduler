@@ -25,7 +25,7 @@ export default async function TenantServicesSettingsPage() {
     <>
       <PageHeader
         title="Job types"
-        titleHint="Built-in and custom types used when you schedule a job, plus default durations and checklists."
+        titleHint="Duration, minimum crew, schedule role, and checklists for each property type."
         backHref="/settings"
         backLabel="Settings"
       />

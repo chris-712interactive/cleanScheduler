@@ -1,245 +1,353 @@
 @use 'mixins/breakpoints' as mq;
+@use 'mixins/tenant-settings-layout' as layout;
 
 .stack {
-  display: grid;
-  gap: var(--space-6);
+  @include layout.stack;
 }
 
 .readOnlyNotice {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-md);
-}
-
-.bannerError {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-danger);
-  background: var(--color-danger-bg);
-  border-radius: var(--radius-md);
+  @include layout.read-only-notice;
 }
 
 .hero {
-  display: grid;
-  gap: var(--space-2);
+  @include layout.hero;
 }
 
 .heroTitle {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 700;
+  @include layout.hero-title;
 }
 
 .heroLead {
+  @include layout.hero-lead;
+}
+
+.heroMeta {
+  @include layout.meta-chips;
+}
+
+.metaChip {
+  @include layout.meta-chip;
+}
+
+.jobType {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.jobTypeTitle {
   margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  line-height: 1.5;
-  max-width: 52rem;
-}
-
-.groupTitle {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
   font-weight: 700;
+  color: var(--color-text);
 }
 
-.groupHint {
-  margin: calc(var(--space-3) * -1) 0 var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-.itemList {
-  list-style: none;
+.propertyList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: var(--space-3);
+  list-style: none;
 }
 
-.itemCard {
-  display: grid;
-  gap: var(--space-3);
+.property {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+
+  &[open] {
+    background: var(--color-surface);
+  }
+}
+
+.propertySummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  list-style: none;
+  cursor: pointer;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+.propertyName {
+  display: inline-flex;
+  flex: 0 1 auto;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+
+  &::before {
+    content: '▸';
+    color: var(--color-text-muted);
+    transition: transform var(--duration-fast) var(--easing-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before {
+      transition: none;
+    }
+  }
+}
+
+.property[open] .propertyName::before {
+  transform: rotate(90deg);
+}
+
+.propertyFacts {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  text-align: left;
+
+  @include mq.up(sm) {
+    text-align: right;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.propertyBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
   padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.settingsGrid {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.settingCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settingLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.settingHint {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.controlRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.numberInput,
+.roleSelect {
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
 
-  @include mq.up(sm) {
-    grid-template-columns: 1fr auto;
-    align-items: center;
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
   }
 }
 
-.itemMain {
-  display: grid;
-  gap: var(--space-1);
+.numberInput {
+  width: 4.75rem;
 }
 
-.itemTitle {
-  margin: 0;
-  font-weight: 600;
+.roleSelect {
+  flex: 1 1 9rem;
+  min-width: 0;
+  max-width: 14rem;
 }
 
-.itemMeta {
-  margin: 0;
+.unit {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
-.itemActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  align-items: flex-start;
-}
-
-.durationForm {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-.scheduleRoleForm {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-.scheduleRoleSelect {
-  min-width: 9rem;
-  min-height: 36px;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.editorGroup {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.editorLabel {
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-.durationInput {
-  width: 5rem;
-  min-height: 36px;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.setupCard {
-  display: grid;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
-}
-
-.setupTitle {
+.readout {
   margin: 0;
-  font-weight: 600;
-}
-
-.field {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.fieldLabel {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  color: var(--color-text);
 }
 
-.fieldHint {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.textInput,
-.selectInput {
-  width: 100%;
-  max-width: 24rem;
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.formGrid {
+.checklistGrid {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
 
-  @include mq.up(sm) {
+  @include mq.up(md) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
   }
 }
 
-.badgeCustom {
-  display: inline-block;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  padding: 0.1rem 0.45rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
+.checklistField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .checklistForm {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
-  width: 100%;
-  max-width: 28rem;
+  align-items: flex-start;
 }
 
 .checklistTextarea {
   width: 100%;
-  min-height: 5.5rem;
+  min-height: 7.5rem;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
   font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   resize: vertical;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+  }
 }
 
 .checklistReadonly {
   margin: 0;
   padding-left: 1.1rem;
   font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.emptyNote {
+  margin: 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
-.bannerSuccess {
+.propertyFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.footerNote {
+  margin: 0;
   font-size: var(--font-size-sm);
-  color: var(--color-success);
+  color: var(--color-text-muted);
+}
+
+.setupCard {
+  @include layout.settings-section;
+}
+
+.setupTitle {
+  @include layout.section-title;
+}
+
+.setupLead {
+  @include layout.section-lead;
+}
+
+.field {
+  @include layout.field;
+}
+
+.fieldLabel {
+  @include layout.field-label;
+}
+
+.fieldHint {
+  @include layout.field-hint;
+}
+
+.textInput {
+  @include layout.text-input;
+}
+
+.selectInput {
+  @include layout.select-input;
+}
+
+.formGrid {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.formActions {
+  display: flex;
+  align-items: flex-end;
+
+  @include mq.up(md) {
+    grid-column: 1 / -1;
+  }
 }
