@@ -190,7 +190,7 @@ async function buildPlan(
     customerIds.length
       ? admin
           .from('tenant_scheduled_visits')
-          .select('customer_id, quote_line_item_id, starts_at, visit_purpose, status')
+          .select('customer_id, property_id, quote_line_item_id, starts_at, visit_purpose, status')
           .eq('tenant_id', tenantId)
           .in('customer_id', customerIds)
           .neq('status', 'cancelled')
@@ -206,7 +206,7 @@ async function buildPlan(
     propertyIds.length
       ? admin
           .from('tenant_customer_properties')
-          .select('id, scheduling_override')
+          .select('id, address_line1, scheduling_override')
           .eq('tenant_id', tenantId)
           .in('id', propertyIds)
       : Promise.resolve({ data: [] as never[] }),
@@ -218,7 +218,11 @@ async function buildPlan(
   const overrideByProperty = new Map(
     (properties ?? []).map((property) => [property.id, property.scheduling_override]),
   );
+  const addressByProperty = new Map(
+    (properties ?? []).map((property) => [property.id, property.address_line1?.trim() || null]),
+  );
   const serviceDates = new Map<string, string[]>();
+  const propertyDates = new Map<string, string[]>();
   const lineDates = new Map<string, string[]>();
   const completedLineIds = new Set<string>();
   const consultationCustomers = new Set<string>();
@@ -232,6 +236,11 @@ async function buildPlan(
     const dates = serviceDates.get(visit.customer_id) ?? [];
     dates.push(dateKey);
     serviceDates.set(visit.customer_id, dates);
+    if (visit.property_id) {
+      const atProperty = propertyDates.get(visit.property_id) ?? [];
+      atProperty.push(dateKey);
+      propertyDates.set(visit.property_id, atProperty);
+    }
     if (visit.quote_line_item_id) {
       const line = lineDates.get(visit.quote_line_item_id) ?? [];
       line.push(dateKey);
@@ -246,7 +255,6 @@ async function buildPlan(
     const identity = quote.customers?.customer_identities;
     const customerName = identity ? formatCustomerDisplayName(identity) : 'Customer';
     const allDates = serviceDates.get(customerId) ?? [];
-    const anchorDateForCustomer = allDates.slice().sort().at(-1) ?? null;
     const facts = effectiveSchedulingFacts(
       factsByCustomer.get(customerId) ?? emptySchedulingFacts(),
       quote.property_id ? overrideByProperty.get(quote.property_id) : null,
@@ -256,7 +264,18 @@ async function buildPlan(
       const frequency = FREQUENCIES.has(line.frequency as QuoteLineFrequency)
         ? (line.frequency as QuoteLineFrequency)
         : 'one_time';
-      const ownDates = lineDates.get(line.id) ?? [];
+      const ownDates = (lineDates.get(line.id) ?? []).slice().sort();
+      const onThisProperty = quote.property_id
+        ? (propertyDates.get(quote.property_id) ?? [])
+        : allDates;
+      // A recurring line follows its own last visit. With no visit yet, use this
+      // property only, so a clean at the customer's other house does not delay it.
+      const cadenceDates =
+        frequency === 'one_time'
+          ? ownDates
+          : ownDates.length > 0
+            ? ownDates
+            : onThisProperty.slice().sort();
       services.push({
         key: line.id,
         customerId,
@@ -264,16 +283,15 @@ async function buildPlan(
         title: line.service_label?.trim() || quote.title?.trim() || 'Visit',
         frequency,
         durationMinutes: durationMinutes(line.estimated_hours),
-        anchorDate:
-          (frequency === 'one_time' ? ownDates : allDates).slice().sort().at(-1) ??
-          anchorDateForCustomer,
-        existingDates: frequency === 'one_time' ? ownDates : allDates,
+        anchorDate: cadenceDates.at(-1) ?? null,
+        existingDates: cadenceDates,
         fulfilled: frequency === 'one_time' && completedLineIds.has(line.id),
         arrivalStartMin: arrival?.startMin ?? null,
         preferredWeekdays: facts.preferredWeekdays,
         quoteId: quote.id,
         lineId: line.id,
         propertyId: quote.property_id,
+        addressLine: quote.property_id ? (addressByProperty.get(quote.property_id) ?? null) : null,
         amountCents: line.amount_cents,
       });
     }
@@ -301,6 +319,7 @@ async function buildPlan(
       preferredDate: preferred,
       preferredWindow: lead.preferred_time_window,
       durationMinutes: consultMinutes,
+      addressLine: lead.service_address_line1?.trim() || null,
       alreadyBooked: Boolean(lead.customer_id && consultationCustomers.has(lead.customer_id)),
     });
   }
@@ -538,6 +557,7 @@ export async function runFillSchedule(
   const rows: FillPreviewRow[] = plan.proposals.map((proposal) => ({
     key: proposal.key,
     customerName: proposal.customerName,
+    addressLine: proposal.addressLine,
     title: proposal.title,
     dateKey: proposal.dateKey,
     timeLabel: formatSuggestionClock(proposal.startMin),
@@ -599,11 +619,16 @@ export async function runFillSchedule(
   }> = [];
   let failed = 0;
   for (const proposal of plan.proposals) {
-    const label = `${proposal.customerName}, ${proposal.title}`;
+    const street = proposal.addressLine?.trim();
+    const label = street
+      ? `${proposal.customerName}, ${street}, ${proposal.title}`
+      : `${proposal.customerName}, ${proposal.title}`;
     emit({
       type: 'status',
       phase: 'placing',
-      message: `Placing ${proposal.customerName} on ${formatFillDate(proposal.dateKey, 'short')}.`,
+      message: street
+        ? `Placing ${proposal.customerName} at ${street} on ${formatFillDate(proposal.dateKey, 'short')}.`
+        : `Placing ${proposal.customerName} on ${formatFillDate(proposal.dateKey, 'short')}.`,
     });
 
     let customerId = proposal.customerId;
@@ -675,6 +700,7 @@ export async function runFillSchedule(
         visitId: inserted.data.id,
         customerId,
         customerName: proposal.customerName,
+        addressLine: proposal.addressLine,
         title: proposal.title,
         dateKey: proposal.dateKey,
         startMin: proposal.startMin,

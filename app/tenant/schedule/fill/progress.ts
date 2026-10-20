@@ -3,6 +3,7 @@ export type FillNote = { label: string; reason: string };
 export type FillPreviewRow = {
   key: string;
   customerName: string;
+  addressLine: string | null;
   title: string;
   dateKey: string;
   timeLabel: string;
@@ -22,6 +23,7 @@ export type FillLiveItem = {
   visitId: string;
   customerId: string;
   customerName: string;
+  addressLine: string | null;
   title: string;
   dateKey: string;
   startMin: number;

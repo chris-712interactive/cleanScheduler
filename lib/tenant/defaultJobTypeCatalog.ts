@@ -10,6 +10,8 @@ export type DefaultJobTypeDefinition = {
   hoursByPropertyKind: Partial<Record<CustomerPropertyKind, number>>;
   sortOrder: number;
   scheduleRole: ServiceTemplateScheduleRole;
+  /** Minimum cleaners for this job type. Omitted means one. */
+  defaultCrewSize?: number;
 };
 
 /** Built-in job types seeded for every tenant; durations are editable in settings. */
@@ -19,6 +21,7 @@ export const DEFAULT_JOB_TYPE_CATALOG: DefaultJobTypeDefinition[] = [
     name: 'Deep cleaning',
     sortOrder: 0,
     scheduleRole: 'initial',
+    defaultCrewSize: 2,
     hoursByPropertyKind: {
       residential: 4,
       commercial: 6,
@@ -73,4 +76,10 @@ export function defaultHoursForJobType(
   propertyKind: CustomerPropertyKind,
 ): number {
   return definition.hoursByPropertyKind[propertyKind] ?? definition.hoursByPropertyKind.other ?? 2;
+}
+
+export function defaultCrewSizeForJobType(definition: DefaultJobTypeDefinition): number {
+  const size = definition.defaultCrewSize ?? 1;
+  if (!Number.isInteger(size) || size < 1) return 1;
+  return Math.min(8, size);
 }

@@ -128,6 +128,8 @@ export type FillServiceDemand = {
   quoteId: string;
   lineId: string;
   propertyId: string | null;
+  /** Street line, so a customer with more than one property can be told apart. */
+  addressLine: string | null;
   amountCents: number | null;
 };
 
@@ -139,6 +141,7 @@ export type FillConsultationDemand = {
   preferredDate: string | null;
   preferredWindow: string | null;
   durationMinutes: number;
+  addressLine: string | null;
   /** True when this person already has a consultation on the calendar. */
   alreadyBooked: boolean;
 };
@@ -156,10 +159,30 @@ export type FillProposal = {
   quoteId: string | null;
   lineId: string | null;
   propertyId: string | null;
+  addressLine: string | null;
   amountCents: number | null;
 };
 
 export type FillSkip = { label: string; reason: string };
+
+function locationLabel(name: string, addressLine: string | null | undefined): string {
+  const street = addressLine?.trim();
+  return street ? `${name}, ${street}` : name;
+}
+
+function formatDueDate(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(year!, (month ?? 1) - 1, day ?? 1)));
+}
+
+/** Each quote line keeps its own cadence. Another property must not move this one. */
+function cadenceKey(service: FillServiceDemand): string {
+  return service.lineId || service.key;
+}
 
 function cadenceDays(frequency: QuoteLineFrequency): number | null {
   if (frequency === 'weekly' || frequency === 'custom') return 7;
@@ -275,22 +298,24 @@ export function planFillPeriod(input: {
       })
     : input.services;
 
-  const mark = (customerId: string, dateKey: string) => {
-    const set = taken.get(customerId) ?? new Set<string>();
+  const mark = (key: string, dateKey: string) => {
+    const set = taken.get(key) ?? new Set<string>();
     set.add(dateKey);
-    taken.set(customerId, set);
+    taken.set(key, set);
   };
 
   for (const service of input.services) {
-    for (const dateKey of service.existingDates) mark(service.customerId, dateKey);
+    const key = cadenceKey(service);
+    for (const dateKey of service.existingDates) mark(key, dateKey);
   }
 
   for (const service of orderedServices) {
-    const occupied = () => [...(taken.get(service.customerId) ?? [])];
+    const key = cadenceKey(service);
+    const occupied = () => [...(taken.get(key) ?? [])];
     const gap = cadenceDays(service.frequency);
     const preferredDays =
       service.preferredWeekdays.length > 0 ? new Set(service.preferredWeekdays) : undefined;
-    const dayTaken = (dateKey: string) => Boolean(taken.get(service.customerId)?.has(dateKey));
+    const dayTaken = (dateKey: string) => Boolean(taken.get(key)?.has(dateKey));
     const dates: string[] = [];
     const initialClean = deferRecurring
       ? latestInitialCleanDate(service.quoteId, input.services, proposals)
@@ -304,7 +329,7 @@ export function planFillPeriod(input: {
       if (service.fulfilled) continue;
       if (service.existingDates.length > 0) {
         skipped.push({
-          label: service.customerName,
+          label: locationLabel(service.customerName, service.addressLine),
           reason: `${service.title} is already on the calendar.`,
         });
         continue;
@@ -315,13 +340,13 @@ export function planFillPeriod(input: {
       });
       if (!day) {
         skipped.push({
-          label: service.customerName,
+          label: locationLabel(service.customerName, service.addressLine),
           reason: `${service.title} has no open workday in this period.`,
         });
         continue;
       }
       dates.push(day);
-      mark(service.customerId, day);
+      mark(key, day);
     } else if (service.frequency === 'monthly') {
       let cursor = service.anchorDate ?? input.start;
       if (recurringFloor && cursor < recurringFloor) cursor = recurringFloor;
@@ -335,7 +360,7 @@ export function planFillPeriod(input: {
         });
         if (day && day >= input.start && day <= input.end) {
           dates.push(day);
-          mark(service.customerId, day);
+          mark(key, day);
         }
         cursor = addMonthsToDateKey(cursor, 1);
       }
@@ -357,7 +382,7 @@ export function planFillPeriod(input: {
           day != null && diffDateKeys(day, due) < gap && diffDateKeys(day, due) >= 0;
         if (stillThisOccurrence && day && day >= input.start && day <= input.end) {
           dates.push(day);
-          mark(service.customerId, day);
+          mark(key, day);
           due = shiftDateKey(day, gap);
         } else {
           due = shiftDateKey(due, gap);
@@ -366,9 +391,15 @@ export function planFillPeriod(input: {
     }
 
     if (dates.length === 0 && service.frequency !== 'one_time') {
+      const nextDue = service.anchorDate
+        ? cadenceAfter(service.anchorDate, service.frequency)
+        : null;
       skipped.push({
-        label: service.customerName,
-        reason: `${service.title} is not due again in this period.`,
+        label: locationLabel(service.customerName, service.addressLine),
+        reason:
+          nextDue && nextDue > input.end
+            ? `${service.title} is not due until ${formatDueDate(nextDue)}, which is after this period.`
+            : `${service.title} is not due again in this period.`,
       });
     }
 
@@ -391,6 +422,7 @@ export function planFillPeriod(input: {
         quoteId: service.quoteId,
         lineId: service.lineId,
         propertyId: service.propertyId,
+        addressLine: service.addressLine?.trim() || null,
         amountCents: service.amountCents,
       });
     }
@@ -399,21 +431,21 @@ export function planFillPeriod(input: {
   for (const lead of input.consultations) {
     if (lead.alreadyBooked) {
       skipped.push({
-        label: lead.customerName,
+        label: locationLabel(lead.customerName, lead.addressLine),
         reason: 'A consultation is already scheduled.',
       });
       continue;
     }
     if (lead.preferredDate && isDateKey(lead.preferredDate) && lead.preferredDate > input.end) {
       skipped.push({
-        label: lead.customerName,
+        label: locationLabel(lead.customerName, lead.addressLine),
         reason: `They asked for ${lead.preferredDate}, which is after this period.`,
       });
       continue;
     }
     if (lead.preferredDate && isDateKey(lead.preferredDate) && lead.preferredDate < input.start) {
       skipped.push({
-        label: lead.customerName,
+        label: locationLabel(lead.customerName, lead.addressLine),
         reason: `They asked for ${lead.preferredDate}, which is before this period.`,
       });
       continue;
@@ -423,7 +455,7 @@ export function planFillPeriod(input: {
     const day = nextOpenDay(from, input.end, open, 6);
     if (!day) {
       skipped.push({
-        label: lead.customerName,
+        label: locationLabel(lead.customerName, lead.addressLine),
         reason: 'No open workday left for a consultation.',
       });
       continue;
@@ -446,6 +478,7 @@ export function planFillPeriod(input: {
       quoteId: null,
       lineId: null,
       propertyId: null,
+      addressLine: lead.addressLine?.trim() || null,
       amountCents: null,
     });
   }

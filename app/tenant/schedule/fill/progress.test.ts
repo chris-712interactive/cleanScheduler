@@ -37,6 +37,7 @@ describe('applyFillProgress', () => {
         visitId: 'visit-1',
         customerId: 'cust-1',
         customerName: 'Ada',
+        addressLine: '12 Oak St',
         title: 'Weekly clean',
         dateKey: '2026-10-09',
         startMin: 9 * 60,

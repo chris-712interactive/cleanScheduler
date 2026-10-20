@@ -11,6 +11,7 @@ import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { parseCustomerPropertyKind } from '@/lib/tenant/quoteStructuredFields';
 import { parseScheduleRole } from '@/lib/tenant/scheduleRoleLabels';
+import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import { parseChecklistLabelsFromForm } from '@/lib/visits/visitChecklist';
 import type { Json } from '@/lib/supabase/database.types';
 
@@ -59,6 +60,40 @@ export async function updateServiceTypeDurationAction(
 
   revalidatePath('/tenant/settings/services', 'page');
   revalidatePath('/tenant/quotes', 'page');
+  revalidatePath('/tenant/schedule', 'page');
+  return { success: true };
+}
+
+export async function updateServiceTypeCrewSizeAction(
+  _prev: ServiceTypeActionState,
+  formData: FormData,
+): Promise<ServiceTypeActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const templateId = String(formData.get('template_id') ?? '').trim();
+  const crewSize = parseRequiredCrewSize(formData.get('default_crew_size'));
+
+  if (!slug || !templateId) return { error: 'Missing service type.' };
+  if (!crewSize.ok) return { error: crewSize.error };
+
+  const membership = await requireTenantPortalAccess(slug, '/settings/services');
+  if (!canManageTeamInvitesAndRoles(membership.role)) {
+    return { error: 'Only owners and admins can edit service types.' };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('tenant_service_templates')
+    .update({ default_crew_size: crewSize.size })
+    .eq('tenant_id', membership.tenantId)
+    .eq('id', templateId)
+    .eq('kind', 'service_line');
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/tenant/settings/services', 'page');
+  revalidatePath('/tenant/schedule', 'page');
   return { success: true };
 }
 
@@ -198,6 +233,8 @@ export async function createCustomServiceTypeAction(
 
   const hours = parseDurationHours(hoursRaw);
   if (hours == null) return { error: 'Enter a valid default duration in hours.' };
+  const crewSize = parseRequiredCrewSize(formData.get('default_crew_size'));
+  if (!crewSize.ok) return { error: crewSize.error };
 
   const membership = await requireTenantPortalAccess(slug, '/settings/services');
   if (!canManageTeamInvitesAndRoles(membership.role)) {
@@ -234,6 +271,7 @@ export async function createCustomServiceTypeAction(
     job_type: propertyKind as CustomerPropertyKind,
     estimated_hours: hours,
     schedule_role: scheduleRole,
+    default_crew_size: crewSize.size,
     is_system_default: false,
     is_active: true,
     sort_order: 100,

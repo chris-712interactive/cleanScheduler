@@ -176,7 +176,8 @@ export function FillScheduleForm({
               <ul>
                 {state.proposals.map((row) => (
                   <li key={row.key}>
-                    <strong>{row.dateKey}</strong> {row.timeLabel} — {row.customerName}, {row.title}
+                    <strong>{row.dateKey}</strong> {row.timeLabel} — {row.customerName}
+                    {row.addressLine ? `, ${row.addressLine}` : ''}, {row.title}
                     {row.kind === 'consultation' ? ' (consultation)' : ''}
                   </li>
                 ))}
