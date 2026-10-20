@@ -24,7 +24,8 @@ import { RecurringBillingPanel } from '../RecurringBillingPanel';
 import { CustomerActivityPanel } from '../CustomerActivityPanel';
 import { CustomerWalletPanel } from '../CustomerWalletPanel';
 import { CustomerReferralAttributionPanel } from '../CustomerReferralAttributionPanel';
-import { CustomerConsultationBanner } from '../CustomerConsultationBanner';
+import { CustomerConsultationBanner, PropertyRequestBanner } from '../CustomerConsultationBanner';
+import { loadPropertyConsultationPrompts } from '@/lib/tenant/propertyConsultationRequest';
 import { resolveCustomerConsultationStatus } from '@/lib/tenant/customerConsultation';
 import { getCustomerWalletBalanceCents } from '@/lib/promotions/customerWallet';
 import { loadCustomerReferralAttributionView } from '@/lib/referrals/loadCustomerReferralAttribution';
@@ -125,7 +126,8 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         required_crew_size,
         latitude,
         longitude,
-        geocode_reason
+        geocode_reason,
+        consultation_requested_at
       )
     `,
     )
@@ -159,6 +161,11 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   );
   const accessCodesByPropertyId = Object.fromEntries(accessCodeLoads);
   const primary = properties.find((p) => p.is_primary);
+  const propertyConsultations = await loadPropertyConsultationPrompts(
+    admin,
+    membership.tenantId,
+    properties,
+  );
   const serviceZones = await loadServiceZonesForAssignment(
     admin,
     membership.tenantId,
@@ -222,6 +229,22 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
               }
             : null,
         ]}
+      />
+
+      <PropertyRequestBanner
+        customerId={id}
+        requests={properties.flatMap((property) => {
+          const prompt = propertyConsultations[property.id];
+          if (!prompt) return [];
+          return [
+            {
+              propertyId: property.id,
+              label: property.label?.trim() || property.address_line1?.trim() || 'Location',
+              phase: prompt.phase,
+              visitId: prompt.visitId,
+            },
+          ];
+        })}
       />
 
       <CustomerConsultationBanner
@@ -302,6 +325,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
               employees={scheduling.employees}
               customerScheduling={scheduling.facts}
               schedulingOverrides={scheduling.overrides}
+              propertyConsultations={propertyConsultations}
             />
           </Card>
         </div>

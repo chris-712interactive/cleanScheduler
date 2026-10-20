@@ -2043,6 +2043,7 @@ export type Database = {
           latitude: number | null;
           longitude: number | null;
           geocode_reason: string | null;
+          consultation_requested_at: string | null;
           scheduling_override: Json | null;
           required_crew_size: number;
           access_codes_ciphertext: string | null;
@@ -2072,6 +2073,7 @@ export type Database = {
           latitude?: number | null;
           longitude?: number | null;
           geocode_reason?: string | null;
+          consultation_requested_at?: string | null;
           scheduling_override?: Json | null;
           required_crew_size?: number;
           access_codes_ciphertext?: string | null;
@@ -2101,6 +2103,7 @@ export type Database = {
           latitude?: number | null;
           longitude?: number | null;
           geocode_reason?: string | null;
+          consultation_requested_at?: string | null;
           scheduling_override?: Json | null;
           required_crew_size?: number;
           access_codes_ciphertext?: string | null;

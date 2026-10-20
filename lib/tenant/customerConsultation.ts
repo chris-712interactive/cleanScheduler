@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import { assertRequestedPropertyReadyForQuote } from '@/lib/tenant/propertyConsultationRequest';
 import {
   formatConsultationIntakeSummary,
   parseConsultationRequiredFields,
@@ -249,7 +250,18 @@ export async function assertCustomerEligibleForQuoteSend(
   admin: Admin,
   tenantId: string,
   customerId: string,
+  propertyId?: string | null,
 ): Promise<{ ok: true } | { ok: false; error: string; schedulePath: string }> {
+  const requireConsultation = await loadRequireConsultationBeforeQuote(admin, tenantId);
+  const propertyGate = await assertRequestedPropertyReadyForQuote(
+    admin,
+    tenantId,
+    customerId,
+    propertyId,
+    requireConsultation,
+  );
+  if (!propertyGate.ok) return propertyGate;
+
   const resolved = await resolveCustomerConsultationStatus(admin, tenantId, customerId);
   if (resolved.status === 'not_required' || resolved.status === 'completed') {
     return { ok: true };

@@ -20,6 +20,7 @@ export type CustomerPropertyVM = Pick<
   | 'latitude'
   | 'longitude'
   | 'geocode_reason'
+  | 'consultation_requested_at'
 >;
 
 export type CustomerPropertiesPatch =
@@ -57,4 +58,4 @@ export function applyCustomerPropertiesPatch(
 }
 
 export const CUSTOMER_PROPERTY_SELECT =
-  'id, label, property_kind, address_line1, address_line2, city, state, postal_code, site_notes, community_name, building_name, is_primary, service_zone_id, required_crew_size, latitude, longitude, geocode_reason' as const;
+  'id, label, property_kind, address_line1, address_line2, city, state, postal_code, site_notes, community_name, building_name, is_primary, service_zone_id, required_crew_size, latitude, longitude, geocode_reason, consultation_requested_at' as const;

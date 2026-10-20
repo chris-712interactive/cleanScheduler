@@ -27,6 +27,7 @@ import {
 import { loadCustomerWalletSummariesForLinks } from '@/lib/promotions/loadCustomerWalletPortal';
 import { CustomerWalletBalanceCard } from './CustomerWalletBalanceCard';
 import { loadCustomerPortalConsultationView } from '@/lib/customer/loadCustomerPortalConsultation';
+import { customerHasOpenPropertyConsultation } from '@/lib/tenant/propertyConsultationRequest';
 import {
   formatNextAppointmentWhen,
   formatUpcomingVisitDate,
@@ -279,6 +280,7 @@ export default async function CustomerHomePage({
     : 0;
 
   const pendingRescheduleVisitIds = await getCustomerPendingRescheduleVisitIds(ctx.customerIds);
+  const openPropertyRequest = await customerHasOpenPropertyConsultation(admin, ctx.customerIds);
   const walletSummaries = await loadCustomerWalletSummariesForLinks(admin, ctx.links);
 
   return (
@@ -292,6 +294,21 @@ export default async function CustomerHomePage({
 
       <div className={styles.dashboardGrid}>
         <div className={styles.mainColumn}>
+          {openPropertyRequest ? (
+            <section className={styles.card}>
+              <div className={styles.cardBody}>
+                <p className={styles.eyebrow}>Properties</p>
+                <h2 className={styles.cardTitle}>A new location is in progress</h2>
+                <p className={styles.emptyText}>
+                  Your cleaner will schedule a consultation before quoting that address.
+                </p>
+                <Button as={Link} href="/properties" variant="secondary">
+                  View properties
+                </Button>
+              </div>
+            </section>
+          ) : null}
+
           {consultationView ? (
             <section className={styles.card}>
               <div className={styles.cardBody}>
