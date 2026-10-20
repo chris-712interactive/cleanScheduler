@@ -17,6 +17,8 @@ export type OptimizerExistingJob = {
   endMin: number;
   location: LatLng | null;
   zoneId: string | null;
+  city: string | null;
+  state: string | null;
   postalCode: string | null;
   buildingKey: string | null;
 };
@@ -28,6 +30,9 @@ export type OptimizerExistingJob = {
 export type OptimizerCrewMember = {
   userId: string;
   home: LatLng | null;
+  homeCity: string | null;
+  homeState: string | null;
+  homePostalCode: string | null;
   office: LatLng | null;
   availableStartMin: number;
   availableEndMin: number;
@@ -62,6 +67,8 @@ export type OptimizerJob = {
   durationMinutes: number;
   location: LatLng | null;
   zoneId: string | null;
+  city: string | null;
+  state: string | null;
   postalCode: string | null;
   /** Same key batches units in one building or office suite. */
   buildingKey: string | null;
