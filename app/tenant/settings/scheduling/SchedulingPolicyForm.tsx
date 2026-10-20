@@ -23,6 +23,27 @@ const PRESETS: Array<{ id: SchedulePolicyPresetId; label: string }> = [
   { id: 'even_workload', label: 'Even workload' },
 ];
 
+function policyMatchesPreset(
+  policy: ScheduleOptimizerPolicy,
+  presetId: SchedulePolicyPresetId,
+): boolean {
+  const preset = schedulePolicyPreset(presetId);
+  const assumptionsMatch =
+    policy.assumptions.travelSpeedMph === preset.assumptions.travelSpeedMph &&
+    policy.assumptions.bufferMinutes === preset.assumptions.bufferMinutes &&
+    policy.assumptions.maxDriveMinutes === preset.assumptions.maxDriveMinutes;
+  if (!assumptionsMatch) return false;
+  return SCHEDULE_FACTORS.every((factor) => {
+    const current = policy.factors[factor.id];
+    const target = preset.factors[factor.id];
+    return (
+      current?.enabled === target?.enabled &&
+      current?.weight === target?.weight &&
+      current?.mode === target?.mode
+    );
+  });
+}
+
 export function SchedulingPolicyForm({
   tenantSlug,
   initialPolicy,
@@ -36,6 +57,8 @@ export function SchedulingPolicyForm({
   useFeedbackToast({ error: state.error, success: state.success, pending });
   const [policy, setPolicy] = useState(initialPolicy);
   const [query, setQuery] = useState('');
+  const [appliedPresetId, setAppliedPresetId] = useState<SchedulePolicyPresetId | null>(null);
+  const [appliedTick, setAppliedTick] = useState(0);
 
   const visibleFactors = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -46,8 +69,15 @@ export function SchedulingPolicyForm({
     });
   }, [query]);
 
+  const activePresetId =
+    PRESETS.find((preset) => policyMatchesPreset(policy, preset.id))?.id ?? null;
+  const appliedPreset = PRESETS.find((preset) => preset.id === appliedPresetId);
+  const showAppliedNote = appliedPreset !== undefined && appliedPreset.id === activePresetId;
+
   const applyPreset = (id: SchedulePolicyPresetId) => {
     setPolicy(schedulePolicyPreset(id));
+    setAppliedPresetId(id);
+    setAppliedTick((tick) => tick + 1);
   };
 
   const patchFactor = (
@@ -78,20 +108,36 @@ export function SchedulingPolicyForm({
           no data on a job is skipped, so a house-cleaning route still builds when skill tags are
           empty.
         </p>
-        <div className={styles.presetRow}>
-          {PRESETS.map((preset) => (
-            <Button
-              key={preset.id}
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={readOnly || pending}
-              onClick={() => applyPreset(preset.id)}
-            >
-              {preset.label}
-            </Button>
-          ))}
+        <div className={styles.presetRow} role="group" aria-label="Starting point">
+          {PRESETS.map((preset) => {
+            const selected = activePresetId === preset.id;
+            return (
+              <Button
+                key={preset.id}
+                type="button"
+                variant={selected ? 'primary' : 'secondary'}
+                size="sm"
+                aria-pressed={selected}
+                disabled={readOnly || pending}
+                onClick={() => applyPreset(preset.id)}
+              >
+                {preset.label}
+              </Button>
+            );
+          })}
         </div>
+        <p
+          className={styles.presetStatus}
+          role="status"
+          aria-live="polite"
+          hidden={!showAppliedNote}
+        >
+          {showAppliedNote ? (
+            <span key={appliedTick} className={styles.presetStatusText}>
+              {appliedPreset.label} is selected. The weights below are filled in. Save to keep them.
+            </span>
+          ) : null}
+        </p>
       </section>
 
       <section className={styles.panel}>

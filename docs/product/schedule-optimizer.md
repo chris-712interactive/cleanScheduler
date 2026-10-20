@@ -10,7 +10,7 @@ Factors are grouped into crew eligibility, customer fit, time windows, travel an
 - Set a weight from 0 to 100.
 - Choose **Prefer** or **Require** when the factor is allowed to reject a plan.
 
-Work window, time off, double booking, and crew size always reject when they are enabled. Presets (Balanced, Residential routes, Commercial sites, Even workload) only change the form. They are stored when the page is saved.
+Work window, time off, double booking, and crew size always reject when they are enabled. Presets (Balanced, Residential routes, Commercial sites, Even workload) only change the form. The chosen starting point fills in as the selected button, and a note under the row confirms the weights below updated. They are stored when the page is saved.
 
 Drive assumptions (speed, buffer between jobs, and the drive length that scores as too far) sit beside the weights. Distance is straight-line miles until road routing is connected.
 
