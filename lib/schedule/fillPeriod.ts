@@ -131,6 +131,8 @@ export type FillServiceDemand = {
   /** Street line, so a customer with more than one property can be told apart. */
   addressLine: string | null;
   amountCents: number | null;
+  /** Job type role. An initial clean is placed first and holds the recurring cadence back. */
+  scheduleRole?: 'initial' | 'recurring' | 'standard' | null;
 };
 
 export type FillConsultationDemand = {
@@ -253,26 +255,41 @@ function cadenceAfter(dateKey: string, frequency: QuoteLineFrequency): string | 
   return shiftDateKey(dateKey, gap);
 }
 
-/** Latest one-time clean on this quote, already booked or placed earlier in this fill. */
-function latestInitialCleanDate(
-  quoteId: string,
+function isInitialDemand(service: FillServiceDemand): boolean {
+  return service.frequency === 'one_time' || service.scheduleRole === 'initial';
+}
+
+function sameServicePlace(a: FillServiceDemand, b: FillServiceDemand): boolean {
+  if (a.propertyId && b.propertyId) return a.propertyId === b.propertyId;
+  return a.quoteId === b.quoteId;
+}
+
+/**
+ * The initial clean a recurring visit has to wait for. One-time and initial job
+ * types count, including a deep clean on another quote at the same property.
+ * A repeating initial job uses its first visit. A one-time job uses its visit day.
+ */
+function initialAnchorDate(
+  recurring: FillServiceDemand,
   services: FillServiceDemand[],
   placed: FillProposal[],
 ): string | null {
-  let latest: string | null = null;
-  const consider = (dateKey: string) => {
-    if (!latest || dateKey > latest) latest = dateKey;
-  };
-  for (const service of services) {
-    if (service.quoteId !== quoteId || service.frequency !== 'one_time') continue;
-    for (const dateKey of service.existingDates) consider(dateKey);
+  let latestStart: string | null = null;
+  for (const initial of services) {
+    if (!isInitialDemand(initial) || initial.lineId === recurring.lineId) continue;
+    if (!sameServicePlace(recurring, initial)) continue;
+    const dates = initial.existingDates.filter((dateKey) => isDateKey(dateKey));
+    for (const proposal of placed) {
+      if (proposal.lineId === initial.lineId && isDateKey(proposal.dateKey)) {
+        dates.push(proposal.dateKey);
+      }
+    }
+    if (dates.length === 0) continue;
+    dates.sort();
+    const start = initial.frequency === 'one_time' ? dates[dates.length - 1]! : dates[0]!;
+    if (!latestStart || start > latestStart) latestStart = start;
   }
-  for (const proposal of placed) {
-    if (proposal.quoteId !== quoteId) continue;
-    const source = services.find((service) => service.lineId === proposal.lineId);
-    if (source?.frequency === 'one_time') consider(proposal.dateKey);
-  }
-  return latest;
+  return latestStart;
 }
 
 export function planFillPeriod(input: {
@@ -292,10 +309,7 @@ export function planFillPeriod(input: {
   const taken = new Map<string, Set<string>>();
   const deferRecurring = input.recurringStartsAfterInitial !== false;
   const orderedServices = deferRecurring
-    ? [...input.services].sort((a, b) => {
-        const rank = (frequency: QuoteLineFrequency) => (frequency === 'one_time' ? 0 : 1);
-        return rank(a.frequency) - rank(b.frequency);
-      })
+    ? [...input.services].sort((a, b) => Number(isInitialDemand(b)) - Number(isInitialDemand(a)))
     : input.services;
 
   const mark = (key: string, dateKey: string) => {
@@ -317,9 +331,10 @@ export function planFillPeriod(input: {
       service.preferredWeekdays.length > 0 ? new Set(service.preferredWeekdays) : undefined;
     const dayTaken = (dateKey: string) => Boolean(taken.get(key)?.has(dateKey));
     const dates: string[] = [];
-    const initialClean = deferRecurring
-      ? latestInitialCleanDate(service.quoteId, input.services, proposals)
-      : null;
+    const initialClean =
+      deferRecurring && !isInitialDemand(service)
+        ? initialAnchorDate(service, input.services, proposals)
+        : null;
     const recurringFloor =
       service.frequency === 'one_time' || !initialClean
         ? null
@@ -394,10 +409,14 @@ export function planFillPeriod(input: {
       const nextDue = service.anchorDate
         ? cadenceAfter(service.anchorDate, service.frequency)
         : null;
+      const waitingForInitial = Boolean(
+        initialClean && recurringFloor && recurringFloor > input.end,
+      );
       skipped.push({
         label: locationLabel(service.customerName, service.addressLine),
-        reason:
-          nextDue && nextDue > input.end
+        reason: waitingForInitial
+          ? `${service.title} starts ${formatDueDate(recurringFloor!)}, one cycle after the initial clean.`
+          : nextDue && nextDue > input.end
             ? `${service.title} is not due until ${formatDueDate(nextDue)}, which is after this period.`
             : `${service.title} is not due again in this period.`,
       });

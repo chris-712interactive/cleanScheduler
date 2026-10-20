@@ -288,6 +288,126 @@ describe('planFillPeriod', () => {
     ).toBe('2026-10-26');
   });
 
+  it('starts a biweekly clean two weeks after the initial clean at the same property', () => {
+    const { proposals } = planFillPeriod({
+      start: '2026-10-21',
+      end: '2026-11-18',
+      workDays: [...WEEKDAYS],
+      workStartMin: 8 * 60,
+      workEndMin: 17 * 60,
+      services: [
+        service({
+          key: 'regular',
+          lineId: 'regular',
+          quoteId: 'quote-regular',
+          propertyId: 'prop-parris',
+          addressLine: '3409 Parris Branch Rd',
+          title: 'Bi-Weekly Standard Cleaning',
+          frequency: 'biweekly',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: 'recurring',
+        }),
+        service({
+          key: 'deep',
+          lineId: 'deep',
+          quoteId: 'quote-deep',
+          propertyId: 'prop-parris',
+          addressLine: '3409 Parris Branch Rd',
+          title: 'Initial Deep Cleaning',
+          frequency: 'one_time',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: 'initial',
+        }),
+      ],
+      consultations: [],
+    });
+
+    expect(proposals.find((item) => item.lineId === 'deep')?.dateKey).toBe('2026-10-21');
+    expect(
+      proposals
+        .filter((item) => item.lineId === 'regular')
+        .map((item) => item.dateKey)
+        .sort()[0],
+    ).toBe('2026-11-04');
+  });
+
+  it('does not delay a biweekly clean for an initial visit at another property', () => {
+    const { proposals } = planFillPeriod({
+      start: '2026-10-21',
+      end: '2026-11-04',
+      workDays: [...WEEKDAYS],
+      workStartMin: 8 * 60,
+      workEndMin: 17 * 60,
+      services: [
+        service({
+          key: 'deep',
+          lineId: 'deep',
+          propertyId: 'prop-a',
+          frequency: 'one_time',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: 'initial',
+        }),
+        service({
+          key: 'regular',
+          lineId: 'regular',
+          quoteId: 'quote-regular',
+          propertyId: 'prop-b',
+          frequency: 'biweekly',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: 'recurring',
+        }),
+      ],
+      consultations: [],
+    });
+
+    expect(proposals.find((item) => item.lineId === 'regular')?.dateKey).toBe('2026-10-21');
+  });
+
+  it('treats a deep-clean job type as the initial visit even when the line repeats', () => {
+    const { proposals } = planFillPeriod({
+      start: '2026-10-21',
+      end: '2026-11-18',
+      workDays: [...WEEKDAYS],
+      workStartMin: 8 * 60,
+      workEndMin: 17 * 60,
+      services: [
+        service({
+          key: 'regular',
+          lineId: 'regular',
+          propertyId: 'prop-parris',
+          title: 'Bi-Weekly Standard Cleaning',
+          frequency: 'biweekly',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: 'recurring',
+        }),
+        service({
+          key: 'deep',
+          lineId: 'deep',
+          propertyId: 'prop-parris',
+          title: 'Initial Deep Cleaning',
+          frequency: 'biweekly',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: 'initial',
+        }),
+      ],
+      consultations: [],
+    });
+
+    expect(proposals.find((item) => item.lineId === 'deep')?.dateKey).toBe('2026-10-21');
+    expect(
+      proposals
+        .filter((item) => item.lineId === 'regular')
+        .map((item) => item.dateKey)
+        .sort()[0],
+    ).toBe('2026-11-04');
+  });
+
   it('skips a one-time clean that is already booked', () => {
     const { proposals, skipped } = planFillPeriod({
       ...range,

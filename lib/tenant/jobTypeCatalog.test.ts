@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   findCatalogEntry,
+  matchJobTypeByLabel,
   resolveVisitDurationHours,
   uniqueJobTypeLabels,
   type JobTypeCatalogEntry,
@@ -38,6 +39,12 @@ const catalog: JobTypeCatalogEntry[] = [
 describe('uniqueJobTypeLabels', () => {
   it('keeps one label when the same job type exists for several property kinds', () => {
     expect(uniqueJobTypeLabels(catalog)).toEqual(['Deep cleaning']);
+  });
+});
+
+describe('matchJobTypeByLabel', () => {
+  it('matches a line name that contains the job type', () => {
+    expect(matchJobTypeByLabel('Initial Deep Cleaning', catalog)?.schedule_role).toBe('initial');
   });
 });
 

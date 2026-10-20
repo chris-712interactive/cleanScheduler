@@ -1,6 +1,6 @@
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import { isRecurringQuoteLineFrequency } from '@/lib/tenant/quoteLineAutoSchedule';
-import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
+import { matchJobTypeByLabel, type JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 
 export type QuoteAutoScheduleLine = {
   id: string;
@@ -50,18 +50,30 @@ export function isInitialScheduleBucket(
   return catalogEntry?.schedule_role === 'initial';
 }
 
+function catalogEntryForLine(
+  line: QuoteAutoScheduleLine,
+  catalogByTemplateId: Map<string, JobTypeCatalogEntry>,
+  catalog: JobTypeCatalogEntry[] | undefined,
+): JobTypeCatalogEntry | null {
+  if (line.service_template_id) {
+    const byId = catalogByTemplateId.get(line.service_template_id);
+    if (byId) return byId;
+  }
+  if (!catalog?.length) return null;
+  return matchJobTypeByLabel(line.service_label, catalog);
+}
+
 export function partitionAutoScheduleLines(
   lines: QuoteAutoScheduleLine[],
   catalogByTemplateId: Map<string, JobTypeCatalogEntry>,
+  catalog?: JobTypeCatalogEntry[],
 ): { initialLines: QuoteAutoScheduleLine[]; recurringLines: QuoteAutoScheduleLine[] } {
   const initialLines: QuoteAutoScheduleLine[] = [];
   const recurringLines: QuoteAutoScheduleLine[] = [];
 
   const sorted = [...lines].sort((a, b) => a.sort_order - b.sort_order);
   for (const line of sorted) {
-    const entry = line.service_template_id
-      ? (catalogByTemplateId.get(line.service_template_id) ?? null)
-      : null;
+    const entry = catalogEntryForLine(line, catalogByTemplateId, catalog);
     if (isInitialScheduleBucket(line, entry)) {
       initialLines.push(line);
     } else {

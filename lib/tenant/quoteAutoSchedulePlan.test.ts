@@ -77,6 +77,36 @@ describe('quoteAutoSchedulePlan', () => {
     expect(recurringLines.map((line) => line.id)).toEqual(['l2']);
   });
 
+  it('treats a renamed deep clean as the initial visit', () => {
+    const { initialLines, recurringLines } = partitionAutoScheduleLines(
+      [
+        {
+          id: 'deep',
+          sort_order: 0,
+          service_label: 'Initial Deep Cleaning',
+          display_title: null,
+          frequency: 'biweekly',
+          service_template_id: null,
+        },
+        {
+          id: 'regular',
+          sort_order: 1,
+          service_label: 'Bi-Weekly Standard Cleaning',
+          display_title: null,
+          frequency: 'biweekly',
+          service_template_id: null,
+        },
+      ],
+      new Map([
+        ['tpl-deep', deepClean],
+        ['tpl-standard', standard],
+      ]),
+      [deepClean, standard],
+    );
+    expect(initialLines.map((line) => line.id)).toEqual(['deep']);
+    expect(recurringLines.map((line) => line.id)).toEqual(['regular']);
+  });
+
   it('offsets recurring first visit by cadence after initial anchor', () => {
     const anchor = '2026-06-02T14:00:00.000Z';
     const notBefore = resolveRecurringFirstVisitNotBefore(anchor, 'weekly', {
