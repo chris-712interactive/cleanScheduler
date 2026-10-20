@@ -12,7 +12,7 @@ import {
 import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
-import { geocodeUsAddress } from '@/lib/geo/censusGeocode';
+import { geocodeUsAddress, resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 
@@ -178,12 +178,6 @@ export async function updateCustomerProperty(
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
   const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
   const buildingName = String(formData.get('building_name') ?? '').trim() || null;
-  const point = await geocodeUsAddress({
-    line1,
-    city,
-    state,
-    postalCode: postal,
-  });
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
   const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
   if (!crewSize.ok) return { error: crewSize.error };
@@ -197,7 +191,7 @@ export async function updateCustomerProperty(
 
   const { data: row, error: fe } = await admin
     .from('tenant_customer_properties')
-    .select('id, service_zone_id')
+    .select('id, service_zone_id, address_line1, city, state, postal_code, latitude, longitude')
     .eq('id', propertyId)
     .eq('customer_id', customerId)
     .eq('tenant_id', membership.tenantId)
@@ -206,6 +200,18 @@ export async function updateCustomerProperty(
   if (fe || !row) {
     return { error: 'Property not found for this customer.' };
   }
+
+  const point = await resolveGeocodedPoint(
+    { line1, city, state, postalCode: postal },
+    {
+      line1: row.address_line1,
+      city: row.city,
+      state: row.state,
+      postalCode: row.postal_code,
+      latitude: row.latitude,
+      longitude: row.longitude,
+    },
+  );
 
   const zoneResolved = await resolveAssignableServiceZoneId(admin, membership.tenantId, rawZoneId, {
     allowInactiveIfCurrent: row.service_zone_id,

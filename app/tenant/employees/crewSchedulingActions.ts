@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import { geocodeUsAddress } from '@/lib/geo/censusGeocode';
+import { resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
 import { parseTagList } from '@/lib/schedule/optimizer/preferences';
 import type { Database } from '@/lib/supabase/database.types';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -72,15 +72,22 @@ export async function updateCrewSchedulingProfileAction(
     return { error: 'You cannot edit this scheduling profile.' };
   }
 
-  const { data: members } = await admin
-    .from('tenant_memberships')
-    .select('user_id')
-    .eq('tenant_id', membership.tenantId)
-    .eq('is_active', true);
-  const { data: zones } = await admin
-    .from('tenant_service_zones')
-    .select('id')
-    .eq('tenant_id', membership.tenantId);
+  const [{ data: members }, { data: zones }, { data: existingHome }] = await Promise.all([
+    admin
+      .from('tenant_memberships')
+      .select('user_id')
+      .eq('tenant_id', membership.tenantId)
+      .eq('is_active', true),
+    admin.from('tenant_service_zones').select('id').eq('tenant_id', membership.tenantId),
+    admin
+      .from('tenant_member_scheduling_profiles')
+      .select(
+        'home_address_line1, home_city, home_state, home_postal_code, home_latitude, home_longitude',
+      )
+      .eq('tenant_id', membership.tenantId)
+      .eq('user_id', targetUserId)
+      .maybeSingle(),
+  ]);
   const memberIds = new Set(
     (members ?? []).map((row) => row.user_id).filter((id) => id !== targetUserId),
   );
@@ -92,7 +99,19 @@ export async function updateCrewSchedulingProfileAction(
     state: String(formData.get('home_state') ?? '').trim() || null,
     postalCode: String(formData.get('home_postal_code') ?? '').trim() || null,
   };
-  const point = await geocodeUsAddress(home);
+  const point = await resolveGeocodedPoint(
+    home,
+    existingHome
+      ? {
+          line1: existingHome.home_address_line1,
+          city: existingHome.home_city,
+          state: existingHome.home_state,
+          postalCode: existingHome.home_postal_code,
+          latitude: existingHome.home_latitude,
+          longitude: existingHome.home_longitude,
+        }
+      : null,
+  );
   const experience = String(formData.get('experience_level') ?? 'standard');
   const experienceLevel = experience === 'new' || experience === 'lead' ? experience : 'standard';
 
