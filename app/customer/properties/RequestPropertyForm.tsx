@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
@@ -10,19 +11,15 @@ import styles from './properties.module.scss';
 const initial: RequestPropertyState = {};
 
 export function RequestPropertyForm({
-  tenantId,
-  customerId,
+  links,
 }: {
-  tenantId: string;
-  customerId: string;
+  links: { tenantId: string; customerId: string; tenantName: string }[];
 }) {
+  const router = useRouter();
   const [state, action, pending] = useActionState(requestCustomerPropertyAction, initial);
-  useFeedbackToast({
-    error: state.error,
-    success: state.success,
-    successMessage: 'Request sent. Your cleaner will schedule a consultation.',
-    pending,
-  });
+  useFeedbackToast({ error: state.error, pending });
+  const [selected, setSelected] = useState(links[0]?.customerId ?? '');
+  const link = links.find((row) => row.customerId === selected) ?? links[0];
   const [line1, setLine1] = useState('');
   const [line2, setLine2] = useState('');
   const [city, setCity] = useState('');
@@ -33,25 +30,28 @@ export function RequestPropertyForm({
   const [kind, setKind] = useState('residential');
 
   useEffect(() => {
-    if (!state.success) return;
-    setLine1('');
-    setLine2('');
-    setCity('');
-    setRegion('');
-    setPostal('');
-    setLabel('');
-    setNote('');
-    setKind('residential');
-  }, [state.savedAt, state.success]);
+    if (!state.savedAt) return;
+    router.push('/properties?requested=1');
+  }, [router, state.savedAt]);
+
+  if (!link) return null;
 
   return (
     <form action={action} className={styles.form}>
-      <input type="hidden" name="tenant_id" value={tenantId} />
-      <input type="hidden" name="customer_id" value={customerId} />
-      <h3 className={styles.formTitle}>Request another location</h3>
-      <p className={styles.formLead}>
-        Your cleaner schedules a consultation at the new address before quoting the work there.
-      </p>
+      <input type="hidden" name="tenant_id" value={link.tenantId} />
+      <input type="hidden" name="customer_id" value={link.customerId} />
+      {links.length > 1 ? (
+        <label className={styles.field}>
+          Cleaning company
+          <select value={selected} onChange={(event) => setSelected(event.target.value)}>
+            {links.map((row) => (
+              <option key={row.customerId} value={row.customerId}>
+                {row.tenantName}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <label className={styles.field}>
         Location name
         <input
