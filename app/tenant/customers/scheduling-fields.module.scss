@@ -276,6 +276,23 @@
   color: var(--color-text-muted);
 }
 
+.geocodeBadge {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+}
+
+.geocodeNote {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-warning);
+}
+
 .checks {
   display: flex;
   flex-direction: column;

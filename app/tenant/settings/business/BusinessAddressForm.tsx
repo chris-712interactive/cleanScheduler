@@ -19,10 +19,12 @@ export function BusinessAddressForm({
   tenantSlug,
   snapshot: initialSnapshot,
   readOnly,
+  geocodeMessage = null,
 }: {
   tenantSlug: string;
   snapshot: TenantBusinessSnapshot;
   readOnly?: boolean;
+  geocodeMessage?: string | null;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [state, formAction, pending] = useActionState(updateBusinessAddressAction, initial);
@@ -41,6 +43,8 @@ export function BusinessAddressForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     submitServerActionForm(event, formAction);
   };
+  const shownGeocodeMessage =
+    state.geocodeMessage !== undefined ? state.geocodeMessage : geocodeMessage;
 
   return (
     <form onSubmit={handleSubmit} className={styles.settingsForm}>
@@ -122,6 +126,8 @@ export function BusinessAddressForm({
           </option>
         ))}
       </select>
+
+      {shownGeocodeMessage ? <p className={styles.geocodeNote}>{shownGeocodeMessage}</p> : null}
 
       {!readOnly ? <SettingsSaveButton pending={pending} saved={Boolean(state.success)} /> : null}
     </form>

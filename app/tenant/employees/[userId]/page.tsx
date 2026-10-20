@@ -422,6 +422,11 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
                   zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
                   partners={partners}
                   scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
+                  homeGeocode={{
+                    reason: crewRow?.home_geocode_reason ?? null,
+                    latitude: crewRow?.home_latitude ?? null,
+                    longitude: crewRow?.home_longitude ?? null,
+                  }}
                 />
               </section>
             ) : null}

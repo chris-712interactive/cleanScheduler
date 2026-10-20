@@ -1,5 +1,6 @@
 import { Stack } from '@/components/layout/Stack';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
@@ -39,6 +40,9 @@ export default async function TenantBusinessSettingsPage() {
       state,
       postal_code,
       country,
+      latitude,
+      longitude,
+      geocode_reason,
       work_week_days,
       work_day_start,
       work_day_end,
@@ -203,6 +207,17 @@ export default async function TenantBusinessSettingsPage() {
                 tenantSlug={membership.tenantSlug}
                 snapshot={snapshot}
                 readOnly={!canEdit}
+                geocodeMessage={missingGeocodeMessage({
+                  reason: tenantRow.geocode_reason,
+                  latitude: tenantRow.latitude,
+                  longitude: tenantRow.longitude,
+                  addressParts: [
+                    tenantRow.address_line1,
+                    tenantRow.city,
+                    tenantRow.state,
+                    tenantRow.postal_code,
+                  ],
+                })}
               />
             </div>
           </section>

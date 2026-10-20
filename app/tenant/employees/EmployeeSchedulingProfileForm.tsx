@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
+import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { formatTagList } from '@/lib/schedule/optimizer/preferences';
 import type { CrewSchedulingProfile } from '@/lib/schedule/optimizer/crewProfile';
 import {
@@ -110,6 +111,7 @@ export function EmployeeSchedulingProfileForm({
   zones,
   partners,
   scope = 'full',
+  homeGeocode = null,
 }: {
   tenantSlug: string;
   targetUserId: string;
@@ -118,12 +120,28 @@ export function EmployeeSchedulingProfileForm({
   partners: { id: string; label: string }[];
   /** Consultation keeps travel and language. Full includes job skills and crew pairing. */
   scope?: 'full' | 'consultation';
+  homeGeocode?: {
+    reason: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
 }) {
   const [state, action, pending] = useActionState(updateCrewSchedulingProfileAction, initial);
   useFeedbackToast({ error: state.error, success: state.success, pending });
   const saved = profileSnapshot(profile);
   const full = scope === 'full';
   const jobLabel = full ? 'jobs' : 'visits';
+  const homeGeocodeMessage = missingGeocodeMessage({
+    reason: homeGeocode?.reason,
+    latitude: homeGeocode?.latitude,
+    longitude: homeGeocode?.longitude,
+    addressParts: [
+      profile.homeAddressLine1,
+      profile.homeCity,
+      profile.homeState,
+      profile.homePostalCode,
+    ],
+  });
 
   const [limitsOpen, setLimitsOpen] = useState(true);
   const [experience, setExperience] = useState(profile.experienceLevel);
@@ -561,13 +579,19 @@ export function EmployeeSchedulingProfileForm({
       <div className={styles.sectionWrap}>
         <details className={styles.section}>
           <summary className={styles.sectionSummary}>
-            <span className={styles.sectionTitle}>Home</span>
+            <span className={styles.sectionTitle}>
+              Home
+              {homeGeocodeMessage ? (
+                <span className={styles.geocodeBadge}>Missing map point</span>
+              ) : null}
+            </span>
             <span className={styles.sectionHint}>{homeSummary(line1, city, region)}</span>
           </summary>
           <div className={styles.sectionBody}>
             <p className={styles.note}>
               Used as a starting point for straight-line drive time. Leave it blank to skip that.
             </p>
+            {homeGeocodeMessage ? <p className={styles.geocodeNote}>{homeGeocodeMessage}</p> : null}
             <div className={styles.grid}>
               <label className={styles.field}>
                 Home address

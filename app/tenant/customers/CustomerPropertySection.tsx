@@ -7,6 +7,7 @@ import {
   applyCustomerPropertiesPatch,
   type CustomerPropertyVM,
 } from '@/lib/tenant/customerPropertyPatch';
+import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import type { ServiceZoneOption } from '@/lib/tenant/serviceZones';
@@ -155,12 +156,21 @@ export function CustomerPropertySection({
         ) : (
           sorted.map((p) => {
             const zoneName = zoneLabel(serviceZones, p.service_zone_id);
+            const geocodeMessage = missingGeocodeMessage({
+              reason: p.geocode_reason,
+              latitude: p.latitude,
+              longitude: p.longitude,
+              addressParts: [p.address_line1, p.city, p.state, p.postal_code],
+            });
             return (
               <details key={p.id} className={styles.propertyCard}>
                 <summary className={styles.propertySummary}>
                   <span className={styles.propertyTitle}>
                     {p.label?.trim() || 'Unnamed location'}
                     {p.is_primary ? <span className={styles.primaryBadge}>Primary</span> : null}
+                    {geocodeMessage ? (
+                      <span className={styles.geocodeBadge}>Missing map point</span>
+                    ) : null}
                   </span>
                   <span className={styles.propertyMeta}>
                     {PROPERTY_KIND_LABEL[p.property_kind]}
@@ -169,6 +179,9 @@ export function CustomerPropertySection({
                     {formatPropertyAddressLine(p) || 'No address on file'}
                     {schedulingOverrides[p.id] != null ? ' · Custom schedule' : ''}
                   </span>
+                  {geocodeMessage ? (
+                    <span className={styles.geocodeNote}>{geocodeMessage}</span>
+                  ) : null}
                 </summary>
 
                 <div className={styles.propertyBody}>

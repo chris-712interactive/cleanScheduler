@@ -122,7 +122,10 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
         building_name,
         is_primary,
         service_zone_id,
-        required_crew_size
+        required_crew_size,
+        latitude,
+        longitude,
+        geocode_reason
       )
     `,
     )
