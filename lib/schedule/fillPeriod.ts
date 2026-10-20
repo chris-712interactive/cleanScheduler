@@ -256,10 +256,17 @@ function cadenceAfter(dateKey: string, frequency: QuoteLineFrequency): string | 
 }
 
 function isInitialDemand(service: FillServiceDemand): boolean {
-  return service.frequency === 'one_time' || service.scheduleRole === 'initial';
+  if (service.frequency === 'one_time' || service.scheduleRole === 'initial') return true;
+  const title = service.title.trim().toLowerCase();
+  // Quote lines are often renamed ("Initial Deep Cleaning") and are not linked
+  // to the Deep cleaning job type, so the title is the remaining signal.
+  return title.startsWith('initial') || /\bdeep clean/.test(title);
 }
 
 function sameServicePlace(a: FillServiceDemand, b: FillServiceDemand): boolean {
+  const streetA = a.addressLine?.trim().toLowerCase();
+  const streetB = b.addressLine?.trim().toLowerCase();
+  if (streetA && streetB && streetA === streetB && a.customerId === b.customerId) return true;
   if (a.propertyId && b.propertyId) return a.propertyId === b.propertyId;
   return a.quoteId === b.quoteId;
 }

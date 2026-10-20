@@ -288,6 +288,54 @@ describe('planFillPeriod', () => {
     ).toBe('2026-10-26');
   });
 
+  it('keeps the biweekly off a one-day fill that is placing the initial deep clean', () => {
+    const day = {
+      start: '2026-10-20',
+      end: '2026-10-20',
+      workDays: [...WEEKDAYS],
+      workStartMin: 8 * 60,
+      workEndMin: 17 * 60,
+    };
+    const { proposals, skipped } = planFillPeriod({
+      ...day,
+      services: [
+        service({
+          key: 'regular',
+          lineId: 'regular',
+          quoteId: 'quote-regular',
+          customerId: 'wayne',
+          propertyId: 'property-copy',
+          addressLine: '3409 Parris Branch Rd',
+          title: 'Bi-Weekly Standard Cleaning',
+          frequency: 'biweekly',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: null,
+          arrivalStartMin: 15 * 60,
+        }),
+        service({
+          key: 'deep',
+          lineId: 'deep',
+          quoteId: 'quote-deep',
+          customerId: 'wayne',
+          propertyId: 'property-original',
+          addressLine: '3409 Parris Branch Rd',
+          title: 'Initial Deep Cleaning',
+          frequency: 'biweekly',
+          anchorDate: null,
+          existingDates: [],
+          scheduleRole: null,
+          arrivalStartMin: 15 * 60,
+        }),
+      ],
+      consultations: [],
+    });
+
+    expect(proposals.map((item) => item.title)).toEqual(['Initial Deep Cleaning']);
+    expect(proposals[0]?.dateKey).toBe('2026-10-20');
+    expect(skipped.some((item) => item.reason.includes('November 3'))).toBe(true);
+  });
+
   it('starts a biweekly clean two weeks after the initial clean at the same property', () => {
     const { proposals } = planFillPeriod({
       start: '2026-10-21',
