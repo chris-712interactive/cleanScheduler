@@ -12,6 +12,7 @@ import {
   deleteCustomServiceTypeAction,
   updateServiceTypeChecklistAction,
   updateServiceTypeConsultationChecklistAction,
+  updateServiceTypeCrewSizeAction,
   updateServiceTypeDurationAction,
   updateServiceTypeScheduleRoleAction,
   type ServiceTypeActionState,
@@ -170,6 +171,58 @@ function DurationEditor({
   );
 }
 
+function CrewSizeEditor({
+  tenantSlug,
+  entry,
+  canEdit,
+}: {
+  tenantSlug: string;
+  entry: JobTypeCatalogEntry;
+  canEdit: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(
+    updateServiceTypeCrewSizeAction,
+    initialState,
+  );
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Saved',
+    pending,
+  });
+
+  if (!canEdit) {
+    return (
+      <span>
+        {entry.default_crew_size} {entry.default_crew_size === 1 ? 'person' : 'people'}
+      </span>
+    );
+  }
+
+  return (
+    <form action={formAction} className={styles.durationForm}>
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="template_id" value={entry.id} />
+      <input
+        className={styles.durationInput}
+        name="default_crew_size"
+        type="number"
+        min={1}
+        max={8}
+        step={1}
+        inputMode="numeric"
+        defaultValue={String(entry.default_crew_size)}
+        aria-label={`Minimum crew for ${entry.service_label}`}
+        disabled={pending}
+      />
+      <span className={styles.itemMeta}>people</span>
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+        Save
+      </Button>
+    </form>
+  );
+}
+
 function ScheduleRoleEditor({
   tenantSlug,
   entry,
@@ -251,10 +304,11 @@ export function ServiceTypesPanel({
         <h2 className={styles.heroTitle}>Job types for the schedule</h2>
         <p className={styles.heroLead}>
           These types appear when you schedule a job. Built-in types are included for every
-          business. Durations feed auto-scheduling and crew availability. Schedule role tells the
-          app whether a job type is an initial visit, recurring visit, or standard when quotes are
-          accepted with automatic scheduling enabled in Operations. Visit and consultation
-          checklists are edited per row below.
+          business. Durations feed auto-scheduling and crew availability. Minimum crew is how many
+          people a visit of that type needs. The schedule uses that number, or a larger crew already
+          saved on the location. Schedule role tells the app whether a job type is an initial visit,
+          recurring visit, or standard when quotes are accepted with automatic scheduling enabled in
+          Operations. Visit and consultation checklists are edited per row below.
         </p>
       </header>
 
@@ -264,8 +318,8 @@ export function ServiceTypesPanel({
           <section key={serviceLabel}>
             <h3 className={styles.groupTitle}>{serviceLabel}</h3>
             <p className={styles.groupHint}>
-              Set duration and schedule role per property type. Initial and recurring roles control
-              how accepted quotes create the first visit vs ongoing cadence.
+              Set duration, minimum crew, and schedule role per property type. Initial and recurring
+              roles control how accepted quotes create the first visit vs ongoing cadence.
             </p>
             <ul className={styles.itemList}>
               {rows.map((entry) => (
@@ -286,6 +340,10 @@ export function ServiceTypesPanel({
                     <div className={styles.editorGroup}>
                       <span className={styles.editorLabel}>Duration</span>
                       <DurationEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
+                    </div>
+                    <div className={styles.editorGroup}>
+                      <span className={styles.editorLabel}>Minimum crew</span>
+                      <CrewSizeEditor tenantSlug={tenantSlug} entry={entry} canEdit={canEdit} />
                     </div>
                     <div className={styles.editorGroup}>
                       <span className={styles.editorLabel}>Schedule role</span>
@@ -369,6 +427,24 @@ export function ServiceTypesPanel({
                   required
                   disabled={createPending}
                 />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Minimum crew</span>
+                <input
+                  className={styles.textInput}
+                  name="default_crew_size"
+                  type="number"
+                  min={1}
+                  max={8}
+                  step={1}
+                  inputMode="numeric"
+                  defaultValue="1"
+                  required
+                  disabled={createPending}
+                />
+                <span className={styles.fieldHint}>
+                  How many people this job needs. Deep cleans are often more than one.
+                </span>
               </label>
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Schedule role</span>

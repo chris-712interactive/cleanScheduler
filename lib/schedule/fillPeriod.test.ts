@@ -19,6 +19,7 @@ function service(overrides: Partial<FillServiceDemand> = {}): FillServiceDemand 
     quoteId: 'quote-1',
     lineId: 'line-1',
     propertyId: 'prop-1',
+    addressLine: null,
     amountCents: 15000,
     ...overrides,
   };
@@ -33,6 +34,7 @@ function consult(overrides: Partial<FillConsultationDemand> = {}): FillConsultat
     preferredDate: '2026-10-14',
     preferredWindow: 'morning',
     durationMinutes: 60,
+    addressLine: null,
     alreadyBooked: false,
     ...overrides,
   };
@@ -105,7 +107,77 @@ describe('planFillPeriod', () => {
       consultations: [],
     });
     expect(proposals).toHaveLength(0);
-    expect(skipped[0]?.reason).toContain('not due');
+    expect(skipped[0]?.reason).toContain('not due until October 19');
+  });
+
+  it('keeps a biweekly property on its own cadence when another property is already booked', () => {
+    const weeklyDates = ['2026-10-20', '2026-10-27', '2026-11-03', '2026-11-10', '2026-11-17'];
+    const { proposals, skipped } = planFillPeriod({
+      start: '2026-10-20',
+      end: '2026-11-20',
+      workDays: [...WEEKDAYS],
+      workStartMin: 8 * 60,
+      workEndMin: 17 * 60,
+      services: [
+        service({
+          key: 'weekly-a',
+          lineId: 'weekly-a',
+          propertyId: 'prop-a',
+          frequency: 'weekly',
+          title: 'Weekly clean',
+          anchorDate: '2026-11-17',
+          existingDates: weeklyDates,
+        }),
+        service({
+          key: 'biweekly-b',
+          lineId: 'biweekly-b',
+          propertyId: 'prop-b',
+          addressLine: '3409 Parris Branch Rd',
+          frequency: 'biweekly',
+          title: 'Bi-weekly regular cleaning',
+          anchorDate: null,
+          existingDates: [],
+        }),
+      ],
+      consultations: [],
+    });
+
+    const biweekly = proposals.filter((item) => item.lineId === 'biweekly-b');
+    expect(biweekly.map((item) => item.dateKey)).toEqual([
+      '2026-10-20',
+      '2026-11-03',
+      '2026-11-17',
+    ]);
+    expect(biweekly[0]?.addressLine).toBe('3409 Parris Branch Rd');
+    expect(skipped.some((item) => item.reason.includes('Bi-weekly'))).toBe(false);
+  });
+
+  it('places a biweekly clean every two weeks across a month from its own last visit', () => {
+    const { proposals, skipped } = planFillPeriod({
+      start: '2026-10-20',
+      end: '2026-11-20',
+      workDays: [...WEEKDAYS],
+      workStartMin: 8 * 60,
+      workEndMin: 17 * 60,
+      services: [
+        service({
+          frequency: 'biweekly',
+          title: 'Bi-weekly regular cleaning',
+          addressLine: '775 Forest View Ln',
+          anchorDate: '2026-10-06',
+          existingDates: ['2026-10-06'],
+        }),
+      ],
+      consultations: [],
+    });
+
+    expect(proposals.map((item) => item.dateKey)).toEqual([
+      '2026-10-20',
+      '2026-11-03',
+      '2026-11-17',
+    ]);
+    expect(proposals[0]?.addressLine).toBe('775 Forest View Ln');
+    expect(skipped).toHaveLength(0);
   });
 
   it('omits a one-time clean whose visit is already complete', () => {

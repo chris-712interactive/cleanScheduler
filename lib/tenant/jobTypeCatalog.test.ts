@@ -18,6 +18,7 @@ const catalog: JobTypeCatalogEntry[] = [
     is_active: true,
     sort_order: 0,
     schedule_role: 'initial',
+    default_crew_size: 2,
   },
   {
     id: 'b',
@@ -30,6 +31,7 @@ const catalog: JobTypeCatalogEntry[] = [
     is_active: true,
     sort_order: 0,
     schedule_role: 'initial',
+    default_crew_size: 3,
   },
 ];
 

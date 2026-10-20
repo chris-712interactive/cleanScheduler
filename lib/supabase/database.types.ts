@@ -2819,6 +2819,7 @@ export type Database = {
           is_active: boolean;
           is_system_default: boolean;
           schedule_role: Database['public']['Enums']['service_template_schedule_role'];
+          default_crew_size: number;
           checklist_items: Json;
           consultation_checklist_items: Json;
           created_at: string;
@@ -2843,6 +2844,7 @@ export type Database = {
           is_active?: boolean;
           is_system_default?: boolean;
           schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
+          default_crew_size?: number;
           checklist_items?: Json;
           consultation_checklist_items?: Json;
           created_at?: string;
@@ -2867,6 +2869,7 @@ export type Database = {
           is_active?: boolean;
           is_system_default?: boolean;
           schedule_role?: Database['public']['Enums']['service_template_schedule_role'];
+          default_crew_size?: number;
           checklist_items?: Json;
           consultation_checklist_items?: Json;
           created_at?: string;

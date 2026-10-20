@@ -4,6 +4,7 @@ import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import {
   DEFAULT_JOB_TYPE_CATALOG,
   DEFAULT_JOB_TYPE_PROPERTY_KINDS,
+  defaultCrewSizeForJobType,
   defaultHoursForJobType,
   type ServiceTemplateScheduleRole,
 } from '@/lib/tenant/defaultJobTypeCatalog';
@@ -23,6 +24,7 @@ export type JobTypeCatalogEntry = {
   is_active: boolean;
   sort_order: number;
   schedule_role: ServiceTemplateScheduleRole;
+  default_crew_size: number;
   checklist_items?: ChecklistTemplateItem[];
   consultation_checklist_items?: ChecklistTemplateItem[];
 };
@@ -48,6 +50,7 @@ export async function ensureTenantJobTypeCatalog(admin: Admin, tenantId: string)
       is_active: true,
       sort_order: definition.sortOrder,
       schedule_role: definition.scheduleRole,
+      default_crew_size: defaultCrewSizeForJobType(definition),
     })),
   );
 
@@ -67,7 +70,7 @@ export async function loadJobTypeCatalog(
   let query = admin
     .from('tenant_service_templates')
     .select(
-      'id, service_label, name, job_type, estimated_hours, amount_cents, is_system_default, is_active, sort_order, schedule_role, checklist_items, consultation_checklist_items',
+      'id, service_label, name, job_type, estimated_hours, amount_cents, is_system_default, is_active, sort_order, schedule_role, default_crew_size, checklist_items, consultation_checklist_items',
     )
     .eq('tenant_id', tenantId)
     .eq('kind', 'service_line')
@@ -102,6 +105,13 @@ export async function loadJobTypeCatalog(
       is_active: row.is_active,
       sort_order: row.sort_order,
       schedule_role: (row.schedule_role as ServiceTemplateScheduleRole | null) ?? 'standard',
+      default_crew_size:
+        row.default_crew_size != null &&
+        Number.isInteger(row.default_crew_size) &&
+        row.default_crew_size >= 1 &&
+        row.default_crew_size <= 8
+          ? row.default_crew_size
+          : 1,
       checklist_items: parseChecklistTemplateItems(row.checklist_items),
       consultation_checklist_items: parseChecklistTemplateItems(row.consultation_checklist_items),
     }));

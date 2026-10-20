@@ -17,6 +17,7 @@ import type {
   OptimizerExistingJob,
   OptimizerJob,
 } from '@/lib/schedule/optimizer/types';
+import { requiredCrewForVisit } from '@/lib/schedule/crewSize';
 import { localWallClockInTimeZoneToUtcIso } from '@/lib/schedule/nextWorkDayVisitWindow';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import { schedulesVisitKind } from '@/lib/schedule/scheduleEligibility';
@@ -158,6 +159,7 @@ type VisitRow = {
   visit_purpose: string;
   expected_amount_cents: number | null;
   recurring_rule_id: string | null;
+  quote_line_item_id: string | null;
   tenant_scheduled_visit_assignees: { user_id: string }[] | null;
 };
 
@@ -225,7 +227,7 @@ export async function loadDaySchedulingSuggestions(
     admin
       .from('tenant_scheduled_visits')
       .select(
-        'id, customer_id, property_id, title, starts_at, ends_at, status, visit_purpose, expected_amount_cents, recurring_rule_id, tenant_scheduled_visit_assignees(user_id)',
+        'id, customer_id, property_id, title, starts_at, ends_at, status, visit_purpose, expected_amount_cents, recurring_rule_id, quote_line_item_id, tenant_scheduled_visit_assignees(user_id)',
       )
       .eq('tenant_id', tenantId)
       .eq('status', 'scheduled')
@@ -286,32 +288,63 @@ export async function loadDaySchedulingSuggestions(
   const ruleIds = [
     ...new Set(openVisits.map((visit) => visit.recurring_rule_id).filter(Boolean)),
   ] as string[];
+  const lineIds = [
+    ...new Set(openVisits.map((visit) => visit.quote_line_item_id).filter(Boolean)),
+  ] as string[];
 
-  const [{ data: properties }, { data: customerPrefs }, { data: customers }, { data: rules }] =
-    await Promise.all([
-      propertyIds.length
-        ? admin
-            .from('tenant_customer_properties')
-            .select(
-              'id, property_kind, city, state, postal_code, service_zone_id, building_name, latitude, longitude, scheduling_override, required_crew_size',
-            )
-            .in('id', propertyIds)
-        : Promise.resolve({ data: [] }),
-      admin
-        .from('tenant_customer_scheduling_preferences')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .in('customer_id', customerIds),
-      admin
-        .from('customers')
-        .select('id, customer_identities(first_name, last_name, full_name)')
-        .in('id', customerIds),
-      ruleIds.length
-        ? admin.from('recurring_appointment_rules').select('id, anchor_starts_at').in('id', ruleIds)
-        : Promise.resolve({ data: [] }),
-    ]);
+  const [
+    { data: properties },
+    { data: customerPrefs },
+    { data: customers },
+    { data: rules },
+    { data: lines },
+    { data: jobTypes },
+  ] = await Promise.all([
+    propertyIds.length
+      ? admin
+          .from('tenant_customer_properties')
+          .select(
+            'id, property_kind, city, state, postal_code, service_zone_id, building_name, latitude, longitude, scheduling_override, required_crew_size',
+          )
+          .in('id', propertyIds)
+      : Promise.resolve({ data: [] }),
+    admin
+      .from('tenant_customer_scheduling_preferences')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .in('customer_id', customerIds),
+    admin
+      .from('customers')
+      .select('id, customer_identities(first_name, last_name, full_name)')
+      .in('id', customerIds),
+    ruleIds.length
+      ? admin.from('recurring_appointment_rules').select('id, anchor_starts_at').in('id', ruleIds)
+      : Promise.resolve({ data: [] }),
+    lineIds.length
+      ? admin
+          .from('tenant_quote_line_items')
+          .select('id, service_label, service_template_id')
+          .eq('tenant_id', tenantId)
+          .in('id', lineIds)
+      : Promise.resolve({ data: [] }),
+    admin
+      .from('tenant_service_templates')
+      .select('id, service_label, job_type, default_crew_size')
+      .eq('tenant_id', tenantId)
+      .eq('kind', 'service_line')
+      .eq('is_active', true),
+  ]);
 
   const propertyById = new Map((properties ?? []).map((property) => [property.id, property]));
+  const lineById = new Map((lines ?? []).map((line) => [line.id, line]));
+  const jobTypeCrew = (jobTypes ?? [])
+    .filter((entry) => entry.service_label && entry.job_type)
+    .map((entry) => ({
+      id: entry.id,
+      serviceLabel: entry.service_label ?? '',
+      propertyKind: entry.job_type ?? '',
+      crewSize: entry.default_crew_size,
+    }));
   const prefsByCustomer = new Map(
     (customerPrefs ?? []).map((row) => [
       row.customer_id,
@@ -417,6 +450,7 @@ export async function loadDaySchedulingSuggestions(
     const span = clipIntervalToDay(visit.starts_at, visit.ends_at, dateKey, timeZone);
     if (!span) continue;
     const property = visit.property_id ? propertyById.get(visit.property_id) : undefined;
+    const line = visit.quote_line_item_id ? lineById.get(visit.quote_line_item_id) : undefined;
     const facts: SchedulingFacts = effectiveSchedulingFacts(
       prefsByCustomer.get(visit.customer_id) ?? emptySchedulingFacts(),
       property?.scheduling_override,
@@ -445,7 +479,13 @@ export async function loadDaySchedulingSuggestions(
       languageCodes: facts.languageCodes,
       petInHome: facts.petInHome,
       chemicalSensitivity: facts.chemicalSensitivity,
-      requiredCrewSize: property?.required_crew_size ?? 1,
+      requiredCrewSize: requiredCrewForVisit({
+        propertyCrewSize: property?.required_crew_size,
+        propertyKind: property?.property_kind,
+        serviceLabel: line?.service_label || visit.title,
+        serviceTemplateId: line?.service_template_id,
+        catalog: jobTypeCrew,
+      }),
       arrivalWindow: schedulingArrivalWindow(facts),
       accessWindow: facts.accessWindow,
       priority: facts.priority,

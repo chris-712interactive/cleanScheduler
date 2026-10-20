@@ -21,6 +21,7 @@ const deepClean: JobTypeCatalogEntry = {
   is_active: true,
   sort_order: 0,
   schedule_role: 'initial',
+  default_crew_size: 2,
 };
 
 const standard: JobTypeCatalogEntry = {
@@ -34,6 +35,7 @@ const standard: JobTypeCatalogEntry = {
   is_active: true,
   sort_order: 1,
   schedule_role: 'recurring',
+  default_crew_size: 1,
 };
 
 describe('quoteAutoSchedulePlan', () => {

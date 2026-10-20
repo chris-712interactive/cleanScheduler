@@ -176,6 +176,9 @@ export function FillScheduleRun({
                             item.customerName
                           )}
                         </p>
+                        {item.addressLine ? (
+                          <p className={styles.visitAddress}>{item.addressLine}</p>
+                        ) : null}
                         <p className={styles.visitTitle}>{item.title}</p>
                         <p
                           className={styles.visitCrew}
@@ -274,6 +277,7 @@ export function FillScheduleRun({
               <span className={styles.activityTime}>{item.timeLabel}</span>
               <span className={styles.activityBody}>
                 <strong>{item.customerName}</strong>
+                {item.addressLine ? <span>{item.addressLine}</span> : null}
                 <span>
                   {item.title}
                   {item.kind === 'consultation' ? ' · consultation' : ''}

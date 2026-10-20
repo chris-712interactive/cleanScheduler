@@ -13,7 +13,9 @@ Office owners and admins set **job notes** when scheduling a visit and when edit
 
 ## Job types
 
-Settings → **Job types** (`/settings/services`) is the catalog used when scheduling a job. Every plan includes the built-in types (durations and checklists are editable). **Pro** can add custom job type names (`customServiceTypes`). Choosing a type on a new appointment fills the job title; the title can still be edited for that visit.
+Settings → **Job types** (`/settings/services`) is the catalog used when scheduling a job. Every plan includes the built-in types (durations, minimum crew, and checklists are editable). **Pro** can add custom job type names (`customServiceTypes`). Choosing a type on a new appointment fills the job title; the title can still be edited for that visit.
+
+**Minimum crew** is stored on `tenant_service_templates.default_crew_size` (1–8, migration `0111`). It is set per property type, next to duration. Deep cleaning starts at 2 people. When a visit is assigned, the day planner uses the higher of that minimum and the location’s crew size. A deep clean can need two people while a regular clean at the same house stays at one. Apply migration **`0111`**.
 
 ## Community name
 
