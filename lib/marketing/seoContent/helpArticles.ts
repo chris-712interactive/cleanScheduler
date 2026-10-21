@@ -172,7 +172,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       {
         title: '1. Review open invoices',
         paragraphs: [
-          'Start with outstanding balance and collections reports. Follow up on past-due residential and commercial accounts before closing the period.',
+          'Start with outstanding balance and collections reports. On Customer invoices, search by invoice number, customer name, or property address. Follow up on past-due residential and commercial accounts before closing the period.',
         ],
       },
       {

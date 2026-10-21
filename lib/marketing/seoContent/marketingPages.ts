@@ -343,6 +343,7 @@ export const FEATURE_PAGES: SeoMarketingPage[] = [
         ],
         bullets: [
           'Invoice creation from visits and quotes',
+          'Search by invoice number, customer, or address',
           'Email delivery with PDF attachment',
           'Outstanding balance snapshots',
         ],

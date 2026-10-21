@@ -8,6 +8,14 @@
   border-top: 1px solid var(--color-border);
 }
 
+.footerStandalone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .summary {
   margin: 0;
   font-size: var(--font-size-sm);

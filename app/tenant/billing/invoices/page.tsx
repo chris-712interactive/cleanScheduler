@@ -18,12 +18,18 @@ import {
   invoiceListStatusTone,
 } from '@/lib/billing/invoiceListDisplay';
 import {
+  buildInvoiceListOrFilter,
+  findCustomerIdsForInvoiceSearch,
+  parseInvoiceListQuery,
+} from '@/lib/billing/invoiceListSearch';
+import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
 import { canExportReports } from '@/lib/tenant/reportPermissions';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { BillingListPagination } from '../BillingListPagination';
+import { InvoiceListSearchForm } from './InvoiceListSearchForm';
 import styles from './invoices.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -62,6 +68,7 @@ export default async function TenantCustomerInvoicesPage({
 }) {
   const sp = await searchParams;
   const page = parseBillingListPage(firstParam(sp.page));
+  const query = parseInvoiceListQuery(firstParam(sp.q));
   const { from, to } = billingListRange(page);
 
   const { tenantSlug } = await getPortalContext();
@@ -69,14 +76,25 @@ export default async function TenantCustomerInvoicesPage({
   const db = createTenantPortalDbClient();
   const canExport = canExportReports(membership.role);
 
-  const {
-    data: invoices,
-    error,
-    count,
-  } = await db
-    .from('tenant_invoices')
-    .select(
-      `
+  let searchError: string | null = null;
+  let orFilter: string | null = null;
+  if (query) {
+    const found = await findCustomerIdsForInvoiceSearch(db, membership.tenantId, query);
+    searchError = found.error;
+    if (!searchError) {
+      orFilter = buildInvoiceListOrFilter({ query, customerIds: found.customerIds });
+    }
+  }
+
+  let rows: InvoiceRow[] = [];
+  let totalCount = 0;
+  let listError = searchError;
+
+  if (!searchError) {
+    let invoiceRequest = db
+      .from('tenant_invoices')
+      .select(
+        `
       id,
       title,
       status,
@@ -90,14 +108,17 @@ export default async function TenantCustomerInvoicesPage({
         )
       )
     `,
-      { count: 'exact' },
-    )
-    .eq('tenant_id', membership.tenantId)
-    .order('created_at', { ascending: false })
-    .range(from, to);
+        { count: 'exact' },
+      )
+      .eq('tenant_id', membership.tenantId)
+      .order('created_at', { ascending: false });
+    if (orFilter) invoiceRequest = invoiceRequest.or(orFilter);
 
-  const rows = (invoices ?? []) as InvoiceRow[];
-  const totalCount = count ?? rows.length;
+    const { data: invoices, error, count } = await invoiceRequest.range(from, to);
+    rows = (invoices ?? []) as InvoiceRow[];
+    totalCount = count ?? rows.length;
+    listError = error?.message ?? null;
+  }
   const totalPages = Math.max(1, Math.ceil(totalCount / BILLING_LIST_PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
 
@@ -122,11 +143,13 @@ export default async function TenantCustomerInvoicesPage({
         }
       />
 
-      {error ? (
+      <InvoiceListSearchForm q={query} />
+
+      {listError ? (
         <div className={styles.errorPanel}>
-          <p className={styles.muted}>{error.message}</p>
+          <p className={styles.muted}>{listError}</p>
         </div>
-      ) : !rows.length && currentPage === 1 ? (
+      ) : !rows.length && currentPage === 1 && !query ? (
         <EmptyState
           title="No customer invoices yet"
           description="Create an invoice linked to a customer in your directory. Card checkout via Stripe Connect comes later."
@@ -136,8 +159,18 @@ export default async function TenantCustomerInvoicesPage({
             </Button>
           }
         />
+      ) : !rows.length ? (
+        <EmptyState
+          title="No invoices match your search"
+          description="Try an invoice number, customer name, or property address."
+          action={
+            <Button variant="secondary" as="a" href="/billing/invoices">
+              Clear search
+            </Button>
+          }
+        />
       ) : (
-        <div className={styles.tablePanel}>
+        <div className={styles.results}>
           <ul className={styles.list}>
             {rows.map((inv) => (
               <li key={inv.id}>
@@ -162,7 +195,9 @@ export default async function TenantCustomerInvoicesPage({
             ))}
           </ul>
           <BillingListPagination
+            layout="standalone"
             basePath="/billing/invoices"
+            query={query}
             currentPage={currentPage}
             totalPages={totalPages}
             totalCount={totalCount}
