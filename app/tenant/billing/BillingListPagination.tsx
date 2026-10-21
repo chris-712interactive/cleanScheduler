@@ -23,6 +23,8 @@ export function BillingListPagination({
   totalCount,
   fromIndex,
   toIndex,
+  query,
+  layout = 'embedded',
 }: {
   basePath: string;
   currentPage: number;
@@ -30,20 +32,21 @@ export function BillingListPagination({
   totalCount: number;
   fromIndex: number;
   toIndex: number;
+  query?: string;
+  /** `standalone` sits under a card list and stays hidden until a second page exists. */
+  layout?: 'embedded' | 'standalone';
 }) {
   if (totalCount === 0) return null;
+  if (layout === 'standalone' && totalPages <= 1) return null;
 
-  const prevHref =
-    currentPage > 1
-      ? `${basePath}${buildBillingListSearchParams({ page: currentPage - 1 })}`
-      : null;
-  const nextHref =
-    currentPage < totalPages
-      ? `${basePath}${buildBillingListSearchParams({ page: currentPage + 1 })}`
-      : null;
+  const pageHref = (page: number) =>
+    `${basePath}${buildBillingListSearchParams({ page, q: query })}`;
+
+  const prevHref = currentPage > 1 ? pageHref(currentPage - 1) : null;
+  const nextHref = currentPage < totalPages ? pageHref(currentPage + 1) : null;
 
   return (
-    <footer className={styles.footer}>
+    <footer className={layout === 'standalone' ? styles.footerStandalone : styles.footer}>
       <p className={styles.summary}>
         Showing {fromIndex} to {toIndex} of {totalCount} results
       </p>
@@ -65,7 +68,7 @@ export function BillingListPagination({
           ) : (
             <Link
               key={item}
-              href={`${basePath}${buildBillingListSearchParams({ page: item })}`}
+              href={pageHref(item)}
               className={styles.pageNum}
               data-active={item === currentPage || undefined}
               aria-current={item === currentPage ? 'page' : undefined}

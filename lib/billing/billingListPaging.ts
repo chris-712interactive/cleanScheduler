@@ -5,10 +5,12 @@ export function parseBillingListPage(raw: string | undefined): number {
   return Number.isFinite(n) && n > 0 ? n : 1;
 }
 
-export function buildBillingListSearchParams(params: { page?: number }): string {
-  const q = new URLSearchParams();
-  if (params.page && params.page > 1) q.set('page', String(params.page));
-  const s = q.toString();
+export function buildBillingListSearchParams(params: { page?: number; q?: string }): string {
+  const search = new URLSearchParams();
+  const query = params.q?.trim();
+  if (query) search.set('q', query);
+  if (params.page && params.page > 1) search.set('page', String(params.page));
+  const s = search.toString();
   return s ? `?${s}` : '';
 }
 
