@@ -7,6 +7,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { tenantRoleError } from '@/lib/auth/tenantRoleAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
+import { inferInvoicePropertyId } from '@/lib/billing/invoiceProperty';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import {
   assertPermission,
@@ -35,6 +36,8 @@ export async function createTenantInvoiceAction(formData: FormData): Promise<voi
   }
 
   const customerId = String(formData.get('customer_id') ?? '').trim();
+  const propertyIdRaw = String(formData.get('property_id') ?? '').trim();
+  const quoteIdRaw = String(formData.get('quote_id') ?? '').trim();
   const title = String(formData.get('title') ?? 'Invoice').trim() || 'Invoice';
   const amountCents = parseCentsFromDollars(String(formData.get('amount_dollars') ?? ''));
   const dueRaw = String(formData.get('due_date') ?? '').trim();
@@ -56,11 +59,58 @@ export async function createTenantInvoiceAction(formData: FormData): Promise<voi
     redirect(`/billing/invoices/new?error=customer`);
   }
 
+  let quoteId: string | null = null;
+  if (quoteIdRaw) {
+    const { data: quote, error: quoteErr } = await admin
+      .from('tenant_quotes')
+      .select('id')
+      .eq('tenant_id', membership.tenantId)
+      .eq('customer_id', customerId)
+      .eq('id', quoteIdRaw)
+      .maybeSingle();
+    if (quoteErr || !quote) {
+      redirect(`/billing/invoices/new?error=quote`);
+    }
+    quoteId = quote.id;
+  }
+
+  let propertyId = propertyIdRaw;
+  if (propertyId) {
+    const { data: property, error: propertyErr } = await admin
+      .from('tenant_customer_properties')
+      .select('id')
+      .eq('tenant_id', membership.tenantId)
+      .eq('customer_id', customerId)
+      .eq('id', propertyId)
+      .maybeSingle();
+    if (propertyErr || !property) {
+      redirect(`/billing/invoices/new?error=property`);
+    }
+  } else {
+    propertyId =
+      (await inferInvoicePropertyId(admin, {
+        tenantId: membership.tenantId,
+        customerId,
+        quoteId,
+      })) ?? '';
+  }
+
+  const { count: propertyCount } = await admin
+    .from('tenant_customer_properties')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', membership.tenantId)
+    .eq('customer_id', customerId);
+  if ((propertyCount ?? 0) > 0 && !propertyId) {
+    redirect(`/billing/invoices/new?error=property`);
+  }
+
   const dueDate = dueRaw ? new Date(`${dueRaw}T12:00:00Z`).toISOString() : null;
 
   const { error } = await admin.from('tenant_invoices').insert({
     tenant_id: membership.tenantId,
     customer_id: customerId,
+    property_id: propertyId || null,
+    quote_id: quoteId,
     title,
     status: 'open' as InvoiceStatus,
     amount_cents: amountCents,

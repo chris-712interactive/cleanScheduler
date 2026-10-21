@@ -1232,6 +1232,7 @@ export type Database = {
           visit_id: string | null;
           location_id: string | null;
           quote_id: string | null;
+          property_id: string | null;
           title: string;
           status: 'draft' | 'open' | 'paid' | 'void';
           currency: string;
@@ -1262,6 +1263,7 @@ export type Database = {
           visit_id?: string | null;
           location_id?: string | null;
           quote_id?: string | null;
+          property_id?: string | null;
           title?: string;
           status?: 'draft' | 'open' | 'paid' | 'void';
           currency?: string;
@@ -1292,6 +1294,7 @@ export type Database = {
           visit_id?: string | null;
           location_id?: string | null;
           quote_id?: string | null;
+          property_id?: string | null;
           title?: string;
           status?: 'draft' | 'open' | 'paid' | 'void';
           currency?: string;
@@ -1321,6 +1324,13 @@ export type Database = {
             columns: ['customer_id'];
             isOneToOne: false;
             referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_invoices_property_id_fkey';
+            columns: ['property_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_customer_properties';
             referencedColumns: ['id'];
           },
           {

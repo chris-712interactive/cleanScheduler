@@ -8,6 +8,7 @@ import {
 } from '@/lib/billing/invoiceListSearch';
 
 const CUSTOMER_ID = '11111111-1111-4111-8111-111111111111';
+const PROPERTY_ID = '22222222-2222-4222-8222-222222222222';
 
 describe('parseInvoiceListQuery', () => {
   it('trims and caps the query', () => {
@@ -77,6 +78,13 @@ describe('buildInvoiceListOrFilter', () => {
     expect(buildInvoiceListOrFilter({ query: '$300.00', customerIds: [] })).toContain(
       'amount_cents.eq.30000',
     );
+    expect(
+      buildInvoiceListOrFilter({
+        query: 'Main St.',
+        customerIds: [],
+        propertyIds: [PROPERTY_ID, 'not-a-uuid'],
+      }),
+    ).toContain(`property_id.in.(${PROPERTY_ID})`);
   });
 
   it('returns null when there is nothing to search', () => {

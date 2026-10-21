@@ -85,6 +85,7 @@ function quotedIlikeAny(columns: string[], raw: string): string {
 export function buildInvoiceListOrFilter(params: {
   query: string;
   customerIds: string[];
+  propertyIds?: string[];
 }): string | null {
   const query = params.query.trim();
   if (!query) return null;
@@ -123,6 +124,15 @@ export function buildInvoiceListOrFilter(params: {
     parts.push(`customer_id.in.(${customerIds.join(',')})`);
   }
 
+  const propertyIds = [
+    ...new Set(
+      (params.propertyIds ?? []).filter((id) => UUID_RE.test(id)).map((id) => id.toLowerCase()),
+    ),
+  ].slice(0, CUSTOMER_MATCH_LIMIT);
+  if (propertyIds.length > 0) {
+    parts.push(`property_id.in.(${propertyIds.join(',')})`);
+  }
+
   return parts.join(',');
 }
 
@@ -155,9 +165,9 @@ export async function findCustomerIdsForInvoiceSearch(
   db: Admin,
   tenantId: string,
   query: string,
-): Promise<{ customerIds: string[]; error: string | null }> {
+): Promise<{ customerIds: string[]; propertyIds: string[]; error: string | null }> {
   const trimmed = query.trim();
-  if (!trimmed) return { customerIds: [], error: null };
+  if (!trimmed) return { customerIds: [], propertyIds: [], error: null };
 
   const [identResult, propertyResult] = await Promise.all([
     db
@@ -167,14 +177,14 @@ export async function findCustomerIdsForInvoiceSearch(
       .limit(CUSTOMER_MATCH_LIMIT),
     db
       .from('tenant_customer_properties')
-      .select('customer_id')
+      .select('id')
       .eq('tenant_id', tenantId)
       .or(propertySearchOrClause(trimmed))
       .limit(CUSTOMER_MATCH_LIMIT),
   ]);
 
   const lookupError = identResult.error ?? propertyResult.error;
-  if (lookupError) return { customerIds: [], error: lookupError.message };
+  if (lookupError) return { customerIds: [], propertyIds: [], error: lookupError.message };
 
   const identityIds = (identResult.data ?? [])
     .map((row) => row.id)
@@ -187,13 +197,14 @@ export async function findCustomerIdsForInvoiceSearch(
       .eq('tenant_id', tenantId)
       .in('customer_identity_id', identityIds)
       .limit(CUSTOMER_MATCH_LIMIT);
-    if (customers.error) return { customerIds: [], error: customers.error.message };
+    if (customers.error)
+      return { customerIds: [], propertyIds: [], error: customers.error.message };
     identityCustomerIds = (customers.data ?? []).map((row) => row.id);
   }
 
-  const propertyCustomerIds = (propertyResult.data ?? []).map((row) => row.customer_id);
-  const customerIds = [...new Set([...identityCustomerIds, ...propertyCustomerIds])].filter((id) =>
-    UUID_RE.test(id),
-  );
-  return { customerIds, error: null };
+  const propertyIds = (propertyResult.data ?? [])
+    .map((row) => row.id)
+    .filter((id) => UUID_RE.test(id));
+  const customerIds = [...new Set(identityCustomerIds)].filter((id) => UUID_RE.test(id));
+  return { customerIds, propertyIds, error: null };
 }

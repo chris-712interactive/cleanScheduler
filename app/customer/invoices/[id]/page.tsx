@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { createAdminClient } from '@/lib/supabase/server';
+import { loadInvoicePropertyLabels } from '@/lib/billing/invoiceProperty';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { createCustomerInvoicePayCheckoutSessionAction } from '@/app/customer/invoices/invoicePayCheckoutActions';
 import { CustomerInvoicePromotionPanel } from '@/app/customer/invoices/CustomerInvoicePromotionPanel';
@@ -29,6 +30,7 @@ type InvoiceDetailRow = {
   due_date: string | null;
   notes: string | null;
   created_at: string;
+  property_id: string | null;
   tenant_id: string;
   customer_id: string;
   hosted_invoice_url: string | null;
@@ -79,6 +81,7 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
       due_date,
       notes,
       created_at,
+      property_id,
       tenant_id,
       customer_id,
       hosted_invoice_url,
@@ -120,6 +123,9 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
   const checkoutErr = firstParam(sp.error);
   const checkoutOk = firstParam(sp.checkout) === 'success';
   const checkoutCanceled = firstParam(sp.checkout) === 'canceled';
+
+  const propertyLabels = await loadInvoicePropertyLabels(admin, row.tenant_id, [row.property_id]);
+  const propertyLabel = row.property_id ? (propertyLabels.get(row.property_id) ?? '') : '';
 
   const { data: payments } = await admin
     .from('tenant_invoice_payments')
@@ -176,6 +182,7 @@ export default async function CustomerInvoiceDetailPage({ params, searchParams }
         <p className={styles.meta}>
           Balance due <strong>{formatUsdFromCents(Math.max(0, collectible))}</strong>
         </p>
+        {propertyLabel ? <p className={styles.meta}>{propertyLabel}</p> : null}
         {row.due_date ? (
           <p className={styles.meta}>Due {new Date(String(row.due_date)).toLocaleDateString()}</p>
         ) : null}

@@ -6,6 +6,7 @@ export interface InvoicePdfInput {
   invoiceTitle: string;
   status: string;
   customerLabel: string;
+  propertyLabel?: string | null;
   amountCents: number;
   amountPaidCents: number;
   dueDate: string | null;
@@ -48,6 +49,9 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Buffer> 
 
     doc.fontSize(11);
     doc.text(`Customer: ${input.customerLabel}`);
+    if (input.propertyLabel?.trim()) {
+      doc.text(`Property: ${input.propertyLabel.trim()}`);
+    }
     doc.text(`Status: ${input.status}`);
     doc.text(`Created: ${formatDate(input.createdAt)}`);
     doc.text(`Due: ${formatDate(input.dueDate)}`);
