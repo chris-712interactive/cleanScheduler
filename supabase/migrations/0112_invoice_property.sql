@@ -61,11 +61,17 @@ begin
   end if;
 
   if new.property_id is null then
-    select case when count(*) = 1 then min(p.id) else null end
+    select p.id
       into new.property_id
     from public.tenant_customer_properties p
     where p.tenant_id = new.tenant_id
-      and p.customer_id = new.customer_id;
+      and p.customer_id = new.customer_id
+      and (
+        select count(*)
+        from public.tenant_customer_properties p2
+        where p2.tenant_id = new.tenant_id
+          and p2.customer_id = new.customer_id
+      ) = 1;
   end if;
 
   if new.property_id is not null then
