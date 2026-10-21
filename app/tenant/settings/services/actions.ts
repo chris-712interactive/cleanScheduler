@@ -117,14 +117,17 @@ export async function updateServiceTypeScheduleRoleAction(
   }
 
   const admin = createAdminClient();
-  const { error } = await admin
+  const { data, error } = await admin
     .from('tenant_service_templates')
     .update({ schedule_role: scheduleRole })
     .eq('tenant_id', membership.tenantId)
     .eq('id', templateId)
-    .eq('kind', 'service_line');
+    .eq('kind', 'service_line')
+    .select('id')
+    .maybeSingle();
 
   if (error) return { error: error.message };
+  if (!data) return { error: 'That job type could not be updated.' };
 
   revalidatePath('/tenant/settings/services', 'page');
   revalidatePath('/tenant/quotes', 'page');

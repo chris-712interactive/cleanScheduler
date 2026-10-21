@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
@@ -17,7 +17,11 @@ import {
   updateServiceTypeScheduleRoleAction,
   type ServiceTypeActionState,
 } from './actions';
-import { SCHEDULE_ROLE_LABEL, SCHEDULE_ROLE_OPTIONS } from '@/lib/tenant/scheduleRoleLabels';
+import {
+  parseScheduleRole,
+  SCHEDULE_ROLE_LABEL,
+  SCHEDULE_ROLE_OPTIONS,
+} from '@/lib/tenant/scheduleRoleLabels';
 import styles from './services-settings.module.scss';
 
 const initialState: ServiceTypeActionState = {};
@@ -266,10 +270,19 @@ function ScheduleRoleEditor({
     updateServiceTypeScheduleRoleAction,
     initialState,
   );
-  useFeedbackToast({ error: state.error, pending });
-  const roleHint = SCHEDULE_ROLE_OPTIONS.find(
-    (option) => option.value === entry.schedule_role,
-  )?.hint;
+  useFeedbackToast({
+    error: state.error,
+    success: state.success,
+    successMessage: 'Saved',
+    pending,
+  });
+  // Controlled, and the submit does not use the form action attribute.
+  // That attribute resets the menu, and the first option is Initial visit.
+  const [role, setRole] = useState(entry.schedule_role);
+  useEffect(() => {
+    setRole(entry.schedule_role);
+  }, [entry.schedule_role]);
+  const roleHint = SCHEDULE_ROLE_OPTIONS.find((option) => option.value === role)?.hint;
 
   return (
     <div className={styles.setting}>
@@ -277,15 +290,25 @@ function ScheduleRoleEditor({
         Schedule role
       </label>
       {canEdit ? (
-        <form action={formAction} className={styles.controlRow}>
+        <form
+          className={styles.controlRow}
+          onSubmit={(event) => {
+            event.preventDefault();
+            formAction(new FormData(event.currentTarget));
+          }}
+        >
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="template_id" value={entry.id} />
           <select
             id={`schedule_role_${entry.id}`}
             className={styles.roleSelect}
             name="schedule_role"
-            defaultValue={entry.schedule_role}
+            value={role}
             disabled={pending}
+            onChange={(event) => {
+              const next = parseScheduleRole(event.target.value);
+              if (next) setRole(next);
+            }}
           >
             {SCHEDULE_ROLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
