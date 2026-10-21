@@ -11,9 +11,11 @@
  * nothing portal-specific.
  */
 import type { ReactNode } from 'react';
+import type { AccountNotice } from '@/lib/billing/accountNotices';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
+import { AccountNoticesProvider } from './accountNotices/AccountNoticesProvider';
 import type { IdentityChipModel, NavItem } from './types';
 import styles from './PortalShell.module.scss';
 
@@ -40,9 +42,11 @@ export interface PortalShellProps {
   tenantBadge?: ReactNode;
   /** Non-production warning (e.g. dev/staging) shown above the top bar. */
   environmentBanner?: ReactNode;
-  /** Optional banner (e.g. masquerade exit) below env banner, above the top bar. */
+  /** Optional banner (e.g. masquerade exit or a paused workspace) below the env banner. */
   sessionNotice?: ReactNode;
-  /** Streamed session banners (connect/usage) below sessionNotice. */
+  /** Trial reminder known at shell render, shown in the header chip on first paint. */
+  headerNotices?: AccountNotice[];
+  /** Streamed notice sources (connect/usage). They publish into the header chip. */
   deferredSessionNotice?: ReactNode;
   /** Optional center slot (e.g. tenant global search). */
   searchSlot?: ReactNode;
@@ -65,6 +69,7 @@ export function PortalShell({
   tenantBadge,
   environmentBanner,
   sessionNotice,
+  headerNotices,
   deferredSessionNotice,
   searchSlot,
   children,
@@ -72,48 +77,46 @@ export function PortalShell({
   const hasBottomNav = Boolean(bottomNavItems && bottomNavItems.length > 0);
 
   return (
-    <div className={styles.shell} data-bottom-nav={hasBottomNav || undefined}>
-      <a href="#main" className="skip-link">
-        Skip to main content
-      </a>
-      {environmentBanner ? (
-        <div className={styles.environmentBanner} role="status">
-          {environmentBanner}
+    <AccountNoticesProvider headerNotices={headerNotices}>
+      <div className={styles.shell} data-bottom-nav={hasBottomNav || undefined}>
+        <a href="#main" className="skip-link">
+          Skip to main content
+        </a>
+        {environmentBanner ? (
+          <div className={styles.environmentBanner} role="status">
+            {environmentBanner}
+          </div>
+        ) : null}
+        {sessionNotice ? (
+          <div className={styles.sessionNotice} role="region" aria-label="Session notice">
+            {sessionNotice}
+          </div>
+        ) : null}
+        {deferredSessionNotice}
+        <TopBar
+          brandLabel={brandLabel}
+          brandLogoUrl={brandLogoUrl}
+          hidePlatformLogo={hidePlatformLogo}
+          brandHref={brandHref}
+          brandSlot={brandSlot}
+          identity={identity}
+          identitySlot={identitySlot}
+          settingsHref={settingsHref}
+          tenantBadge={tenantBadge}
+          navItems={navItems}
+          mobileNav={mobileNav ?? sidebarNav}
+          searchSlot={searchSlot}
+        />
+        <div className={styles.body}>
+          {sidebarNav ? <Sidebar>{sidebarNav}</Sidebar> : <Sidebar items={navItems} />}
+          <main id="main" className={styles.main}>
+            {children}
+          </main>
         </div>
-      ) : null}
-      {sessionNotice ? (
-        <div className={styles.sessionNotice} role="region" aria-label="Session notice">
-          {sessionNotice}
-        </div>
-      ) : null}
-      {deferredSessionNotice ? (
-        <div className={styles.sessionNotice} role="region" aria-label="Account notice">
-          {deferredSessionNotice}
-        </div>
-      ) : null}
-      <TopBar
-        brandLabel={brandLabel}
-        brandLogoUrl={brandLogoUrl}
-        hidePlatformLogo={hidePlatformLogo}
-        brandHref={brandHref}
-        brandSlot={brandSlot}
-        identity={identity}
-        identitySlot={identitySlot}
-        settingsHref={settingsHref}
-        tenantBadge={tenantBadge}
-        navItems={navItems}
-        mobileNav={mobileNav ?? sidebarNav}
-        searchSlot={searchSlot}
-      />
-      <div className={styles.body}>
-        {sidebarNav ? <Sidebar>{sidebarNav}</Sidebar> : <Sidebar items={navItems} />}
-        <main id="main" className={styles.main}>
-          {children}
-        </main>
+        {bottomNavItems && bottomNavItems.length > 0 ? (
+          <MobileBottomNav items={bottomNavItems} />
+        ) : null}
       </div>
-      {bottomNavItems && bottomNavItems.length > 0 ? (
-        <MobileBottomNav items={bottomNavItems} />
-      ) : null}
-    </div>
+    </AccountNoticesProvider>
   );
 }

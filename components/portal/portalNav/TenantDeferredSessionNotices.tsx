@@ -17,7 +17,7 @@ export interface TenantDeferredSessionNoticesProps {
   subscriptionAccess: Parameters<typeof needsSubscriptionPurchase>[0];
 }
 
-/** Banners that depend on onboarding/usage data — streamed after the shell paints. */
+/** Plan-limit and card-payment reminders streamed into the header notice chip. */
 export async function TenantDeferredSessionNotices({
   tenantId,
   tenantSlug,

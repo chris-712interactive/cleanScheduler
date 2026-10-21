@@ -455,12 +455,12 @@ Forms update local display from action result; business settings actions omit `r
 
 **Goal:** Static portal chrome + dynamic slots.
 
-| Approach               | Detail                                                                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Split layout           | Static `PortalShell` frame; dynamic nav badges, session banners, customer branding/identity as async server components in `Suspense` |
-| Reduce `force-dynamic` | Layouts remain auth-gated; deferred slots stream without blocking `{children}` / route `loading.tsx`                                 |
-| PPR / streaming        | When Next.js PPR is stable for auth-gated apps, evaluate for marketing + public pages first                                          |
-| White-label cache      | `unstable_cache` (300s) for `host → tenant` mapping in `resolveActiveWhiteLabelCustomerPortal`; `revalidateTag` on domain changes    |
+| Approach               | Detail                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Split layout           | Static `PortalShell` frame; dynamic nav badges, header account notices, customer branding/identity as async server components in `Suspense` |
+| Reduce `force-dynamic` | Layouts remain auth-gated; deferred slots stream without blocking `{children}` / route `loading.tsx`                                        |
+| PPR / streaming        | When Next.js PPR is stable for auth-gated apps, evaluate for marketing + public pages first                                                 |
+| White-label cache      | `unstable_cache` (300s) for `host → tenant` mapping in `resolveActiveWhiteLabelCustomerPortal`; `revalidateTag` on domain changes           |
 
 **Implementation:** `components/portal/portalNav/*`, `lib/tenant/loadTenantNavItems.ts`, `lib/customer/loadCustomerNavItems.ts`, `PortalShell` nav/brand/identity slots.
 

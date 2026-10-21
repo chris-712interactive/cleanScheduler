@@ -282,9 +282,9 @@ States:
 
 Display when `platform_plan` is null: **“Free trial — choose a plan to subscribe”** (not “No plan selected” as error).
 
-### Banners
+### Header notice
 
-`TrialSubscriptionBanner`: unchanged logic; link to `/billing` subscribe section.
+`TrialSubscriptionBanner` publishes a compact header chip (for example “Trial · 18 days”) instead of a full-width bar. The chip links to `/billing`. When a plan limit or card-payment setup also needs attention, the chip keeps the most urgent label and a count opens the rest. A paused workspace still uses a full-width bar.
 
 ---
 
