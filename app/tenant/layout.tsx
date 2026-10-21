@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { MasqueradeExitBanner } from '@/components/portal/MasqueradeExitBanner';
 import { TrialSubscriptionBanner } from '@/components/billing/TrialSubscriptionBanner';
+import { buildTrialAccountNotice } from '@/lib/billing/accountNotices';
 import { WorkspacePausedBanner } from '@/components/billing/WorkspacePausedBanner';
 import {
   needsSubscriptionPurchase,
@@ -49,7 +50,7 @@ export const dynamic = 'force-dynamic';
  * day-to-day sales work once the directory exists.
  *
  * Phase 4: shell paints with membership + billing; nav badges and deferred
- * banners stream in via Suspense without blocking page content.
+ * header notices stream in via Suspense without blocking page content.
  */
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
@@ -127,19 +128,13 @@ export default async function TenantLayout({ children }: { children: React.React
 
     const sessionNotices: ReactNode[] = [];
     if (masquerading) sessionNotices.push(<MasqueradeExitBanner key="masq" />);
-    if (
+    const showTrialNotice =
       shouldShowTrialPurchaseBanner(subscriptionAccess) &&
       !subscriptionLocked &&
-      !isFieldEmployeeRole(membership.role)
-    ) {
-      sessionNotices.push(
-        <TrialSubscriptionBanner
-          key="trial"
-          access={subscriptionAccess}
-          daysRemaining={trialDaysLeft}
-        />,
-      );
-    }
+      !isFieldEmployeeRole(membership.role);
+    const trialNotice = showTrialNotice
+      ? buildTrialAccountNotice(subscriptionAccess, trialDaysLeft)
+      : null;
     if (subscriptionLocked) {
       sessionNotices.push(
         <WorkspacePausedBanner
@@ -174,18 +169,27 @@ export default async function TenantLayout({ children }: { children: React.React
           tenantBadge={<span>{slug}.cleanscheduler.com</span>}
           environmentBanner={nonProdBanner}
           sessionNotice={sessionNotice}
+          headerNotices={trialNotice ? [trialNotice] : undefined}
           deferredSessionNotice={
-            !subscriptionLocked && !isFieldEmployeeRole(membership.role) ? (
-              <Suspense fallback={null}>
-                <TenantDeferredSessionNotices
-                  tenantId={membership.tenantId}
-                  tenantSlug={slug}
-                  role={membership.role}
-                  connectStatus={billingSnapshot.connectStatus}
-                  subscriptionAccess={subscriptionAccess}
+            <>
+              {showTrialNotice ? (
+                <TrialSubscriptionBanner
+                  access={subscriptionAccess}
+                  daysRemaining={trialDaysLeft}
                 />
-              </Suspense>
-            ) : null
+              ) : null}
+              {!subscriptionLocked && !isFieldEmployeeRole(membership.role) ? (
+                <Suspense fallback={null}>
+                  <TenantDeferredSessionNotices
+                    tenantId={membership.tenantId}
+                    tenantSlug={slug}
+                    role={membership.role}
+                    connectStatus={billingSnapshot.connectStatus}
+                    subscriptionAccess={subscriptionAccess}
+                  />
+                </Suspense>
+              ) : null}
+            </>
           }
           searchSlot={showGlobalSearch ? <GlobalSearchLazy /> : undefined}
           bottomNavItems={bottomNavItems}

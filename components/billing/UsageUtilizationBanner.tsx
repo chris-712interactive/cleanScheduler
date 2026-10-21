@@ -1,17 +1,8 @@
-import Link from 'next/link';
+import { RegisterAccountNotice } from '@/components/portal/accountNotices/RegisterAccountNotice';
+import { buildUsageAccountNotice } from '@/lib/billing/accountNotices';
 import type { UtilizationAlert } from '@/lib/billing/usageUtilization';
-import { utilizationBannerMessage } from '@/lib/billing/usageUtilization';
-import styles from './UsageUtilizationBanner.module.scss';
 
+/** Publishes a plan-limit reminder into the header notice chip. */
 export function UsageUtilizationBanner({ alert }: { alert: UtilizationAlert }) {
-  const urgent = alert.level === 'critical' || alert.level === 'exceeded';
-
-  return (
-    <p className={styles.banner} data-urgency={urgent ? 'high' : undefined} role="status">
-      <span>{utilizationBannerMessage(alert)}</span>
-      <Link href="/billing" className={styles.link}>
-        View billing →
-      </Link>
-    </p>
-  );
+  return <RegisterAccountNotice notice={buildUsageAccountNotice(alert)} />;
 }

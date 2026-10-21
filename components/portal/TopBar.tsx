@@ -16,6 +16,7 @@ import { usePathname } from 'next/navigation';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { AccountMenu } from './AccountMenu';
+import { AccountNoticesMenu } from './accountNotices/AccountNoticesMenu';
 import { NavList } from './NavList';
 import type { IdentityChipModel, NavItem } from './types';
 import styles from './TopBar.module.scss';
@@ -111,6 +112,7 @@ export function TopBar({
 
       <div className={styles.right}>
         {searchSlot}
+        <AccountNoticesMenu />
         <ThemeToggle />
         {identitySlot ??
           (identity ? <AccountMenu {...identity} settingsHref={settingsHref} /> : null)}
