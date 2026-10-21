@@ -340,10 +340,14 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   }
   const invoicePrefill = new URLSearchParams({
     customer_id: row.customer_id ?? '',
+    quote_id: row.id,
     title: row.title,
     amount_dollars: ((row.amount_cents ?? 0) / 100).toFixed(2),
     notes: `From quote ${row.id.slice(0, 8)}`,
   });
+  if (row.property_id) {
+    invoicePrefill.set('property_id', row.property_id);
+  }
 
   return (
     <>

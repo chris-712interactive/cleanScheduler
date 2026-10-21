@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { loadInvoicePropertyLabels } from '@/lib/billing/invoiceProperty';
 import { customerLabelFromIdentity } from '@/lib/reports/customerLabel';
 import { renderInvoicePdf } from '@/lib/billing/renderInvoicePdf';
 
@@ -21,6 +22,7 @@ export async function buildInvoicePdfBuffer(
       due_date,
       notes,
       created_at,
+      property_id,
       customers (
         customer_identities (
           first_name,
@@ -49,11 +51,13 @@ export async function buildInvoicePdfBuffer(
     .order('recorded_at', { ascending: true });
 
   const ident = inv.customers?.customer_identities ?? null;
+  const propertyLabels = await loadInvoicePropertyLabels(admin, params.tenantId, [inv.property_id]);
   const buffer = await renderInvoicePdf({
     tenantName: tenant?.name?.trim() || tenant?.slug || 'Workspace',
     invoiceTitle: inv.title,
     status: inv.status,
     customerLabel: customerLabelFromIdentity(ident),
+    propertyLabel: inv.property_id ? propertyLabels.get(inv.property_id) : null,
     amountCents: inv.amount_cents,
     amountPaidCents: inv.amount_paid_cents,
     dueDate: inv.due_date,

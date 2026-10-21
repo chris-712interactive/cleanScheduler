@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import type { TenantOperationalSettingsSnapshot } from '@/lib/tenant/loadTenantOperationalSettings';
+import { inferInvoicePropertyId } from '@/lib/billing/invoiceProperty';
 import { ensureAutoScheduledVisitForAcceptedQuote } from '@/lib/tenant/quoteAutoSchedule';
 
 type Admin = SupabaseClient<Database>;
@@ -89,6 +90,11 @@ async function ensurePrepayInvoiceForQuote(
   const title = `Prepayment — ${input.quoteTitle.trim() || 'Quote'}`.slice(0, 200);
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + 7);
+  const propertyId = await inferInvoicePropertyId(admin, {
+    tenantId: input.tenantId,
+    customerId: input.customerId,
+    quoteId: input.quoteId,
+  });
 
   const { data: created, error } = await admin
     .from('tenant_invoices')
@@ -96,6 +102,7 @@ async function ensurePrepayInvoiceForQuote(
       tenant_id: input.tenantId,
       customer_id: input.customerId,
       quote_id: input.quoteId,
+      property_id: propertyId,
       title,
       status: 'open',
       currency: input.currency || 'usd',

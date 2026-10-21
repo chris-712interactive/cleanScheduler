@@ -27,6 +27,7 @@ import {
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
 import { canExportReports } from '@/lib/tenant/reportPermissions';
+import { loadInvoicePropertyLabels } from '@/lib/billing/invoiceProperty';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { BillingListPagination } from '../BillingListPagination';
 import { InvoiceListSearchForm } from './InvoiceListSearchForm';
@@ -40,6 +41,7 @@ type InvoiceRow = {
   status: string;
   amount_cents: number;
   created_at: string;
+  property_id: string | null;
   customers: {
     customer_identities: {
       first_name: string | null;
@@ -82,7 +84,11 @@ export default async function TenantCustomerInvoicesPage({
     const found = await findCustomerIdsForInvoiceSearch(db, membership.tenantId, query);
     searchError = found.error;
     if (!searchError) {
-      orFilter = buildInvoiceListOrFilter({ query, customerIds: found.customerIds });
+      orFilter = buildInvoiceListOrFilter({
+        query,
+        customerIds: found.customerIds,
+        propertyIds: found.propertyIds,
+      });
     }
   }
 
@@ -100,6 +106,7 @@ export default async function TenantCustomerInvoicesPage({
       status,
       amount_cents,
       created_at,
+      property_id,
       customers (
         customer_identities (
           first_name,
@@ -119,6 +126,14 @@ export default async function TenantCustomerInvoicesPage({
     totalCount = count ?? rows.length;
     listError = error?.message ?? null;
   }
+
+  const propertyLabels = listError
+    ? new Map<string, string>()
+    : await loadInvoicePropertyLabels(
+        db,
+        membership.tenantId,
+        rows.map((row) => row.property_id),
+      );
   const totalPages = Math.max(1, Math.ceil(totalCount / BILLING_LIST_PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
 
@@ -181,6 +196,11 @@ export default async function TenantCustomerInvoicesPage({
                         {formatInvoiceListHeading(inv.id, inv.title)}
                       </p>
                       <p className={styles.customerName}>{customerLabelFromRow(inv)}</p>
+                      {inv.property_id && propertyLabels.get(inv.property_id) ? (
+                        <p className={styles.propertyAddress}>
+                          {propertyLabels.get(inv.property_id)}
+                        </p>
+                      ) : null}
                       <p className={styles.invoiceDate}>{formatInvoiceListDate(inv.created_at)}</p>
                     </div>
                     <div className={styles.cardRight}>

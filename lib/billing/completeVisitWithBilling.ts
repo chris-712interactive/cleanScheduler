@@ -10,6 +10,7 @@ import {
 import { sendTenantInvoiceEmailForInvoice } from '@/lib/billing/sendTenantInvoiceEmail';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
+import { inferInvoicePropertyId } from '@/lib/billing/invoiceProperty';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 
 type AdminClient = SupabaseClient<Database>;
@@ -51,12 +52,19 @@ async function createVisitInvoice(
     amountCents: number;
   },
 ): Promise<{ invoiceId: string } | { error: string }> {
+  const propertyId = await inferInvoicePropertyId(admin, {
+    tenantId: params.tenantId,
+    customerId: params.customerId,
+    visitId: params.visitId,
+  });
+
   const { data, error } = await admin
     .from('tenant_invoices')
     .insert({
       tenant_id: params.tenantId,
       customer_id: params.customerId,
       visit_id: params.visitId,
+      property_id: propertyId,
       title: params.title,
       status: 'open',
       amount_cents: params.amountCents,

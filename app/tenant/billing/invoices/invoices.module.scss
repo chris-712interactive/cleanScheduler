@@ -144,7 +144,8 @@
   line-height: 1.3;
 }
 
-.customerName {
+.customerName,
+.propertyAddress {
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

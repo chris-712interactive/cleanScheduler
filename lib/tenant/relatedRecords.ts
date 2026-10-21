@@ -10,7 +10,12 @@ import type { RelatedRecordsSnapshot } from '@/lib/tenant/relatedRecordsTypes';
 export async function getInvoiceRelatedRecords(
   db: SupabaseClient<Database>,
   tenantId: string,
-  invoice: { id: string; customer_id: string | null; visit_id: string | null },
+  invoice: {
+    id: string;
+    customer_id: string | null;
+    visit_id: string | null;
+    propertyLabel?: string | null;
+  },
 ): Promise<RelatedRecordsSnapshot> {
   const links: RelatedRecordsSnapshot['links'] = [];
 
@@ -28,6 +33,14 @@ export async function getInvoiceRelatedRecords(
     links.push({
       label: 'Customer',
       detail: name === 'Unnamed' ? undefined : name,
+      href: `/customers/${invoice.customer_id}`,
+    });
+  }
+
+  if (invoice.propertyLabel && invoice.customer_id) {
+    links.push({
+      label: 'Property',
+      detail: invoice.propertyLabel,
       href: `/customers/${invoice.customer_id}`,
     });
   }

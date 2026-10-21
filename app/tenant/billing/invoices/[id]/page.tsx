@@ -11,6 +11,7 @@ import { createInvoicePayCheckoutSessionAction } from '@/app/tenant/billing/invo
 import { sendTenantInvoiceEmailAction } from '@/app/tenant/billing/invoiceEmailActions';
 import { refundStripeInvoicePaymentAction } from '@/app/tenant/billing/invoiceRefundActions';
 import { RecordInvoicePaymentForm } from './RecordInvoicePaymentForm';
+import { loadInvoicePropertyLabels } from '@/lib/billing/invoiceProperty';
 import { formatUsdFromCents } from '@/lib/format/money';
 import { isResendConfigured } from '@/lib/email/resend';
 import { getInvoiceRelatedRecords } from '@/lib/tenant/relatedRecords';
@@ -74,10 +75,15 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
   const connectComplete = tenantRow?.stripe_connect_status === 'complete';
 
   const remaining = inv.amount_cents - inv.amount_paid_cents;
+  const propertyLabels = await loadInvoicePropertyLabels(db, membership.tenantId, [
+    inv.property_id,
+  ]);
+  const propertyLabel = inv.property_id ? (propertyLabels.get(inv.property_id) ?? '') : '';
   const relatedRecords = await getInvoiceRelatedRecords(db, membership.tenantId, {
     id: inv.id,
     customer_id: inv.customer_id,
     visit_id: inv.visit_id,
+    propertyLabel,
   });
 
   return (
@@ -210,6 +216,7 @@ export default async function TenantInvoiceDetailPage({ params, searchParams }: 
           <Card title="Summary">
             <KeyValueList
               items={[
+                ...(propertyLabel ? [{ key: 'Property', value: propertyLabel }] : []),
                 { key: 'Total', value: formatUsdFromCents(inv.amount_cents) },
                 { key: 'Paid', value: formatUsdFromCents(inv.amount_paid_cents) },
                 { key: 'Balance', value: formatUsdFromCents(Math.max(0, remaining)) },
