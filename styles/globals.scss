@@ -8,6 +8,7 @@
 // =============================================================================
 
 @use 'theme';
+@use 'mixins/focus' as f;
 
 *,
 *::before,
@@ -105,5 +106,68 @@ hr {
 
   &:focus {
     top: var(--space-4);
+  }
+}
+
+// Root 404. These rules live in the global sheet on purpose: a CSS module on
+// app/not-found.tsx is preloaded on every page and never applied unless the
+// request is actually a 404, which makes the browser warn about an unused preload.
+.not-found {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-7);
+}
+
+.not-found-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 40rem;
+}
+
+.not-found-eyebrow {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: var(--font-size-sm);
+}
+
+.not-found-title {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  color: var(--color-text);
+}
+
+.not-found-copy {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.not-found-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-on-brand);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+
+  @include f.focus-ring;
+
+  &:hover {
+    background-color: var(--color-brand-primary-hover);
+    border-color: var(--color-brand-primary-hover);
+    color: var(--color-text-on-brand);
+    text-decoration: none;
   }
 }
