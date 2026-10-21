@@ -22,7 +22,7 @@ Work to make Clean Scheduler feel less early-stage / “vibe coded” and more l
 
 - Quotes empty states and Pro report placeholders use `EmptyState`.
 - Admin dashboard CTA points to the SEO checklist (removed dead “status page” button).
-- Global 404 uses an SCSS module instead of inline styles.
+- Global 404 is styled from the global stylesheet, so its CSS is not preloaded as a separate unused file on every other page.
 
 ### Onboarding tone
 
