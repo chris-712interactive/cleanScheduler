@@ -20,6 +20,26 @@ export interface DashboardTodayQueueItem {
   tone: 'brand' | 'warn' | 'muted';
 }
 
+/**
+ * Today is a list of work still waiting. A day whose jobs are all finished
+ * stays off this list; the jobs chart already shows them as completed.
+ */
+export function todayJobsQueueItem(todaysJobs: {
+  count: number;
+  scheduledCount: number;
+  todayKey: string;
+}): DashboardTodayQueueItem | null {
+  if (todaysJobs.scheduledCount <= 0) return null;
+
+  return {
+    id: 'schedule',
+    label: `${todaysJobs.count} job${todaysJobs.count === 1 ? '' : 's'} today`,
+    detail: `${todaysJobs.scheduledCount} still scheduled`,
+    href: `/schedule?date=${todaysJobs.todayKey}&view=day`,
+    tone: 'brand',
+  };
+}
+
 export interface DashboardTodayQueue {
   pendingReschedules: number;
   todaysJobCount: number;
@@ -136,18 +156,8 @@ export async function getDashboardTodayQueue(
     });
   }
 
-  if (todaysJobs.count > 0) {
-    items.push({
-      id: 'schedule',
-      label: `${todaysJobs.count} job${todaysJobs.count === 1 ? '' : 's'} today`,
-      detail:
-        todaysJobs.scheduledCount > 0
-          ? `${todaysJobs.scheduledCount} still scheduled`
-          : 'Review the day board',
-      href: `/schedule?date=${todaysJobs.todayKey}&view=day`,
-      tone: 'brand',
-    });
-  }
+  const scheduleItem = todayJobsQueueItem(todaysJobs);
+  if (scheduleItem) items.push(scheduleItem);
 
   if (outstanding.pastDueCount > 0) {
     items.push({
