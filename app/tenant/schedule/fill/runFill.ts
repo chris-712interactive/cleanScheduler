@@ -4,6 +4,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import type { TenantRole } from '@/lib/auth/types';
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
+import { ensurePropertyGeocoded } from '@/lib/geo/ensurePropertyGeocoded';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
 import {
@@ -649,6 +650,7 @@ export async function runFillSchedule(
   });
 
   const runId = crypto.randomUUID();
+  const propertyIds = new Set<string>();
   const created: Array<{
     visitId: string;
     dateKey: string;
@@ -698,6 +700,7 @@ export async function runFillSchedule(
       emit({ type: 'miss', label, reason: 'The visit time could not be placed on the calendar.' });
       continue;
     }
+    if (propertyId) propertyIds.add(propertyId);
     const inserted = await admin
       .from('tenant_scheduled_visits')
       .insert({
@@ -751,6 +754,18 @@ export async function runFillSchedule(
 
   const createdIds = new Set(created.map((row) => row.visitId));
   const createdDates = [...new Set(created.map((row) => row.dateKey))];
+  if (propertyIds.size > 0) {
+    emit({
+      type: 'status',
+      phase: 'assigning',
+      message: 'Looking up map points for the service locations.',
+    });
+    await Promise.all(
+      [...propertyIds].map((propertyId) =>
+        ensurePropertyGeocoded(admin, membership.tenantId, propertyId),
+      ),
+    );
+  }
   const staffedIds = new Set<string>();
   let assignDone = 0;
 

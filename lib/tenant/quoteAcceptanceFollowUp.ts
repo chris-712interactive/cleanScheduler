@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { ensurePropertyGeocoded } from '@/lib/geo/ensurePropertyGeocoded';
 import type { TenantOperationalSettingsSnapshot } from '@/lib/tenant/loadTenantOperationalSettings';
 import { inferInvoicePropertyId } from '@/lib/billing/invoiceProperty';
 import { ensureAutoScheduledVisitForAcceptedQuote } from '@/lib/tenant/quoteAutoSchedule';
@@ -36,6 +37,8 @@ export async function applyQuoteAcceptanceFollowUp(
 ): Promise<QuoteAcceptanceFollowUpResult> {
   const result: QuoteAcceptanceFollowUpResult = {};
 
+  await geocodeAcceptedQuoteProperty(admin, input.tenantId, input.quoteId);
+
   if (input.ops.invoiceExpectation === 'prepay') {
     const invoiceResult = await ensurePrepayInvoiceForQuote(admin, input);
     if (invoiceResult.invoiceId) {
@@ -65,6 +68,22 @@ export async function applyQuoteAcceptanceFollowUp(
   }
 
   return result;
+}
+
+/** Catches a location saved before quote create started geocoding, or a lookup that missed. */
+async function geocodeAcceptedQuoteProperty(
+  admin: Admin,
+  tenantId: string,
+  quoteId: string,
+): Promise<void> {
+  const { data: quote } = await admin
+    .from('tenant_quotes')
+    .select('property_id')
+    .eq('id', quoteId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (!quote?.property_id) return;
+  await ensurePropertyGeocoded(admin, tenantId, quote.property_id);
 }
 
 async function ensurePrepayInvoiceForQuote(
