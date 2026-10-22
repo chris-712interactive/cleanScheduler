@@ -460,6 +460,45 @@ function memberCanHost(
   return { ok: true, travel, prev, reason: null };
 }
 
+/**
+ * The first open minute is the lead's arrival. A partner who lives a little
+ * farther away misses that minute and the whole pair is dropped. Start when
+ * the last person on the crew can arrive.
+ */
+function delaySlotUntilTeamCanArrive(
+  job: OptimizerJob,
+  team: OptimizerCrewMember[],
+  slot: { startMin: number; endMin: number; travel: number | null; prev: PlacedBlock | null },
+  assigned: Map<string, PlacedBlock[]>,
+  policy: ScheduleOptimizerPolicy,
+): { startMin: number; endMin: number; travel: number | null; prev: PlacedBlock | null } {
+  let startMin = slot.startMin;
+  for (let pass = 0; pass < team.length + 1; pass += 1) {
+    let floor = startMin;
+    for (const member of team) {
+      const blocks = factorIsActive(policy, 'no_double_booking')
+        ? memberJobBlocks(member, assigned.get(member.userId) ?? [])
+        : [];
+      const prev = previousBlock(blocks, startMin + 0.001);
+      const from = prev ? blockHint(prev) : homeHint(member);
+      const travel =
+        approximateTravelMinutes(from, jobHint(job), policy.assumptions.travelSpeedMph) ?? 0;
+      const departFloor = prev
+        ? prev.endMin + policy.assumptions.bufferMinutes + travel
+        : member.availableStartMin + travel;
+      floor = Math.max(floor, departFloor);
+    }
+    if (floor <= startMin + 0.001) break;
+    startMin = floor;
+  }
+  return {
+    startMin,
+    endMin: startMin + job.durationMinutes,
+    travel: slot.travel,
+    prev: slot.prev,
+  };
+}
+
 function loadMinutes(member: OptimizerCrewMember, extra: PlacedBlock[]): number {
   const jobs = memberJobBlocks(member, extra);
   return jobs.reduce((sum, block) => sum + (block.endMin - block.startMin), 0);
@@ -1172,7 +1211,8 @@ export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
         continue;
       }
       for (const slot of slots) {
-        const scored = scoreSlot(job, team, slot, assigned, policy, busiestLoadMinutes);
+        const ready = delaySlotUntilTeamCanArrive(job, team, slot, assigned, policy);
+        const scored = scoreSlot(job, team, ready, assigned, policy, busiestLoadMinutes);
         if ('failure' in scored) {
           failures.add(scored.failure);
           continue;
@@ -1193,10 +1233,12 @@ export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
       continue;
     }
 
+    const startMin = Math.round(best.startMin);
+    const endMin = startMin + Math.round(job.durationMinutes);
     const block: PlacedBlock = {
       jobId: job.id,
-      startMin: best.startMin,
-      endMin: best.endMin,
+      startMin,
+      endMin,
       location: job.location,
       zoneId: job.zoneId,
       city: job.city,
@@ -1212,8 +1254,8 @@ export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
     assignments.push({
       jobId: job.id,
       userIds: best.team.map((member) => member.userId),
-      startMin: best.startMin,
-      endMin: best.endMin,
+      startMin,
+      endMin,
       travelMinutesBefore: Math.round(best.travelMinutesBefore * 10) / 10,
       score: Math.round(best.score * 1000) / 1000,
       contributions: best.contributions,

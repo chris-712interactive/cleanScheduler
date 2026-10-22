@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { computeNextWorkDayVisitWindow } from '@/lib/schedule/nextWorkDayVisitWindow';
+import {
+  computeNextWorkDayVisitWindow,
+  localWallClockInTimeZoneToUtcIso,
+} from '@/lib/schedule/nextWorkDayVisitWindow';
 
 describe('computeNextWorkDayVisitWindow', () => {
   it('schedules on the next configured work day at tenant hours', () => {
@@ -34,5 +37,19 @@ describe('computeNextWorkDayVisitWindow', () => {
     }).format(new Date(window.startsAt));
 
     expect(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']).toContain(weekday);
+  });
+});
+
+describe('localWallClockInTimeZoneToUtcIso', () => {
+  it('saves a fractional drive time as the nearest minute', () => {
+    const startsAt = localWallClockInTimeZoneToUtcIso('America/New_York', {
+      year: 2026,
+      month: 10,
+      day: 22,
+      hour: 8,
+      minute: 18.4,
+    });
+
+    expect(startsAt).toBe('2026-10-22T12:18:00.000Z');
   });
 });

@@ -61,6 +61,11 @@ export function localWallClockInTimeZoneToUtcIso(
 ): string | null {
   const tz = safeTimeZone(timeZone);
   const targetDate = `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+  // A straight-line drive is rarely a whole minute. The clock lookup compares
+  // integers, so 8:18.4 never matches 8:18 and the visit is left unassigned.
+  const totalMinutes = Math.round(parts.hour * 60 + parts.minute);
+  const hourWanted = Math.floor(totalMinutes / 60);
+  const minuteWanted = totalMinutes % 60;
 
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone: tz,
@@ -83,8 +88,8 @@ export function localWallClockInTimeZoneToUtcIso(
     const minute = Number(read('minute'));
     if (
       dateKey === targetDate &&
-      hour === parts.hour &&
-      minute === parts.minute &&
+      hour === hourWanted &&
+      minute === minuteWanted &&
       Number.isFinite(hour) &&
       Number.isFinite(minute)
     ) {
