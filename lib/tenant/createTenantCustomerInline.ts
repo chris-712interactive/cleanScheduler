@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { geocodeColumnsForAddress } from '@/lib/geo/ensurePropertyGeocoded';
 import type { Database } from '@/lib/supabase/database.types';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
@@ -133,6 +134,12 @@ export async function createTenantCustomerInlineForQuote(options: {
     return { ok: false, error: profileInsert.error.message };
   }
 
+  const propertyGeocode = await geocodeColumnsForAddress({
+    line1: options.property?.address_line1,
+    city: options.property?.city,
+    state: options.property?.state,
+    postalCode: options.property?.postal_code,
+  });
   const propertyInsert = await options.admin
     .from('tenant_customer_properties')
     .insert({
@@ -145,6 +152,9 @@ export async function createTenantCustomerInlineForQuote(options: {
       city: options.property?.city?.trim() || null,
       state: options.property?.state?.trim() || null,
       postal_code: options.property?.postal_code?.trim() || null,
+      latitude: propertyGeocode.latitude,
+      longitude: propertyGeocode.longitude,
+      geocode_reason: propertyGeocode.geocode_reason,
       site_notes: options.property?.site_notes?.trim() || null,
       bedrooms: options.property?.bedrooms ?? null,
       bathrooms: options.property?.bathrooms ?? null,
@@ -205,6 +215,12 @@ export async function createTenantPropertyInlineForQuote(options: {
   const label =
     options.label?.trim() || line1 || (isFirst ? 'Primary service location' : 'Service location');
 
+  const propertyGeocode = await geocodeColumnsForAddress({
+    line1,
+    city: options.property.city,
+    state: options.property.state,
+    postalCode: options.property.postal_code,
+  });
   const propertyInsert = await options.admin
     .from('tenant_customer_properties')
     .insert({
@@ -217,6 +233,9 @@ export async function createTenantPropertyInlineForQuote(options: {
       city: options.property.city?.trim() || null,
       state: options.property.state?.trim() || null,
       postal_code: options.property.postal_code?.trim() || null,
+      latitude: propertyGeocode.latitude,
+      longitude: propertyGeocode.longitude,
+      geocode_reason: propertyGeocode.geocode_reason,
       site_notes: options.property.site_notes?.trim() || null,
       bedrooms: options.property.bedrooms ?? null,
       bathrooms: options.property.bathrooms ?? null,
