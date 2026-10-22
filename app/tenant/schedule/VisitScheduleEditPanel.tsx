@@ -289,8 +289,8 @@ export function VisitScheduleEditPanel({
           </p>
           <p className={styles.visitRescheduleHint} title={durationSourceLabel}>
             {isConsultation
-              ? `${durationSourceLabel} · end time auto-fills from start`
-              : `${durationHours} hr job · end time auto-fills from start`}
+              ? `${durationSourceLabel}. The end time updates when you change the start.`
+              : `${durationHours}-hour job. The end time updates when you change the start.`}
           </p>
         </div>
       </div>
@@ -409,7 +409,7 @@ export function VisitScheduleEditPanel({
             <input type="hidden" name="confirm_unavailable" value="true" />
           ) : null}
 
-          <h3 className={styles.visitScheduleSectionTitle}>
+          <h3 id="visit-crew-heading" className={styles.visitScheduleSectionTitle}>
             {isConsultation ? 'Consultant' : 'Crew'}
           </h3>
 
@@ -435,8 +435,8 @@ export function VisitScheduleEditPanel({
             onConfirmChange={setCrewOverlapConfirm}
           />
 
-          <fieldset className={`${styles.crewFieldset} ${styles.crewFieldsetCompact}`}>
-            <legend className={styles.crewLegend}>{isConsultation ? 'Consultant' : 'Crew'}</legend>
+          <fieldset className={styles.crewFieldset} aria-labelledby="visit-crew-heading">
+            <legend className={styles.srOnly}>{isConsultation ? 'Consultant' : 'Crew'}</legend>
             <input
               className={styles.crewSearch}
               type="search"
@@ -465,7 +465,7 @@ export function VisitScheduleEditPanel({
                           checked={checked}
                           onChange={(ev) => toggleAssignee(e.id, ev.target.checked)}
                         />
-                        <span>{e.label}</span>
+                        <span className={styles.crewName}>{e.label}</span>
                         {availability ? (
                           <span
                             className={
