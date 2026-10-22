@@ -116,8 +116,9 @@ function experienceLevel(raw: string | null | undefined): ExperienceLevel {
 }
 
 function formatMinutes(minutes: number): string {
-  const hour24 = Math.floor(minutes / 60) % 24;
-  const minute = minutes % 60;
+  const rounded = Math.round(minutes);
+  const hour24 = Math.floor(rounded / 60) % 24;
+  const minute = rounded % 60;
   const suffix = hour24 >= 12 ? 'PM' : 'AM';
   const hour = hour24 % 12 || 12;
   return `${hour}:${String(minute).padStart(2, '0')} ${suffix}`;

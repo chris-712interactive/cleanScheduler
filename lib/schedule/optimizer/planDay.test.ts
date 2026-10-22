@@ -452,6 +452,50 @@ describe('planOptimizedDay', () => {
     expect(plan.assignments[0]?.shortStaffed).toBe(true);
   });
 
+  it('assigns two nearby cleaners at a whole minute and leaves a far cleaner off', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [
+        crew({
+          userId: 'amanda',
+          home: { lat: 26.64, lng: -81.87 },
+          homeCity: 'Fort Myers',
+          homeState: 'FL',
+        }),
+        crew({
+          userId: 'employee5',
+          home: { lat: 26.62, lng: -81.84 },
+          homeCity: 'Fort Myers',
+          homeState: 'FL',
+        }),
+        crew({
+          userId: 'nc',
+          home: { lat: 35.23, lng: -80.84 },
+          homeCity: 'Charlotte',
+          homeState: 'NC',
+        }),
+      ],
+      jobs: [
+        job({
+          id: 'initial',
+          durationMinutes: 120,
+          requiredCrewSize: 2,
+          location: { lat: 26.6406, lng: -81.8723 },
+          city: 'Fort Myers',
+          state: 'FL',
+          postalCode: '33913',
+          placedStartMin: 8 * 60,
+        }),
+      ],
+    });
+
+    expect(plan.unassigned).toEqual([]);
+    expect(plan.assignments[0]?.userIds.slice().sort()).toEqual(['amanda', 'employee5']);
+    expect(Number.isInteger(plan.assignments[0]?.startMin)).toBe(true);
+    expect(Number.isInteger(plan.assignments[0]?.endMin)).toBe(true);
+    expect(plan.assignments[0]?.endMin).toBe((plan.assignments[0]?.startMin ?? 0) + 120);
+  });
+
   it('leaves a job open when every cleaner is too far', () => {
     const plan = planOptimizedDay({
       policy: defaultScheduleOptimizerPolicy(),
