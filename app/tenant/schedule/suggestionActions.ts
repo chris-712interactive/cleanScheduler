@@ -66,6 +66,14 @@ export async function applyDaySuggestionAction(
   });
   if (!assigned.ok) return { error: assigned.error };
 
+  if (String(formData.get('short_staffed') ?? '') === '1') {
+    await admin
+      .from('tenant_scheduled_visits')
+      .update({ staffing_status: 'needs_staffing' })
+      .eq('id', visitId)
+      .eq('tenant_id', membership.tenantId);
+  }
+
   revalidatePath('/tenant/schedule', 'page');
   revalidatePath(`/tenant/schedule/${visitId}`, 'page');
   return { success: true };

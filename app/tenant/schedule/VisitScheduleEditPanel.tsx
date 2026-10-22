@@ -417,7 +417,7 @@ export function VisitScheduleEditPanel({
           !crewConfirmUnavailable &&
           crewConflicts.length === 0 ? (
             <div className={styles.confirmBox} role="status">
-              <p>Some selected crew are unavailable at this time.</p>
+              <p>Some selected crew cannot take this visit.</p>
               <button
                 type="button"
                 className={styles.confirmBtn}

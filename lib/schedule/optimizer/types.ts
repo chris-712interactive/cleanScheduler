@@ -146,6 +146,8 @@ export type PlannedAssignment = {
   /** Weighted soft score from 0 to 1. Hard failures never produce an assignment. */
   score: number;
   contributions: FactorContribution[];
+  /** True when fewer people can reach the job than the visit's crew size. */
+  shortStaffed?: boolean;
 };
 
 export type UnassignedJob = {

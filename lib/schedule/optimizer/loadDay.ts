@@ -46,6 +46,7 @@ export type DaySchedulingSuggestion = {
   userIds: string[];
   crewNames: string[];
   reasons: string[];
+  shortStaffed: boolean;
 };
 
 export type DaySchedulingGap = {
@@ -531,6 +532,7 @@ export async function loadDaySchedulingSuggestions(
       reasons: topContributions(assignment, 3).map(
         (entry) => `${factorLabel(entry.factorId)}: ${entry.note}`,
       ),
+      shortStaffed: assignment.shortStaffed === true,
     };
   });
 

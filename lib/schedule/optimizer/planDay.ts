@@ -2,6 +2,7 @@ import { scheduleFactorDefinition, type ScheduleFactorId } from '@/lib/schedule/
 import {
   approximateTravelMinutes,
   clamp01,
+  isTooFarFromLocation,
   placeIsComparable,
   type PlaceHint,
 } from '@/lib/schedule/optimizer/geo';
@@ -366,6 +367,19 @@ function homeHint(member: OptimizerCrewMember): PlaceHint {
   };
 }
 
+function cannotReachJob(
+  member: OptimizerCrewMember,
+  job: OptimizerJob,
+  policy: ScheduleOptimizerPolicy,
+): boolean {
+  const minutes = approximateTravelMinutes(
+    homeHint(member),
+    jobHint(job),
+    policy.assumptions.travelSpeedMph,
+  );
+  return isTooFarFromLocation(minutes);
+}
+
 function jobHint(job: OptimizerJob): PlaceHint {
   return {
     point: job.location,
@@ -587,7 +601,15 @@ function evaluateFactors(ctx: ScoreContext): {
     'Crew can work this property type.',
   );
 
-  consider('crew_size', 1, null, 'Crew is large enough.');
+  const neededCrew = requiredTeamSize(job);
+  consider(
+    'crew_size',
+    1,
+    null,
+    team.length >= neededCrew
+      ? 'Crew is large enough.'
+      : `Only ${team.length} of ${neededCrew} cleaners can reach this location.`,
+  );
   consider('crew_availability', 1, null, 'Inside working hours.');
   consider('time_off', 1, null, 'Clear of time off.');
   consider('no_double_booking', 1, null, 'No overlapping job.');
@@ -1114,15 +1136,21 @@ export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
     }
 
     const { people, failure } = eligiblePeople(job, input.crew, policy);
-    const teams = candidateTeams(job, people);
+    const reachable = people.filter((person) => !cannotReachJob(person, job, policy));
+    let teams = candidateTeams(job, reachable);
+    if (teams.length === 0 && reachable.length > 0) {
+      teams = [reachable.slice(0, requiredTeamSize(job))];
+    }
     if (teams.length === 0) {
       unassigned.push({
         jobId: job.id,
         reasons: [
-          failure ??
-            (isHard(policy, 'required_cleaners') && job.requiredUserIds.length > 0
-              ? 'A required cleaner is not available.'
-              : 'Not enough eligible people to fill the crew.'),
+          people.length > 0 && reachable.length === 0
+            ? 'No cleaner can reach this location in time.'
+            : (failure ??
+              (isHard(policy, 'required_cleaners') && job.requiredUserIds.length > 0
+                ? 'A required cleaner is not available.'
+                : 'Not enough eligible people to fill the crew.')),
         ],
       });
       continue;
@@ -1189,6 +1217,7 @@ export function planOptimizedDay(input: PlanDayInput): OptimizedDayPlan {
       travelMinutesBefore: Math.round(best.travelMinutesBefore * 10) / 10,
       score: Math.round(best.score * 1000) / 1000,
       contributions: best.contributions,
+      shortStaffed: best.team.length < requiredTeamSize(job),
     });
   }
 

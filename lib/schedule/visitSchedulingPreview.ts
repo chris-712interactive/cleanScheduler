@@ -7,6 +7,8 @@ import {
   type UnavailabilityReason,
 } from '@/lib/schedule/employeeAvailability';
 import { findStaffedVisitWindows } from '@/lib/schedule/findStaffedVisitWindow';
+import { tooFarUserIdsForVisit } from '@/lib/schedule/crewReach';
+import { TOO_FAR_LOCATION_REASON } from '@/lib/schedule/optimizer/geo';
 import {
   findAssigneeScheduleConflicts,
   type AssigneeConflictInfo,
@@ -84,18 +86,15 @@ export async function buildVisitSchedulingPreview(
     .eq('is_active', true);
 
   const memberUserIds = (members ?? []).map((m) => m.user_id);
-  const previewUserIds =
-    assigneeUserIds.length > 0
-      ? assigneeUserIds.filter((id) => memberUserIds.includes(id))
-      : memberUserIds;
 
   const availability = await findAvailableEmployees(admin, {
     tenantId,
     startsAt,
     endsAt,
-    userIds: previewUserIds,
+    userIds: memberUserIds,
     excludeVisitId: visitId,
   });
+  const tooFar = await tooFarUserIdsForVisit(admin, tenantId, visitId, memberUserIds);
 
   const profileIds = availability.map((row) => row.userId);
   const { data: profiles } =
@@ -107,12 +106,16 @@ export async function buildVisitSchedulingPreview(
     (profiles ?? []).map((p) => [p.user_id, p.display_name?.trim() || 'Member']),
   );
 
-  const crew: VisitSchedulingCrewRow[] = availability.map((row) => ({
-    userId: row.userId,
-    name: firstNameFromDisplayName(nameByUser.get(row.userId) || '') || 'Member',
-    available: row.available,
-    reasons: reasonLabels(row.reasons),
-  }));
+  const crew: VisitSchedulingCrewRow[] = availability.map((row) => {
+    const tooFarForVisit = tooFar.has(row.userId);
+    const reasons = reasonLabels(row.reasons);
+    return {
+      userId: row.userId,
+      name: firstNameFromDisplayName(nameByUser.get(row.userId) || '') || 'Member',
+      available: row.available && !tooFarForVisit,
+      reasons: tooFarForVisit ? [...reasons, TOO_FAR_LOCATION_REASON] : reasons,
+    };
+  });
 
   const conflicts =
     assigneeUserIds.length > 0
@@ -127,7 +130,7 @@ export async function buildVisitSchedulingPreview(
       : [];
 
   const assignedUnavailable = assigneeUserIds.some((id) => {
-    const row = availability.find((entry) => entry.userId === id);
+    const row = crew.find((entry) => entry.userId === id);
     return row ? !row.available : true;
   });
 

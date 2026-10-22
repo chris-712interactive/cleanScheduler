@@ -3,7 +3,9 @@ import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
+import { tooFarUserIdsForVisit } from '@/lib/schedule/crewReach';
 import { findAvailableEmployees, UNAVAILABILITY_LABEL } from '@/lib/schedule/employeeAvailability';
+import { TOO_FAR_LOCATION_REASON } from '@/lib/schedule/optimizer/geo';
 import { firstNameFromDisplayName } from '@/lib/profile/displayName';
 
 export async function GET(request: Request) {
@@ -45,6 +47,9 @@ export async function GET(request: Request) {
     userIds,
     excludeVisitId: visitId,
   });
+  const tooFar = visitId
+    ? await tooFarUserIdsForVisit(admin, membership.tenantId, visitId, userIds)
+    : new Set<string>();
 
   const profileIds = results.map((r) => r.userId);
   const { data: profiles } =
@@ -57,11 +62,15 @@ export async function GET(request: Request) {
   );
 
   return NextResponse.json({
-    crew: results.map((row) => ({
-      userId: row.userId,
-      name: firstNameFromDisplayName(nameByUser.get(row.userId) || '') || 'Member',
-      available: row.available,
-      reasons: row.reasons.map((reason) => UNAVAILABILITY_LABEL[reason]),
-    })),
+    crew: results.map((row) => {
+      const reasons = row.reasons.map((reason) => UNAVAILABILITY_LABEL[reason]);
+      const tooFarForVisit = tooFar.has(row.userId);
+      return {
+        userId: row.userId,
+        name: firstNameFromDisplayName(nameByUser.get(row.userId) || '') || 'Member',
+        available: row.available && !tooFarForVisit,
+        reasons: tooFarForVisit ? [...reasons, TOO_FAR_LOCATION_REASON] : reasons,
+      };
+    }),
   });
 }
