@@ -27,6 +27,7 @@ import { resolveCustomerConsultationStatus } from '@/lib/tenant/customerConsulta
 import { QuoteEditForm } from '../QuoteEditForm';
 import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import { QuoteAutoScheduleBanner } from '../QuoteAutoScheduleBanner';
+import { QuotePipelineLiveSync } from '../QuotePipelineLiveSync';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
 import { parseQuoteScopeSnapshot } from '@/lib/tenant/quoteStructuredFields';
 import {
@@ -351,6 +352,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   return (
     <>
+      <QuotePipelineLiveSync tenantId={membership.tenantId} quoteId={row.id} />
       <PageHeader
         title={row.title}
         description={`${QUOTE_STATUS_LABEL[row.status]} · ${formatQuoteMoney(row.amount_cents, row.currency)} · Version ${row.version_number}`}

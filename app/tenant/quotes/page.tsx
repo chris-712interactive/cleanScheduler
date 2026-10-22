@@ -14,6 +14,7 @@ import { loadTenantQuotePipelineStages } from '@/lib/tenant/quotePipelineStages'
 import type { QuoteListEmbedRow } from '@/lib/tenant/quoteEmbedTypes';
 import nextDynamic from 'next/dynamic';
 import { PortalRouteLoading } from '@/components/portal/PortalRouteLoading';
+import { QuotePipelineLiveSync } from './QuotePipelineLiveSync';
 import styles from './quotes.module.scss';
 
 const QuotesBoard = nextDynamic(
@@ -132,7 +133,7 @@ export default async function TenantQuotesPage({
         titleHint={
           view === 'archived'
             ? 'Accepted quotes move here after they are attached to scheduled work.'
-            : 'Drag cards between columns on desktop, or use Move to on smaller screens.'
+            : 'Drag cards between columns on desktop, or use Move to on smaller screens. When a customer accepts or declines, the card moves on its own.'
         }
         actions={
           <div className={styles.quoteHeaderActions}>
@@ -147,6 +148,7 @@ export default async function TenantQuotesPage({
       />
 
       <Stack gap={6}>
+        <QuotePipelineLiveSync tenantId={membership.tenantId} />
         <nav className={styles.viewTabs} aria-label="Quote views">
           <Link
             href={activeTabHref}
@@ -223,6 +225,7 @@ export default async function TenantQuotesPage({
               </p>
             ) : null}
             <QuotesBoard
+              tenantId={membership.tenantId}
               tenantSlug={membership.tenantSlug}
               quotes={activeQuotes}
               stages={pipelineStages}

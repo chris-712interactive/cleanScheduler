@@ -22,6 +22,7 @@ import type { QuoteStatus } from '@/lib/tenant/quoteLabels';
 import type { QuotePipelineStage } from '@/lib/tenant/quotePipelineStages';
 import { isAcceptedSystemStage, stageDroppableId } from '@/lib/tenant/quotePipelineStages';
 import { moveTenantQuoteToStage } from './actions';
+import { useQuoteDecisionRealtime } from './useQuoteDecisionRealtime';
 import {
   PORTAL_INTERACTION_FLOWS,
   endPortalInteraction,
@@ -307,11 +308,13 @@ function MobileQuoteCard({
 }
 
 export function QuotesBoard({
+  tenantId,
   tenantSlug,
   quotes,
   stages,
   needsSchedulingQuoteIds,
 }: {
+  tenantId: string;
   tenantSlug: string;
   quotes: QuoteListEmbedRow[];
   stages: QuotePipelineStage[];
@@ -321,6 +324,25 @@ export function QuotesBoard({
   useEffect(() => {
     setLocalQuotes(quotes);
   }, [quotes]);
+
+  useQuoteDecisionRealtime(
+    tenantId,
+    (row) => {
+      setLocalQuotes((current) =>
+        current.map((quote) =>
+          quote.id === row.id
+            ? {
+                ...quote,
+                status: row.status,
+                pipeline_stage_id: row.pipeline_stage_id ?? quote.pipeline_stage_id,
+                is_locked: row.is_locked,
+              }
+            : quote,
+        ),
+      );
+    },
+    'board',
+  );
 
   const [isNarrow, setIsNarrow] = useState(false);
   const [narrowReady, setNarrowReady] = useState(false);

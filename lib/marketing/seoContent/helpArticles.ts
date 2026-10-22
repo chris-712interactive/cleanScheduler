@@ -31,12 +31,13 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
       {
         title: 'Build the quote in Clean Scheduler',
         paragraphs: [
-          'Create a quote with line items your customer can understand. Send it from the app, track status on the pipeline board, and schedule the first visit when they accept.',
+          'Create a quote with line items your customer can understand. Send it from the app. The pipeline board moves the card into Accepted or Declined as soon as the customer responds, and you can schedule the first visit from an accepted quote.',
         ],
         bullets: [
           'Add line items with descriptions and quantities',
           'Pick an imported customer, or one who has finished a consultation form',
           'Move quotes from draft → sent → accepted',
+          'Leave the quotes board open — accepted and declined cards move on their own',
           'Prefill the first visit from an accepted quote',
         ],
         tip: 'Keep a few quote templates for your most common packages (standard clean, deep clean, move-out) to speed up estimates.',
