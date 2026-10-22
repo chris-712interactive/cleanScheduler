@@ -842,6 +842,13 @@ export async function runFillSchedule(
           })
         ).ok;
       if (!crewOk) continue;
+      if (suggestion.shortStaffed) {
+        await admin
+          .from('tenant_scheduled_visits')
+          .update({ staffing_status: 'needs_staffing' })
+          .eq('id', suggestion.visitId)
+          .eq('tenant_id', membership.tenantId);
+      }
       staffedIds.add(suggestion.visitId);
       decided.add(suggestion.visitId);
       emit({

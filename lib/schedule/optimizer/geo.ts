@@ -112,6 +112,15 @@ export function placeIsComparable(place: PlaceHint | null | undefined): boolean 
  * the same state is a longer hop, and a different state is a multi-hour hop.
  * Returns null when the two places cannot be compared.
  */
+/** A different state is estimated at this many minutes. Longer than this is too far to staff. */
+export const TOO_FAR_DRIVE_MINUTES = 180;
+
+export const TOO_FAR_LOCATION_REASON = 'Too far from this location';
+
+export function isTooFarFromLocation(minutes: number | null): boolean {
+  return minutes != null && minutes >= TOO_FAR_DRIVE_MINUTES;
+}
+
 export function approximateTravelMinutes(
   from: PlaceHint | null,
   to: PlaceHint | null,

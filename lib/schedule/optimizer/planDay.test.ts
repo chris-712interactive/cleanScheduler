@@ -411,6 +411,72 @@ describe('planOptimizedDay', () => {
     expect(plan.assignments[0]?.userIds).toEqual(['alex', 'blair']);
   });
 
+  it('assigns the local cleaner when the other people live several states away', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [
+        crew({
+          userId: 'local',
+          home: { lat: 27.34, lng: -82.53 },
+          homeCity: 'Sarasota',
+          homeState: 'FL',
+        }),
+        crew({
+          userId: 'nc-a',
+          home: { lat: 35.23, lng: -80.84 },
+          homeCity: 'Charlotte',
+          homeState: 'NC',
+        }),
+        crew({
+          userId: 'nc-b',
+          home: { lat: 35.78, lng: -78.64 },
+          homeCity: 'Raleigh',
+          homeState: 'NC',
+        }),
+      ],
+      jobs: [
+        job({
+          id: 'deep-clean',
+          durationMinutes: 180,
+          requiredCrewSize: 2,
+          location: { lat: 27.33, lng: -82.54 },
+          city: 'Sarasota',
+          state: 'FL',
+          placedStartMin: 9 * 60,
+        }),
+      ],
+    });
+
+    expect(plan.unassigned).toEqual([]);
+    expect(plan.assignments[0]?.userIds).toEqual(['local']);
+    expect(plan.assignments[0]?.shortStaffed).toBe(true);
+  });
+
+  it('leaves a job open when every cleaner is too far', () => {
+    const plan = planOptimizedDay({
+      policy: defaultScheduleOptimizerPolicy(),
+      crew: [
+        crew({
+          userId: 'nc-a',
+          home: { lat: 35.23, lng: -80.84 },
+          homeCity: 'Charlotte',
+          homeState: 'NC',
+        }),
+      ],
+      jobs: [
+        job({
+          id: 'deep-clean',
+          location: { lat: 27.33, lng: -82.54 },
+          city: 'Sarasota',
+          state: 'FL',
+        }),
+      ],
+    });
+
+    expect(plan.assignments).toEqual([]);
+    expect(plan.unassigned[0]?.reasons[0]).toMatch(/reach this location/i);
+  });
+
   it('spreads equal jobs across the team when workload balance is the deciding factor', () => {
     const policy = withWeights(defaultScheduleOptimizerPolicy(), {
       workload_balance: { weight: 100 },

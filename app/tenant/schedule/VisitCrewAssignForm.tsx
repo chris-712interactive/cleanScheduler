@@ -68,6 +68,7 @@ export function VisitCrewAssignForm({
         const params = new URLSearchParams({
           starts_at: startsAtIso,
           ends_at: endsAtIso,
+          visit_id: visitId,
         });
         const res = await fetch(`/api/tenant/schedule/crew-availability?${params}`, {
           signal: controller.signal,
@@ -81,7 +82,7 @@ export function VisitCrewAssignForm({
     };
     void load();
     return () => controller.abort();
-  }, [startsAtIso, endsAtIso]);
+  }, [startsAtIso, endsAtIso, visitId]);
 
   const availabilityByUser = useMemo(
     () => new Map(crewAvailability.map((row) => [row.userId, row])),

@@ -104,6 +104,7 @@ function SuggestionRow({
         {suggestion.userIds.map((userId) => (
           <input key={userId} type="hidden" name="user_id" value={userId} />
         ))}
+        {suggestion.shortStaffed ? <input type="hidden" name="short_staffed" value="1" /> : null}
         <Button type="submit" variant="secondary" size="sm" disabled={pending || state.success}>
           {pending ? 'Applying…' : 'Apply'}
         </Button>

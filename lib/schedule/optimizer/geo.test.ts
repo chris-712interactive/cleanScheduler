@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { approximateTravelMinutes, normalizeUsState } from '@/lib/schedule/optimizer/geo';
+import {
+  approximateTravelMinutes,
+  isTooFarFromLocation,
+  normalizeUsState,
+} from '@/lib/schedule/optimizer/geo';
 
 describe('approximateTravelMinutes', () => {
   it('treats the same town as a short hop and another state as a long one', () => {
@@ -9,6 +13,8 @@ describe('approximateTravelMinutes', () => {
 
     expect(approximateTravelMinutes(neighbor, job, 25)).toBe(15);
     expect(approximateTravelMinutes(remote, job, 25)).toBe(180);
+    expect(isTooFarFromLocation(approximateTravelMinutes(remote, job, 25))).toBe(true);
+    expect(isTooFarFromLocation(approximateTravelMinutes(neighbor, job, 25))).toBe(false);
   });
 
   it('reads full state names', () => {
