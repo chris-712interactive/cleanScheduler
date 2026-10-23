@@ -11,6 +11,13 @@ import {
 } from '@/lib/tenant/memberAvailabilityDays';
 import { canEditMemberAvailability } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
+import {
+  loadEmployeeHoursPolicy,
+  memberHoursSaveMode,
+  replacePendingHoursChange,
+  saveMemberAvailability,
+} from '@/lib/tenant/employeeHoursPolicy';
+import { notifyOfficeOfHoursChangeRequest } from '@/lib/email/timeOffNotifications';
 
 export interface MemberAvailabilityActionState {
   error?: string;
@@ -67,42 +74,52 @@ export async function updateMemberAvailabilityAction(
     if (validationError) return { error: validationError };
   }
 
-  const { error: profileError } = await admin.from('tenant_member_schedule_profiles').upsert(
-    {
-      tenant_id: membership.tenantId,
-      user_id: targetUserId,
-      use_tenant_default: useTenantDefault,
-    },
-    { onConflict: 'tenant_id,user_id' },
-  );
+  const hoursPolicy = await loadEmployeeHoursPolicy(admin, membership.tenantId);
+  const saveMode = memberHoursSaveMode({
+    actorRole: membership.role as TenantRole,
+    editingSelf: auth.user.id === targetUserId,
+    ...hoursPolicy,
+  });
 
-  if (profileError) return { error: profileError.message };
-
-  await admin
-    .from('tenant_member_availability_days')
-    .delete()
-    .eq('tenant_id', membership.tenantId)
-    .eq('user_id', targetUserId);
-
-  if (!useTenantDefault) {
-    const enabledDays = days.filter((day) => day.enabled);
-    if (enabledDays.length > 0) {
-      const { error: daysError } = await admin.from('tenant_member_availability_days').insert(
-        enabledDays.map((day) => ({
-          tenant_id: membership.tenantId,
-          user_id: targetUserId,
-          weekday: day.weekday,
-          starts_at: day.startsAt,
-          ends_at: day.endsAt,
-        })),
-      );
-      if (daysError) return { error: daysError.message };
-    }
+  if (saveMode === 'locked') {
+    return { error: 'An admin sets your hours.' };
   }
+
+  if (saveMode === 'pending') {
+    const pendingError = await replacePendingHoursChange(admin, membership.tenantId, targetUserId, {
+      useTenantDefault,
+      days,
+    });
+    if (pendingError) return { error: pendingError };
+
+    const notified = await notifyOfficeOfHoursChangeRequest(admin, {
+      tenantId: membership.tenantId,
+      requesterUserId: targetUserId,
+    });
+
+    revalidatePath(`/employees/${targetUserId}`);
+    revalidatePath('/settings/account');
+    revalidatePath('/schedule/hours-requests');
+    revalidatePath('/dashboard');
+
+    return {
+      success:
+        notified.emailed > 0
+          ? 'Hour change submitted. Your current hours stay in effect until an admin approves them. Owners and admins were emailed.'
+          : 'Hour change submitted. Your current hours stay in effect until an admin approves them.',
+    };
+  }
+
+  const saveError = await saveMemberAvailability(admin, membership.tenantId, targetUserId, {
+    useTenantDefault,
+    days,
+  });
+  if (saveError) return { error: saveError };
 
   revalidatePath(`/employees/${targetUserId}`);
   revalidatePath('/settings/account');
   revalidatePath('/schedule');
+  revalidatePath('/schedule/hours-requests');
 
   return {
     success: 'Work availability saved.',

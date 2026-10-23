@@ -295,6 +295,20 @@
   }
 }
 
+.hoursToggles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+
+  .notifyToggle {
+    justify-content: flex-start;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+  }
+}
+
 .notifyToggle {
   display: inline-flex;
   align-items: center;

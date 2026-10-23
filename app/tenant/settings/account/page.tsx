@@ -23,6 +23,11 @@ import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile'
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { canBeScheduledAsCrew, canSetCrewSchedulingLimits } from '@/lib/tenant/employeePermissions';
+import {
+  loadEmployeeHoursPolicy,
+  loadHoursChangeNotice,
+  memberHoursSaveMode,
+} from '@/lib/tenant/employeeHoursPolicy';
 import { OfficeScheduleEligibilityForm } from '@/app/tenant/employees/OfficeScheduleEligibilityForm';
 import { officeRoleCanOptOut, schedulingProfileScope } from '@/lib/schedule/scheduleEligibility';
 import {
@@ -170,6 +175,20 @@ export default async function TenantAccountSettingsPage({
     (isOfficeRole || (showScheduleDetails && memberProfile != null && tenantDefaults != null));
   const roleLabel = teamRoleLabel(membership.role as TenantRole);
   const showOwnSchedule = showScheduleDetails && memberProfile != null && tenantDefaults != null;
+  const hoursPolicy =
+    canSetScheduleAvailability && userId
+      ? await loadEmployeeHoursPolicy(admin, membership.tenantId)
+      : null;
+  const hoursSaveMode = memberHoursSaveMode({
+    actorRole: membership.role as TenantRole,
+    editingSelf: true,
+    employeesCanEditOwnHours: hoursPolicy?.employeesCanEditOwnHours ?? true,
+    employeeHoursRequireApproval: hoursPolicy?.employeeHoursRequireApproval ?? false,
+  });
+  const hoursChange =
+    canSetScheduleAvailability && userId
+      ? await loadHoursChangeNotice(admin, membership.tenantId, userId)
+      : null;
 
   if (isFieldEmployee) {
     return (
@@ -217,6 +236,8 @@ export default async function TenantAccountSettingsPage({
                 targetUserId={userId}
                 profile={memberProfile}
                 tenantDefaults={tenantDefaults}
+                saveMode={hoursSaveMode}
+                hoursChange={hoursChange}
               />
             ) : null}
 
@@ -453,6 +474,8 @@ export default async function TenantAccountSettingsPage({
                         targetUserId={userId}
                         profile={memberProfile}
                         tenantDefaults={tenantDefaults}
+                        saveMode={hoursSaveMode}
+                        hoursChange={hoursChange}
                       />
                       <AccountSchedulingProfile
                         tenantSlug={membership.tenantSlug}
