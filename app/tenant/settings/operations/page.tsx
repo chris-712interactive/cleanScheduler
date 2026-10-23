@@ -21,6 +21,7 @@ import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
 import { normalizeMessagingChannelsFromDb } from '@/lib/sms/sentMessagingChannels';
 import { DEFAULT_CONSULTATION_DURATION_MINUTES } from '@/lib/tenant/consultationDuration';
 import { OperationalSettingsForm } from '../OperationalSettingsForm';
+import { EmployeeHoursPolicyForm } from './EmployeeHoursPolicyForm';
 import styles from './operations-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,11 @@ export default async function TenantOperationsSettingsPage() {
   const onMyWayEmailEditable = isFeatureEnabled(plan, 'emailOnMyWay');
   const reviewRequestEmailEditable = isFeatureEnabled(plan, 'emailReviewRequest');
   const invoiceReminderSmsEditable = smsAllowed;
+  const { data: hoursPolicyRow } = await admin
+    .from('tenant_operational_settings')
+    .select('employees_can_edit_own_hours, employee_hours_require_approval')
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
 
   const supabase = createTenantPortalDbClient();
   const { data: opsRow } = await supabase
@@ -143,6 +149,13 @@ export default async function TenantOperationsSettingsPage() {
             description="Pro includes customer text alerts for quotes, visit reminders, and overdue invoices — 25,000 segments per month."
           />
         ) : null}
+
+        <EmployeeHoursPolicyForm
+          tenantSlug={membership.tenantSlug}
+          employeesCanEditOwnHours={hoursPolicyRow?.employees_can_edit_own_hours ?? true}
+          employeeHoursRequireApproval={hoursPolicyRow?.employee_hours_require_approval ?? false}
+          readOnly={!canEdit}
+        />
 
         <OperationalSettingsForm
           tenantSlug={membership.tenantSlug}

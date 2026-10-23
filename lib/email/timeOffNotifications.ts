@@ -200,6 +200,53 @@ export async function notifyOfficeOfTimeOffRequest(
   return { emailed: recipients.length };
 }
 
+export async function notifyOfficeOfHoursChangeRequest(
+  admin: Admin,
+  params: { tenantId: string; requesterUserId: string },
+): Promise<{ emailed: number }> {
+  if (!isResendConfigured()) return { emailed: 0 };
+
+  const [workspace, reviewers, fallbackEmails, memberName] = await Promise.all([
+    loadWorkspace(admin, params.tenantId),
+    loadReviewerContacts(admin, params.tenantId),
+    loadFallbackEmails(admin, params.tenantId),
+    loadMemberName(admin, params.requesterUserId),
+  ]);
+  if (!workspace) return { emailed: 0 };
+
+  const recipients = selectTimeOffNotifyEmails({
+    reviewers,
+    excludeUserId: params.requesterUserId,
+    fallbackEmails,
+  });
+  if (recipients.length === 0) return { emailed: 0 };
+
+  const reviewUrl = tenantWorkspaceUrl(workspace.slug, '/schedule/hours-requests');
+  const text = [
+    `${memberName} asked to change their weekly hours.`,
+    '',
+    'Current hours stay on the schedule until you approve the change.',
+    '',
+    `Review the request: ${reviewUrl}`,
+  ].join('\n');
+
+  const html = wrapTransactionalEmailHtml({
+    preheader: `${memberName} asked to change weekly hours`,
+    bodyHtml: `
+      <p><strong>${escapeHtml(memberName)}</strong> asked to change their weekly hours.</p>
+      <p>Current hours stay on the schedule until you approve the change.</p>
+      <p><a href="${escapeEmailAttr(reviewUrl)}" style="color:#2563eb;">Review hour changes</a></p>
+    `.trim(),
+  });
+
+  await sendToEach(recipients, {
+    subject: `${workspace.name}: hour change from ${memberName}`,
+    text,
+    html,
+  });
+  return { emailed: recipients.length };
+}
+
 export async function notifyOfficeOfTimeOffConflicts(
   admin: Admin,
   params: {

@@ -3,6 +3,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { getTenantOutstandingInvoicesSummary } from '@/lib/billing/outstandingInvoices';
 import { countPendingRescheduleRequests } from '@/lib/tenant/pendingRescheduleRequestCount';
 import { countPendingTimeOffRequests } from '@/lib/tenant/pendingTimeOffCount';
+import { countPendingHoursChanges } from '@/lib/tenant/employeeHoursPolicy';
 import { countScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
 import {
   countCustomersNeedingConsultationAction,
@@ -50,6 +51,7 @@ export interface DashboardTodayQueue {
   matchSuggestionCount: number;
   scheduleRenewalCount: number;
   pendingTimeOffCount: number;
+  pendingHoursChangeCount: number;
   scheduleIssueCount: number;
   consultationActionCount: number;
   items: DashboardTodayQueueItem[];
@@ -68,6 +70,7 @@ export async function getDashboardTodayQueue(
     matchSuggestionRes,
     scheduleRenewalCount,
     pendingTimeOffCount,
+    pendingHoursChangeCount,
     scheduleIssueCount,
     consultationActionCount,
     propertyRequestCount,
@@ -95,6 +98,7 @@ export async function getDashboardTodayQueue(
       .eq('status', 'suggested'),
     countScheduleRenewalReminders(db, tenantId),
     countPendingTimeOffRequests(db, tenantId),
+    countPendingHoursChanges(db, tenantId),
     countScheduleIssues(db, tenantId),
     countCustomersNeedingConsultationAction(db, tenantId),
     countPropertiesNeedingConsultation(db, tenantId),
@@ -122,6 +126,16 @@ export async function getDashboardTodayQueue(
       label: `${pendingTimeOffCount} time off request${pendingTimeOffCount === 1 ? '' : 's'}`,
       detail: 'Team members waiting on approval',
       href: '/schedule/time-off-requests',
+      tone: 'warn',
+    });
+  }
+
+  if (pendingHoursChangeCount > 0) {
+    items.push({
+      id: 'hours-changes',
+      label: `${pendingHoursChangeCount} hour change${pendingHoursChangeCount === 1 ? '' : 's'}`,
+      detail: 'Weekly hours waiting on approval',
+      href: '/schedule/hours-requests',
       tone: 'warn',
     });
   }
@@ -227,6 +241,7 @@ export async function getDashboardTodayQueue(
     matchSuggestionCount,
     scheduleRenewalCount,
     pendingTimeOffCount,
+    pendingHoursChangeCount,
     scheduleIssueCount,
     consultationActionCount,
     items,

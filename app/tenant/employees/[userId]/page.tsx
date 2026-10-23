@@ -21,6 +21,7 @@ import { officeRoleCanOptOut, schedulingProfileScope } from '@/lib/schedule/sche
 import { crewSchedulingProfileFromRow } from '@/lib/schedule/optimizer/crewProfile';
 import { calendarDateKeyInTimeZone } from '@/lib/datetime/tenantCalendarDay';
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
+import { loadHoursChangeNotice } from '@/lib/tenant/employeeHoursPolicy';
 import {
   buildEmployeeWeekDays,
   employeeWeekDateKeys,
@@ -134,6 +135,7 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
   const [
     { data: tenantRow },
     memberProfile,
+    hoursChange,
     { data: crewRow },
     { data: zones },
     { data: teammates },
@@ -146,6 +148,7 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
       .eq('id', membership.tenantId)
       .maybeSingle(),
     loadMemberScheduleProfile(admin, membership.tenantId, targetUserId),
+    loadHoursChangeNotice(admin, membership.tenantId, targetUserId),
     admin
       .from('tenant_member_scheduling_profiles')
       .select('*')
@@ -391,6 +394,12 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
                     Hours used for auto-scheduling and crew assignment. Overrides the business
                     default when customized.
                   </p>
+                  {hoursChange?.status === 'pending' ? (
+                    <p className={styles.panelLead}>
+                      Waiting for approval: {hoursChange.summary}. These hours are not on the
+                      schedule yet. <a href="/schedule/hours-requests">Review hour changes</a>
+                    </p>
+                  ) : null}
                 </header>
                 <EmployeeAvailabilityForm
                   tenantSlug={membership.tenantSlug}

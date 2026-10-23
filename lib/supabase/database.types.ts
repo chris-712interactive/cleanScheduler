@@ -1619,6 +1619,85 @@ export type Database = {
           },
         ];
       };
+      tenant_member_availability_change_requests: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          status: Database['public']['Enums']['tenant_time_off_status'];
+          use_tenant_default: boolean;
+          requested_at: string;
+          reviewed_at: string | null;
+          reviewed_by_user_id: string | null;
+          review_note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          status?: Database['public']['Enums']['tenant_time_off_status'];
+          use_tenant_default: boolean;
+          requested_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by_user_id?: string | null;
+          review_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          user_id?: string;
+          status?: Database['public']['Enums']['tenant_time_off_status'];
+          use_tenant_default?: boolean;
+          requested_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by_user_id?: string | null;
+          review_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_member_availability_change_requests_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_member_availability_change_request_days: {
+        Row: {
+          request_id: string;
+          weekday: string;
+          starts_at: string;
+          ends_at: string;
+        };
+        Insert: {
+          request_id: string;
+          weekday: string;
+          starts_at: string;
+          ends_at: string;
+        };
+        Update: {
+          request_id?: string;
+          weekday?: string;
+          starts_at?: string;
+          ends_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_member_availability_change_request_days_request_id_fkey';
+            columns: ['request_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_member_availability_change_requests';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_member_scheduling_profiles: {
         Row: {
           tenant_id: string;
@@ -1885,6 +1964,8 @@ export type Database = {
           allow_same_day_initial_recurring: boolean;
           messaging_channels: string[];
           public_booking_request_enabled: boolean;
+          employees_can_edit_own_hours: boolean;
+          employee_hours_require_approval: boolean;
           schedule_optimizer_policy: Json;
           allow_passkey_sign_in: boolean;
           mfa_required: boolean;
@@ -1920,6 +2001,8 @@ export type Database = {
           allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           public_booking_request_enabled?: boolean;
+          employees_can_edit_own_hours?: boolean;
+          employee_hours_require_approval?: boolean;
           schedule_optimizer_policy?: Json;
           allow_passkey_sign_in?: boolean;
           mfa_required?: boolean;
@@ -1955,6 +2038,8 @@ export type Database = {
           allow_same_day_initial_recurring?: boolean;
           messaging_channels?: string[];
           public_booking_request_enabled?: boolean;
+          employees_can_edit_own_hours?: boolean;
+          employee_hours_require_approval?: boolean;
           schedule_optimizer_policy?: Json;
           allow_passkey_sign_in?: boolean;
           mfa_required?: boolean;

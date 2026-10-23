@@ -188,6 +188,9 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
               <Button as="a" href="/schedule/time-off-requests" variant="secondary">
                 Time off requests
               </Button>
+              <Button as="a" href="/schedule/hours-requests" variant="secondary">
+                Hour changes
+              </Button>
               <Button as="a" href="/schedule/recurring" variant="secondary">
                 Recurring visits
               </Button>
