@@ -85,7 +85,7 @@ export async function updateCrewSchedulingProfileAction(
     admin
       .from('tenant_member_scheduling_profiles')
       .select(
-        'home_address_line1, home_city, home_state, home_postal_code, home_latitude, home_longitude, experience_level, max_jobs_per_day, max_minutes_per_day, max_drive_minutes',
+        'home_address_line1, home_city, home_state, home_postal_code, home_latitude, home_longitude, experience_level, max_jobs_per_day, max_minutes_per_day, max_drive_minutes, skill_tags, certification_tags, equipment_tags, attribute_tags, language_codes, property_kinds, handles_pets, handles_chemical_sensitivity, preferred_zone_ids, preferred_partner_ids, avoid_partner_ids',
       )
       .eq('tenant_id', membership.tenantId)
       .eq('user_id', targetUserId)
@@ -115,38 +115,47 @@ export async function updateCrewSchedulingProfileAction(
         }
       : null,
   );
-  const maySetLimits = canSetCrewSchedulingLimits(membership.role as TenantRole);
+  const mayEditOffice = canSetCrewSchedulingLimits(membership.role as TenantRole);
+  const savedTags = (value: string[] | null | undefined) => value ?? [];
+  const savedIds = (value: string[] | null | undefined, allowed: Set<string>) =>
+    savedTags(value).filter((id) => allowed.has(id));
   const requestedExperience = String(formData.get('experience_level') ?? 'standard');
   const parsedExperience =
     requestedExperience === 'new' || requestedExperience === 'lead'
       ? requestedExperience
       : 'standard';
   const savedExperience = existingHome?.experience_level;
-  const experienceLevel = maySetLimits
+  const experienceLevel = mayEditOffice
     ? parsedExperience
     : savedExperience === 'new' || savedExperience === 'lead'
       ? savedExperience
       : 'standard';
-  const maxJobsPerDay = maySetLimits
+  const maxJobsPerDay = mayEditOffice
     ? optionalCap(formData.get('max_jobs_per_day'), 1, 20)
     : (existingHome?.max_jobs_per_day ?? null);
-  const maxMinutesPerDay = maySetLimits
+  const maxMinutesPerDay = mayEditOffice
     ? optionalCap(formData.get('max_minutes_per_day'), 30, 960)
     : (existingHome?.max_minutes_per_day ?? null);
-  const maxDriveMinutes = maySetLimits
+  const maxDriveMinutes = mayEditOffice
     ? optionalCap(formData.get('max_drive_minutes'), 5, 180)
     : (existingHome?.max_drive_minutes ?? null);
+  const languageCodes = mayEditOffice
+    ? parseTagList(String(formData.get('language_codes') ?? ''))
+    : savedTags(existingHome?.language_codes);
+  const preferredZoneIds = mayEditOffice
+    ? checked(formData, 'preferred_zone_id', zoneIds)
+    : savedIds(existingHome?.preferred_zone_ids, zoneIds);
 
   if (formData.get('profile_scope') === 'consultation') {
     const { error } = await admin.from('tenant_member_scheduling_profiles').upsert({
       tenant_id: membership.tenantId,
       user_id: targetUserId,
-      language_codes: parseTagList(String(formData.get('language_codes') ?? '')),
+      language_codes: languageCodes,
       experience_level: experienceLevel,
       max_jobs_per_day: maxJobsPerDay,
       max_minutes_per_day: maxMinutesPerDay,
       max_drive_minutes: maxDriveMinutes,
-      preferred_zone_ids: checked(formData, 'preferred_zone_id', zoneIds),
+      preferred_zone_ids: preferredZoneIds,
       home_address_line1: home.line1,
       home_city: home.city,
       home_state: home.state,
@@ -165,21 +174,39 @@ export async function updateCrewSchedulingProfileAction(
   const row: Database['public']['Tables']['tenant_member_scheduling_profiles']['Insert'] = {
     tenant_id: membership.tenantId,
     user_id: targetUserId,
-    skill_tags: parseTagList(String(formData.get('skill_tags') ?? '')),
-    certification_tags: parseTagList(String(formData.get('certification_tags') ?? '')),
-    equipment_tags: parseTagList(String(formData.get('equipment_tags') ?? '')),
-    attribute_tags: parseTagList(String(formData.get('attribute_tags') ?? '')),
-    language_codes: parseTagList(String(formData.get('language_codes') ?? '')),
-    property_kinds: checked(formData, 'property_kind', PROPERTY_KINDS),
-    handles_pets: formData.get('handles_pets') === 'on',
-    handles_chemical_sensitivity: formData.get('handles_chemical_sensitivity') === 'on',
+    skill_tags: mayEditOffice
+      ? parseTagList(String(formData.get('skill_tags') ?? ''))
+      : savedTags(existingHome?.skill_tags),
+    certification_tags: mayEditOffice
+      ? parseTagList(String(formData.get('certification_tags') ?? ''))
+      : savedTags(existingHome?.certification_tags),
+    equipment_tags: mayEditOffice
+      ? parseTagList(String(formData.get('equipment_tags') ?? ''))
+      : savedTags(existingHome?.equipment_tags),
+    attribute_tags: mayEditOffice
+      ? parseTagList(String(formData.get('attribute_tags') ?? ''))
+      : savedTags(existingHome?.attribute_tags),
+    language_codes: languageCodes,
+    property_kinds: mayEditOffice
+      ? checked(formData, 'property_kind', PROPERTY_KINDS)
+      : savedIds(existingHome?.property_kinds, PROPERTY_KINDS),
+    handles_pets: mayEditOffice
+      ? formData.get('handles_pets') === 'on'
+      : (existingHome?.handles_pets ?? true),
+    handles_chemical_sensitivity: mayEditOffice
+      ? formData.get('handles_chemical_sensitivity') === 'on'
+      : (existingHome?.handles_chemical_sensitivity ?? true),
     experience_level: experienceLevel,
     max_jobs_per_day: maxJobsPerDay,
     max_minutes_per_day: maxMinutesPerDay,
     max_drive_minutes: maxDriveMinutes,
-    preferred_zone_ids: checked(formData, 'preferred_zone_id', zoneIds),
-    preferred_partner_ids: checked(formData, 'preferred_partner_id', memberIds),
-    avoid_partner_ids: checked(formData, 'avoid_partner_id', memberIds),
+    preferred_zone_ids: preferredZoneIds,
+    preferred_partner_ids: mayEditOffice
+      ? checked(formData, 'preferred_partner_id', memberIds)
+      : savedIds(existingHome?.preferred_partner_ids, memberIds),
+    avoid_partner_ids: mayEditOffice
+      ? checked(formData, 'avoid_partner_id', memberIds)
+      : savedIds(existingHome?.avoid_partner_ids, memberIds),
     home_address_line1: home.line1,
     home_city: home.city,
     home_state: home.state,

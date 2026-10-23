@@ -60,7 +60,7 @@ describe('canEditMemberAvailability', () => {
 });
 
 describe('canSetCrewSchedulingLimits', () => {
-  it('lets the office set experience and daily caps', () => {
+  it('lets the office set limits, skills, places, and pairing', () => {
     expect(canSetCrewSchedulingLimits('owner')).toBe(true);
     expect(canSetCrewSchedulingLimits('admin')).toBe(true);
   });

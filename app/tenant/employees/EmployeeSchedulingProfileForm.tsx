@@ -124,7 +124,7 @@ export function EmployeeSchedulingProfileForm({
   profile: CrewSchedulingProfile;
   zones: { id: string; label: string }[];
   partners: { id: string; label: string }[];
-  /** Office sets experience and daily caps. Field employees see the saved values. */
+  /** Office sets limits, skills, places, and teammate pairing. */
   canEditLimits: boolean;
   /** Consultation keeps travel and language. Full includes job skills and crew pairing. */
   scope?: 'full' | 'consultation';
@@ -341,62 +341,100 @@ export function EmployeeSchedulingProfileForm({
             </span>
           </summary>
           <div className={styles.sectionBody}>
-            <div className={styles.grid}>
-              {full ? (
-                <>
+            {canEditLimits ? (
+              <>
+                <div className={styles.grid}>
+                  {full ? (
+                    <>
+                      <label className={styles.field}>
+                        Skills
+                        <input
+                          name="skill_tags"
+                          value={skills}
+                          placeholder="floor-care, deep-clean"
+                          onChange={(event) => setSkills(event.target.value)}
+                        />
+                      </label>
+                      <label className={styles.field}>
+                        Certifications
+                        <input
+                          name="certification_tags"
+                          value={certifications}
+                          placeholder="osha"
+                          onChange={(event) => setCertifications(event.target.value)}
+                        />
+                      </label>
+                      <label className={styles.field}>
+                        Equipment
+                        <input
+                          name="equipment_tags"
+                          value={equipment}
+                          placeholder="floor-buffer"
+                          onChange={(event) => setEquipment(event.target.value)}
+                        />
+                      </label>
+                    </>
+                  ) : null}
                   <label className={styles.field}>
-                    Skills
+                    Languages
                     <input
-                      name="skill_tags"
-                      value={skills}
-                      placeholder="floor-care, deep-clean"
-                      onChange={(event) => setSkills(event.target.value)}
+                      name="language_codes"
+                      value={languages}
+                      placeholder="spanish"
+                      onChange={(event) => setLanguages(event.target.value)}
                     />
                   </label>
-                  <label className={styles.field}>
-                    Certifications
-                    <input
-                      name="certification_tags"
-                      value={certifications}
-                      placeholder="osha"
-                      onChange={(event) => setCertifications(event.target.value)}
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    Equipment
-                    <input
-                      name="equipment_tags"
-                      value={equipment}
-                      placeholder="floor-buffer"
-                      onChange={(event) => setEquipment(event.target.value)}
-                    />
-                  </label>
-                </>
-              ) : null}
-              <label className={styles.field}>
-                Languages
-                <input
-                  name="language_codes"
-                  value={languages}
-                  placeholder="spanish"
-                  onChange={(event) => setLanguages(event.target.value)}
-                />
-              </label>
-              {full ? (
-                <label className={styles.field}>
-                  Entry tags
-                  <input
-                    name="attribute_tags"
-                    value={attributes}
-                    placeholder="female, non-smoker"
-                    onChange={(event) => setAttributes(event.target.value)}
-                  />
-                </label>
-              ) : null}
-            </div>
-            <p className={styles.note}>
-              Separate items with commas. Leave a list blank if it does not apply.
-            </p>
+                  {full ? (
+                    <label className={styles.field}>
+                      Entry tags
+                      <input
+                        name="attribute_tags"
+                        value={attributes}
+                        placeholder="female, non-smoker"
+                        onChange={(event) => setAttributes(event.target.value)}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+                <p className={styles.note}>
+                  Separate items with commas. Leave a list blank if it does not apply.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className={styles.grid}>
+                  {full ? (
+                    <>
+                      <p className={styles.field}>
+                        Skills
+                        <span className={styles.value}>{capLabel(skills, 'None added')}</span>
+                      </p>
+                      <p className={styles.field}>
+                        Certifications
+                        <span className={styles.value}>
+                          {capLabel(certifications, 'None added')}
+                        </span>
+                      </p>
+                      <p className={styles.field}>
+                        Equipment
+                        <span className={styles.value}>{capLabel(equipment, 'None added')}</span>
+                      </p>
+                    </>
+                  ) : null}
+                  <p className={styles.field}>
+                    Languages
+                    <span className={styles.value}>{capLabel(languages, 'None added')}</span>
+                  </p>
+                  {full ? (
+                    <p className={styles.field}>
+                      Entry tags
+                      <span className={styles.value}>{capLabel(attributes, 'None added')}</span>
+                    </p>
+                  ) : null}
+                </div>
+                <p className={styles.note}>An admin sets skills, languages, and equipment.</p>
+              </>
+            )}
           </div>
         </details>
       </div>
@@ -411,82 +449,127 @@ export function EmployeeSchedulingProfileForm({
               </span>
             </summary>
             <div className={styles.sectionBody}>
-              <fieldset className={styles.block}>
-                <legend className={styles.legend}>Property types</legend>
-                <div className={styles.personList}>
-                  {KINDS.map((kind) => {
-                    const selected = kinds.includes(kind.id);
-                    return (
-                      <label
-                        key={kind.id}
-                        className={styles.person}
-                        data-selected={selected || undefined}
-                      >
-                        <input
-                          type="checkbox"
-                          name="property_kind"
-                          value={kind.id}
-                          checked={selected}
-                          onChange={(event) =>
-                            setKinds((current) => toggleId(current, kind.id, event.target.checked))
-                          }
-                        />
-                        {kind.label}
-                      </label>
-                    );
-                  })}
-                </div>
-                <p className={styles.note}>Leave these off to allow every type.</p>
-              </fieldset>
-              <div className={styles.checks}>
-                <label className={styles.check} data-selected={pets || undefined}>
-                  <input
-                    type="checkbox"
-                    name="handles_pets"
-                    checked={pets}
-                    onChange={(event) => setPets(event.target.checked)}
-                  />
-                  Comfortable with pets
-                </label>
-                <label className={styles.check} data-selected={fragranceFree || undefined}>
-                  <input
-                    type="checkbox"
-                    name="handles_chemical_sensitivity"
-                    checked={fragranceFree}
-                    onChange={(event) => setFragranceFree(event.target.checked)}
-                  />
-                  Can run a fragrance-free clean
-                </label>
-              </div>
-              <fieldset className={styles.block}>
-                <legend className={styles.legend}>Preferred zones</legend>
-                {zones.length === 0 ? <p className={styles.empty}>No service zones yet.</p> : null}
-                <div className={styles.personList}>
-                  {zones.map((zone) => {
-                    const selected = zoneIds.includes(zone.id);
-                    return (
-                      <label
-                        key={zone.id}
-                        className={styles.person}
-                        data-selected={selected || undefined}
-                      >
-                        <input
-                          type="checkbox"
-                          name="preferred_zone_id"
-                          value={zone.id}
-                          checked={selected}
-                          onChange={(event) =>
-                            setZoneIds((current) =>
-                              toggleId(current, zone.id, event.target.checked),
-                            )
-                          }
-                        />
-                        {zone.label}
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
+              {canEditLimits ? (
+                <>
+                  <fieldset className={styles.block}>
+                    <legend className={styles.legend}>Property types</legend>
+                    <div className={styles.personList}>
+                      {KINDS.map((kind) => {
+                        const selected = kinds.includes(kind.id);
+                        return (
+                          <label
+                            key={kind.id}
+                            className={styles.person}
+                            data-selected={selected || undefined}
+                          >
+                            <input
+                              type="checkbox"
+                              name="property_kind"
+                              value={kind.id}
+                              checked={selected}
+                              onChange={(event) =>
+                                setKinds((current) =>
+                                  toggleId(current, kind.id, event.target.checked),
+                                )
+                              }
+                            />
+                            {kind.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <p className={styles.note}>Leave these off to allow every type.</p>
+                  </fieldset>
+                  <div className={styles.checks}>
+                    <label className={styles.check} data-selected={pets || undefined}>
+                      <input
+                        type="checkbox"
+                        name="handles_pets"
+                        checked={pets}
+                        onChange={(event) => setPets(event.target.checked)}
+                      />
+                      Comfortable with pets
+                    </label>
+                    <label className={styles.check} data-selected={fragranceFree || undefined}>
+                      <input
+                        type="checkbox"
+                        name="handles_chemical_sensitivity"
+                        checked={fragranceFree}
+                        onChange={(event) => setFragranceFree(event.target.checked)}
+                      />
+                      Can run a fragrance-free clean
+                    </label>
+                  </div>
+                  <fieldset className={styles.block}>
+                    <legend className={styles.legend}>Preferred zones</legend>
+                    {zones.length === 0 ? (
+                      <p className={styles.empty}>No service zones yet.</p>
+                    ) : null}
+                    <div className={styles.personList}>
+                      {zones.map((zone) => {
+                        const selected = zoneIds.includes(zone.id);
+                        return (
+                          <label
+                            key={zone.id}
+                            className={styles.person}
+                            data-selected={selected || undefined}
+                          >
+                            <input
+                              type="checkbox"
+                              name="preferred_zone_id"
+                              value={zone.id}
+                              checked={selected}
+                              onChange={(event) =>
+                                setZoneIds((current) =>
+                                  toggleId(current, zone.id, event.target.checked),
+                                )
+                              }
+                            />
+                            {zone.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                </>
+              ) : (
+                <>
+                  <div className={styles.grid}>
+                    <p className={styles.field}>
+                      Property types
+                      <span className={styles.value}>
+                        {KINDS.filter((kind) => kinds.includes(kind.id))
+                          .map((kind) => kind.label)
+                          .join(', ') || 'Every property type'}
+                      </span>
+                    </p>
+                    <p className={styles.field}>
+                      Pets
+                      <span className={styles.value}>
+                        {pets ? 'Comfortable with pets' : 'Not marked for pets'}
+                      </span>
+                    </p>
+                    <p className={styles.field}>
+                      Fragrance-free
+                      <span className={styles.value}>
+                        {fragranceFree
+                          ? 'Can run a fragrance-free clean'
+                          : 'Not marked for fragrance-free'}
+                      </span>
+                    </p>
+                    <p className={styles.field}>
+                      Preferred zones
+                      <span className={styles.value}>
+                        {zones
+                          .filter((zone) => zoneIds.includes(zone.id))
+                          .map((zone) => zone.label)
+                          .join(', ') || 'Any zone'}
+                      </span>
+                    </p>
+                  </div>
+                  <p className={styles.note}>An admin sets where this person can work.</p>
+                </>
+              )}
             </div>
           </details>
         </div>
@@ -504,36 +587,57 @@ export function EmployeeSchedulingProfileForm({
               </span>
             </summary>
             <div className={styles.sectionBody}>
-              {zones.length === 0 ? <p className={styles.empty}>No service zones yet.</p> : null}
-              <div className={styles.personList}>
-                {zones.map((zone) => {
-                  const selected = zoneIds.includes(zone.id);
-                  return (
-                    <label
-                      key={zone.id}
-                      className={styles.person}
-                      data-selected={selected || undefined}
-                    >
-                      <input
-                        type="checkbox"
-                        name="preferred_zone_id"
-                        value={zone.id}
-                        checked={selected}
-                        onChange={(event) =>
-                          setZoneIds((current) => toggleId(current, zone.id, event.target.checked))
-                        }
-                      />
-                      {zone.label}
-                    </label>
-                  );
-                })}
-              </div>
+              {canEditLimits ? (
+                <>
+                  {zones.length === 0 ? (
+                    <p className={styles.empty}>No service zones yet.</p>
+                  ) : null}
+                  <div className={styles.personList}>
+                    {zones.map((zone) => {
+                      const selected = zoneIds.includes(zone.id);
+                      return (
+                        <label
+                          key={zone.id}
+                          className={styles.person}
+                          data-selected={selected || undefined}
+                        >
+                          <input
+                            type="checkbox"
+                            name="preferred_zone_id"
+                            value={zone.id}
+                            checked={selected}
+                            onChange={(event) =>
+                              setZoneIds((current) =>
+                                toggleId(current, zone.id, event.target.checked),
+                              )
+                            }
+                          />
+                          {zone.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className={styles.field}>
+                    Preferred zones
+                    <span className={styles.value}>
+                      {zones
+                        .filter((zone) => zoneIds.includes(zone.id))
+                        .map((zone) => zone.label)
+                        .join(', ') || 'Any zone'}
+                    </span>
+                  </p>
+                  <p className={styles.note}>An admin sets preferred zones.</p>
+                </>
+              )}
             </div>
           </details>
         </div>
       )}
 
-      {full ? (
+      {full && canEditLimits ? (
         <div className={styles.sectionWrap}>
           <details className={styles.section}>
             <summary className={styles.sectionSummary}>
