@@ -84,6 +84,11 @@ export function canBeScheduledAsCrew(role: TenantRole): boolean {
   return role === 'owner' || role === 'admin' || role === 'employee';
 }
 
+/** Experience and daily caps are office settings. Field employees can read them only. */
+export function canSetCrewSchedulingLimits(role: TenantRole): boolean {
+  return role === 'owner' || role === 'admin';
+}
+
 /** Edit work availability for scheduling — self-service or via team management. */
 export function canEditMemberAvailability(params: {
   actor: TenantRole;

@@ -3,6 +3,7 @@ import {
   canBeScheduledAsCrew,
   canEditMemberAvailability,
   canEditTeamMember,
+  canSetCrewSchedulingLimits,
 } from '@/lib/tenant/employeePermissions';
 
 describe('canEditMemberAvailability', () => {
@@ -55,6 +56,18 @@ describe('canEditMemberAvailability', () => {
         targetRole: 'employee',
       }),
     );
+  });
+});
+
+describe('canSetCrewSchedulingLimits', () => {
+  it('lets the office set experience and daily caps', () => {
+    expect(canSetCrewSchedulingLimits('owner')).toBe(true);
+    expect(canSetCrewSchedulingLimits('admin')).toBe(true);
+  });
+
+  it('keeps field employees from setting their own caps', () => {
+    expect(canSetCrewSchedulingLimits('employee')).toBe(false);
+    expect(canSetCrewSchedulingLimits('viewer')).toBe(false);
   });
 });
 

@@ -70,6 +70,11 @@ function teammatesSummary(preferred: number, avoided: number): string {
   return parts.join(' · ') || 'Any teammate';
 }
 
+function capLabel(value: string, empty: string): string {
+  const text = value.trim();
+  return text || empty;
+}
+
 function homeSummary(line1: string, city: string, state: string): string {
   const place = [city.trim(), state.trim()].filter(Boolean).join(', ');
   return place || line1.trim() || 'No home address';
@@ -112,12 +117,15 @@ export function EmployeeSchedulingProfileForm({
   partners,
   scope = 'full',
   homeGeocode = null,
+  canEditLimits,
 }: {
   tenantSlug: string;
   targetUserId: string;
   profile: CrewSchedulingProfile;
   zones: { id: string; label: string }[];
   partners: { id: string; label: string }[];
+  /** Office sets experience and daily caps. Field employees see the saved values. */
+  canEditLimits: boolean;
   /** Consultation keeps travel and language. Full includes job skills and crew pairing. */
   scope?: 'full' | 'consultation';
   homeGeocode?: {
@@ -226,70 +234,98 @@ export function EmployeeSchedulingProfileForm({
             </span>
           </summary>
           <div className={styles.sectionBody}>
-            <fieldset className={styles.block}>
-              <legend className={styles.legend}>Experience</legend>
-              <div className={styles.choiceGrid}>
-                {EXPERIENCE.map((option) => {
-                  const selected = experience === option.value;
-                  return (
-                    <label
-                      key={option.value}
-                      className={styles.timeCard}
-                      data-selected={selected || undefined}
-                    >
-                      <input
-                        type="radio"
-                        name="experience_level"
-                        value={option.value}
-                        checked={selected}
-                        onChange={() => setExperience(option.value)}
-                      />
-                      <span className={styles.timeTitle}>{option.title}</span>
-                      <span className={styles.timeHint}>{option.hint}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-            <div className={styles.grid}>
-              <label className={styles.field}>
-                {full ? 'Max jobs per day' : 'Max consultations per day'}
-                <input
-                  type="number"
-                  name="max_jobs_per_day"
-                  min={1}
-                  max={20}
-                  value={maxJobs}
-                  placeholder="No cap"
-                  onChange={(event) => setMaxJobs(event.target.value)}
-                />
-              </label>
-              <label className={styles.field}>
-                Max minutes per day
-                <input
-                  type="number"
-                  name="max_minutes_per_day"
-                  min={30}
-                  max={960}
-                  value={maxMinutes}
-                  placeholder="No cap"
-                  onChange={(event) => setMaxMinutes(event.target.value)}
-                />
-              </label>
-              <label className={styles.field}>
-                Max drive between stops
-                <input
-                  type="number"
-                  name="max_drive_minutes"
-                  min={5}
-                  max={180}
-                  value={maxDrive}
-                  placeholder="Company default"
-                  onChange={(event) => setMaxDrive(event.target.value)}
-                />
-              </label>
-            </div>
-            <p className={styles.note}>Drive time is in minutes. Leave a box blank for no cap.</p>
+            {canEditLimits ? (
+              <>
+                <fieldset className={styles.block}>
+                  <legend className={styles.legend}>Experience</legend>
+                  <div className={styles.choiceGrid}>
+                    {EXPERIENCE.map((option) => {
+                      const selected = experience === option.value;
+                      return (
+                        <label
+                          key={option.value}
+                          className={styles.timeCard}
+                          data-selected={selected || undefined}
+                        >
+                          <input
+                            type="radio"
+                            name="experience_level"
+                            value={option.value}
+                            checked={selected}
+                            onChange={() => setExperience(option.value)}
+                          />
+                          <span className={styles.timeTitle}>{option.title}</span>
+                          <span className={styles.timeHint}>{option.hint}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+                <div className={styles.grid}>
+                  <label className={styles.field}>
+                    {full ? 'Max jobs per day' : 'Max consultations per day'}
+                    <input
+                      type="number"
+                      name="max_jobs_per_day"
+                      min={1}
+                      max={20}
+                      value={maxJobs}
+                      placeholder="No cap"
+                      onChange={(event) => setMaxJobs(event.target.value)}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    Max minutes per day
+                    <input
+                      type="number"
+                      name="max_minutes_per_day"
+                      min={30}
+                      max={960}
+                      value={maxMinutes}
+                      placeholder="No cap"
+                      onChange={(event) => setMaxMinutes(event.target.value)}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    Max drive between stops
+                    <input
+                      type="number"
+                      name="max_drive_minutes"
+                      min={5}
+                      max={180}
+                      value={maxDrive}
+                      placeholder="Company default"
+                      onChange={(event) => setMaxDrive(event.target.value)}
+                    />
+                  </label>
+                </div>
+                <p className={styles.note}>
+                  Drive time is in minutes. Leave a box blank for no cap.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className={styles.grid}>
+                  <p className={styles.field}>
+                    Experience
+                    <span className={styles.value}>{experienceTitle(experience)}</span>
+                  </p>
+                  <p className={styles.field}>
+                    {full ? 'Max jobs per day' : 'Max consultations per day'}
+                    <span className={styles.value}>{capLabel(maxJobs, 'No cap')}</span>
+                  </p>
+                  <p className={styles.field}>
+                    Max minutes per day
+                    <span className={styles.value}>{capLabel(maxMinutes, 'No cap')}</span>
+                  </p>
+                  <p className={styles.field}>
+                    Max drive between stops
+                    <span className={styles.value}>{capLabel(maxDrive, 'Company default')}</span>
+                  </p>
+                </div>
+                <p className={styles.note}>An admin sets experience and these limits.</p>
+              </>
+            )}
           </div>
         </details>
       </div>

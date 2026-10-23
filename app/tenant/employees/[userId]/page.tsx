@@ -9,6 +9,7 @@ import type { TenantRole } from '@/lib/auth/types';
 import {
   canChangeMemberRole,
   canEditTeamMember,
+  canSetCrewSchedulingLimits,
   canToggleMemberActive,
   roleOptionsForMemberEditor,
 } from '@/lib/tenant/employeePermissions';
@@ -421,6 +422,7 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
                   profile={crewProfile}
                   zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
                   partners={partners}
+                  canEditLimits={canSetCrewSchedulingLimits(membership.role as TenantRole)}
                   scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
                   homeGeocode={{
                     reason: crewRow?.home_geocode_reason ?? null,
