@@ -22,7 +22,7 @@ import { crewSchedulingProfileFromRow } from '@/lib/schedule/optimizer/crewProfi
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
-import { canBeScheduledAsCrew } from '@/lib/tenant/employeePermissions';
+import { canBeScheduledAsCrew, canSetCrewSchedulingLimits } from '@/lib/tenant/employeePermissions';
 import { OfficeScheduleEligibilityForm } from '@/app/tenant/employees/OfficeScheduleEligibilityForm';
 import { officeRoleCanOptOut, schedulingProfileScope } from '@/lib/schedule/scheduleEligibility';
 import {
@@ -228,6 +228,7 @@ export default async function TenantAccountSettingsPage({
                 userId={userId}
                 crewRow={crewRow}
                 scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
+                canEditLimits={canSetCrewSchedulingLimits(membership.role as TenantRole)}
               />
             ) : null}
 
@@ -459,6 +460,7 @@ export default async function TenantAccountSettingsPage({
                         userId={userId}
                         crewRow={crewRow}
                         scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
+                        canEditLimits={canSetCrewSchedulingLimits(membership.role as TenantRole)}
                       />
                     </>
                   ) : null}
@@ -485,6 +487,7 @@ async function AccountSchedulingProfile({
   userId,
   crewRow,
   scope,
+  canEditLimits,
   headless = false,
 }: {
   tenantSlug: string;
@@ -492,6 +495,7 @@ async function AccountSchedulingProfile({
   userId: string;
   crewRow: Parameters<typeof crewSchedulingProfileFromRow>[0];
   scope: 'full' | 'consultation';
+  canEditLimits: boolean;
   headless?: boolean;
 }) {
   const admin = createAdminClient();
@@ -538,6 +542,7 @@ async function AccountSchedulingProfile({
           latitude: crewRow?.home_latitude ?? null,
           longitude: crewRow?.home_longitude ?? null,
         }}
+        canEditLimits={canEditLimits}
         zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
         partners={partnerIds.map((id) => ({
           id,

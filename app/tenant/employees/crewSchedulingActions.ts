@@ -7,7 +7,10 @@ import { resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
 import { parseTagList } from '@/lib/schedule/optimizer/preferences';
 import type { Database } from '@/lib/supabase/database.types';
 import { createAdminClient } from '@/lib/supabase/server';
-import { canEditMemberAvailability } from '@/lib/tenant/employeePermissions';
+import {
+  canEditMemberAvailability,
+  canSetCrewSchedulingLimits,
+} from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
 
 export interface CrewSchedulingActionState {
@@ -82,7 +85,7 @@ export async function updateCrewSchedulingProfileAction(
     admin
       .from('tenant_member_scheduling_profiles')
       .select(
-        'home_address_line1, home_city, home_state, home_postal_code, home_latitude, home_longitude',
+        'home_address_line1, home_city, home_state, home_postal_code, home_latitude, home_longitude, experience_level, max_jobs_per_day, max_minutes_per_day, max_drive_minutes',
       )
       .eq('tenant_id', membership.tenantId)
       .eq('user_id', targetUserId)
@@ -112,8 +115,27 @@ export async function updateCrewSchedulingProfileAction(
         }
       : null,
   );
-  const experience = String(formData.get('experience_level') ?? 'standard');
-  const experienceLevel = experience === 'new' || experience === 'lead' ? experience : 'standard';
+  const maySetLimits = canSetCrewSchedulingLimits(membership.role as TenantRole);
+  const requestedExperience = String(formData.get('experience_level') ?? 'standard');
+  const parsedExperience =
+    requestedExperience === 'new' || requestedExperience === 'lead'
+      ? requestedExperience
+      : 'standard';
+  const savedExperience = existingHome?.experience_level;
+  const experienceLevel = maySetLimits
+    ? parsedExperience
+    : savedExperience === 'new' || savedExperience === 'lead'
+      ? savedExperience
+      : 'standard';
+  const maxJobsPerDay = maySetLimits
+    ? optionalCap(formData.get('max_jobs_per_day'), 1, 20)
+    : (existingHome?.max_jobs_per_day ?? null);
+  const maxMinutesPerDay = maySetLimits
+    ? optionalCap(formData.get('max_minutes_per_day'), 30, 960)
+    : (existingHome?.max_minutes_per_day ?? null);
+  const maxDriveMinutes = maySetLimits
+    ? optionalCap(formData.get('max_drive_minutes'), 5, 180)
+    : (existingHome?.max_drive_minutes ?? null);
 
   if (formData.get('profile_scope') === 'consultation') {
     const { error } = await admin.from('tenant_member_scheduling_profiles').upsert({
@@ -121,9 +143,9 @@ export async function updateCrewSchedulingProfileAction(
       user_id: targetUserId,
       language_codes: parseTagList(String(formData.get('language_codes') ?? '')),
       experience_level: experienceLevel,
-      max_jobs_per_day: optionalCap(formData.get('max_jobs_per_day'), 1, 20),
-      max_minutes_per_day: optionalCap(formData.get('max_minutes_per_day'), 30, 960),
-      max_drive_minutes: optionalCap(formData.get('max_drive_minutes'), 5, 180),
+      max_jobs_per_day: maxJobsPerDay,
+      max_minutes_per_day: maxMinutesPerDay,
+      max_drive_minutes: maxDriveMinutes,
       preferred_zone_ids: checked(formData, 'preferred_zone_id', zoneIds),
       home_address_line1: home.line1,
       home_city: home.city,
@@ -152,9 +174,9 @@ export async function updateCrewSchedulingProfileAction(
     handles_pets: formData.get('handles_pets') === 'on',
     handles_chemical_sensitivity: formData.get('handles_chemical_sensitivity') === 'on',
     experience_level: experienceLevel,
-    max_jobs_per_day: optionalCap(formData.get('max_jobs_per_day'), 1, 20),
-    max_minutes_per_day: optionalCap(formData.get('max_minutes_per_day'), 30, 960),
-    max_drive_minutes: optionalCap(formData.get('max_drive_minutes'), 5, 180),
+    max_jobs_per_day: maxJobsPerDay,
+    max_minutes_per_day: maxMinutesPerDay,
+    max_drive_minutes: maxDriveMinutes,
     preferred_zone_ids: checked(formData, 'preferred_zone_id', zoneIds),
     preferred_partner_ids: checked(formData, 'preferred_partner_id', memberIds),
     avoid_partner_ids: checked(formData, 'avoid_partner_id', memberIds),
