@@ -770,15 +770,24 @@ export function EmployeeSchedulingProfileForm({
                 />
               </label>
             </div>
+            {canEditLimits ? null : (
+              <div className={styles.saveRow}>
+                <Button type="submit" variant="primary" disabled={pending}>
+                  {pending ? 'Saving…' : 'Save home address'}
+                </Button>
+              </div>
+            )}
           </div>
         </details>
       </div>
 
-      <div className={styles.saveRow}>
-        <Button type="submit" variant="primary" disabled={pending}>
-          {pending ? 'Saving…' : 'Save scheduling profile'}
-        </Button>
-      </div>
+      {canEditLimits ? (
+        <div className={styles.saveRow}>
+          <Button type="submit" variant="primary" disabled={pending}>
+            {pending ? 'Saving…' : 'Save scheduling profile'}
+          </Button>
+        </div>
+      ) : null}
     </form>
   );
 }
