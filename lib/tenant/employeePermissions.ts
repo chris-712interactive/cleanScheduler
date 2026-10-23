@@ -84,7 +84,10 @@ export function canBeScheduledAsCrew(role: TenantRole): boolean {
   return role === 'owner' || role === 'admin' || role === 'employee';
 }
 
-/** Experience and daily caps are office settings. Field employees can read them only. */
+/**
+ * Office crew settings: experience, daily caps, skills, places, and teammate pairing.
+ * Field employees can read skills and places. They cannot see or change pairing.
+ */
 export function canSetCrewSchedulingLimits(role: TenantRole): boolean {
   return role === 'owner' || role === 'admin';
 }
