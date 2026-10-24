@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+description: After code has shipped, make sure to do the following.
+---
+
+# Self Document
+After every single shipment of code, ensure that you have self-documented anything that you learned during the session.  This would include any information that is useful for you in future sessions to keep everything cohesive.
+
+# Where to Self Document
+This should be kept in a docs folder within the project and something that can be also saved and pushed up to the repository.
+
+# After Self Documenting
+Ensure to push changes to documents up to both dev and main branches of the repository.
