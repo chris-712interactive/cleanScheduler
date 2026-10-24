@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Import mail-merge contact lists (per-recipient subject + body) from a **CSV upload** or a **published Google Sheet CSV URL**, queue sends through Resend, track delivery/open/click/bounce via webhooks, and log replies manually in the admin UI.
+Import mail-merge contact lists (per-recipient subject + body) from a **CSV upload** or a **published Google Sheet CSV URL**, queue sends through Resend, track delivery/open/click/bounce via webhooks, and log replies manually in the admin UI. The message uses Clean Scheduler branding (mark, color, and business address). The campaign signature stays under the letter. See `docs/product/email-branding.md`.
 
 ## Routes
 

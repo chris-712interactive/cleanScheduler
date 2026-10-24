@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { formatEmailFromAddress } from '@/lib/email/fromAddress';
 import { serverEnv } from '@/lib/env';
 
 export interface SendCampaignEmailParams {
@@ -47,8 +48,5 @@ export async function sendCampaignEmail(
 }
 
 export function campaignFromAddress(tenantName: string, platformFrom: string): string {
-  const safeName = tenantName.replace(/"/g, '').trim() || 'Your cleaning team';
-  const match = platformFrom.match(/<([^>]+)>/);
-  const email = match?.[1] ?? platformFrom.trim();
-  return `"${safeName}" <${email}>`;
+  return formatEmailFromAddress(tenantName.trim() || 'Your cleaning team', platformFrom);
 }

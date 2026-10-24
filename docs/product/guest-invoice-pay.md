@@ -1,6 +1,6 @@
 # Guest invoice pay links
 
-When a workspace **does not** have `customerPortal` (Starter), invoice emails use a guest Stripe Checkout link instead of the customer portal.
+When a workspace **does not** have `customerPortal` (Starter), invoice emails use a guest Stripe Checkout link instead of the customer portal. The message is branded as the cleaning company (`docs/product/email-branding.md`).
 
 ## Flow
 

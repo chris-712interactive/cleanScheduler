@@ -15,6 +15,7 @@ import {
   assertFeatureEnabledForTier,
   featureGateErrorMessage,
 } from '@/lib/billing/tenantFeatureGate';
+import { emailBrandForTenant } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendEmployeeInviteEmail } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
@@ -150,7 +151,9 @@ export async function sendEmployeeInviteAction(
 
   const { data: tenant, error: tErr } = await admin
     .from('tenants')
-    .select('name, slug')
+    .select(
+      'name, slug, brand_color, logo_url, business_phone, business_email, address_line1, city, state, postal_code',
+    )
     .eq('id', membership.tenantId)
     .maybeSingle();
   if (tErr || !tenant) {
@@ -213,6 +216,7 @@ export async function sendEmployeeInviteAction(
   const tenantName = String(tenant.name ?? tenant.slug).trim() || slug;
   const acceptUrl = `${getPublicOrigin(null)}/complete-employee-invite?token=${invite.token}`;
   const workspaceUrl = getPublicOrigin(tenant.slug);
+  const brand = await emailBrandForTenant(admin, membership.tenantId, tenant);
 
   const sent = await sendEmployeeInviteEmail({
     to: emailRaw,
@@ -220,6 +224,7 @@ export async function sendEmployeeInviteAction(
     roleLabel: roleLabel(invitedRole),
     acceptUrl,
     workspaceUrl,
+    brand,
   });
   if (!sent.ok) {
     await admin.from('employee_invites').delete().eq('token', invite.token);
@@ -262,7 +267,9 @@ async function sendInviteEmailForToken(
 
   const { data: tenant, error: tErr } = await admin
     .from('tenants')
-    .select('name, slug')
+    .select(
+      'name, slug, brand_color, logo_url, business_phone, business_email, address_line1, city, state, postal_code',
+    )
     .eq('id', tenantId)
     .maybeSingle();
   if (tErr || !tenant) {
@@ -272,6 +279,7 @@ async function sendInviteEmailForToken(
   const tenantName = String(tenant.name ?? tenant.slug).trim() || tenant.slug;
   const acceptUrl = `${getPublicOrigin(null)}/complete-employee-invite?token=${token}`;
   const workspaceUrl = getPublicOrigin(tenant.slug);
+  const brand = await emailBrandForTenant(admin, tenantId, tenant);
 
   const sent = await sendEmployeeInviteEmail({
     to: invite.email_normalized,
@@ -279,6 +287,7 @@ async function sendInviteEmailForToken(
     roleLabel: roleLabel(invite.invited_role),
     acceptUrl,
     workspaceUrl,
+    brand,
   });
   if (!sent.ok) {
     return { error: sent.error };

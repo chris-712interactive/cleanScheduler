@@ -1,4 +1,5 @@
 import { escapeHtmlLite } from '@/lib/email/escapeHtml';
+import { wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { formatLegalBusinessAddress, PRODUCT_NAME } from '@/lib/legal/site';
 import type { OutreachSignature } from '@/lib/admin/outreachSignature';
 
@@ -105,35 +106,11 @@ export function buildOutreachEmailContent(params: BuildOutreachEmailContentParam
     })
     .join('');
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:28px 12px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;background:#ffffff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;">
-          <tr>
-            <td style="height:4px;background:#0f766e;font-size:0;line-height:0;">&nbsp;</td>
-          </tr>
-          <tr>
-            <td style="padding:32px 28px 24px;">
-              ${paragraphs}
-              ${signatureHtml}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:16px 28px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.5;color:#6b7280;">
-              <p style="margin:0 0 6px;">${escapeHtmlLite(PRODUCT_NAME)} · ${escapeHtmlLite(address)}</p>
-              <p style="margin:0;"><a href="${escapeHtmlLite(params.unsubscribeUrl)}" style="color:#6b7280;">Unsubscribe</a></p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+  const html = wrapTransactionalEmailHtml({
+    preheader: subject,
+    bodyHtml: `${paragraphs}${signatureHtml}`,
+    footerHtml: `<p style="margin:10px 0 0;font-size:12px;line-height:1.5;"><a href="${escapeHtmlLite(params.unsubscribeUrl)}" style="color:#5c6f6e;text-decoration:underline;">Unsubscribe</a></p>`,
+  });
 
   return { subject, text, html };
 }

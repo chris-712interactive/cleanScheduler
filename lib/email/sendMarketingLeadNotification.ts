@@ -1,4 +1,7 @@
+import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
+import { emailFactsHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 
 export async function sendMarketingLeadNotificationEmail(input: {
   to: string;
@@ -24,12 +27,26 @@ export async function sendMarketingLeadNotificationEmail(input: {
     .filter(Boolean)
     .join('\n');
 
-  const html = text.replace(/\n/g, '<br />');
+  const html = wrapTransactionalEmailHtml({
+    preheader: `New website lead — ${input.leadName}`,
+    bodyHtml: `
+      <p>You have a new lead from your <strong>${escapeHtmlLite(input.tenantName)}</strong> website.</p>
+      ${emailFactsHtml(
+        [
+          { label: 'Name', value: input.leadName },
+          { label: 'Email', value: input.leadEmail },
+          input.leadPhone ? { label: 'Phone', value: input.leadPhone } : null,
+          input.message ? { label: 'Message', value: input.message } : null,
+        ].filter((row): row is { label: string; value: string } => row !== null),
+      )}
+    `.trim(),
+  });
 
   return sendTransactionalEmail({
     to: input.to,
     subject,
     text,
     html,
+    ...emailDeliveryFields(platformEmailBrand()),
   });
 }

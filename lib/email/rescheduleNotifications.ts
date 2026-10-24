@@ -1,7 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  emailDeliveryFields,
+  loadTenantEmailBrand,
+  platformEmailBrand,
+  tenantEmailBrand,
+} from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
-import { wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { publicEnv } from '@/lib/env';
 
 type Admin = SupabaseClient<Database>;
@@ -76,13 +83,13 @@ export async function notifyTenantRescheduleSubmitted(
   const html = wrapTransactionalEmailHtml({
     preheader: `Reschedule request — ${visitLabel}`,
     bodyHtml: `
-      <p>A customer submitted a reschedule request for <strong>${escape(visitLabel)}</strong>.</p>
-      <ul style="padding-left:20px;margin:16px 0;">
-        <li>Current start: ${escape(formatWhen(visit?.starts_at ?? null))}</li>
-        <li>Preferred start: ${escape(formatWhen(params.preferredStartsAt))}</li>
-        ${params.customerNote ? `<li>Customer note: ${escape(params.customerNote)}</li>` : ''}
+      <p>A customer submitted a reschedule request for <strong>${escapeHtmlLite(visitLabel)}</strong>.</p>
+      <ul>
+        <li>Current start: ${escapeHtmlLite(formatWhen(visit?.starts_at ?? null))}</li>
+        <li>Preferred start: ${escapeHtmlLite(formatWhen(params.preferredStartsAt))}</li>
+        ${params.customerNote ? `<li>Customer note: ${escapeHtmlLite(params.customerNote)}</li>` : ''}
       </ul>
-      <p><a href="${escapeAttr(requestsUrl)}" style="color:#2563eb;">Review reschedule requests</a></p>
+      ${emailButtonHtml({ href: requestsUrl, label: 'Review reschedule requests' })}
     `.trim(),
   });
 
@@ -91,6 +98,7 @@ export async function notifyTenantRescheduleSubmitted(
     subject: `${workspace}: reschedule request submitted`,
     text,
     html,
+    ...emailDeliveryFields(platformEmailBrand()),
   });
 }
 
@@ -107,8 +115,8 @@ export async function notifyCustomerRescheduleResolved(
 ): Promise<void> {
   if (!isResendConfigured()) return;
 
-  const [{ data: tenant }, { data: cust }, { data: visit }] = await Promise.all([
-    admin.from('tenants').select('name, slug').eq('id', params.tenantId).maybeSingle(),
+  const [brandLoaded, { data: cust }, { data: visit }] = await Promise.all([
+    loadTenantEmailBrand(admin, params.tenantId),
     admin
       .from('customers')
       .select('customer_identities ( email )')
@@ -124,7 +132,8 @@ export async function notifyCustomerRescheduleResolved(
   const email = (cust?.customer_identities as { email: string | null } | null)?.email?.trim();
   if (!email) return;
 
-  const provider = tenant?.name?.trim() || tenant?.slug || 'Your provider';
+  const brand = brandLoaded ?? tenantEmailBrand({ name: 'Your provider' });
+  const provider = brand.name;
   const visitLabel = visit?.title?.trim() || 'your visit';
   const approved = params.resolution === 'completed';
 
@@ -137,15 +146,16 @@ export async function notifyCustomerRescheduleResolved(
     .join('\n');
 
   const html = wrapTransactionalEmailHtml({
+    brand,
     preheader: `${provider} responded to your reschedule request`,
     bodyHtml: `
-      <p><strong>${escape(provider)}</strong> ${approved ? 'approved' : 'declined'} your reschedule request for <strong>${escape(visitLabel)}</strong>.</p>
+      <p><strong>${escapeHtmlLite(provider)}</strong> ${approved ? 'approved' : 'declined'} your reschedule request for <strong>${escapeHtmlLite(visitLabel)}</strong>.</p>
       ${
         approved && params.appliedStartsAt
-          ? `<p>New time: <strong>${escape(formatWhen(params.appliedStartsAt))}</strong></p>`
+          ? `<p>New time: <strong>${escapeHtmlLite(formatWhen(params.appliedStartsAt))}</strong></p>`
           : ''
       }
-      ${params.tenantNote ? `<p>Message from provider: ${escape(params.tenantNote)}</p>` : ''}
+      ${params.tenantNote ? `<p>Message from provider: ${escapeHtmlLite(params.tenantNote)}</p>` : ''}
     `.trim(),
   });
 
@@ -154,13 +164,6 @@ export async function notifyCustomerRescheduleResolved(
     subject: `${provider}: reschedule request ${approved ? 'approved' : 'declined'}`,
     text,
     html,
+    ...emailDeliveryFields(brand),
   });
-}
-
-function escape(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function escapeAttr(s: string): string {
-  return escape(s).replace(/"/g, '&quot;');
 }

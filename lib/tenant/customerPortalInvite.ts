@@ -5,7 +5,8 @@ import {
   assertTenantFeatureEnabled,
   featureGateErrorMessage,
 } from '@/lib/billing/tenantFeatureGate';
-import { sendCustomerPortalInviteEmail, isResendApiConfigured } from '@/lib/email/resend';
+import { loadTenantEmailBrand, tenantEmailBrand } from '@/lib/email/emailBrand';
+import { isResendConfigured, sendCustomerPortalInviteEmail } from '@/lib/email/resend';
 import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { inviteTemplateCustomerFirstName } from '@/lib/tenant/customerIdentityName';
 
@@ -206,11 +207,11 @@ export async function ensureCustomerPortalInvite(options: {
     return { ok: false, error: 'Add an email address before sending a portal invite.' };
   }
 
-  if (sendEmail && !isResendApiConfigured()) {
+  if (sendEmail && !isResendConfigured()) {
     return {
       ok: false,
       error:
-        'Email is not configured. Add RESEND_API_KEY to the server environment (Resend dashboard template supplies from/subject for invites).',
+        'Email is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL to the server environment.',
     };
   }
 
@@ -236,9 +237,12 @@ export async function ensureCustomerPortalInvite(options: {
   }
 
   const customerName = inviteTemplateCustomerFirstName(identity);
+  const brand =
+    (await loadTenantEmailBrand(options.admin, options.tenantId)) ??
+    tenantEmailBrand({ name: tenantName });
   const sent = await sendCustomerPortalInviteEmail({
     to: email,
-    tenantName,
+    brand,
     customerName,
     createCustomerLink: acceptUrl,
   });

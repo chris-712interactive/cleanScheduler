@@ -5,8 +5,10 @@ import {
 } from '@/lib/campaigns/campaignMergeTags';
 import { getCampaignTemplateDefinition } from '@/lib/campaigns/campaignTemplateCatalog';
 import type { CampaignTemplateKey } from '@/lib/campaigns/types';
+import { tenantEmailBrand } from '@/lib/email/emailBrand';
 import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { sanitizeCampaignHtml } from '@/lib/email/sanitizeCampaignHtml';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 
 export interface CampaignEmailContentParams {
   tenantName: string;
@@ -22,6 +24,8 @@ export interface CampaignEmailContentParams {
   addressLine: string | null;
   brandColor: string;
   logoUrl: string | null;
+  /** Pro white-label workspaces omit the Clean Scheduler footer line. */
+  showPlatformMark?: boolean;
 }
 
 export interface CampaignPreviewBranding {
@@ -30,6 +34,7 @@ export interface CampaignPreviewBranding {
   addressLine: string | null;
   portalUrl: string;
   logoUrl: string | null;
+  showPlatformMark?: boolean;
 }
 
 function mergeContextFromParams(params: CampaignEmailContentParams): CampaignMergeContext {
@@ -66,45 +71,37 @@ function resolveBodyText(
   return applyCampaignMergeTags(htmlToPlainCampaignText(template.defaultBodyHtml), context);
 }
 
-function buildInnerBodyHtml(params: {
+function assembleCampaignHtml(params: {
+  subject: string;
   bodyHtml: string;
-  templateKey: CampaignTemplateKey;
+  tenantName: string;
   brandColor: string;
   logoUrl: string | null;
-  tenantName: string;
+  addressLine: string | null;
   portalUrl: string;
+  unsubscribeUrl: string;
   ctaLabel: string;
   accentLabel: string;
+  showPlatformMark?: boolean;
 }): string {
-  const logoBlock = params.logoUrl
-    ? `<p style="margin:0 0 16px;"><img src="${escapeHtmlLite(params.logoUrl)}" alt="${escapeHtmlLite(params.tenantName)}" style="max-height:48px;width:auto;" /></p>`
-    : `<p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${escapeHtmlLite(params.brandColor)};">${escapeHtmlLite(params.accentLabel)}</p>`;
+  const brand = tenantEmailBrand({
+    name: params.tenantName,
+    brandColor: params.brandColor,
+    logoUrl: params.logoUrl,
+    addressLine: params.addressLine,
+    showPlatformMark: params.showPlatformMark,
+  });
 
-  return `
-<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#111827;">
-  ${logoBlock}
-  <div>${params.bodyHtml}</div>
-  <p style="margin:28px 0 0;">
-    <a href="${escapeHtmlLite(params.portalUrl)}" style="display:inline-block;padding:12px 20px;background:${escapeHtmlLite(params.brandColor)};color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">
-      ${escapeHtmlLite(params.ctaLabel)}
-    </a>
-  </p>
-</div>`.trim();
-}
-
-function buildFooterHtml(params: {
-  tenantName: string;
-  addressLine: string | null;
-  unsubscribeUrl: string;
-}): string {
-  const footerAddress = params.addressLine?.trim() || '';
-  return `
-<hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;" />
-<p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">
-  <strong>${escapeHtmlLite(params.tenantName)}</strong><br />
-  ${footerAddress ? `${escapeHtmlLite(footerAddress)}<br />` : ''}
-  <a href="${escapeHtmlLite(params.unsubscribeUrl)}" style="color:#6b7280;">Unsubscribe</a>
-</p>`.trim();
+  return wrapTransactionalEmailHtml({
+    brand,
+    preheader: params.subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${escapeHtmlLite(brand.brandColor)};">${escapeHtmlLite(params.accentLabel)}</p>
+      <div>${params.bodyHtml}</div>
+      ${emailButtonHtml({ href: params.portalUrl, label: params.ctaLabel, color: brand.brandColor })}
+    `.trim(),
+    footerHtml: `<p style="margin:10px 0 0;font-size:12px;line-height:1.5;"><a href="${escapeHtmlLite(params.unsubscribeUrl)}" style="color:#5c6f6e;text-decoration:underline;">Unsubscribe</a></p>`,
+  });
 }
 
 export function buildCampaignEmailContent(params: CampaignEmailContentParams): {
@@ -118,22 +115,19 @@ export function buildCampaignEmailContent(params: CampaignEmailContentParams): {
   const bodyHtml = resolveBodyHtml(params, context);
   const bodyText = resolveBodyText(params, context);
 
-  const innerHtml = buildInnerBodyHtml({
+  const html = assembleCampaignHtml({
+    subject,
     bodyHtml,
-    templateKey: params.templateKey,
+    tenantName: params.tenantName,
     brandColor: params.brandColor,
     logoUrl: params.logoUrl,
-    tenantName: params.tenantName,
+    addressLine: params.addressLine,
     portalUrl: params.portalUrl,
+    unsubscribeUrl: params.unsubscribeUrl,
     ctaLabel: template.ctaLabel,
     accentLabel: template.accentLabel,
+    showPlatformMark: params.showPlatformMark,
   });
-
-  const html = `${innerHtml}${buildFooterHtml({
-    tenantName: params.tenantName,
-    addressLine: params.addressLine,
-    unsubscribeUrl: params.unsubscribeUrl,
-  })}`;
 
   const text = [
     bodyText,
@@ -174,26 +168,24 @@ export function buildCampaignEmailPreviewHtml(params: {
       addressLine: params.branding.addressLine,
       brandColor: params.branding.brandColor,
       logoUrl: params.branding.logoUrl,
+      showPlatformMark: params.branding.showPlatformMark,
     },
     params.mergeContext,
   );
 
-  const innerHtml = buildInnerBodyHtml({
+  const html = assembleCampaignHtml({
+    subject,
     bodyHtml,
-    templateKey: params.templateKey,
+    tenantName: params.branding.tenantName,
     brandColor: params.branding.brandColor,
     logoUrl: params.branding.logoUrl,
-    tenantName: params.branding.tenantName,
+    addressLine: params.branding.addressLine,
     portalUrl: params.branding.portalUrl,
+    unsubscribeUrl: '#',
     ctaLabel: template.ctaLabel,
     accentLabel: template.accentLabel,
+    showPlatformMark: params.branding.showPlatformMark,
   });
-
-  const html = `${innerHtml}${buildFooterHtml({
-    tenantName: params.branding.tenantName,
-    addressLine: params.branding.addressLine,
-    unsubscribeUrl: '#',
-  })}`;
 
   return { subject, html };
 }

@@ -1,6 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  emailDeliveryFields,
+  loadTenantEmailBrand,
+  platformEmailBrand,
+  tenantEmailBrand,
+} from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
+import {
+  emailButtonHtml,
+  emailFactsHtml,
+  wrapTransactionalEmailHtml,
+} from '@/lib/email/transactionalEmailLayout';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
 import {
   customerHasPortalLogin,
@@ -94,7 +106,10 @@ export async function sendQuoteNotificationEmail(
   const flags = await loadOpsFlags(admin, params.tenantId);
   if (!flags) return;
 
-  const tname = await tenantName(admin, params.tenantId);
+  const loadedBrand = await loadTenantEmailBrand(admin, params.tenantId);
+  const tname = loadedBrand?.name || (await tenantName(admin, params.tenantId));
+  const brand = loadedBrand ?? tenantEmailBrand({ name: tname });
+  const platformDelivery = emailDeliveryFields(platformEmailBrand());
   const staffEmail = await tenantStaffEmail(admin, params.tenantId);
   const customerEmail = await customerIdentityEmail(admin, params.customerId);
   const hasLogin = await customerHasPortalLogin(admin, params.customerId);
@@ -121,10 +136,28 @@ export async function sendQuoteNotificationEmail(
       ? ''
       : '\n\nYou will need to finish setting up your customer portal account before you can view this quote.';
     const text = `You have a new quote from ${tname}.\n\nTitle: ${params.quoteTitle}\n\nView and respond: ${link}${setupHint}\n`;
-    const html = hasLogin
-      ? `<p>You have a new quote from <strong>${escapeHtml(tname)}</strong>.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p><a href="${link}">View and respond</a></p>`
-      : `<p>You have a new quote from <strong>${escapeHtml(tname)}</strong>.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p><a href="${link}">Create your account &amp; view quote</a></p><p>Use the same email address your provider has on file (${escapeHtml(customerEmail)}).</p>`;
-    const sent = await sendTransactionalEmail({ to: customerEmail, subject, text, html });
+    const ctaLabel = hasLogin ? 'View and respond' : 'Create your account and view the quote';
+    const html = wrapTransactionalEmailHtml({
+      brand,
+      preheader: `New quote from ${tname}`,
+      bodyHtml: `
+        <p>You have a new quote from <strong>${escapeHtmlLite(tname)}</strong>.</p>
+        <p style="margin:0 0 16px;font-size:18px;font-weight:700;color:#102122;">${escapeHtmlLite(params.quoteTitle)}</p>
+        ${emailButtonHtml({ href: link, label: ctaLabel, color: brand.brandColor })}
+        ${
+          hasLogin
+            ? ''
+            : `<p style="margin:0;font-size:13px;line-height:1.5;color:#5c6f6e;">Use the email address your provider has on file (${escapeHtmlLite(customerEmail)}).</p>`
+        }
+      `.trim(),
+    });
+    const sent = await sendTransactionalEmail({
+      to: customerEmail,
+      subject,
+      text,
+      html,
+      ...emailDeliveryFields(brand),
+    });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_sent email failed:', sent.error);
     }
@@ -134,8 +167,23 @@ export async function sendQuoteNotificationEmail(
   if (event === 'quote_accepted' && flags.email_accepted && staffEmail) {
     const subject = `Quote accepted: ${params.quoteTitle}`;
     const text = `A customer accepted a quote.\n\nTitle: ${params.quoteTitle}\nQuote ID: ${params.quoteId}\n`;
-    const html = `<p>A customer accepted a quote.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p>Quote ID: <code>${escapeHtml(params.quoteId)}</code></p>`;
-    const sent = await sendTransactionalEmail({ to: staffEmail, subject, text, html });
+    const html = wrapTransactionalEmailHtml({
+      preheader: `Quote accepted — ${params.quoteTitle}`,
+      bodyHtml: `
+        <p>A customer accepted a quote.</p>
+        ${emailFactsHtml([
+          { label: 'Quote', value: params.quoteTitle },
+          { label: 'Quote ID', value: params.quoteId },
+        ])}
+      `.trim(),
+    });
+    const sent = await sendTransactionalEmail({
+      to: staffEmail,
+      subject,
+      text,
+      html,
+      ...platformDelivery,
+    });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_accepted email failed:', sent.error);
     }
@@ -145,18 +193,25 @@ export async function sendQuoteNotificationEmail(
   if (event === 'quote_declined' && flags.email_declined && staffEmail) {
     const subject = `Quote declined: ${params.quoteTitle}`;
     const text = `A customer declined a quote.\n\nTitle: ${params.quoteTitle}\nQuote ID: ${params.quoteId}\n`;
-    const html = `<p>A customer declined a quote.</p><p><strong>${escapeHtml(params.quoteTitle)}</strong></p><p>Quote ID: <code>${escapeHtml(params.quoteId)}</code></p>`;
-    const sent = await sendTransactionalEmail({ to: staffEmail, subject, text, html });
+    const html = wrapTransactionalEmailHtml({
+      preheader: `Quote declined — ${params.quoteTitle}`,
+      bodyHtml: `
+        <p>A customer declined a quote.</p>
+        ${emailFactsHtml([
+          { label: 'Quote', value: params.quoteTitle },
+          { label: 'Quote ID', value: params.quoteId },
+        ])}
+      `.trim(),
+    });
+    const sent = await sendTransactionalEmail({
+      to: staffEmail,
+      subject,
+      text,
+      html,
+      ...platformDelivery,
+    });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_declined email failed:', sent.error);
     }
   }
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

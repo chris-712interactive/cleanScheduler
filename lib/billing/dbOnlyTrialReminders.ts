@@ -1,5 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { salutationFirstName } from '@/lib/people/personName';
 import { publicEnv } from '@/lib/env';
 import type { Database } from '@/lib/supabase/database.types';
@@ -54,12 +57,16 @@ export async function sendDbOnlyTrialEndingEmail(params: {
     to: params.ownerEmail,
     subject: `${workspace}: your Clean Scheduler trial ends ${trialEnd}`,
     text: textBody,
-    html: [
-      `<p>Hi ${ownerFirstName},</p>`,
-      `<p>Your free trial for <strong>${workspace}</strong> ends on <strong>${trialEnd}</strong>.</p>`,
-      `<p><a href="${billingUrl}">Choose a plan and subscribe</a> to keep scheduling, quotes, and billing running without interruption.</p>`,
-      '<p>— Clean Scheduler</p>',
-    ].join(''),
+    html: wrapTransactionalEmailHtml({
+      preheader: `Your trial for ${workspace} ends ${trialEnd}`,
+      bodyHtml: `
+        <p>Hi ${escapeHtmlLite(ownerFirstName)},</p>
+        <p>Your free trial for <strong>${escapeHtmlLite(workspace)}</strong> ends on <strong>${escapeHtmlLite(trialEnd)}</strong>.</p>
+        <p>Choose a plan and subscribe to keep scheduling, quotes, and billing running without interruption.</p>
+        ${emailButtonHtml({ href: billingUrl, label: 'Choose a plan' })}
+      `.trim(),
+    }),
+    ...emailDeliveryFields(platformEmailBrand()),
   });
 }
 

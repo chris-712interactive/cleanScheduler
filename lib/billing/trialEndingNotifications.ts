@@ -1,6 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
+import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { salutationFirstName } from '@/lib/people/personName';
 import { publicEnv } from '@/lib/env';
 import type { Database } from '@/lib/supabase/database.types';
@@ -72,12 +75,16 @@ export async function notifyTenantTrialEndingSoon(
     to,
     subject: `${workspace}: your Clean Scheduler trial ends ${trialEnd}`,
     text: textBody,
-    html: [
-      `<p>Hi ${ownerFirstName},</p>`,
-      `<p>Your free trial for <strong>${workspace}</strong> ends on <strong>${trialEnd}</strong>.</p>`,
-      `<p><a href="${billingUrl}">Add a subscription</a> to keep scheduling, quotes, and billing running without interruption.</p>`,
-      '<p>If you already added a payment method in Stripe, you can ignore this email.</p>',
-      '<p>— Clean Scheduler</p>',
-    ].join(''),
+    html: wrapTransactionalEmailHtml({
+      preheader: `Your trial for ${workspace} ends ${trialEnd}`,
+      bodyHtml: `
+        <p>Hi ${escapeHtmlLite(ownerFirstName)},</p>
+        <p>Your free trial for <strong>${escapeHtmlLite(workspace)}</strong> ends on <strong>${escapeHtmlLite(trialEnd)}</strong>.</p>
+        <p>Add a subscription to keep scheduling, quotes, and billing running without interruption.</p>
+        ${emailButtonHtml({ href: billingUrl, label: 'Add a subscription' })}
+        <p style="margin:0;">If you already added a payment method in Stripe, you can ignore this email.</p>
+      `.trim(),
+    }),
+    ...emailDeliveryFields(platformEmailBrand()),
   });
 }

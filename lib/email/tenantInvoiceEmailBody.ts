@@ -1,5 +1,16 @@
+import type { TenantEmailBrand } from '@/lib/email/emailBrand';
+import { tenantEmailBrand } from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
+import {
+  emailButtonHtml,
+  emailFactsHtml,
+  wrapTransactionalEmailHtml,
+} from '@/lib/email/transactionalEmailLayout';
 import { formatUsdFromCents } from '@/lib/format/money';
-import { escapeEmailAttr, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
+
+function brandFor(name: string, brand?: TenantEmailBrand): TenantEmailBrand {
+  return brand ?? tenantEmailBrand({ name });
+}
 
 export function buildTenantInvoiceEmailContent(params: {
   tenantName: string;
@@ -13,12 +24,14 @@ export function buildTenantInvoiceEmailContent(params: {
   /** When set, CTA prefers guest pay over portal copy. */
   payUrl?: string | null;
   ctaLabel?: string;
+  brand?: TenantEmailBrand;
 }): { subject: string; text: string; html: string } {
+  const brand = brandFor(params.tenantName, params.brand);
   const payHref = params.payUrl?.trim() || params.portalUrl;
   const ctaLabel = params.ctaLabel ?? (params.payUrl ? 'Pay this invoice' : 'Open customer portal');
-  const subject = `Invoice from ${params.tenantName}: ${params.invoiceTitle}`;
+  const subject = `Invoice from ${brand.name}: ${params.invoiceTitle}`;
   const text = [
-    `${params.tenantName} sent you an invoice in Clean Scheduler.`,
+    `${brand.name} sent you an invoice.`,
     ``,
     `Invoice: ${params.invoiceTitle}`,
     `Status: ${params.status}`,
@@ -32,31 +45,23 @@ export function buildTenantInvoiceEmailContent(params: {
     .filter(Boolean)
     .join('\n');
 
-  const tableRows = [
-    ['Invoice', params.invoiceTitle],
-    ['Status', params.status],
-    ['Total', formatUsdFromCents(params.totalCents)],
-    ['Paid', formatUsdFromCents(params.paidCents)],
-    ['Balance', formatUsdFromCents(params.balanceCents)],
-    ...(params.dueLabel ? [['Due', params.dueLabel] as const] : []),
+  const rows = [
+    { label: 'Invoice', value: params.invoiceTitle },
+    { label: 'Status', value: params.status },
+    { label: 'Total', value: formatUsdFromCents(params.totalCents) },
+    { label: 'Paid', value: formatUsdFromCents(params.paidCents) },
+    { label: 'Balance', value: formatUsdFromCents(params.balanceCents) },
+    ...(params.dueLabel ? [{ label: 'Due', value: params.dueLabel }] : []),
   ];
 
-  const bodyHtml = `
-    <p><strong>${escape(params.tenantName)}</strong> sent you an invoice.</p>
-    <table style="border-collapse:collapse;width:100%;font-size:14px;margin:16px 0;">
-      ${tableRows
-        .map(
-          ([label, value]) =>
-            `<tr><td style="padding:6px 8px;color:#71717a;">${escape(label)}</td><td style="padding:6px 8px;"><strong>${escape(String(value))}</strong></td></tr>`,
-        )
-        .join('')}
-    </table>
-    <p style="margin:16px 0 0;"><a href="${escapeEmailAttr(payHref)}" style="color:#2563eb;">${escape(ctaLabel)}</a></p>
-  `.trim();
-
   const html = wrapTransactionalEmailHtml({
-    preheader: `${params.tenantName} — balance ${formatUsdFromCents(params.balanceCents)}`,
-    bodyHtml,
+    brand,
+    preheader: `${brand.name} — balance ${formatUsdFromCents(params.balanceCents)}`,
+    bodyHtml: `
+      <p><strong>${escapeHtmlLite(brand.name)}</strong> sent you an invoice.</p>
+      ${emailFactsHtml(rows)}
+      ${emailButtonHtml({ href: payHref, label: ctaLabel, color: brand.brandColor })}
+    `.trim(),
   });
 
   return { subject, text, html };
@@ -68,10 +73,12 @@ export function buildInvoiceReceiptEmailContent(params: {
   amountPaidCents: number;
   totalCents: number;
   portalUrl: string;
+  brand?: TenantEmailBrand;
 }): { subject: string; text: string; html: string } {
+  const brand = brandFor(params.tenantName, params.brand);
   const subject = `Payment receipt — ${params.invoiceTitle}`;
   const text = [
-    `Thank you — ${params.tenantName} received your payment.`,
+    `Thank you — ${brand.name} received your payment.`,
     ``,
     `Invoice: ${params.invoiceTitle}`,
     `Amount paid: ${formatUsdFromCents(params.amountPaidCents)}`,
@@ -80,24 +87,19 @@ export function buildInvoiceReceiptEmailContent(params: {
     `View invoice: ${params.portalUrl}`,
   ].join('\n');
 
-  const bodyHtml = `
-    <p>Thank you — <strong>${escape(params.tenantName)}</strong> received your payment.</p>
-    <table style="border-collapse:collapse;width:100%;font-size:14px;margin:16px 0;">
-      <tr><td style="padding:6px 8px;color:#71717a;">Invoice</td><td style="padding:6px 8px;"><strong>${escape(params.invoiceTitle)}</strong></td></tr>
-      <tr><td style="padding:6px 8px;color:#71717a;">Amount paid</td><td style="padding:6px 8px;"><strong>${escape(formatUsdFromCents(params.amountPaidCents))}</strong></td></tr>
-      <tr><td style="padding:6px 8px;color:#71717a;">Invoice total</td><td style="padding:6px 8px;">${escape(formatUsdFromCents(params.totalCents))}</td></tr>
-    </table>
-    <p style="margin:16px 0 0;"><a href="${escapeEmailAttr(params.portalUrl)}" style="color:#2563eb;">View invoice</a></p>
-  `.trim();
-
   const html = wrapTransactionalEmailHtml({
+    brand,
     preheader: `Payment received for ${params.invoiceTitle}`,
-    bodyHtml,
+    bodyHtml: `
+      <p>Thank you — <strong>${escapeHtmlLite(brand.name)}</strong> received your payment.</p>
+      ${emailFactsHtml([
+        { label: 'Invoice', value: params.invoiceTitle },
+        { label: 'Amount paid', value: formatUsdFromCents(params.amountPaidCents) },
+        { label: 'Invoice total', value: formatUsdFromCents(params.totalCents) },
+      ])}
+      ${emailButtonHtml({ href: params.portalUrl, label: 'View invoice', color: brand.brandColor })}
+    `.trim(),
   });
 
   return { subject, text, html };
-}
-
-function escape(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

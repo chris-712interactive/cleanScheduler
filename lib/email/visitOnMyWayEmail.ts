@@ -1,7 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { customerContactForVisit } from '@/lib/customers/customerContact';
+import {
+  emailDeliveryFields,
+  loadTenantEmailBrand,
+  tenantEmailBrand,
+} from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { emailFactsHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import {
   logVisitCustomerEmail,
   visitCustomerEmailAlreadyLogged,
@@ -61,12 +68,8 @@ export async function maybeSendVisitOnMyWayEmail(
     const contact = await customerContactForVisit(admin, params.customerId);
     if (!contact.email) return { sent: false, reason: 'no_email' };
 
-    const [{ data: tenant }, { data: visit }] = await Promise.all([
-      admin
-        .from('tenants')
-        .select('name, slug, business_phone')
-        .eq('id', params.tenantId)
-        .maybeSingle(),
+    const [brandLoaded, { data: visit }] = await Promise.all([
+      loadTenantEmailBrand(admin, params.tenantId),
       admin
         .from('tenant_scheduled_visits')
         .select('title, starts_at')
@@ -75,8 +78,9 @@ export async function maybeSendVisitOnMyWayEmail(
         .maybeSingle(),
     ]);
 
-    const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your cleaning team';
-    const phone = tenant?.business_phone?.trim() || null;
+    const brand = brandLoaded ?? tenantEmailBrand({ name: 'Your cleaning team' });
+    const tenantName = brand.name;
+    const phone = brand.phone;
     const when = visit?.starts_at ? formatVisitWhen(visit.starts_at) : null;
     const title = visit?.title?.trim() || 'your cleaning';
 
@@ -92,19 +96,24 @@ export async function maybeSendVisitOnMyWayEmail(
       tenantName,
     ].filter((line): line is string => line != null);
 
-    const html = `
-      <p>Hi,</p>
-      <p>Our team from <strong>${escapeHtml(tenantName)}</strong> is on the way for ${escapeHtml(title)}.</p>
-      ${when ? `<p>Scheduled for: ${escapeHtml(when)}</p>` : ''}
-      ${phone ? `<p>Questions? Call us at ${escapeHtml(phone)}.</p>` : ''}
-      <p>Thank you,<br/>${escapeHtml(tenantName)}</p>
-    `.trim();
+    const html = wrapTransactionalEmailHtml({
+      brand,
+      preheader: `${tenantName} is on the way`,
+      bodyHtml: `
+        <p>Hi,</p>
+        <p>Our team from <strong>${escapeHtmlLite(tenantName)}</strong> is on the way for ${escapeHtmlLite(title)}.</p>
+        ${when ? emailFactsHtml([{ label: 'Scheduled for', value: when }]) : ''}
+        ${phone ? `<p>Questions? Call us at ${escapeHtmlLite(phone)}.</p>` : ''}
+        <p style="margin:0;">Thank you,<br/>${escapeHtmlLite(tenantName)}</p>
+      `.trim(),
+    });
 
     const delivered = await sendTransactionalEmail({
       to: contact.email,
       subject,
       text: textLines.join('\n'),
       html,
+      ...emailDeliveryFields(brand),
     });
     if (!delivered.ok) return { sent: false, reason: 'failed' };
 
@@ -118,12 +127,4 @@ export async function maybeSendVisitOnMyWayEmail(
     console.error('[visitOnMyWayEmail]', err);
     return { sent: false, reason: 'failed' };
   }
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

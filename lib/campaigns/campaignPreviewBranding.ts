@@ -15,6 +15,7 @@ type TenantBrandingRow = {
 export function campaignPreviewBrandingFromTenant(
   tenant: TenantBrandingRow,
   portalUrl: string,
+  options?: { showPlatformMark?: boolean },
 ): CampaignPreviewBranding {
   return {
     tenantName: tenant.name,
@@ -28,5 +29,6 @@ export function campaignPreviewBrandingFromTenant(
         postal_code: tenant.postal_code,
       }) || null,
     portalUrl,
+    showPlatformMark: options?.showPlatformMark,
   };
 }

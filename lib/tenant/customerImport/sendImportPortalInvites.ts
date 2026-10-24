@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import { isResendApiConfigured } from '@/lib/email/resend';
+import { isResendConfigured } from '@/lib/email/resend';
 import {
   assertTenantFeatureEnabled,
   featureGateErrorMessage,
@@ -79,7 +79,7 @@ export async function sendPortalInvitesForImportedCustomers(input: {
     };
   }
 
-  if (!isResendApiConfigured()) {
+  if (!isResendConfigured()) {
     return {
       ...summary,
       failed: input.customerIds.length,

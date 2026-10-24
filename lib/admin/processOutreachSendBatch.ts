@@ -7,8 +7,9 @@ import {
 import { signatureFromCampaignRow } from '@/lib/admin/outreachSignature';
 import { OUTREACH_SEND_BATCH_SIZE } from '@/lib/admin/outreachTypes';
 import { createOutreachUnsubscribeToken } from '@/lib/admin/outreachUnsubscribeToken';
-import { sendCampaignEmail } from '@/lib/email/sendCampaignEmail';
+import { campaignFromAddress, sendCampaignEmail } from '@/lib/email/sendCampaignEmail';
 import { serverEnv } from '@/lib/env';
+import { PRODUCT_NAME } from '@/lib/legal/site';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -24,8 +25,8 @@ export async function processOutreachSendBatch(
   campaignsTouched: string[];
 }> {
   const batchSize = options?.batchSize ?? OUTREACH_SEND_BATCH_SIZE;
-  const from = serverEnv.RESEND_FROM_EMAIL?.trim();
-  if (!from) {
+  const platformFrom = serverEnv.RESEND_FROM_EMAIL?.trim();
+  if (!platformFrom) {
     return { processed: 0, sent: 0, failed: 0, campaignsTouched: [] };
   }
 
@@ -92,7 +93,7 @@ export async function processOutreachSendBatch(
 
     const result = await sendCampaignEmail({
       to: recipient.email,
-      from,
+      from: campaignFromAddress(PRODUCT_NAME, platformFrom),
       subject: content.subject,
       text: content.text,
       html: content.html,

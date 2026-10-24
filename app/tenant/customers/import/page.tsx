@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
-import { isResendApiConfigured } from '@/lib/email/resend';
+import { isResendConfigured } from '@/lib/email/resend';
 import { createAdminClient } from '@/lib/supabase/server';
 import {
   hasPermission,
@@ -42,7 +42,7 @@ export default async function TenantCustomerImportPage() {
           <CustomerImportWizard
             tenantSlug={membership.tenantSlug}
             portalInvitesAvailable={portalInvitesAvailable}
-            emailReady={isResendApiConfigured()}
+            emailReady={isResendConfigured()}
           />
         </Card>
       ) : (

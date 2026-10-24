@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/supabase/database.types';
+import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { emailFactsHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { LEGAL_CONTACT_EMAIL } from '@/lib/legal/site';
 
 type Admin = SupabaseClient<Database>;
@@ -157,29 +159,33 @@ async function notifyOpsVelocityBlocked(options: {
     `Customer checkout starts (24h): ${options.counts.customerCheckoutStarts}`,
   ].join('\n');
 
-  const html = `<p>A Connect card Checkout was blocked by new-account velocity caps.</p>
-<ul>
-<li>Tenant: <code>${escapeHtml(options.tenantSlug ?? options.tenantId)}</code></li>
-<li>Customer: <code>${escapeHtml(options.customerId ?? '(none)')}</code></li>
-<li>Reason: <code>${escapeHtml(options.reason)}</code></li>
-<li>Tenant payments / starts: ${options.counts.tenantPayments} / ${options.counts.tenantCheckoutStarts}</li>
-<li>Customer payments / starts: ${options.counts.customerPayments} / ${options.counts.customerCheckoutStarts}</li>
-</ul>`;
+  const html = wrapTransactionalEmailHtml({
+    preheader: 'Connect checkout was blocked by a velocity cap',
+    bodyHtml: `
+      <p>A Connect card Checkout was blocked by new-account velocity caps.</p>
+      ${emailFactsHtml([
+        { label: 'Tenant', value: options.tenantSlug ?? options.tenantId },
+        { label: 'Customer', value: options.customerId ?? '(none)' },
+        { label: 'Reason', value: options.reason },
+        {
+          label: 'Tenant payments / starts',
+          value: `${options.counts.tenantPayments} / ${options.counts.tenantCheckoutStarts}`,
+        },
+        {
+          label: 'Customer payments / starts',
+          value: `${options.counts.customerPayments} / ${options.counts.customerCheckoutStarts}`,
+        },
+      ])}
+    `.trim(),
+  });
 
   await sendTransactionalEmail({
     to: LEGAL_CONTACT_EMAIL,
     subject,
     text,
     html,
+    ...emailDeliveryFields(platformEmailBrand()),
   });
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 /**
