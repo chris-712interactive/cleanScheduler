@@ -9,7 +9,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
-import { isResendApiConfigured } from '@/lib/email/resend';
+import { isResendConfigured } from '@/lib/email/resend';
 import type { CustomerDetailEmbedRow } from '@/lib/tenant/customerEmbedTypes';
 import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
 import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
@@ -176,7 +176,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   const email = identity.email ?? '';
   const phone = identity.phone ?? '';
   const portalLinked = Boolean(identity.auth_user_id);
-  const emailReady = isResendApiConfigured();
+  const emailReady = isResendConfigured();
 
   const errMsg = firstParam(sp.error);
   const subscriptionCheckoutOk = firstParam(sp.subscription_checkout) === 'success';

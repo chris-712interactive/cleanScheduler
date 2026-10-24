@@ -1,15 +1,20 @@
 /**
  * Resend transactional email (server-only).
  *
- * Configure `RESEND_API_KEY`. For non-template sends (quotes), also set
- * `RESEND_FROM_EMAIL`. Customer portal invites use the Resend template
- * `RESEND_CUSTOMER_INVITE_TEMPLATE_ID` (default `create-customer-account`) with
- * from/subject defined in the dashboard template.
+ * Configure `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. The inbox display name
+ * follows the email brand (the cleaning company, or Clean Scheduler).
  */
 import { Resend } from 'resend';
+import {
+  emailFromName,
+  emailReplyTo,
+  tenantEmailBrand,
+  type TenantEmailBrand,
+} from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
+import { formatEmailFromAddress } from '@/lib/email/fromAddress';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { serverEnv } from '@/lib/env';
-
-const DEFAULT_CUSTOMER_INVITE_TEMPLATE_ID = 'create-customer-account';
 
 function resendApiKey(): string | undefined {
   const k = serverEnv.RESEND_API_KEY?.trim();
@@ -21,7 +26,7 @@ function resendFrom(): string | undefined {
   return f || undefined;
 }
 
-/** API key only — enough for template-based portal invites (from/subject live in Resend). */
+/** API key only. Inline mail also needs {@link isResendConfigured}. */
 export function isResendApiConfigured(): boolean {
   return Boolean(resendApiKey());
 }
@@ -31,16 +36,14 @@ export function isResendConfigured(): boolean {
   return Boolean(resendApiKey() && resendFrom());
 }
 
-function customerInviteTemplateId(): string {
-  const id = serverEnv.RESEND_CUSTOMER_INVITE_TEMPLATE_ID?.trim();
-  return id || DEFAULT_CUSTOMER_INVITE_TEMPLATE_ID;
-}
-
 export interface SendTransactionalEmailParams {
   to: string;
   subject: string;
   text: string;
   html: string;
+  /** Inbox display name. The address stays the verified `RESEND_FROM_EMAIL`. */
+  fromName?: string;
+  replyTo?: string;
 }
 
 export async function sendTransactionalEmail(
@@ -58,14 +61,17 @@ export async function sendTransactionalEmail(
   }
 
   const resend = new Resend(apiKey);
+  const fromName = params.fromName?.trim();
+  const replyTo = params.replyTo?.trim();
 
   try {
     const { error } = await resend.emails.send({
-      from,
+      from: fromName ? formatEmailFromAddress(fromName, from) : from,
       to,
       subject: params.subject,
       text: params.text,
       html: params.html,
+      ...(replyTo ? { replyTo } : {}),
     });
     if (error) {
       const detail = [error.message, error.name].filter(Boolean).join(' — ');
@@ -82,54 +88,51 @@ export async function sendTransactionalEmail(
 
 export interface SendCustomerPortalInviteEmailParams {
   to: string;
-  tenantName: string;
+  brand: TenantEmailBrand;
   customerName: string;
   createCustomerLink: string;
 }
 
-/**
- * Sends the customer portal invite using the Resend dashboard template
- * (from + subject come from the template unless overridden).
- */
+/** Customer portal invite, branded as the cleaning company. */
 export async function sendCustomerPortalInviteEmail(
   params: SendCustomerPortalInviteEmailParams,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const apiKey = resendApiKey();
-  if (!apiKey) {
-    return { ok: false, error: 'Resend is not configured (RESEND_API_KEY).' };
-  }
+  const greeting = params.customerName.trim() || 'there';
+  const business = params.brand.name;
+  const subject = `${business} invited you to your customer portal`;
+  const text = [
+    `Hi ${greeting},`,
+    '',
+    `${business} invited you to view visits, invoices, and messages in your customer portal.`,
+    '',
+    `Create your account: ${params.createCustomerLink}`,
+    '',
+    'This link expires in 7 days.',
+  ].join('\n');
 
-  const to = params.to.trim();
-  if (!to) {
-    return { ok: false, error: 'Recipient address is empty.' };
-  }
+  const html = wrapTransactionalEmailHtml({
+    brand: params.brand,
+    preheader: `Create your ${business} customer portal account`,
+    bodyHtml: `
+      <p>Hi ${escapeHtmlLite(greeting)},</p>
+      <p><strong>${escapeHtmlLite(business)}</strong> invited you to view visits, invoices, and messages in your customer portal.</p>
+      ${emailButtonHtml({
+        href: params.createCustomerLink,
+        label: 'Create your account',
+        color: params.brand.brandColor,
+      })}
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#5c6f6e;">This link expires in 7 days.</p>
+    `.trim(),
+  });
 
-  const resend = new Resend(apiKey);
-  const templateId = customerInviteTemplateId();
-
-  try {
-    const { error } = await resend.emails.send({
-      to,
-      template: {
-        id: templateId,
-        variables: {
-          tenantName: params.tenantName,
-          customerName: params.customerName,
-          createCustomerLink: params.createCustomerLink,
-        },
-      },
-    });
-    if (error) {
-      const detail = [error.message, error.name].filter(Boolean).join(' — ');
-      console.error('[resend] invite template send failed:', detail);
-      return { ok: false, error: error.message };
-    }
-    return { ok: true };
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Resend request failed';
-    console.error('[resend] invite template send threw:', msg);
-    return { ok: false, error: msg };
-  }
+  return sendTransactionalEmail({
+    to: params.to,
+    subject,
+    text,
+    html,
+    fromName: emailFromName(params.brand),
+    replyTo: emailReplyTo(params.brand),
+  });
 }
 
 export interface SendEmployeeInviteEmailParams {
@@ -138,25 +141,17 @@ export interface SendEmployeeInviteEmailParams {
   roleLabel: string;
   acceptUrl: string;
   workspaceUrl: string;
+  brand?: TenantEmailBrand;
 }
 
-function escapeHtmlLite(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** Inline HTML invite — requires RESEND_FROM_EMAIL (same as quote mail). */
+/** Team invite. The header is the cleaning company; the account lives on Clean Scheduler. */
 export async function sendEmployeeInviteEmail(
   params: SendEmployeeInviteEmailParams,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const tenant = escapeHtmlLite(params.tenantName);
-  const role = escapeHtmlLite(params.roleLabel);
-  const subject = `You're invited to ${params.tenantName} on Clean Scheduler`;
+  const brand = params.brand ?? tenantEmailBrand({ name: params.tenantName });
+  const subject = `You're invited to ${brand.name} on Clean Scheduler`;
   const text = [
-    `${params.tenantName} invited you as ${params.roleLabel}.`,
+    `${brand.name} invited you as ${params.roleLabel}.`,
     '',
     'Create your password and join the team:',
     params.acceptUrl,
@@ -167,15 +162,27 @@ export async function sendEmployeeInviteEmail(
     'This link expires in 7 days.',
   ].join('\n');
 
-  const html = `<p><strong>${tenant}</strong> invited you as <strong>${role}</strong>.</p>
-<p><a href="${escapeHtmlLite(params.acceptUrl)}">Create your account</a></p>
-<p>Then sign in at <a href="${escapeHtmlLite(params.workspaceUrl)}">${escapeHtmlLite(params.workspaceUrl)}</a>.</p>
-<p style="color:#666;font-size:12px">This link expires in 7 days.</p>`;
+  const html = wrapTransactionalEmailHtml({
+    brand,
+    preheader: `${brand.name} invited you as ${params.roleLabel}`,
+    bodyHtml: `
+      <p><strong>${escapeHtmlLite(brand.name)}</strong> invited you to join the team as <strong>${escapeHtmlLite(params.roleLabel)}</strong>.</p>
+      ${emailButtonHtml({
+        href: params.acceptUrl,
+        label: 'Create your account',
+        color: brand.brandColor,
+      })}
+      <p>After you set a password, sign in at <a href="${escapeHtmlLite(params.workspaceUrl)}">${escapeHtmlLite(params.workspaceUrl)}</a>.</p>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#5c6f6e;">This link expires in 7 days.</p>
+    `.trim(),
+  });
 
   return sendTransactionalEmail({
     to: params.to,
     subject,
     text,
     html,
+    fromName: emailFromName(brand),
+    replyTo: emailReplyTo(brand),
   });
 }

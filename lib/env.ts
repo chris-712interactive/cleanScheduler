@@ -137,9 +137,12 @@ const serverEnvSchema = z.object({
 
   /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),
-  /** Resend — verified sender for non-template sends (e.g. quotes). Portal invite template may define its own from. */
+  /** Resend — verified sender. Display name is set per message (tenant or Clean Scheduler). */
   RESEND_FROM_EMAIL: z.string().min(1).optional(),
-  /** Resend — published template id/alias for customer portal invites (default create-customer-account). */
+  /**
+   * Unused. Portal invites are branded HTML sent with `RESEND_FROM_EMAIL`.
+   * Kept so existing environment files still parse.
+   */
   RESEND_CUSTOMER_INVITE_TEMPLATE_ID: z.string().min(1).optional(),
   /** Resend — Svix signing secret for `/api/webhooks/resend` (whsec_… from Resend dashboard). */
   RESEND_WEBHOOK_SECRET: z.string().optional(),

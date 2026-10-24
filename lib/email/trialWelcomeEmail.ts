@@ -1,6 +1,7 @@
+import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import { escapeHtmlLite } from '@/lib/email/escapeHtml';
-import { wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { PRODUCT_NAME } from '@/lib/legal/site';
 
@@ -40,12 +41,8 @@ export async function maybeSendTrialWelcomeEmail(params: {
       <p>Hi ${escapeHtmlLite(greeting)},</p>
       <p>Your <strong>${escapeHtmlLite(PRODUCT_NAME)}</strong> workspace for <strong>${escapeHtmlLite(business)}</strong> is ready.</p>
       <p>You have ${params.trialDays} days to explore scheduling, quotes, and invoicing.</p>
-      <p style="margin:24px 0;">
-        <a href="${escapeHtmlLite(workspaceUrl)}" style="display:inline-block;padding:12px 20px;background:#18181b;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">
-          Open your workspace
-        </a>
-      </p>
-      <p style="font-size:13px;color:#71717a;">No email confirmation is required — sign in with the password you chose at signup.</p>
+      ${emailButtonHtml({ href: workspaceUrl, label: 'Open your workspace' })}
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#5c6f6e;">No email confirmation is required — sign in with the password you chose at signup.</p>
     `.trim();
 
     await sendTransactionalEmail({
@@ -56,6 +53,7 @@ export async function maybeSendTrialWelcomeEmail(params: {
         preheader: `${business} is ready — open your workspace`,
         bodyHtml,
       }),
+      ...emailDeliveryFields(platformEmailBrand()),
     });
   } catch (err) {
     console.error('[trialWelcomeEmail] failed', err);

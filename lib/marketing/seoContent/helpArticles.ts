@@ -236,6 +236,7 @@ export const CLEANING_BUSINESS_ARTICLES: HelpGuideArticle[] = [
         title: 'What you control',
         paragraphs: [
           'You decide when to invite customers, what they see, and whether white-label custom domains are used (Pro). Office staff approve or deny reschedule requests from the schedule inbox.',
+          'Quotes, invoices, visit reminders, and portal invites use the logo, color, and address saved under Settings → Business, so customers see your company rather than a generic notice. Mail about your Clean Scheduler account — trial reminders, time off, and office alerts — uses Clean Scheduler branding. Pro white-label portals leave the Clean Scheduler line off customer mail.',
         ],
       },
       {

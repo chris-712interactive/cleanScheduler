@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { emailDeliveryFields, loadTenantEmailBrand } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import { buildInvoiceReceiptEmailContent } from '@/lib/email/tenantInvoiceEmailBody';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
@@ -30,13 +31,8 @@ export async function sendInvoiceReceiptEmail(
   const email = (cust?.customer_identities as { email: string | null } | null)?.email?.trim();
   if (!email) return;
 
-  const { data: tenant } = await admin
-    .from('tenants')
-    .select('name, slug')
-    .eq('id', params.tenantId)
-    .maybeSingle();
-
-  const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your provider';
+  const brand = await loadTenantEmailBrand(admin, params.tenantId);
+  const tenantName = brand?.name || 'Your provider';
   const portalUrl = await customerPortalUrlForTenant(
     admin,
     params.tenantId,
@@ -49,7 +45,12 @@ export async function sendInvoiceReceiptEmail(
     amountPaidCents: params.paymentAmountCents ?? inv.amount_paid_cents,
     totalCents: inv.amount_cents,
     portalUrl,
+    brand: brand ?? undefined,
   });
 
-  await sendTransactionalEmail({ to: email, ...body });
+  await sendTransactionalEmail({
+    to: email,
+    ...body,
+    ...(brand ? emailDeliveryFields(brand) : { fromName: tenantName }),
+  });
 }

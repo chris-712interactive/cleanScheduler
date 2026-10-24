@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  emailDeliveryFields,
+  loadTenantEmailBrand,
+  platformEmailBrand,
+} from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import {
   buildRefereeAttributionRecordedEmailContent,
@@ -33,14 +38,14 @@ export async function sendReferralQualificationEmails(
 ): Promise<void> {
   if (!isResendConfigured()) return;
 
-  const { data: tenant } = await admin
-    .from('tenants')
-    .select('name, slug')
-    .eq('id', ctx.tenantId)
-    .maybeSingle();
+  const [{ data: tenant }, brand] = await Promise.all([
+    admin.from('tenants').select('name, slug').eq('id', ctx.tenantId).maybeSingle(),
+    loadTenantEmailBrand(admin, ctx.tenantId),
+  ]);
 
-  const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your provider';
+  const tenantName = brand?.name || tenant?.name?.trim() || tenant?.slug || 'Your provider';
   const tenantSlug = tenant?.slug ?? '';
+  const customerDelivery = brand ? emailDeliveryFields(brand) : { fromName: tenantName };
 
   const [referrer, referee] = await Promise.all([
     loadReferralCustomerContact(admin, ctx.referrerCustomerId),
@@ -56,8 +61,9 @@ export async function sendReferralQualificationEmails(
       refereeName: referee.displayName,
       rewardAmountCents: ctx.referrerRewardCents,
       portalUrl: referrerPortalUrl,
+      brand: brand ?? undefined,
     });
-    await sendTransactionalEmail({ to: referrer.email, ...body });
+    await sendTransactionalEmail({ to: referrer.email, ...body, ...customerDelivery });
   }
 
   if (referee.email && ctx.refereeRewardCents != null && ctx.refereeRewardCents > 0) {
@@ -66,8 +72,9 @@ export async function sendReferralQualificationEmails(
       referrerName: referrer.displayName,
       rewardAmountCents: ctx.refereeRewardCents,
       portalUrl: refereePortalUrl,
+      brand: brand ?? undefined,
     });
-    await sendTransactionalEmail({ to: referee.email, ...body });
+    await sendTransactionalEmail({ to: referee.email, ...body, ...customerDelivery });
   }
 
   const { data: profile } = await admin
@@ -85,7 +92,11 @@ export async function sendReferralQualificationEmails(
       refereeName: referee.displayName,
       auditUrl,
     });
-    await sendTransactionalEmail({ to: ownerEmail, ...body });
+    await sendTransactionalEmail({
+      to: ownerEmail,
+      ...body,
+      ...emailDeliveryFields(platformEmailBrand()),
+    });
   }
 }
 
@@ -104,13 +115,9 @@ export async function sendReferralAttributionRecordedEmails(
 ): Promise<void> {
   if (!isResendConfigured()) return;
 
-  const { data: tenant } = await admin
-    .from('tenants')
-    .select('name, slug')
-    .eq('id', input.tenantId)
-    .maybeSingle();
-
-  const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your provider';
+  const brand = await loadTenantEmailBrand(admin, input.tenantId);
+  const tenantName = brand?.name || 'Your provider';
+  const customerDelivery = brand ? emailDeliveryFields(brand) : { fromName: tenantName };
 
   const [referrer, referee] = await Promise.all([
     loadReferralCustomerContact(admin, input.referrerCustomerId),
@@ -125,8 +132,9 @@ export async function sendReferralAttributionRecordedEmails(
       tenantName,
       refereeName: referee.displayName,
       portalUrl: referrerPortalUrl,
+      brand: brand ?? undefined,
     });
-    await sendTransactionalEmail({ to: referrer.email, ...body });
+    await sendTransactionalEmail({ to: referrer.email, ...body, ...customerDelivery });
   }
 
   if (referee.email) {
@@ -134,7 +142,8 @@ export async function sendReferralAttributionRecordedEmails(
       tenantName,
       referrerName: referrer.displayName,
       portalUrl: refereePortalUrl,
+      brand: brand ?? undefined,
     });
-    await sendTransactionalEmail({ to: referee.email, ...body });
+    await sendTransactionalEmail({ to: referee.email, ...body, ...customerDelivery });
   }
 }

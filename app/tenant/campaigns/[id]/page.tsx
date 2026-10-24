@@ -88,6 +88,7 @@ export default async function CampaignDetailPage({ params, searchParams }: PageP
       postal_code: null,
     },
     `${portalOrigin}/`,
+    { showPlatformMark: !isFeatureEnabled(tier, 'whiteLabelCustomerPortal') },
   );
 
   const fullAudienceCounts = isDraft

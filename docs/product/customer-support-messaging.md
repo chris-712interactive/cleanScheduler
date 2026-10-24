@@ -14,7 +14,7 @@ Two-way in-app messaging between customers and tenant staff. Uses the **`0013`**
 
 **Shipped (Phase 2, 0073):** platform support tickets — founder `/support`, tenant `/settings/support`. Separate from customer `/messages` threads. See `docs/product/platform-support-tickets.md`.
 
-**v1.1 (PR #115 follow-up):** email staff when a customer sends or replies (`email_notify_customer_message` in Operations settings, default on); nav badge counts threads awaiting reply.
+**v1.1 (PR #115 follow-up):** email staff when a customer sends or replies (`email_notify_customer_message` in Operations settings, default on); nav badge counts threads awaiting reply. Staff alerts use Clean Scheduler branding. The customer’s copy of a staff reply uses the cleaning company’s logo and color. See `docs/product/email-branding.md`.
 
 **Live alerts:** while either portal is open, a new message from the other side refreshes the page and shows a notice within a few seconds (immediately when Supabase Realtime is available). The check is `/api/messaging/inbound`. That path skips the portal rewrite, so the handler reads the host (`acme.…` vs `my.…`, or a white-label customer domain) instead of `x-portal`. Messages includes a control to allow browser notifications for that signed-in session. Staff replies also email the customer (`email_notify_staff_reply`, default on) so they hear about it when the portal is closed. Apply **`0104`** before relying on the customer email toggle or live database events.
 

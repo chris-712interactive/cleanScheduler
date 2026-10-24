@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { Database, Json } from '@/lib/supabase/database.types';
+import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { emailFactsHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 
 type Admin = SupabaseClient<Database>;
 
@@ -83,8 +85,25 @@ export async function notifyTenantDisputeOpened(
   const tenantName = t?.name?.trim() || 'Your workspace';
   const subject = `[Clean Scheduler] Stripe dispute opened — ${tenantName}`;
   const text = `A card dispute was opened on your connected Stripe account.\n\nDispute: ${dispute.id}\nAmount (cents): ${dispute.amount}\nStatus: ${dispute.status}\n\nRespond in the Stripe Dashboard for your connected account.`;
-  const html = `<p>A card dispute was opened for <strong>${escapeHtml(tenantName)}</strong>.</p><ul><li>Dispute ID: <code>${escapeHtml(dispute.id)}</code></li><li>Amount: ${escapeHtml(String(dispute.amount))} ${escapeHtml(dispute.currency)}</li><li>Status: ${escapeHtml(dispute.status)}</li></ul><p>Respond in your Stripe Express account.</p>`;
-  await sendTransactionalEmail({ to, subject, text, html });
+  const html = wrapTransactionalEmailHtml({
+    preheader: `Card dispute opened for ${tenantName}`,
+    bodyHtml: `
+      <p>A card dispute was opened for <strong>${escapeHtml(tenantName)}</strong>.</p>
+      ${emailFactsHtml([
+        { label: 'Dispute ID', value: dispute.id },
+        { label: 'Amount', value: `${dispute.amount} ${dispute.currency}` },
+        { label: 'Status', value: dispute.status },
+      ])}
+      <p style="margin:0;">Respond in your Stripe Express account.</p>
+    `.trim(),
+  });
+  await sendTransactionalEmail({
+    to,
+    subject,
+    text,
+    html,
+    ...emailDeliveryFields(platformEmailBrand()),
+  });
 }
 
 function escapeHtml(s: string): string {

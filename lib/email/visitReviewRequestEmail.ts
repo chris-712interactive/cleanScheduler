@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { customerContactForVisit } from '@/lib/customers/customerContact';
+import { emailDeliveryFields, emailBrandForTenant } from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import {
   logVisitCustomerEmail,
   visitCustomerEmailAlreadyLogged,
@@ -49,17 +52,20 @@ export async function maybeSendVisitReviewRequestEmail(
 
     const { data: tenant } = await admin
       .from('tenants')
-      .select('name, slug, customer_review_url')
+      .select(
+        'name, slug, customer_review_url, brand_color, logo_url, business_phone, business_email, address_line1, city, state, postal_code',
+      )
       .eq('id', params.tenantId)
       .maybeSingle();
 
     const reviewUrl = tenant?.customer_review_url?.trim() || null;
-    if (!reviewUrl) return;
+    if (!reviewUrl || !tenant) return;
+    const brand = await emailBrandForTenant(admin, params.tenantId, tenant);
 
     const contact = await customerContactForVisit(admin, params.customerId);
     if (!contact.email) return;
 
-    const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your cleaning team';
+    const tenantName = brand.name;
     const subject = `How did we do? — ${tenantName}`;
     const text = [
       `Hi,`,
@@ -74,19 +80,24 @@ export async function maybeSendVisitReviewRequestEmail(
       tenantName,
     ].join('\n');
 
-    const html = `
-      <p>Hi,</p>
-      <p>Thank you for choosing <strong>${escapeHtml(tenantName)}</strong>. If you had a great experience, we would really appreciate your feedback.</p>
-      <p><a href="${escapeAttr(reviewUrl)}">Leave a review</a></p>
-      <p>Your review helps other customers find reliable cleaning service.</p>
-      <p>Thank you,<br/>${escapeHtml(tenantName)}</p>
-    `.trim();
+    const html = wrapTransactionalEmailHtml({
+      brand,
+      preheader: `How did ${tenantName} do?`,
+      bodyHtml: `
+        <p>Hi,</p>
+        <p>Thank you for choosing <strong>${escapeHtmlLite(tenantName)}</strong>. If you had a great experience, we would really appreciate your feedback.</p>
+        ${emailButtonHtml({ href: reviewUrl, label: 'Leave a review', color: brand.brandColor })}
+        <p>Your review helps other customers find reliable cleaning service.</p>
+        <p style="margin:0;">Thank you,<br/>${escapeHtmlLite(tenantName)}</p>
+      `.trim(),
+    });
 
     await sendTransactionalEmail({
       to: contact.email,
       subject,
       text,
       html,
+      ...emailDeliveryFields(brand),
     });
 
     await logVisitCustomerEmail(admin, {
@@ -97,16 +108,4 @@ export async function maybeSendVisitReviewRequestEmail(
   } catch (err) {
     console.error('[visitReviewRequestEmail]', err);
   }
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function escapeAttr(value: string): string {
-  return escapeHtml(value).replace(/'/g, '&#39;');
 }

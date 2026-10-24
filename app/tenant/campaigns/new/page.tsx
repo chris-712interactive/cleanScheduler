@@ -77,6 +77,7 @@ export default async function NewCampaignPage() {
       postal_code: null,
     },
     `${portalOrigin}/`,
+    { showPlatformMark: !isFeatureEnabled(tier, 'whiteLabelCustomerPortal') },
   );
 
   return (

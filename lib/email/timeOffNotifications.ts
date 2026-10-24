@@ -1,7 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatDateTimeInTimeZone } from '@/lib/datetime/formatInTimeZone';
+import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
-import { escapeEmailAttr, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
+import {
+  emailButtonHtml,
+  escapeEmailAttr,
+  wrapTransactionalEmailHtml,
+} from '@/lib/email/transactionalEmailLayout';
 import { publicEnv } from '@/lib/env';
 import { loadTenantTimezone } from '@/lib/schedule/memberScheduleProfile';
 import type { TimeOffVisitConflict } from '@/lib/schedule/timeOffVisitConflicts';
@@ -130,7 +135,11 @@ async function sendToEach(
 ) {
   await Promise.all(
     emails.map(async (to) => {
-      const sent = await sendTransactionalEmail({ to, ...message });
+      const sent = await sendTransactionalEmail({
+        to,
+        ...message,
+        ...emailDeliveryFields(platformEmailBrand()),
+      });
       if (!sent.ok) {
         console.error('[timeOffNotifications] email failed:', sent.error);
       }
@@ -188,7 +197,7 @@ export async function notifyOfficeOfTimeOffRequest(
         <li>When: ${escapeHtml(windowLabel)}</li>
         ${note ? `<li>Note: ${escapeHtml(note)}</li>` : ''}
       </ul>
-      <p><a href="${escapeEmailAttr(reviewUrl)}" style="color:#2563eb;">Review time off requests</a></p>
+      ${emailButtonHtml({ href: reviewUrl, label: 'Review time off requests' })}
     `.trim(),
   });
 
@@ -235,7 +244,7 @@ export async function notifyOfficeOfHoursChangeRequest(
     bodyHtml: `
       <p><strong>${escapeHtml(memberName)}</strong> asked to change their weekly hours.</p>
       <p>Current hours stay on the schedule until you approve the change.</p>
-      <p><a href="${escapeEmailAttr(reviewUrl)}" style="color:#2563eb;">Review hour changes</a></p>
+      ${emailButtonHtml({ href: reviewUrl, label: 'Review hour changes' })}
     `.trim(),
   });
 
@@ -296,7 +305,7 @@ export async function notifyOfficeOfTimeOffConflicts(
     .map((conflict) => {
       const when = formatWindow(conflict.startsAt, conflict.endsAt, timeZone);
       const visitUrl = tenantWorkspaceUrl(workspace.slug, `/schedule/${conflict.visitId}`);
-      return `<li><a href="${escapeEmailAttr(visitUrl)}" style="color:#2563eb;">${escapeHtml(conflict.customerName)} — ${escapeHtml(conflict.title)}</a> (${escapeHtml(when)})</li>`;
+      return `<li><a href="${escapeEmailAttr(visitUrl)}">${escapeHtml(conflict.customerName)} — ${escapeHtml(conflict.title)}</a> (${escapeHtml(when)})</li>`;
     })
     .join('');
 
@@ -306,7 +315,7 @@ export async function notifyOfficeOfTimeOffConflicts(
       <p><strong>${escapeHtml(memberName)}</strong>'s time off was approved and overlaps scheduled jobs that still need a new time or a different crew member.</p>
       <p>Time off: ${escapeHtml(windowLabel)}</p>
       <ul style="padding-left:20px;margin:16px 0;">${listHtml}</ul>
-      <p><a href="${escapeEmailAttr(issuesUrl)}" style="color:#2563eb;">Open schedule issues</a></p>
+      ${emailButtonHtml({ href: issuesUrl, label: 'Open schedule issues' })}
     `.trim(),
   });
 

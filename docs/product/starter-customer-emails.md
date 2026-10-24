@@ -2,6 +2,8 @@
 
 Transactional Resend emails available on **all plans** (including Starter). Opt-in via Settings → Operations. SMS parity is not included.
 
+Both messages use the cleaning company’s logo, brand color, and business address. See `docs/product/email-branding.md`.
+
 ## On-my-way (`emailOnMyWay`)
 
 - **When:** Crew or office taps **On our way** on a scheduled visit that has not been checked in yet (`notifyCustomerOnOurWayAction`).

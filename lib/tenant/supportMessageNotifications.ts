@@ -1,7 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  emailDeliveryFields,
+  loadTenantEmailBrand,
+  platformEmailBrand,
+  tenantEmailBrand,
+} from '@/lib/email/emailBrand';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
-import { escapeEmailAttr, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
+import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
@@ -120,16 +126,26 @@ export async function sendCustomerSupportMessageNotification(
   const preview = previewBody(params.body);
   const linkLine = inboxUrl ? `\n\nOpen in your workspace: ${inboxUrl}` : '';
   const text = `${customerName} ${actionLabel} in the customer portal.\n\nSubject: ${params.subject}\n\n${preview}${linkLine}\n`;
-  const htmlLink = inboxUrl
-    ? `<p><a href="${inboxUrl}">Open conversation</a></p>`
-    : '<p>Sign in to your workspace and open Messages.</p>';
-  const html = `<p><strong>${escapeHtml(customerName)}</strong> ${actionLabel} in the customer portal.</p><p><strong>${escapeHtml(params.subject)}</strong></p><p>${escapeHtml(preview)}</p>${htmlLink}`;
+  const html = wrapTransactionalEmailHtml({
+    preheader: `${customerName} ${actionLabel}`,
+    bodyHtml: `
+      <p><strong>${escapeHtml(customerName)}</strong> ${actionLabel} in the customer portal.</p>
+      <p><strong>${escapeHtml(params.subject)}</strong></p>
+      <p>${escapeHtml(preview)}</p>
+      ${
+        inboxUrl
+          ? emailButtonHtml({ href: inboxUrl, label: 'Open conversation' })
+          : '<p>Sign in to your workspace and open Messages.</p>'
+      }
+    `.trim(),
+  });
 
   const sent = await sendTransactionalEmail({
     to: staffEmail,
     subject: subjectLine,
     text,
     html,
+    ...emailDeliveryFields(platformEmailBrand()),
   });
 
   if (!sent.ok) {
@@ -172,8 +188,8 @@ export async function sendStaffSupportReplyNotification(
   const enabled = await loadStaffReplyNotifyFlag(admin, params.tenantId);
   if (!enabled) return;
 
-  const [{ data: tenant }, { data: customer }, inboxUrl] = await Promise.all([
-    admin.from('tenants').select('name').eq('id', params.tenantId).maybeSingle(),
+  const [brandLoaded, { data: customer }, inboxUrl] = await Promise.all([
+    loadTenantEmailBrand(admin, params.tenantId),
     admin
       .from('customers')
       .select('customer_identities ( email )')
@@ -185,13 +201,20 @@ export async function sendStaffSupportReplyNotification(
   const email = (customer?.customer_identities as { email: string | null } | null)?.email?.trim();
   if (!email) return;
 
-  const provider = tenant?.name?.trim() || 'Your provider';
+  const brand = brandLoaded ?? tenantEmailBrand({ name: 'Your provider' });
+  const provider = brand.name;
   const preview = previewBody(params.body);
   const subjectLine = `${provider} sent you a message`;
   const text = `${provider} replied in your customer portal.\n\nSubject: ${params.subject}\n\n${preview}\n\nOpen the conversation: ${inboxUrl}\n`;
   const html = wrapTransactionalEmailHtml({
+    brand,
     preheader: `${provider} replied in your portal`,
-    bodyHtml: `<p><strong>${escapeHtml(provider)}</strong> replied in your customer portal.</p><p><strong>${escapeHtml(params.subject)}</strong></p><p>${escapeHtml(preview)}</p><p><a href="${escapeEmailAttr(inboxUrl)}">Open the conversation</a></p>`,
+    bodyHtml: `
+      <p><strong>${escapeHtml(provider)}</strong> replied in your customer portal.</p>
+      <p><strong>${escapeHtml(params.subject)}</strong></p>
+      <p>${escapeHtml(preview)}</p>
+      ${emailButtonHtml({ href: inboxUrl, label: 'Open the conversation', color: brand.brandColor })}
+    `.trim(),
   });
 
   const sent = await sendTransactionalEmail({
@@ -199,6 +222,7 @@ export async function sendStaffSupportReplyNotification(
     subject: subjectLine,
     text,
     html,
+    ...emailDeliveryFields(brand),
   });
 
   if (!sent.ok) {

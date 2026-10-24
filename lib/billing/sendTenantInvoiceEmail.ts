@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { emailDeliveryFields, loadTenantEmailBrand } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import { buildTenantInvoiceEmailContent } from '@/lib/email/tenantInvoiceEmailBody';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
@@ -46,12 +47,8 @@ export async function sendTenantInvoiceEmailForInvoice(
     return { ok: false, error: 'Customer has no email on file.' };
   }
 
-  const { data: tenant } = await admin
-    .from('tenants')
-    .select('name')
-    .eq('id', params.tenantId)
-    .maybeSingle();
-  const tenantName = tenant?.name?.trim() || params.tenantSlug;
+  const brand = await loadTenantEmailBrand(admin, params.tenantId);
+  const tenantName = brand?.name || params.tenantSlug;
   const balance = Math.max(0, inv.amount_cents - inv.amount_paid_cents);
   const dueLabel = inv.due_date ? new Date(String(inv.due_date)).toLocaleDateString() : null;
   const portalUrl = await customerPortalUrlForTenant(
@@ -85,9 +82,14 @@ export async function sendTenantInvoiceEmailForInvoice(
     portalUrl,
     payUrl,
     ctaLabel: payUrl ? 'Pay this invoice' : undefined,
+    brand: brand ?? undefined,
   });
 
-  const sent = await sendTransactionalEmail({ to: email, ...body });
+  const sent = await sendTransactionalEmail({
+    to: email,
+    ...body,
+    ...(brand ? emailDeliveryFields(brand) : { fromName: tenantName }),
+  });
   if (!sent.ok) {
     return { ok: false, error: sent.error };
   }

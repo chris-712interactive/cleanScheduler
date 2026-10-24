@@ -29,7 +29,7 @@ Canonical values live in `lib/billing/entitlements.ts`. Transactional Resend sen
 - **Marketing opt-in** (`tenant_customer_profiles.marketing_email_opt_in`, default `false`).
 - **Suppressions** (`tenant_email_suppressions`) — unsubscribe, bounce, complaint, manual.
 - Baseline send predicate: active customer + email on file + marketing opt-in + not suppressed.
-- CAN-SPAM footer: tenant name, business address, unsubscribe link.
+- CAN-SPAM footer: tenant name, business address, unsubscribe link. The message uses the same branded shell as other customer mail (`docs/product/email-branding.md`). Pro white-label workspaces omit the Clean Scheduler footer line.
 
 ## Campaign lifecycle
 

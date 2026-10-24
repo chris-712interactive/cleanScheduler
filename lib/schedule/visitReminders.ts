@@ -4,7 +4,14 @@ import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/en
 import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
 import { customerContactForVisit } from '@/lib/customers/customerContact';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  emailDeliveryFields,
+  loadTenantEmailBrand,
+  tenantEmailBrand,
+} from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { emailFactsHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
 import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
 
@@ -104,12 +111,10 @@ export async function sendVisitRemindersForAllTenants(): Promise<{
       continue;
     }
 
-    const { data: tenant } = await admin
-      .from('tenants')
-      .select('name')
-      .eq('id', tenantId)
-      .maybeSingle();
-    const tenantName = (tenant?.name ?? '').trim() || 'Your cleaning provider';
+    const brand =
+      (await loadTenantEmailBrand(admin, tenantId)) ??
+      tenantEmailBrand({ name: 'Your cleaning provider' });
+    const tenantName = brand.name;
 
     const { data: visits, error: visitErr } = await admin
       .from('tenant_scheduled_visits')
@@ -140,11 +145,24 @@ export async function sendVisitRemindersForAllTenants(): Promise<{
         } else {
           const subject = `Reminder: upcoming visit with ${tenantName}`;
           const text = `${tenantName}: Reminder — "${visit.title}" is scheduled for ${when}. Reply to this email if you need to reschedule.`;
+          const html = wrapTransactionalEmailHtml({
+            brand,
+            preheader: `${visit.title} is scheduled for ${when}`,
+            bodyHtml: `
+              <p>This is a reminder from <strong>${escapeHtmlLite(tenantName)}</strong>.</p>
+              ${emailFactsHtml([
+                { label: 'Visit', value: visit.title },
+                { label: 'When', value: when },
+              ])}
+              <p style="margin:0;">Reply to this email if you need to reschedule.</p>
+            `.trim(),
+          });
           const sent = await sendTransactionalEmail({
             to: contact.email,
             subject,
             text,
-            html: `<p>${text.replace(/\n/g, '<br/>')}</p>`,
+            html,
+            ...emailDeliveryFields(brand),
           });
           if (sent.ok) {
             await logVisitReminder(admin, {

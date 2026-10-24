@@ -2,7 +2,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
 import type { Database } from '@/lib/supabase/database.types';
+import {
+  emailDeliveryFields,
+  loadTenantEmailBrand,
+  tenantEmailBrand,
+} from '@/lib/email/emailBrand';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
+import {
+  emailButtonHtml,
+  emailFactsHtml,
+  wrapTransactionalEmailHtml,
+} from '@/lib/email/transactionalEmailLayout';
 import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
 import { formatUsdFromCents } from '@/lib/format/money';
@@ -127,13 +138,13 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
   for (const ops of opsRows ?? []) {
     const tenantId = ops.tenant_id;
 
-    const [{ data: billing }, { data: tenant }, plan] = await Promise.all([
+    const [{ data: billing }, brandLoaded, plan] = await Promise.all([
       admin
         .from('tenant_billing_accounts')
         .select('status, platform_plan')
         .eq('tenant_id', tenantId)
         .maybeSingle(),
-      admin.from('tenants').select('name, slug, business_email').eq('id', tenantId).maybeSingle(),
+      loadTenantEmailBrand(admin, tenantId),
       resolveTenantEntitlementPlan(admin, tenantId),
     ]);
 
@@ -161,12 +172,13 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
       continue;
     }
 
-    const tenantName = tenant?.name?.trim() || tenant?.slug || 'Your provider';
+    const brand = brandLoaded ?? tenantEmailBrand({ name: 'Your provider' });
+    const tenantName = brand.name;
     const hasCustomerPortal = isFeatureEnabled(plan, 'customerPortal');
     const portalOrigin = hasCustomerPortal
       ? await getCustomerPortalOriginForTenant(admin, tenantId)
       : null;
-    const officeContact = tenant?.business_email?.trim() || null;
+    const officeContact = brand.email;
 
     for (const inv of invoices ?? []) {
       const balance = inv.amount_cents - inv.amount_paid_cents;
@@ -210,11 +222,33 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
               ? `Contact ${tenantName} at ${officeContact} to pay or ask questions.`
               : `Contact ${tenantName} to pay or ask questions.`;
           const text = `${tenantName}: Your invoice "${inv.title}" for ${balanceLabel} was due ${dueLabel}. ${cta}`;
+          const html = wrapTransactionalEmailHtml({
+            brand,
+            preheader: `${inv.title} — ${balanceLabel} was due ${dueLabel}`,
+            bodyHtml: `
+              <p><strong>${escapeHtmlLite(tenantName)}</strong> is following up on an invoice.</p>
+              ${emailFactsHtml([
+                { label: 'Invoice', value: inv.title },
+                { label: 'Balance', value: balanceLabel },
+                { label: 'Was due', value: dueLabel },
+              ])}
+              ${
+                portalUrl
+                  ? emailButtonHtml({
+                      href: portalUrl,
+                      label: 'Pay or view details',
+                      color: brand.brandColor,
+                    })
+                  : `<p style="margin:0;">${escapeHtmlLite(cta)}</p>`
+              }
+            `.trim(),
+          });
           const sent = await sendTransactionalEmail({
             to: contact.email,
             subject,
             text,
-            html: `<p>${text.replace(/\n/g, '<br/>')}</p>`,
+            html,
+            ...emailDeliveryFields(brand),
           });
           if (sent.ok) {
             await logReminderSent(admin, {

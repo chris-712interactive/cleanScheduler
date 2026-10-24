@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createCampaignUnsubscribeToken } from '@/lib/campaigns/unsubscribeToken';
 import { resolveCampaignAudience } from '@/lib/campaigns/resolveCampaignAudience';
 import { assertCanSendCampaign } from '@/lib/campaigns/campaignLimits';
+import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { buildCampaignEmailContent } from '@/lib/email/campaignEmailBody';
 import { campaignFromAddress, sendCampaignEmail } from '@/lib/email/sendCampaignEmail';
 import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
@@ -61,11 +62,14 @@ export async function sendEmailCampaignNow(params: {
     };
   }
 
-  const { data: tenant } = await params.admin
-    .from('tenants')
-    .select('name, brand_color, logo_url, address_line1, city, state, postal_code')
-    .eq('id', params.tenantId)
-    .maybeSingle();
+  const [{ data: tenant }, plan] = await Promise.all([
+    params.admin
+      .from('tenants')
+      .select('name, brand_color, logo_url, address_line1, city, state, postal_code')
+      .eq('id', params.tenantId)
+      .maybeSingle(),
+    resolveTenantEntitlementPlan(params.admin, params.tenantId),
+  ]);
 
   if (!tenant) {
     return { ok: false, error: 'Tenant not found.' };
@@ -78,6 +82,7 @@ export async function sendEmailCampaignNow(params: {
 
   const from = campaignFromAddress(tenant.name, platformFrom);
   const brandColor = tenant.brand_color?.trim() || DEFAULT_BRAND_COLOR;
+  const showPlatformMark = !isFeatureEnabled(plan, 'whiteLabelCustomerPortal');
   const addressLine = formatPropertyAddressLine({
     address_line1: tenant.address_line1,
     city: tenant.city,
@@ -150,6 +155,7 @@ export async function sendEmailCampaignNow(params: {
       addressLine: addressLine || null,
       brandColor,
       logoUrl: tenant.logo_url?.trim() || null,
+      showPlatformMark,
     });
 
     const result = await sendCampaignEmail({
