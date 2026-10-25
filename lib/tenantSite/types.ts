@@ -52,13 +52,33 @@ export type TenantSiteBranding = {
   slug: string;
 };
 
+/** Business identity used for NAP, hours, and LocalBusiness structured data. */
+export type TenantSiteProfile = {
+  email: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Schema.org day names, e.g. Monday. */
+  openingDays: string[];
+  /** 24-hour HH:MM */
+  opens: string | null;
+  /** 24-hour HH:MM */
+  closes: string | null;
+};
+
 export type TenantSiteContext = {
   tenantId: string;
   branding: TenantSiteBranding;
   settings: TenantSiteSettings;
-  /** Public origin without trailing slash */
+  profile: TenantSiteProfile;
+  /** Canonical public origin without trailing slash (`https://host` or `https://host/site`) */
   origin: string;
-  /** True when served from unified custom domain (paths omit /site prefix) */
+  /** True when this request is served from a unified custom domain (paths omit /site) */
   unifiedDomain: boolean;
   portalLoginHref: string;
   indexable: boolean;

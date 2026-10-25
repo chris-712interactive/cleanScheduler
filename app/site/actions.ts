@@ -31,6 +31,7 @@ export async function submitTenantSiteLeadAction(
     .trim()
     .toLowerCase();
   const phone = String(formData.get('phone') ?? '').trim() || null;
+  const city = String(formData.get('service_city') ?? '').trim() || null;
   const message = String(formData.get('message') ?? '').trim() || null;
   const pageId = String(formData.get('page_id') ?? '').trim() || null;
 
@@ -74,6 +75,7 @@ export async function submitTenantSiteLeadAction(
     email,
     phone,
     message,
+    service_city: city,
     status: 'new',
   });
 

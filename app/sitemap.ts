@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getAllPublicSeoPaths } from '@/lib/marketing/seoContent';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
+import { loadRequestTenantSiteSeo } from '@/lib/tenantSite/hostSeo';
 
 const MARKETING_PATHS = [
   { path: '/', priority: 1, changeFrequency: 'weekly' as const },
@@ -26,7 +27,7 @@ const MARKETING_PATHS = [
   { path: '/data-retention', priority: 0.4, changeFrequency: 'yearly' as const },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+function platformSitemap(): MetadataRoute.Sitemap {
   const origin = getPublicOrigin(null);
   const lastModified = new Date();
 
@@ -57,4 +58,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency,
       priority,
     }));
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const seo = await loadRequestTenantSiteSeo();
+  if (seo.kind === 'platform') return platformSitemap();
+  if (seo.kind === 'suppress' || !seo.indexable || !seo.canonicalHost) return [];
+
+  return seo.entries.map((entry) => ({
+    url: entry.url,
+    lastModified: entry.lastModified,
+    changeFrequency: entry.changeFrequency,
+    priority: entry.priority,
+  }));
 }

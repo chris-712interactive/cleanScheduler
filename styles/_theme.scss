@@ -28,8 +28,7 @@
 // Light theme (default)
 // -----------------------------------------------------------------------------
 
-:root,
-:root[data-theme='light'] {
+@mixin semantic-light-theme {
   // -- color: surfaces / backgrounds --
   // Page canvas is the soft teal tint; cards, sidebar, and top bar use white surface.
   --color-bg: #{c.$brand-surface-light};
@@ -86,6 +85,19 @@
   --shadow-xl: #{sh.$shadow-xl-light};
 
   color-scheme: light;
+}
+
+:root,
+:root[data-theme='light'] {
+  @include semantic-light-theme;
+}
+
+// Public tenant marketing sites stay on the light palette even when the
+// visitor's app theme is dark. The class is set on the site layout and shell.
+.tenant-site-canvas {
+  @include semantic-light-theme;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 // -----------------------------------------------------------------------------

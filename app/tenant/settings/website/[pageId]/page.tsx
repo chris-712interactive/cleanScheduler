@@ -8,8 +8,9 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { ensureTenantMarketingSiteSeeded } from '@/lib/tenantSite/seedTenantSite';
+import { mapTenantSiteProfile } from '@/lib/tenantSite/businessProfile';
 import { mapTenantSiteSettings } from '@/lib/tenantSite/loadTenantSiteData';
-import { publicPathForSitePage } from '@/lib/tenantSite/publicPaths';
+import { buildTenantSitePublicUrl } from '@/lib/tenantSite/publicPaths';
 import { resolveTenantSiteOrigin } from '@/lib/portal/tenantSiteOrigin';
 import { DEFAULT_BRAND_COLOR } from '@/lib/tenant/tenantBusinessSettings';
 import type { MarketingFaqItem } from '@/lib/marketing/homepageContent';
@@ -58,7 +59,9 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
       .maybeSingle(),
     admin
       .from('tenants')
-      .select('name, logo_url, brand_color, slug')
+      .select(
+        'name, logo_url, brand_color, slug, business_email, business_phone, address_line1, city, state, postal_code, country, latitude, longitude, work_week_days, work_day_start, work_day_end',
+      )
       .eq('id', membership.tenantId)
       .maybeSingle(),
   ]);
@@ -66,7 +69,11 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
   if (error || !page || !settingsRow || !tenantRow) notFound();
 
   const originInfo = await resolveTenantSiteOrigin(admin, membership.tenantId);
-  const previewPath = `${originInfo.origin}${publicPathForSitePage(page.slug, originInfo.unifiedDomain)}`;
+  const previewPath = buildTenantSitePublicUrl(
+    originInfo.origin,
+    page.slug,
+    settingsRow.homepage_slug,
+  );
 
   const previewSite: TenantSiteContext & { tenantId: string } = {
     tenantId: membership.tenantId,
@@ -77,6 +84,7 @@ export default async function TenantWebsitePageEditorPage({ params }: PageProps)
       slug: tenantRow.slug,
     },
     settings: mapTenantSiteSettings(settingsRow),
+    profile: mapTenantSiteProfile(tenantRow),
     origin: originInfo.origin,
     unifiedDomain: originInfo.unifiedDomain,
     portalLoginHref: '#preview-login',

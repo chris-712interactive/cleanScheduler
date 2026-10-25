@@ -5,13 +5,10 @@ import Link from 'next/link';
 import { Menu, X, Phone } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
+import { tenantSiteTelHref } from '@/lib/tenantSite/businessProfile';
 import { formatTenantSitePhoneDisplay } from '@/lib/tenantSite/navLabels';
 import type { TenantSiteBranding, TenantSiteNavLink } from '@/lib/tenantSite/types';
 import styles from './TenantSitePage.module.scss';
-
-function mapPhoneHref(phone: string): string {
-  return `tel:${phone.replace(/\s/g, '')}`;
-}
 
 export function TenantSiteMobileNav({
   branding,
@@ -20,6 +17,8 @@ export function TenantSiteMobileNav({
   portalLoginHref,
   ctaLabel,
   ctaHref,
+  homeHref,
+  currentPath,
   showCta,
 }: {
   branding: TenantSiteBranding;
@@ -28,6 +27,8 @@ export function TenantSiteMobileNav({
   portalLoginHref: string;
   ctaLabel: string;
   ctaHref: string;
+  homeHref: string;
+  currentPath: string | null;
   showCta: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -65,7 +66,7 @@ export function TenantSiteMobileNav({
         aria-hidden={!open}
       >
         <div className={styles.mobileNavHeader}>
-          <Link href="/" className={styles.brand} onClick={() => setOpen(false)}>
+          <Link href={homeHref} className={styles.brand} onClick={() => setOpen(false)}>
             {branding.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={branding.logoUrl} alt="" className={styles.logo} />
@@ -80,6 +81,7 @@ export function TenantSiteMobileNav({
               <Link
                 href={link.href}
                 className={styles.mobileNavLink}
+                aria-current={currentPath && link.href === currentPath ? 'page' : undefined}
                 onClick={() => setOpen(false)}
               >
                 {link.label}
@@ -90,7 +92,7 @@ export function TenantSiteMobileNav({
 
         <div className={styles.mobileNavActions}>
           {phoneDisplay ? (
-            <a href={mapPhoneHref(phone!)} className={styles.mobilePhoneLink}>
+            <a href={tenantSiteTelHref(phone!)} className={styles.mobilePhoneLink}>
               <Phone size={18} aria-hidden />
               {phoneDisplay}
             </a>
@@ -116,6 +118,8 @@ export function TenantSiteHeader({
   portalLoginHref,
   ctaLabel,
   ctaHref,
+  homeHref,
+  currentPath,
   showCta,
 }: {
   branding: TenantSiteBranding;
@@ -124,6 +128,8 @@ export function TenantSiteHeader({
   portalLoginHref: string;
   ctaLabel: string;
   ctaHref: string;
+  homeHref: string;
+  currentPath: string | null;
   showCta: boolean;
 }) {
   const phoneDisplay = phone ? formatTenantSitePhoneDisplay(phone) : null;
@@ -132,7 +138,7 @@ export function TenantSiteHeader({
     <header className={styles.header}>
       <Container size="lg">
         <div className={styles.headerInner}>
-          <Link href="/" className={styles.brand}>
+          <Link href={homeHref} className={styles.brand}>
             {branding.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={branding.logoUrl} alt="" className={styles.logo} />
@@ -144,7 +150,11 @@ export function TenantSiteHeader({
             <ul className={styles.desktopNavLinks}>
               {navLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className={styles.desktopNavLink}>
+                  <Link
+                    href={link.href}
+                    className={styles.desktopNavLink}
+                    aria-current={currentPath && link.href === currentPath ? 'page' : undefined}
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -154,7 +164,7 @@ export function TenantSiteHeader({
 
           <div className={styles.headerActions}>
             {phoneDisplay ? (
-              <a href={mapPhoneHref(phone!)} className={styles.phoneLink}>
+              <a href={tenantSiteTelHref(phone!)} className={styles.phoneLink}>
                 <Phone size={16} aria-hidden className={styles.phoneIcon} />
                 <span>{phoneDisplay}</span>
               </a>
@@ -176,6 +186,8 @@ export function TenantSiteHeader({
             portalLoginHref={portalLoginHref}
             ctaLabel={ctaLabel}
             ctaHref={ctaHref}
+            homeHref={homeHref}
+            currentPath={currentPath}
             showCta={showCta}
           />
         </div>
@@ -190,6 +202,7 @@ export function TenantSiteFooter({
   contactEmail,
   contactPhone,
   serviceAreaSummary,
+  addressLine,
   showPoweredBy,
 }: {
   branding: TenantSiteBranding;
@@ -197,6 +210,7 @@ export function TenantSiteFooter({
   contactEmail: string | null;
   contactPhone: string | null;
   serviceAreaSummary: string | null;
+  addressLine: string | null;
   showPoweredBy: boolean;
 }) {
   const phoneDisplay = contactPhone ? formatTenantSitePhoneDisplay(contactPhone) : null;
@@ -206,8 +220,11 @@ export function TenantSiteFooter({
       <Container size="lg">
         <div className={styles.footerGrid}>
           <div className={styles.footerBrand}>
-            <h2 className={styles.footerTitle}>{branding.tenantName}</h2>
-            {serviceAreaSummary ? <p className={styles.footerMeta}>{serviceAreaSummary}</p> : null}
+            <p className={styles.footerTitle}>{branding.tenantName}</p>
+            {serviceAreaSummary ? (
+              <p className={styles.footerMeta}>Serving {serviceAreaSummary}</p>
+            ) : null}
+            {addressLine ? <address className={styles.footerMeta}>{addressLine}</address> : null}
           </div>
 
           {navLinks.length > 0 ? (
@@ -236,13 +253,17 @@ export function TenantSiteFooter({
             ) : null}
             {phoneDisplay ? (
               <p className={styles.footerMeta}>
-                <a href={mapPhoneHref(contactPhone!)} className={styles.footerLink}>
+                <a href={tenantSiteTelHref(contactPhone!)} className={styles.footerLink}>
                   {phoneDisplay}
                 </a>
               </p>
             ) : null}
           </div>
         </div>
+
+        <p className={styles.copyright}>
+          © {new Date().getFullYear()} {branding.tenantName}
+        </p>
 
         {showPoweredBy ? (
           <p className={styles.poweredBy}>

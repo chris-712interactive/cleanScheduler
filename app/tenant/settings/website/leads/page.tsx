@@ -79,6 +79,7 @@ export default async function TenantWebsiteLeadsPage() {
               name: lead.name,
               email: lead.email,
               phone: lead.phone,
+              city: lead.service_city,
               message: lead.message,
               status: lead.status,
               createdAt: lead.created_at,

@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getPortalContext } from '@/lib/portal';
-import { createAdminClient } from '@/lib/supabase/server';
-import { buildTenantSiteSitemapEntries } from '@/lib/marketing/tenantSiteJsonLd';
-import { loadTenantSiteContext } from '@/lib/tenantSite/loadTenantSiteData';
-import { isUnifiedSiteRequest } from '@/app/site/actions';
+import { loadRequestTenantSiteSeo } from '@/lib/tenantSite/hostSeo';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,38 +12,20 @@ function escapeXml(value: string): string {
 }
 
 export async function GET() {
-  const { kind, tenantSlug } = await getPortalContext();
-  if (kind !== 'site' || !tenantSlug) {
+  const seo = await loadRequestTenantSiteSeo();
+  if (seo.kind !== 'tenant' || !seo.indexable || !seo.canonicalHost) {
     return new NextResponse('Not found', { status: 404 });
   }
-
-  const admin = createAdminClient();
-  const unifiedDomain = await isUnifiedSiteRequest();
-  const site = await loadTenantSiteContext(admin, tenantSlug, { unifiedDomain });
-  if (!site || !site.indexable || !site.settings.isPublished) {
-    return new NextResponse('Not found', { status: 404 });
-  }
-
-  const { data: pages } = await admin
-    .from('tenant_marketing_pages')
-    .select('slug, updated_at')
-    .eq('tenant_id', site.tenantId)
-    .eq('status', 'published')
-    .order('sort_order', { ascending: true });
-
-  const entries = buildTenantSiteSitemapEntries(
-    site.origin,
-    (pages ?? []).map((row) => ({ slug: row.slug, updatedAt: row.updated_at })),
-    site.settings.homepageSlug,
-  );
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries
+${seo.entries
   .map(
     (entry) => `  <url>
     <loc>${escapeXml(entry.url)}</loc>
     <lastmod>${entry.lastModified.toISOString()}</lastmod>
+    <changefreq>${entry.changeFrequency}</changefreq>
+    <priority>${entry.priority.toFixed(1)}</priority>
   </url>`,
   )
   .join('\n')}

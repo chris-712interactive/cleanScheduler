@@ -10,7 +10,8 @@ Developer reference for public-site search optimization on cleanscheduler.com.
 - Structured data: `lib/marketing/seoJsonLd.ts` — homepage, pricing, compare hub, feature hub, competitor pages, help guides.
 - Content-driven SEO pages: `lib/marketing/seoContent/` (features, audience pages, comparisons, help articles).
 - Sitemap: `app/sitemap.ts` + `getAllPublicSeoPaths()` in `lib/marketing/seoContent/index.ts`.
-- Robots: `app/robots.ts` — allows `/`, disallows `/api/`, `/admin/`, `/tenant/`, `/customer/`.
+- Robots: `app/robots.ts` — allows `/`, disallows `/api/`, `/admin/`, `/tenant/`, `/customer/` on the **apex host only**.
+- Tenant marketing hosts (`{slug}.{apex}` and unified custom domains) use the same files, but `loadRequestTenantSiteSeo()` swaps in that company’s sitemap and robots. See [tenant-marketing-site.md](../product/tenant-marketing-site.md).
 
 ## Canonical & www
 

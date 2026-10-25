@@ -35,27 +35,54 @@ export function TenantSiteContactForm({
         </label>
       </div>
 
-      <label className={styles.fieldLabel}>
-        Name
-        <input className={styles.fieldInput} name="name" required disabled={pending} />
-      </label>
-      <label className={styles.fieldLabel}>
-        Email
+      <label className={styles.fieldLabel} htmlFor="tenant-site-name">
+        Full name
         <input
+          id="tenant-site-name"
           className={styles.fieldInput}
-          type="email"
-          name="email"
+          name="name"
+          autoComplete="name"
           required
           disabled={pending}
         />
       </label>
-      <label className={styles.fieldLabel}>
-        Phone
-        <input className={styles.fieldInput} type="tel" name="phone" disabled={pending} />
+      <label className={styles.fieldLabel} htmlFor="tenant-site-email">
+        Email
+        <input
+          id="tenant-site-email"
+          className={styles.fieldInput}
+          type="email"
+          name="email"
+          autoComplete="email"
+          required
+          disabled={pending}
+        />
       </label>
-      <label className={styles.fieldLabel}>
-        Message
+      <label className={styles.fieldLabel} htmlFor="tenant-site-phone">
+        Phone
+        <input
+          id="tenant-site-phone"
+          className={styles.fieldInput}
+          type="tel"
+          name="phone"
+          autoComplete="tel"
+          disabled={pending}
+        />
+      </label>
+      <label className={styles.fieldLabel} htmlFor="tenant-site-city">
+        City
+        <input
+          id="tenant-site-city"
+          className={styles.fieldInput}
+          name="service_city"
+          autoComplete="address-level2"
+          disabled={pending}
+        />
+      </label>
+      <label className={styles.fieldLabel} htmlFor="tenant-site-message">
+        What do you need cleaned?
         <textarea
+          id="tenant-site-message"
           className={styles.fieldInput}
           name="message"
           rows={5}
@@ -64,7 +91,7 @@ export function TenantSiteContactForm({
         />
       </label>
       <Button type="submit" disabled={pending}>
-        {pending ? 'Sending…' : 'Send message'}
+        {pending ? 'Sending…' : 'Request a quote'}
       </Button>
     </form>
   );

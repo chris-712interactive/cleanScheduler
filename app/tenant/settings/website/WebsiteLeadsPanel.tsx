@@ -12,6 +12,7 @@ type LeadItem = {
   name: string;
   email: string;
   phone: string | null;
+  city: string | null;
   message: string | null;
   status: string;
   createdAt: string;
@@ -69,6 +70,12 @@ export function WebsiteLeadsPanel({
                   <>
                     <br />
                     {lead.phone}
+                  </>
+                ) : null}
+                {lead.city ? (
+                  <>
+                    <br />
+                    {lead.city}
                   </>
                 ) : null}
               </td>

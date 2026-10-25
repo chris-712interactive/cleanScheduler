@@ -6,8 +6,10 @@ import type {
   TenantSiteContext,
   TenantSiteNavLink,
   TenantSitePageContent,
+  TenantSiteProfile,
   TenantSiteSettings,
 } from '@/lib/tenantSite/types';
+import { mapTenantSiteProfile } from '@/lib/tenantSite/businessProfile';
 import { DEFAULT_BRAND_COLOR } from '@/lib/tenant/tenantBusinessSettings';
 import {
   getTenantSiteOriginForRequest,
@@ -61,24 +63,45 @@ export function mapTenantSitePage(row: PageRow): TenantSitePageContent {
   };
 }
 
-export async function loadTenantSiteBranding(
+const TENANT_SITE_IDENTITY_COLUMNS =
+  'id, slug, name, logo_url, brand_color, business_email, business_phone, address_line1, city, state, postal_code, country, latitude, longitude, work_week_days, work_day_start, work_day_end';
+
+type TenantSiteIdentity = {
+  tenantId: string;
+  branding: TenantSiteBranding;
+  profile: TenantSiteProfile;
+};
+
+async function loadTenantSiteIdentity(
   admin: SupabaseClient<Database>,
   tenantSlug: string,
-): Promise<TenantSiteBranding | null> {
+): Promise<TenantSiteIdentity | null> {
   const { data: tenant, error } = await admin
     .from('tenants')
-    .select('id, slug, name, logo_url, brand_color')
+    .select(TENANT_SITE_IDENTITY_COLUMNS)
     .eq('slug', tenantSlug.trim().toLowerCase())
     .maybeSingle();
 
   if (error || !tenant) return null;
 
   return {
-    tenantName: String(tenant.name ?? 'Cleaning company').trim() || 'Cleaning company',
-    logoUrl: tenant.logo_url?.trim() || null,
-    brandColor: tenant.brand_color?.trim() || DEFAULT_BRAND_COLOR,
-    slug: tenant.slug,
+    tenantId: tenant.id,
+    branding: {
+      tenantName: String(tenant.name ?? 'Cleaning company').trim() || 'Cleaning company',
+      logoUrl: tenant.logo_url?.trim() || null,
+      brandColor: tenant.brand_color?.trim() || DEFAULT_BRAND_COLOR,
+      slug: tenant.slug,
+    },
+    profile: mapTenantSiteProfile(tenant),
   };
+}
+
+export async function loadTenantSiteBranding(
+  admin: SupabaseClient<Database>,
+  tenantSlug: string,
+): Promise<TenantSiteBranding | null> {
+  const identity = await loadTenantSiteIdentity(admin, tenantSlug);
+  return identity?.branding ?? null;
 }
 
 export async function loadTenantSiteContext(
@@ -86,26 +109,22 @@ export async function loadTenantSiteContext(
   tenantSlug: string,
   options?: { unifiedDomain?: boolean },
 ): Promise<(TenantSiteContext & { tenantId: string }) | null> {
-  const branding = await loadTenantSiteBranding(admin, tenantSlug);
-  if (!branding) return null;
-
-  const { data: tenant } = await admin
-    .from('tenants')
-    .select('id')
-    .eq('slug', tenantSlug.trim().toLowerCase())
-    .maybeSingle();
-
-  if (!tenant) return null;
+  const identity = await loadTenantSiteIdentity(admin, tenantSlug);
+  if (!identity) return null;
 
   const [{ data: settingsRow }, { data: billing }, plan, originInfo] = await Promise.all([
     admin
       .from('tenant_marketing_site_settings')
       .select('*')
-      .eq('tenant_id', tenant.id)
+      .eq('tenant_id', identity.tenantId)
       .maybeSingle(),
-    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenant.id).maybeSingle(),
-    resolveTenantEntitlementPlan(admin, tenant.id),
-    resolveTenantSiteOrigin(admin, tenant.id),
+    admin
+      .from('tenant_billing_accounts')
+      .select('status')
+      .eq('tenant_id', identity.tenantId)
+      .maybeSingle(),
+    resolveTenantEntitlementPlan(admin, identity.tenantId),
+    resolveTenantSiteOrigin(admin, identity.tenantId),
   ]);
 
   if (!settingsRow) return null;
@@ -115,11 +134,12 @@ export async function loadTenantSiteContext(
   const unifiedDomain = options?.unifiedDomain ?? originInfo.unifiedDomain;
   const origin = options?.unifiedDomain
     ? originInfo.origin
-    : await getTenantSiteOriginForRequest(admin, tenant.id);
+    : await getTenantSiteOriginForRequest(admin, identity.tenantId);
 
   return {
-    tenantId: tenant.id,
-    branding,
+    tenantId: identity.tenantId,
+    branding: identity.branding,
+    profile: identity.profile,
     settings,
     origin,
     unifiedDomain,

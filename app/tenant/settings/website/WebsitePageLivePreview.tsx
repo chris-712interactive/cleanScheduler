@@ -95,6 +95,7 @@ export function WebsitePageLivePreview({
               footerNavLinks={PREVIEW_NAV_LINKS}
               pageId={pageId}
               showPoweredBy={false}
+              interactiveLinks={false}
             />
           </div>
         </div>

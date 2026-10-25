@@ -29,7 +29,7 @@ export function resolveTenantSiteNavLabel(input: TenantSiteNavPageInput): string
   }
 
   const metaTitle = input.metaTitle?.trim();
-  if (metaTitle && metaTitle.length <= 28) return metaTitle;
+  if (metaTitle && metaTitle.length <= 28) return humanizeNavLabel(metaTitle);
 
   return titleCaseSlug(input.slug);
 }
@@ -77,6 +77,11 @@ export function buildTenantSiteNavPages(
     }),
     sortOrder: row.sort_order,
   }));
+}
+
+function humanizeNavLabel(value: string): string {
+  if (!value.includes('-') || value.includes(' ')) return value;
+  return titleCaseSlug(value);
 }
 
 function titleCaseSlug(slug: string): string {

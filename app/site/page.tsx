@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Container } from '@/components/layout/Container';
+import { TenantSiteJsonLd } from '@/components/tenantSite/TenantSiteJsonLd';
 import { TenantSitePageView } from '@/components/tenantSite/TenantSitePage';
 import { buildTenantSitePageMetadata } from '@/lib/marketing/tenantSiteMetadata';
+import { buildTenantSitePublicUrl } from '@/lib/tenantSite/publicPaths';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -51,14 +53,17 @@ export default async function TenantSiteHomePage() {
     .maybeSingle();
 
   return (
-    <TenantSitePageView
-      site={site}
-      page={page}
-      headerNavLinks={mapTenantSiteNavLinks(headerNavRows, site.unifiedDomain)}
-      footerNavLinks={mapTenantSiteNavLinks(footerNavRows, site.unifiedDomain)}
-      pageId={pageRow?.id ?? null}
-      showPoweredBy={plan !== 'pro'}
-    />
+    <>
+      <TenantSiteJsonLd site={site} page={page} />
+      <TenantSitePageView
+        site={site}
+        page={page}
+        headerNavLinks={mapTenantSiteNavLinks(headerNavRows, site.unifiedDomain)}
+        footerNavLinks={mapTenantSiteNavLinks(footerNavRows, site.unifiedDomain)}
+        pageId={pageRow?.id ?? null}
+        showPoweredBy={plan !== 'pro'}
+      />
+    </>
   );
 }
 
@@ -75,12 +80,12 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!page) return {};
 
   return buildTenantSitePageMetadata({
-    origin: site.origin,
-    path: '/',
+    canonicalUrl: buildTenantSitePublicUrl(site.origin, page.slug, site.settings.homepageSlug),
     title: page.metaTitle || page.headline,
     description: page.metaDescription || page.lead,
     tenantName: site.branding.tenantName,
     ogImageUrl: page.ogImageUrl ?? site.branding.logoUrl,
+    iconUrl: site.branding.logoUrl,
     noIndex: !site.indexable,
   });
 }
