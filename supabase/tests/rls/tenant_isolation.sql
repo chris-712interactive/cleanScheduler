@@ -62,6 +62,25 @@ BEGIN
     END IF;
   END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tenant_hiring_applications'
+      AND policyname = 'tenant_hiring_applications_member_read'
+      AND qual LIKE '%can_read_hiring_desk%'
+  ) THEN
+    missing := array_append(missing, 'tenant_hiring_applications_member_read');
+  END IF;
+
+  IF to_regclass('public.tenant_hiring_applications') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relname = 'tenant_hiring_applications' AND c.relrowsecurity
+    ) THEN
+      missing := array_append(missing, 'tenant_hiring_applications RLS not enabled');
+    END IF;
+  END IF;
+
   IF array_length(missing, 1) IS NOT NULL THEN
     RAISE EXCEPTION 'Tenant isolation RLS smoke failed — missing: %', array_to_string(missing, ', ');
   END IF;

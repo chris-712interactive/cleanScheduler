@@ -114,6 +114,10 @@ function isPublicBookingRequestPath(path: string): boolean {
   return path === '/book' || path === '/request';
 }
 
+function isPublicHiringPath(path: string): boolean {
+  return path === '/apply' || path.startsWith('/apply/');
+}
+
 function isUnifiedMarketingPath(path: string): boolean {
   if (path === '/sitemap.xml' || path === '/robots.txt') return true;
   return !UNIFIED_SITE_RESERVED_PREFIXES.some(
@@ -360,7 +364,9 @@ export async function proxy(request: NextRequest) {
     } else if (
       baseClassification.kind === 'tenant' &&
       baseClassification.tenantSlug &&
-      (isPublicTenantSitePath(requestedPath) || isPublicBookingRequestPath(requestedPath))
+      (isPublicTenantSitePath(requestedPath) ||
+        isPublicBookingRequestPath(requestedPath) ||
+        isPublicHiringPath(requestedPath))
     ) {
       baseClassification = { kind: 'site', tenantSlug: baseClassification.tenantSlug };
     }
@@ -410,6 +416,9 @@ export async function proxy(request: NextRequest) {
     if (kind === 'site' && isPublicBookingRequestPath(requestedPath)) {
       // Public booking form lives at app/book (and /request alias), not under /site.
       url.pathname = requestedPath === '/request' ? '/book' : requestedPath;
+    } else if (kind === 'site' && isPublicHiringPath(requestedPath)) {
+      // Public hiring apply/confirm pages live at app/apply, not under /site.
+      url.pathname = requestedPath;
     } else if (
       kind === 'marketing' &&
       (requestedPath === '/pay' || requestedPath.startsWith('/pay/'))

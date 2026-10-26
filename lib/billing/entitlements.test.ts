@@ -35,6 +35,15 @@ describe('entitlements', () => {
     expect(isFeatureEnabled('trial', 'visitChecklists')).toBe(true);
   });
 
+  it('keeps the hiring desk on Business and Pro, off Starter and the trial', () => {
+    expect(isFeatureEnabled('starter', 'hiringDesk')).toBe(false);
+    expect(isFeatureEnabled('trial', 'hiringDesk')).toBe(false);
+    expect(isFeatureEnabled('business', 'hiringDesk')).toBe(true);
+    expect(isFeatureEnabled('pro', 'hiringDesk')).toBe(true);
+    expect(PLATFORM_TIER_ENTITLEMENTS.business.limits.maxActiveHiringOpenings).toBe(5);
+    expect(PLATFORM_TIER_ENTITLEMENTS.pro.limits.maxActiveHiringOpenings).toBe(25);
+  });
+
   it('exposes seat limits for starter', () => {
     expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedOfficeSeats).toBe(2);
     expect(PLATFORM_TIER_ENTITLEMENTS.starter.limits.includedFieldSeats).toBe(5);

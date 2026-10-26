@@ -87,6 +87,15 @@ export const PLATFORM_RETENTION_SCHEDULE: RetentionScheduleRow[] = [
       'We retain recipient metadata and status in app tables where applicable; message bodies live with Resend for a limited provider retention window.',
   },
   {
+    category: 'Hiring applications',
+    examples: 'tenant_hiring_applications, tenant_hiring_tokens, tenant_hiring_events',
+    retentionPeriod:
+      'While the opening is active; contact details removed when the applicant withdraws or the office deletes them',
+    disposition: 'delete',
+    notes:
+      'Applicant name, email, and phone belong to the cleaning company. Withdrawal and office delete null those fields and keep a status tombstone. Rows are removed with the workspace.',
+  },
+  {
     category: 'Portal and employee invites',
     examples: 'customer_portal_invites, employee_invites',
     retentionPeriod: 'Until accepted, revoked, or 30 days after expires_at (whichever is first)',

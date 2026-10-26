@@ -33,6 +33,7 @@ const FEATURE_MINIMUM_TIER: Record<EntitlementFeature, PlatformPlanTier> = {
   emailOnMyWay: 'starter',
   emailReviewRequest: 'starter',
   publicBookingRequest: 'starter',
+  hiringDesk: 'business',
   visitChecklists: 'starter',
   proofOfServicePortalShare: 'pro',
   customServiceTypes: 'pro',

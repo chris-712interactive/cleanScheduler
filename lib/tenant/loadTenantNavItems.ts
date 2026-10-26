@@ -22,7 +22,10 @@ import {
   tenantReferralsNavEnabled,
 } from '@/lib/referrals/tenantReferralsNav';
 import { createAdminClient } from '@/lib/supabase/server';
-import { resolveMembershipPermissions } from '@/lib/tenant/resolveMembershipPermissions';
+import {
+  hasPermission,
+  resolveMembershipPermissions,
+} from '@/lib/tenant/resolveMembershipPermissions';
 
 export interface TenantNavShellParams {
   tenantId: string;
@@ -107,6 +110,9 @@ export const loadTenantNavItemsForShell = cache(
       settingsNavItem: buildTenantSettingsNavItem(),
       websiteNavItems,
       campaignsNavEnabled: isFeatureEnabled(planTier, 'campaigns'),
+      hiringNavEnabled:
+        isFeatureEnabled(planTier, 'hiringDesk') &&
+        (hasPermission(permissions, 'hiring.view') || role === 'owner' || role === 'admin'),
       referralsNavEnabled: referralsEnabled,
       pendingRescheduleCount,
       openSupportThreadCount,

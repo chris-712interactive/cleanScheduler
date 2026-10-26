@@ -21,7 +21,8 @@
     "marketing:screenshots": "playwright test -c playwright.config.ts",
     "db:types": "supabase gen types typescript --linked --schema public",
     "db:prod-baseline": "bash supabase/scripts/build-prod-baseline.sh",
-    "briefing:pdf": "node scripts/generate-sales-partner-briefing-pdf.mjs"
+    "briefing:pdf": "node scripts/generate-sales-partner-briefing-pdf.mjs",
+    "hiring-guide:pdf": "node scripts/generate-hiring-desk-guide-pdf.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

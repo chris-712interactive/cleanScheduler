@@ -30,6 +30,7 @@ type EntitlementFeature =
   | 'emailOnMyWay'
   | 'emailReviewRequest'
   | 'publicBookingRequest'
+  | 'hiringDesk'
   | 'visitChecklists'
   | 'proofOfServicePortalShare';
 
@@ -221,6 +222,17 @@ Migration `0086_value_everywhere_pack.sql` / `0087_consultation_checklist_and_no
 When `customerPortal` is off, invoice emails use `{apex}/pay/{token}` guest Checkout links. Portal tenants keep portal CTAs.
 
 See `docs/product/guest-invoice-pay.md`.
+
+## Hiring desk (Business and Pro)
+
+| Tier     | `hiringDesk` | Active openings |
+| -------- | ------------ | --------------- |
+| Starter  | No           | 0               |
+| Business | Yes          | 5               |
+| Pro      | Yes          | 25              |
+| Trial    | No           | 0               |
+
+Office flow at `/hiring`. Public apply link at `{slug}.{apex}/apply/{opening-slug}` (`noindex`). Confirm is a link tap, not a text reply. SMS is not part of phase 1. Apply migration `0115`. See `docs/product/hiring-desk.md`.
 
 ## Public booking request form (all plans)
 

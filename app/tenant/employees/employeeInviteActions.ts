@@ -5,17 +5,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
-import { isLimitExceededError } from '@/lib/billing/checkLimit';
-import {
-  assertCanAssignTeamSeat,
-  countTeamSeatUsage,
-  teamSeatGateErrorMessage,
-} from '@/lib/billing/teamSeats';
-import {
-  assertFeatureEnabledForTier,
-  featureGateErrorMessage,
-} from '@/lib/billing/tenantFeatureGate';
 import { emailBrandForTenant } from '@/lib/email/emailBrand';
+import { issueEmployeeInvite } from '@/lib/tenant/issueEmployeeInvite';
 import { isResendConfigured, sendEmployeeInviteEmail } from '@/lib/email/resend';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
@@ -82,153 +73,23 @@ export async function sendEmployeeInviteAction(
     return { error: 'You cannot assign that role.' };
   }
 
-  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
-
-  if (invitedRole === 'admin' || invitedRole === 'viewer') {
-    try {
-      assertFeatureEnabledForTier(tier, 'rolePermissions');
-    } catch (error) {
-      const message = featureGateErrorMessage(error);
-      if (message) return { error: message };
-      throw error;
-    }
-  }
-
-  const { data: existingUsers, error: listErr } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 200,
-  });
-  if (listErr) {
-    return { error: listErr.message };
-  }
-
   const auth = await getAuthContext();
   if (!auth) {
     return { error: 'You must be signed in to send an invite.' };
   }
 
-  if (!isResendConfigured()) {
-    return {
-      error:
-        'Configure RESEND_API_KEY and RESEND_FROM_EMAIL on the server to email employee invites.',
-    };
-  }
-
-  const existing = existingUsers.users.find(
-    (u) => (u.email ?? '').trim().toLowerCase() === emailRaw,
-  );
-  if (existing) {
-    const { data: already } = await admin
-      .from('tenant_memberships')
-      .select('id')
-      .eq('tenant_id', membership.tenantId)
-      .eq('user_id', existing.id)
-      .maybeSingle();
-    if (already) {
-      return { error: 'That person is already a member of this workspace.' };
-    }
-    const appRole = (existing.app_metadata as { app_role?: string })?.app_role;
-    if (appRole === 'customer') {
-      return {
-        error:
-          'That email already uses the customer portal. Use a work email or a different address for team access.',
-      };
-    }
-    const { data: otherMembership } = await admin
-      .from('tenant_memberships')
-      .select('tenant_id')
-      .eq('user_id', existing.id)
-      .neq('tenant_id', membership.tenantId)
-      .limit(1)
-      .maybeSingle();
-    if (otherMembership) {
-      return {
-        error:
-          'That login is already linked to another workspace. Ask them to open the invite link and use “Link existing account”, or use a different email.',
-      };
-    }
-  }
-
-  const { data: tenant, error: tErr } = await admin
-    .from('tenants')
-    .select(
-      'name, slug, brand_color, logo_url, business_phone, business_email, address_line1, city, state, postal_code',
-    )
-    .eq('id', membership.tenantId)
-    .maybeSingle();
-  if (tErr || !tenant) {
-    return { error: 'Could not load workspace.' };
-  }
-
-  const { data: existingPendingInvite } = await admin
-    .from('employee_invites')
-    .select('invited_role')
-    .eq('tenant_id', membership.tenantId)
-    .eq('email_normalized', emailRaw)
-    .is('used_at', null)
-    .maybeSingle();
-
-  try {
-    const tier = await resolveTenantPlanTier(admin, membership.tenantId);
-    const usage = await countTeamSeatUsage(admin, membership.tenantId);
-    assertCanAssignTeamSeat({
-      plan: tier,
-      role: invitedRole,
-      usage,
-      replaceRole: existingPendingInvite
-        ? (existingPendingInvite.invited_role as TenantRole)
-        : undefined,
-    });
-  } catch (error) {
-    const message = teamSeatGateErrorMessage(error);
-    if (message) {
-      return { error: message, limitExceeded: isLimitExceededError(error) };
-    }
-    throw error;
-  }
-
-  const expires = new Date();
-  expires.setUTCDate(expires.getUTCDate() + 7);
-
-  await admin
-    .from('employee_invites')
-    .delete()
-    .eq('tenant_id', membership.tenantId)
-    .eq('email_normalized', emailRaw)
-    .is('used_at', null);
-
-  const { data: invite, error: invErr } = await admin
-    .from('employee_invites')
-    .insert({
-      tenant_id: membership.tenantId,
-      email_normalized: emailRaw,
-      invited_role: invitedRole,
-      invited_by_user_id: auth.user.id,
-      expires_at: expires.toISOString(),
-    })
-    .select('token')
-    .single();
-
-  if (invErr || !invite?.token) {
-    return { error: invErr?.message ?? 'Could not create invite.' };
-  }
-
-  const tenantName = String(tenant.name ?? tenant.slug).trim() || slug;
-  const acceptUrl = `${getPublicOrigin(null)}/complete-employee-invite?token=${invite.token}`;
-  const workspaceUrl = getPublicOrigin(tenant.slug);
-  const brand = await emailBrandForTenant(admin, membership.tenantId, tenant);
-
-  const sent = await sendEmployeeInviteEmail({
-    to: emailRaw,
-    tenantName,
-    roleLabel: roleLabel(invitedRole),
-    acceptUrl,
-    workspaceUrl,
-    brand,
+  const plan = await resolveTenantPlanTier(admin, membership.tenantId);
+  const issued = await issueEmployeeInvite({
+    admin,
+    tenantId: membership.tenantId,
+    email: emailRaw,
+    invitedRole,
+    invitedByUserId: auth.user.id,
+    actorRole: membership.role,
+    plan,
   });
-  if (!sent.ok) {
-    await admin.from('employee_invites').delete().eq('token', invite.token);
-    return { error: sent.error };
+  if (!issued.ok) {
+    return { error: issued.error, limitExceeded: issued.limitExceeded };
   }
 
   revalidatePath('/employees');

@@ -9,6 +9,7 @@ import { getAuthContext } from '@/lib/auth/session';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { TenantRole } from '@/lib/auth/types';
 import { fieldEmployeeHomePath, isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
+import { linkHiredApplicant } from '@/lib/hiring/linkHiredApplicant';
 import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import {
   assertCanAssignTeamSeat,
@@ -139,6 +140,7 @@ export async function linkExistingEmployeeInviteAction(
       .from('employee_invites')
       .update({ used_at: new Date().toISOString() })
       .eq('token', token);
+    await linkHiredApplicant(admin, token, auth.user.id);
     redirect(tenantPortalLandingPath(tenantSlugEarly, invitedRole));
   }
 
@@ -228,6 +230,7 @@ export async function linkExistingEmployeeInviteAction(
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
 
+  await linkHiredApplicant(admin, token, auth.user.id);
   redirect(tenantPortalLandingPath(tenantSlugEarly, invitedRole));
 }
 
@@ -353,6 +356,8 @@ export async function acceptEmployeeInviteAction(
     .from('employee_invites')
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
+
+  await linkHiredApplicant(admin, token, userId);
 
   const tenantsRaw = invite.tenants as
     { slug: string; name: string } | { slug: string; name: string }[] | null;

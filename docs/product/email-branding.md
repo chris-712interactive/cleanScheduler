@@ -6,11 +6,11 @@ Every Resend message uses one HTML shell. The shell follows who the message is f
 
 **The cleaning company** — customer-facing mail. Header uses the workspace logo (or the business name when no logo is saved), brand color, business address, phone, and email from Settings → Business. The inbox display name is the business name. Reply-to is the business email when one is saved. The verified send address stays `RESEND_FROM_EMAIL`.
 
-Covered mail: portal invites, quotes, invoices and receipts, invoice and visit reminders, on-my-way, review requests, reschedule decisions, referral notes to customers, staff replies in Messages, team invites, and marketing campaigns.
+Covered mail: portal invites, quotes, invoices and receipts, invoice and visit reminders, on-my-way, review requests, reschedule decisions, referral notes to customers, staff replies in Messages, team invites, hiring applicant mail, and marketing campaigns.
 
 **Clean Scheduler** — product mail to owners, office staff, and platform operations. Header uses the product mark and teal `#006D77`, with the Casper business address in the footer. The inbox display name is Clean Scheduler.
 
-Covered mail: trial welcome and trial-ending reminders, time off and hour-change notices, reschedule requests to the office, quote accepted or declined, customer Messages alerts to staff, website leads, referral alerts to the owner, Stripe dispute and velocity alerts, and founder outreach.
+Covered mail: trial welcome and trial-ending reminders, time off and hour-change notices, reschedule requests to the office, quote accepted or declined, customer Messages alerts to staff, website leads, referral alerts to the owner, hiring “people are waiting” alerts, Stripe dispute and velocity alerts, and founder outreach.
 
 Pro workspaces with white-label customer portal omit the “Sent with Clean Scheduler” footer line on company mail. Everyone else keeps that one line so the customer can see which product delivered it.
 

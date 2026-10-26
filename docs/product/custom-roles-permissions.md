@@ -38,6 +38,7 @@ Permissions are enforced in server actions first; RLS still uses membership + `b
 Wired paths:
 
 - Team invites / member changes → `team.invite`, `team.manage_members`
+- Hiring desk → `hiring.view`, `hiring.manage` (owner and admin system roles; migration `0115`)
 - Quote status moves → `quotes.manage`
 - Customer message replies → `messages.reply`
 - Sidebar nav visibility → view permissions per route (`buildTenantNavItems.ts`)

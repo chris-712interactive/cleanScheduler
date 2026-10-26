@@ -167,6 +167,13 @@ export const PERMISSION_AREA_DEFINITIONS: readonly PermissionAreaDefinition[] = 
         shortLabel: 'Manage roles',
         requires: ['team.view', 'team.manage_members'],
       },
+      { key: 'hiring.view', label: 'View hiring', shortLabel: 'View hiring' },
+      {
+        key: 'hiring.manage',
+        label: 'Manage hiring',
+        shortLabel: 'Manage hiring',
+        requires: ['hiring.view'],
+      },
     ],
   },
   {

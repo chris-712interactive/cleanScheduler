@@ -1224,6 +1224,255 @@ export type Database = {
           },
         ];
       };
+      tenant_hiring_applications: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          opening_id: string;
+          full_name: string | null;
+          email: string | null;
+          phone_e164: string | null;
+          status: string;
+          gate_answers: Json;
+          applicant_note: string | null;
+          consent_at: string | null;
+          consent_version: string | null;
+          source: string;
+          invite_token: string | null;
+          hired_user_id: string | null;
+          screened_out_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          opening_id: string;
+          full_name?: string | null;
+          email?: string | null;
+          phone_e164?: string | null;
+          status?: string;
+          gate_answers?: Json;
+          applicant_note?: string | null;
+          consent_at?: string | null;
+          consent_version?: string | null;
+          source?: string;
+          invite_token?: string | null;
+          hired_user_id?: string | null;
+          screened_out_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          opening_id?: string;
+          full_name?: string | null;
+          email?: string | null;
+          phone_e164?: string | null;
+          status?: string;
+          gate_answers?: Json;
+          applicant_note?: string | null;
+          consent_at?: string | null;
+          consent_version?: string | null;
+          source?: string;
+          invite_token?: string | null;
+          hired_user_id?: string | null;
+          screened_out_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_hiring_events: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          opening_id: string;
+          application_id: string | null;
+          event_type: string;
+          actor_user_id: string | null;
+          detail: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          opening_id: string;
+          application_id?: string | null;
+          event_type: string;
+          actor_user_id?: string | null;
+          detail?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          opening_id?: string;
+          application_id?: string | null;
+          event_type?: string;
+          actor_user_id?: string | null;
+          detail?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_hiring_openings: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          slug: string;
+          title: string;
+          kind: string;
+          status: string;
+          pay_text: string;
+          schedule_text: string;
+          area_text: string;
+          interview_kind: string;
+          confirm_window_minutes: number;
+          require_transportation: boolean;
+          require_accepts_pay: boolean;
+          require_accepts_schedule: boolean;
+          require_background_check_willing: boolean;
+          require_work_authorized: boolean;
+          closed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          slug: string;
+          title: string;
+          kind: string;
+          status?: string;
+          pay_text?: string;
+          schedule_text?: string;
+          area_text?: string;
+          interview_kind?: string;
+          confirm_window_minutes?: number;
+          require_transportation?: boolean;
+          require_accepts_pay?: boolean;
+          require_accepts_schedule?: boolean;
+          require_background_check_willing?: boolean;
+          require_work_authorized?: boolean;
+          closed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          slug?: string;
+          title?: string;
+          kind?: string;
+          status?: string;
+          pay_text?: string;
+          schedule_text?: string;
+          area_text?: string;
+          interview_kind?: string;
+          confirm_window_minutes?: number;
+          require_transportation?: boolean;
+          require_accepts_pay?: boolean;
+          require_accepts_schedule?: boolean;
+          require_background_check_willing?: boolean;
+          require_work_authorized?: boolean;
+          closed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_hiring_slots: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          opening_id: string;
+          starts_at: string;
+          duration_minutes: number;
+          meeting_text: string;
+          held_by_application_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          opening_id: string;
+          starts_at: string;
+          duration_minutes?: number;
+          meeting_text?: string;
+          held_by_application_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          opening_id?: string;
+          starts_at?: string;
+          duration_minutes?: number;
+          meeting_text?: string;
+          held_by_application_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_hiring_submit_attempts: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          opening_id: string;
+          ip_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          opening_id: string;
+          ip_hash: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          opening_id?: string;
+          ip_hash?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_hiring_tokens: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          application_id: string;
+          token_hash: string;
+          purpose: string;
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          application_id: string;
+          token_hash: string;
+          purpose: string;
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          application_id?: string;
+          token_hash?: string;
+          purpose?: string;
+          expires_at?: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       tenant_invoices: {
         Row: {
           id: string;

@@ -20,6 +20,7 @@ const NAV_ITEMS_BASE: NavItem[] = [
     icon: 'rescheduleRequests',
   },
   { label: 'Employees', href: '/employees', icon: 'work' },
+  { label: 'Hiring', href: '/hiring', icon: 'users' },
   { label: 'Campaigns', href: '/campaigns', icon: 'campaigns' },
   { label: 'Reports', href: '/reports', icon: 'reports' },
   { label: 'Accounting', href: '/accounting', icon: 'accounting' },
@@ -62,6 +63,7 @@ export function buildTenantNavItems(params: {
   settingsNavItem: NavItem;
   websiteNavItems?: NavItem[];
   campaignsNavEnabled: boolean;
+  hiringNavEnabled: boolean;
   referralsNavEnabled: boolean;
   pendingRescheduleCount: number;
   openSupportThreadCount: number;
@@ -76,6 +78,7 @@ export function buildTenantNavItems(params: {
     settingsNavItem,
     websiteNavItems = [],
     campaignsNavEnabled,
+    hiringNavEnabled,
     referralsNavEnabled,
     pendingRescheduleCount,
     openSupportThreadCount,
@@ -99,6 +102,7 @@ export function buildTenantNavItems(params: {
         billingNavItem,
         ...NAV_ITEMS_BASE.slice(7).filter((item) => {
           if (item.href === '/campaigns' && !campaignsNavEnabled) return false;
+          if (item.href === '/hiring' && !hiringNavEnabled) return false;
           if (item.href === '/accounting') {
             if (permissions) return hasPermission(permissions, 'billing.view');
             return role === 'owner' || role === 'admin';

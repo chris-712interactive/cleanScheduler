@@ -27,6 +27,7 @@ export type EntitlementFeature =
   | 'emailOnMyWay'
   | 'emailReviewRequest'
   | 'publicBookingRequest'
+  | 'hiringDesk'
   | 'visitChecklists'
   | 'proofOfServicePortalShare'
   | 'customServiceTypes'
@@ -49,7 +50,8 @@ export type EntitlementLimitKey =
   | 'maxCampaignAudienceSize'
   | 'maxCampaignDrafts'
   | 'maxMarketingSitePages'
-  | 'maxMarketingSiteServiceAreaPages';
+  | 'maxMarketingSiteServiceAreaPages'
+  | 'maxActiveHiringOpenings';
 
 /** Limits stored as plain numbers (excludes nullable field-seat cap). */
 export type NumericEntitlementLimitKey = Exclude<EntitlementLimitKey, 'includedFieldSeats'>;
@@ -98,6 +100,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       emailOnMyWay: true,
       emailReviewRequest: true,
       publicBookingRequest: true,
+      hiringDesk: false,
       visitChecklists: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
@@ -121,6 +124,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxCampaignDrafts: 0,
       maxMarketingSitePages: 0,
       maxMarketingSiteServiceAreaPages: 0,
+      maxActiveHiringOpenings: 0,
     },
   },
   business: {
@@ -150,6 +154,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       emailOnMyWay: true,
       emailReviewRequest: true,
       publicBookingRequest: true,
+      hiringDesk: true,
       visitChecklists: true,
       proofOfServicePortalShare: false,
       customServiceTypes: false,
@@ -173,6 +178,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxCampaignDrafts: 20,
       maxMarketingSitePages: 10,
       maxMarketingSiteServiceAreaPages: 2,
+      maxActiveHiringOpenings: 5,
     },
   },
   pro: {
@@ -202,6 +208,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       emailOnMyWay: true,
       emailReviewRequest: true,
       publicBookingRequest: true,
+      hiringDesk: true,
       visitChecklists: true,
       proofOfServicePortalShare: true,
       customServiceTypes: true,
@@ -225,6 +232,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxCampaignDrafts: 50,
       maxMarketingSitePages: 50,
       maxMarketingSiteServiceAreaPages: 25,
+      maxActiveHiringOpenings: 25,
     },
   },
 };
@@ -260,6 +268,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     emailOnMyWay: true,
     emailReviewRequest: true,
     publicBookingRequest: true,
+    hiringDesk: false,
     visitChecklists: true,
     proofOfServicePortalShare: false,
     customServiceTypes: false,
@@ -283,6 +292,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     maxCampaignDrafts: 0,
     maxMarketingSitePages: 2,
     maxMarketingSiteServiceAreaPages: 0,
+    maxActiveHiringOpenings: 0,
   },
 };
 

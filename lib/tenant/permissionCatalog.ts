@@ -22,6 +22,8 @@ export const PERMISSION_KEYS = [
   'reports.export',
   'campaigns.view',
   'campaigns.manage',
+  'hiring.view',
+  'hiring.manage',
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -159,6 +161,18 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     label: 'Manage campaigns',
     description: 'Create and send email campaigns.',
     group: 'Campaigns',
+  },
+  {
+    key: 'hiring.view',
+    label: 'View hiring',
+    description: 'See openings, applicants, and hiring metrics.',
+    group: 'Team',
+  },
+  {
+    key: 'hiring.manage',
+    label: 'Manage hiring',
+    description: 'Publish openings and slots, decide on applicants, and hire.',
+    group: 'Team',
   },
 ];
 
