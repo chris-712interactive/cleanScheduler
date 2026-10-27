@@ -1632,6 +1632,7 @@ export type Database = {
           platform_plan: 'starter' | 'pro' | 'business' | null;
           billing_interval: 'month' | 'year' | null;
           trial_ending_reminder_sent_at: string | null;
+          admin_granted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1648,6 +1649,7 @@ export type Database = {
           platform_plan?: 'starter' | 'pro' | 'business' | null;
           billing_interval?: 'month' | 'year' | null;
           trial_ending_reminder_sent_at?: string | null;
+          admin_granted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1664,6 +1666,7 @@ export type Database = {
           platform_plan?: 'starter' | 'pro' | 'business' | null;
           billing_interval?: 'month' | 'year' | null;
           trial_ending_reminder_sent_at?: string | null;
+          admin_granted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

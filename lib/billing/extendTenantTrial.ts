@@ -14,12 +14,16 @@ export type TrialExtensionBilling = {
   trial_started_at: string | null;
   activated_at: string | null;
   stripe_subscription_id: string | null;
+  admin_granted_at?: string | null;
 };
 
 export function trialExtensionBlockReason(billing: TrialExtensionBilling | null): string | null {
   if (!billing) return 'This workspace has no billing record.';
   if (billing.stripe_subscription_id) {
     return 'This trial is managed in Stripe. Change the trial end on the subscription there.';
+  }
+  if (billing.admin_granted_at) {
+    return 'This workspace is on an admin-granted plan. Return it to the free trial before extending the trial.';
   }
   if (billing.status === 'active' || billing.status === 'past_due') {
     return 'This workspace already has a paid subscription.';
@@ -78,7 +82,7 @@ export async function extendTenantTrial(
   const { data: billing, error: billingError } = await admin
     .from('tenant_billing_accounts')
     .select(
-      'status, trial_ends_at, trial_started_at, activated_at, stripe_subscription_id, canceled_at',
+      'status, trial_ends_at, trial_started_at, activated_at, stripe_subscription_id, canceled_at, admin_granted_at',
     )
     .eq('tenant_id', input.tenantId)
     .maybeSingle();

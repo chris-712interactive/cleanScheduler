@@ -22,7 +22,7 @@ This document describes the lean accounting surfaces shipped in Phase 2. Full le
 
 ### Metrics
 
-- **MRR** — Sum of estimated monthly recurring revenue from `tenant_billing_accounts` with status `active` or `trialing`, priced from `PLATFORM_TIER_ENTITLEMENTS` and billing interval.
+- **MRR** — Sum of estimated monthly recurring revenue from `tenant_billing_accounts` with status `active` or `trialing`, priced from `PLATFORM_TIER_ENTITLEMENTS` and billing interval. Rows with `admin_granted_at` set (a plan activated from Admin without Checkout) are left out.
 - **Revenue YTD (estimated)** — For each **active** paying subscription, `monthlyRecurringCents × months live` since the later of Jan 1 UTC or `activated_at`. Labeled **estimated** — not a Stripe ledger export.
 - **Tenant subscriptions** — Slug, plan, status, estimated MRR, Stripe subscription id when present.
 

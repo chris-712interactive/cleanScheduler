@@ -19,11 +19,14 @@ function daysAgoIso(days: number): string {
   return d.toISOString();
 }
 
-function monthlyRecurringCentsForAccount(row: {
+export function monthlyRecurringCentsForAccount(row: {
   status: string;
   platform_plan: PlatformPlanTier | null;
   billing_interval: 'month' | 'year' | null;
+  /** Set when a platform admin activated the plan without Checkout. */
+  admin_granted_at: string | null;
 }): number {
+  if (row.admin_granted_at) return 0;
   if (row.status !== 'active' && row.status !== 'trialing') return 0;
   const tier = row.platform_plan ?? 'starter';
   const entitlements = PLATFORM_TIER_ENTITLEMENTS[tier];
@@ -54,7 +57,7 @@ export async function getPlatformDashboardStats(): Promise<PlatformDashboardStat
       db.from('customers').select('*', { count: 'exact', head: true }),
       db
         .from('tenant_billing_accounts')
-        .select('status, platform_plan, billing_interval')
+        .select('status, platform_plan, billing_interval, admin_granted_at')
         .in('status', ['active', 'trialing']),
       db.from('tenants').select('stripe_connect_status').eq('is_active', true),
     ]);
@@ -70,6 +73,7 @@ export async function getPlatformDashboardStats(): Promise<PlatformDashboardStat
       status: row.status,
       platform_plan: tier,
       billing_interval: row.billing_interval,
+      admin_granted_at: row.admin_granted_at,
     });
     if (cents > 0) {
       estimatedMrrCents += cents;
@@ -170,6 +174,7 @@ export async function getPlatformAccountingSummary(): Promise<PlatformAccounting
         platform_plan,
         billing_interval,
         stripe_subscription_id,
+        admin_granted_at,
         trial_ends_at,
         activated_at,
         created_at
@@ -200,6 +205,7 @@ export async function getPlatformAccountingSummary(): Promise<PlatformAccounting
           status: billing.status,
           platform_plan: tier,
           billing_interval: billing.billing_interval,
+          admin_granted_at: billing.admin_granted_at,
         })
       : 0;
 

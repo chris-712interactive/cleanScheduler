@@ -9,6 +9,7 @@ import {
 } from '@/lib/billing/platformPlans';
 import type { Database } from '@/lib/supabase/database.types';
 import { markSalesLeadWonForTenant } from '@/lib/admin/salesTrialExpiryTasks';
+import { shouldPreserveAdminSubscriptionGrant } from '@/lib/billing/grantTenantSubscription';
 import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 
 type Admin = SupabaseClient<Database>;
@@ -146,9 +147,18 @@ export async function syncTenantFromStripeSubscription(
 
   const { data: existingBilling } = await admin
     .from('tenant_billing_accounts')
-    .select('activated_at, status, canceled_at')
+    .select('activated_at, status, canceled_at, admin_granted_at')
     .eq('tenant_id', tenantId)
     .maybeSingle();
+
+  if (
+    shouldPreserveAdminSubscriptionGrant({
+      adminGrantedAt: existingBilling?.admin_granted_at,
+      incomingStatus: mappedStatus,
+    })
+  ) {
+    return true;
+  }
 
   const wasAlreadyCanceled = existingBilling?.status === 'canceled';
 
@@ -168,6 +178,9 @@ export async function syncTenantFromStripeSubscription(
   };
   if (platformPlan) {
     updatePayload.platform_plan = platformPlan;
+  }
+  if (!isCanceled) {
+    updatePayload.admin_granted_at = null;
   }
   if (billingInterval) {
     updatePayload.billing_interval = billingInterval;

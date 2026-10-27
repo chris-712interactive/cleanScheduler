@@ -25,8 +25,15 @@ describe('trialExtensionBlockReason', () => {
     ).toBeNull();
   });
 
-  it('refuses paid, Stripe-managed, and already-activated workspaces', () => {
+  it('refuses paid, Stripe-managed, admin-granted, and already-activated workspaces', () => {
     expect(trialExtensionBlockReason({ ...openTrial, status: 'active' })).toMatch(/paid/);
+    expect(
+      trialExtensionBlockReason({
+        ...openTrial,
+        status: 'active',
+        admin_granted_at: '2026-10-27T00:00:00.000Z',
+      }),
+    ).toMatch(/admin-granted/);
     expect(trialExtensionBlockReason({ ...openTrial, stripe_subscription_id: 'sub_123' })).toMatch(
       /Stripe/,
     );

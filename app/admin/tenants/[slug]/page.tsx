@@ -18,6 +18,11 @@ import {
 import { getEntitlementsForTier } from '@/lib/billing/entitlements';
 import { formatOfficeFieldSeatLine } from '@/lib/billing/teamSeats';
 import {
+  canReturnManualSubscriptionToTrial,
+  manualSubscriptionGrantBlockReason,
+} from '@/lib/billing/grantTenantSubscription';
+import { parsePlatformBillingInterval } from '@/lib/billing/platformPlans';
+import {
   formatAutoPurgeDate,
   getTenantPurgeStatus,
   isCanceledForAdminPurge,
@@ -30,6 +35,7 @@ import {
 } from '@/lib/admin/platformSupportLabels';
 import { AdminDeleteTenantPanel } from '../AdminDeleteTenantPanel';
 import { AdminExtendTrialPanel } from '../AdminExtendTrialPanel';
+import { AdminGrantSubscriptionPanel } from '../AdminGrantSubscriptionPanel';
 import { AdminTenantRiskPanel } from '../AdminTenantRiskPanel';
 import { CONNECT_VELOCITY_BLOCKED_AUDIT_ACTION } from '@/lib/billing/connectPaymentVelocity';
 import { trialExtensionBlockReason } from '@/lib/billing/extendTenantTrial';
@@ -60,6 +66,7 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
   const slug = rawSlug.trim().toLowerCase();
   const riskFlash = firstParam(sp.risk);
   const trialFlash = firstParam(sp.trial);
+  const planFlash = firstParam(sp.plan);
 
   const admin = createAdminClient();
   const { data: tenant, error } = await admin
@@ -85,7 +92,9 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
         canceled_at,
         stripe_customer_id,
         stripe_subscription_id,
-        platform_plan
+        platform_plan,
+        billing_interval,
+        admin_granted_at
       ),
       tenant_onboarding_profiles (
         company_email,
@@ -211,6 +220,20 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
                     variant: 'success',
                   }
                 : null,
+              planFlash === 'granted'
+                ? {
+                    title:
+                      'Active plan saved. This workspace can use that subscription level without Checkout.',
+                    variant: 'success',
+                  }
+                : null,
+              planFlash === 'trial'
+                ? {
+                    title:
+                      'Workspace returned to the free trial. Checkout is available again on Billing.',
+                    variant: 'success',
+                  }
+                : null,
             ]}
           />
 
@@ -328,6 +351,21 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
                         : '—',
                     },
                     {
+                      key: 'Billing cycle',
+                      value:
+                        billing.billing_interval === 'year'
+                          ? 'Yearly'
+                          : billing.billing_interval === 'month'
+                            ? 'Monthly'
+                            : '—',
+                    },
+                    {
+                      key: 'Admin grant',
+                      value: billing.admin_granted_at
+                        ? new Date(String(billing.admin_granted_at)).toLocaleString()
+                        : '—',
+                    },
+                    {
                       key: 'Connect account',
                       value: connectAcct?.stripe_account_id
                         ? String(connectAcct.stripe_account_id)
@@ -359,9 +397,31 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pa
                       trial_started_at: billing.trial_started_at,
                       activated_at: billing.activated_at,
                       stripe_subscription_id: billing.stripe_subscription_id,
+                      admin_granted_at: billing.admin_granted_at,
                     }
                   : null,
               )}
+            />
+          </Card>
+
+          <Card title="Subscription level">
+            <AdminGrantSubscriptionPanel
+              tenantId={tenant.id}
+              tenantSlug={tenant.slug}
+              blockedReason={manualSubscriptionGrantBlockReason(
+                billing ? { stripe_subscription_id: billing.stripe_subscription_id } : null,
+              )}
+              canReturnToTrial={canReturnManualSubscriptionToTrial(
+                billing
+                  ? {
+                      status: billing.status,
+                      stripe_subscription_id: billing.stripe_subscription_id,
+                    }
+                  : null,
+              )}
+              currentPlan={parsedPlan}
+              currentInterval={parsePlatformBillingInterval(billing?.billing_interval ?? null)}
+              hasStripeCustomer={Boolean(billing?.stripe_customer_id)}
             />
           </Card>
 

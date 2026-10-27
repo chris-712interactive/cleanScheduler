@@ -434,4 +434,14 @@ Reply with choices (or edits) before implementation.
 
 ## Admin trial extension
 
-Platform admins can add 1–90 days from **Admin → Tenants → [workspace] → Billing**. Days are added after the current `trial_ends_at`, or from today if that date has passed. An expired database-only trial (`status=canceled`, never activated, no Stripe subscription) is set back to `trialing` and the workspace is marked active again. Paid or Stripe-managed subscriptions are not changed here. The action is audited as `tenant.trial_extended`.
+Platform admins can add 1–90 days from **Admin → Tenants → [workspace] → Billing**. Days are added after the current `trial_ends_at`, or from today if that date has passed. An expired database-only trial (`status=canceled`, never activated, no Stripe subscription) is set back to `trialing` and the workspace is marked active again. Paid or Stripe-managed subscriptions are not changed here. An admin-granted plan must be returned to the free trial before the trial can be extended. The action is audited as `tenant.trial_extended`.
+
+## Admin subscription grant
+
+Platform admins can set **Starter**, **Business**, or **Pro** as an active plan from **Admin → Tenants → [workspace] → Subscription level** without Stripe Checkout. Apply migration **`0116`**. This is for production test workspaces. It writes the same billing fields Checkout writes (`status=active`, `platform_plan`, `billing_interval`, `activated_at`) and sets `admin_granted_at`. Nothing is charged, and no Stripe subscription is created.
+
+Workspaces that are not changed here keep the current trial and Checkout path. A workspace that already has `stripe_subscription_id` cannot be overridden here; change that plan in Stripe. A later live Stripe subscription (Checkout or an active subscription webhook) clears `admin_granted_at` and becomes the source of truth. A canceled Stripe event does not remove an admin grant.
+
+**Return to free trial** clears the grant, clears `platform_plan` and `billing_interval`, and puts the workspace back on `status=trialing` so the plan picker and Checkout show up again. If the previous trial end is already past, the trial is given 7 more days. The grant is audited as `tenant.subscription_granted`. Clearing it is audited as `tenant.subscription_grant_cleared`.
+
+Admin grants are left out of estimated MRR. While a grant is active, the workspace billing page shows that plan as active and does not offer the subscribe picker.
