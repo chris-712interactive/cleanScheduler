@@ -25,28 +25,116 @@
   align-items: center;
 }
 
-.statStrip {
+$flow-node: 2.75rem;
+
+.flow {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4) var(--space-6);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
 }
 
-.stat {
+.flowStep {
+  position: relative;
   display: flex;
+  flex: 1 0 8rem;
   flex-direction: column;
   gap: var(--space-1);
-  min-width: 5.5rem;
+  min-width: 8rem;
+  padding-right: var(--space-5);
 
-  strong {
-    font-size: var(--font-size-lg);
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: calc($flow-node / 2);
+    right: 0.85rem;
+    left: $flow-node;
+    height: 1px;
+    background: var(--color-border);
+    transform: translateY(-50%);
   }
 
-  span {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-    font-weight: 400;
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: calc($flow-node / 2);
+    right: 0.35rem;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-top: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  &:has(.flowCount[data-live])::before {
+    background: var(--color-brand-primary);
+  }
+
+  &:has(.flowCount[data-live])::after {
+    border-top-color: var(--color-brand-primary);
+    border-right-color: var(--color-brand-primary);
+  }
+}
+
+.flowCount {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: $flow-node;
+  height: $flow-node;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-circle);
+
+  &[data-live] {
+    color: var(--color-text);
+    background: var(--color-bg-muted);
+    border-color: var(--color-brand-primary);
+  }
+}
+
+.flowName {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.flowHint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+}
+
+.flowExits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flowExit {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-pill);
+
+  strong {
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
   }
 }
 

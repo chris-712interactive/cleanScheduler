@@ -84,6 +84,27 @@ function openingTone(status: string): StatusTone {
   return 'neutral';
 }
 
+function countStatuses(rows: { status: string }[], statuses: readonly string[]): number {
+  return rows.filter((row) => statuses.includes(row.status)).length;
+}
+
+const APPLICANT_PATH = [
+  { label: 'Waiting', detail: 'Passed the screen', statuses: ['ready'] },
+  { label: 'Hold sent', detail: 'Waiting on them', statuses: ['slot_offered'] },
+  { label: 'Confirmed', detail: 'Time is set', statuses: ['confirmed'] },
+  { label: 'Showed', detail: 'Ready to decide', statuses: ['showed'] },
+  { label: 'Hired', detail: 'On the team', statuses: ['hired'] },
+] as const;
+
+const APPLICANT_EXITS = [
+  { label: 'Screened out', statuses: ['screened_out'] },
+  { label: 'No-show', statuses: ['no_show'] },
+  { label: 'Not a fit', statuses: ['rejected'] },
+  { label: 'Declined', statuses: ['declined'] },
+  { label: 'Hold expired', statuses: ['offer_expired'] },
+  { label: 'Withdrawn', statuses: ['withdrawn'] },
+] as const;
+
 export default async function HiringOpeningPage({
   params,
 }: {
@@ -199,15 +220,28 @@ export default async function HiringOpeningPage({
     hasPermission(permissions, 'team.invite') ||
     membership.role === 'owner' ||
     membership.role === 'admin';
-  const stats = [
-    ['Applicants', metrics.applicants],
-    ['Screened out', metrics.screenedOut],
-    ['Confirmed', metrics.confirmed],
-    ['Showed', metrics.showed],
-    ['No-show', metrics.noShow],
-    ['Unresolved', metrics.unresolved],
-    ['Hired', metrics.hired],
-  ] as const;
+  const path = APPLICANT_PATH.map((stage) => ({
+    ...stage,
+    count: countStatuses(rows, stage.statuses),
+    detail:
+      stage.label === 'Confirmed' && metrics.unresolved > 0
+        ? `${metrics.unresolved} time${metrics.unresolved === 1 ? '' : 's'} passed`
+        : stage.detail,
+  }));
+  const exits = APPLICANT_EXITS.map((exit) => ({
+    label: exit.label,
+    count: countStatuses(rows, exit.statuses),
+  })).filter((exit) => exit.count > 0);
+  const pathNote =
+    rows.length === 0
+      ? 'Someone who passes the questions waits for a time, confirms it, shows up, and can be hired.'
+      : showUp
+        ? `${showUp} of people who confirmed a time showed up.${
+            ofApplicants ? ` ${ofApplicants} of everyone who applied showed up.` : ''
+          }`
+        : metrics.confirmed > 0
+          ? 'Show-up rate appears after 5 confirmations.'
+          : null;
 
   return (
     <>
@@ -240,22 +274,33 @@ export default async function HiringOpeningPage({
       />
 
       <div className={styles.workspace}>
-        <section className={styles.panel} aria-label="Hiring funnel">
+        <section className={styles.panel} aria-labelledby="applicant-path-heading">
+          <h2 id="applicant-path-heading" className={styles.panelTitle}>
+            Applicant path
+          </h2>
           <div className={styles.panelBody}>
-            <div className={styles.statStrip}>
-              {stats.map(([label, value]) => (
-                <div key={label} className={styles.stat}>
-                  <strong>{value}</strong>
-                  <span>{label}</span>
-                </div>
+            <ol className={styles.flow}>
+              {path.map((stage) => (
+                <li key={stage.label} className={styles.flowStep}>
+                  <span className={styles.flowCount} data-live={stage.count > 0 || undefined}>
+                    {stage.count}
+                  </span>
+                  <span className={styles.flowName}>{stage.label}</span>
+                  <span className={styles.flowHint}>{stage.detail}</span>
+                </li>
               ))}
-            </div>
-            <p className={styles.note}>
-              {showUp
-                ? `${showUp} of people who confirmed a time showed up.`
-                : 'Show-up rate appears after 5 confirmations.'}
-              {ofApplicants ? ` ${ofApplicants} of everyone who applied showed up.` : ''}
-            </p>
+            </ol>
+            {exits.length > 0 ? (
+              <ul className={styles.flowExits}>
+                {exits.map((exit) => (
+                  <li key={exit.label} className={styles.flowExit}>
+                    <strong>{exit.count}</strong>
+                    <span>{exit.label}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {pathNote ? <p className={styles.note}>{pathNote}</p> : null}
           </div>
         </section>
 

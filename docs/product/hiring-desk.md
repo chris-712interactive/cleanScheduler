@@ -102,7 +102,7 @@ Owner and admin receive both. Field and viewer receive neither. Starter never se
 3. **Questions.** A fixed set of yes/no gates, toggled per opening. The office cannot type their own screening questions in v1 (see Legal). Always on and not removable: “Are you 18 or older?”
 4. **Slots.** The office adds concrete starts in the tenant timezone for the next few days: “Tue 7:00am, phone” or “Wed 8:00am, paid shadow, 2 hours, $36.” A slot has a capacity of one. No slot means qualified people sit in **Waiting** and the office gets an email: “N people passed the screen and have nowhere to go.”
 5. **Share.** Copy `https://{tenant-slug}.{apex}/apply/{opening-slug}`. The page is `noindex`. It is not linked from the Clean Scheduler marketing site. The company pastes it into their own site or job post.
-6. **Queue.** On the opening page, applicants fill the main column, grouped as coming in, waiting for a time, ready to decide, and finished. The application link and interview times sit beside that list on a wide screen, and above it on a narrow one. Pay, days, questions, and closing the role stay in a Role section that is collapsed once the link is live. Primary actions are one tap: mark showed, mark no-show, reject, or hire.
+6. **Queue.** On the opening page, an applicant path shows how many people are waiting, holding a time, confirmed, showed, and hired. People who left that path (screened out, no-show, not a fit) appear only when someone is there. Applicants fill the main column, grouped as coming in, waiting for a time, ready to decide, and finished. The application link and interview times sit beside that list on a wide screen, and above it on a narrow one. Pay, days, questions, and closing the role stay in a Role section that is collapsed once the link is live. Primary actions are one tap: mark showed, mark no-show, reject, or hire.
 7. **Hire.** Prefills the existing employee invite (`app/tenant/employees/employeeInviteActions.ts`) with name, email, and field or office role. Seat check is unchanged. The applicant row stores the invite id. When the invite is accepted, store the membership user id. If the seat cap blocks the invite, the hire action stops and the applicant stays **showed**.
 
 Manual add exists for someone who applied on Indeed and never hit the link: the office enters name, phone, and email, and the product emails them the same application form. The office cannot skip the form and invent a passing screen. Parsing Indeed emails is out of scope.
@@ -268,17 +268,9 @@ This section is product constraint, not a legal opinion. Counsel should review t
 
 ## Metrics
 
-On the opening, for the office:
+On the opening, the office sees where people stand right now, in order: waiting, hold sent, confirmed, showed, hired. Anyone who left that path is listed only when the count is above zero (screened out, no-show, not a fit, declined, hold expired, withdrawn). A confirmed interview whose start time has passed is called out on the Confirmed step.
 
-- Applicants (all submits)
-- Screened out
-- Confirmed
-- Showed
-- No-show
-- Unresolved (confirmed, start time passed, still unmarked)
-- Hired
-
-Show-up rate is **showed ÷ confirmed**, displayed only when confirmed is at least 5. Also show **showed ÷ applicants** so the owner can see the funnel they actually feel. No leaderboard across tenants. No public “response time” badge in v1.
+Show-up rate is **showed ÷ confirmed**, counting later showed, no-show, and hired people in the confirmed total, and it is displayed only when that total is at least 5. Also show **showed ÷ applicants** so the owner can see the funnel they actually feel. No leaderboard across tenants. No public “response time” badge in v1.
 
 ## Limits and entitlement enforcement
 
