@@ -225,29 +225,38 @@ export default async function HiringOpeningPage({
             <StatusPill tone={openingTone(opening.status)}>
               {OPENING_STATUS_LABEL[opening.status] ?? opening.status}
             </StatusPill>
-            <span>{opening.kind === 'office' ? 'Office' : 'Field'}</span>
-            <span>{interviewKindLabel(opening.interview_kind)}</span>
-            {opening.area_text ? <span>{opening.area_text}</span> : null}
+            <span>
+              {[
+                opening.kind === 'office' ? 'Office' : 'Field',
+                interviewKindLabel(opening.interview_kind),
+                opening.area_text,
+              ]
+                .map((part) => part.trim())
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
           </span>
         }
       />
 
       <div className={styles.workspace}>
-        <section className={styles.statCard} aria-label="Hiring funnel">
-          <div className={styles.statStrip}>
-            {stats.map(([label, value]) => (
-              <div key={label} className={styles.stat}>
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-            ))}
+        <section className={styles.panel} aria-label="Hiring funnel">
+          <div className={styles.panelBody}>
+            <div className={styles.statStrip}>
+              {stats.map(([label, value]) => (
+                <div key={label} className={styles.stat}>
+                  <strong>{value}</strong>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+            <p className={styles.note}>
+              {showUp
+                ? `${showUp} of people who confirmed a time showed up.`
+                : 'Show-up rate appears after 5 confirmations.'}
+              {ofApplicants ? ` ${ofApplicants} of everyone who applied showed up.` : ''}
+            </p>
           </div>
-          <p className={styles.statFoot}>
-            {ofApplicants ? `${ofApplicants} of applicants showed up.` : 'No show-ups yet.'}{' '}
-            {showUp
-              ? `Show-up rate among people who confirmed: ${showUp}.`
-              : 'Show-up rate appears after 5 confirmations.'}
-          </p>
         </section>
 
         <div className={styles.layout}>
