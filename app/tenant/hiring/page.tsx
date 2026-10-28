@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { FeatureUpgradePanel } from '@/components/billing/FeatureUpgradePanel';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { getPortalContext } from '@/lib/portal';
@@ -14,6 +15,18 @@ import {
 import styles from './hiring.module.scss';
 
 export const dynamic = 'force-dynamic';
+
+const OPENING_STATUS_LABEL: Record<string, string> = {
+  draft: 'Draft',
+  open: 'Live',
+  closed: 'Closed',
+};
+
+function openingTone(status: string): StatusTone {
+  if (status === 'open') return 'success';
+  if (status === 'draft') return 'warning';
+  return 'neutral';
+}
 
 export default async function HiringPage() {
   const { tenantSlug } = await getPortalContext();
@@ -61,8 +74,7 @@ export default async function HiringPage() {
     <>
       <PageHeader
         title="Hiring"
-        titleHint="Publish tomorrow’s slots before you share the link. People who pass the questions get the earliest open time by email and have to tap to keep it."
-        description="This company is the employer. Clean Scheduler does not place workers."
+        titleHint="Publish interview times before you share a link. People who pass the questions get the earliest open time by email and have to tap to keep it. This company is the employer."
         actions={
           <Button as={Link} href="/hiring/new">
             New opening
@@ -75,13 +87,18 @@ export default async function HiringPage() {
           description="Create a role, publish a couple of times for tomorrow, then copy the link into the job post you already use."
         />
       ) : (
-        <ul className={styles.list}>
+        <ul className={styles.openingGrid}>
           {(openings ?? []).map((opening) => (
             <li key={opening.id}>
-              <Link href={`/hiring/${opening.id}`} className={styles.cardLink}>
-                <strong>{opening.title}</strong>
+              <Link href={`/hiring/${opening.id}`} className={styles.openingCard}>
+                <span className={styles.openingTop}>
+                  <strong>{opening.title}</strong>
+                  <StatusPill tone={openingTone(opening.status)}>
+                    {OPENING_STATUS_LABEL[opening.status] ?? opening.status}
+                  </StatusPill>
+                </span>
                 <p className={styles.muted}>
-                  {opening.status} · {opening.kind === 'office' ? 'Office' : 'Field'}
+                  {opening.kind === 'office' ? 'Office' : 'Field'}
                   {opening.area_text ? ` · ${opening.area_text}` : ''}
                 </p>
               </Link>

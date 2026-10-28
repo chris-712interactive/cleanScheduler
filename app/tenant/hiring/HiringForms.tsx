@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import {
@@ -76,11 +76,11 @@ export function OpeningEditor({
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="opening_id" value={opening.id} />
-      <label className={styles.field}>
-        <span>Title</span>
-        <input name="title" className={styles.input} required defaultValue={opening.title} />
-      </label>
-      <div className={styles.row}>
+      <div className={styles.editorGrid}>
+        <label className={`${styles.field} ${styles.fieldWide}`}>
+          <span>Title</span>
+          <input name="title" className={styles.input} required defaultValue={opening.title} />
+        </label>
         <label className={styles.field}>
           <span>Kind</span>
           <select name="kind" className={styles.select} defaultValue={opening.kind}>
@@ -100,54 +100,60 @@ export function OpeningEditor({
             <option value="paid_shadow">Paid shadow</option>
           </select>
         </label>
+        <label className={styles.field}>
+          <span>Pay shown to applicants</span>
+          <input
+            name="pay_text"
+            className={styles.input}
+            defaultValue={opening.payText}
+            placeholder="$18–$22/hour to start"
+          />
+        </label>
+        <label className={styles.field}>
+          <span>Days and hours</span>
+          <input
+            name="schedule_text"
+            className={styles.input}
+            defaultValue={opening.scheduleText}
+            placeholder="Weekdays, 8:00–3:00"
+          />
+        </label>
+        <label className={styles.field}>
+          <span>City or area</span>
+          <input
+            name="area_text"
+            className={styles.input}
+            defaultValue={opening.areaText}
+            placeholder="Palm Bay"
+          />
+        </label>
+        <label className={styles.field}>
+          <span>Minutes to confirm a time</span>
+          <input
+            name="confirm_window_minutes"
+            type="number"
+            min={30}
+            max={1440}
+            className={styles.input}
+            defaultValue={opening.confirmWindowMinutes}
+          />
+          <span className={styles.note}>
+            180 minutes is 3 hours. Between 30 minutes and 24 hours.
+          </span>
+        </label>
+        <label className={`${styles.field} ${styles.fieldWide}`}>
+          <span>Link name</span>
+          <input
+            name="slug"
+            className={styles.input}
+            defaultValue={opening.slug}
+            readOnly={lockedSlug}
+          />
+          {lockedSlug ? (
+            <span className={styles.note}>The link name stays put once the role is live.</span>
+          ) : null}
+        </label>
       </div>
-      <label className={styles.field}>
-        <span>Pay shown to applicants</span>
-        <input
-          name="pay_text"
-          className={styles.input}
-          defaultValue={opening.payText}
-          placeholder="$18–$22/hour to start"
-        />
-      </label>
-      <label className={styles.field}>
-        <span>Days and hours</span>
-        <input
-          name="schedule_text"
-          className={styles.input}
-          defaultValue={opening.scheduleText}
-          placeholder="Weekdays, 8:00–3:00"
-        />
-      </label>
-      <label className={styles.field}>
-        <span>City or area</span>
-        <input
-          name="area_text"
-          className={styles.input}
-          defaultValue={opening.areaText}
-          placeholder="Palm Bay"
-        />
-      </label>
-      <label className={styles.field}>
-        <span>Link name</span>
-        <input
-          name="slug"
-          className={styles.input}
-          defaultValue={opening.slug}
-          readOnly={lockedSlug}
-        />
-      </label>
-      <label className={styles.field}>
-        <span>Hours they have to confirm</span>
-        <input
-          name="confirm_window_minutes"
-          type="number"
-          min={30}
-          max={1440}
-          className={styles.input}
-          defaultValue={opening.confirmWindowMinutes}
-        />
-      </label>
       <fieldset className={styles.checks}>
         <legend>Questions</legend>
         <Check
@@ -175,7 +181,7 @@ export function OpeningEditor({
           label="Authorized to work in the United States"
           defaultChecked={opening.requireWorkAuthorized}
         />
-        <p className={styles.note}>
+        <p className={`${styles.note} ${styles.checkNote}`}>
           Age 18 or older is always asked. You cannot add your own screening questions.
         </p>
       </fieldset>
@@ -231,7 +237,7 @@ export function AddSlotForm({ openingId }: { openingId: string }) {
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="opening_id" value={openingId} />
-      <div className={styles.row}>
+      <div className={styles.slotGrid}>
         <label className={styles.field}>
           <span>Date</span>
           <input name="slot_date" type="date" className={styles.input} required />
@@ -265,6 +271,45 @@ export function AddSlotForm({ openingId }: { openingId: string }) {
         {pending ? 'Publishing…' : 'Publish slot'}
       </Button>
     </form>
+  );
+}
+
+export function ApplyLinkBar({
+  openingId,
+  applyUrl,
+  canEmail,
+}: {
+  openingId: string;
+  applyUrl: string;
+  canEmail: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className={styles.panel}>
+      <h2 className={styles.panelTitle}>Application link</h2>
+      <div className={styles.panelBody}>
+        <div className={styles.linkRow}>
+          <p className={styles.linkBox}>{applyUrl}</p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              void navigator.clipboard.writeText(applyUrl).then(
+                () => setCopied(true),
+                () => setCopied(false),
+              );
+            }}
+          >
+            {copied ? 'Copied' : 'Copy'}
+          </Button>
+        </div>
+        <p className={styles.note}>
+          This page is not indexed. Paste the link into the job post you already use.
+        </p>
+        {canEmail ? <EmailApplyLinkForm openingId={openingId} /> : null}
+      </div>
+    </div>
   );
 }
 
@@ -315,17 +360,22 @@ export function ApplicationButtons({
       {label}
     </Button>
   );
+  const openApplication = status !== 'hired' && status !== 'withdrawn';
   return (
     <form action={formAction} className={styles.queueActions}>
       <input type="hidden" name="opening_id" value={openingId} />
       <input type="hidden" name="application_id" value={applicationId} />
-      {status === 'screened_out' ? button('override', 'Move forward') : null}
-      {status === 'slot_offered' ? button('resend', 'Resend confirm') : null}
-      {status === 'slot_offered' || status === 'confirmed' ? button('cancel', 'Cancel time') : null}
-      {status !== 'hired' && status !== 'withdrawn' ? button('showed', 'Showed', 'primary') : null}
-      {status !== 'hired' && status !== 'withdrawn' ? button('no_show', 'No-show') : null}
-      {status !== 'hired' && status !== 'withdrawn' ? button('rejected', 'Not a fit') : null}
-      {status === 'showed' && canHire ? button('hire', 'Hire', 'primary') : null}
+      <div className={styles.queuePrimary}>
+        {status === 'screened_out' ? button('override', 'Move forward') : null}
+        {status === 'slot_offered' ? button('resend', 'Resend confirm') : null}
+        {status === 'slot_offered' || status === 'confirmed'
+          ? button('cancel', 'Cancel time')
+          : null}
+        {openApplication ? button('showed', 'Showed', 'primary') : null}
+        {openApplication ? button('no_show', 'No-show') : null}
+        {openApplication ? button('rejected', 'Not a fit') : null}
+        {status === 'showed' && canHire ? button('hire', 'Hire', 'primary') : null}
+      </div>
       {status !== 'withdrawn' ? button('delete', 'Delete data', 'danger') : null}
     </form>
   );

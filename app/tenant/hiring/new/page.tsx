@@ -5,6 +5,7 @@ import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/en
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
 import { CreateOpeningForm } from '../HiringForms';
+import styles from '../hiring.module.scss';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,9 @@ export default async function NewOpeningPage() {
         backLabel="Hiring"
         description="A draft stays off the public link until you add pay, days, and an area."
       />
-      <CreateOpeningForm />
+      <div className={styles.setupCard}>
+        <CreateOpeningForm />
+      </div>
     </>
   );
 }
