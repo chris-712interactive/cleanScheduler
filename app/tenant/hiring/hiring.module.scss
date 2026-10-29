@@ -301,6 +301,27 @@ $flow-node: 2.75rem;
   border-radius: var(--radius-md);
 }
 
+.slotScroll {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.slotDayGroup + .slotDayGroup {
+  margin-top: var(--space-3);
+}
+
+.slotDay {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
 .slotList {
   display: flex;
   flex-direction: column;
@@ -312,32 +333,74 @@ $flow-node: 2.75rem;
 .slot {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3) 0;
+  gap: 0;
+  padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-border);
 
-  &:first-child {
-    padding-top: 0;
-  }
-
   &:last-child {
-    padding-bottom: 0;
     border-bottom: none;
   }
 }
 
-.slotWhen {
+.slotMain {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.slotTime {
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.slotWho {
+  min-width: 0;
+  max-width: 9rem;
+
+  > span {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  span span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.slotMeta {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  a {
+    color: var(--color-brand-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .earlier {
-  margin-top: var(--space-2);
-
   summary {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
+  }
+
+  .slotScroll {
+    margin-top: var(--space-2);
   }
 }
 
@@ -421,10 +484,6 @@ $flow-node: 2.75rem;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
-
-  .field:last-child {
-    grid-column: 1 / -1;
-  }
 }
 
 .field {

@@ -406,10 +406,13 @@ export default async function HiringOpeningPage({
                 Interview times
               </h2>
               <div className={styles.panelBody}>
-                <p className={styles.note}>
-                  Add times before you share the link. Otherwise everyone who passes waits on you.
-                </p>
-                {slotRows.length === 0 ? <p className={styles.muted}>No times yet.</p> : null}
+                {upcomingSlots.length === 0 ? (
+                  <p className={styles.note}>
+                    {slotRows.length === 0
+                      ? 'Add times before you share the link. Otherwise everyone who passes waits on you.'
+                      : 'No upcoming times. Add one before more people pass the screen.'}
+                  </p>
+                ) : null}
                 <SlotList slots={upcomingSlots} applications={rows} timeZone={timeZone} />
                 {earlierSlots.length > 0 ? (
                   <details className={styles.earlier}>
@@ -469,46 +472,102 @@ export default async function HiringOpeningPage({
   );
 }
 
+type SlotRow = {
+  id: string;
+  starts_at: string;
+  duration_minutes: number;
+  meeting_text: string;
+  held_by_application_id: string | null;
+};
+
+function slotDayKey(iso: string, timeZone: string): string {
+  return formatDateTimeInTimeZone(iso, timeZone, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+}
+
+function meetingLink(text: string): { href: string; label: string } | null {
+  const trimmed = text.trim();
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  const host = url.hostname.replace(/^www\./, '');
+  return { href: trimmed, label: host.includes('zoom.us') ? 'Zoom' : host };
+}
+
 function SlotList({
   slots,
   applications,
   timeZone,
 }: {
-  slots: {
-    id: string;
-    starts_at: string;
-    duration_minutes: number;
-    meeting_text: string;
-    held_by_application_id: string | null;
-  }[];
+  slots: SlotRow[];
   applications: { id: string; full_name: string | null; email: string | null }[];
   timeZone: string;
 }) {
   if (slots.length === 0) return null;
+  const groups: { key: string; label: string; slots: SlotRow[] }[] = [];
+  for (const slot of slots) {
+    const key = slotDayKey(slot.starts_at, timeZone);
+    const last = groups[groups.length - 1];
+    if (last?.key === key) last.slots.push(slot);
+    else {
+      groups.push({
+        key,
+        label: formatDateTimeInTimeZone(slot.starts_at, timeZone, {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        }),
+        slots: [slot],
+      });
+    }
+  }
   return (
-    <ul className={styles.slotList}>
-      {slots.map((slot) => {
-        const holder = applications.find((row) => row.id === slot.held_by_application_id);
-        return (
-          <li key={slot.id} className={styles.slot}>
-            <span className={styles.slotWhen}>
-              {formatDateTimeInTimeZone(slot.starts_at, timeZone, {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </span>
-            <p className={styles.muted}>
-              {slot.duration_minutes} min · {slot.meeting_text}
-            </p>
-            <p className={styles.muted}>
-              {holder ? (holder.full_name ?? holder.email ?? 'Held') : 'Open'}
-            </p>
-          </li>
-        );
-      })}
-    </ul>
+    <div className={styles.slotScroll}>
+      {groups.map((group) => (
+        <section key={group.key} className={styles.slotDayGroup}>
+          <h3 className={styles.slotDay}>{group.label}</h3>
+          <ul className={styles.slotList}>
+            {group.slots.map((slot) => {
+              const holder = applications.find((row) => row.id === slot.held_by_application_id);
+              const who = holder ? (holder.full_name ?? holder.email ?? 'Held') : 'Open';
+              const link = meetingLink(slot.meeting_text);
+              return (
+                <li key={slot.id} className={styles.slot}>
+                  <div className={styles.slotMain}>
+                    <time dateTime={slot.starts_at} className={styles.slotTime}>
+                      {formatDateTimeInTimeZone(slot.starts_at, timeZone, {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </time>
+                    <span className={styles.slotWho} title={who}>
+                      <StatusPill tone={holder ? 'brand' : 'neutral'}>{who}</StatusPill>
+                    </span>
+                  </div>
+                  <p className={styles.slotMeta} title={slot.meeting_text}>
+                    {slot.duration_minutes} min
+                    <span aria-hidden="true"> · </span>
+                    {link ? (
+                      <a href={link.href} target="_blank" rel="noopener noreferrer">
+                        {link.label}
+                      </a>
+                    ) : (
+                      slot.meeting_text
+                    )}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }

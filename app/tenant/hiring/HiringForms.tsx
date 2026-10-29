@@ -259,13 +259,14 @@ export function AddSlotForm({ openingId }: { openingId: string }) {
         </label>
       </div>
       <label className={styles.field}>
-        <span>Where they should go, or the number that will call</span>
+        <span>Meeting place or link</span>
         <input
           name="meeting_text"
           className={styles.input}
           required
-          placeholder="Meet at the shop, 14 Oak St. Do not put a customer address here."
+          placeholder="Shop address, phone, or Zoom link"
         />
+        <span className={styles.note}>Do not put a customer address here.</span>
       </label>
       <Button type="submit" disabled={pending}>
         {pending ? 'Publishing…' : 'Publish slot'}
