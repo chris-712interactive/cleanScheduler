@@ -15,6 +15,7 @@ import {
   hasPermission,
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
+import { HiringDeskTabs } from '../HiringDeskTabs';
 import {
   AddSlotForm,
   ApplicationButtons,
@@ -305,89 +306,112 @@ export default async function HiringOpeningPage({
         </section>
 
         <div className={styles.layout}>
-          <section className={styles.primary} aria-labelledby="applicants-heading">
-            <div className={styles.sectionHead}>
-              <h2 id="applicants-heading">Applicants</h2>
-              {rows.length > 0 ? (
-                <a
-                  className={styles.textLink}
-                  href={`/api/tenant/hiring/export?opening=${opening.id}`}
-                >
-                  Download CSV
-                </a>
-              ) : null}
-            </div>
-            <div className={styles.people}>
-              {rows.length === 0 ? (
-                <p className={styles.emptyPeople}>
-                  No one has applied yet. Publish a couple of times, then share the link.
-                </p>
-              ) : (
-                grouped.map((group) => (
-                  <div key={group.label}>
-                    <h3 className={styles.groupLabel}>{group.label}</h3>
-                    {group.items.map((row) => {
-                      const slot = slotByApplication.get(row.id);
-                      const passed =
-                        slot &&
-                        row.status === 'confirmed' &&
-                        new Date(slot.starts_at).getTime() < now.getTime();
-                      const mailFailed = latestEvent.get(row.id) === 'mail_failed';
-                      const reason =
-                        row.screened_out_reason && isHiringGateKey(row.screened_out_reason)
-                          ? HIRING_GATE_FAIL_REASONS[row.screened_out_reason]
-                          : null;
-                      return (
-                        <article key={row.id} className={styles.person}>
-                          <div className={styles.personTop}>
-                            <div>
-                              <p className={styles.personName}>{row.full_name ?? 'Name removed'}</p>
-                              {row.email || row.phone_e164 ? (
-                                <p className={styles.personMeta}>
-                                  {row.email ? <span>{row.email}</span> : null}
-                                  {row.phone_e164 ? <span>{row.phone_e164}</span> : null}
+          <HiringDeskTabs
+            applicantCount={rows.length}
+            timeCount={upcomingSlots.length}
+            exportHref={rows.length > 0 ? `/api/tenant/hiring/export?opening=${opening.id}` : null}
+            applicants={
+              <div className={styles.people}>
+                {rows.length === 0 ? (
+                  <p className={styles.emptyPeople}>
+                    No one has applied yet. Publish a couple of times, then share the link.
+                  </p>
+                ) : (
+                  grouped.map((group) => (
+                    <div key={group.label}>
+                      <h3 className={styles.groupLabel}>{group.label}</h3>
+                      {group.items.map((row) => {
+                        const slot = slotByApplication.get(row.id);
+                        const passed =
+                          slot &&
+                          row.status === 'confirmed' &&
+                          new Date(slot.starts_at).getTime() < now.getTime();
+                        const mailFailed = latestEvent.get(row.id) === 'mail_failed';
+                        const reason =
+                          row.screened_out_reason && isHiringGateKey(row.screened_out_reason)
+                            ? HIRING_GATE_FAIL_REASONS[row.screened_out_reason]
+                            : null;
+                        return (
+                          <article key={row.id} className={styles.person}>
+                            <div className={styles.personTop}>
+                              <div>
+                                <p className={styles.personName}>
+                                  {row.full_name ?? 'Name removed'}
                                 </p>
-                              ) : null}
+                                {row.email || row.phone_e164 ? (
+                                  <p className={styles.personMeta}>
+                                    {row.email ? <span>{row.email}</span> : null}
+                                    {row.phone_e164 ? <span>{row.phone_e164}</span> : null}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <StatusPill tone={applicantTone(row.status)}>
+                                {STATUS_LABEL[row.status] ?? row.status}
+                              </StatusPill>
                             </div>
-                            <StatusPill tone={applicantTone(row.status)}>
-                              {STATUS_LABEL[row.status] ?? row.status}
-                            </StatusPill>
-                          </div>
-                          {slot ? (
-                            <p className={styles.note}>
-                              {formatDateTimeInTimeZone(slot.starts_at, timeZone, {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })}
-                              {passed ? ' · This time has passed' : ''}
-                            </p>
-                          ) : null}
-                          {reason ? <p className={styles.note}>Needed {reason}</p> : null}
-                          {mailFailed ? (
-                            <p className={styles.note}>The last email did not send.</p>
-                          ) : null}
-                          {row.applicant_note ? (
-                            <p className={styles.note}>{row.applicant_note}</p>
-                          ) : null}
-                          {canManage ? (
-                            <ApplicationButtons
-                              openingId={opening.id}
-                              applicationId={row.id}
-                              status={row.status}
-                              canHire={canHire}
-                            />
-                          ) : null}
-                        </article>
-                      );
-                    })}
+                            {slot ? (
+                              <p className={styles.note}>
+                                {formatDateTimeInTimeZone(slot.starts_at, timeZone, {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                })}
+                                {passed ? ' · This time has passed' : ''}
+                              </p>
+                            ) : null}
+                            {reason ? <p className={styles.note}>Needed {reason}</p> : null}
+                            {mailFailed ? (
+                              <p className={styles.note}>The last email did not send.</p>
+                            ) : null}
+                            {row.applicant_note ? (
+                              <p className={styles.note}>{row.applicant_note}</p>
+                            ) : null}
+                            {canManage ? (
+                              <ApplicationButtons
+                                openingId={opening.id}
+                                applicationId={row.id}
+                                status={row.status}
+                                canHire={canHire}
+                              />
+                            ) : null}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ))
+                )}
+              </div>
+            }
+            times={
+              <div className={styles.people}>
+                {upcomingSlots.length === 0 && earlierSlots.length === 0 ? (
+                  <p className={styles.emptyPeople}>
+                    {canManage && opening.status !== 'closed'
+                      ? 'No times yet. Use Add a time, then share the link.'
+                      : 'No times yet.'}
+                  </p>
+                ) : (
+                  <div className={styles.slotBoard}>
+                    {upcomingSlots.length === 0 ? (
+                      <p className={styles.note}>No upcoming times.</p>
+                    ) : (
+                      <SlotList slots={upcomingSlots} applications={rows} timeZone={timeZone} />
+                    )}
+                    {earlierSlots.length > 0 ? (
+                      <details className={styles.earlier}>
+                        <summary>
+                          {earlierSlots.length} earlier time{earlierSlots.length === 1 ? '' : 's'}
+                        </summary>
+                        <SlotList slots={earlierSlots} applications={rows} timeZone={timeZone} />
+                      </details>
+                    ) : null}
                   </div>
-                ))
-              )}
-            </div>
-          </section>
+                )}
+              </div>
+            }
+          />
 
           <aside className={styles.aside}>
             {applyUrl ? (
@@ -401,32 +425,22 @@ export default async function HiringOpeningPage({
               </section>
             )}
 
-            <section className={styles.panel} aria-labelledby="slots-heading">
-              <h2 id="slots-heading" className={styles.panelTitle}>
-                Interview times
-              </h2>
-              <div className={styles.panelBody}>
-                {upcomingSlots.length === 0 ? (
-                  <p className={styles.note}>
-                    {slotRows.length === 0
-                      ? 'Add times before you share the link. Otherwise everyone who passes waits on you.'
-                      : 'No upcoming times. Add one before more people pass the screen.'}
-                  </p>
-                ) : null}
-                <SlotList slots={upcomingSlots} applications={rows} timeZone={timeZone} />
-                {earlierSlots.length > 0 ? (
-                  <details className={styles.earlier}>
-                    <summary>
-                      {earlierSlots.length} earlier time{earlierSlots.length === 1 ? '' : 's'}
-                    </summary>
-                    <SlotList slots={earlierSlots} applications={rows} timeZone={timeZone} />
-                  </details>
-                ) : null}
-                {canManage && opening.status !== 'closed' ? (
+            {canManage && opening.status !== 'closed' ? (
+              <section className={styles.panel} aria-labelledby="add-time-heading">
+                <h2 id="add-time-heading" className={styles.panelTitle}>
+                  Add a time
+                </h2>
+                <div className={styles.panelBody}>
+                  {slotRows.length === 0 ? (
+                    <p className={styles.note}>
+                      Add times before you share the link. Otherwise everyone who passes waits on
+                      you.
+                    </p>
+                  ) : null}
                   <AddSlotForm openingId={opening.id} />
-                ) : null}
-              </div>
-            </section>
+                </div>
+              </section>
+            ) : null}
           </aside>
         </div>
 
@@ -529,7 +543,7 @@ function SlotList({
     }
   }
   return (
-    <div className={styles.slotScroll}>
+    <div>
       {groups.map((group) => (
         <section key={group.key} className={styles.slotDayGroup}>
           <h3 className={styles.slotDay}>{group.label}</h3>
@@ -540,17 +554,12 @@ function SlotList({
               const link = meetingLink(slot.meeting_text);
               return (
                 <li key={slot.id} className={styles.slot}>
-                  <div className={styles.slotMain}>
-                    <time dateTime={slot.starts_at} className={styles.slotTime}>
-                      {formatDateTimeInTimeZone(slot.starts_at, timeZone, {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                    </time>
-                    <span className={styles.slotWho} title={who}>
-                      <StatusPill tone={holder ? 'brand' : 'neutral'}>{who}</StatusPill>
-                    </span>
-                  </div>
+                  <time dateTime={slot.starts_at} className={styles.slotTime}>
+                    {formatDateTimeInTimeZone(slot.starts_at, timeZone, {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </time>
                   <p className={styles.slotMeta} title={slot.meeting_text}>
                     {slot.duration_minutes} min
                     <span aria-hidden="true"> · </span>
@@ -562,6 +571,9 @@ function SlotList({
                       slot.meeting_text
                     )}
                   </p>
+                  <span className={styles.slotWho} title={who}>
+                    <StatusPill tone={holder ? 'brand' : 'neutral'}>{who}</StatusPill>
+                  </span>
                 </li>
               );
             })}
