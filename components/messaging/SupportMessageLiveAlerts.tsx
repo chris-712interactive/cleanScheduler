@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Bell, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/browser';
 import {
   inboundAlertHref,
@@ -210,33 +212,44 @@ export function SupportMessageLiveAlerts({ portal }: { portal: SupportAlertPorta
     <div className={styles.region} aria-live="polite">
       {banner ? (
         <div className={styles.banner} role="status">
-          <div className={styles.copy}>
-            <p className={styles.title}>{banner.title}</p>
-            {banner.bodyPreview ? <p className={styles.body}>{banner.bodyPreview}</p> : null}
+          <div className={styles.lead}>
+            <span className={styles.icon} aria-hidden>
+              <MessageSquare size={18} strokeWidth={1.75} />
+            </span>
+            <div className={styles.copy}>
+              <p className={styles.title}>{banner.title}</p>
+              {banner.bodyPreview ? <p className={styles.body}>{banner.bodyPreview}</p> : null}
+            </div>
           </div>
           <div className={styles.actions}>
-            <Link
+            <Button
+              as={Link}
               href={inboundAlertHref(portal, banner.threadId, pathname)}
-              className={styles.link}
+              size="sm"
               onClick={() => setBanner(null)}
             >
               Open
-            </Link>
-            <button type="button" className={styles.dismiss} onClick={() => setBanner(null)}>
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setBanner(null)}>
               Dismiss
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
       {showPrompt ? (
         <div className={styles.prompt}>
-          <p className={styles.hint}>
-            Turn on notifications to hear about new messages while this portal is open.
-          </p>
+          <div className={styles.lead}>
+            <span className={styles.icon} aria-hidden>
+              <Bell size={18} strokeWidth={1.75} />
+            </span>
+            <p className={styles.hint}>
+              Turn on notifications to hear about new messages while this portal is open.
+            </p>
+          </div>
           <div className={styles.actions}>
-            <button
+            <Button
               type="button"
-              className={styles.textButton}
+              size="sm"
               onClick={() => {
                 void Notification.requestPermission().then((next) => {
                   setPermission(next);
@@ -244,10 +257,11 @@ export function SupportMessageLiveAlerts({ portal }: { portal: SupportAlertPorta
               }}
             >
               Turn on notifications
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={styles.dismiss}
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 try {
                   localStorage.setItem(PROMPT_KEY, 'dismissed');
@@ -258,7 +272,7 @@ export function SupportMessageLiveAlerts({ portal }: { portal: SupportAlertPorta
               }}
             >
               Not now
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}

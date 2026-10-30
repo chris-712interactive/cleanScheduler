@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { SupportMessageReplyComposer } from '@/components/messaging/SupportMessageReplyComposer';
 import { SupportMessageTranscript } from '@/components/messaging/SupportMessageTranscript';
 import { supportMessageSenderLabel } from '@/lib/messaging/supportMessageAuthor';
@@ -52,12 +54,17 @@ export function TenantSupportConversation({
       <header className={styles.conversationHeader}>
         <div className={styles.conversationTitleBlock}>
           <Link href={backHref} className={styles.backLink}>
-            ← Conversations
+            <ChevronLeft size={16} aria-hidden />
+            Conversations
           </Link>
-          <h2 className={styles.conversationTitle}>{thread.subject}</h2>
+          <div className={styles.titleLine}>
+            <h2 className={styles.conversationTitle}>{thread.subject}</h2>
+            <span className={isOpen ? styles.statusOpen : styles.statusClosed}>
+              {isOpen ? 'Open' : 'Closed'}
+            </span>
+          </div>
           <p className={styles.conversationSub}>
             <Link href={`/customers/${thread.customer_id}`}>{thread.customerName}</Link>
-            {isOpen ? ' · Open' : ' · Closed'}
           </p>
         </div>
         {canReply ? (
@@ -67,18 +74,18 @@ export function TenantSupportConversation({
                 <input type="hidden" name="tenant_slug" value={tenantSlug} />
                 <input type="hidden" name="thread_id" value={thread.id} />
                 <input type="hidden" name="return_to" value={returnTo} />
-                <button type="submit" className={styles.linkButtonDanger}>
+                <Button type="submit" variant="secondary" size="sm">
                   Close conversation
-                </button>
+                </Button>
               </form>
             ) : (
               <form action={reopenTenantSupportThreadAction}>
                 <input type="hidden" name="tenant_slug" value={tenantSlug} />
                 <input type="hidden" name="thread_id" value={thread.id} />
                 <input type="hidden" name="return_to" value={returnTo} />
-                <button type="submit" className={styles.linkButton}>
+                <Button type="submit" variant="secondary" size="sm">
                   Reopen
-                </button>
+                </Button>
               </form>
             )}
           </div>

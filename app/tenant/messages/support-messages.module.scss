@@ -1,5 +1,6 @@
 @use 'mixins/breakpoints' as mq;
 @use 'mixins/a11y' as a11y;
+@use 'mixins/focus' as f;
 
 .srOnly {
   @include a11y.visually-hidden;
@@ -18,19 +19,39 @@
   display: flex;
   flex-shrink: 0;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: baseline;
+  gap: var(--space-3);
+  align-items: center;
   justify-content: space-between;
+}
+
+.headerIdentity {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+}
+
+.headerMark {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-lg);
 }
 
 .compactTitle {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 .compactHint {
-  margin: 0;
+  margin: 0.15rem 0 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
@@ -48,13 +69,14 @@
 .workspace {
   display: grid;
   flex: 1;
-  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  grid-template-columns: minmax(17.5rem, 22.5rem) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .listPane {
@@ -63,7 +85,7 @@
   min-height: 0;
   overflow: hidden;
   border-right: 1px solid var(--color-border);
-  background: var(--color-surface-muted);
+  background: color-mix(in srgb, var(--color-bg-muted) 65%, var(--color-surface));
 }
 
 .listToolbar {
@@ -73,23 +95,34 @@
   gap: var(--space-2);
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
 }
 
 .filterTabs {
   display: inline-flex;
-  gap: var(--space-1);
+  gap: 0.15rem;
+  padding: 0.2rem;
+  background: color-mix(in srgb, var(--color-text) 4%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
 }
 
 .filterTab,
 .filterTabActive {
-  min-height: 2rem;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-md);
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 600;
+  line-height: 1;
   text-decoration: none;
+  white-space: nowrap;
+
+  @include f.focus-ring;
 }
 
 .filterTab {
@@ -97,26 +130,41 @@
 }
 
 .filterTab:hover {
-  background: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
   color: var(--color-text);
+  text-decoration: none;
 }
 
 .filterTabActive {
-  color: var(--color-brand-primary);
-  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.filterCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-on-brand);
+  background: var(--color-brand-primary);
+  border-radius: var(--radius-pill);
 }
 
 .threadList {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--space-1);
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--space-2);
   overflow-y: auto;
   list-style: none;
-  background: var(--color-border);
 }
 
 .threadButton,
@@ -126,21 +174,63 @@
   gap: var(--space-1);
   width: 100%;
   padding: var(--space-3);
-  border: 0;
-  background: var(--color-surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background: transparent;
   color: inherit;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+
+  @include f.focus-ring(-2px);
 }
 
 .threadButton:hover {
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-brand-primary) 6%, var(--color-surface));
+  color: inherit;
+  text-decoration: none;
 }
 
 .threadButtonActive {
   background: var(--color-surface);
-  box-shadow: inset 3px 0 0 var(--color-brand-primary);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 32%, var(--color-border));
+  box-shadow: var(--shadow-xs);
+}
+
+.threadButtonActive:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
+.threadRow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-top: 0.1rem;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-circle);
+}
+
+.threadCopy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .threadTopRow {
@@ -151,10 +241,12 @@
 }
 
 .threadSubject {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   overflow: hidden;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -177,10 +269,46 @@
   white-space: nowrap;
 }
 
-.threadMeta {
+.threadMeta,
+.threadTime {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.threadTime {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.replyBadge,
+.closedBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.replyBadge {
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+}
+
+.closedBadge {
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
 }
 
 .awaitingDot {
@@ -193,9 +321,44 @@
 }
 
 .listEmpty {
-  padding: var(--space-4);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.listEmptyIcon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: var(--space-1);
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-surface));
+  border-radius: var(--radius-circle);
+}
+
+.listEmptyTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.listEmptyHint {
+  max-width: 14rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
 }
 
 .conversationPane {
@@ -203,43 +366,120 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  background: var(--color-surface);
 }
 
 .conversationEmpty {
-  display: grid;
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  background: radial-gradient(
+    ellipse at 50% 38%,
+    color-mix(in srgb, var(--color-brand-primary) 9%, transparent),
+    transparent 26rem
+  );
+}
+
+.emptyMark {
+  position: relative;
+  display: grid;
   place-items: center;
-  padding: var(--space-6);
+  width: 4.25rem;
+  height: 4.25rem;
+  margin-bottom: var(--space-3);
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-circle);
+
+  &::before {
+    position: absolute;
+    inset: -0.7rem;
+    content: '';
+    border: 1px solid color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
+    border-radius: var(--radius-circle);
+  }
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.emptyBody {
+  max-width: 26rem;
+  margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  text-align: center;
+  line-height: 1.55;
 }
 
 .conversationHeader {
   display: flex;
   flex-shrink: 0;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-3);
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .conversationTitleBlock {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-1);
   min-width: 0;
 }
 
+.titleLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+}
+
 .conversationTitle {
+  min-width: 0;
   margin: 0;
   overflow: hidden;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   font-weight: 700;
+  letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.statusOpen,
+.statusClosed {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.statusOpen {
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+}
+
+.statusClosed {
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
 }
 
 .conversationSub {
@@ -257,23 +497,42 @@
 
 .linkButton,
 .linkButtonDanger {
+  display: inline-flex;
+  align-items: center;
   min-height: 2rem;
-  padding: 0 var(--space-2);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
   font: inherit;
   font-size: var(--font-size-xs);
   font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
   cursor: pointer;
+
+  @include f.focus-ring;
 }
 
 .linkButton {
+  color: var(--color-text);
+}
+
+.linkButton:hover {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 40%, var(--color-border));
   color: var(--color-brand-primary);
+  text-decoration: none;
 }
 
 .linkButtonDanger {
   color: var(--color-danger-600);
+  background: color-mix(in srgb, var(--color-danger) 6%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+}
+
+.linkButtonDanger:hover {
+  text-decoration: none;
 }
 
 .composer {
@@ -281,29 +540,35 @@
   flex-shrink: 0;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-4);
   border-top: 1px solid var(--color-border);
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
 }
 
 .composerReadonly {
   flex-shrink: 0;
   margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-muted);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .textarea {
   width: 100%;
-  min-height: 5rem;
+  min-height: 4.75rem;
+  max-height: 8rem;
   padding: var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-bg);
+  box-shadow: var(--shadow-xs);
   color: var(--color-text);
   font: inherit;
-  max-height: 8rem;
   resize: vertical;
+
+  @include f.focus-ring;
 }
 
 .composerRow {
@@ -316,6 +581,8 @@
 
 .backLink {
   display: none;
+  gap: var(--space-1);
+  align-items: center;
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-brand-primary);

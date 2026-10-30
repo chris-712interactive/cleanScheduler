@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { ChevronLeft, Inbox, MessageSquare } from 'lucide-react';
 import { getAuthContext } from '@/lib/auth/session';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { loadSupportAuthorDisplayName } from '@/lib/messaging/supportMessageAuthor';
+import { Button } from '@/components/ui/Button';
 import { FeedbackToasts } from '@/components/ui/FeedbackToast';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import {
@@ -106,17 +108,28 @@ export default async function TenantMessagesPage({ searchParams }: PageProps) {
 
   return (
     <div className={styles.page} data-fill-viewport="">
-      <div className={styles.compactHeader}>
-        <div>
-          <h1 className={styles.compactTitle}>Messages</h1>
-          <p className={styles.compactHint}>Customer conversations from the portal.</p>
+      <header className={styles.compactHeader}>
+        <div className={styles.headerIdentity}>
+          <span className={styles.headerMark} aria-hidden>
+            <MessageSquare size={18} strokeWidth={1.75} />
+          </span>
+          <div>
+            <h1 className={styles.compactTitle}>Messages</h1>
+            <p className={styles.compactHint}>Customer conversations from the portal.</p>
+          </div>
         </div>
         {customerId ? (
-          <Link href={`/customers/${customerId}`} className={styles.linkButton}>
-            ← Customer profile
-          </Link>
+          <Button
+            as={Link}
+            href={`/customers/${customerId}`}
+            variant="secondary"
+            size="sm"
+            iconLeft={<ChevronLeft size={16} aria-hidden />}
+          >
+            Customer profile
+          </Button>
         ) : null}
-      </div>
+      </header>
 
       <FeedbackToasts messages={[error ? { title: error, variant: 'danger' } : null]} />
 
@@ -142,9 +155,25 @@ export default async function TenantMessagesPage({ searchParams }: PageProps) {
           ) : (
             <div className={styles.conversationPane}>
               <div className={styles.conversationEmpty}>
-                {threads.length === 0
-                  ? 'When customers message you from their portal, conversations appear here.'
-                  : 'Select a conversation to read and reply.'}
+                <span className={styles.emptyMark} aria-hidden>
+                  <Inbox size={26} strokeWidth={1.75} />
+                </span>
+                <h2 className={styles.emptyTitle}>
+                  {threads.length === 0
+                    ? filter === 'closed'
+                      ? 'No closed conversations'
+                      : filter === 'all'
+                        ? 'No conversations yet'
+                        : 'No open conversations'
+                    : 'Select a conversation'}
+                </h2>
+                <p className={styles.emptyBody}>
+                  {threads.length === 0
+                    ? filter === 'closed'
+                      ? 'Conversations you close are kept here, ready to reopen if a customer writes again.'
+                      : 'When customers message you from their portal, the thread opens here so you can read it and reply.'
+                    : 'Choose a conversation from the list to read it and send a reply.'}
+                </p>
               </div>
             </div>
           )}

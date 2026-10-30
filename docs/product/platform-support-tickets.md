@@ -23,6 +23,7 @@ Statuses: `open`, `waiting_on_tenant`, `waiting_on_platform`, `resolved`, `close
 - `lib/admin/platformSupportActions.ts`
 - `lib/tenant/loadTenantPlatformSupportTickets.ts`
 - `app/admin/support/`, `app/tenant/settings/support/`
+- Inbox chrome is `app/tenant/messages/support-messages.module.scss`, shared with tenant Messages. Ticket rows stay a vertical stack inside `.threadButton`.
 
 ## Follow-ups
 

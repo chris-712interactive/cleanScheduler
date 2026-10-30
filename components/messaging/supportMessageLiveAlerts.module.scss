@@ -14,9 +14,29 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border));
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 24%, var(--color-border));
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.lead {
+  display: flex;
+  flex: 1 1 16rem;
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+}
+
+.icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-circle);
 }
 
 .copy {
@@ -37,6 +57,7 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+  line-height: 1.45;
 }
 
 .actions {
@@ -44,27 +65,5 @@
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
-}
-
-.link,
-.textButton {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-brand-primary);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.dismiss {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-text-muted);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
+  margin-left: auto;
 }

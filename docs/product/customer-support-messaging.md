@@ -33,8 +33,11 @@ Access helper: `lib/tenant/supportMessagingAccess.ts` → `canReplyToSupportThre
 
 ## UX notes
 
-- **Tenant desktop:** ~240–320px thread list + conversation pane; maximizes transcript space. The inbox stays inside the viewport. The thread list and transcript scroll inside the pane.
-- **Tenant mobile:** list by default; `?thread=<uuid>` shows conversation full-screen.
+- **Tenant desktop:** the inbox is a card. The list is about 280–360px, with a segmented Open / Closed / All control. Each row shows the customer’s initials, subject, preview, and time. A thread that still needs a staff reply shows **Needs reply**. An empty filter explains that state in the list and in the conversation pane. The inbox stays inside the viewport. The thread list and transcript scroll inside the pane.
+- **Tenant mobile:** list by default; `?thread=<uuid>` shows conversation full-screen. On a phone with no thread selected, only the list (including its empty state) is shown.
+- **Conversation:** Open or Closed is a pill beside the subject. Messages are chat bubbles on a muted transcript. The reply box sits on the footer of the pane.
+- **Live alerts:** the “turn on notifications” prompt and a new-message notice are cards with an icon and buttons. The same component is on the customer portal.
+- **Shared chrome:** founder `/support` uses `app/tenant/messages/support-messages.module.scss`. Keep `.threadButton` as a vertical stack. The tenant row (avatar, time, badges) lives in `.threadRow` so the admin ticket list does not break. `.listEmpty` is a centered flex box and is also the admin “select a ticket” placeholder.
 - **Nav badge:** count of **open threads awaiting staff reply** (`countSupportThreadsAwaitingReply`, cached via `getCachedOpenSupportThreadCount`).
 - **Closed threads:** customer sees note to start a new message; tenant can reopen.
 - **Sending:** the message appears in the thread immediately. The save and email finish afterward. **⌘/Ctrl + Enter** sends from the reply box (Enter still adds a line). The same shortcut starts a new customer conversation.

@@ -2,10 +2,11 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-height: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
   overflow-y: auto;
+  background: color-mix(in srgb, var(--color-bg-muted) 55%, var(--color-surface));
 }
 
 .empty {
@@ -18,21 +19,24 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-width: min(42rem, 92%);
+  max-width: min(42rem, 88%);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
+  border-radius: 1.125rem;
+  box-shadow: var(--shadow-xs);
 }
 
 .incoming {
   align-self: flex-start;
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-bottom-left-radius: var(--radius-sm);
 }
 
 .outgoing {
   align-self: flex-end;
-  background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-surface));
-  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-brand-primary) 14%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 22%, var(--color-border));
+  border-bottom-right-radius: var(--radius-sm);
 }
 
 .messageMeta {
@@ -46,9 +50,7 @@
 .sender {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .time {
