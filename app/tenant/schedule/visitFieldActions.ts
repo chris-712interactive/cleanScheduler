@@ -13,6 +13,8 @@ import {
   isVisitAssignee,
 } from '@/lib/schedule/visitFieldWork';
 import { applyVisitCompletionBilling } from '@/lib/billing/completeVisitWithBilling';
+import { previewVisitCoverage } from '@/lib/billing/applySubscriptionCoverage';
+import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 import { emitVisitWebhookEvent } from '@/lib/integrations/emitVisitWebhook';
 import {
   assertFeatureEnabled,
@@ -315,7 +317,17 @@ export async function completeVisitWithPaymentAction(
   const notesFromForm = sanitizeConsultationNotes(String(formData.get('notes') ?? ''));
 
   if (!slug || !visitId) return { error: 'Missing visit.' };
-  if (paymentCollectedRaw !== 'yes' && paymentCollectedRaw !== 'no') {
+
+  const addonCents = parseCentsFromDollars(String(formData.get('addon_dollars') ?? ''));
+  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  const auth = await getAuthContext();
+  if (!auth) return { error: 'Not signed in.' };
+  const admin = createAdminClient();
+
+  const preview = await previewVisitCoverage(admin, membership.tenantId, visitId);
+  const includedInPlan =
+    preview?.kind === 'covered' || preview?.kind === 'waiting' || preview?.kind === 'makeup';
+  if (!includedInPlan && paymentCollectedRaw !== 'yes' && paymentCollectedRaw !== 'no') {
     return { error: 'Select whether payment was collected.' };
   }
 
@@ -325,11 +337,6 @@ export async function completeVisitWithPaymentAction(
       ? collectedMethodRaw
       : undefined;
 
-  const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
-  const auth = await getAuthContext();
-  if (!auth) return { error: 'Not signed in.' };
-
-  const admin = createAdminClient();
   const loaded = await loadVisitForActor(admin, membership.tenantId, visitId);
   if (loaded.error || !loaded.visit) return { error: loaded.error ?? 'Visit not found.' };
 
@@ -358,7 +365,11 @@ export async function completeVisitWithPaymentAction(
       ? {
           amountCents: null as number | null,
           invoiceId: null as string | null,
+          addonInvoiceId: null as string | null,
           emailed: false,
+          coverageStatus: null,
+          coverageGrantId: null,
+          coverageMakeupId: null,
         }
       : await applyVisitCompletionBilling(admin, {
           tenantId: membership.tenantId,
@@ -375,6 +386,7 @@ export async function completeVisitWithPaymentAction(
             collectedMethod,
             checkNumber: checkNumber || undefined,
             amountDollars,
+            addonCents,
           },
         });
 
@@ -443,6 +455,10 @@ export async function completeVisitWithPaymentAction(
         : null,
     completion_collected_amount_cents: effectivePaymentCollected ? billing.amountCents : null,
     completion_invoice_id: billing.invoiceId,
+    coverage_status: billing.coverageStatus,
+    coverage_grant_id: billing.coverageGrantId,
+    coverage_makeup_id: billing.coverageMakeupId,
+    coverage_addon_invoice_id: billing.addonInvoiceId,
     ...(consultationComplete && notesFromForm ? { notes: notesFromForm } : {}),
     ...(!loaded.visit.checked_in_at
       ? {

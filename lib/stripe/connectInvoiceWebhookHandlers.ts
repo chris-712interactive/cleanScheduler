@@ -2,6 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { Database } from '@/lib/supabase/database.types';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
+import {
+  openCoverageGrantForInvoice,
+  syncCoverageGrantRefund,
+} from '@/lib/billing/applySubscriptionCoverage';
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
 import { resolveConnectTenantId } from '@/lib/stripe/connectChargeMirrorHandlers';
 import {
@@ -309,6 +313,12 @@ export async function handleConnectInvoicePaid(
     stripe: options?.stripe,
     connectAccountId,
   });
+
+  await openCoverageGrantForInvoice(admin, {
+    tenantId,
+    tenantInvoiceId: invoiceId,
+    billingReason: invoice.billing_reason,
+  });
 }
 
 export async function handleConnectInvoicePaymentFailed(
@@ -359,4 +369,6 @@ export async function handleConnectInvoiceVoided(
     })
     .eq('id', invoiceId)
     .eq('tenant_id', tenantId);
+
+  await syncCoverageGrantRefund(admin, { tenantId, invoiceId, voided: true });
 }

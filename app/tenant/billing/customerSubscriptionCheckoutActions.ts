@@ -116,12 +116,44 @@ export async function createCustomerSubscriptionCheckoutSessionAction(
     }
   }
 
+  const { data: properties } = await admin
+    .from('tenant_customer_properties')
+    .select('id')
+    .eq('tenant_id', membership.tenantId)
+    .eq('customer_id', customerId);
+  const propertyIds = (properties ?? []).map((row) => row.id);
+  const requestedPropertyId = String(formData.get('property_id') ?? '').trim();
+  const propertyId =
+    propertyIds.length === 1
+      ? propertyIds[0]
+      : propertyIds.find((id) => id === requestedPropertyId);
+  if (propertyIds.length > 1 && !propertyId) {
+    redirect(
+      `/customers/${customerId}?error=${encodeURIComponent('Choose which property this subscription covers.')}`,
+    );
+  }
+  if (propertyId) {
+    const { data: existingSub } = await admin
+      .from('customer_subscriptions')
+      .select('id')
+      .eq('tenant_id', membership.tenantId)
+      .eq('property_id', propertyId)
+      .in('status', ['incomplete', 'trialing', 'active', 'past_due', 'unpaid', 'paused'])
+      .maybeSingle();
+    if (existingSub) {
+      redirect(
+        `/customers/${customerId}?error=${encodeURIComponent('This property already has an open subscription.')}`,
+      );
+    }
+  }
+
   const meta = {
     kind: SUBSCRIPTION_CHECKOUT_KIND,
     tenant_id: membership.tenantId,
     customer_id: customerId,
     service_plan_id: servicePlanId,
-  } as const;
+    ...(propertyId ? { property_id: propertyId } : {}),
+  };
 
   const session = await stripe.checkout.sessions.create(
     {

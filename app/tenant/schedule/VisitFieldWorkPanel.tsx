@@ -40,6 +40,7 @@ export function VisitFieldWorkPanel({
   hasBillableAmount = true,
   isConsultation = false,
   initialNotes = '',
+  coverageKind = null,
   onVisitPatch,
   compact = false,
   onOurWayEnabled = false,
@@ -60,6 +61,7 @@ export function VisitFieldWorkPanel({
   hasBillableAmount?: boolean;
   isConsultation?: boolean;
   initialNotes?: string;
+  coverageKind?: 'covered' | 'waiting' | 'makeup' | 'extra' | null;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
   compact?: boolean;
   /** Workspace has on-our-way email turned on. */
@@ -91,7 +93,9 @@ export function VisitFieldWorkPanel({
 
   if (!canCheckIn && !canComplete) return null;
 
-  const blockedFromComplete = canComplete && !hasBillableAmount;
+  const includedCoverage =
+    coverageKind === 'covered' || coverageKind === 'waiting' || coverageKind === 'makeup';
+  const blockedFromComplete = canComplete && !hasBillableAmount && !includedCoverage;
   const noPriceMessage = isFieldEmployee
     ? FIELD_EMPLOYEE_NO_PRICE_MESSAGE
     : OFFICE_NO_PRICE_MESSAGE;
@@ -185,6 +189,7 @@ export function VisitFieldWorkPanel({
         isFieldEmployee={isFieldEmployee}
         isConsultation={isConsultation}
         initialNotes={initialNotes}
+        coverageKind={coverageKind}
         onVisitPatch={onVisitPatch}
       />
     ) : null;

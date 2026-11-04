@@ -152,6 +152,7 @@ export function FieldEmployeeVisitDetail({
             isFieldEmployee
             hasBillableAmount={hasBillableAmount}
             isConsultation={visit.visitPurpose === 'consultation'}
+            coverageKind={visit.coverageKind}
             initialNotes={visit.notes ?? ''}
             onVisitPatch={onVisitPatch}
             onOurWayEnabled={visit.onOurWayEnabled}

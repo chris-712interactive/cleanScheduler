@@ -11,6 +11,7 @@ import {
 } from '@/lib/tenant/customerConsultation';
 import { countPropertiesNeedingConsultation } from '@/lib/tenant/propertyConsultationRequest';
 import { countScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
+import { countUnscheduledPaidCleans } from '@/lib/billing/applySubscriptionCoverage';
 import { getTenantTodaysJobsSummary } from '@/lib/tenant/todaysJobs';
 
 export interface DashboardTodayQueueItem {
@@ -72,6 +73,7 @@ export async function getDashboardTodayQueue(
     pendingTimeOffCount,
     pendingHoursChangeCount,
     scheduleIssueCount,
+    unscheduledPaidCount,
     consultationActionCount,
     propertyRequestCount,
   ] = await Promise.all([
@@ -100,6 +102,7 @@ export async function getDashboardTodayQueue(
     countPendingTimeOffRequests(db, tenantId),
     countPendingHoursChanges(db, tenantId),
     countScheduleIssues(db, tenantId),
+    countUnscheduledPaidCleans(db, tenantId),
     countCustomersNeedingConsultationAction(db, tenantId),
     countPropertiesNeedingConsultation(db, tenantId),
   ]);
@@ -156,6 +159,16 @@ export async function getDashboardTodayQueue(
       label: `${propertyRequestCount} new location${propertyRequestCount === 1 ? '' : 's'} need a consultation`,
       detail: 'Customers asked to add a property',
       href: CUSTOMERS_NEEDING_CONSULTATION_HREF,
+      tone: 'warn',
+    });
+  }
+
+  if (unscheduledPaidCount > 0) {
+    items.push({
+      id: 'paid-unscheduled',
+      label: `${unscheduledPaidCount} paid period${unscheduledPaidCount === 1 ? '' : 's'} with nothing scheduled`,
+      detail: 'A subscription was paid and no upcoming clean is on the calendar',
+      href: '/billing/service-plans',
       tone: 'warn',
     });
   }

@@ -24,7 +24,13 @@ type SubEmbed = {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   billing_cycle_anchor: string | null;
-  service_plans: { name: string; amount_cents: number; billing_interval: string } | null;
+  service_plans: {
+    name: string;
+    amount_cents: number;
+    billing_interval: string;
+    included_cleans: number | null;
+    service_cadence: string | null;
+  } | null;
 };
 
 interface Props {
@@ -42,31 +48,39 @@ function formatAnchor(iso: string | null): string | null {
 
 export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }: Props) {
   const db = createTenantPortalDbClient();
-  const [{ data: tenantRow }, { data: plansData }, { data: subsRaw }] = await Promise.all([
-    db.from('tenants').select('stripe_connect_status').eq('id', tenantId).maybeSingle(),
-    db
-      .from('service_plans')
-      .select('id, name, amount_cents, billing_interval')
-      .eq('tenant_id', tenantId)
-      .eq('is_active', true)
-      .order('name'),
-    db
-      .from('customer_subscriptions')
-      .select(
-        `
+  const [{ data: tenantRow }, { data: plansData }, { data: subsRaw }, { data: propertyRows }] =
+    await Promise.all([
+      db.from('tenants').select('stripe_connect_status').eq('id', tenantId).maybeSingle(),
+      db
+        .from('service_plans')
+        .select('id, name, amount_cents, billing_interval')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .order('name'),
+      db
+        .from('customer_subscriptions')
+        .select(
+          `
         id,
         status,
         stripe_subscription_id,
         current_period_end,
         cancel_at_period_end,
         billing_cycle_anchor,
-        service_plans ( name, amount_cents, billing_interval )
+        service_plans ( name, amount_cents, billing_interval, included_cleans, service_cadence )
       `,
-      )
-      .eq('tenant_id', tenantId)
-      .eq('customer_id', customerId)
-      .order('created_at', { ascending: false }),
-  ]);
+        )
+        .eq('tenant_id', tenantId)
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false }),
+      db
+        .from('tenant_customer_properties')
+        .select('id, label, address_line1')
+        .eq('tenant_id', tenantId)
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: true }),
+    ]);
+  const properties = propertyRows ?? [];
 
   const connectComplete = tenantRow?.stripe_connect_status === 'complete';
   const plans = (plansData ?? []) as PlanRow[];
@@ -106,6 +120,21 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
               ))}
             </select>
           </label>
+          {properties.length > 1 ? (
+            <label className={styles.field}>
+              Property
+              <select className={styles.select} name="property_id" required defaultValue="">
+                <option value="" disabled>
+                  Select a property…
+                </option>
+                {properties.map((property) => (
+                  <option key={property.id} value={property.id}>
+                    {property.label || property.address_line1 || 'Property'}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           {hasMonthlyPlan ? (
             <label className={styles.field}>
               Billing day (optional, monthly plans)
@@ -169,6 +198,9 @@ export async function RecurringBillingPanel({ tenantSlug, tenantId, customerId }
                   Current period ends {end}
                   {anchorLabel ? ` · Billing anchor ${anchorLabel}` : ''}
                   {sidShort ? ` · ${sidShort}` : ''}
+                  {sp?.included_cleans
+                    ? ` · ${sp.included_cleans} cleans per charge`
+                    : ' · each clean is invoiced on its own'}
                 </span>
                 {connectComplete && sid ? (
                   <div className={styles.subActions}>

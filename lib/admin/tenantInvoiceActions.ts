@@ -9,6 +9,7 @@ import { getAuthContext } from '@/lib/auth/session';
 import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 import { inferInvoicePropertyId } from '@/lib/billing/invoiceProperty';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
+import { openCoverageGrantForInvoice } from '@/lib/billing/applySubscriptionCoverage';
 import {
   assertPermission,
   permissionDeniedMessage,
@@ -212,6 +213,12 @@ export async function recordInvoicePaymentAction(formData: FormData): Promise<vo
   await afterInvoicePaymentRecorded(admin, {
     tenantId: membership.tenantId,
     invoiceId,
+  });
+
+  await openCoverageGrantForInvoice(admin, {
+    tenantId: membership.tenantId,
+    tenantInvoiceId: invoiceId,
+    manual: true,
   });
 
   revalidatePath('/billing');

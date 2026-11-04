@@ -11,6 +11,7 @@ import { sendTenantInvoiceEmailForInvoice } from '@/lib/billing/sendTenantInvoic
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import { recordTenantPaymentEvent } from '@/lib/audit/recordTenantPaymentEvent';
 import { inferInvoicePropertyId } from '@/lib/billing/invoiceProperty';
+import { claimVisitCoverage } from '@/lib/billing/applySubscriptionCoverage';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 
 type AdminClient = SupabaseClient<Database>;
@@ -21,7 +22,18 @@ export interface CompleteVisitBillingInput {
   collectedMethod?: 'cash' | 'check';
   checkNumber?: string;
   amountDollars: string;
+  addonCents?: number | null;
 }
+
+export type VisitCompletionBillingResult = {
+  invoiceId: string | null;
+  addonInvoiceId: string | null;
+  emailed: boolean;
+  amountCents: number | null;
+  coverageStatus: 'covered' | 'waiting' | 'makeup' | null;
+  coverageGrantId: string | null;
+  coverageMakeupId: string | null;
+};
 
 /** @deprecated Use resolveVisitExpectedAmountCents — kept for callers loading quote only. */
 export async function resolveVisitBillingAmountCents(
@@ -93,12 +105,60 @@ export async function applyVisitCompletionBilling(
     actorUserId?: string | null;
     billing: CompleteVisitBillingInput;
   },
-): Promise<{ invoiceId: string; emailed: boolean; amountCents: number } | { error: string }> {
-  const expectedAmountCents = await resolveVisitExpectedAmountCents(admin, {
+): Promise<VisitCompletionBillingResult | { error: string }> {
+  const claimed = await claimVisitCoverage(admin, {
     tenantId: params.tenantId,
-    expectedAmountCents: params.expectedAmountCents,
-    quoteId: params.quoteId,
+    visitId: params.visitId,
   });
+
+  if (claimed.kind === 'already') {
+    return { error: 'This visit is already billed.' };
+  }
+
+  if (claimed.kind === 'included') {
+    const addonCents = params.billing.addonCents ?? null;
+    if (addonCents != null && addonCents > 0) {
+      const created = await createVisitInvoice(admin, {
+        tenantId: params.tenantId,
+        customerId: params.customerId,
+        visitId: params.visitId,
+        title: `${params.visitTitle.trim() || 'Service visit'} — extra work`,
+        amountCents: addonCents,
+      });
+      if ('error' in created) return created;
+      await sendTenantInvoiceEmailForInvoice(admin, {
+        tenantId: params.tenantId,
+        tenantSlug: params.tenantSlug,
+        invoiceId: created.invoiceId,
+      });
+      return {
+        invoiceId: null,
+        addonInvoiceId: created.invoiceId,
+        emailed: true,
+        amountCents: addonCents,
+        coverageStatus: claimed.coverageStatus,
+        coverageGrantId: claimed.coverageGrantId,
+        coverageMakeupId: claimed.coverageMakeupId,
+      };
+    }
+    return {
+      invoiceId: null,
+      addonInvoiceId: null,
+      emailed: false,
+      amountCents: null,
+      coverageStatus: claimed.coverageStatus,
+      coverageGrantId: claimed.coverageGrantId,
+      coverageMakeupId: claimed.coverageMakeupId,
+    };
+  }
+
+  const expectedAmountCents =
+    claimed.amountCents ??
+    (await resolveVisitExpectedAmountCents(admin, {
+      tenantId: params.tenantId,
+      expectedAmountCents: params.expectedAmountCents,
+      quoteId: params.quoteId,
+    }));
 
   if (expectedAmountCents == null) {
     return {
@@ -181,7 +241,15 @@ export async function applyVisitCompletionBilling(
       invoiceId: created.invoiceId,
     });
 
-    return { invoiceId: created.invoiceId, emailed: false, amountCents };
+    return {
+      invoiceId: created.invoiceId,
+      addonInvoiceId: null,
+      emailed: false,
+      amountCents,
+      coverageStatus: null,
+      coverageGrantId: null,
+      coverageMakeupId: null,
+    };
   }
 
   const created = await createVisitInvoice(admin, {
@@ -203,5 +271,13 @@ export async function applyVisitCompletionBilling(
     return { error: sent.error };
   }
 
-  return { invoiceId: created.invoiceId, emailed: true, amountCents };
+  return {
+    invoiceId: created.invoiceId,
+    addonInvoiceId: null,
+    emailed: true,
+    amountCents,
+    coverageStatus: null,
+    coverageGrantId: null,
+    coverageMakeupId: null,
+  };
 }

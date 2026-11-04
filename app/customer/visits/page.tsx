@@ -15,6 +15,7 @@ import { getCustomerPendingRescheduleVisitIds } from '@/lib/customer/pendingResc
 import { formatVisitWhenCompact } from '@/lib/datetime/formatInTimeZone';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
+import { customerCoverageLabel } from '@/lib/billing/subscriptionCoverage';
 import styles from './visits.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,8 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
             ends_at,
             status,
             checked_in_at,
+            coverage_status,
+            completion_invoice_id,
             tenants:tenants!inner ( name, slug, timezone ),
             tenant_scheduled_visit_assignees (
               user_id,
@@ -193,6 +196,27 @@ export default async function CustomerVisitsPage({ searchParams }: PageProps) {
                     {formatVisitWhenCompact(row.starts_at, row.ends_at, t?.timezone)}
                   </StatusPill>
                   <StatusPill tone="neutral">{row.status}</StatusPill>
+                  {customerCoverageLabel(
+                    row.coverage_status === 'covered' || row.coverage_status === 'makeup'
+                      ? row.coverage_status
+                      : row.coverage_status === 'waiting'
+                        ? 'waiting'
+                        : row.completion_invoice_id
+                          ? 'extra'
+                          : null,
+                  ) ? (
+                    <StatusPill tone="info">
+                      {customerCoverageLabel(
+                        row.coverage_status === 'covered' || row.coverage_status === 'makeup'
+                          ? row.coverage_status
+                          : row.coverage_status === 'waiting'
+                            ? 'waiting'
+                            : row.completion_invoice_id
+                              ? 'extra'
+                              : null,
+                      )}
+                    </StatusPill>
+                  ) : null}
                   {canCustomerRequestReschedule(row) && !reschedulePending ? (
                     <Button
                       variant="secondary"

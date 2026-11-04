@@ -23,6 +23,10 @@ import {
 import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
 import { ineligibleScheduleMessage } from '@/lib/schedule/scheduleEligibility';
 import { recordRecurringOccurrenceSkip } from '@/lib/schedule/recurringOccurrenceSkips';
+import {
+  propertyHasCoverageSubscription,
+  recordCoverageCancellation,
+} from '@/lib/billing/applySubscriptionCoverage';
 import { resolveScheduleJobPriceCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { parseCentsFromDollars } from '@/lib/billing/parseMoney';
 import {
@@ -361,13 +365,32 @@ export async function deleteScheduledVisit(
 
   const { data: visit, error: loadErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, recurring_rule_id, starts_at')
+    .select('id, recurring_rule_id, starts_at, customer_id, property_id')
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
   if (loadErr || !visit) {
     return { error: 'Visit not found.' };
+  }
+
+  const partyRaw = String(formData.get('coverage_party') ?? '').trim();
+  const party = partyRaw === 'company' || partyRaw === 'customer' ? partyRaw : null;
+  const needsParty = await propertyHasCoverageSubscription(
+    admin,
+    membership.tenantId,
+    visit.customer_id,
+    visit.property_id,
+  );
+  if (needsParty && !party) {
+    return { error: 'Choose whether the company or the customer cancelled this visit.' };
+  }
+  if (party) {
+    await recordCoverageCancellation(admin, {
+      tenantId: membership.tenantId,
+      visitId,
+      party,
+    });
   }
 
   if (visit.recurring_rule_id) {

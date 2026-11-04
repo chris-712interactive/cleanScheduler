@@ -17,6 +17,10 @@ import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
 import { VisitDetailCard } from '../VisitDetailCard';
 import { createAdminClient } from '@/lib/supabase/server';
 import {
+  previewVisitCoverage,
+  propertyHasCoverageSubscription,
+} from '@/lib/billing/applySubscriptionCoverage';
+import {
   loadPropertyAccessCodes,
   propertyAccessCodeReadError,
 } from '@/lib/security/propertyAccessCodeCrypto';
@@ -134,6 +138,24 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
     .maybeSingle();
 
   if (error || !row) notFound();
+
+  const coverageAdmin = createAdminClient();
+  const [coverageDecision, coveragePartyRequired] = await Promise.all([
+    previewVisitCoverage(coverageAdmin, membership.tenantId, visitId),
+    propertyHasCoverageSubscription(
+      coverageAdmin,
+      membership.tenantId,
+      row.customer_id,
+      row.property_id,
+    ),
+  ]);
+  const coveragePreview =
+    coverageDecision?.kind === 'covered' ||
+    coverageDecision?.kind === 'waiting' ||
+    coverageDecision?.kind === 'makeup' ||
+    coverageDecision?.kind === 'extra'
+      ? coverageDecision.kind
+      : null;
 
   const ident = row.customers?.customer_identities;
   const customerName =
@@ -350,6 +372,8 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           completionCollectedAmountCents: row.completion_collected_amount_cents,
           completionCheckNumber: row.completion_check_number,
           completionInvoiceId: row.completion_invoice_id,
+          coverageKind: coveragePreview,
+          coveragePartyRequired,
         }}
       />
     </>

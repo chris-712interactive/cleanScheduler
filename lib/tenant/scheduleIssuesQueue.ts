@@ -7,11 +7,18 @@ import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
 } from '@/lib/tenant/customerIdentityName';
+import { listCoverageScheduleFlags } from '@/lib/billing/applySubscriptionCoverage';
 
 export const SCHEDULE_ISSUES_TAB_HREF = '/schedule?tab=issues';
 
 export type ScheduleIssueKind =
-  'needs_staffing' | 'schedule_conflict' | 'time_off_conflict' | 'unpriced' | 'pending_reschedule';
+  | 'needs_staffing'
+  | 'schedule_conflict'
+  | 'time_off_conflict'
+  | 'unpriced'
+  | 'pending_reschedule'
+  | 'unpaid_subscription'
+  | 'subscription_paused';
 
 export const SCHEDULE_ISSUE_LABEL: Record<ScheduleIssueKind, string> = {
   needs_staffing: 'No crew assigned',
@@ -19,6 +26,8 @@ export const SCHEDULE_ISSUE_LABEL: Record<ScheduleIssueKind, string> = {
   time_off_conflict: 'Time off overlap',
   unpriced: 'Missing job price',
   pending_reschedule: 'Reschedule requested',
+  unpaid_subscription: 'Subscription unpaid',
+  subscription_paused: 'Subscription paused',
 };
 
 export interface ScheduleIssueItem {
@@ -135,6 +144,7 @@ export async function listScheduleIssues(
     .eq('status', 'pending');
 
   const pendingRescheduleVisitIds = new Set((pendingRescheduleRows ?? []).map((r) => r.visit_id));
+  const coverageFlags = await listCoverageScheduleFlags(admin, tenantId);
 
   const { data: approvedTimeOffRows } = await admin
     .from('tenant_member_time_off')
@@ -191,6 +201,8 @@ export async function listScheduleIssues(
     if (pendingRescheduleVisitIds.has(row.id)) {
       issues.push('pending_reschedule');
     }
+    const coverageFlag = coverageFlags.get(row.id);
+    if (coverageFlag) issues.push(coverageFlag);
 
     if (issues.length === 0) continue;
 

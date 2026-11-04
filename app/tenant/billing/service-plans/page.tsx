@@ -35,7 +35,9 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
   const db = createTenantPortalDbClient();
   const { data: rows, error } = await db
     .from('service_plans')
-    .select('id, name, amount_cents, billing_interval, is_active, created_at')
+    .select(
+      'id, name, amount_cents, billing_interval, is_active, created_at, included_cleans, service_cadence, overage_amount_cents',
+    )
     .eq('tenant_id', membership.tenantId)
     .order('created_at', { ascending: false });
 
@@ -61,7 +63,10 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
       <Stack gap={6}>
         <RecurringConceptCallout variant="billing" />
 
-        <Card title="Add a plan" description="Amount is billed each billing period (USD).">
+        <Card
+          title="Add a plan"
+          description="Amount is billed each billing period (USD). The included count is copied onto each paid charge. Changing it later changes the next charge for every customer on this plan."
+        >
           <form action={createServicePlanAction} className={styles.invoiceRow}>
             <label className={styles.field}>
               Name
@@ -89,6 +94,34 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
                 <option value="month">Monthly</option>
                 <option value="year">Yearly</option>
               </select>
+            </label>
+            <label className={styles.field}>
+              Visit cadence
+              <select
+                className={styles.select}
+                name="service_cadence"
+                required
+                defaultValue="biweekly"
+              >
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Every 2 weeks</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </label>
+            <label className={styles.field}>
+              Cleans included per charge
+              <input
+                className={styles.input}
+                name="included_cleans"
+                type="number"
+                min={1}
+                required
+                defaultValue={2}
+              />
+            </label>
+            <label className={styles.field}>
+              Extra clean price (optional)
+              <input className={styles.input} name="overage_dollars" placeholder="120.00" />
             </label>
             <Button type="submit" variant="primary">
               Save plan
@@ -123,6 +156,9 @@ export default async function TenantServicePlansPage({ searchParams }: PageProps
                     <span className={styles.muted}>
                       {' '}
                       · {formatUsdFromCents(r.amount_cents)} / {intervalLabel(r.billing_interval)}
+                      {r.included_cleans
+                        ? ` · ${r.included_cleans} cleans / charge`
+                        : ' · billed per visit'}
                       {r.is_active ? '' : ' · inactive'}
                     </span>
                   </span>

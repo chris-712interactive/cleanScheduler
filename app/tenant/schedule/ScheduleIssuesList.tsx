@@ -14,6 +14,8 @@ const ISSUE_TONE: Record<ScheduleIssueKind, 'warning' | 'danger' | 'info' | 'neu
   time_off_conflict: 'warning',
   unpriced: 'warning',
   pending_reschedule: 'info',
+  unpaid_subscription: 'warning',
+  subscription_paused: 'neutral',
 };
 
 function IssueBadge({ kind }: { kind: ScheduleIssueKind }) {

@@ -65,6 +65,7 @@ export function CompleteVisitPaymentModal({
   isFieldEmployee = false,
   isConsultation = false,
   initialNotes = '',
+  coverageKind = null,
   onVisitPatch,
 }: {
   tenantSlug: string;
@@ -78,6 +79,7 @@ export function CompleteVisitPaymentModal({
   isFieldEmployee?: boolean;
   isConsultation?: boolean;
   initialNotes?: string;
+  coverageKind?: 'covered' | 'waiting' | 'makeup' | 'extra' | null;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -245,7 +247,39 @@ export function CompleteVisitPaymentModal({
             {isConsultation ? 'Complete consultation' : 'Complete job'}
           </Dialog.Title>
 
-          {isConsultation ? (
+          {coverageKind === 'covered' || coverageKind === 'waiting' || coverageKind === 'makeup' ? (
+            <form action={formAction} className={styles.form}>
+              <input type="hidden" name="tenant_slug" value={tenantSlug} />
+              <input type="hidden" name="visit_id" value={visitId} />
+              <p className={styles.fieldHint}>
+                {coverageKind === 'waiting'
+                  ? 'Waiting on this period’s subscription charge. The base clean is not invoiced.'
+                  : coverageKind === 'makeup'
+                    ? 'This clean covers a visit the company still owed. The base clean is not invoiced.'
+                    : 'Included in the subscription. The base clean is not invoiced.'}
+              </p>
+              <label className={styles.label} htmlFor="addon_dollars">
+                Extra work amount (optional)
+                <input
+                  id="addon_dollars"
+                  name="addon_dollars"
+                  className={styles.input}
+                  inputMode="decimal"
+                  placeholder="0.00"
+                />
+              </label>
+              <div className={styles.actions}>
+                <Dialog.Close asChild>
+                  <Button type="button" variant="ghost" disabled={pending}>
+                    Cancel
+                  </Button>
+                </Dialog.Close>
+                <Button type="submit" variant="primary" disabled={pending}>
+                  {pending ? 'Saving…' : 'Mark complete'}
+                </Button>
+              </div>
+            </form>
+          ) : isConsultation ? (
             <form action={formAction} className={styles.form} onSubmit={handleConsultationSubmit}>
               <input type="hidden" name="tenant_slug" value={tenantSlug} />
               <input type="hidden" name="visit_id" value={visitId} />

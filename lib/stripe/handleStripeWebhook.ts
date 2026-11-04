@@ -15,6 +15,7 @@ import {
 } from '@/lib/stripe/connectWebhookHandlers';
 import { notifyTenantTrialEndingSoon } from '@/lib/billing/trialEndingNotifications';
 import { backfillInvoicePaymentsForPayout } from '@/lib/stripe/backfillPayoutPayments';
+import { syncCoverageGrantDispute } from '@/lib/billing/applySubscriptionCoverage';
 import {
   notifyTenantDisputeOpened,
   resolveConnectTenantId,
@@ -106,6 +107,16 @@ async function dispatchStripeWebhookEvent(
       if (!connectAccountId) break;
       const dispute = event.data.object as Stripe.Dispute;
       await upsertConnectDispute(admin, dispute, connectAccountId);
+      const disputeTenantId = await resolveConnectTenantId(admin, connectAccountId);
+      if (disputeTenantId) {
+        const chargeId =
+          typeof dispute.charge === 'string' ? dispute.charge : (dispute.charge?.id ?? null);
+        await syncCoverageGrantDispute(admin, {
+          tenantId: disputeTenantId,
+          stripeChargeId: chargeId,
+          disputeStatus: dispute.status,
+        });
+      }
       if (event.type === 'charge.dispute.created') {
         const tid = await resolveConnectTenantId(admin, connectAccountId);
         if (tid) {

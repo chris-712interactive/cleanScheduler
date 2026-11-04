@@ -36,7 +36,12 @@ type SubRow = {
   status: string;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
-  service_plans: { name: string; amount_cents: number; billing_interval: string } | null;
+  service_plans: {
+    name: string;
+    amount_cents: number;
+    billing_interval: string;
+    included_cleans: number | null;
+  } | null;
   tenants: { name: string } | null;
 };
 
@@ -66,7 +71,7 @@ export default async function CustomerSubscriptionsPage({ searchParams }: PagePr
             status,
             current_period_end,
             cancel_at_period_end,
-            service_plans ( name, amount_cents, billing_interval ),
+            service_plans ( name, amount_cents, billing_interval, included_cleans ),
             tenants:tenants!inner ( name )
           `,
           )
@@ -130,6 +135,11 @@ export default async function CustomerSubscriptionsPage({ searchParams }: PagePr
                   >
                     {row.status}
                   </StatusPill>
+                  {spRow?.included_cleans ? (
+                    <span className={styles.muted}>
+                      {spRow.included_cleans} cleans included per charge
+                    </span>
+                  ) : null}
                   {row.cancel_at_period_end ? (
                     <span className={styles.muted}>Cancels at period end</span>
                   ) : null}

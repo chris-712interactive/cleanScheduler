@@ -1055,6 +1055,7 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           service_plan_id: string;
+          property_id: string | null;
           status: Database['public']['Enums']['tenant_customer_subscription_status'];
           stripe_subscription_id: string | null;
           current_period_start: string | null;
@@ -1069,6 +1070,7 @@ export type Database = {
           tenant_id: string;
           customer_id: string;
           service_plan_id: string;
+          property_id?: string | null;
           status?: Database['public']['Enums']['tenant_customer_subscription_status'];
           stripe_subscription_id?: string | null;
           current_period_start?: string | null;
@@ -1083,6 +1085,7 @@ export type Database = {
           tenant_id?: string;
           customer_id?: string;
           service_plan_id?: string;
+          property_id?: string | null;
           status?: Database['public']['Enums']['tenant_customer_subscription_status'];
           stripe_subscription_id?: string | null;
           current_period_start?: string | null;
@@ -1115,6 +1118,111 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      subscription_coverage_grants: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_subscription_id: string;
+          stripe_invoice_id: string | null;
+          tenant_invoice_id: string | null;
+          period_start: string;
+          period_end: string;
+          included_cleans: number;
+          overage_amount_cents: number | null;
+          coverage_ends_on: string | null;
+          status: Database['public']['Enums']['subscription_coverage_grant_status'];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_subscription_id: string;
+          stripe_invoice_id?: string | null;
+          tenant_invoice_id?: string | null;
+          period_start: string;
+          period_end: string;
+          included_cleans: number;
+          overage_amount_cents?: number | null;
+          coverage_ends_on?: string | null;
+          status?: Database['public']['Enums']['subscription_coverage_grant_status'];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_subscription_id?: string;
+          stripe_invoice_id?: string | null;
+          tenant_invoice_id?: string | null;
+          period_start?: string;
+          period_end?: string;
+          included_cleans?: number;
+          overage_amount_cents?: number | null;
+          coverage_ends_on?: string | null;
+          status?: Database['public']['Enums']['subscription_coverage_grant_status'];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      subscription_coverage_makeups: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_subscription_id: string;
+          source_visit_id: string | null;
+          source_grant_id: string | null;
+          consumed_visit_id: string | null;
+          dismissed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_subscription_id: string;
+          source_visit_id?: string | null;
+          source_grant_id?: string | null;
+          consumed_visit_id?: string | null;
+          dismissed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_subscription_id?: string;
+          source_visit_id?: string | null;
+          source_grant_id?: string | null;
+          consumed_visit_id?: string | null;
+          dismissed_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      subscription_coverage_forfeits: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          customer_subscription_id: string;
+          starts_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          customer_subscription_id: string;
+          starts_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          customer_subscription_id?: string;
+          starts_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       tenant_invoice_payments: {
         Row: {
@@ -3429,6 +3537,9 @@ export type Database = {
           amount_cents: number;
           currency: string;
           billing_interval: Database['public']['Enums']['service_plan_billing_interval'];
+          included_cleans: number | null;
+          service_cadence: Database['public']['Enums']['service_plan_cadence'] | null;
+          overage_amount_cents: number | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -3441,6 +3552,9 @@ export type Database = {
           amount_cents: number;
           currency?: string;
           billing_interval?: Database['public']['Enums']['service_plan_billing_interval'];
+          included_cleans?: number | null;
+          service_cadence?: Database['public']['Enums']['service_plan_cadence'] | null;
+          overage_amount_cents?: number | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -3453,6 +3567,9 @@ export type Database = {
           amount_cents?: number;
           currency?: string;
           billing_interval?: Database['public']['Enums']['service_plan_billing_interval'];
+          included_cleans?: number | null;
+          service_cadence?: Database['public']['Enums']['service_plan_cadence'] | null;
+          overage_amount_cents?: number | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -3861,6 +3978,11 @@ export type Database = {
           completion_check_number: string | null;
           completion_collected_amount_cents: number | null;
           completion_invoice_id: string | null;
+          coverage_status: Database['public']['Enums']['visit_coverage_status'] | null;
+          coverage_grant_id: string | null;
+          coverage_makeup_id: string | null;
+          coverage_cancel_party: Database['public']['Enums']['visit_coverage_cancel_party'] | null;
+          coverage_addon_invoice_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -3897,6 +4019,11 @@ export type Database = {
           completion_check_number?: string | null;
           completion_collected_amount_cents?: number | null;
           completion_invoice_id?: string | null;
+          coverage_status?: Database['public']['Enums']['visit_coverage_status'] | null;
+          coverage_grant_id?: string | null;
+          coverage_makeup_id?: string | null;
+          coverage_cancel_party?: Database['public']['Enums']['visit_coverage_cancel_party'] | null;
+          coverage_addon_invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -3933,6 +4060,11 @@ export type Database = {
           completion_check_number?: string | null;
           completion_collected_amount_cents?: number | null;
           completion_invoice_id?: string | null;
+          coverage_status?: Database['public']['Enums']['visit_coverage_status'] | null;
+          coverage_grant_id?: string | null;
+          coverage_makeup_id?: string | null;
+          coverage_cancel_party?: Database['public']['Enums']['visit_coverage_cancel_party'] | null;
+          coverage_addon_invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -5677,6 +5809,10 @@ export type Database = {
       referral_attribution_source: 'link' | 'manual';
       referral_reward_recipient: 'referrer' | 'referee';
       service_plan_billing_interval: 'week' | 'month' | 'year';
+      service_plan_cadence: 'weekly' | 'biweekly' | 'monthly';
+      subscription_coverage_grant_status: 'open' | 'disputed' | 'reversed';
+      visit_coverage_status: 'covered' | 'waiting' | 'makeup';
+      visit_coverage_cancel_party: 'company' | 'customer';
       visit_reschedule_request_status: 'pending' | 'completed' | 'declined' | 'withdrawn';
       tenant_customer_subscription_status:
         | 'incomplete'

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapPin, Phone } from 'lucide-react';
 import { googleMapsDirectionsUrl } from '@/lib/geo/googleMapsDirectionsUrl';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { Button } from '@/components/ui/Button';
 import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeAvatars';
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
 import {
@@ -45,6 +46,7 @@ import { formatCheckInLocationProof } from '@/lib/schedule/checkInLocation';
 import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import { FieldEmployeeVisitDetail } from './FieldEmployeeVisitDetail';
 import { DeleteVisitButton } from './DeleteVisitButton';
+import { reopenCompletedVisitAction } from '@/app/tenant/customers/coverageActions';
 import { VisitFieldWorkPanel } from './VisitFieldWorkPanel';
 import { VisitChecklistPanel } from './VisitChecklistPanel';
 import { VisitScheduleEditPanel } from './VisitScheduleEditPanel';
@@ -123,6 +125,8 @@ export type VisitDetailSnapshot = {
   completionCollectedAmountCents: number | null;
   completionCheckNumber: string | null;
   completionInvoiceId: string | null;
+  coverageKind: 'covered' | 'waiting' | 'makeup' | 'extra' | null;
+  coveragePartyRequired: boolean;
   visitPurpose: 'service' | 'consultation';
   propertyKind: CustomerPropertyKind;
   consultationIntake: ConsultationIntake | null;
@@ -322,6 +326,7 @@ export function VisitDetailCard({
                 hasBillableAmount={hasBillableAmount}
                 isConsultation={isConsultation}
                 initialNotes={visit.notes ?? ''}
+                coverageKind={visit.coverageKind}
                 onVisitPatch={onVisitPatch}
                 onOurWayEnabled={visit.onOurWayEnabled}
                 onOurWayAlreadySent={visit.onOurWayAlreadySent}
@@ -563,11 +568,30 @@ export function VisitDetailCard({
             </section>
           ) : null}
 
+          {canManage && visit.status === 'completed' ? (
+            <section className={styles.panel}>
+              <form action={reopenCompletedVisitAction}>
+                <input type="hidden" name="tenant_slug" value={visit.tenantSlug} />
+                <input type="hidden" name="visit_id" value={visit.visitId} />
+                <p className={styles.adminHint}>
+                  Return this visit to the calendar. A covered clean gives its slot back.
+                </p>
+                <Button type="submit" variant="secondary">
+                  Reopen visit
+                </Button>
+              </form>
+            </section>
+          ) : null}
+
           {canDelete ? (
             <section className={styles.panel}>
               <div className={styles.adminRow}>
                 <p className={styles.adminHint}>Permanently remove this visit from the schedule.</p>
-                <DeleteVisitButton tenantSlug={visit.tenantSlug} visitId={visit.visitId} />
+                <DeleteVisitButton
+                  tenantSlug={visit.tenantSlug}
+                  visitId={visit.visitId}
+                  requiresCoverageParty={visit.coveragePartyRequired}
+                />
               </div>
             </section>
           ) : null}

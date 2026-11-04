@@ -4,6 +4,7 @@ import type { Database, Json } from '@/lib/supabase/database.types';
 import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebhook';
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
 import { retrieveConnectSubscription, subscriptionPeriodIso } from '@/lib/stripe/stripeBasilCompat';
+import { settleWaitingVisits } from '@/lib/billing/applySubscriptionCoverage';
 import { invoiceCollectibleCents } from '@/lib/promotions/invoiceCollectible';
 
 type Admin = SupabaseClient<Database>;
@@ -255,10 +256,13 @@ export async function upsertCustomerSubscriptionFromStripe(
       ? new Date(subscription.billing_cycle_anchor * 1000).toISOString()
       : null;
 
+  const propertyId = (subscription.metadata?.property_id as string | undefined)?.trim() || null;
+
   const row: Database['public']['Tables']['customer_subscriptions']['Update'] = {
     tenant_id: tenantId,
     customer_id: customerId,
     service_plan_id: servicePlanId,
+    ...(propertyId ? { property_id: propertyId } : {}),
     status,
     stripe_subscription_id: subscription.id,
     current_period_start: periodStart,
@@ -277,6 +281,16 @@ export async function upsertCustomerSubscriptionFromStripe(
   if (existing?.id) {
     const { error } = await admin.from('customer_subscriptions').update(row).eq('id', existing.id);
     if (error) throw new Error(error.message);
+    if (status === 'canceled') {
+      const { data: saved } = await admin
+        .from('customer_subscriptions')
+        .select(
+          'id, tenant_id, customer_id, property_id, service_plan_id, status, stripe_subscription_id, created_at, current_period_start, current_period_end',
+        )
+        .eq('id', existing.id)
+        .maybeSingle();
+      if (saved) await settleWaitingVisits(admin, saved);
+    }
     return;
   }
 
@@ -284,6 +298,7 @@ export async function upsertCustomerSubscriptionFromStripe(
     tenant_id: tenantId,
     customer_id: customerId,
     service_plan_id: servicePlanId,
+    ...(propertyId ? { property_id: propertyId } : {}),
     status,
     stripe_subscription_id: subscription.id,
     current_period_start: periodStart,

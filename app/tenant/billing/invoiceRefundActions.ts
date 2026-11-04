@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getStripe } from '@/lib/stripe/server';
+import { syncCoverageGrantRefund } from '@/lib/billing/applySubscriptionCoverage';
 
 export async function refundStripeInvoicePaymentAction(formData: FormData): Promise<void> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
@@ -90,6 +91,8 @@ export async function refundStripeInvoicePaymentAction(formData: FormData): Prom
   if (insErr) {
     redirect(`/billing/invoices/${invoiceId}?error=${encodeURIComponent(insErr.message)}`);
   }
+
+  await syncCoverageGrantRefund(admin, { tenantId: membership.tenantId, invoiceId });
 
   redirect(`/billing/invoices/${invoiceId}?refund=ok`);
 }

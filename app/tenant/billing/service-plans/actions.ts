@@ -20,13 +20,28 @@ function parseInterval(raw: string): Interval | null {
   return null;
 }
 
+function parseCadence(raw: string): Database['public']['Enums']['service_plan_cadence'] | null {
+  if (raw === 'weekly' || raw === 'biweekly' || raw === 'monthly') return raw;
+  return null;
+}
+
+function parseIncludedCleans(raw: string): number | null {
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isInteger(n) || n <= 0) return null;
+  return n;
+}
+
 export async function createServicePlanAction(formData: FormData): Promise<void> {
   const { tenantSlug } = await getPortalContext();
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/service-plans');
   const name = String(formData.get('name') ?? '').trim();
   const amountCents = parseAmountCents(String(formData.get('amount_dollars') ?? ''));
   const interval = parseInterval(String(formData.get('billing_interval') ?? ''));
-  if (!name || !amountCents || !interval) {
+  const cadence = parseCadence(String(formData.get('service_cadence') ?? ''));
+  const includedCleans = parseIncludedCleans(String(formData.get('included_cleans') ?? ''));
+  const overageRaw = String(formData.get('overage_dollars') ?? '').trim();
+  const overageCents = overageRaw ? parseAmountCents(overageRaw) : null;
+  if (!name || !amountCents || !interval || !cadence || !includedCleans) {
     redirect('/billing/service-plans?error=invalid');
   }
 
@@ -36,6 +51,9 @@ export async function createServicePlanAction(formData: FormData): Promise<void>
     name,
     amount_cents: amountCents,
     billing_interval: interval,
+    service_cadence: cadence,
+    included_cleans: includedCleans,
+    overage_amount_cents: overageCents,
   });
   if (error) {
     redirect(`/billing/service-plans?error=${encodeURIComponent(error.message)}`);

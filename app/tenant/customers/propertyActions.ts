@@ -15,6 +15,8 @@ import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCod
 import { lookupUsAddress, resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
+import { bindSubscriptionToOriginalProperty } from '@/lib/billing/applySubscriptionCoverage';
+import { propertyIdToBind } from '@/lib/billing/subscriptionCoverage';
 
 export interface PropertyFormState {
   error?: string;
@@ -94,11 +96,12 @@ export async function addCustomerProperty(
     return { error: 'Customer not found in this workspace.' };
   }
 
-  const { count } = await admin
+  const { data: existingProperties } = await admin
     .from('tenant_customer_properties')
-    .select('id', { count: 'exact', head: true })
+    .select('id')
     .eq('customer_id', customerId)
     .eq('tenant_id', membership.tenantId);
+  const count = existingProperties?.length ?? 0;
 
   const isFirst = (count ?? 0) === 0;
   const makePrimary = isFirst || wantPrimary;
@@ -138,6 +141,18 @@ export async function addCustomerProperty(
 
   if (ins.error || !ins.data) {
     return { error: ins.error?.message ?? 'Could not add location.' };
+  }
+
+  const originalPropertyId = propertyIdToBind(
+    (existingProperties ?? []).map((row) => row.id),
+    ins.data.id,
+  );
+  if (originalPropertyId) {
+    await bindSubscriptionToOriginalProperty(admin, {
+      tenantId: membership.tenantId,
+      customerId,
+      originalPropertyId,
+    });
   }
 
   if (formData.get('save_access_codes') === '1') {
