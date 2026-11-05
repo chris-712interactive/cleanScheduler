@@ -8,7 +8,7 @@ import {
   insertStop,
   legIsIncluded,
   mileageCsv,
-  milesFromOsrmPayload,
+  milesFromRoutePayload,
   odometerSummary,
   pairStops,
   reimbursementCents,
@@ -140,10 +140,10 @@ describe('mile sources', () => {
     expect(filled?.miles).toBe(4.4);
   });
 
-  it('reads driving meters from an OSRM route and ignores a missing route', () => {
-    expect(milesFromOsrmPayload({ routes: [{ distance: 1609.344 }] })).toBe(1);
-    expect(milesFromOsrmPayload({ routes: [] })).toBeNull();
-    expect(milesFromOsrmPayload(null)).toBeNull();
+  it('reads driving meters from a Mapricot route and ignores a missing route', () => {
+    expect(milesFromRoutePayload({ routes: [{ distanceMeters: 1609 }] })).toBe(1);
+    expect(milesFromRoutePayload({ routes: [] })).toBeNull();
+    expect(milesFromRoutePayload(null)).toBeNull();
   });
 
   it('keys a repeated address by rounded coordinates', () => {

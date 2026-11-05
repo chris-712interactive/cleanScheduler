@@ -276,10 +276,11 @@ export function mondayOf(dateKey: string): string {
   return addDateKey(dateKey, delta);
 }
 
-export function milesFromOsrmPayload(payload: unknown): number | null {
+/** Miles from a Mapricot route. `distanceMeters` is the driving distance. */
+export function milesFromRoutePayload(payload: unknown): number | null {
   if (typeof payload !== 'object' || payload === null) return null;
-  const routes = (payload as { routes?: { distance?: number }[] }).routes;
-  const meters = routes?.[0]?.distance;
+  const routes = (payload as { routes?: { distanceMeters?: number }[] }).routes;
+  const meters = routes?.[0]?.distanceMeters;
   if (typeof meters !== 'number' || !Number.isFinite(meters) || meters < 0) return null;
   return roundMiles(meters / 1609.344);
 }

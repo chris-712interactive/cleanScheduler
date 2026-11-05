@@ -28,7 +28,7 @@ The odometer difference is the vehicle total. It is compared with every trip on 
 ## Where a mile comes from
 
 1. Miles this account already confirmed for the same two places.
-2. A hosted OpenStreetMap route when `OSRM_BASE_URL` is set. The leg is labeled Suggested.
+2. A Mapricot driving route when `MAPRICOT_API_KEY` is set. The leg is labeled Suggested. The review page credits OpenStreetMap when a suggestion is showing.
 3. A number the person types. **Open in Maps** opens the drive and does not send a distance back.
 
 Coordinates already come from Google geocoding when a key is set, and from the US Census geocoder otherwise. A straight-line distance is never stored as the drive.
@@ -44,5 +44,5 @@ A check-in far from the property (about 500 meters) is a flag on that stop. The 
 - Apply migration **0118** before the screens can save. New tenants get the permission keys from `seed_tenant_system_roles_for_tenant`.
 - Field route allowlist in `lib/tenant/fieldEmployeeAccess.ts` includes `/schedule/miles` only. Do not hang the team week under that path.
 - Mileage tables are service-role only, same pattern as other operational tables.
-- `OSRM_BASE_URL` is optional. Without it, unsaved pairs stay blank until someone types the miles or a saved pair exists.
+- `MAPRICOT_API_KEY` is optional and server-only. It needs the routing scope. Without it, unsaved pairs stay blank until someone types the miles or a saved pair exists. The request is `POST https://api.mapricot.com/routing/v1/route` with `mode: drive`. Miles come from `routes[0].distanceMeters`. An empty `routes` list leaves the leg blank.
 - Confirming a day writes `tenant_mileage_segments` so the next identical drive is suggested from this account, not from a map API.

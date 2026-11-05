@@ -93,6 +93,18 @@ export function MileageDayForm({
             Rate {formatRateDollars(settings.rateCentsPerMile)} per mile
           </p>
         ) : null}
+        {legs.some((leg) => leg.source === 'suggested') ? (
+          <p className={styles.meta}>
+            Road miles{' '}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              © OpenStreetMap contributors
+            </a>
+          </p>
+        ) : null}
       </div>
 
       {legs.length === 0 ? (
