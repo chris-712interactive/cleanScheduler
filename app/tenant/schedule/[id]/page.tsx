@@ -36,6 +36,7 @@ import { loadJobTypeCatalog, uniqueJobTypeLabels } from '@/lib/tenant/jobTypeCat
 import { listVisitProofPhotos } from '@/lib/visits/visitProofPhotos';
 import { ensureVisitChecklistState } from '@/lib/visits/visitChecklistState';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { loadVisitDrive } from '@/lib/mileage/store';
 import { visitCustomerEmailAlreadyLogged } from '@/lib/email/visitCustomerEmailLog';
 import { parseStoredConsultationIntake } from '@/lib/visits/consultationIntake';
 import { loadConsultationRequiredFields } from '@/lib/tenant/customerConsultation';
@@ -199,6 +200,10 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   const canUseGpsCheckIn = isFeatureEnabled(tier, 'gpsVerifiedCheckIn');
   const proofPhotosSharedWithCustomers = isFeatureEnabled(tier, 'proofOfServicePortalShare');
   const canUseChecklists = isFeatureEnabled(tier, 'visitChecklists');
+  const canUseJobCosting = isFeatureEnabled(tier, 'jobCosting');
+  const visitDrive = canUseJobCosting
+    ? await loadVisitDrive({ admin, tenantId: membership.tenantId, visitId })
+    : null;
 
   const proofPhotos =
     row.status === 'completed' && canUseProofPhotos
@@ -310,6 +315,13 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           </p>
         </div>
       </header>
+
+      {visitDrive ? (
+        <p className={styles.visitPageSubtitle}>
+          Drive on this job: {visitDrive.miles.toFixed(1)} mi
+          {visitDrive.cents != null ? ` · $${(visitDrive.cents / 100).toFixed(2)}` : ''}
+        </p>
+      ) : null}
 
       <VisitDetailCard
         employeeOptions={employeeOptions}

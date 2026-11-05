@@ -4,6 +4,7 @@ export type PermissionAreaId =
   | 'quotes'
   | 'customers'
   | 'schedule'
+  | 'mileage'
   | 'billing'
   | 'messages'
   | 'reports'
@@ -64,6 +65,27 @@ export const PERMISSION_AREA_DEFINITIONS: readonly PermissionAreaDefinition[] = 
         label: 'Manage customers',
         shortLabel: 'Manage customers',
         requires: ['customers.view'],
+      },
+    ],
+  },
+  {
+    id: 'mileage',
+    title: 'Mileage',
+    description: 'Drive log, reimbursement, and the team week.',
+    fullAccessSummary: 'Log, review, and configure mileage',
+    capabilities: [
+      { key: 'mileage.log', label: 'Log your miles', shortLabel: 'Log miles' },
+      {
+        key: 'mileage.review',
+        label: 'Review team miles',
+        shortLabel: 'Review team',
+        requires: ['mileage.log'],
+      },
+      {
+        key: 'mileage.manage_settings',
+        label: 'Mileage settings',
+        shortLabel: 'Settings',
+        requires: ['mileage.log'],
       },
     ],
   },
@@ -315,12 +337,11 @@ export function applyPermissionAreaPreset(
   if (preset === 'none') return next;
 
   const viewKey = keys[0];
-  const manageKey = keys[1];
   if (!viewKey) return next;
 
   next.add(viewKey);
-  if (preset === 'full' && manageKey) {
-    next.add(manageKey);
+  if (preset === 'full') {
+    for (const key of keys) next.add(key);
   }
 
   return next;

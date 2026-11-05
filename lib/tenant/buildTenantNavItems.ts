@@ -38,6 +38,7 @@ const NAV_ITEM_PERMISSION: Partial<Record<string, PermissionKey>> = {
   '/customers': 'customers.view',
   '/messages': 'messages.view',
   '/schedule': 'schedule.view',
+  '/mileage': 'mileage.review',
   '/schedule/reschedule-requests': 'schedule.manage',
   '/employees': 'team.view',
   '/campaigns': 'campaigns.view',
@@ -98,7 +99,9 @@ export function buildTenantNavItems(params: {
     : [
         ...NAV_ITEMS_BASE.slice(0, 1),
         ...(gettingStartedNavItem ? [gettingStartedNavItem] : []),
-        ...NAV_ITEMS_BASE.slice(1, 7),
+        ...NAV_ITEMS_BASE.slice(1, 5),
+        { label: 'Miles', href: '/mileage', icon: 'miles' },
+        ...NAV_ITEMS_BASE.slice(5, 7),
         billingNavItem,
         ...NAV_ITEMS_BASE.slice(7).filter((item) => {
           if (item.href === '/campaigns' && !campaignsNavEnabled) return false;

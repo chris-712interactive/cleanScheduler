@@ -2326,6 +2326,13 @@ export type Database = {
           public_booking_request_enabled: boolean;
           employees_can_edit_own_hours: boolean;
           employee_hours_require_approval: boolean;
+          mileage_reimbursement_enabled: boolean;
+          mileage_rate_cents_per_mile: number | null;
+          mileage_ask_odometer: boolean;
+          mileage_count_commute_to_first: boolean;
+          mileage_count_return_home: boolean;
+          mileage_count_between_stops: boolean;
+          mileage_count_office_legs: boolean;
           schedule_optimizer_policy: Json;
           allow_passkey_sign_in: boolean;
           mfa_required: boolean;
@@ -2363,6 +2370,13 @@ export type Database = {
           public_booking_request_enabled?: boolean;
           employees_can_edit_own_hours?: boolean;
           employee_hours_require_approval?: boolean;
+          mileage_reimbursement_enabled?: boolean;
+          mileage_rate_cents_per_mile?: number | null;
+          mileage_ask_odometer?: boolean;
+          mileage_count_commute_to_first?: boolean;
+          mileage_count_return_home?: boolean;
+          mileage_count_between_stops?: boolean;
+          mileage_count_office_legs?: boolean;
           schedule_optimizer_policy?: Json;
           allow_passkey_sign_in?: boolean;
           mfa_required?: boolean;
@@ -2400,6 +2414,13 @@ export type Database = {
           public_booking_request_enabled?: boolean;
           employees_can_edit_own_hours?: boolean;
           employee_hours_require_approval?: boolean;
+          mileage_reimbursement_enabled?: boolean;
+          mileage_rate_cents_per_mile?: number | null;
+          mileage_ask_odometer?: boolean;
+          mileage_count_commute_to_first?: boolean;
+          mileage_count_return_home?: boolean;
+          mileage_count_between_stops?: boolean;
+          mileage_count_office_legs?: boolean;
           schedule_optimizer_policy?: Json;
           allow_passkey_sign_in?: boolean;
           mfa_required?: boolean;
@@ -4724,6 +4745,224 @@ export type Database = {
           },
         ];
       };
+      tenant_mileage_places: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          address: string;
+          latitude: number | null;
+          longitude: number | null;
+          kind: Database['public']['Enums']['mileage_place_kind'];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          address: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          kind?: Database['public']['Enums']['mileage_place_kind'];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          name?: string;
+          address?: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          kind?: Database['public']['Enums']['mileage_place_kind'];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_mileage_places_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_mileage_days: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          work_date: string;
+          status: Database['public']['Enums']['mileage_day_status'];
+          vehicle: Database['public']['Enums']['mileage_vehicle'];
+          odometer_start: number | null;
+          odometer_end: number | null;
+          counted_miles: number;
+          reimbursement_cents: number | null;
+          note: string | null;
+          confirmed_at: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          work_date: string;
+          status?: Database['public']['Enums']['mileage_day_status'];
+          vehicle?: Database['public']['Enums']['mileage_vehicle'];
+          odometer_start?: number | null;
+          odometer_end?: number | null;
+          counted_miles?: number;
+          reimbursement_cents?: number | null;
+          note?: string | null;
+          confirmed_at?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          user_id?: string;
+          work_date?: string;
+          status?: Database['public']['Enums']['mileage_day_status'];
+          vehicle?: Database['public']['Enums']['mileage_vehicle'];
+          odometer_start?: number | null;
+          odometer_end?: number | null;
+          counted_miles?: number;
+          reimbursement_cents?: number | null;
+          note?: string | null;
+          confirmed_at?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_mileage_days_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_mileage_legs: {
+        Row: {
+          id: string;
+          day_id: string;
+          tenant_id: string;
+          sequence: number;
+          origin_label: string;
+          origin_kind: Database['public']['Enums']['mileage_place_kind'];
+          origin_lat: number | null;
+          origin_lng: number | null;
+          dest_label: string;
+          dest_kind: Database['public']['Enums']['mileage_place_kind'];
+          dest_lat: number | null;
+          dest_lng: number | null;
+          visit_id: string | null;
+          included: boolean;
+          miles: number | null;
+          source: Database['public']['Enums']['mileage_leg_source'];
+          check_in_away: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          day_id: string;
+          tenant_id: string;
+          sequence: number;
+          origin_label: string;
+          origin_kind: Database['public']['Enums']['mileage_place_kind'];
+          origin_lat?: number | null;
+          origin_lng?: number | null;
+          dest_label: string;
+          dest_kind: Database['public']['Enums']['mileage_place_kind'];
+          dest_lat?: number | null;
+          dest_lng?: number | null;
+          visit_id?: string | null;
+          included?: boolean;
+          miles?: number | null;
+          source?: Database['public']['Enums']['mileage_leg_source'];
+          check_in_away?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          day_id?: string;
+          tenant_id?: string;
+          sequence?: number;
+          origin_label?: string;
+          origin_kind?: Database['public']['Enums']['mileage_place_kind'];
+          origin_lat?: number | null;
+          origin_lng?: number | null;
+          dest_label?: string;
+          dest_kind?: Database['public']['Enums']['mileage_place_kind'];
+          dest_lat?: number | null;
+          dest_lng?: number | null;
+          visit_id?: string | null;
+          included?: boolean;
+          miles?: number | null;
+          source?: Database['public']['Enums']['mileage_leg_source'];
+          check_in_away?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_mileage_legs_day_id_fkey';
+            columns: ['day_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_mileage_days';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tenant_mileage_segments: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          origin_key: string;
+          dest_key: string;
+          miles: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          origin_key: string;
+          dest_key: string;
+          miles: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          origin_key?: string;
+          dest_key?: string;
+          miles?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_mileage_segments_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_locations: {
         Row: {
           id: string;
@@ -5813,6 +6052,10 @@ export type Database = {
       subscription_coverage_grant_status: 'open' | 'disputed' | 'reversed';
       visit_coverage_status: 'covered' | 'waiting' | 'makeup';
       visit_coverage_cancel_party: 'company' | 'customer';
+      mileage_day_status: 'draft' | 'confirmed' | 'approved';
+      mileage_vehicle: 'personal' | 'company';
+      mileage_place_kind: 'home' | 'visit' | 'event' | 'supply' | 'estimate' | 'office' | 'other';
+      mileage_leg_source: 'saved' | 'suggested' | 'typed';
       visit_reschedule_request_status: 'pending' | 'completed' | 'declined' | 'withdrawn';
       tenant_customer_subscription_status:
         | 'incomplete'

@@ -16,6 +16,9 @@ export const PERMISSION_KEYS = [
   'messages.reply',
   'schedule.view',
   'schedule.manage',
+  'mileage.log',
+  'mileage.review',
+  'mileage.manage_settings',
   'customers.view',
   'customers.manage',
   'reports.view',
@@ -127,6 +130,24 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     group: 'Schedule',
   },
   {
+    key: 'mileage.log',
+    label: 'Log miles',
+    description: 'Review and confirm your own mileage days.',
+    group: 'Mileage',
+  },
+  {
+    key: 'mileage.review',
+    label: 'Review team miles',
+    description: 'See the team week, approve days, and export the mileage CSV.',
+    group: 'Mileage',
+  },
+  {
+    key: 'mileage.manage_settings',
+    label: 'Mileage settings',
+    description: 'Turn reimbursement and odometer readings on, and set the rate.',
+    group: 'Mileage',
+  },
+  {
     key: 'customers.view',
     label: 'View customers',
     description: 'See customer records and properties.',
@@ -178,7 +199,7 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
 
 const OWNER_ADMIN_PERMISSIONS: PermissionKey[] = [...PERMISSION_KEYS];
 
-const EMPLOYEE_PERMISSIONS: PermissionKey[] = ['schedule.view', 'settings.view'];
+const EMPLOYEE_PERMISSIONS: PermissionKey[] = ['schedule.view', 'settings.view', 'mileage.log'];
 
 const VIEWER_PERMISSIONS: PermissionKey[] = [
   'quotes.view',

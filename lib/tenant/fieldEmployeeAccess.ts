@@ -59,7 +59,7 @@ export function fieldEmployeeCanAccessBrowserPath(pathname: string): boolean {
     return true;
   }
 
-  if (path === '/schedule/time-off') {
+  if (path === '/schedule/time-off' || path === '/schedule/miles') {
     return true;
   }
 

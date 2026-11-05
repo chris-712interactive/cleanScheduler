@@ -22,6 +22,7 @@ import { normalizeMessagingChannelsFromDb } from '@/lib/sms/sentMessagingChannel
 import { DEFAULT_CONSULTATION_DURATION_MINUTES } from '@/lib/tenant/consultationDuration';
 import { OperationalSettingsForm } from '../OperationalSettingsForm';
 import { EmployeeHoursPolicyForm } from './EmployeeHoursPolicyForm';
+import { MileageSettingsForm } from './MileageSettingsForm';
 import styles from './operations-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,9 @@ export default async function TenantOperationsSettingsPage() {
   const invoiceReminderSmsEditable = smsAllowed;
   const { data: hoursPolicyRow } = await admin
     .from('tenant_operational_settings')
-    .select('employees_can_edit_own_hours, employee_hours_require_approval')
+    .select(
+      'employees_can_edit_own_hours, employee_hours_require_approval, mileage_reimbursement_enabled, mileage_rate_cents_per_mile, mileage_ask_odometer, mileage_count_commute_to_first, mileage_count_return_home, mileage_count_between_stops, mileage_count_office_legs',
+    )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
@@ -154,6 +157,18 @@ export default async function TenantOperationsSettingsPage() {
           tenantSlug={membership.tenantSlug}
           employeesCanEditOwnHours={hoursPolicyRow?.employees_can_edit_own_hours ?? true}
           employeeHoursRequireApproval={hoursPolicyRow?.employee_hours_require_approval ?? false}
+          readOnly={!canEdit}
+        />
+
+        <MileageSettingsForm
+          tenantSlug={membership.tenantSlug}
+          reimbursementEnabled={hoursPolicyRow?.mileage_reimbursement_enabled ?? false}
+          rateCentsPerMile={hoursPolicyRow?.mileage_rate_cents_per_mile ?? null}
+          askOdometer={hoursPolicyRow?.mileage_ask_odometer ?? false}
+          countCommuteToFirst={hoursPolicyRow?.mileage_count_commute_to_first ?? false}
+          countReturnHome={hoursPolicyRow?.mileage_count_return_home ?? false}
+          countBetweenStops={hoursPolicyRow?.mileage_count_between_stops ?? true}
+          countOfficeLegs={hoursPolicyRow?.mileage_count_office_legs ?? true}
           readOnly={!canEdit}
         />
 

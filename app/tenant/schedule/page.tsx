@@ -17,6 +17,8 @@ import { loadScheduleVisits } from '@/lib/tenant/loadScheduleVisits';
 import type { TenantRole } from '@/lib/auth/types';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { listScheduleRenewalReminders } from '@/lib/tenant/scheduleRenewalQueue';
+import { addDateKey } from '@/lib/mileage/model';
+import { yesterdayNeedsConfirm } from '@/lib/mileage/store';
 import { listScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { TenantScheduleClient } from './TenantScheduleClient';
 import { DaySchedulingSuggestions } from './DaySchedulingSuggestions';
@@ -157,6 +159,30 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
     },
   ];
 
+  const mileageUserId = currentUserId;
+  const showMileagePrompt =
+    Boolean(mileageUserId) && tab === 'schedule' && (isFieldEmployee || view === 'day');
+  const mileageDay = showMileagePrompt
+    ? await admin
+        .from('tenant_mileage_days')
+        .select('counted_miles, status')
+        .eq('tenant_id', membership.tenantId)
+        .eq('user_id', mileageUserId)
+        .eq('work_date', dateKey)
+        .maybeSingle()
+    : { data: null };
+  const showYesterday =
+    showMileagePrompt && isLocalCalendarToday(dateKey)
+      ? await yesterdayNeedsConfirm({
+          admin,
+          tenantId: membership.tenantId,
+          userId: mileageUserId,
+          todayKey: dateKey,
+          timeZone: tenantTimezone,
+        })
+      : false;
+  const yesterdayKey = addDateKey(dateKey, -1);
+
   const dayPlan =
     !isFieldEmployee && tab === 'schedule' && view === 'day'
       ? await loadDaySchedulingSuggestions(admin, {
@@ -254,6 +280,32 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           suggestions={dayPlan.suggestions}
           gaps={dayPlan.gaps}
         />
+      ) : null}
+
+      {showMileagePrompt ? (
+        <div className={styles.scheduleRenewalBanner} role="status">
+          <p>
+            {mileageDay.data
+              ? `${Number(mileageDay.data.counted_miles).toFixed(1)} mi ${mileageDay.data.status} for this day.`
+              : 'Review miles for this day when the stops are done.'}
+          </p>
+          <p>
+            <a className={styles.scheduleRenewalLink} href={`/schedule/miles?date=${dateKey}`}>
+              Review miles
+            </a>
+            {showYesterday ? (
+              <>
+                {' · '}
+                <a
+                  className={styles.scheduleRenewalLink}
+                  href={`/schedule/miles?date=${yesterdayKey}`}
+                >
+                  Yesterday still needs a confirm
+                </a>
+              </>
+            ) : null}
+          </p>
+        </div>
       ) : null}
 
       {tab === 'issues' && !isFieldEmployee ? (
