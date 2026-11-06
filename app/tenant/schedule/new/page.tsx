@@ -15,6 +15,8 @@ import { loadConsultationDurationMinutes } from '@/lib/tenant/consultationDurati
 import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
 import { loadJobTypeCatalog, uniqueJobTypeLabels } from '@/lib/tenant/jobTypeCatalog';
 import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment, propertyKindAllowed } from '@/lib/tenant/serviceSegment';
 import { schedulesVisitKind } from '@/lib/schedule/scheduleEligibility';
 import type { TenantRole } from '@/lib/auth/types';
 import { ScheduleVisitForm } from '../ScheduleVisitForm';
@@ -42,6 +44,7 @@ type PropertyPickRow = Pick<
   | 'state'
   | 'postal_code'
   | 'is_primary'
+  | 'property_kind'
 >;
 
 type QuotePickRow = Pick<Tables<'tenant_quotes'>, 'id' | 'title' | 'amount_cents'>;
@@ -113,7 +116,7 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
     supabase
       .from('tenant_customer_properties')
       .select(
-        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+        'id, customer_id, label, property_kind, address_line1, address_line2, city, state, postal_code, is_primary',
       )
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })
@@ -153,7 +156,12 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
   const displayByUserId = new Map((memberProfiles ?? []).map((p) => [p.user_id, p.display_name]));
 
   const customerRows = customersRes.data ?? [];
-  const propertyRows = propertiesRes.data ?? [];
+  const capabilities = capabilitiesForSegment(
+    await loadTenantServiceSegment(admin, membership.tenantId),
+  );
+  const propertyRows = (propertiesRes.data ?? []).filter((row) =>
+    propertyKindAllowed(capabilities, row.property_kind),
+  );
   const quoteRows = quotesRes.data ?? [];
   const tenantTimezone = tenantRowRes.data?.timezone ?? 'America/New_York';
 
@@ -192,10 +200,12 @@ export default async function TenantScheduleNewPage({ searchParams }: PageProps)
       label: `${displayByUserId.get(member.user_id)?.trim() || 'Member'} (${member.role})`,
     }));
 
-  const consultationServiceTypes = jobTypeCatalog.map((entry) => ({
-    id: entry.id,
-    label: `${entry.service_label} · ${PROPERTY_KIND_LABEL[entry.job_type]}`,
-  }));
+  const consultationServiceTypes = jobTypeCatalog
+    .filter((entry) => propertyKindAllowed(capabilities, entry.job_type))
+    .map((entry) => ({
+      id: entry.id,
+      label: `${entry.service_label} · ${PROPERTY_KIND_LABEL[entry.job_type]}`,
+    }));
 
   const returnTo = sanitizeInternalReturnPath(returnToRaw);
 

@@ -14,7 +14,7 @@ This document describes how **tenant quotes** combine a header row (`tenant_quot
   - `service_label` (required, free text — “what we are pricing”).
   - `frequency` (`quote_line_frequency` enum: `one_time`, `weekly`, `biweekly`, `monthly`, `custom`).
   - `frequency_detail` (optional text; **required when `frequency` is `custom`** to describe the cadence in plain language).
-  - `amount_cents` (non-negative integer; **list** price for the line in the quote’s currency — see **Currency** below).
+  - `amount_cents` (non-negative integer; **list** price for the line in the quote’s currency — see **Currency** below). For `pricing_method = per_sqft` this is computed (rate × sq ft × visits), not a typed dollar amount. See `docs/product/service-segment-and-sqft-bids.md`.
   - `line_discount_kind` / `line_discount_value` (`quote_line_discount_kind` + value: bps for percent, cents off for `fixed_cents`).
   - `sort_order` (integer; row order from the form).
 

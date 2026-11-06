@@ -30,7 +30,7 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
   const [step, setStep] = useState(0);
   const [slug, setSlug] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [businessType, setBusinessType] = useState('residential');
+  const [businessType, setBusinessType] = useState('both');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
@@ -329,16 +329,16 @@ export function TenantOnboardingForm({ domainSuffix }: { domainSuffix: string })
           />
         </FormField>
 
-        <FormField label="Business type" htmlFor="business_type">
+        <FormField label="Services you offer" htmlFor="business_type">
           <Select
             id="business_type"
             name="business_type"
             value={businessType}
             onChange={(event) => setBusinessType(event.target.value)}
           >
-            <option value="residential">Residential cleaning</option>
-            <option value="commercial">Commercial cleaning</option>
-            <option value="both">Both residential and commercial</option>
+            <option value="both">Residential and commercial</option>
+            <option value="residential">Residential only</option>
+            <option value="commercial">Commercial only</option>
           </Select>
         </FormField>
       </section>

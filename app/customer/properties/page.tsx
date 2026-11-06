@@ -11,6 +11,8 @@ import { formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
 import { createAdminClient } from '@/lib/supabase/server';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import { PROPERTY_KIND_LABEL, type CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment, propertyKindAllowed } from '@/lib/tenant/serviceSegment';
 import {
   loadConsultationVisitsForProperties,
   propertyConsultationPhase,
@@ -96,6 +98,19 @@ export default async function CustomerPropertiesPage({
       : { data: [] };
 
   const rows = properties ?? [];
+  const tenantIds = [
+    ...new Set(rows.map((row) => row.tenant_id).concat(ctx.links.map((link) => link.tenantId))),
+  ];
+  const capabilitiesByTenant = new Map(
+    await Promise.all(
+      tenantIds.map(async (tenantId) => {
+        const capabilities = capabilitiesForSegment(
+          await loadTenantServiceSegment(admin, tenantId),
+        );
+        return [tenantId, capabilities] as const;
+      }),
+    ),
+  );
   const visitsByTenant = new Map<
     string,
     Awaited<ReturnType<typeof loadConsultationVisitsForProperties>>
@@ -140,7 +155,12 @@ export default async function CustomerPropertiesPage({
         <p className={styles.muted}>Your account is not linked to a cleaning company yet.</p>
       ) : (
         ctx.links.map((link) => {
-          const locations = rows.filter((row) => row.customer_id === link.customerId);
+          const linkCapabilities = capabilitiesByTenant.get(link.tenantId);
+          const locations = rows.filter(
+            (row) =>
+              row.customer_id === link.customerId &&
+              (linkCapabilities ? propertyKindAllowed(linkCapabilities, row.property_kind) : true),
+          );
           const visits = visitsByTenant.get(link.tenantId) ?? [];
           return (
             <section key={link.linkId} className={styles.company}>
@@ -175,9 +195,9 @@ export default async function CustomerPropertiesPage({
                       PROPERTY_KIND_LABEL[location.property_kind as CustomerPropertyKind];
                     const details = organizePropertyDetails({
                       siteNotes: location.site_notes,
-                      bedrooms: location.bedrooms,
-                      bathrooms: location.bathrooms,
-                      sqft: location.sqft,
+                      bedrooms: linkCapabilities?.showBedsBaths ? location.bedrooms : null,
+                      bathrooms: linkCapabilities?.showBedsBaths ? location.bathrooms : null,
+                      sqft: linkCapabilities?.showSqft ? location.sqft : null,
                       stories: location.stories,
                     });
                     const status =

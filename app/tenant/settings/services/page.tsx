@@ -7,6 +7,8 @@ import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitleme
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
 import { ServiceTypesPanel } from './ServiceTypesPanel';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment, propertyKindAllowed } from '@/lib/tenant/serviceSegment';
 import styles from './services-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +21,14 @@ export default async function TenantServicesSettingsPage() {
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const customTypesEnabled = isFeatureEnabled(tier, 'customServiceTypes');
   const checklistsEnabled = isFeatureEnabled(tier, 'visitChecklists');
-  const entries = await loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true });
+  const [entries, serviceSegment] = await Promise.all([
+    loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
+    loadTenantServiceSegment(admin, membership.tenantId),
+  ]);
+  const capabilities = capabilitiesForSegment(serviceSegment);
+  const visibleEntries = entries.filter((entry) =>
+    propertyKindAllowed(capabilities, entry.job_type),
+  );
 
   return (
     <>
@@ -40,7 +49,8 @@ export default async function TenantServicesSettingsPage() {
         <ServiceTypesPanel
           tenantSlug={membership.tenantSlug}
           canEdit={canEdit}
-          entries={entries}
+          entries={visibleEntries}
+          propertyKinds={capabilities.propertyKinds}
           customTypesEnabled={customTypesEnabled}
           checklistsEnabled={checklistsEnabled}
         />

@@ -396,13 +396,18 @@ export function ServiceTypesPanel({
   entries,
   customTypesEnabled,
   checklistsEnabled = true,
+  propertyKinds,
 }: {
   tenantSlug: string;
   canEdit: boolean;
   entries: JobTypeCatalogEntry[];
   customTypesEnabled: boolean;
   checklistsEnabled?: boolean;
+  propertyKinds?: CustomerPropertyKind[];
 }) {
+  const kindOptions = PROPERTY_KIND_OPTIONS.filter((option) =>
+    propertyKinds ? propertyKinds.includes(option.value) : true,
+  );
   const [createState, createAction, createPending] = useActionState(
     createCustomServiceTypeAction,
     initialState,
@@ -501,7 +506,7 @@ export function ServiceTypesPanel({
                   defaultValue="residential"
                   disabled={createPending}
                 >
-                  {PROPERTY_KIND_OPTIONS.map((option) => (
+                  {kindOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>

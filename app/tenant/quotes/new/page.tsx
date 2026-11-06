@@ -17,6 +17,8 @@ import {
 } from '@/lib/tenant/customerConsultation';
 import { loadQuotePickerEligibleCustomerIds } from '@/lib/tenant/quoteCustomerPicker';
 import { QuoteCreateWizard } from '../QuoteCreateWizard';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment, propertyKindAllowed } from '@/lib/tenant/serviceSegment';
 import type { CustomerPropertyGroup } from '../quoteFormTypes';
 import styles from '../quotes.module.scss';
 
@@ -43,6 +45,7 @@ type PropertyPickRow = Pick<
   | 'postal_code'
   | 'is_primary'
   | 'required_crew_size'
+  | 'property_kind'
 >;
 
 function propertyOptionLabel(p: PropertyPickRow): string {
@@ -105,7 +108,7 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
     supabase
       .from('tenant_customer_properties')
       .select(
-        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary, required_crew_size',
+        'id, customer_id, label, property_kind, address_line1, address_line2, city, state, postal_code, is_primary, required_crew_size',
       )
       .eq('tenant_id', membership.tenantId)
       .order('is_primary', { ascending: false })
@@ -124,8 +127,6 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
     label: r.customer_identities ? formatCustomerDisplayName(r.customer_identities) : 'Unnamed',
   }));
 
-  const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
-
   const consultationPrefill = defaultCustomerId
     ? await loadConsultationQuotePrefill(
         admin,
@@ -134,7 +135,7 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
         defaultPropertyId || null,
       )
     : null;
-  const [jobTypeCatalog, ops, consultationByCustomerId] = await Promise.all([
+  const [jobTypeCatalog, ops, consultationByCustomerId, serviceSegment] = await Promise.all([
     loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
     loadTenantOperationalSettings(admin, membership.tenantId),
     loadQuoteConsultationPromptsByCustomer(
@@ -142,8 +143,13 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
       membership.tenantId,
       customerRows.map((row) => row.id),
     ),
+    loadTenantServiceSegment(admin, membership.tenantId),
   ]);
   const autoScheduleEnabled = isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode);
+  const capabilities = capabilitiesForSegment(serviceSegment);
+  const customerPropertyGroups = buildCustomerPropertyGroups(
+    propertyRows.filter((row) => propertyKindAllowed(capabilities, row.property_kind)),
+  );
 
   return (
     <>
@@ -171,6 +177,7 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
           jobTypeCatalog={jobTypeCatalog}
           autoScheduleEnabled={autoScheduleEnabled}
           consultationByCustomerId={consultationByCustomerId}
+          serviceSegment={serviceSegment}
           defaults={{
             customerId: defaultCustomerId,
             propertyId: defaultPropertyId,

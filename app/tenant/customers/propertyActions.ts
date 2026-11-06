@@ -17,6 +17,8 @@ import { normalizeCommunityName } from '@/lib/tenant/communityName';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import { bindSubscriptionToOriginalProperty } from '@/lib/billing/applySubscriptionCoverage';
 import { propertyIdToBind } from '@/lib/billing/subscriptionCoverage';
+import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
+import { propertyKindWriteError } from '@/lib/tenant/serviceSegment';
 
 export interface PropertyFormState {
   error?: string;
@@ -79,6 +81,9 @@ export async function addCustomerProperty(
 
   const membership = await requireTenantPortalAccess(slug, `/customers/${customerId}`);
   const admin = createAdminClient();
+  const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
+  const kindError = propertyKindWriteError(capabilities, kind);
+  if (kindError) return { error: kindError };
 
   const zoneResolved = await resolveAssignableServiceZoneId(admin, membership.tenantId, rawZoneId);
   if (zoneResolved.error) {
@@ -207,7 +212,9 @@ export async function updateCustomerProperty(
 
   const { data: row, error: fe } = await admin
     .from('tenant_customer_properties')
-    .select('id, service_zone_id, address_line1, city, state, postal_code, latitude, longitude')
+    .select(
+      'id, property_kind, service_zone_id, address_line1, city, state, postal_code, latitude, longitude',
+    )
     .eq('id', propertyId)
     .eq('customer_id', customerId)
     .eq('tenant_id', membership.tenantId)
@@ -216,6 +223,10 @@ export async function updateCustomerProperty(
   if (fe || !row) {
     return { error: 'Property not found for this customer.' };
   }
+
+  const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
+  const kindError = propertyKindWriteError(capabilities, kind, row.property_kind);
+  if (kindError) return { error: kindError };
 
   const geocoded = await resolveGeocodedPoint(
     { line1, city, state, postalCode: postal },

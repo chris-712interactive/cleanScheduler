@@ -15,6 +15,7 @@ import { CustomerAccountEditPanel } from '../CustomerAccountEditPanel';
 import { CustomerPortalInvitePanel } from '../CustomerPortalInvitePanel';
 import { CustomerProfileSummary } from '../CustomerProfileSummary';
 import { CustomerPropertySection } from '../CustomerPropertySection';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import { CustomerSchedulingPanel } from '../CustomerSchedulingPanel';
 import { schedulingFactsFromRow } from '@/lib/schedule/optimizer/preferences';
 import { loadPropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
@@ -147,6 +148,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
   }
   const profile = customer.tenant_customer_profiles;
   const properties = customer.tenant_customer_properties ?? [];
+  const serviceSegment = await loadTenantServiceSegment(admin, membership.tenantId);
   const accessCodeLoads = await Promise.all(
     properties.map(async (property) => {
       const loaded = await loadPropertyAccessCodes(admin, membership.tenantId, property.id);
@@ -326,6 +328,7 @@ export default async function TenantCustomerDetailPage({ params, searchParams }:
               customerScheduling={scheduling.facts}
               schedulingOverrides={scheduling.overrides}
               propertyConsultations={propertyConsultations}
+              serviceSegment={serviceSegment}
             />
           </Card>
         </div>

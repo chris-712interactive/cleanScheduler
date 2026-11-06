@@ -13,7 +13,12 @@ const initial: RequestPropertyState = {};
 export function RequestPropertyForm({
   links,
 }: {
-  links: { tenantId: string; customerId: string; tenantName: string }[];
+  links: {
+    tenantId: string;
+    customerId: string;
+    tenantName: string;
+    propertyKinds: { value: string; label: string }[];
+  }[];
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(requestCustomerPropertyAction, initial);
@@ -64,7 +69,7 @@ export function RequestPropertyForm({
       <label className={styles.field}>
         Type
         <select name="property_kind" value={kind} onChange={(event) => setKind(event.target.value)}>
-          {PROPERTY_KIND_OPTIONS.map((option) => (
+          {(link?.propertyKinds ?? PROPERTY_KIND_OPTIONS).map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

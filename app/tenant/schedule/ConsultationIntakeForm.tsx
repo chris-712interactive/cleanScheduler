@@ -22,6 +22,8 @@ import {
 } from '@/lib/visits/consultationIntake';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
+import type { TenantServiceSegment } from '@/lib/tenant/serviceSegment';
+import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
 import styles from './visitDetail.module.scss';
 
 function Field({
@@ -58,6 +60,7 @@ export function ConsultationIntakeForm({
   initial,
   canEdit,
   requiredFields = [],
+  serviceSegment = 'both',
 }: {
   tenantSlug: string;
   visitId: string;
@@ -65,7 +68,9 @@ export function ConsultationIntakeForm({
   initial: ConsultationIntake | null;
   canEdit: boolean;
   requiredFields?: readonly ConsultationIntakeFieldKey[];
+  serviceSegment?: TenantServiceSegment;
 }) {
+  const capabilities = useTenantSegmentCapabilities(serviceSegment);
   const [state, action, pending] = useActionState(saveConsultationIntakeAction, {});
   useFeedbackToast({ error: state.error, success: state.success, pending });
   const [frequency, setFrequency] = useState(initial?.frequency ?? '');
@@ -147,16 +152,18 @@ export function ConsultationIntakeForm({
             />
           </Field>
         ) : null}
-        <Field label="Square footage" htmlFor="sqft" required={req('sqft')}>
-          <input
-            id="sqft"
-            name="sqft"
-            inputMode="numeric"
-            defaultValue={initial?.sqft ?? ''}
-            required={req('sqft')}
-            placeholder="1800"
-          />
-        </Field>
+        {capabilities.showSqft ? (
+          <Field label="Square footage" htmlFor="sqft" required={req('sqft')}>
+            <input
+              id="sqft"
+              name="sqft"
+              inputMode="numeric"
+              defaultValue={initial?.sqft ?? ''}
+              required={req('sqft')}
+              placeholder="1800"
+            />
+          </Field>
+        ) : null}
         <Field label="Current condition" htmlFor="condition" required={req('condition')}>
           <select
             id="condition"
@@ -221,7 +228,7 @@ export function ConsultationIntakeForm({
         </Field>
       </fieldset>
 
-      {commercial ? (
+      {commercial && capabilities.offersCommercial ? (
         <fieldset className={styles.intakeGroup}>
           <legend>The space</legend>
           <Field label="Space type" htmlFor="space_type" required={req('space_type')}>
@@ -339,7 +346,7 @@ export function ConsultationIntakeForm({
             </select>
           </Field>
         </fieldset>
-      ) : (
+      ) : !commercial && capabilities.showBedsBaths ? (
         <fieldset className={styles.intakeGroup}>
           <legend>The home</legend>
           <Field label="Bedrooms" htmlFor="bedrooms" required={req('bedrooms')}>
@@ -447,7 +454,7 @@ export function ConsultationIntakeForm({
             </select>
           </Field>
         </fieldset>
-      )}
+      ) : null}
 
       <fieldset className={styles.intakeGroup}>
         <legend>Optional</legend>

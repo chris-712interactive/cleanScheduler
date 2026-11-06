@@ -1,4 +1,5 @@
 import type { ScheduleAssigneeChip } from '@/lib/schedule/assigneeDisplay';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 
 export type ScheduleVisitVM = {
   id: string;
@@ -18,4 +19,5 @@ export type ScheduleVisitVM = {
   assignees: ScheduleAssigneeChip[];
   assigneeUserIds: string[];
   checkedInAt: string | null;
+  propertyKind: CustomerPropertyKind | null;
 };

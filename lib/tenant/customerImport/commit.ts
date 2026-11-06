@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 import type { CustomerImportDisposition } from '@/lib/tenant/customerImport/types';
+import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
+import { propertyKindAllowed, type SegmentCapabilities } from '@/lib/tenant/serviceSegment';
 
 type Admin = SupabaseClient<Database>;
 
@@ -32,10 +34,18 @@ async function deleteImportedCustomers(
   }
 }
 
+function keepImportProperty(
+  capabilities: SegmentCapabilities,
+  kind: CustomerImportDisposition['propertiesToAdd'][number]['kind'],
+): boolean {
+  return propertyKindAllowed(capabilities, kind);
+}
+
 async function insertCreateBatch(
   admin: Admin,
   tenantId: string,
   batch: CustomerImportDisposition[],
+  capabilities: SegmentCapabilities,
 ): Promise<{ created: number; propertiesAdded: number; customerIds: string[]; error?: string }> {
   const prepared = batch.map((disposition) => {
     const identityId = randomUUID();
@@ -117,19 +127,21 @@ async function insertCreateBatch(
   }
 
   const propertyRows = prepared.flatMap(({ disposition, customerId }) =>
-    disposition.propertiesToAdd.map((property) => ({
-      tenant_id: tenantId,
-      customer_id: customerId,
-      label: property.label,
-      property_kind: property.kind,
-      address_line1: property.addressLine1,
-      address_line2: property.addressLine2,
-      city: property.city,
-      state: property.state,
-      postal_code: property.postalCode,
-      site_notes: property.siteNotes,
-      is_primary: property.isPrimary,
-    })),
+    disposition.propertiesToAdd
+      .filter((property) => keepImportProperty(capabilities, property.kind))
+      .map((property) => ({
+        tenant_id: tenantId,
+        customer_id: customerId,
+        label: property.label,
+        property_kind: property.kind,
+        address_line1: property.addressLine1,
+        address_line2: property.addressLine2,
+        city: property.city,
+        state: property.state,
+        postal_code: property.postalCode,
+        site_notes: property.siteNotes,
+        is_primary: property.isPrimary,
+      })),
   );
 
   if (propertyRows.length > 0) {
@@ -161,6 +173,7 @@ export async function commitCustomerImport(input: {
   tenantId: string;
   dispositions: CustomerImportDisposition[];
 }): Promise<CustomerImportWriteResult> {
+  const capabilities = await loadTenantSegmentCapabilities(input.admin, input.tenantId);
   const creates = input.dispositions.filter((row) => row.action === 'create');
   const propertyAdds = input.dispositions.filter((row) => row.action === 'add_properties');
   let created = 0;
@@ -171,7 +184,7 @@ export async function commitCustomerImport(input: {
 
   for (let index = 0; index < creates.length; index += BATCH_SIZE) {
     const batch = creates.slice(index, index + BATCH_SIZE);
-    const result = await insertCreateBatch(input.admin, input.tenantId, batch);
+    const result = await insertCreateBatch(input.admin, input.tenantId, batch, capabilities);
     created += result.created;
     propertiesAdded += result.propertiesAdded;
     if (result.error) {
@@ -183,19 +196,21 @@ export async function commitCustomerImport(input: {
   }
 
   const propertyRows = propertyAdds.flatMap((disposition) =>
-    disposition.propertiesToAdd.map((property) => ({
-      tenant_id: input.tenantId,
-      customer_id: disposition.matchedCustomerId!,
-      label: property.label,
-      property_kind: property.kind,
-      address_line1: property.addressLine1,
-      address_line2: property.addressLine2,
-      city: property.city,
-      state: property.state,
-      postal_code: property.postalCode,
-      site_notes: property.siteNotes,
-      is_primary: property.isPrimary,
-    })),
+    disposition.propertiesToAdd
+      .filter((property) => keepImportProperty(capabilities, property.kind))
+      .map((property) => ({
+        tenant_id: input.tenantId,
+        customer_id: disposition.matchedCustomerId!,
+        label: property.label,
+        property_kind: property.kind,
+        address_line1: property.addressLine1,
+        address_line2: property.addressLine2,
+        city: property.city,
+        state: property.state,
+        postal_code: property.postalCode,
+        site_notes: property.siteNotes,
+        is_primary: property.isPrimary,
+      })),
   );
 
   for (let index = 0; index < propertyRows.length; index += BATCH_SIZE) {

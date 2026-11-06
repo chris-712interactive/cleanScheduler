@@ -28,6 +28,8 @@ import {
   type QuotePropertySnapshot,
 } from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
+import { propertyKindWriteError, type SegmentCapabilities } from '@/lib/tenant/serviceSegment';
 import { assertCustomerEligibleForQuoteSend } from '@/lib/tenant/customerConsultation';
 import { customerQualifiesForNewQuote } from '@/lib/tenant/quoteCustomerPicker';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
@@ -392,7 +394,43 @@ function linePayloadFromParsed(lines: ParsedQuoteLineItem[]) {
     auto_schedule_on_accept: l.auto_schedule_on_accept,
     auto_schedule_visit_count: l.auto_schedule_visit_count,
     service_template_id: l.service_template_id,
+    sqft_rate_cents: l.sqft_rate_cents,
+    billable_sqft: l.billable_sqft,
+    bid_visits: l.bid_visits,
+    bid_period: l.bid_period,
+    production_sqft_per_hour: l.production_sqft_per_hour,
   }));
+}
+
+function applySegmentToPropertySnapshot(
+  capabilities: SegmentCapabilities,
+  snapshot: QuotePropertySnapshot,
+) {
+  if (!capabilities.showBedsBaths) {
+    snapshot.bedrooms = null;
+    snapshot.bathrooms = null;
+  }
+  if (!capabilities.showSqft) {
+    snapshot.sqft = null;
+  }
+}
+
+async function propertyFactsForQuote(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  propertyId: string | null,
+): Promise<{ kind: CustomerPropertyKind | null; sqft: number | null }> {
+  if (!propertyId) return { kind: null, sqft: null };
+  const { data } = await admin
+    .from('tenant_customer_properties')
+    .select('property_kind, sqft')
+    .eq('id', propertyId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  return {
+    kind: (data?.property_kind as CustomerPropertyKind | undefined) ?? null,
+    sqft: data?.sqft ?? null,
+  };
 }
 
 async function persistQuotedCrewSize(
@@ -507,6 +545,15 @@ export async function createTenantQuote(
 
   const membership = await requireTenantPortalAccess(slug, '/quotes/new');
   const admin = createAdminClient();
+  const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
+  applySegmentToPropertySnapshot(capabilities, structured.propertySnapshot);
+  const quotedKind = structured.jobType ?? inlinePropertyKind;
+  const quotedKindError = propertyKindWriteError(capabilities, quotedKind);
+  if (quotedKindError) return { error: quotedKindError };
+  if (customerSource === 'new' || propertySource === 'new') {
+    const inlineKindError = propertyKindWriteError(capabilities, inlinePropertyKind);
+    if (inlineKindError) return { error: inlineKindError };
+  }
 
   let customerId: string;
   let defaultPropertyId: string | null = null;
@@ -603,7 +650,17 @@ export async function createTenantQuote(
     propertyId = defaultPropertyId;
   }
 
-  const parsedLines = parseQuoteLineItemsFromForm(formData);
+  const propertyFacts = await propertyFactsForQuote(admin, membership.tenantId, propertyId);
+  if (propertyFacts.kind) {
+    const propertyKindError = propertyKindWriteError(capabilities, propertyFacts.kind);
+    if (propertyKindError) return { error: propertyKindError };
+  }
+  const linePropertyKind = propertyFacts.kind ?? quotedKind;
+  const parsedLines = parseQuoteLineItemsFromForm(formData, {
+    allowPerSqft: capabilities.sqftBids,
+    propertyKind: linePropertyKind,
+    defaultSqft: structured.propertySnapshot.sqft ?? propertyFacts.sqft,
+  });
   if (!parsedLines.ok) {
     return { error: parsedLines.error };
   }
@@ -611,7 +668,7 @@ export async function createTenantQuote(
   const enrichedLines = await enrichParsedQuoteLines(
     admin,
     membership.tenantId,
-    structured.jobType ?? inlinePropertyKind,
+    linePropertyKind,
     parsedLines.lines,
   );
   if ('error' in enrichedLines) {
@@ -826,6 +883,7 @@ export async function updateTenantQuote(
 
   const membership = await requireTenantPortalAccess(slug, `/quotes/${quoteId}`);
   const admin = createAdminClient();
+  const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
 
   const { data: existing, error: fetchError } = await admin
     .from('tenant_quotes')
@@ -870,13 +928,28 @@ export async function updateTenantQuote(
     propertyId = propertyRaw;
   }
 
-  const parsedLines = parseQuoteLineItemsFromForm(formData);
+  const fromWizard = formData.has('scope_template_id');
+  const structured = fromWizard ? parseQuoteWizardStructuredFromForm(formData) : null;
+  if (structured) applySegmentToPropertySnapshot(capabilities, structured.propertySnapshot);
+
+  const propertyFacts = await propertyFactsForQuote(admin, membership.tenantId, propertyId);
+  const previousKind = (existing.job_type as CustomerPropertyKind | null) ?? null;
+  const nextKind = propertyFacts.kind ?? structured?.jobType ?? previousKind;
+  if (nextKind) {
+    const kindError = propertyKindWriteError(capabilities, nextKind, previousKind);
+    if (kindError) return { error: kindError };
+  }
+
+  const parsedLines = parseQuoteLineItemsFromForm(formData, {
+    allowPerSqft: capabilities.sqftBids,
+    propertyKind: nextKind,
+    defaultSqft: capabilities.showSqft
+      ? (structured?.propertySnapshot.sqft ?? propertyFacts.sqft)
+      : null,
+  });
   if (!parsedLines.ok) {
     return { error: parsedLines.error };
   }
-
-  const fromWizard = formData.has('scope_template_id');
-  const structured = fromWizard ? parseQuoteWizardStructuredFromForm(formData) : null;
 
   const enrichedLines = await enrichParsedQuoteLines(
     admin,
@@ -1136,7 +1209,7 @@ export async function createTenantQuoteAmendment(
   const { data: lineRows } = await admin
     .from('tenant_quote_line_items')
     .select(
-      'sort_order, service_label, frequency, frequency_detail, amount_cents, line_discount_kind, line_discount_value, pricing_method, estimated_hours',
+      'sort_order, service_label, frequency, frequency_detail, amount_cents, line_discount_kind, line_discount_value, pricing_method, estimated_hours, sqft_rate_cents, billable_sqft, bid_visits, bid_period, production_sqft_per_hour',
     )
     .eq('quote_id', priorQuoteId)
     .order('sort_order', { ascending: true });
@@ -1153,6 +1226,11 @@ export async function createTenantQuoteAmendment(
       line_discount_value: l.line_discount_value,
       pricing_method: l.pricing_method,
       estimated_hours: l.estimated_hours,
+      sqft_rate_cents: l.sqft_rate_cents,
+      billable_sqft: l.billable_sqft,
+      bid_visits: l.bid_visits,
+      bid_period: l.bid_period,
+      production_sqft_per_hour: l.production_sqft_per_hour,
     }));
     const liErr = await admin.from('tenant_quote_line_items').insert(copy);
     if (liErr.error) {

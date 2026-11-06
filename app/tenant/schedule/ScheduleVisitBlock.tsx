@@ -6,6 +6,8 @@ import { ScheduleAssigneeAvatars } from '@/components/schedule/ScheduleAssigneeA
 import { formatVisitTime } from '@/lib/datetime/formatInTimeZone';
 import { compactCalendarAddress } from '@/lib/tenant/formatPropertyAddress';
 import type { ScheduleVisitVM } from './TenantScheduleClient';
+import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
+import { propertyKindFamily } from '@/lib/tenant/serviceSegment';
 import styles from './schedule.module.scss';
 
 function formatTimeRange(startsAt: string, endsAt: string, timeZone: string): string {
@@ -19,6 +21,7 @@ export function ScheduleVisitBlock({
   heightPct,
   column,
   columnCount,
+  distinguishSegments = false,
 }: {
   visit: ScheduleVisitVM;
   tenantTimezone: string;
@@ -26,6 +29,7 @@ export function ScheduleVisitBlock({
   heightPct: number;
   column: number;
   columnCount: number;
+  distinguishSegments?: boolean;
 }) {
   const timeLabel = formatTimeRange(visit.starts_at, visit.ends_at, tenantTimezone);
   const addressLabel = visit.siteLine ? compactCalendarAddress(visit.siteLine) : '';
@@ -41,6 +45,7 @@ export function ScheduleVisitBlock({
     <Link
       href={`/schedule/${visit.id}`}
       className={styles.visitCard}
+      data-segment={visit.propertyKind ? propertyKindFamily(visit.propertyKind) : undefined}
       style={position}
       aria-label={`${visit.customerName}, ${timeLabel}, open appointment`}
     >
@@ -57,6 +62,9 @@ export function ScheduleVisitBlock({
             {addressLabel || 'No address on file'}
           </span>
           <span className={styles.visitTime}>{timeLabel}</span>
+          {distinguishSegments && visit.propertyKind ? (
+            <PropertyKindBadge kind={visit.propertyKind} compact />
+          ) : null}
         </div>
 
         {visit.assignees.length > 0 ? (

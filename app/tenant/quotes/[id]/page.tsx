@@ -20,6 +20,11 @@ import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import { resolveAutoScheduleVisitCount } from '@/lib/tenant/quoteLineAutoSchedule';
 import { loadJobTypeCatalog } from '@/lib/tenant/jobTypeCatalog';
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment, sqftBidAllowedForProperty } from '@/lib/tenant/serviceSegment';
+import { breakdownFromStoredSqftBid } from '@/lib/tenant/sqftBid';
+import { SqftBidBreakdownView } from '@/components/tenant/SqftBidBreakdown';
+import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { CustomerConsultationBanner } from '@/app/tenant/customers/CustomerConsultationBanner';
@@ -29,7 +34,10 @@ import { QuoteAmendmentForm } from '../QuoteAmendmentForm';
 import { QuoteAutoScheduleBanner } from '../QuoteAutoScheduleBanner';
 import { QuotePipelineLiveSync } from '../QuotePipelineLiveSync';
 import type { CustomerPropertyGroup } from '../QuoteCreateForm';
-import { parseQuoteScopeSnapshot } from '@/lib/tenant/quoteStructuredFields';
+import {
+  parseQuotePropertySnapshot,
+  parseQuoteScopeSnapshot,
+} from '@/lib/tenant/quoteStructuredFields';
 import {
   absorbLegacyQuoteAccessCodes,
   loadPropertyAccessCodes,
@@ -140,7 +148,12 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
           estimated_hours,
           auto_schedule_on_accept,
           auto_schedule_visit_count,
-          service_template_id
+          service_template_id,
+          sqft_rate_cents,
+          billable_sqft,
+          bid_visits,
+          bid_period,
+          production_sqft_per_hour
         )
       `,
     )
@@ -156,12 +169,13 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   const admin = createAdminClient();
   const quotePropertyKind = (row.job_type as CustomerPropertyKind | null) ?? null;
-  const [jobTypeCatalog, ops] = await Promise.all([
+  const [jobTypeCatalog, ops, serviceSegment] = await Promise.all([
     loadJobTypeCatalog(admin, membership.tenantId, {
       propertyKind: quotePropertyKind,
       activeOnly: true,
     }),
     loadTenantOperationalSettings(admin, membership.tenantId),
+    loadTenantServiceSegment(admin, membership.tenantId),
   ]);
   const autoScheduleEnabled = isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode);
 
@@ -280,6 +294,9 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
 
   const summaryItems = [
     { key: 'Quote ID', value: row.id },
+    ...(quotePropertyKind && capabilitiesForSegment(serviceSegment).offersBoth
+      ? [{ key: 'Property type', value: <PropertyKindBadge kind={quotePropertyKind} /> }]
+      : []),
     { key: 'Version', value: String(row.version_number) },
     {
       key: 'Created',
@@ -493,7 +510,15 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
                 <tbody>
                   {quoteLineItems.map((line) => (
                     <tr key={line.id}>
-                      <td>{line.service_label}</td>
+                      <td>
+                        {line.service_label}
+                        {breakdownFromStoredSqftBid(line) ? (
+                          <SqftBidBreakdownView
+                            breakdown={breakdownFromStoredSqftBid(line)!}
+                            currency={row.currency}
+                          />
+                        ) : null}
+                      </td>
                       <td>{QUOTE_LINE_FREQUENCY_LABEL[line.frequency]}</td>
                       <td>{line.frequency_detail?.trim() ? line.frequency_detail : '—'}</td>
                       <td>{formatQuoteMoney(line.amount_cents, row.currency)}</td>
@@ -569,6 +594,11 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
             jobTypeCatalog={jobTypeCatalog}
             quotePropertyKind={quotePropertyKind}
             autoScheduleEnabled={autoScheduleEnabled}
+            sqftBidsEnabled={sqftBidAllowedForProperty(
+              capabilitiesForSegment(serviceSegment),
+              quotePropertyKind,
+            )}
+            defaultSqft={parseQuotePropertySnapshot(row.property_snapshot).sqft ?? null}
             snapshot={{
               quoteId: row.id,
               title: row.title,

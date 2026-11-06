@@ -34,6 +34,14 @@ import { CustomerDirectorySearchForm } from './CustomerDirectorySearchForm';
 import { CustomersDirectoryCards } from './CustomersDirectoryCards';
 import { CustomersDirectoryTable, type CustomerDirectoryRow } from './CustomersDirectoryTable';
 import styles from './customers.module.scss';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import {
+  capabilitiesForSegment,
+  parseServiceDirectorySegment,
+  propertyKindsForDirectorySegment,
+  segmentCustomersTitleHint,
+  type ServiceDirectorySegment,
+} from '@/lib/tenant/serviceSegment';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +52,7 @@ interface PageProps {
     page?: string;
     consultation?: string;
     zone?: string;
+    segment?: string;
   }>;
 }
 
@@ -133,6 +142,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
   const q = parseCustomerDirectoryQuery(sp?.q);
   const statusFilter = parseCustomerDirectoryStatus(sp?.status);
   const zoneFilter = parseServiceZoneParam(sp?.zone);
+  const requestedSegment = parseServiceDirectorySegment(sp?.segment);
   const requestedPage = parseCustomerDirectoryPage(firstParam(sp?.page));
   const consultationFilter = firstParam(sp?.consultation)?.trim() === 'needs_action';
   const filtersActive =
@@ -144,6 +154,10 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
   const permissions = await resolveMembershipPermissions(admin, membership);
   const canImport = hasPermission(permissions, 'customers.manage');
   const serviceZones = await loadServiceZonesForAssignment(admin, membership.tenantId);
+  const capabilities = capabilitiesForSegment(
+    await loadTenantServiceSegment(admin, membership.tenantId),
+  );
+  const segmentFilter: ServiceDirectorySegment = capabilities.offersBoth ? requestedSegment : 'all';
   const zoneNameById = new Map(serviceZones.map((z) => [z.id, z.name]));
 
   let directoryRows: CustomerDirectoryRow[] = [];
@@ -194,6 +208,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
       statusFilter,
       page: requestedPage,
       zoneId: zoneFilter,
+      propertyKinds: propertyKindsForDirectorySegment(segmentFilter),
     });
 
     if (!result.ok) {
@@ -231,7 +246,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
     <>
       <PageHeader
         title="Customers"
-        titleHint="Search, filter, and open any account. Works whether you have a handful or thousands."
+        titleHint={segmentCustomersTitleHint(capabilities)}
         actions={customerDirectoryActions(canImport)}
       />
 
@@ -259,8 +274,35 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
               q={q}
               status={statusFilter}
               zone={zoneFilter}
+              segment={segmentFilter === 'all' ? null : segmentFilter}
               zones={serviceZones.filter((z) => z.is_active || z.id === zoneFilter)}
             />
+            {capabilities.offersBoth ? (
+              <nav className={styles.panelTabs} aria-label="Service line">
+                {(
+                  [
+                    ['all', 'All accounts'],
+                    ['residential', 'Residential'],
+                    ['commercial', 'Commercial'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Link
+                    key={key}
+                    href={`/customers${buildCustomerDirectorySearchParams({
+                      q,
+                      status: statusFilter,
+                      zone: zoneFilter,
+                      segment: key === 'all' ? null : key,
+                    })}`}
+                    className={styles.panelTab}
+                    data-active={segmentFilter === key || undefined}
+                    aria-current={segmentFilter === key ? 'page' : undefined}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
             <nav className={styles.panelTabs} aria-label="Customer filters">
               <Link
                 href="/customers?consultation=needs_action"
@@ -277,6 +319,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
                     q,
                     status: tab.key,
                     zone: zoneFilter,
+                    segment: segmentFilter === 'all' ? null : segmentFilter,
                   })}`}
                   className={styles.panelTab}
                   data-active={statusFilter === tab.key || undefined}
@@ -314,6 +357,7 @@ export default async function TenantCustomersPage({ searchParams }: PageProps) {
                 q={q}
                 status={statusFilter}
                 zone={zoneFilter}
+                segment={segmentFilter === 'all' ? null : segmentFilter}
               />
             </>
           )}

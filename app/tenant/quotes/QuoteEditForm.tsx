@@ -40,6 +40,8 @@ export function QuoteEditForm({
   quotePropertyKind = null,
   autoScheduleEnabled = false,
   consultationPrompt = null,
+  sqftBidsEnabled = false,
+  defaultSqft = null,
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -51,6 +53,8 @@ export function QuoteEditForm({
   quotePropertyKind?: CustomerPropertyKind | null;
   autoScheduleEnabled?: boolean;
   consultationPrompt?: QuoteConsultationPromptInfo | null;
+  sqftBidsEnabled?: boolean;
+  defaultSqft?: number | null;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [rowsRevision, setRowsRevision] = useState(0);
@@ -216,6 +220,8 @@ export function QuoteEditForm({
         jobTypeCatalog={jobTypeCatalog}
         quotePropertyKind={quotePropertyKind}
         autoScheduleEnabled={autoScheduleEnabled}
+        sqftBidsEnabled={sqftBidsEnabled}
+        defaultSqft={defaultSqft}
       />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />

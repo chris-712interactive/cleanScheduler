@@ -118,6 +118,7 @@ export function EmployeeSchedulingProfileForm({
   scope = 'full',
   homeGeocode = null,
   canEditLimits,
+  allowedPropertyKinds,
 }: {
   tenantSlug: string;
   targetUserId: string;
@@ -133,7 +134,11 @@ export function EmployeeSchedulingProfileForm({
     latitude: number | null;
     longitude: number | null;
   } | null;
+  allowedPropertyKinds?: string[];
 }) {
+  const propertyKindChoices = allowedPropertyKinds
+    ? KINDS.filter((kind) => allowedPropertyKinds.includes(kind.id))
+    : KINDS;
   const [state, action, pending] = useActionState(updateCrewSchedulingProfileAction, initial);
   useFeedbackToast({ error: state.error, success: state.success, pending });
   const saved = profileSnapshot(profile);
@@ -454,7 +459,7 @@ export function EmployeeSchedulingProfileForm({
                   <fieldset className={styles.block}>
                     <legend className={styles.legend}>Property types</legend>
                     <div className={styles.personList}>
-                      {KINDS.map((kind) => {
+                      {propertyKindChoices.map((kind) => {
                         const selected = kinds.includes(kind.id);
                         return (
                           <label

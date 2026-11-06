@@ -3,6 +3,8 @@ import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import { formatQuoteLineDiscountShort, formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 import { effectiveLineSubtotalCents } from '@/lib/tenant/quoteTotals';
 import type { Database } from '@/lib/supabase/database.types';
+import { SqftBidBreakdownView } from '@/components/tenant/SqftBidBreakdown';
+import type { SqftBidBreakdown } from '@/lib/tenant/sqftBid';
 import styles from './quotes.module.scss';
 
 type QuoteLineDiscountKind = Database['public']['Enums']['quote_line_discount_kind'];
@@ -15,6 +17,7 @@ export type CustomerQuoteLineView = {
   amount_cents: number;
   line_discount_kind: QuoteLineDiscountKind;
   line_discount_value: number;
+  sqftBid?: SqftBidBreakdown | null;
 };
 
 function lineCadenceLabel(line: CustomerQuoteLineView): string {
@@ -58,6 +61,9 @@ export function CustomerQuoteLineCards({
             <div className={styles.lineCardMain}>
               <p className={styles.lineCardLabel}>{line.service_label}</p>
               <p className={styles.lineCardCadence}>{lineCadenceLabel(line)}</p>
+              {line.sqftBid ? (
+                <SqftBidBreakdownView breakdown={line.sqftBid} currency={currency} />
+              ) : null}
               {discounted && anyDiscount ? (
                 <p className={styles.lineCardDiscount}>
                   List {formatQuoteMoney(line.amount_cents, currency)}

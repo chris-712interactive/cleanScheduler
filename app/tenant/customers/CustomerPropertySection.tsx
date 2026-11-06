@@ -12,7 +12,13 @@ import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { buildScheduleConsultationPath } from '@/lib/tenant/customerConsultation';
 import type { PropertyConsultationPrompt } from '@/lib/tenant/propertyConsultationRequest';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
-import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import {
+  segmentLocationsDescription,
+  type TenantServiceSegment,
+} from '@/lib/tenant/serviceSegment';
+import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
+import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import type { ServiceZoneOption } from '@/lib/tenant/serviceZones';
 import {
   emptyPropertyAccessCodes,
@@ -47,11 +53,19 @@ function Field({ id, label, children }: { id: string; label: string; children: R
   );
 }
 
-function PropertyKindField({ id, defaultValue }: { id: string; defaultValue: string }) {
+function PropertyKindField({
+  id,
+  defaultValue,
+  options,
+}: {
+  id: string;
+  defaultValue: string;
+  options: typeof PROPERTY_KIND_OPTIONS;
+}) {
   return (
     <Field id={id} label="Property type">
       <select id={id} name="property_kind" className={styles.input} defaultValue={defaultValue}>
-        {PROPERTY_KIND_OPTIONS.map(({ value, label }) => (
+        {options.map(({ value, label }) => (
           <option key={value} value={value}>
             {label}
           </option>
@@ -120,6 +134,7 @@ export function CustomerPropertySection({
   customerScheduling,
   schedulingOverrides,
   propertyConsultations = {},
+  serviceSegment = 'both',
 }: {
   tenantSlug: string;
   customerId: string;
@@ -130,7 +145,12 @@ export function CustomerPropertySection({
   customerScheduling: SchedulingFacts;
   schedulingOverrides: Record<string, unknown>;
   propertyConsultations?: Record<string, PropertyConsultationPrompt>;
+  serviceSegment?: TenantServiceSegment;
 }) {
+  const capabilities = useTenantSegmentCapabilities(serviceSegment);
+  const propertyKindOptions = PROPERTY_KIND_OPTIONS.filter((option) =>
+    capabilities.propertyKinds.includes(option.value),
+  );
   const [properties, setProperties] = useState(initialProperties);
   const [addLocationOpen, setAddLocationOpen] = useState(false);
 
@@ -186,7 +206,7 @@ export function CustomerPropertySection({
                     ) : null}
                   </span>
                   <span className={styles.propertyMeta}>
-                    {PROPERTY_KIND_LABEL[p.property_kind]}
+                    <PropertyKindBadge kind={p.property_kind} compact />
                     {zoneName ? ` · ${zoneName}` : ''}
                     {p.community_name?.trim() ? ` · ${p.community_name.trim()}` : ''} ·{' '}
                     {formatPropertyAddressLine(p) || 'No address on file'}
@@ -212,6 +232,7 @@ export function CustomerPropertySection({
 
                 <div className={styles.propertyBody}>
                   <EditPropertyForm
+                    kindOptions={propertyKindOptions}
                     tenantSlug={tenantSlug}
                     customerId={customerId}
                     property={p}
@@ -255,6 +276,8 @@ export function CustomerPropertySection({
       {addLocationOpen ? (
         <div className={styles.collapsibleFormBlock}>
           <AddPropertyForm
+            kindOptions={propertyKindOptions}
+            locationDescription={segmentLocationsDescription(capabilities)}
             tenantSlug={tenantSlug}
             customerId={customerId}
             hasAny={sorted.length > 0}
@@ -414,6 +437,7 @@ function EditPropertyForm({
   schedulingOverride,
   onPropertiesPatch,
   secondaryActions,
+  kindOptions,
 }: {
   tenantSlug: string;
   customerId: string;
@@ -425,6 +449,7 @@ function EditPropertyForm({
   schedulingOverride: unknown;
   onPropertiesPatch: PatchHandler;
   secondaryActions?: ReactNode;
+  kindOptions: typeof PROPERTY_KIND_OPTIONS;
 }) {
   const [state, action, pending] = useActionState(updateCustomerProperty, initial);
   useFeedbackToast({
@@ -453,7 +478,11 @@ function EditPropertyForm({
               placeholder="Oak St Airbnb, HQ, etc."
             />
           </Field>
-          <PropertyKindField id={`pk_${id}`} defaultValue={property.property_kind} />
+          <PropertyKindField
+            id={`pk_${id}`}
+            defaultValue={property.property_kind}
+            options={kindOptions}
+          />
           <ServiceZoneSelect
             id={`sz_${id}`}
             zones={serviceZones}
@@ -573,6 +602,8 @@ function AddPropertyForm({
   onPropertiesPatch,
   onAdded,
   onCancel,
+  kindOptions,
+  locationDescription,
 }: {
   tenantSlug: string;
   customerId: string;
@@ -581,6 +612,8 @@ function AddPropertyForm({
   onPropertiesPatch: PatchHandler;
   onAdded: () => void;
   onCancel: () => void;
+  kindOptions: typeof PROPERTY_KIND_OPTIONS;
+  locationDescription: string;
 }) {
   const [state, action, pending] = useActionState(addCustomerProperty, initial);
   useFeedbackToast({
@@ -601,9 +634,7 @@ function AddPropertyForm({
     <div className={styles.sectionCard}>
       <header className={styles.sectionHeader}>
         <h4 className={styles.sectionTitle}>Add service location</h4>
-        <p className={styles.sectionDescription}>
-          Commercial accounts and short-term rentals usually need multiple sites under one customer.
-        </p>
+        <p className={styles.sectionDescription}>{locationDescription}</p>
       </header>
       <form action={action} className={styles.detailForm}>
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -618,7 +649,11 @@ function AddPropertyForm({
               placeholder="e.g. Branch office · Unit 4"
             />
           </Field>
-          <PropertyKindField id="new_prop_kind" defaultValue="residential" />
+          <PropertyKindField
+            id="new_prop_kind"
+            defaultValue={kindOptions[0]?.value ?? 'residential'}
+            options={kindOptions}
+          />
           <ServiceZoneSelect id="new_service_zone" zones={serviceZones} defaultValue={null} />
         </div>
         <CrewSizeField id="new_prop_crew" defaultValue={1} />

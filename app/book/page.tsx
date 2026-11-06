@@ -28,6 +28,7 @@ import { getStripe } from '@/lib/stripe/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { BookingRequestForm } from './BookingRequestForm';
 import { InstantBookingFlow } from './InstantBookingFlow';
+import { capabilitiesForSegment, parseTenantServiceSegment } from '@/lib/tenant/serviceSegment';
 import styles from './book.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -66,7 +67,7 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
   const { data: ops } = await admin
     .from('tenant_operational_settings')
     .select(
-      'public_booking_mode, public_booking_request_enabled, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
+      'public_booking_mode, public_booking_request_enabled, service_segment, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
     )
     .eq('tenant_id', tenant.id)
     .maybeSingle();
@@ -223,7 +224,12 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
           Request a quote or cleaning. Tell us about your property and we will follow up — this does
           not book a time on the calendar automatically.
         </p>
-        <BookingRequestForm tenantSlug={tenant.slug} />
+        <BookingRequestForm
+          tenantSlug={tenant.slug}
+          services={
+            capabilitiesForSegment(parseTenantServiceSegment(ops?.service_segment)).bookingServices
+          }
+        />
       </div>
     </main>
   );

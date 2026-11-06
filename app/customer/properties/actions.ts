@@ -6,6 +6,8 @@ import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { createAdminClient } from '@/lib/supabase/server';
 import { PROPERTY_KIND_OPTIONS, type CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
+import { propertyKindWriteError } from '@/lib/tenant/serviceSegment';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -54,6 +56,11 @@ export async function requestCustomerPropertyAction(
   }
 
   const admin = createAdminClient();
+  const kind = kindFromForm(formData.get('property_kind'));
+  const capabilities = await loadTenantSegmentCapabilities(admin, link.tenantId);
+  const kindError = propertyKindWriteError(capabilities, kind);
+  if (kindError) return { error: kindError };
+
   const { count } = await admin
     .from('tenant_customer_properties')
     .select('id', { count: 'exact', head: true })
@@ -71,7 +78,7 @@ export async function requestCustomerPropertyAction(
     tenant_id: link.tenantId,
     customer_id: link.customerId,
     label: label || null,
-    property_kind: kindFromForm(formData.get('property_kind')),
+    property_kind: kind,
     address_line1: line1,
     address_line2: line2 || null,
     city,
