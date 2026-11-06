@@ -331,6 +331,22 @@ export function pricingPropertyKind(input: {
   return input.locationKind ?? input.manualKind ?? null;
 }
 
+/** Job type stored on a quote. The selected location wins over the previous quote job type. */
+export function savedQuoteJobType(input: {
+  locationKind?: CustomerPropertyKind | null;
+  formKind?: CustomerPropertyKind | null;
+  storedKind?: CustomerPropertyKind | null;
+}): CustomerPropertyKind | null {
+  return input.locationKind ?? input.formKind ?? input.storedKind ?? null;
+}
+
+export function crewPropertyKindHelp(hasPreservedKinds: boolean): string {
+  if (hasPreservedKinds) {
+    return 'Checked types are the only ones this person is suggested for. A kept type still applies when its box is hidden, so leaving the other boxes off does not allow every property type.';
+  }
+  return 'Leave these off to allow every property type.';
+}
+
 export function defaultRequestPropertyKind(
   kinds: readonly { value: string }[],
   current?: string | null,

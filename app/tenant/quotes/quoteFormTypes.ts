@@ -12,5 +12,6 @@ export interface CustomerPropertyGroup {
     label: string;
     requiredCrewSize?: number;
     propertyKind?: CustomerPropertyKind;
+    sqft?: number | null;
   }[];
 }

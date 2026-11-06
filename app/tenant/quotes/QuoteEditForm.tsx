@@ -233,7 +233,7 @@ export function QuoteEditForm({
         quotePropertyKind={effectivePropertyKind}
         autoScheduleEnabled={autoScheduleEnabled}
         sqftBidsEnabled={sqftBidsEnabled && effectivePropertyKind === 'commercial'}
-        defaultSqft={defaultSqft}
+        defaultSqft={editPropertyId ? (selectedLocation?.sqft ?? null) : defaultSqft}
       />
 
       <QuoteHeaderPricingFields defaults={snapshot.headerPricing} />

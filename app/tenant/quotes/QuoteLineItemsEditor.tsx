@@ -22,7 +22,11 @@ import {
   defaultAutoScheduleVisitCount,
   isRecurringQuoteLineFrequency,
 } from '@/lib/tenant/quoteLineAutoSchedule';
-import { findCatalogEntry, type JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
+import {
+  findCatalogEntry,
+  jobTypeTemplateForKind,
+  type JobTypeCatalogEntry,
+} from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import styles from './quotes.module.scss';
 
@@ -901,6 +905,34 @@ export function QuoteLineItemsEditor({
     },
     [controlled, controlledRows, onRowsChange],
   );
+
+  useEffect(() => {
+    if (!quotePropertyKind || jobTypeCatalog.length === 0) return;
+    setRows((prev) => {
+      let changed = false;
+      const next = prev.map((row) => {
+        if (!row.service_template_id && !row.service_label.trim()) return row;
+        const match = jobTypeTemplateForKind(jobTypeCatalog, {
+          serviceTemplateId: row.service_template_id || null,
+          serviceLabel: row.service_label,
+          propertyKind: quotePropertyKind,
+        });
+        if (match) {
+          if (match.id === row.service_template_id) return row;
+          changed = true;
+          return {
+            ...row,
+            service_template_id: match.id,
+            service_label: row.service_label.trim() || match.service_label,
+          };
+        }
+        if (!row.service_template_id) return row;
+        changed = true;
+        return { ...row, service_template_id: '' };
+      });
+      return changed ? next : prev;
+    });
+  }, [quotePropertyKind, jobTypeCatalog, setRows]);
 
   const updateRow = useCallback(
     (key: string, patch: Partial<QuoteLineItemDraft>) => {

@@ -3,8 +3,10 @@ import {
   bookingServiceAllowed,
   capabilitiesForSegment,
   defaultPropertyKind,
+  crewPropertyKindHelp,
   defaultRequestPropertyKind,
   mergeCrewPropertyKinds,
+  savedQuoteJobType,
   parseServiceDirectorySegment,
   parseTenantServiceSegment,
   pricingPropertyKind,
@@ -143,6 +145,32 @@ describe('grandfathered property kinds', () => {
       explicitChange: true,
     });
     expect(resolved).toEqual({ ok: true, kind: 'residential' });
+  });
+});
+
+describe('saved quote job type', () => {
+  it('stores the selected location kind instead of the quote’s previous job type', () => {
+    expect(
+      savedQuoteJobType({
+        locationKind: 'commercial',
+        formKind: null,
+        storedKind: 'residential',
+      }),
+    ).toBe('commercial');
+    expect(
+      savedQuoteJobType({
+        locationKind: null,
+        formKind: null,
+        storedKind: 'residential',
+      }),
+    ).toBe('residential');
+  });
+});
+
+describe('crew property kind help', () => {
+  it('does not say every type is allowed when a hidden kind is kept', () => {
+    expect(crewPropertyKindHelp(true)).toMatch(/does not allow every property type/);
+    expect(crewPropertyKindHelp(false)).toMatch(/Leave these off to allow every property type/);
   });
 });
 

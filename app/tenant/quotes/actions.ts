@@ -29,7 +29,11 @@ import {
 } from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
-import { propertyKindWriteError, type SegmentCapabilities } from '@/lib/tenant/serviceSegment';
+import {
+  propertyKindWriteError,
+  savedQuoteJobType,
+  type SegmentCapabilities,
+} from '@/lib/tenant/serviceSegment';
 import { assertCustomerEligibleForQuoteSend } from '@/lib/tenant/customerConsultation';
 import { customerQualifiesForNewQuote } from '@/lib/tenant/quoteCustomerPicker';
 import { sendQuoteNotificationEmail } from '@/lib/tenant/quoteNotifications';
@@ -934,7 +938,11 @@ export async function updateTenantQuote(
 
   const propertyFacts = await propertyFactsForQuote(admin, membership.tenantId, propertyId);
   const previousKind = (existing.job_type as CustomerPropertyKind | null) ?? null;
-  const nextKind = propertyFacts.kind ?? structured?.jobType ?? previousKind;
+  const nextKind = savedQuoteJobType({
+    locationKind: propertyFacts.kind,
+    formKind: structured?.jobType ?? null,
+    storedKind: previousKind,
+  });
   if (nextKind) {
     const kindError = propertyKindWriteError(capabilities, nextKind, previousKind);
     if (kindError) return { error: kindError };
@@ -954,7 +962,7 @@ export async function updateTenantQuote(
   const enrichedLines = await enrichParsedQuoteLines(
     admin,
     membership.tenantId,
-    structured?.jobType ?? (existing.job_type as CustomerPropertyKind | null),
+    nextKind,
     parsedLines.lines,
   );
   if ('error' in enrichedLines) {
@@ -1030,7 +1038,7 @@ export async function updateTenantQuote(
     p_quote_discount_kind: quoteDiscountKind,
     p_quote_discount_value: quoteDiscountValue,
     p_line_items: linePayload,
-    p_job_type: structured?.jobType ?? existing.job_type,
+    p_job_type: nextKind,
     p_scope_snapshot: structured?.scopeSnapshot ?? existing.scope_snapshot,
     p_property_snapshot: structured?.propertySnapshot ?? existing.property_snapshot,
     p_internal_notes: structured?.internalNotes ?? existing.internal_notes,

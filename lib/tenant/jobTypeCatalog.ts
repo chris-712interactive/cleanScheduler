@@ -133,6 +133,33 @@ export function uniqueJobTypeLabels(
   return labels;
 }
 
+/**
+ * Job type row for the property kind a quote is pricing.
+ * Keeps the same service name when the selected location changes kind.
+ */
+export function jobTypeTemplateForKind(
+  catalog: JobTypeCatalogEntry[],
+  input: {
+    serviceTemplateId?: string | null;
+    serviceLabel?: string | null;
+    propertyKind: CustomerPropertyKind;
+  },
+): JobTypeCatalogEntry | null {
+  const current = input.serviceTemplateId
+    ? (catalog.find((entry) => entry.id === input.serviceTemplateId) ?? null)
+    : null;
+  if (current?.job_type === input.propertyKind) return current;
+
+  const label = (current?.service_label || input.serviceLabel || '').trim().toLowerCase();
+  if (!label) return null;
+  return (
+    catalog.find(
+      (entry) =>
+        entry.job_type === input.propertyKind && entry.service_label.trim().toLowerCase() === label,
+    ) ?? null
+  );
+}
+
 export function findCatalogEntry(
   catalog: JobTypeCatalogEntry[],
   input: {

@@ -75,6 +75,7 @@ type PropertyPickRow = Pick<
   | 'postal_code'
   | 'is_primary'
   | 'property_kind'
+  | 'sqft'
 >;
 
 function propertyOptionLabel(p: PropertyPickRow): string {
@@ -86,11 +87,21 @@ function propertyOptionLabel(p: PropertyPickRow): string {
 function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyGroup[] {
   const map = new Map<
     string,
-    { id: string; label: string; propertyKind: PropertyPickRow['property_kind'] }[]
+    {
+      id: string;
+      label: string;
+      propertyKind: PropertyPickRow['property_kind'];
+      sqft: number | null;
+    }[]
   >();
   for (const p of rows) {
     const list = map.get(p.customer_id) ?? [];
-    list.push({ id: p.id, label: propertyOptionLabel(p), propertyKind: p.property_kind });
+    list.push({
+      id: p.id,
+      label: propertyOptionLabel(p),
+      propertyKind: p.property_kind,
+      sqft: p.sqft,
+    });
     map.set(p.customer_id, list);
   }
   return Array.from(map.entries()).map(([customerId, options]) => ({ customerId, options }));
@@ -174,10 +185,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   const admin = createAdminClient();
   const quotePropertyKind = (row.job_type as CustomerPropertyKind | null) ?? null;
   const [jobTypeCatalog, ops, serviceSegment] = await Promise.all([
-    loadJobTypeCatalog(admin, membership.tenantId, {
-      propertyKind: quotePropertyKind,
-      activeOnly: true,
-    }),
+    loadJobTypeCatalog(admin, membership.tenantId, { activeOnly: true }),
     loadTenantOperationalSettings(admin, membership.tenantId),
     loadTenantServiceSegment(admin, membership.tenantId),
   ]);
@@ -216,7 +224,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
       supabase
         .from('tenant_customer_properties')
         .select(
-          'id, customer_id, label, property_kind, address_line1, address_line2, city, state, postal_code, is_primary',
+          'id, customer_id, label, property_kind, sqft, address_line1, address_line2, city, state, postal_code, is_primary',
         )
         .eq('tenant_id', membership.tenantId)
         .order('is_primary', { ascending: false })
