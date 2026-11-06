@@ -8,11 +8,11 @@
 
 A lite public **quote / booking request** form at `https://{tenant-slug}.{apex}/book` (also `/request`). Submissions create `tenant_marketing_leads` rows with `source = quote_request` and email the office.
 
-This is **not** instant calendar booking, an embeddable pricing widget, or the full marketing CMS.
+This is **not** the only public booking mode. Settings → Online booking can turn the page off or switch it to instant self-booking. See `docs/product/instant-online-booking.md`.
 
 ## Tenant setup
 
-1. Settings → **Booking requests** — copy the public URL; toggle form live
+1. Settings → **Online booking** — choose Off, Request only, or Instant booking
 2. Settings → **Leads** — review submissions (same inbox as CMS contact forms)
 
 ## Key files

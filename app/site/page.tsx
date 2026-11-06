@@ -5,6 +5,7 @@ import { TenantSiteJsonLd } from '@/components/tenantSite/TenantSiteJsonLd';
 import { TenantSitePageView } from '@/components/tenantSite/TenantSitePage';
 import { buildTenantSitePageMetadata } from '@/lib/marketing/tenantSiteMetadata';
 import { buildTenantSitePublicUrl } from '@/lib/tenantSite/publicPaths';
+import { publicBookingModeFromRow, publicBookingPageOpen } from '@/lib/booking/publicBookingMode';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -52,6 +53,12 @@ export default async function TenantSiteHomePage() {
     .eq('slug', site.settings.homepageSlug)
     .maybeSingle();
 
+  const { data: bookingOps } = await admin
+    .from('tenant_operational_settings')
+    .select('public_booking_mode, public_booking_request_enabled')
+    .eq('tenant_id', site.tenantId)
+    .maybeSingle();
+
   return (
     <>
       <TenantSiteJsonLd site={site} page={page} />
@@ -62,6 +69,7 @@ export default async function TenantSiteHomePage() {
         footerNavLinks={mapTenantSiteNavLinks(footerNavRows, site.unifiedDomain)}
         pageId={pageRow?.id ?? null}
         showPoweredBy={plan !== 'pro'}
+        publicBookingOpen={publicBookingPageOpen(publicBookingModeFromRow(bookingOps))}
       />
     </>
   );

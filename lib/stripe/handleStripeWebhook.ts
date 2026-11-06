@@ -7,6 +7,7 @@ import {
   syncTenantFromStripeSubscription,
 } from '@/lib/billing/syncTenantPlatformSubscription';
 import { processStripeWebhookEventOnce } from '@/lib/stripe/webhookIdempotency';
+import { completeInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
 import {
   handleConnectAccountUpdated,
   handleTenantInvoiceCheckoutCompleted,
@@ -44,6 +45,18 @@ async function dispatchStripeWebhookEvent(
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (
+        session.metadata?.kind === 'instant_booking' &&
+        session.metadata.booking_id &&
+        session.metadata.tenant_id
+      ) {
+        await completeInstantBookingCheckout(admin, stripe, {
+          tenantId: session.metadata.tenant_id,
+          bookingId: session.metadata.booking_id,
+          connectAccountId,
+        });
+        break;
+      }
       if (session.mode === 'payment' && session.metadata?.kind === 'tenant_invoice_pay') {
         await handleTenantInvoiceCheckoutCompleted(admin, session, {
           stripe,

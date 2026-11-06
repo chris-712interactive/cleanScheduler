@@ -198,7 +198,7 @@ export async function assertConnectPaymentVelocityAllowed(
     tenantId: string;
     customerId?: string | null;
     actorUserId?: string | null;
-    kind: 'invoice_pay' | 'subscription_checkout';
+    kind: 'invoice_pay' | 'subscription_checkout' | 'instant_booking';
   },
 ): Promise<ConnectVelocityGateResult> {
   const now = new Date();

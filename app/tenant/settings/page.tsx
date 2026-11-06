@@ -113,8 +113,8 @@ const HUB_GROUPS: HubGroup[] = [
       },
       {
         href: '/settings/booking-requests',
-        label: 'Booking requests',
-        description: 'Public quote request form on your workspace subdomain.',
+        label: 'Online booking',
+        description: 'Public booking page: off, quote request, or instant visit booking.',
         icon: Inbox,
       },
       {

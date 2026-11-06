@@ -45,7 +45,7 @@ export default async function TenantWebsiteLeadsPage() {
         title="Leads"
         titleHint="Quote requests and contact form submissions from your public forms."
         backHref={websiteEnabled ? '/settings/website' : '/settings/booking-requests'}
-        backLabel={websiteEnabled ? 'Website' : 'Booking requests'}
+        backLabel={websiteEnabled ? 'Website' : 'Online booking'}
         actions={
           leadsAccess ? (
             <Link
@@ -68,7 +68,7 @@ export default async function TenantWebsiteLeadsPage() {
           <p className={styles.readOnlyNotice} role="status">
             Publish your website or enable the booking request form to start receiving leads.{' '}
             <Link href="/settings/booking-requests" className={styles.inlineLink}>
-              Booking requests
+              Online booking
             </Link>
           </p>
         ) : (

@@ -1,0 +1,66 @@
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mode {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.mode span span {
+  display: block;
+  color: var(--color-text-muted);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.field input,
+.field select {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 400;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.zones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.offerList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.offerCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}

@@ -12,7 +12,7 @@ export function buildTenantWebsiteNavItems(params: {
 
   if (params.bookingRequestEnabled) {
     items.push({
-      label: 'Booking requests',
+      label: 'Online booking',
       href: '/settings/booking-requests',
       icon: 'inquiries',
     });

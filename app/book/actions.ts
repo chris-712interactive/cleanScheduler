@@ -2,6 +2,12 @@
 
 import { sendMarketingLeadNotificationEmail } from '@/lib/email/sendMarketingLeadNotification';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import {
+  PUBLIC_BOOKING_UNAVAILABLE,
+  publicBookingModeError,
+  publicBookingModeFromRow,
+} from '@/lib/booking/publicBookingMode';
+import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export type BookingRequestActionState = {
@@ -49,6 +55,11 @@ export async function submitBookingRequestAction(
     return { error: 'Name, email, and message are required.' };
   }
 
+  const portal = await getPortalContext();
+  if (portal.kind !== 'site' || portal.tenantSlug !== tenantSlug) {
+    return { error: PUBLIC_BOOKING_UNAVAILABLE };
+  }
+
   const admin = createAdminClient();
   const { data: tenant } = await admin
     .from('tenants')
@@ -67,13 +78,12 @@ export async function submitBookingRequestAction(
 
   const { data: ops } = await admin
     .from('tenant_operational_settings')
-    .select('public_booking_request_enabled')
+    .select('public_booking_mode, public_booking_request_enabled')
     .eq('tenant_id', tenant.id)
     .maybeSingle();
 
-  if (ops && ops.public_booking_request_enabled === false) {
-    return { error: 'This booking form is not available.' };
-  }
+  const modeError = publicBookingModeError(publicBookingModeFromRow(ops), 'request');
+  if (modeError) return { error: modeError };
 
   const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
   const { count } = await admin
