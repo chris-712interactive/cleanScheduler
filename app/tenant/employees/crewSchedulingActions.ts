@@ -12,9 +12,8 @@ import {
   canSetCrewSchedulingLimits,
 } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
-import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
-import { propertyKindAllowed, propertyKindDeniedMessage } from '@/lib/tenant/serviceSegment';
+import { mergeCrewPropertyKinds } from '@/lib/tenant/serviceSegment';
 
 export interface CrewSchedulingActionState {
   error?: string;
@@ -174,16 +173,14 @@ export async function updateCrewSchedulingProfileAction(
     return { success: true };
   }
 
+  const existingPropertyKinds = existingHome?.property_kinds ?? [];
   const submittedPropertyKinds = mayEditOffice
-    ? checked(formData, 'property_kind', PROPERTY_KINDS)
-    : savedIds(existingHome?.property_kinds, PROPERTY_KINDS);
-  if (mayEditOffice) {
-    const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
-    const blocked = submittedPropertyKinds.some(
-      (kind) => !propertyKindAllowed(capabilities, kind as CustomerPropertyKind),
-    );
-    if (blocked) return { error: propertyKindDeniedMessage(capabilities) };
-  }
+    ? mergeCrewPropertyKinds({
+        capabilities: await loadTenantSegmentCapabilities(admin, membership.tenantId),
+        submittedKinds: checked(formData, 'property_kind', PROPERTY_KINDS),
+        existingKinds: existingPropertyKinds,
+      })
+    : savedIds(existingPropertyKinds, PROPERTY_KINDS);
 
   const row: Database['public']['Tables']['tenant_member_scheduling_profiles']['Insert'] = {
     tenant_id: membership.tenantId,

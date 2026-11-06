@@ -55,13 +55,17 @@ function propertyOptionLabel(p: PropertyPickRow): string {
 }
 
 function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyGroup[] {
-  const map = new Map<string, { id: string; label: string; requiredCrewSize: number }[]>();
+  const map = new Map<
+    string,
+    { id: string; label: string; requiredCrewSize: number; propertyKind: PropertyPickRow['property_kind'] }[]
+  >();
   for (const p of rows) {
     const list = map.get(p.customer_id) ?? [];
     list.push({
       id: p.id,
       label: propertyOptionLabel(p),
       requiredCrewSize: p.required_crew_size,
+      propertyKind: p.property_kind,
     });
     map.set(p.customer_id, list);
   }

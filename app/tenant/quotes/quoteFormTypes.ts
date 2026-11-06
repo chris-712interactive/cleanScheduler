@@ -1,3 +1,5 @@
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+
 export interface QuoteCustomerOption {
   id: string;
   label: string;
@@ -5,5 +7,10 @@ export interface QuoteCustomerOption {
 
 export interface CustomerPropertyGroup {
   customerId: string;
-  options: { id: string; label: string; requiredCrewSize?: number }[];
+  options: {
+    id: string;
+    label: string;
+    requiredCrewSize?: number;
+    propertyKind?: CustomerPropertyKind;
+  }[];
 }

@@ -288,6 +288,7 @@ export function CustomerImportWizard({
         <section className={styles.result} aria-live="polite">
           <p>
             Imported {result.created ?? 0} customers and {result.propertiesAdded ?? 0} properties.
+            {result.segmentSkipSummary ? ` ${result.segmentSkipSummary}` : ''}
             {result.skipped ? ` Skipped ${result.skipped}.` : ''}
             {result.failed ? ` ${result.failed} could not be saved.` : ''}
             {result.invites

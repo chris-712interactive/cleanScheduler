@@ -11,6 +11,7 @@ import type { QuoteAddonTemplate } from '@/lib/tenant/quoteScopeTemplates';
 import {
   capabilitiesForSegment,
   defaultPropertyKind,
+  pricingPropertyKind,
   propertyKindFamily,
   sqftBidAllowedForProperty,
   type TenantServiceSegment,
@@ -242,6 +243,18 @@ export function QuoteCreateWizard({
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
   }, [customerPropertyGroups, customerId]);
+  const selectedLocation =
+    propertySource === 'existing'
+      ? (propertyOptions.find((option) => option.id === propertyId) ?? null)
+      : null;
+  const creatingLocation = customerSource === 'new' || propertySource === 'new';
+  const effectivePropertyKind =
+    pricingPropertyKind({
+      locationKind:
+        selectedLocation?.propertyKind ?? (creatingLocation ? inlinePropertyKind : null),
+      manualKind: quotePropertyType as CustomerPropertyKind,
+    }) ?? (quotePropertyType as CustomerPropertyKind);
+  const locationKindLocked = Boolean(selectedLocation?.propertyKind);
 
   useEffect(() => {
     if (crewSizeTouched.current) return;
@@ -537,7 +550,7 @@ export function QuoteCreateWizard({
       <input ref={saveIntentInputRef} type="hidden" name="save_intent" defaultValue="draft" />
       <input type="hidden" name="scope_inclusions" value={JSON.stringify(scopeInclusions)} />
       <input type="hidden" name="scope_template_id" value={scopeTemplateId} />
-      <input type="hidden" name="quote_property_kind" value={quotePropertyType} />
+      <input type="hidden" name="quote_property_kind" value={effectivePropertyKind} />
 
       {state.error && state.schedulePath ? (
         <QuoteConsultationPrompt
@@ -801,15 +814,20 @@ export function QuoteCreateWizard({
                   {capabilities.offersBoth ? (
                     <>
                       {' '}
-                      <PropertyKindBadge kind={quotePropertyType as CustomerPropertyKind} compact />
+                      <PropertyKindBadge kind={effectivePropertyKind} compact />
                     </>
                   ) : null}
                 </label>
                 <select
                   id="quote_property_type_select"
                   className={styles.select}
-                  value={quotePropertyType}
-                  onChange={(e) => setQuotePropertyType(e.target.value)}
+                  value={effectivePropertyKind}
+                  disabled={locationKindLocked}
+                  onChange={(e) => {
+                    const next = e.target.value as CustomerPropertyKind;
+                    setQuotePropertyType(next);
+                    if (creatingLocation) setInlinePropertyKind(next);
+                  }}
                 >
                   {propertyKindOptions.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -819,7 +837,7 @@ export function QuoteCreateWizard({
                 </select>
               </div>
               {capabilities.showSqft &&
-              propertyKindFamily(quotePropertyType as CustomerPropertyKind) !== 'residential' ? (
+              propertyKindFamily(effectivePropertyKind) !== 'residential' ? (
                 <div>
                   <label className={styles.label} htmlFor="quote_property_sqft">
                     Sq ft (cleanable)
@@ -836,7 +854,7 @@ export function QuoteCreateWizard({
                 </div>
               ) : null}
               {capabilities.showBedsBaths &&
-              propertyKindFamily(quotePropertyType as CustomerPropertyKind) === 'residential' ? (
+              propertyKindFamily(effectivePropertyKind) === 'residential' ? (
                 <>
                   <div>
                     <label className={styles.label} htmlFor="quote_property_bedrooms">
@@ -1054,12 +1072,9 @@ export function QuoteCreateWizard({
               onRowsChange={setLineRows}
               hideLegend
               jobTypeCatalog={jobTypeCatalog}
-              quotePropertyKind={quotePropertyType as CustomerPropertyKind}
+              quotePropertyKind={effectivePropertyKind}
               autoScheduleEnabled={autoScheduleEnabled}
-              sqftBidsEnabled={sqftBidAllowedForProperty(
-                capabilities,
-                quotePropertyType as CustomerPropertyKind,
-              )}
+              sqftBidsEnabled={sqftBidAllowedForProperty(capabilities, effectivePropertyKind)}
               defaultSqft={
                 Number.isInteger(Number(quotePropertySqft)) && Number(quotePropertySqft) > 0
                   ? Number(quotePropertySqft)

@@ -1,6 +1,6 @@
 import type { SchedulePolicyPresetId } from '@/lib/schedule/optimizer/policy';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
-import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import type { QuoteLinePricingMethod } from '@/lib/tenant/quoteLinePricingMethod';
 import { QUOTE_LINE_PRICING_METHOD_OPTIONS } from '@/lib/tenant/quoteLinePricingMethod';
 import {
@@ -272,4 +272,85 @@ export function segmentLocationsDescription(capabilities: SegmentCapabilities): 
     return 'Commercial accounts often have more than one site on the same contract.';
   }
   return 'Add a home or a commercial site. Each location is labeled so the two stay distinct.';
+}
+
+export type PropertyKindSelectOption = {
+  value: CustomerPropertyKind;
+  label: string;
+  outsideSegment: boolean;
+};
+
+/** Keep a grandfathered kind in the dropdown so a normal save still posts that kind. */
+export function propertyKindSelectOptions(
+  capabilities: SegmentCapabilities,
+  currentKind?: CustomerPropertyKind | null,
+): PropertyKindSelectOption[] {
+  const options: PropertyKindSelectOption[] = PROPERTY_KIND_OPTIONS.filter((option) =>
+    capabilities.propertyKinds.includes(option.value),
+  ).map((option) => ({ ...option, outsideSegment: false }));
+  if (currentKind && !options.some((option) => option.value === currentKind)) {
+    options.unshift({
+      value: currentKind,
+      label: `${PROPERTY_KIND_LABEL[currentKind]} (current)`,
+      outsideSegment: true,
+    });
+  }
+  return options;
+}
+
+/**
+ * A save that did not touch the property-type control keeps the stored kind.
+ * Changing the control to a kind this workspace does not offer is rejected.
+ * Changing it to an offered kind is kept.
+ */
+export function resolvePropertyKindWrite(input: {
+  capabilities: SegmentCapabilities;
+  postedKind: CustomerPropertyKind;
+  existingKind?: CustomerPropertyKind | null;
+  explicitChange: boolean;
+}): { ok: true; kind: CustomerPropertyKind } | { ok: false; error: string } {
+  const { capabilities, postedKind, existingKind, explicitChange } = input;
+  if (!existingKind) {
+    const error = propertyKindWriteError(capabilities, postedKind);
+    return error ? { ok: false, error } : { ok: true, kind: postedKind };
+  }
+  if (!explicitChange || postedKind === existingKind) {
+    return { ok: true, kind: existingKind };
+  }
+  if (!propertyKindAllowed(capabilities, postedKind)) {
+    return { ok: false, error: propertyKindDeniedMessage(capabilities) };
+  }
+  return { ok: true, kind: postedKind };
+}
+
+/** Square-foot pricing follows the linked location. The manual control applies only when there is no location yet. */
+export function pricingPropertyKind(input: {
+  locationKind: CustomerPropertyKind | null | undefined;
+  manualKind: CustomerPropertyKind | null | undefined;
+}): CustomerPropertyKind | null {
+  return input.locationKind ?? input.manualKind ?? null;
+}
+
+export function defaultRequestPropertyKind(
+  kinds: readonly { value: string }[],
+  current?: string | null,
+): string {
+  if (current && kinds.some((kind) => kind.value === current)) return current;
+  return kinds[0]?.value ?? 'residential';
+}
+
+/**
+ * Visible crew checkboxes are only the current segment. Kinds saved before the
+ * workspace narrowed stay on the profile. An empty submitted list must not wipe them,
+ * because the day planner treats [] as eligible for every property type.
+ */
+export function mergeCrewPropertyKinds(input: {
+  capabilities: SegmentCapabilities;
+  submittedKinds: readonly string[];
+  existingKinds: readonly string[];
+}): string[] {
+  const allowed = new Set<string>(input.capabilities.propertyKinds);
+  const submittedAllowed = input.submittedKinds.filter((kind) => allowed.has(kind));
+  const preserved = input.existingKinds.filter((kind) => !allowed.has(kind));
+  return [...new Set([...submittedAllowed, ...preserved])];
 }

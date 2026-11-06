@@ -18,7 +18,7 @@ import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import { bindSubscriptionToOriginalProperty } from '@/lib/billing/applySubscriptionCoverage';
 import { propertyIdToBind } from '@/lib/billing/subscriptionCoverage';
 import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
-import { propertyKindWriteError } from '@/lib/tenant/serviceSegment';
+import { propertyKindWriteError, resolvePropertyKindWrite } from '@/lib/tenant/serviceSegment';
 
 export interface PropertyFormState {
   error?: string;
@@ -225,8 +225,14 @@ export async function updateCustomerProperty(
   }
 
   const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
-  const kindError = propertyKindWriteError(capabilities, kind, row.property_kind);
-  if (kindError) return { error: kindError };
+  const resolvedKind = resolvePropertyKindWrite({
+    capabilities,
+    postedKind: kind,
+    existingKind: row.property_kind,
+    explicitChange: String(formData.get('property_kind_explicit') ?? '') === '1',
+  });
+  if (!resolvedKind.ok) return { error: resolvedKind.error };
+  const kindToSave = resolvedKind.kind;
 
   const geocoded = await resolveGeocodedPoint(
     { line1, city, state, postalCode: postal },
@@ -251,7 +257,7 @@ export async function updateCustomerProperty(
     .from('tenant_customer_properties')
     .update({
       label: label || null,
-      property_kind: kind,
+      property_kind: kindToSave,
       address_line1: line1 || null,
       address_line2: line2 || null,
       city: city || null,

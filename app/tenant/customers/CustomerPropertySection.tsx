@@ -12,8 +12,8 @@ import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { buildScheduleConsultationPath } from '@/lib/tenant/customerConsultation';
 import type { PropertyConsultationPrompt } from '@/lib/tenant/propertyConsultationRequest';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
-import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import {
+  propertyKindSelectOptions,
   segmentLocationsDescription,
   type TenantServiceSegment,
 } from '@/lib/tenant/serviceSegment';
@@ -60,17 +60,28 @@ function PropertyKindField({
 }: {
   id: string;
   defaultValue: string;
-  options: typeof PROPERTY_KIND_OPTIONS;
+  options: { value: string; label: string }[];
 }) {
+  const [explicit, setExplicit] = useState(false);
+  const selected = options.some((option) => option.value === defaultValue)
+    ? defaultValue
+    : (options[0]?.value ?? defaultValue);
   return (
     <Field id={id} label="Property type">
-      <select id={id} name="property_kind" className={styles.input} defaultValue={defaultValue}>
+      <select
+        id={id}
+        name="property_kind"
+        className={styles.input}
+        defaultValue={selected}
+        onChange={() => setExplicit(true)}
+      >
         {options.map(({ value, label }) => (
           <option key={value} value={value}>
             {label}
           </option>
         ))}
       </select>
+      <input type="hidden" name="property_kind_explicit" value={explicit ? '1' : '0'} />
     </Field>
   );
 }
@@ -148,9 +159,7 @@ export function CustomerPropertySection({
   serviceSegment?: TenantServiceSegment;
 }) {
   const capabilities = useTenantSegmentCapabilities(serviceSegment);
-  const propertyKindOptions = PROPERTY_KIND_OPTIONS.filter((option) =>
-    capabilities.propertyKinds.includes(option.value),
-  );
+  const propertyKindOptions = propertyKindSelectOptions(capabilities);
   const [properties, setProperties] = useState(initialProperties);
   const [addLocationOpen, setAddLocationOpen] = useState(false);
 
@@ -232,7 +241,7 @@ export function CustomerPropertySection({
 
                 <div className={styles.propertyBody}>
                   <EditPropertyForm
-                    kindOptions={propertyKindOptions}
+                    kindOptions={propertyKindSelectOptions(capabilities, p.property_kind)}
                     tenantSlug={tenantSlug}
                     customerId={customerId}
                     property={p}
@@ -449,7 +458,7 @@ function EditPropertyForm({
   schedulingOverride: unknown;
   onPropertiesPatch: PatchHandler;
   secondaryActions?: ReactNode;
-  kindOptions: typeof PROPERTY_KIND_OPTIONS;
+  kindOptions: { value: string; label: string }[];
 }) {
   const [state, action, pending] = useActionState(updateCustomerProperty, initial);
   useFeedbackToast({
@@ -612,7 +621,7 @@ function AddPropertyForm({
   onPropertiesPatch: PatchHandler;
   onAdded: () => void;
   onCancel: () => void;
-  kindOptions: typeof PROPERTY_KIND_OPTIONS;
+  kindOptions: { value: string; label: string }[];
   locationDescription: string;
 }) {
   const [state, action, pending] = useActionState(addCustomerProperty, initial);

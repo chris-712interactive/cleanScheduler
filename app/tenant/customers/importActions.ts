@@ -166,6 +166,7 @@ export async function commitCustomerImport(
       propertiesAdded: written.propertiesAdded,
       skipped,
       failed: written.failed,
+      segmentSkipSummary: written.segmentSkipSummary,
       error: written.failed > 0 ? written.error : undefined,
       invites,
     };

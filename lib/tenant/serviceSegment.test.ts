@@ -3,11 +3,16 @@ import {
   bookingServiceAllowed,
   capabilitiesForSegment,
   defaultPropertyKind,
+  defaultRequestPropertyKind,
+  mergeCrewPropertyKinds,
   parseServiceDirectorySegment,
   parseTenantServiceSegment,
+  pricingPropertyKind,
   propertyKindAllowed,
+  propertyKindSelectOptions,
   propertyKindWriteError,
   propertyKindsForDirectorySegment,
+  resolvePropertyKindWrite,
   sqftBidAllowedForProperty,
 } from '@/lib/tenant/serviceSegment';
 
@@ -100,6 +105,98 @@ describe('booking services', () => {
     expect(bookingServiceAllowed(caps, 'Office / commercial')).toBe(false);
     expect(bookingServiceAllowed(caps, 'Standard clean')).toBe(true);
     expect(bookingServiceAllowed(caps, '')).toBe(true);
+  });
+});
+
+describe('grandfathered property kinds', () => {
+  it('keeps the current kind in the select when the segment no longer offers it', () => {
+    const options = propertyKindSelectOptions(capabilitiesForSegment('residential'), 'commercial');
+    expect(options.map((option) => option.value)).toContain('commercial');
+    expect(options.find((option) => option.value === 'commercial')?.outsideSegment).toBe(true);
+  });
+
+  it('does not change kind on a normal save', () => {
+    const resolved = resolvePropertyKindWrite({
+      capabilities: capabilitiesForSegment('residential'),
+      postedKind: 'residential',
+      existingKind: 'commercial',
+      explicitChange: false,
+    });
+    expect(resolved).toEqual({ ok: true, kind: 'commercial' });
+  });
+
+  it('rejects an explicit change to a kind the workspace does not offer', () => {
+    const resolved = resolvePropertyKindWrite({
+      capabilities: capabilitiesForSegment('residential'),
+      postedKind: 'commercial',
+      existingKind: 'residential',
+      explicitChange: true,
+    });
+    expect(resolved.ok).toBe(false);
+  });
+
+  it('allows an explicit change onto a kind the workspace does offer', () => {
+    const resolved = resolvePropertyKindWrite({
+      capabilities: capabilitiesForSegment('residential'),
+      postedKind: 'residential',
+      existingKind: 'commercial',
+      explicitChange: true,
+    });
+    expect(resolved).toEqual({ ok: true, kind: 'residential' });
+  });
+});
+
+describe('crew property kinds', () => {
+  it('keeps hidden commercial skills and does not write an empty list', () => {
+    const merged = mergeCrewPropertyKinds({
+      capabilities: capabilitiesForSegment('residential'),
+      submittedKinds: [],
+      existingKinds: ['commercial'],
+    });
+    expect(merged).toEqual(['commercial']);
+  });
+
+  it('keeps a hidden kind when the visible boxes change', () => {
+    const merged = mergeCrewPropertyKinds({
+      capabilities: capabilitiesForSegment('residential'),
+      submittedKinds: ['residential'],
+      existingKinds: ['residential', 'commercial'],
+    });
+    expect(merged).toEqual(['residential', 'commercial']);
+  });
+});
+
+describe('quote property kind', () => {
+  it('uses the selected location instead of the manual property-type default', () => {
+    expect(pricingPropertyKind({ locationKind: 'commercial', manualKind: 'residential' })).toBe(
+      'commercial',
+    );
+    expect(pricingPropertyKind({ locationKind: null, manualKind: 'residential' })).toBe(
+      'residential',
+    );
+    expect(
+      sqftBidAllowedForProperty(
+        capabilitiesForSegment('both'),
+        pricingPropertyKind({ locationKind: 'commercial', manualKind: 'residential' }),
+      ),
+    ).toBe(true);
+    expect(
+      sqftBidAllowedForProperty(
+        capabilitiesForSegment('both'),
+        pricingPropertyKind({ locationKind: 'residential', manualKind: 'commercial' }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('customer location request default', () => {
+  it('starts on the first allowed kind for a commercial-only company', () => {
+    const kinds = [
+      { value: 'commercial', label: 'Commercial' },
+      { value: 'other', label: 'Other' },
+    ];
+    expect(defaultRequestPropertyKind(kinds, 'residential')).toBe('commercial');
+    expect(defaultRequestPropertyKind(kinds, 'other')).toBe('other');
   });
 });
 

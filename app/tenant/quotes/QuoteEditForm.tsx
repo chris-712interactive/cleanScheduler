@@ -7,6 +7,7 @@ import { useServerActionQuoteSnapshot } from '@/lib/hooks/useServerActionQuoteSn
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { pricingPropertyKind } from '@/lib/tenant/serviceSegment';
 import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { CustomerPropertyGroup } from './QuoteCreateForm';
@@ -90,6 +91,16 @@ export function QuoteEditForm({
   const propertyDefault = propertyOptions.some((p) => p.id === snapshot.propertyId)
     ? snapshot.propertyId
     : '';
+  const [editPropertyId, setEditPropertyId] = useState(propertyDefault);
+  useEffect(() => {
+    setEditPropertyId(propertyDefault);
+  }, [propertyDefault, customerId]);
+  const selectedLocation = propertyOptions.find((option) => option.id === editPropertyId);
+  const effectivePropertyKind =
+    pricingPropertyKind({
+      locationKind: selectedLocation?.propertyKind ?? null,
+      manualKind: quotePropertyKind,
+    }) ?? quotePropertyKind;
 
   const statusSelectOptions = useMemo(() => {
     const base = [...TENANT_QUOTE_STATUS_EDIT_OPTIONS];
@@ -198,7 +209,8 @@ export function QuoteEditForm({
         id="edit_quote_property"
         name="property_id"
         className={styles.select}
-        defaultValue={propertyDefault}
+        value={editPropertyId}
+        onChange={(event) => setEditPropertyId(event.target.value)}
         disabled={!customerId || propertyOptions.length === 0}
       >
         <option value="">— None —</option>
@@ -218,9 +230,9 @@ export function QuoteEditForm({
         initialRows={snapshot.lineItems}
         rowsRevision={rowsRevision}
         jobTypeCatalog={jobTypeCatalog}
-        quotePropertyKind={quotePropertyKind}
+        quotePropertyKind={effectivePropertyKind}
         autoScheduleEnabled={autoScheduleEnabled}
-        sqftBidsEnabled={sqftBidsEnabled}
+        sqftBidsEnabled={sqftBidsEnabled && effectivePropertyKind === 'commercial'}
         defaultSqft={defaultSqft}
       />
 

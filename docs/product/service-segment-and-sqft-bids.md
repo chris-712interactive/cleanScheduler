@@ -30,7 +30,7 @@ Each workspace chooses the cleaning work it sells: residential, commercial, or b
 `pricing_method = per_sqft` now computes the line amount. The office enters cents per square foot. Square feet come from the line, or from the quote property snapshot, or from `tenant_customer_properties.sqft`.
 
 - One-time: amount = rate × sq ft.
-- Weekly: monthly contract = rate × sq ft × (52 / 12).
+- Weekly: monthly contract = per-visit price × the visit count rounded to 3 decimals (52/12 → 4.333). The stored `bid_visits` and `amount_cents` use that same rounded count, so the breakdown multiplies back to the charge.
 - Every two weeks: half of that weekly visit count.
 - Monthly: one visit, unless times per month is set.
 - Custom: requires times per week or times per month. Times per week also uses 52 / 12.

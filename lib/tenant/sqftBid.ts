@@ -4,6 +4,11 @@ import { formatQuoteMoney } from '@/lib/tenant/quoteMoney';
 /** Weeks in a month used to turn a weekly cadence into a monthly contract price (52/12). */
 export const WEEKS_PER_MONTH = 52 / 12;
 
+/** Visit counts are stored to 3 decimals. The contract total uses this same rounded count. */
+export function roundVisitCount(visits: number): number {
+  return Math.round(visits * 1000) / 1000;
+}
+
 export type SqftBidPeriod = 'visit' | 'month';
 
 export type SqftBidInput = {
@@ -101,8 +106,9 @@ export function computeSqftBid(input: SqftBidInput): SqftBidResult {
   const visits = resolveVisits(input);
   if (!visits.ok) return visits;
 
+  const visitsInPeriod = roundVisitCount(visits.visits);
   const visitAmountCents = Math.round(rateCentsPerSqft * input.sqft);
-  const amountCents = Math.round(rateCentsPerSqft * input.sqft * visits.visits);
+  const amountCents = Math.round(visitAmountCents * visitsInPeriod);
   if (!Number.isSafeInteger(visitAmountCents) || !Number.isSafeInteger(amountCents)) {
     return { ok: false, error: 'Square-foot bid is too large.' };
   }
@@ -123,7 +129,7 @@ export function computeSqftBid(input: SqftBidInput): SqftBidResult {
       rateCentsPerSqft,
       billableSqft: input.sqft,
       visitAmountCents,
-      visitsInPeriod: Math.round(visits.visits * 1000) / 1000,
+      visitsInPeriod,
       period: visits.period,
       amountCents,
       estimatedHoursPerVisit,
@@ -132,8 +138,29 @@ export function computeSqftBid(input: SqftBidInput): SqftBidResult {
   };
 }
 
+export function resolveBillableSqft(
+  raw: string,
+  defaultSqft: number | null | undefined,
+): { ok: true; sqft: number } | { ok: false; error: string } {
+  const trimmed = raw.trim().replace(/,/g, '');
+  if (!trimmed) {
+    if (defaultSqft != null && Number.isInteger(defaultSqft) && defaultSqft > 0) {
+      return { ok: true, sqft: defaultSqft };
+    }
+    return { ok: false, error: 'Enter the cleanable square footage for this bid.' };
+  }
+  const sqft = Number(trimmed);
+  if (!Number.isFinite(sqft) || !Number.isInteger(sqft) || sqft <= 0) {
+    return {
+      ok: false,
+      error: 'Square footage on a line must be a whole number greater than zero.',
+    };
+  }
+  return { ok: true, sqft };
+}
+
 export function formatVisitCount(visits: number): string {
-  const rounded = Math.round(visits * 1000) / 1000;
+  const rounded = roundVisitCount(visits);
   if (Number.isInteger(rounded)) return String(rounded);
   return rounded.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
 }

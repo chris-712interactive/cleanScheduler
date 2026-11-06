@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   breakdownFromStoredSqftBid,
   computeSqftBid,
+  resolveBillableSqft,
+  roundVisitCount,
   sqftBidSummaryLines,
   WEEKS_PER_MONTH,
 } from '@/lib/tenant/sqftBid';
@@ -31,7 +33,9 @@ describe('computeSqftBid', () => {
     if (!result.ok) return;
     expect(result.breakdown.visitsInPeriod).toBe(Math.round(WEEKS_PER_MONTH * 1000) / 1000);
     expect(result.breakdown.period).toBe('month');
-    expect(result.breakdown.amountCents).toBe(Math.round(10 * 1000 * WEEKS_PER_MONTH));
+    expect(result.breakdown.amountCents).toBe(
+      Math.round(10_000 * roundVisitCount(WEEKS_PER_MONTH)),
+    );
     expect(result.breakdown.visitAmountCents).toBe(10_000);
   });
 
@@ -46,7 +50,9 @@ describe('computeSqftBid', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.breakdown.visitsInPeriod).toBe(Math.round(3 * WEEKS_PER_MONTH * 1000) / 1000);
-    expect(result.breakdown.amountCents).toBe(Math.round(8 * 5000 * 3 * WEEKS_PER_MONTH));
+    expect(result.breakdown.amountCents).toBe(
+      Math.round(8 * 5000 * roundVisitCount(3 * WEEKS_PER_MONTH)),
+    );
     expect(result.breakdown.estimatedHoursPerVisit).toBe(2.5);
     expect(result.breakdown.productionSqftPerHour).toBe(2000);
   });
@@ -74,6 +80,37 @@ describe('computeSqftBid', () => {
     expect(custom.ok).toBe(false);
     if (custom.ok) return;
     expect(custom.error).toMatch(/times per week/i);
+  });
+});
+
+describe('stored visit count matches the charge', () => {
+  it('multiplies the displayed weekly visit count by the per-visit price', () => {
+    const result = computeSqftBid({
+      rateCentsPerSqft: 25,
+      sqft: 50_000,
+      frequency: 'weekly',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.breakdown.visitsInPeriod).toBe(4.333);
+    expect(result.breakdown.visitAmountCents).toBe(1_250_000);
+    expect(result.breakdown.amountCents).toBe(
+      Math.round(result.breakdown.visitAmountCents * result.breakdown.visitsInPeriod),
+    );
+    const lines = sqftBidSummaryLines(result.breakdown);
+    expect(lines[1]).toContain('4.333 visits / month');
+    expect(lines[1]).toContain('$54,162.50');
+  });
+});
+
+describe('resolveBillableSqft', () => {
+  it('uses the property size only when the line is blank', () => {
+    expect(resolveBillableSqft('', 12000)).toEqual({ ok: true, sqft: 12000 });
+  });
+
+  it('rejects zero and fractional line values instead of falling back', () => {
+    expect(resolveBillableSqft('0', 12000).ok).toBe(false);
+    expect(resolveBillableSqft('1000.5', 12000).ok).toBe(false);
   });
 });
 

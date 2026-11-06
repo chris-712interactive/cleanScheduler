@@ -12,7 +12,12 @@ import type { QuoteLineDiscountKind } from '@/lib/tenant/quoteHeaderPricingForm'
 import { QUOTE_LINE_DISCOUNT_OPTIONS } from '@/lib/tenant/quoteHeaderPricingForm';
 import type { QuoteLinePricingMethod } from '@/lib/tenant/quoteLinePricingMethod';
 import { QUOTE_LINE_PRICING_METHOD_OPTIONS } from '@/lib/tenant/quoteLinePricingMethod';
-import { computeSqftBid, sqftBidSummaryLines, type SqftBidBreakdown } from '@/lib/tenant/sqftBid';
+import {
+  computeSqftBid,
+  resolveBillableSqft,
+  sqftBidSummaryLines,
+  type SqftBidBreakdown,
+} from '@/lib/tenant/sqftBid';
 import {
   defaultAutoScheduleVisitCount,
   isRecurringQuoteLineFrequency,
@@ -346,9 +351,9 @@ function previewSqftLine(
   if (row.pricing_method !== 'per_sqft') return null;
   const rate = Number(row.sqft_rate_dollars.replace(/,/g, ''));
   if (!Number.isFinite(rate) || rate < 0 || !row.sqft_rate_dollars.trim()) return null;
-  const typedSqft = row.billable_sqft.trim() ? Number(row.billable_sqft.replace(/,/g, '')) : null;
-  const sqft = typedSqft != null && Number.isInteger(typedSqft) ? typedSqft : defaultSqft;
-  if (sqft == null) return null;
+  const resolvedSqft = resolveBillableSqft(row.billable_sqft, defaultSqft);
+  if (!resolvedSqft.ok) return null;
+  const sqft = resolvedSqft.sqft;
   const optional = (raw: string) => {
     const trimmed = raw.trim();
     if (!trimmed) return null;
@@ -391,6 +396,8 @@ function SqftBidInputs({
   }
 
   const bid = previewSqftLine(row, defaultSqft);
+  const sqftCheck = row.billable_sqft.trim() ? resolveBillableSqft(row.billable_sqft, null) : null;
+  const sqftError = sqftCheck && !sqftCheck.ok ? sqftCheck.error : null;
   return (
     <div className={styles.lineItemCardGrid}>
       <div>
@@ -418,7 +425,14 @@ function SqftBidInputs({
           placeholder={defaultSqft != null ? String(defaultSqft) : '12000'}
           value={row.billable_sqft}
           onChange={(e) => updateRow(row.key, { billable_sqft: e.target.value })}
+          aria-invalid={sqftError ? true : undefined}
+          aria-describedby={sqftError ? `line_billable_sqft_error_${row.key}` : undefined}
         />
+        {sqftError ? (
+          <p id={`line_billable_sqft_error_${row.key}`} className={styles.hint} role="alert">
+            {sqftError}
+          </p>
+        ) : null}
       </div>
       <div>
         <label className={styles.label} htmlFor={`line_times_week_${row.key}`}>

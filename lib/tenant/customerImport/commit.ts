@@ -4,7 +4,12 @@ import type { Database } from '@/lib/supabase/database.types';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 import type { CustomerImportDisposition } from '@/lib/tenant/customerImport/types';
 import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
-import { propertyKindAllowed, type SegmentCapabilities } from '@/lib/tenant/serviceSegment';
+import type { SegmentCapabilities } from '@/lib/tenant/serviceSegment';
+import {
+  formatSegmentSkipSummary,
+  splitPropertiesForSegment,
+  type SegmentSkippedProperty,
+} from '@/lib/tenant/customerImport/segmentSkips';
 
 type Admin = SupabaseClient<Database>;
 
@@ -16,6 +21,8 @@ export type CustomerImportWriteResult = {
   failed: number;
   createdCustomerIds: string[];
   error?: string;
+  segmentSkips: SegmentSkippedProperty[];
+  segmentSkipSummary: string | null;
 };
 
 async function deleteImportedCustomers(
@@ -34,19 +41,18 @@ async function deleteImportedCustomers(
   }
 }
 
-function keepImportProperty(
-  capabilities: SegmentCapabilities,
-  kind: CustomerImportDisposition['propertiesToAdd'][number]['kind'],
-): boolean {
-  return propertyKindAllowed(capabilities, kind);
-}
-
 async function insertCreateBatch(
   admin: Admin,
   tenantId: string,
   batch: CustomerImportDisposition[],
   capabilities: SegmentCapabilities,
-): Promise<{ created: number; propertiesAdded: number; customerIds: string[]; error?: string }> {
+): Promise<{
+  created: number;
+  propertiesAdded: number;
+  customerIds: string[];
+  error?: string;
+  segmentSkips: SegmentSkippedProperty[];
+}> {
   const prepared = batch.map((disposition) => {
     const identityId = randomUUID();
     const customerId = randomUUID();
@@ -67,7 +73,13 @@ async function insertCreateBatch(
     })),
   );
   if (identityInsert.error) {
-    return { created: 0, propertiesAdded: 0, customerIds: [], error: identityInsert.error.message };
+    return {
+      created: 0,
+      propertiesAdded: 0,
+      customerIds: [],
+      segmentSkips: [],
+      error: identityInsert.error.message,
+    };
   }
 
   const customerInsert = await admin.from('customers').insert(
@@ -86,7 +98,13 @@ async function insertCreateBatch(
       [],
       prepared.map((row) => row.identityId),
     );
-    return { created: 0, propertiesAdded: 0, customerIds: [], error: customerInsert.error.message };
+    return {
+      created: 0,
+      propertiesAdded: 0,
+      customerIds: [],
+      segmentSkips: [],
+      error: customerInsert.error.message,
+    };
   }
 
   const linkInsert = await admin.from('customer_tenant_links').insert(
@@ -103,7 +121,13 @@ async function insertCreateBatch(
       prepared.map((row) => row.customerId),
       prepared.map((row) => row.identityId),
     );
-    return { created: 0, propertiesAdded: 0, customerIds: [], error: linkInsert.error.message };
+    return {
+      created: 0,
+      propertiesAdded: 0,
+      customerIds: [],
+      segmentSkips: [],
+      error: linkInsert.error.message,
+    };
   }
 
   const profileInsert = await admin.from('tenant_customer_profiles').insert(
@@ -123,26 +147,33 @@ async function insertCreateBatch(
       prepared.map((row) => row.customerId),
       prepared.map((row) => row.identityId),
     );
-    return { created: 0, propertiesAdded: 0, customerIds: [], error: profileInsert.error.message };
+    return {
+      created: 0,
+      propertiesAdded: 0,
+      customerIds: [],
+      segmentSkips: [],
+      error: profileInsert.error.message,
+    };
   }
 
-  const propertyRows = prepared.flatMap(({ disposition, customerId }) =>
-    disposition.propertiesToAdd
-      .filter((property) => keepImportProperty(capabilities, property.kind))
-      .map((property) => ({
-        tenant_id: tenantId,
-        customer_id: customerId,
-        label: property.label,
-        property_kind: property.kind,
-        address_line1: property.addressLine1,
-        address_line2: property.addressLine2,
-        city: property.city,
-        state: property.state,
-        postal_code: property.postalCode,
-        site_notes: property.siteNotes,
-        is_primary: property.isPrimary,
-      })),
-  );
+  const segmentSkips: SegmentSkippedProperty[] = [];
+  const propertyRows = prepared.flatMap(({ disposition, customerId }) => {
+    const split = splitPropertiesForSegment(capabilities, disposition.propertiesToAdd);
+    segmentSkips.push(...split.skipped);
+    return split.kept.map((property) => ({
+      tenant_id: tenantId,
+      customer_id: customerId,
+      label: property.label,
+      property_kind: property.kind,
+      address_line1: property.addressLine1,
+      address_line2: property.addressLine2,
+      city: property.city,
+      state: property.state,
+      postal_code: property.postalCode,
+      site_notes: property.siteNotes,
+      is_primary: property.isPrimary,
+    }));
+  });
 
   if (propertyRows.length > 0) {
     const propertyInsert = await admin.from('tenant_customer_properties').insert(propertyRows);
@@ -156,6 +187,7 @@ async function insertCreateBatch(
         created: 0,
         propertiesAdded: 0,
         customerIds: [],
+        segmentSkips,
         error: propertyInsert.error.message,
       };
     }
@@ -165,6 +197,7 @@ async function insertCreateBatch(
     created: prepared.length,
     propertiesAdded: propertyRows.length,
     customerIds: prepared.map((row) => row.customerId),
+    segmentSkips,
   };
 }
 
@@ -180,6 +213,7 @@ export async function commitCustomerImport(input: {
   let propertiesAdded = 0;
   let failed = 0;
   const createdCustomerIds: string[] = [];
+  const segmentSkips: SegmentSkippedProperty[] = [];
   let error: string | undefined;
 
   for (let index = 0; index < creates.length; index += BATCH_SIZE) {
@@ -187,6 +221,7 @@ export async function commitCustomerImport(input: {
     const result = await insertCreateBatch(input.admin, input.tenantId, batch, capabilities);
     created += result.created;
     propertiesAdded += result.propertiesAdded;
+    segmentSkips.push(...result.segmentSkips);
     if (result.error) {
       failed += batch.length;
       error = result.error;
@@ -195,23 +230,23 @@ export async function commitCustomerImport(input: {
     }
   }
 
-  const propertyRows = propertyAdds.flatMap((disposition) =>
-    disposition.propertiesToAdd
-      .filter((property) => keepImportProperty(capabilities, property.kind))
-      .map((property) => ({
-        tenant_id: input.tenantId,
-        customer_id: disposition.matchedCustomerId!,
-        label: property.label,
-        property_kind: property.kind,
-        address_line1: property.addressLine1,
-        address_line2: property.addressLine2,
-        city: property.city,
-        state: property.state,
-        postal_code: property.postalCode,
-        site_notes: property.siteNotes,
-        is_primary: property.isPrimary,
-      })),
-  );
+  const propertyRows = propertyAdds.flatMap((disposition) => {
+    const split = splitPropertiesForSegment(capabilities, disposition.propertiesToAdd);
+    segmentSkips.push(...split.skipped);
+    return split.kept.map((property) => ({
+      tenant_id: input.tenantId,
+      customer_id: disposition.matchedCustomerId!,
+      label: property.label,
+      property_kind: property.kind,
+      address_line1: property.addressLine1,
+      address_line2: property.addressLine2,
+      city: property.city,
+      state: property.state,
+      postal_code: property.postalCode,
+      site_notes: property.siteNotes,
+      is_primary: property.isPrimary,
+    }));
+  });
 
   for (let index = 0; index < propertyRows.length; index += BATCH_SIZE) {
     const batch = propertyRows.slice(index, index + BATCH_SIZE);
@@ -224,5 +259,13 @@ export async function commitCustomerImport(input: {
     }
   }
 
-  return { created, propertiesAdded, failed, createdCustomerIds, error };
+  return {
+    created,
+    propertiesAdded,
+    failed,
+    createdCustomerIds,
+    error,
+    segmentSkips,
+    segmentSkipSummary: formatSegmentSkipSummary(segmentSkips),
+  };
 }

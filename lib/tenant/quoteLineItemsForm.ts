@@ -13,7 +13,7 @@ import {
   parseAutoScheduleFlag,
   parseAutoScheduleVisitCount,
 } from '@/lib/tenant/quoteLineAutoSchedule';
-import { computeSqftBid, type SqftBidPeriod } from '@/lib/tenant/sqftBid';
+import { computeSqftBid, resolveBillableSqft, type SqftBidPeriod } from '@/lib/tenant/sqftBid';
 
 export type QuoteLineDiscountKind = Database['public']['Enums']['quote_line_discount_kind'];
 export type QuoteLinePricingMethod = Database['public']['Enums']['quote_line_pricing_method'];
@@ -185,13 +185,9 @@ export function parseQuoteLineItemsFromForm(
         return { ok: false, error: 'Enter a rate per square foot for each square-foot line.' };
       }
       if (!rateParsed.ok) return { ok: false, error: 'Enter a valid rate per square foot.' };
-      const sqftInput = parseOptionalCount(sqftRaw);
-      const sqft =
-        sqftInput != null && Number.isInteger(sqftInput)
-          ? sqftInput
-          : options.defaultSqft != null && Number.isInteger(options.defaultSqft)
-            ? options.defaultSqft
-            : null;
+      const sqftResolved = resolveBillableSqft(sqftRaw, options.defaultSqft);
+      if (!sqftResolved.ok) return sqftResolved;
+      const sqft = sqftResolved.sqft;
       const production = parseOptionalCount(productionRates[i] ?? '');
       const computed = computeSqftBid({
         rateCentsPerSqft: rateParsed.cents,

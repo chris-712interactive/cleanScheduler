@@ -459,6 +459,21 @@ export function EmployeeSchedulingProfileForm({
                   <fieldset className={styles.block}>
                     <legend className={styles.legend}>Property types</legend>
                     <div className={styles.personList}>
+                      {(profile.propertyKinds ?? [])
+                        .filter(
+                          (kind) =>
+                            allowedPropertyKinds != null &&
+                            !allowedPropertyKinds.includes(kind) &&
+                            !propertyKindChoices.some((choice) => choice.id === kind),
+                        )
+                        .map((kind) => (
+                          <label key={kind} className={styles.person} data-selected="true">
+                            <input type="checkbox" checked disabled />
+                            <span>
+                              {KINDS.find((option) => option.id === kind)?.label ?? kind} (kept)
+                            </span>
+                          </label>
+                        ))}
                       {propertyKindChoices.map((kind) => {
                         const selected = kinds.includes(kind.id);
                         return (
