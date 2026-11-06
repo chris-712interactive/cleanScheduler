@@ -9,6 +9,7 @@ import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/en
 import { minimumTierLabelForFeature } from '@/lib/billing/tenantFeatureGate';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { publicBookingModeFromRow } from '@/lib/booking/publicBookingMode';
+import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { publicEnv } from '@/lib/env';
 import { BookingRequestSettingsForm } from './BookingRequestSettingsForm';
@@ -37,7 +38,7 @@ export default async function TenantBookingRequestsSettingsPage() {
         admin
           .from('tenant_operational_settings')
           .select(
-            'public_booking_mode, public_booking_request_enabled, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
+            'public_booking_mode, public_booking_request_enabled, service_segment, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
           )
           .eq('tenant_id', membership.tenantId)
           .maybeSingle(),
@@ -142,6 +143,8 @@ export default async function TenantBookingRequestsSettingsPage() {
               <InstantBookingOffers
                 tenantSlug={membership.tenantSlug}
                 readOnly={!canEdit}
+                allowPerSqft={capabilitiesForSegment(ops?.service_segment).sqftBids}
+                allowBedsBaths={capabilitiesForSegment(ops?.service_segment).showBedsBaths}
                 zones={(zones ?? []).map((zone) => ({ id: zone.id, name: zone.name }))}
                 plans={plans ?? []}
                 templates={templates ?? []}

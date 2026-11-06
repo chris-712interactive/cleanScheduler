@@ -18,7 +18,9 @@ export function offerMatchesBookingSegment(
   offerAudience: BookingServiceAudience,
   tenantSegment: BookingServiceAudience,
 ): boolean {
-  if (tenantSegment === 'both' || offerAudience === 'both') return true;
+  if (tenantSegment === 'both') return true;
+  // A stamped "both" is not permission to book after the workspace narrows.
+  if (offerAudience === 'both') return false;
   return offerAudience === tenantSegment;
 }
 
@@ -39,12 +41,52 @@ export function resolveTenantBookingSegment(
   return 'both';
 }
 
+export type InstantOfferLineInput = {
+  audience?: string | null;
+  pricingMethod?: string | null;
+  templateJobType?: string | null;
+};
+
+/** What line of work an offer actually is. Audience "both" is not a line by itself. */
+export function instantOfferServiceLine(
+  offer: InstantOfferLineInput,
+): 'residential' | 'commercial' | 'unspecified' {
+  if (offer.pricingMethod === 'per_sqft' || offer.templateJobType === 'commercial') {
+    return 'commercial';
+  }
+  if (
+    offer.pricingMethod === 'beds_baths' ||
+    offer.templateJobType === 'residential' ||
+    offer.templateJobType === 'short_term_rental'
+  ) {
+    return 'residential';
+  }
+  if (offer.audience === 'commercial') return 'commercial';
+  if (offer.audience === 'residential') return 'residential';
+  return 'unspecified';
+}
+
 export function instantOfferAllowedForSegment(
-  offerAudience: string | null | undefined,
+  offer: InstantOfferLineInput | string | null | undefined,
   serviceSegment?: TenantServiceSegment | string | null,
 ): boolean {
-  return offerMatchesBookingSegment(
-    parseBookingServiceAudience(offerAudience),
-    resolveTenantBookingSegment(serviceSegment),
-  );
+  const input: InstantOfferLineInput =
+    typeof offer === 'string' || offer == null ? { audience: offer } : offer;
+  const capabilities = capabilitiesForSegment(parseTenantServiceSegment(serviceSegment ?? 'both'));
+  const line = instantOfferServiceLine(input);
+  if (line === 'commercial') return capabilities.offersCommercial;
+  if (line === 'residential') return capabilities.offersResidential;
+  // No specific line, including a leftover audience of "both". Only a mixed workspace may book it.
+  return capabilities.offersBoth;
+}
+
+/** Square-foot booking prices are commercial. Beds and baths are residential. */
+export function instantPricingMethodAllowed(
+  pricingMethod: string | null | undefined,
+  serviceSegment?: TenantServiceSegment | string | null,
+): boolean {
+  const capabilities = capabilitiesForSegment(parseTenantServiceSegment(serviceSegment ?? 'both'));
+  if (pricingMethod === 'per_sqft') return capabilities.sqftBids;
+  if (pricingMethod === 'beds_baths') return capabilities.showBedsBaths;
+  return true;
 }

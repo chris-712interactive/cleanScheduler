@@ -9,7 +9,11 @@ import { parsePublicBookingMode, type PublicBookingMode } from '@/lib/booking/pu
 import { normalizePostalList } from '@/lib/booking/serviceZoneMatch';
 import type { InstantPricingMethod } from '@/lib/booking/priceInstantOffer';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
-import { resolveTenantBookingSegment } from '@/lib/booking/bookingAudience';
+import {
+  instantOfferServiceLine,
+  instantPricingMethodAllowed,
+  resolveTenantBookingSegment,
+} from '@/lib/booking/bookingAudience';
 import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 
 export type BookingRequestSettingsState = {
@@ -174,11 +178,39 @@ export async function saveInstantBookingOffer(
   const perBed = parseCentsFromDollars(String(formData.get('per_bedroom_dollars') ?? '')) ?? 0;
   const perBath = parseCentsFromDollars(String(formData.get('per_bathroom_dollars') ?? '')) ?? 0;
 
+  const serviceSegment = await loadTenantServiceSegment(access.admin, access.tenantId);
+  const pricingMethod = parsePricingMethod(String(formData.get('pricing_method') ?? ''));
+  if (!instantPricingMethodAllowed(pricingMethod, serviceSegment)) {
+    return {
+      error:
+        pricingMethod === 'per_sqft'
+          ? 'Square-foot pricing is only for commercial cleaning.'
+          : 'Beds and baths pricing is only for residential cleaning.',
+    };
+  }
+  let templateJobType: string | null = null;
+  if (templateId) {
+    const { data: template } = await access.admin
+      .from('tenant_service_templates')
+      .select('job_type')
+      .eq('id', templateId)
+      .eq('tenant_id', access.tenantId)
+      .maybeSingle();
+    templateJobType = template?.job_type ?? null;
+  }
+  const line = instantOfferServiceLine({ pricingMethod, templateJobType });
+  const audience =
+    line === 'commercial'
+      ? 'commercial'
+      : line === 'residential'
+        ? 'residential'
+        : resolveTenantBookingSegment(serviceSegment);
+
   const row = {
     tenant_id: access.tenantId,
     name,
     duration_minutes: clampInt(String(formData.get('duration_minutes') ?? ''), 15, 720, 120),
-    pricing_method: parsePricingMethod(String(formData.get('pricing_method') ?? '')),
+    pricing_method: pricingMethod,
     base_amount_cents: base,
     per_sqft_cents: perSqft,
     per_bedroom_cents: perBed,
@@ -186,9 +218,7 @@ export async function saveInstantBookingOffer(
     service_plan_id: planId,
     service_template_id: templateId,
     zone_ids: zoneIds,
-    audience: resolveTenantBookingSegment(
-      await loadTenantServiceSegment(access.admin, access.tenantId),
-    ),
+    audience,
     is_active: formData.get('is_active') === 'on',
   };
 

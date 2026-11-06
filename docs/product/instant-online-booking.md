@@ -29,7 +29,7 @@ Settings → **Online booking**
 
 Linking a plan or template does **not** start a Stripe subscription. The price the customer sees is the offer price. A repeat choice creates a recurring visit rule, the same records Schedule → Recurring uses. The first visit is staffed. Later occurrences are materialized by the existing recurring job and are not auto-assigned.
 
-`resolveTenantBookingSegment(serviceSegment)` reads the tenant service segment (`0123_tenant_service_segment_sqft_bids.sql`) through `capabilitiesForSegment` and `bookingServiceAllowed`. A residential-only workspace cannot book a commercial offer, and a commercial-only workspace cannot book a residential offer. `both` keeps every offer. The public page, slot preview, and `prepareInstantBooking` all use that check. Saving a bookable service stores the workspace’s current audience.
+Booking eligibility uses the offer’s price and linked job type, not a stamped audience of `both`. Per-square-foot pricing or a commercial job type is commercial. Beds and baths or a home job type is residential. After a workspace narrows to one line, offers from the other line leave `/book`, and preview, confirm, and `prepareInstantBooking` reject them. A residential-only workspace cannot save a square-foot booking price.
 
 ## Customer flow
 

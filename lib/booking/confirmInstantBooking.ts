@@ -1,6 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
-import { instantOfferAllowedForSegment } from '@/lib/booking/bookingAudience';
+import {
+  instantOfferAllowedForSegment,
+  instantPricingMethodAllowed,
+} from '@/lib/booking/bookingAudience';
 import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import {
   loadInstantSlotsForTenant,
@@ -46,13 +49,49 @@ export function parseInstantFrequency(raw: string): InstantBookingFrequency | nu
     : null;
 }
 
-export function visibleInstantOffers(
-  offers: InstantOfferRow[],
+export function visibleInstantOffers<
+  T extends {
+    is_active: boolean;
+    audience: string;
+    pricing_method: string;
+    service_template_id?: string | null;
+  },
+>(
+  offers: T[],
   serviceSegment?: string | null,
-): InstantOfferRow[] {
-  return offers.filter(
-    (offer) => offer.is_active && instantOfferAllowedForSegment(offer.audience, serviceSegment),
-  );
+  templateJobTypeById?: ReadonlyMap<string, string | null>,
+): T[] {
+  return offers.filter((offer) => {
+    if (!offer.is_active) return false;
+    const templateJobType = offer.service_template_id
+      ? (templateJobTypeById?.get(offer.service_template_id) ?? null)
+      : null;
+    return instantOfferAllowedForSegment(
+      {
+        audience: offer.audience,
+        pricingMethod: offer.pricing_method,
+        templateJobType,
+      },
+      serviceSegment,
+    );
+  });
+}
+
+export async function loadTemplateJobTypes(
+  admin: Admin,
+  tenantId: string,
+  templateIds: Array<string | null | undefined>,
+): Promise<Map<string, string | null>> {
+  const ids = [...new Set(templateIds.filter((id): id is string => Boolean(id)))];
+  const jobTypes = new Map<string, string | null>();
+  if (ids.length === 0) return jobTypes;
+  const { data } = await admin
+    .from('tenant_service_templates')
+    .select('id, job_type')
+    .eq('tenant_id', tenantId)
+    .in('id', ids);
+  for (const row of data ?? []) jobTypes.set(row.id, row.job_type);
+  return jobTypes;
 }
 
 function splitPersonName(name: string): { first: string; last: string } {
@@ -120,8 +159,14 @@ export async function prepareInstantBooking(
   if (offerError || !offer) return { ok: false, error: 'Choose a service to continue.' };
 
   const serviceSegment = await loadTenantServiceSegment(admin, input.tenantId);
-  const visible = visibleInstantOffers([offer], serviceSegment);
+  const templateJobTypes = await loadTemplateJobTypes(admin, input.tenantId, [
+    offer.service_template_id,
+  ]);
+  const visible = visibleInstantOffers([offer], serviceSegment, templateJobTypes);
   if (visible.length === 0) return { ok: false, error: 'That service is not available to book.' };
+  if (!instantPricingMethodAllowed(offer.pricing_method, serviceSegment)) {
+    return { ok: false, error: 'That price is not available for this cleaning company.' };
+  }
 
   if (offer.service_plan_id) {
     const { data: plan } = await admin

@@ -3,7 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
-import { instantOfferAllowedForSegment } from '@/lib/booking/bookingAudience';
+import {
+  instantOfferAllowedForSegment,
+  instantPricingMethodAllowed,
+} from '@/lib/booking/bookingAudience';
 import { randomUUID } from 'node:crypto';
 import { publicSlotPayload, rateLimitAllows, trustedClientIp } from '@/lib/booking/bookingGuards';
 import {
@@ -11,6 +14,7 @@ import {
   finalizeInstantBookingRecord,
   holdInstantBooking,
   parseInstantFrequency,
+  loadTemplateJobTypes,
   prepareInstantBooking,
   visibleInstantOffers,
 } from '@/lib/booking/confirmInstantBooking';
@@ -162,8 +166,16 @@ export async function previewInstantBookingAction(
     .select('*')
     .eq('tenant_id', gated.tenant.id)
     .eq('id', offerId);
-  const offer = visibleInstantOffers(offers ?? [], gated.serviceSegment)[0];
+  const templateJobTypes = await loadTemplateJobTypes(
+    gated.admin,
+    gated.tenant.id,
+    (offers ?? []).map((offer) => offer.service_template_id),
+  );
+  const offer = visibleInstantOffers(offers ?? [], gated.serviceSegment, templateJobTypes)[0];
   if (!offer) return { error: 'Choose a service to continue.' };
+  if (!instantPricingMethodAllowed(offer.pricing_method, gated.serviceSegment)) {
+    return { error: 'That price is not available for this cleaning company.' };
+  }
 
   const postalCode = String(formData.get('postal_code') ?? '').trim();
   const { data: coverageRows } = await gated.admin
@@ -351,7 +363,23 @@ export async function confirmInstantBookingAction(
   });
   if (!prepared.ok) return { error: prepared.error };
 
-  if (!instantOfferAllowedForSegment(prepared.prepared.offer.audience, gated.serviceSegment)) {
+  if (
+    !instantOfferAllowedForSegment(
+      {
+        audience: prepared.prepared.offer.audience,
+        pricingMethod: prepared.prepared.offer.pricing_method,
+        templateJobType: prepared.prepared.offer.service_template_id
+          ? (
+              await loadTemplateJobTypes(gated.admin, gated.tenant.id, [
+                prepared.prepared.offer.service_template_id,
+              ])
+            ).get(prepared.prepared.offer.service_template_id)
+          : null,
+      },
+      gated.serviceSegment,
+    ) ||
+    !instantPricingMethodAllowed(prepared.prepared.offer.pricing_method, gated.serviceSegment)
+  ) {
     return { error: 'That service is not available to book.' };
   }
 

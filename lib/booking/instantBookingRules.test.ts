@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   instantOfferAllowedForSegment,
+  instantPricingMethodAllowed,
   offerMatchesBookingSegment,
-  resolveTenantBookingSegment,
 } from '@/lib/booking/bookingAudience';
 import { depositForPrice, priceInstantOffer } from '@/lib/booking/priceInstantOffer';
 import { recurringRuleFromFrequency } from '@/lib/booking/recurringRuleFromFrequency';
@@ -47,19 +47,47 @@ describe('instant booking price and zones', () => {
     expect(offerMatchesBookingSegment('residential', 'residential')).toBe(true);
     expect(offerMatchesBookingSegment('commercial', 'residential')).toBe(false);
     expect(offerMatchesBookingSegment('commercial', 'both')).toBe(true);
-    expect(offerMatchesBookingSegment('both', 'commercial')).toBe(true);
+    expect(offerMatchesBookingSegment('both', 'commercial')).toBe(false);
+    expect(offerMatchesBookingSegment('both', 'both')).toBe(true);
   });
 
-  it('blocks the other service line from online booking', () => {
-    expect(resolveTenantBookingSegment('residential')).toBe('residential');
-    expect(resolveTenantBookingSegment('commercial')).toBe('commercial');
-    expect(resolveTenantBookingSegment('both')).toBe('both');
-    expect(instantOfferAllowedForSegment('commercial', 'residential')).toBe(false);
-    expect(instantOfferAllowedForSegment('residential', 'residential')).toBe(true);
-    expect(instantOfferAllowedForSegment('residential', 'commercial')).toBe(false);
-    expect(instantOfferAllowedForSegment('commercial', 'commercial')).toBe(true);
-    expect(instantOfferAllowedForSegment('commercial', 'both')).toBe(true);
-    expect(instantOfferAllowedForSegment('residential', 'both')).toBe(true);
+  it('does not keep a both-audience offer after the workspace narrows', () => {
+    const savedWhileBoth = { audience: 'both', pricingMethod: 'per_sqft' };
+    expect(instantOfferAllowedForSegment(savedWhileBoth, 'both')).toBe(true);
+    expect(instantOfferAllowedForSegment(savedWhileBoth, 'residential')).toBe(false);
+    expect(instantOfferAllowedForSegment(savedWhileBoth, 'commercial')).toBe(true);
+
+    const homeSavedWhileBoth = { audience: 'both', pricingMethod: 'beds_baths' };
+    expect(instantOfferAllowedForSegment(homeSavedWhileBoth, 'commercial')).toBe(false);
+    expect(instantOfferAllowedForSegment(homeSavedWhileBoth, 'residential')).toBe(true);
+
+    const flatSavedWhileBoth = { audience: 'both', pricingMethod: 'flat' };
+    expect(instantOfferAllowedForSegment(flatSavedWhileBoth, 'residential')).toBe(false);
+    expect(instantOfferAllowedForSegment(flatSavedWhileBoth, 'commercial')).toBe(false);
+    expect(instantOfferAllowedForSegment(flatSavedWhileBoth, 'both')).toBe(true);
+  });
+
+  it('uses a linked job type when the stamped audience is both', () => {
+    expect(
+      instantOfferAllowedForSegment(
+        { audience: 'both', pricingMethod: 'flat', templateJobType: 'commercial' },
+        'residential',
+      ),
+    ).toBe(false);
+    expect(
+      instantOfferAllowedForSegment(
+        { audience: 'both', pricingMethod: 'flat', templateJobType: 'residential' },
+        'commercial',
+      ),
+    ).toBe(false);
+  });
+
+  it('blocks square-foot booking prices on a residential workspace', () => {
+    expect(instantPricingMethodAllowed('per_sqft', 'residential')).toBe(false);
+    expect(instantPricingMethodAllowed('per_sqft', 'commercial')).toBe(true);
+    expect(instantPricingMethodAllowed('per_sqft', 'both')).toBe(true);
+    expect(instantPricingMethodAllowed('beds_baths', 'commercial')).toBe(false);
+    expect(instantPricingMethodAllowed('flat', 'residential')).toBe(true);
   });
 
   it('matches ZIP coverage and offer zones', () => {
