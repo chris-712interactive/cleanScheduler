@@ -11,6 +11,7 @@ import {
   type TenantBusinessSnapshot,
 } from '@/lib/tenant/tenantBusinessSettings';
 import { updateBusinessAddressAction, type BusinessSettingsActionState } from './businessActions';
+import layoutStyles from './business-settings.module.scss';
 import styles from '../settings.module.scss';
 
 const initial: BusinessSettingsActionState = {};
@@ -47,26 +48,24 @@ export function BusinessAddressForm({
     state.geocodeMessage !== undefined ? state.geocodeMessage : geocodeMessage;
 
   return (
-    <form onSubmit={handleSubmit} className={styles.settingsForm}>
+    <form onSubmit={handleSubmit} className={layoutStyles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
 
-      <label className={styles.fieldLabel} htmlFor="address_line1">
+      <label className={layoutStyles.field} htmlFor="address_line1">
         Address
+        <input
+          id="address_line1"
+          name="address_line1"
+          type="text"
+          className={styles.fieldInput}
+          defaultValue={snapshot.addressLine1}
+          disabled={readOnly}
+        />
       </label>
-      <input
-        id="address_line1"
-        name="address_line1"
-        type="text"
-        className={styles.fieldInput}
-        defaultValue={snapshot.addressLine1}
-        disabled={readOnly}
-      />
 
-      <div className={styles.addressGrid}>
-        <div>
-          <label className={styles.fieldLabel} htmlFor="city">
-            City
-          </label>
+      <div className={layoutStyles.fieldGridFour}>
+        <label className={layoutStyles.field} htmlFor="city">
+          City
           <input
             id="city"
             name="city"
@@ -75,11 +74,9 @@ export function BusinessAddressForm({
             defaultValue={snapshot.city}
             disabled={readOnly}
           />
-        </div>
-        <div>
-          <label className={styles.fieldLabel} htmlFor="state">
-            State
-          </label>
+        </label>
+        <label className={layoutStyles.field} htmlFor="state">
+          State
           <select
             id="state"
             name="state"
@@ -94,11 +91,9 @@ export function BusinessAddressForm({
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className={styles.fieldLabel} htmlFor="postal_code">
-            Zip code
-          </label>
+        </label>
+        <label className={layoutStyles.field} htmlFor="postal_code">
+          Zip code
           <input
             id="postal_code"
             name="postal_code"
@@ -107,25 +102,24 @@ export function BusinessAddressForm({
             defaultValue={snapshot.postalCode}
             disabled={readOnly}
           />
-        </div>
+        </label>
+        <label className={layoutStyles.field} htmlFor="country">
+          Country
+          <select
+            id="country"
+            name="country"
+            className={styles.fieldSelect}
+            defaultValue={snapshot.country}
+            disabled={readOnly}
+          >
+            {TENANT_COUNTRY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-
-      <label className={styles.fieldLabel} htmlFor="country">
-        Country
-      </label>
-      <select
-        id="country"
-        name="country"
-        className={styles.fieldSelect}
-        defaultValue={snapshot.country}
-        disabled={readOnly}
-      >
-        {TENANT_COUNTRY_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
 
       {shownGeocodeMessage ? <p className={styles.geocodeNote}>{shownGeocodeMessage}</p> : null}
 

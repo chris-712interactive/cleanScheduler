@@ -14,6 +14,7 @@ import {
   uploadTenantLogoAction,
   type BusinessSettingsActionState,
 } from './businessActions';
+import layoutStyles from './business-settings.module.scss';
 import styles from '../settings.module.scss';
 
 const brandingInitial: BusinessSettingsActionState = {};
@@ -49,7 +50,7 @@ function BrandColorForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.settingsForm}>
+    <form onSubmit={handleSubmit} className={layoutStyles.brandingCard}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
 
       <ColorField
@@ -104,7 +105,7 @@ function LogoUploadForm({
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className={styles.settingsForm}>
+    <form ref={formRef} onSubmit={handleSubmit} className={layoutStyles.brandingCard}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
 
       <span className={styles.fieldLabel}>Logo</span>
@@ -149,7 +150,7 @@ export function BrandingForm({
   readOnly?: boolean;
 }) {
   return (
-    <div className={styles.brandingStack}>
+    <div className={layoutStyles.brandingGrid}>
       <BrandColorForm
         tenantSlug={tenantSlug}
         initialBrandColor={snapshot.brandColor}

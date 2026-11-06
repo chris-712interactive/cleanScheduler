@@ -5,7 +5,7 @@ Each workspace chooses the cleaning work it sells: residential, commercial, or b
 ## Where it is set
 
 - Trial signup asks **Services you offer** and writes the same value onto operational settings. The onboarding profile still keeps the free-text `business_type` for founder review.
-- Owners and admins change it later under **Settings → Business → Residential, commercial, or both**.
+- Owners and admins change it later under **Settings → Business → Residential, commercial, or both**. On a wide screen the three choices sit side by side, each with its own explanation.
 
 ## One capability helper
 

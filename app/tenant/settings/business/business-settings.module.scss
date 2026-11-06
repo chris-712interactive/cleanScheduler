@@ -1,3 +1,4 @@
+@use 'mixins/breakpoints' as mq;
 @use 'mixins/tenant-settings-layout' as layout;
 
 .stack {
@@ -28,16 +29,60 @@
   @include layout.meta-chip;
 }
 
-.sectionNav {
-  @include layout.section-nav;
+.shell {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+
+  @include mq.up(lg) {
+    grid-template-columns: 13rem minmax(0, 1fr);
+    gap: var(--space-6);
+  }
 }
 
-.sectionNavLink {
-  @include layout.section-nav-link;
+.nav {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+
+  @include mq.up(lg) {
+    position: sticky;
+    top: var(--space-4);
+    flex-direction: column;
+    overflow: visible;
+  }
+}
+
+.navLink {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+
+  &:hover {
+    color: var(--color-text);
+    background: var(--color-surface);
+  }
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
 }
 
 .settingsSection {
   @include layout.settings-section;
+
+  scroll-margin-top: 5rem;
 }
 
 .sectionHeader {
@@ -52,6 +97,194 @@
   @include layout.section-lead;
 }
 
-.formWrap {
-  max-width: 36rem;
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.fieldGrid {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fieldGridFour {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.hint {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--color-text-subtle);
+}
+
+.spanAll {
+  @include mq.up(md) {
+    grid-column: 1 / -1;
+  }
+}
+
+.choiceFieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.choiceGrid {
+  display: grid;
+  gap: var(--space-3);
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.choiceCard {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-height: 8.5rem;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  cursor: pointer;
+
+  &:has(input:checked) {
+    border-color: color-mix(in srgb, var(--color-brand-primary) 50%, var(--color-border));
+    background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+  }
+
+  &:has(input:disabled) {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  input {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+  }
+}
+
+.choiceTitle {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.choiceHint {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.brandingGrid {
+  display: grid;
+  gap: var(--space-4);
+  align-items: stretch;
+
+  @include mq.up(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.brandingCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+}
+
+.weekGrid {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @include mq.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dayCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+
+  &:has(input:checked) {
+    border-color: color-mix(in srgb, var(--color-brand-primary) 50%, var(--color-border));
+    background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface));
+  }
+}
+
+.dayToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dayTimes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.dayDash {
+  color: var(--color-text-muted);
 }

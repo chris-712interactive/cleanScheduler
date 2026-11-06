@@ -12,6 +12,7 @@ import {
   type WorkDaySchedule,
 } from '@/lib/tenant/tenantBusinessSettings';
 import { updateWorkWeekAction, type BusinessSettingsActionState } from './businessActions';
+import layoutStyles from './business-settings.module.scss';
 import styles from '../settings.module.scss';
 
 const initial: BusinessSettingsActionState = {};
@@ -53,18 +54,17 @@ export function WorkWeekForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.settingsForm}>
+    <form onSubmit={handleSubmit} className={layoutStyles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
 
-      <span className={styles.fieldLabel}>Hours of operation</span>
-      <p className={styles.fieldHint}>
-        Set each day on its own. A closed day is left unchecked and is not given the same hours as
-        the other days.
+      <p className={layoutStyles.hint}>
+        Check a day to open it. A closed day stays unchecked and keeps its own hours for the next
+        time you open it.
       </p>
-      <ul className={styles.hoursDayList}>
+      <ul className={layoutStyles.weekGrid}>
         {days.map((day) => (
-          <li key={day.weekday} className={styles.hoursDayRow}>
-            <label className={styles.hoursDayToggle}>
+          <li key={day.weekday} className={layoutStyles.dayCard}>
+            <label className={layoutStyles.dayToggle}>
               <input
                 type="checkbox"
                 name={`work_day_${day.weekday}`}
@@ -78,41 +78,45 @@ export function WorkWeekForm({
               />
               <span>{WORK_WEEK_DAY_LABEL[day.weekday]}</span>
             </label>
-            <select
-              name={`work_day_${day.weekday}_start`}
-              className={styles.fieldSelect}
-              value={day.start}
-              disabled={readOnly || !day.enabled}
-              aria-label={`${WORK_WEEK_DAY_LABEL[day.weekday]} start`}
-              onChange={(event) =>
-                setDays((current) => updateDay(current, day.weekday, { start: event.target.value }))
-              }
-            >
-              {timeOptions.map((option) => (
-                <option key={`${day.weekday}-start-${option.value}`} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <span className={styles.hoursDayDash} aria-hidden>
-              –
-            </span>
-            <select
-              name={`work_day_${day.weekday}_end`}
-              className={styles.fieldSelect}
-              value={day.end}
-              disabled={readOnly || !day.enabled}
-              aria-label={`${WORK_WEEK_DAY_LABEL[day.weekday]} end`}
-              onChange={(event) =>
-                setDays((current) => updateDay(current, day.weekday, { end: event.target.value }))
-              }
-            >
-              {timeOptions.map((option) => (
-                <option key={`${day.weekday}-end-${option.value}`} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className={layoutStyles.dayTimes}>
+              <select
+                name={`work_day_${day.weekday}_start`}
+                className={styles.fieldSelect}
+                value={day.start}
+                disabled={readOnly || !day.enabled}
+                aria-label={`${WORK_WEEK_DAY_LABEL[day.weekday]} start`}
+                onChange={(event) =>
+                  setDays((current) =>
+                    updateDay(current, day.weekday, { start: event.target.value }),
+                  )
+                }
+              >
+                {timeOptions.map((option) => (
+                  <option key={`${day.weekday}-start-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <span className={layoutStyles.dayDash} aria-hidden>
+                –
+              </span>
+              <select
+                name={`work_day_${day.weekday}_end`}
+                className={styles.fieldSelect}
+                value={day.end}
+                disabled={readOnly || !day.enabled}
+                aria-label={`${WORK_WEEK_DAY_LABEL[day.weekday]} end`}
+                onChange={(event) =>
+                  setDays((current) => updateDay(current, day.weekday, { end: event.target.value }))
+                }
+              >
+                {timeOptions.map((option) => (
+                  <option key={`${day.weekday}-end-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </li>
         ))}
       </ul>
