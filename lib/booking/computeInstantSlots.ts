@@ -222,3 +222,19 @@ export function computeInstantSlots(input: ComputeInstantSlotsInput): InstantSlo
 
   return results;
 }
+
+/** Match a saved slot even when the database writes the same instant as `+00:00`. */
+export function findMatchingInstantSlot(
+  slots: InstantSlot[],
+  wanted: { startsAt: string; endsAt: string; assigneeUserId: string },
+): InstantSlot | undefined {
+  const startMs = Date.parse(wanted.startsAt);
+  const endMs = Date.parse(wanted.endsAt);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return undefined;
+  return slots.find(
+    (candidate) =>
+      Date.parse(candidate.startsAt) === startMs &&
+      Date.parse(candidate.endsAt) === endMs &&
+      candidate.assigneeUserId === wanted.assigneeUserId,
+  );
+}
