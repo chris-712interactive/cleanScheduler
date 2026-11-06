@@ -108,3 +108,47 @@ export function rateLimitWindowStartMs(nowMs: number, windowMs: number): number 
 export function rateLimitAllows(hitCount: number, limit: number): boolean {
   return hitCount <= limit;
 }
+
+export function firstVisitAndRecurringCents(
+  priceCents: number,
+  depositCents: number,
+): { firstVisitCents: number; recurringCents: number } {
+  return {
+    firstVisitCents: balanceDueCents(priceCents, depositCents),
+    recurringCents: Math.max(0, priceCents),
+  };
+}
+
+/** Any failed finalize after Checkout is terminal: refund a charge, or flag the office. */
+export function checkoutFinalizeOutcome(input: {
+  paymentCollected: boolean;
+}): 'refund' | 'flag_for_office' {
+  return input.paymentCollected ? 'refund' : 'flag_for_office';
+}
+
+/**
+ * Deposit ledger decision shared by the return URL and the webhook.
+ * A checkout session that already has a payment must not create a second invoice.
+ */
+export function depositWritePlan(input: {
+  depositCents: number;
+  bookingInvoiceId: string | null;
+  sessionPaymentInvoiceId: string | null;
+}): 'skip' | 'link_existing' | 'ensure_payment' | 'create' {
+  if (input.depositCents <= 0) return 'skip';
+  if (input.sessionPaymentInvoiceId) return 'link_existing';
+  if (input.bookingInvoiceId) return 'ensure_payment';
+  return 'create';
+}
+
+/** Preview failures must show even when no slot list came back. */
+export function previewFeedback(input: {
+  error?: string;
+  slotCount: number | null;
+  offerMatches: boolean;
+}): 'error' | 'empty' | 'slots' | 'none' {
+  if (input.error) return 'error';
+  if (input.slotCount == null || !input.offerMatches) return 'none';
+  if (input.slotCount === 0) return 'empty';
+  return 'slots';
+}

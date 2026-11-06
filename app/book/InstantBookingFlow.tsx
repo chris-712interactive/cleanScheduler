@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import { SmsOptInCheckboxLabel } from '@/components/legal/SmsOptInCheckboxLabel';
-import { previewMatchesOffer } from '@/lib/booking/bookingGuards';
+import { previewFeedback, previewMatchesOffer } from '@/lib/booking/bookingGuards';
 import {
   confirmInstantBookingAction,
   previewInstantBookingAction,
@@ -242,6 +242,13 @@ export function InstantBookingFlow({
           <input type="checkbox" name="sms_opt_in" value="on" />
           <SmsOptInCheckboxLabel />
         </label>
+        {previewFeedback({
+          error: preview.error,
+          slotCount: preview.slots ? preview.slots.length : null,
+          offerMatches: previewMatchesOffer(previewOfferId, offer?.id ?? ''),
+        }) === 'error' ? (
+          <p className={styles.error}>{preview.error}</p>
+        ) : null}
         <PreviewButton />
       </form>
 
@@ -302,10 +309,11 @@ export function InstantBookingFlow({
         </form>
       ) : null}
 
-      {preview.slots &&
-      previewMatchesOffer(previewOfferId, offer?.id ?? '') &&
-      preview.slots.length === 0 &&
-      !preview.error ? (
+      {previewFeedback({
+        error: undefined,
+        slotCount: preview.slots ? preview.slots.length : null,
+        offerMatches: previewMatchesOffer(previewOfferId, offer?.id ?? ''),
+      }) === 'empty' ? (
         <p className={styles.error}>
           No open times in the booking window. Contact the office and they can find another day.
         </p>

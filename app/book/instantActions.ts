@@ -18,15 +18,11 @@ import {
   prepareInstantBooking,
   visibleInstantOffers,
 } from '@/lib/booking/confirmInstantBooking';
-import {
-  recordBookingDeposit,
-  startInstantBookingCheckout,
-} from '@/lib/booking/instantBookingCheckout';
+import { startInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
 import {
   instantBookingPolicyFromRow,
   loadInstantSlotsForTenant,
 } from '@/lib/booking/loadInstantSlots';
-import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
 import {
   depositForPrice,
   priceInstantOffer,
@@ -42,6 +38,7 @@ import { formatNextAppointmentWhen } from '@/lib/datetime/formatInTimeZone';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { getPortalContext } from '@/lib/portal';
+import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { PlaceHint } from '@/lib/schedule/optimizer/geo';
 import { createAdminClient } from '@/lib/supabase/server';
 
@@ -417,22 +414,8 @@ export async function confirmInstantBookingAction(
     held.bookingId,
   );
   if ('error' in finalized) return { error: finalized.error };
-  await recordBookingDeposit(gated.admin, {
-    tenantId: gated.tenant.id,
-    bookingId: held.bookingId,
-    visitId: finalized.visitId,
-  });
-  await notifyInstantBookingConfirmed(gated.admin, {
-    tenantId: gated.tenant.id,
-    bookingId: held.bookingId,
-    visitId: finalized.visitId,
-  }).catch(() => undefined);
   revalidatePath('/schedule');
-
   return {
-    success: true,
-    title: prepared.prepared.offer.name,
-    whenLabel: formatNextAppointmentWhen(prepared.prepared.startsAt, gated.tenant.timezone),
-    priceLabel: `$${formatCentsAsDollars(prepared.prepared.priceCents)}`,
+    checkoutUrl: `${getPublicOrigin(gated.tenant.slug)}/book?booking=${encodeURIComponent(held.publicToken)}`,
   };
 }

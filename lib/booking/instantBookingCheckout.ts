@@ -6,7 +6,11 @@ import {
   finalizeInstantBookingRecord,
 } from '@/lib/booking/confirmInstantBooking';
 import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
-import { balanceDueCents } from '@/lib/booking/bookingGuards';
+import {
+  balanceDueCents,
+  checkoutFinalizeOutcome,
+  depositWritePlan,
+} from '@/lib/booking/bookingGuards';
 import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import {
   parseConnectApplicationFeeBps,
@@ -187,6 +191,30 @@ async function refundPaidBooking(
   }
 }
 
+async function paymentInvoiceForSession(
+  admin: Admin,
+  sessionId: string | null,
+): Promise<string | null> {
+  if (!sessionId) return null;
+  const { data } = await admin
+    .from('tenant_invoice_payments')
+    .select('invoice_id')
+    .eq('stripe_checkout_session_id', sessionId)
+    .maybeSingle();
+  return data?.invoice_id ?? null;
+}
+
+async function linkBookingInvoice(
+  admin: Admin,
+  input: { tenantId: string; bookingId: string; invoiceId: string },
+): Promise<void> {
+  await admin
+    .from('tenant_instant_bookings')
+    .update({ invoice_id: input.invoiceId })
+    .eq('id', input.bookingId)
+    .eq('tenant_id', input.tenantId);
+}
+
 export async function recordBookingDeposit(
   admin: Admin,
   input: { tenantId: string; bookingId: string; visitId: string },
@@ -199,30 +227,78 @@ export async function recordBookingDeposit(
     .eq('id', input.bookingId)
     .eq('tenant_id', input.tenantId)
     .maybeSingle();
-  if (!booking || booking.deposit_cents <= 0 || booking.invoice_id || !booking.customer_id) return;
+  if (!booking || !booking.customer_id) return;
 
-  const invoice = await admin
-    .from('tenant_invoices')
-    .insert({
-      tenant_id: input.tenantId,
-      customer_id: booking.customer_id,
-      property_id: booking.property_id,
-      visit_id: input.visitId,
-      title: `${booking.title} deposit`,
-      status: 'open',
-      currency: booking.currency || 'usd',
-      amount_cents: booking.price_cents,
-      amount_paid_cents: 0,
-      source: 'checkout',
-      notes: `Online booking. Deposit ${booking.deposit_cents} cents. Balance due ${balanceDueCents(booking.price_cents, booking.deposit_cents)} cents.`,
-    })
-    .select('id')
-    .single();
-  if (invoice.error || !invoice.data) return;
+  const sessionInvoiceId = await paymentInvoiceForSession(
+    admin,
+    booking.stripe_checkout_session_id,
+  );
+  const plan = depositWritePlan({
+    depositCents: booking.deposit_cents,
+    bookingInvoiceId: booking.invoice_id,
+    sessionPaymentInvoiceId: sessionInvoiceId,
+  });
+  if (plan === 'skip') return;
+  if (plan === 'link_existing' && sessionInvoiceId) {
+    await linkBookingInvoice(admin, {
+      tenantId: input.tenantId,
+      bookingId: booking.id,
+      invoiceId: sessionInvoiceId,
+    });
+    return;
+  }
 
+  let invoiceId = plan === 'ensure_payment' ? booking.invoice_id : null;
+  if (!invoiceId) {
+    const invoice = await admin
+      .from('tenant_invoices')
+      .insert({
+        tenant_id: input.tenantId,
+        customer_id: booking.customer_id,
+        property_id: booking.property_id,
+        visit_id: input.visitId,
+        title: `${booking.title} deposit`,
+        status: 'open',
+        currency: booking.currency || 'usd',
+        amount_cents: booking.price_cents,
+        amount_paid_cents: 0,
+        source: 'checkout',
+        notes: `Online booking. Deposit ${booking.deposit_cents} cents. Balance due ${balanceDueCents(booking.price_cents, booking.deposit_cents)} cents.`,
+      })
+      .select('id')
+      .single();
+    if (invoice.error || !invoice.data) return;
+
+    const claim = await admin
+      .from('tenant_instant_bookings')
+      .update({ invoice_id: invoice.data.id })
+      .eq('id', booking.id)
+      .eq('tenant_id', input.tenantId)
+      .is('invoice_id', null)
+      .select('id');
+    if (claim.error || (claim.data ?? []).length === 0) {
+      await admin
+        .from('tenant_invoices')
+        .delete()
+        .eq('id', invoice.data.id)
+        .eq('tenant_id', input.tenantId);
+      const winner = await paymentInvoiceForSession(admin, booking.stripe_checkout_session_id);
+      if (winner) {
+        await linkBookingInvoice(admin, {
+          tenantId: input.tenantId,
+          bookingId: booking.id,
+          invoiceId: winner,
+        });
+      }
+      return;
+    }
+    invoiceId = invoice.data.id;
+  }
+
+  if (!invoiceId || !booking.stripe_checkout_session_id) return;
   const payment = await admin.from('tenant_invoice_payments').insert({
     tenant_id: input.tenantId,
-    invoice_id: invoice.data.id,
+    invoice_id: invoiceId,
     amount_cents: booking.deposit_cents,
     method: 'card',
     recorded_via: 'stripe_checkout',
@@ -230,13 +306,21 @@ export async function recordBookingDeposit(
     stripe_payment_intent_id: booking.stripe_payment_intent_id,
     notes: 'Instant booking deposit',
   });
-  if (payment.error) return;
-
-  await admin
-    .from('tenant_instant_bookings')
-    .update({ invoice_id: invoice.data.id })
-    .eq('id', booking.id)
-    .eq('tenant_id', input.tenantId);
+  if (payment.error?.code === '23505') {
+    const winner = await paymentInvoiceForSession(admin, booking.stripe_checkout_session_id);
+    if (winner && winner !== invoiceId) {
+      await admin
+        .from('tenant_invoices')
+        .delete()
+        .eq('id', invoiceId)
+        .eq('tenant_id', input.tenantId);
+      await linkBookingInvoice(admin, {
+        tenantId: input.tenantId,
+        bookingId: booking.id,
+        invoiceId: winner,
+      });
+    }
+  }
 }
 
 export async function completeInstantBookingCheckout(
@@ -323,8 +407,11 @@ export async function completeInstantBookingCheckout(
 
   const finalized = await finalizeInstantBookingRecord(admin, input.tenantId, booking.id);
   if ('error' in finalized) {
-    if (finalized.code === 'slot_taken' && paymentIntentId && session.mode === 'payment') {
-      const outcome = await refundPaidBooking(admin, stripe, {
+    const outcome = checkoutFinalizeOutcome({
+      paymentCollected: session.mode === 'payment' && Boolean(paymentIntentId),
+    });
+    if (outcome === 'refund' && paymentIntentId) {
+      const refund = await refundPaidBooking(admin, stripe, {
         tenantId: input.tenantId,
         bookingId: booking.id,
         paymentIntentId,
@@ -334,12 +421,21 @@ export async function completeInstantBookingCheckout(
         ok: false,
         retry: false,
         error:
-          outcome === 'refunded'
-            ? 'That time was taken. The deposit was refunded.'
-            : 'That time was taken. The office will refund the deposit.',
+          refund === 'refunded'
+            ? 'The visit could not be booked. The deposit was refunded.'
+            : 'The visit could not be booked. The office will refund the deposit.',
       };
     }
-    return { ok: false, retry: true, error: finalized.error };
+    await admin
+      .from('tenant_instant_bookings')
+      .update({ status: 'needs_review' })
+      .eq('id', booking.id)
+      .eq('tenant_id', input.tenantId);
+    return {
+      ok: false,
+      retry: false,
+      error: 'The visit could not be booked. The office will follow up.',
+    };
   }
 
   await recordBookingDeposit(admin, {

@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   balanceDueCents,
   bookingReturnState,
+  checkoutFinalizeOutcome,
+  depositWritePlan,
   emailsEqual,
   escapeIlikePattern,
+  firstVisitAndRecurringCents,
+  previewFeedback,
   previewMatchesOffer,
   propertyFactPatch,
   publicSlotPayload,
@@ -65,7 +69,52 @@ describe('booking QA guards', () => {
     expect(previewMatchesOffer('offer-a', 'offer-b')).toBe(false);
   });
 
-  it('retries notification only while the visit is confirmed and unsent', () => {
+  it('settles every failed paid finalize, and keeps the full price on later visits', () => {
+    expect(checkoutFinalizeOutcome({ paymentCollected: true })).toBe('refund');
+    expect(checkoutFinalizeOutcome({ paymentCollected: false })).toBe('flag_for_office');
+    expect(firstVisitAndRecurringCents(12000, 12000)).toEqual({
+      firstVisitCents: 0,
+      recurringCents: 12000,
+    });
+    expect(firstVisitAndRecurringCents(12000, 5000)).toEqual({
+      firstVisitCents: 7000,
+      recurringCents: 12000,
+    });
+  });
+
+  it('records one deposit invoice when the webhook and the return URL both run', () => {
+    expect(
+      depositWritePlan({
+        depositCents: 5000,
+        bookingInvoiceId: null,
+        sessionPaymentInvoiceId: null,
+      }),
+    ).toBe('create');
+    expect(
+      depositWritePlan({
+        depositCents: 5000,
+        bookingInvoiceId: null,
+        sessionPaymentInvoiceId: 'inv_existing',
+      }),
+    ).toBe('link_existing');
+    expect(
+      depositWritePlan({
+        depositCents: 5000,
+        bookingInvoiceId: 'inv_existing',
+        sessionPaymentInvoiceId: 'inv_existing',
+      }),
+    ).toBe('link_existing');
+  });
+
+  it('shows preview errors when the slot list is missing', () => {
+    expect(
+      previewFeedback({ error: 'Enter a valid ZIP code.', slotCount: null, offerMatches: true }),
+    ).toBe('error');
+    expect(previewFeedback({ error: undefined, slotCount: 0, offerMatches: true })).toBe('empty');
+    expect(previewFeedback({ slotCount: 2, offerMatches: false })).toBe('none');
+  });
+
+  it('retries a confirmation email that never set notified_at', () => {
     expect(shouldAttemptBookingNotification({ status: 'confirmed', notifiedAt: null })).toBe(true);
     expect(
       shouldAttemptBookingNotification({ status: 'confirmed', notifiedAt: '2026-01-01T00:00:00Z' }),

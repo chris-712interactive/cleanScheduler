@@ -9,6 +9,7 @@ import {
 import { allowedFrequencies, type InstantBookingFrequency } from '@/lib/booking/priceInstantOffer';
 import { instantBookingPolicyFromRow } from '@/lib/booking/loadInstantSlots';
 import { balanceDueCents, bookingReturnState } from '@/lib/booking/bookingGuards';
+import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
 import { completeInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
 import {
   PUBLIC_BOOKING_UNAVAILABLE,
@@ -114,11 +115,19 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
     const { data: fresh } = booking
       ? await admin
           .from('tenant_instant_bookings')
-          .select('status, title, starts_at, price_cents, deposit_cents')
+          .select('id, status, visit_id, title, starts_at, price_cents, deposit_cents')
           .eq('tenant_id', tenant.id)
           .eq('public_token', bookingToken)
           .maybeSingle()
       : { data: null };
+
+    if (fresh?.status === 'confirmed' && fresh.visit_id) {
+      await notifyInstantBookingConfirmed(admin, {
+        tenantId: tenant.id,
+        bookingId: fresh.id,
+        visitId: fresh.visit_id,
+      }).catch(() => undefined);
+    }
 
     const state = bookingReturnState(fresh?.status);
     const message =
