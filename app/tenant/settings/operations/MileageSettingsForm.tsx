@@ -47,7 +47,9 @@ export function MileageSettingsForm({
         <h2 className={styles.sectionTitle}>Mileage</h2>
         <p className={styles.sectionLead}>
           Crew and office staff confirm a day of drives. Leave reimbursement off and the log stays
-          miles only. Odometer start and end stay optional either way.
+          miles only, with no office approval. Turn it on when the company pays for those miles, and
+          the office approves each confirmed day. Odometer start and end stay optional either way. A
+          person downloads their own year from Review miles.
         </p>
         <div className={styles.hoursToggles}>
           <label className={styles.notifyToggle}>

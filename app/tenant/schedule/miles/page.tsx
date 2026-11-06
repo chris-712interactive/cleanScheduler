@@ -14,6 +14,7 @@ import {
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
 import { MileageDayForm } from '../MileageDayForm';
+import { Button } from '@/components/ui/Button';
 import styles from '../mileage.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,7 @@ export default async function MileageDayPage({
   const prev = shiftDateKey(workDate, -1);
   const next = shiftDateKey(workDate, 1);
   const userQuery = userId === actorId ? '' : `&user=${userId}`;
+  const yearDefault = workDate.slice(0, 4);
 
   return (
     <>
@@ -79,6 +81,37 @@ export default async function MileageDayPage({
             </>
           ) : null}
         </p>
+        <form id="year-file" className={styles.summary} action="/schedule/miles/year" method="get">
+          <p className={styles.legTitle}>Year file</p>
+          <p className={styles.meta}>
+            {userId === actorId
+              ? 'Download your confirmed drives for a calendar year. Each line is one drive, with the odometer when it was entered. Drives left off the company pay rules are included.'
+              : `Download ${day.personName}'s confirmed drives for a calendar year. Each line is one drive, with the odometer when it was entered.`}
+          </p>
+          {userId === actorId ? null : <input type="hidden" name="user" value={userId} />}
+          <div className={styles.row}>
+            <label className={styles.field}>
+              <span className={styles.label}>Calendar year</span>
+              <input
+                className={styles.input}
+                name="year"
+                type="number"
+                min={2000}
+                max={2100}
+                defaultValue={yearDefault}
+                required
+              />
+            </label>
+          </div>
+          <div className={styles.actions}>
+            <Button type="submit" name="format" value="csv" variant="secondary" size="sm">
+              CSV
+            </Button>
+            <Button type="submit" name="format" value="pdf" variant="secondary" size="sm">
+              PDF
+            </Button>
+          </div>
+        </form>
         <MileageDayForm
           tenantSlug={membership.tenantSlug}
           userId={userId}

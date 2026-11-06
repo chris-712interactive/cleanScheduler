@@ -138,7 +138,7 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
   {
     key: 'mileage.review',
     label: 'Review team miles',
-    description: 'See the team week, approve days, and export the mileage CSV.',
+    description: 'See the team week, approve reimbursed days, and export the mileage CSV.',
     group: 'Mileage',
   },
   {

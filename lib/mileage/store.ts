@@ -2,12 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { fetchDrivingMiles } from '@/lib/mileage/drivingMiles';
 import { checkInIsAwayFromStop } from '@/lib/mileage/checkInDistance';
+import type { MileageYearDayRecord } from '@/lib/mileage/yearReport';
 import {
   addDateKey,
   chooseLegMiles,
   countedMiles,
   DEFAULT_MILEAGE_SETTINGS,
   mondayOf,
+  mileageApprovalRequired,
   pairKey,
   pairStops,
   reimbursementCents,
@@ -471,6 +473,10 @@ export async function approveMileageDay(params: {
   dayId: string;
   actorUserId: string;
 }): Promise<{ error?: string }> {
+  const settings = await loadMileageSettings(params.admin, params.tenantId);
+  if (!mileageApprovalRequired(settings)) {
+    return { error: 'Approval is only used when the company reimburses mileage.' };
+  }
   const { error } = await params.admin
     .from('tenant_mileage_days')
     .update({
@@ -640,6 +646,59 @@ export async function loadVisitDrive(params: {
   }
   if (miles <= 0) return null;
   return { miles: Math.round(miles * 10) / 10, cents: anyPay ? cents : null };
+}
+
+export async function loadMileageYear(params: {
+  admin: Admin;
+  tenantId: string;
+  userId: string;
+  year: number;
+}): Promise<{ personName: string; days: MileageYearDayRecord[] }> {
+  const name = await personName(params.admin, params.userId);
+  const from = `${params.year}-01-01`;
+  const to = `${params.year}-12-31`;
+  const { data: dayRows } = await params.admin
+    .from('tenant_mileage_days')
+    .select('id, work_date, vehicle, odometer_start, odometer_end')
+    .eq('tenant_id', params.tenantId)
+    .eq('user_id', params.userId)
+    .gte('work_date', from)
+    .lte('work_date', to)
+    .in('status', ['confirmed', 'approved'])
+    .order('work_date')
+    .limit(400);
+  const days = dayRows ?? [];
+  const dayIds = days.map((day) => day.id);
+  const legsByDay = new Map<string, MileageYearDayRecord['legs']>();
+  if (dayIds.length > 0) {
+    const { data: legRows } = await params.admin
+      .from('tenant_mileage_legs')
+      .select('day_id, sequence, origin_label, dest_label, miles, included')
+      .eq('tenant_id', params.tenantId)
+      .in('day_id', dayIds)
+      .order('sequence')
+      .limit(10000);
+    for (const leg of legRows ?? []) {
+      const list = legsByDay.get(leg.day_id) ?? [];
+      list.push({
+        originLabel: leg.origin_label,
+        destLabel: leg.dest_label,
+        miles: leg.miles == null ? null : Number(leg.miles),
+        included: leg.included,
+      });
+      legsByDay.set(leg.day_id, list);
+    }
+  }
+  return {
+    personName: name,
+    days: days.map((day) => ({
+      workDate: day.work_date,
+      vehicle: day.vehicle,
+      odometerStart: day.odometer_start == null ? null : Number(day.odometer_start),
+      odometerEnd: day.odometer_end == null ? null : Number(day.odometer_end),
+      legs: legsByDay.get(day.id) ?? [],
+    })),
+  };
 }
 
 export function weekExportWindow(anchorDate: string): { from: string; to: string } {

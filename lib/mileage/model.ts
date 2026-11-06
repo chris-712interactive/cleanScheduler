@@ -17,6 +17,13 @@ export type MileageSettings = {
   countOfficeLegs: boolean;
 };
 
+/** Office approval is only for days the company is paying for. */
+export function mileageApprovalRequired(
+  settings: Pick<MileageSettings, 'reimbursementEnabled'>,
+): boolean {
+  return settings.reimbursementEnabled;
+}
+
 export const DEFAULT_MILEAGE_SETTINGS: MileageSettings = {
   reimbursementEnabled: false,
   rateCentsPerMile: null,

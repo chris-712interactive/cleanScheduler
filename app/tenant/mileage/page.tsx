@@ -60,7 +60,11 @@ export default async function MileageWeekPage({
     <>
       <PageHeader
         title="Miles"
-        titleHint="Confirmed days can be approved. The CSV stays separate from payroll hours."
+        titleHint={
+          showAmount
+            ? 'Confirmed days can be approved. The CSV stays separate from payroll hours.'
+            : 'A confirmed day is the record. Approval stays off while reimbursement is off.'
+        }
         backHref="/schedule"
         backLabel="Schedule"
       />
@@ -113,7 +117,7 @@ export default async function MileageWeekPage({
                   ) : null}
                   <td>{day.status}</td>
                   <td>
-                    {day.status === 'confirmed' ? (
+                    {showAmount && day.status === 'confirmed' ? (
                       <MileageApproveButton tenantSlug={membership.tenantSlug} dayId={day.id} />
                     ) : null}
                   </td>

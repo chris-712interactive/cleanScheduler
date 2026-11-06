@@ -293,6 +293,13 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
             <a className={styles.scheduleRenewalLink} href={`/schedule/miles?date=${dateKey}`}>
               Review miles
             </a>
+            {' · '}
+            <a
+              className={styles.scheduleRenewalLink}
+              href={`/schedule/miles?date=${dateKey}#year-file`}
+            >
+              Year file
+            </a>
             {showYesterday ? (
               <>
                 {' · '}

@@ -59,7 +59,11 @@ export function fieldEmployeeCanAccessBrowserPath(pathname: string): boolean {
     return true;
   }
 
-  if (path === '/schedule/time-off' || path === '/schedule/miles') {
+  if (
+    path === '/schedule/time-off' ||
+    path === '/schedule/miles' ||
+    path.startsWith('/schedule/miles/')
+  ) {
     return true;
   }
 

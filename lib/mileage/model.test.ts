@@ -8,6 +8,7 @@ import {
   insertStop,
   legIsIncluded,
   mileageCsv,
+  mileageApprovalRequired,
   milesFromRoutePayload,
   odometerSummary,
   pairStops,
@@ -101,6 +102,11 @@ describe('reimbursement and odometer', () => {
 });
 
 describe('mile sources', () => {
+  it('asks the office to approve only when mileage is reimbursed', () => {
+    expect(mileageApprovalRequired({ reimbursementEnabled: false })).toBe(false);
+    expect(mileageApprovalRequired({ reimbursementEnabled: true })).toBe(true);
+  });
+
   it('prefers a saved pair, then a suggested road mile, then a typed mile', () => {
     expect(
       chooseLegMiles({
