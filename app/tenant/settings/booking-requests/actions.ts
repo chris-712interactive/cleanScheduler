@@ -9,6 +9,8 @@ import { parsePublicBookingMode, type PublicBookingMode } from '@/lib/booking/pu
 import { normalizePostalList } from '@/lib/booking/serviceZoneMatch';
 import type { InstantPricingMethod } from '@/lib/booking/priceInstantOffer';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
+import { resolveTenantBookingSegment } from '@/lib/booking/bookingAudience';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 
 export type BookingRequestSettingsState = {
   error?: string;
@@ -184,7 +186,9 @@ export async function saveInstantBookingOffer(
     service_plan_id: planId,
     service_template_id: templateId,
     zone_ids: zoneIds,
-    audience: 'residential' as const,
+    audience: resolveTenantBookingSegment(
+      await loadTenantServiceSegment(access.admin, access.tenantId),
+    ),
     is_active: formData.get('is_active') === 'on',
   };
 

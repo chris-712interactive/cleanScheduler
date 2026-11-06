@@ -1,11 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
-import {
-  offerMatchesBookingSegment,
-  parseBookingServiceAudience,
-  resolveTenantBookingSegment,
-} from '@/lib/booking/bookingAudience';
+import { instantOfferAllowedForSegment } from '@/lib/booking/bookingAudience';
 import { allowedFrequencies, type InstantBookingFrequency } from '@/lib/booking/priceInstantOffer';
 import { instantBookingPolicyFromRow } from '@/lib/booking/loadInstantSlots';
 import {
@@ -176,9 +172,8 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
-    const segment = resolveTenantBookingSegment();
     const offers = (offerRows ?? []).filter((offer) =>
-      offerMatchesBookingSegment(parseBookingServiceAudience(offer.audience), segment),
+      instantOfferAllowedForSegment(offer.audience, ops.service_segment),
     );
     const frequencies = allowedFrequencies(policy).map((value) => ({
       value,

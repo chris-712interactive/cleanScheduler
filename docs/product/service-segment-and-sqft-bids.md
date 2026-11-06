@@ -1,6 +1,6 @@
 # Service segment and commercial square-foot bids
 
-Each workspace chooses the cleaning work it sells: residential, commercial, or both. The choice is stored on `tenant_operational_settings.service_segment` (`0119_tenant_service_segment_sqft_bids.sql`). Existing workspaces default to `both`, so current homes, offices, quotes, and visits stay available until an owner narrows the setting.
+Each workspace chooses the cleaning work it sells: residential, commercial, or both. The choice is stored on `tenant_operational_settings.service_segment` (`0123_tenant_service_segment_sqft_bids.sql`, after instant booking `0119`–`0122`). Existing workspaces default to `both`, so current homes, offices, quotes, and visits stay available until an owner narrows the setting.
 
 ## Where it is set
 
@@ -22,7 +22,8 @@ Each workspace chooses the cleaning work it sells: residential, commercial, or b
 ## Where the segment is enforced
 
 - Customer locations, quote property type, schedule location picker, job types, crew property skills, consultation questions, and the customer portal location request.
-- Public `/book` service list. A posted service that the segment does not offer is rejected. Instant online booking (a separate booking-mode setting) should keep calling `bookingServiceAllowed` and `capabilitiesForSegment` rather than adding a second copy of these lists.
+- Public `/book` request list. A posted service that the segment does not offer is rejected.
+- Instant booking. `resolveTenantBookingSegment` uses `capabilitiesForSegment` and `bookingServiceAllowed`. Preview, confirm, and `prepareInstantBooking` reject an offer whose audience the workspace does not serve.
 - Reports stay one set of financial totals. The reports page says so. Mixed workspaces get Residential and Commercial tabs on the customer directory and a service-line filter on the schedule. Schedule cards use a green accent for homes and a blue accent for commercial sites.
 
 ## Square-foot bids

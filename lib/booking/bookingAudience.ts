@@ -1,8 +1,10 @@
-/**
- * Instant booking is residential until the tenant service-segment setting exists.
- * Call `resolveTenantBookingSegment` from offer loading — that is the only
- * checkpoint a later segment setting needs to replace.
- */
+import {
+  bookingServiceAllowed,
+  capabilitiesForSegment,
+  parseTenantServiceSegment,
+  type TenantServiceSegment,
+} from '@/lib/tenant/serviceSegment';
+
 export type BookingServiceAudience = 'residential' | 'commercial' | 'both';
 
 export function parseBookingServiceAudience(
@@ -21,9 +23,28 @@ export function offerMatchesBookingSegment(
 }
 
 /**
- * Tenant service segment is owned by a separate setting. Instant booking stays
- * residential until that value is passed into this function.
+ * Booking audience for a workspace. Comes from the tenant service segment:
+ * residential-only businesses cannot take commercial bookings, and commercial-only
+ * businesses cannot take residential ones. `both` keeps every offer.
  */
-export function resolveTenantBookingSegment(): BookingServiceAudience {
-  return 'residential';
+export function resolveTenantBookingSegment(
+  serviceSegment?: TenantServiceSegment | string | null,
+): BookingServiceAudience {
+  const capabilities = capabilitiesForSegment(parseTenantServiceSegment(serviceSegment ?? 'both'));
+  const residential = bookingServiceAllowed(capabilities, 'Standard clean');
+  const commercial = bookingServiceAllowed(capabilities, 'Office / commercial');
+  if (residential && commercial) return 'both';
+  if (commercial) return 'commercial';
+  if (residential) return 'residential';
+  return 'both';
+}
+
+export function instantOfferAllowedForSegment(
+  offerAudience: string | null | undefined,
+  serviceSegment?: TenantServiceSegment | string | null,
+): boolean {
+  return offerMatchesBookingSegment(
+    parseBookingServiceAudience(offerAudience),
+    resolveTenantBookingSegment(serviceSegment),
+  );
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { offerMatchesBookingSegment } from '@/lib/booking/bookingAudience';
+import {
+  instantOfferAllowedForSegment,
+  offerMatchesBookingSegment,
+  resolveTenantBookingSegment,
+} from '@/lib/booking/bookingAudience';
 import { depositForPrice, priceInstantOffer } from '@/lib/booking/priceInstantOffer';
 import { recurringRuleFromFrequency } from '@/lib/booking/recurringRuleFromFrequency';
 import { matchBookingZone } from '@/lib/booking/serviceZoneMatch';
@@ -39,11 +43,23 @@ describe('instant booking price and zones', () => {
     expect(depositForPrice(12000, 5000)).toBe(5000);
   });
 
-  it('keeps instant booking residential until a segment is passed in', () => {
+  it('matches an offer audience to a tenant booking segment', () => {
     expect(offerMatchesBookingSegment('residential', 'residential')).toBe(true);
     expect(offerMatchesBookingSegment('commercial', 'residential')).toBe(false);
     expect(offerMatchesBookingSegment('commercial', 'both')).toBe(true);
     expect(offerMatchesBookingSegment('both', 'commercial')).toBe(true);
+  });
+
+  it('blocks the other service line from online booking', () => {
+    expect(resolveTenantBookingSegment('residential')).toBe('residential');
+    expect(resolveTenantBookingSegment('commercial')).toBe('commercial');
+    expect(resolveTenantBookingSegment('both')).toBe('both');
+    expect(instantOfferAllowedForSegment('commercial', 'residential')).toBe(false);
+    expect(instantOfferAllowedForSegment('residential', 'residential')).toBe(true);
+    expect(instantOfferAllowedForSegment('residential', 'commercial')).toBe(false);
+    expect(instantOfferAllowedForSegment('commercial', 'commercial')).toBe(true);
+    expect(instantOfferAllowedForSegment('commercial', 'both')).toBe(true);
+    expect(instantOfferAllowedForSegment('residential', 'both')).toBe(true);
   });
 
   it('matches ZIP coverage and offer zones', () => {

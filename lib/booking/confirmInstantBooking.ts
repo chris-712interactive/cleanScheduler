@@ -1,10 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
-import {
-  offerMatchesBookingSegment,
-  parseBookingServiceAudience,
-  resolveTenantBookingSegment,
-} from '@/lib/booking/bookingAudience';
+import { instantOfferAllowedForSegment } from '@/lib/booking/bookingAudience';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import {
   loadInstantSlotsForTenant,
   type InstantBookingPolicy,
@@ -49,12 +46,12 @@ export function parseInstantFrequency(raw: string): InstantBookingFrequency | nu
     : null;
 }
 
-export function visibleInstantOffers(offers: InstantOfferRow[]): InstantOfferRow[] {
-  const segment = resolveTenantBookingSegment();
+export function visibleInstantOffers(
+  offers: InstantOfferRow[],
+  serviceSegment?: string | null,
+): InstantOfferRow[] {
   return offers.filter(
-    (offer) =>
-      offer.is_active &&
-      offerMatchesBookingSegment(parseBookingServiceAudience(offer.audience), segment),
+    (offer) => offer.is_active && instantOfferAllowedForSegment(offer.audience, serviceSegment),
   );
 }
 
@@ -122,7 +119,8 @@ export async function prepareInstantBooking(
 
   if (offerError || !offer) return { ok: false, error: 'Choose a service to continue.' };
 
-  const visible = visibleInstantOffers([offer]);
+  const serviceSegment = await loadTenantServiceSegment(admin, input.tenantId);
+  const visible = visibleInstantOffers([offer], serviceSegment);
   if (visible.length === 0) return { ok: false, error: 'That service is not available to book.' };
 
   if (offer.service_plan_id) {

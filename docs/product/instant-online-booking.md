@@ -29,7 +29,7 @@ Settings → **Online booking**
 
 Linking a plan or template does **not** start a Stripe subscription. The price the customer sees is the offer price. A repeat choice creates a recurring visit rule, the same records Schedule → Recurring uses. The first visit is staffed. Later occurrences are materialized by the existing recurring job and are not auto-assigned.
 
-Instant offers default to a residential audience. `resolveTenantBookingSegment()` in `lib/booking/bookingAudience.ts` is the checkpoint for the tenant service-segment setting. Until that setting is passed in, the segment is residential, so commercial-only offers stay hidden.
+`resolveTenantBookingSegment(serviceSegment)` reads the tenant service segment (`0123_tenant_service_segment_sqft_bids.sql`) through `capabilitiesForSegment` and `bookingServiceAllowed`. A residential-only workspace cannot book a commercial offer, and a commercial-only workspace cannot book a residential offer. `both` keeps every offer. The public page, slot preview, and `prepareInstantBooking` all use that check. Saving a bookable service stores the workspace’s current audience.
 
 ## Customer flow
 
@@ -67,4 +67,4 @@ Preview is rate-limited per IP. Confirm is rate-limited per IP and per email. A 
 - Stripe subscription billing for the recurring choice
 - A dedicated sent.dm template (confirmation SMS uses the visit reminder template)
 - Automatic refunds if a paid hold expires before finalize
-- Commercial booking questions (suite, after-hours). Add them when `resolveTenantBookingSegment()` starts returning the tenant’s segment.
+- Commercial booking questions (suite, after-hours). The segment now filters which offers can be booked; those extra questions are still not on the form.
