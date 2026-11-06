@@ -37,7 +37,7 @@ Booking eligibility uses the offer’s price and linked job type, not a stamped 
 
 1. Pick a service.
 2. Enter contact details and the home. Square footage is required for per-sqft pricing. Beds and baths are required for beds-and-baths pricing.
-3. See a price and open times. Times come from business hours, each crew member’s hours, approved time off, scheduled visits, and unexpired holds. The buffer and an estimated drive (straight-line minutes, or same-city / same-state fallback from `lib/schedule/optimizer/geo.ts`) must fit between jobs.
+3. See a price and open times. Each day is a heading, and the open times for that day sit in a row of buttons. Times come from business hours, each crew member’s hours, approved time off, scheduled visits, and unexpired holds. The buffer and an estimated drive (straight-line minutes, or same-city / same-state fallback from `lib/schedule/optimizer/geo.ts`) must fit between jobs.
 4. Choose one-time or a repeat frequency and confirm.
 5. If a deposit or saved card is configured, Stripe Checkout runs on the tenant’s Connect account. The visit is created only after Checkout completes (return URL and the Connect webhook both finalize, and the database function is safe to call twice). With no payment, the visit is created immediately.
 6. The customer gets a confirmation email. SMS reuses the existing visit-reminder template when visit-reminder SMS is on and a phone was entered. The office email (site contact email, otherwise the business email) is notified. The visit shows on the schedule.

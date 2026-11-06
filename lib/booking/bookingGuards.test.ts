@@ -10,6 +10,7 @@ import {
   emailsEqual,
   escapeIlikePattern,
   firstVisitAndRecurringCents,
+  groupSlotsByDate,
   paidCustomerCreateDisposition,
   previewFeedback,
   previewMatchesOffer,
@@ -176,10 +177,39 @@ describe('booking QA guards', () => {
     expect(
       publicSlotPayload({
         token: 'tok_abc',
-        label: 'Wednesday at 9:00 AM',
+        label: 'Wednesday, May 12 at 9:00 AM',
+        dateLabel: 'Wednesday, May 12',
+        timeLabel: '9:00 AM',
         assigneeUserId: 'user-1',
       }),
-    ).toEqual({ token: 'tok_abc', label: 'Wednesday at 9:00 AM' });
+    ).toEqual({
+      token: 'tok_abc',
+      label: 'Wednesday, May 12 at 9:00 AM',
+      dateLabel: 'Wednesday, May 12',
+      timeLabel: '9:00 AM',
+    });
+  });
+
+  it('groups open times under the day they belong to', () => {
+    expect(
+      groupSlotsByDate([
+        { token: 'a', dateLabel: 'Monday, November 9', timeLabel: '8:00 AM' },
+        { token: 'b', dateLabel: 'Monday, November 9', timeLabel: '8:30 AM' },
+        { token: 'c', dateLabel: 'Tuesday, November 10', timeLabel: '8:00 AM' },
+      ]),
+    ).toEqual([
+      {
+        date: 'Monday, November 9',
+        slots: [
+          { token: 'a', dateLabel: 'Monday, November 9', timeLabel: '8:00 AM' },
+          { token: 'b', dateLabel: 'Monday, November 9', timeLabel: '8:30 AM' },
+        ],
+      },
+      {
+        date: 'Tuesday, November 10',
+        slots: [{ token: 'c', dateLabel: 'Tuesday, November 10', timeLabel: '8:00 AM' }],
+      },
+    ]);
   });
 
   it('uses the platform client IP instead of a spoofed forwarded hop', () => {

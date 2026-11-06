@@ -4,7 +4,11 @@ import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import { SmsOptInCheckboxLabel } from '@/components/legal/SmsOptInCheckboxLabel';
-import { previewFeedback, previewMatchesOffer } from '@/lib/booking/bookingGuards';
+import {
+  groupSlotsByDate,
+  previewFeedback,
+  previewMatchesOffer,
+} from '@/lib/booking/bookingGuards';
 import {
   confirmInstantBookingAction,
   previewInstantBookingAction,
@@ -268,18 +272,26 @@ export function InstantBookingFlow({
           </h2>
           <fieldset className={styles.choiceSet}>
             <legend className={styles.stepTitle}>Time</legend>
-            {slots.map((slot) => (
-              <label key={slot.token} className={styles.choice}>
-                <input
-                  type="radio"
-                  name="slot_token"
-                  value={slot.token}
-                  checked={slotToken === slot.token}
-                  onChange={() => setSlotToken(slot.token)}
-                  required
-                />
-                <span>{slot.label}</span>
-              </label>
+            {groupSlotsByDate(slots).map((day) => (
+              <div key={day.date} className={styles.dayGroup}>
+                <h3 className={styles.dayHeading}>{day.date}</h3>
+                <div className={styles.timeGrid}>
+                  {day.slots.map((slot) => (
+                    <label key={slot.token} className={styles.timeChoice}>
+                      <input
+                        type="radio"
+                        name="slot_token"
+                        value={slot.token}
+                        checked={slotToken === slot.token}
+                        onChange={() => setSlotToken(slot.token)}
+                        aria-label={`${day.date} at ${slot.timeLabel}`}
+                        required
+                      />
+                      <span>{slot.timeLabel}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             ))}
           </fieldset>
 

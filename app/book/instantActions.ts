@@ -34,8 +34,12 @@ import {
   publicBookingModeFromRow,
 } from '@/lib/booking/publicBookingMode';
 import { matchBookingZone } from '@/lib/booking/serviceZoneMatch';
-import { formatNextAppointmentWhen } from '@/lib/datetime/formatInTimeZone';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
+import {
+  formatDateTimeInTimeZone,
+  formatNextAppointmentWhen,
+  formatVisitTime,
+} from '@/lib/datetime/formatInTimeZone';
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { getPortalContext } from '@/lib/portal';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
@@ -45,6 +49,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 export type InstantSlotChoice = {
   token: string;
   label: string;
+  dateLabel: string;
+  timeLabel: string;
 };
 
 export type InstantPreviewState = {
@@ -245,6 +251,12 @@ export async function previewInstantBookingAction(
       starts_at: slot.startsAt,
       ends_at: slot.endsAt,
       label: formatNextAppointmentWhen(slot.startsAt, loaded.timezone),
+      dateLabel: formatDateTimeInTimeZone(slot.startsAt, loaded.timezone, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+      }),
+      timeLabel: formatVisitTime(slot.startsAt, loaded.timezone),
     };
   });
   if (slots.length > 0) {
