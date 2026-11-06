@@ -27,7 +27,7 @@ The page is a section list beside the settings on a wide screen: Mode, then Avai
 - Mode: Off, Request only, or Instant booking
 - Instant policy: lead time, how far ahead customers can book, buffer between jobs, slot step (15/30/60), flat deposit, optional “save a card” when the deposit is $0, travel speed used for the gap between jobs, and which repeat frequencies are offered
 - ZIP codes on service zones. If none are set, every address is in range. If any zone lists ZIP codes, other ZIPs are declined. An offer can be limited to a subset of those zones.
-- Bookable services: name, duration, price (flat, base + per sq ft, or base + beds and baths), optional link to a service plan or service template, and zones
+- Bookable services: name, duration, price (flat, base + per sq ft, or base + beds and baths), optional link to a service plan or service template, and zones. The template menu groups each job type under its property type, because the same name is stored once for a home, an office, a short-term rental, and other.
 
 Linking a plan or template does **not** start a Stripe subscription. The price the customer sees is the offer price. A repeat choice creates a recurring visit rule, the same records Schedule → Recurring uses. The first visit is staffed. Later occurrences are materialized by the existing recurring job and are not auto-assigned.
 

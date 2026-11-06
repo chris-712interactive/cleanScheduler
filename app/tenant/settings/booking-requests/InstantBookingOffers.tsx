@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
+import { PROPERTY_KIND_OPTIONS, type CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import {
   deactivateInstantBookingOffer,
   saveInstantBookingOffer,
@@ -14,6 +15,19 @@ const initial: BookingRequestSettingsState = {};
 
 type Zone = { id: string; name: string };
 type Option = { id: string; name: string };
+type TemplateOption = { id: string; name: string; jobType: CustomerPropertyKind | null };
+
+function groupedTemplates(templates: TemplateOption[]) {
+  const groups = PROPERTY_KIND_OPTIONS.map((kind) => ({
+    label: kind.label,
+    options: templates.filter((template) => template.jobType === kind.value),
+  })).filter((group) => group.options.length > 0);
+  const untyped = templates.filter((template) => template.jobType == null);
+  if (untyped.length > 0) {
+    groups.push({ label: 'Not tied to a property type', options: untyped });
+  }
+  return groups;
+}
 type PricingMethod = 'flat' | 'per_sqft' | 'beds_baths';
 
 export type OfferDraft = {
@@ -53,7 +67,7 @@ function OfferForm({
   offer: OfferDraft;
   zones: Zone[];
   plans: Option[];
-  templates: Option[];
+  templates: TemplateOption[];
   readOnly: boolean;
   allowPerSqft: boolean;
   allowBedsBaths: boolean;
@@ -179,10 +193,14 @@ function OfferForm({
               disabled={disabled}
             >
               <option value="">None</option>
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
+              {groupedTemplates(templates).map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.options.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
@@ -244,7 +262,7 @@ export function InstantBookingOffers({
   offers: OfferDraft[];
   zones: Zone[];
   plans: Option[];
-  templates: Option[];
+  templates: TemplateOption[];
   readOnly: boolean;
   allowPerSqft: boolean;
   allowBedsBaths: boolean;

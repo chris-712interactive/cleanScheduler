@@ -67,9 +67,10 @@ export default async function TenantBookingRequestsSettingsPage() {
           .order('name', { ascending: true }),
         admin
           .from('tenant_service_templates')
-          .select('id, name')
+          .select('id, name, job_type, sort_order')
           .eq('tenant_id', membership.tenantId)
           .eq('is_active', true)
+          .order('sort_order', { ascending: true })
           .order('name', { ascending: true }),
       ])
     : [
@@ -147,7 +148,16 @@ export default async function TenantBookingRequestsSettingsPage() {
                   allowBedsBaths={capabilitiesForSegment(ops?.service_segment).showBedsBaths}
                   zones={(zones ?? []).map((zone) => ({ id: zone.id, name: zone.name }))}
                   plans={plans ?? []}
-                  templates={templates ?? []}
+                  templates={[...(templates ?? [])]
+                    .sort(
+                      (left, right) =>
+                        left.sort_order - right.sort_order || left.name.localeCompare(right.name),
+                    )
+                    .map((template) => ({
+                      id: template.id,
+                      name: template.name,
+                      jobType: template.job_type,
+                    }))}
                   offers={(offers ?? []).map((offer) => ({
                     id: offer.id,
                     name: offer.name,
