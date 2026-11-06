@@ -11,7 +11,7 @@ describe('buildTenantWebsiteNavItems', () => {
         newLeadsCount: 3,
       }),
     ).toEqual([
-      { label: 'Booking requests', href: '/settings/booking-requests', icon: 'inquiries' },
+      { label: 'Online booking', href: '/settings/booking-requests', icon: 'inquiries' },
       { label: 'Leads', href: '/settings/website/leads', icon: 'inquiries', badge: 3 },
     ]);
   });

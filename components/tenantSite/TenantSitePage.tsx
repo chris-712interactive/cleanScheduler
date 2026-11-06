@@ -13,6 +13,7 @@ import {
 } from '@/lib/tenantSite/businessProfile';
 import { formatTenantSitePhoneDisplay } from '@/lib/tenantSite/navLabels';
 import { publicPathForSitePage, resolveTenantSiteHref } from '@/lib/tenantSite/publicPaths';
+import { isPublicBookingHref } from '@/lib/booking/isPublicBookingHref';
 import { resolveTenantSiteThemeStyle } from '@/lib/tenantSite/siteTheme';
 import type {
   TenantSiteContext,
@@ -34,6 +35,7 @@ export function TenantSitePageView({
   footerNavLinks,
   pageId,
   showPoweredBy,
+  publicBookingOpen = true,
   interactiveLinks = true,
 }: {
   site: TenantSiteContext & { tenantId: string };
@@ -42,6 +44,8 @@ export function TenantSitePageView({
   footerNavLinks: TenantSiteNavLink[];
   pageId?: string | null;
   showPoweredBy: boolean;
+  /** When false, /book and /request links are omitted. */
+  publicBookingOpen?: boolean;
   /** Editor preview keeps clicks inside the settings page. */
   interactiveLinks?: boolean;
 }) {
@@ -77,6 +81,11 @@ export function TenantSitePageView({
     .filter(Boolean)
     .join(' · ');
 
+  const bookingOpen = publicBookingOpen !== false;
+  const allowPublicHref = (href: string) => bookingOpen || !isPublicBookingHref(href);
+  const visibleHeaderNav = headerNavLinks.filter((link) => allowPublicHref(link.href));
+  const visibleFooterNav = footerNavLinks.filter((link) => allowPublicHref(link.href));
+  const showBookingCta = allowPublicHref(site.settings.defaultCtaHref);
   const showTrustPanel = isHomePage && site.settings.siteTemplate === 'modern';
 
   return (
@@ -92,14 +101,14 @@ export function TenantSitePageView({
 
       <TenantSiteHeader
         branding={site.branding}
-        navLinks={headerNavLinks}
+        navLinks={visibleHeaderNav}
         phone={contactPhone}
         portalLoginHref={interactiveLinks ? site.portalLoginHref : '#preview'}
         ctaLabel={site.settings.defaultCtaLabel}
         ctaHref={ctaHref}
         homeHref={homeHref}
         currentPath={interactiveLinks ? currentPath : null}
-        showCta={!isContactPage}
+        showCta={!isContactPage && showBookingCta}
       />
 
       <main id="site-main" className={styles.main}>
@@ -125,9 +134,11 @@ export function TenantSitePageView({
                 {page.lead && !isContactPage ? <p className={styles.lead}>{page.lead}</p> : null}
                 {!isContactPage ? (
                   <div className={styles.heroActions}>
-                    <Button size="lg" href={ctaHref} as="a" iconRight={<ArrowRight size={18} />}>
-                      {site.settings.defaultCtaLabel}
-                    </Button>
+                    {showBookingCta ? (
+                      <Button size="lg" href={ctaHref} as="a" iconRight={<ArrowRight size={18} />}>
+                        {site.settings.defaultCtaLabel}
+                      </Button>
+                    ) : null}
                     {phoneDisplay ? (
                       <Button
                         size="lg"
@@ -239,7 +250,7 @@ export function TenantSitePageView({
                             </ul>
                           )
                         ) : null}
-                        {section.link ? (
+                        {section.link && allowPublicHref(section.link.href) ? (
                           <Link href={hrefFor(section.link.href)} className={styles.sectionLink}>
                             {section.link.label}
                             <ArrowRight size={16} aria-hidden />
@@ -332,14 +343,16 @@ export function TenantSitePageView({
                 Continue exploring
               </h2>
               <ul className={styles.relatedList}>
-                {page.relatedLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link href={hrefFor(link.href)} className={styles.relatedLink}>
-                      {link.label}
-                      <ArrowRight size={16} aria-hidden />
-                    </Link>
-                  </li>
-                ))}
+                {page.relatedLinks
+                  .filter((link) => allowPublicHref(link.href))
+                  .map((link) => (
+                    <li key={link.href}>
+                      <Link href={hrefFor(link.href)} className={styles.relatedLink}>
+                        {link.label}
+                        <ArrowRight size={16} aria-hidden />
+                      </Link>
+                    </li>
+                  ))}
               </ul>
             </Container>
           </section>
@@ -357,9 +370,11 @@ export function TenantSitePageView({
                     'Tell us about the space and we will follow up with pricing and availability.'}
                 </p>
                 <div className={styles.heroActions}>
-                  <Button size="lg" href={ctaHref} as="a" iconRight={<ArrowRight size={18} />}>
-                    {site.settings.defaultCtaLabel}
-                  </Button>
+                  {showBookingCta ? (
+                    <Button size="lg" href={ctaHref} as="a" iconRight={<ArrowRight size={18} />}>
+                      {site.settings.defaultCtaLabel}
+                    </Button>
+                  ) : null}
                   <Button
                     size="lg"
                     variant="secondary"
@@ -377,7 +392,7 @@ export function TenantSitePageView({
 
       <TenantSiteFooter
         branding={site.branding}
-        navLinks={footerNavLinks}
+        navLinks={visibleFooterNav}
         contactEmail={contactEmail}
         contactPhone={contactPhone}
         serviceAreaSummary={site.settings.serviceAreaSummary}

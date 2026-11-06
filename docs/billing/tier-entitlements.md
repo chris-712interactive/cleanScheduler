@@ -243,7 +243,7 @@ Office flow at `/hiring`. Public apply link at `{slug}.{apex}/apply/{opening-slu
 | Pro      | Yes                    |
 | Trial    | Yes                    |
 
-Lite quote request at `{slug}.{apex}/book` (alias `/request`). Creates `tenant_marketing_leads` with `source = quote_request`. Does **not** unlock marketing CMS (`tenantMarketingSite` stays Business+). Settings → Booking requests; Leads inbox works with booking form or CMS.
+Public booking page at `{slug}.{apex}/book` (alias `/request`). Modes: off, quote request (`tenant_marketing_leads`, `source = quote_request`), or instant visit booking. Does **not** unlock marketing CMS (`tenantMarketingSite` stays Business+). Settings → Online booking.
 
 Migration: `0084_public_booking_request.sql`. Product notes: `docs/product/public-booking-request.md`.
 
@@ -336,7 +336,7 @@ Current implementation:
   - `proofOfServicePhotos` — visit completion photo uploads (`visitFieldActions.ts`) — all plans
   - `gpsVerifiedCheckIn` — point-in-time check-in location proof (`visitFieldActions.ts`)
   - `invoiceReminderEmail` / `emailVisitReminders` / `emailOnMyWay` / `emailReviewRequest` — Operations toggles + senders
-  - `publicBookingRequest` — `/book` form + Settings → Booking requests
+  - `publicBookingRequest` — `/book` page + Settings → Online booking
   - `proofOfServicePortalShare` — customer portal completed-visit photos (`app/customer/visits/page.tsx`)
 - `lib/billing/automationWorkflows.ts`
   - enforces `maxAutomationWorkflows` when creating recurring visit rules

@@ -449,7 +449,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have a website booking widget like Launch27?',
         answer:
-          'Every plan includes a public quote / booking request form on your workspace subdomain (`/book`). It captures leads for your office — it is not an embeddable bedroom/bath pricing calculator or instant self-booking like Launch27. If that widget is your primary sales channel, Launch27 Base may still be a better fit.',
+          'Every plan includes a public booking page on your workspace subdomain (`/book`). The company can leave it off, collect a quote request, or turn on instant booking so a customer picks an open time. It is not an embeddable Launch27-style widget. If that widget is your primary sales channel, Launch27 Base may still be a better fit.',
       },
       {
         question: 'Is Launch27 cheaper for larger teams?',
