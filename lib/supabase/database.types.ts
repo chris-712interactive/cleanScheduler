@@ -6418,7 +6418,8 @@ export type Database = {
       public_booking_mode: 'off' | 'request' | 'instant';
       instant_booking_pricing_method: 'flat' | 'per_sqft' | 'beds_baths';
       instant_booking_frequency: 'one_time' | 'weekly' | 'biweekly' | 'monthly';
-      instant_booking_status: 'hold' | 'confirmed' | 'expired' | 'cancelled' | 'refunded' | 'needs_review';
+      instant_booking_status:
+        'hold' | 'confirmed' | 'expired' | 'cancelled' | 'refunded' | 'needs_review';
       booking_service_audience: 'residential' | 'commercial' | 'both';
       tenant_service_template_kind: 'service_line' | 'scope_template' | 'addon';
       service_template_schedule_role: 'initial' | 'recurring' | 'standard';
