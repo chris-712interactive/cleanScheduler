@@ -22,6 +22,8 @@ The mode is enforced on the page and on every public submit action. A request po
 
 Settings → **Online booking**
 
+The page is a section list beside the settings on a wide screen: Mode, then Availability, Payment, Repeats, and Areas when instant booking is selected, then Services once instant booking is saved. On a narrow screen those same links sit in a row above the cards. Each service is its own card. Price fields that do not apply to the selected pricing method stay on the form so a save does not wipe them.
+
 - Mode: Off, Request only, or Instant booking
 - Instant policy: lead time, how far ahead customers can book, buffer between jobs, slot step (15/30/60), flat deposit, optional “save a card” when the deposit is $0, travel speed used for the gap between jobs, and which repeat frequencies are offered
 - ZIP codes on service zones. If none are set, every address is in range. If any zone lists ZIP codes, other ZIPs are declined. An offer can be limited to a subset of those zones.
