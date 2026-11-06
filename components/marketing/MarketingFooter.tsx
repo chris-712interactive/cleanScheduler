@@ -36,10 +36,19 @@ export function MarketingFooter() {
               Online payments
             </Link>
             <Link className={styles.link} href="/features/stripe-integration">
-              Stripe integration
+              Cleaning company software with Stripe
+            </Link>
+            <Link className={styles.link} href="/features/mobile-scheduling-for-cleaners">
+              Cleaning crew mobile software
             </Link>
             <Link className={styles.link} href="/features/crew-scheduling-and-timekeeping">
               Crew scheduling
+            </Link>
+            <Link
+              className={styles.link}
+              href="/help/cleaning-businesses/dispatch-vs-scheduling-for-cleaners"
+            >
+              Dispatch & scheduling
             </Link>
             <Link
               className={styles.link}
