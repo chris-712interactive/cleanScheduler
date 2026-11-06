@@ -21,6 +21,8 @@ import { addDateKey } from '@/lib/mileage/model';
 import { yesterdayNeedsConfirm } from '@/lib/mileage/store';
 import { listScheduleIssues, SCHEDULE_ISSUES_TAB_HREF } from '@/lib/tenant/scheduleIssuesQueue';
 import { TenantScheduleClient } from './TenantScheduleClient';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { DaySchedulingSuggestions } from './DaySchedulingSuggestions';
 import { loadDaySchedulingSuggestions } from '@/lib/schedule/optimizer/loadDay';
 import { ScheduleIssuesList } from './ScheduleIssuesList';
@@ -331,6 +333,10 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           fieldEmployeeMode={isFieldEmployee}
           locationFilter={locationFilter || 'all'}
           locationOptions={locationsEnabled ? locationOptions : []}
+          distinguishSegments={
+            capabilitiesForSegment(await loadTenantServiceSegment(admin, membership.tenantId))
+              .offersBoth
+          }
         />
       )}
     </div>

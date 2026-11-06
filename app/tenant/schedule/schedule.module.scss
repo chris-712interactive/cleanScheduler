@@ -798,6 +798,14 @@
   }
 }
 
+.visitCard[data-segment='residential'] .visitAccent {
+  background: var(--color-success);
+}
+
+.visitCard[data-segment='commercial'] .visitAccent {
+  background: var(--color-info);
+}
+
 .visitAccent {
   position: absolute;
   top: 0;

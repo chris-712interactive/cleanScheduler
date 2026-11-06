@@ -21,6 +21,7 @@ import { requestFingerprintFromHeaders } from '@/lib/audit/requestFingerprint';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
+import { parseTenantServiceSegment } from '@/lib/tenant/serviceSegment';
 
 export interface TenantOnboardingState {
   error?: string;
@@ -208,6 +209,11 @@ export async function createTenantAndOwner(
     owner_email: email,
     owner_phone: ownerPhone || null,
   });
+
+  await admin
+    .from('tenant_operational_settings')
+    .update({ service_segment: parseTenantServiceSegment(businessType) })
+    .eq('tenant_id', tenantId);
 
   if (onboardingProfileInsert.error) {
     await admin.from('tenant_memberships').delete().eq('tenant_id', tenantId).eq('user_id', userId);

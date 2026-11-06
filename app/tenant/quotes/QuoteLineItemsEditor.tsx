@@ -13,10 +13,20 @@ import { QUOTE_LINE_DISCOUNT_OPTIONS } from '@/lib/tenant/quoteHeaderPricingForm
 import type { QuoteLinePricingMethod } from '@/lib/tenant/quoteLinePricingMethod';
 import { QUOTE_LINE_PRICING_METHOD_OPTIONS } from '@/lib/tenant/quoteLinePricingMethod';
 import {
+  computeSqftBid,
+  resolveBillableSqft,
+  sqftBidSummaryLines,
+  type SqftBidBreakdown,
+} from '@/lib/tenant/sqftBid';
+import {
   defaultAutoScheduleVisitCount,
   isRecurringQuoteLineFrequency,
 } from '@/lib/tenant/quoteLineAutoSchedule';
-import { findCatalogEntry, type JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
+import {
+  findCatalogEntry,
+  jobTypeTemplateForKind,
+  type JobTypeCatalogEntry,
+} from '@/lib/tenant/jobTypeCatalog';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import styles from './quotes.module.scss';
 
@@ -32,6 +42,11 @@ export type QuoteLineItemDraft = {
   line_discount_input: string;
   pricing_method: QuoteLinePricingMethod;
   estimated_hours: string;
+  sqft_rate_dollars: string;
+  billable_sqft: string;
+  times_per_week: string;
+  times_per_month: string;
+  production_sqft_per_hour: string;
   auto_schedule_on_accept: boolean;
   auto_schedule_visit_count: string;
 };
@@ -49,6 +64,11 @@ type QuoteLineItemRow = Pick<
   | 'line_discount_value'
   | 'pricing_method'
   | 'estimated_hours'
+  | 'sqft_rate_cents'
+  | 'billable_sqft'
+  | 'bid_visits'
+  | 'bid_period'
+  | 'production_sqft_per_hour'
   | 'auto_schedule_on_accept'
   | 'auto_schedule_visit_count'
   | 'service_template_id'
@@ -76,6 +96,11 @@ export function createEmptyQuoteLineDraft(): QuoteLineItemDraft {
     line_discount_input: '',
     pricing_method: 'flat',
     estimated_hours: '',
+    sqft_rate_dollars: '',
+    billable_sqft: '',
+    times_per_week: '',
+    times_per_month: '',
+    production_sqft_per_hour: '',
     auto_schedule_on_accept: false,
     auto_schedule_visit_count: '',
   };
@@ -101,6 +126,20 @@ export function draftsFromQuoteLineRows(
       pricing_method: l.pricing_method ?? 'flat',
       estimated_hours:
         l.estimated_hours != null && Number(l.estimated_hours) > 0 ? String(l.estimated_hours) : '',
+      sqft_rate_dollars:
+        l.sqft_rate_cents != null && l.sqft_rate_cents >= 0
+          ? (l.sqft_rate_cents / 100).toFixed(2)
+          : '',
+      billable_sqft: l.billable_sqft != null && l.billable_sqft > 0 ? String(l.billable_sqft) : '',
+      times_per_week: '',
+      times_per_month:
+        l.pricing_method === 'per_sqft' && l.bid_period === 'month' && l.bid_visits != null
+          ? String(l.bid_visits)
+          : '',
+      production_sqft_per_hour:
+        l.production_sqft_per_hour != null && Number(l.production_sqft_per_hour) > 0
+          ? String(l.production_sqft_per_hour)
+          : '',
       auto_schedule_on_accept: l.auto_schedule_on_accept ?? false,
       auto_schedule_visit_count:
         l.auto_schedule_visit_count != null && l.auto_schedule_visit_count > 0
@@ -309,20 +348,180 @@ function lineCardTitle(
   return (entry?.name ?? entry?.service_label ?? row.service_label.trim()) || 'Service line';
 }
 
+function previewSqftLine(
+  row: QuoteLineItemDraft,
+  defaultSqft: number | null,
+): SqftBidBreakdown | null {
+  if (row.pricing_method !== 'per_sqft') return null;
+  const rate = Number(row.sqft_rate_dollars.replace(/,/g, ''));
+  if (!Number.isFinite(rate) || rate < 0 || !row.sqft_rate_dollars.trim()) return null;
+  const resolvedSqft = resolveBillableSqft(row.billable_sqft, defaultSqft);
+  if (!resolvedSqft.ok) return null;
+  const sqft = resolvedSqft.sqft;
+  const optional = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const value = Number(trimmed.replace(/,/g, ''));
+    return Number.isFinite(value) && value > 0 ? value : null;
+  };
+  const result = computeSqftBid({
+    rateCentsPerSqft: Math.round(rate * 100),
+    sqft,
+    frequency: row.frequency,
+    timesPerWeek: optional(row.times_per_week),
+    timesPerMonth: optional(row.times_per_month),
+    productionSqftPerHour: optional(row.production_sqft_per_hour),
+  });
+  return result.ok ? result.breakdown : null;
+}
+
+function SqftBidInputs({
+  row,
+  updateRow,
+  defaultSqft,
+  enabled,
+}: {
+  row: QuoteLineItemDraft;
+  updateRow: (key: string, patch: Partial<QuoteLineItemDraft>) => void;
+  defaultSqft: number | null;
+  enabled: boolean;
+}) {
+  const active = enabled && row.pricing_method === 'per_sqft';
+  if (!active) {
+    return (
+      <>
+        <input type="hidden" name="line_sqft_rate" value="" readOnly />
+        <input type="hidden" name="line_billable_sqft" value="" readOnly />
+        <input type="hidden" name="line_times_per_week" value="" readOnly />
+        <input type="hidden" name="line_times_per_month" value="" readOnly />
+        <input type="hidden" name="line_production_sqft_per_hour" value="" readOnly />
+      </>
+    );
+  }
+
+  const bid = previewSqftLine(row, defaultSqft);
+  const sqftCheck = row.billable_sqft.trim() ? resolveBillableSqft(row.billable_sqft, null) : null;
+  const sqftError = sqftCheck && !sqftCheck.ok ? sqftCheck.error : null;
+  return (
+    <div className={styles.lineItemCardGrid}>
+      <div>
+        <label className={styles.label} htmlFor={`line_sqft_rate_${row.key}`}>
+          Rate per sq ft (USD)
+        </label>
+        <input
+          id={`line_sqft_rate_${row.key}`}
+          name="line_sqft_rate"
+          className={styles.input}
+          inputMode="decimal"
+          value={row.sqft_rate_dollars}
+          onChange={(e) => updateRow(row.key, { sqft_rate_dollars: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className={styles.label} htmlFor={`line_billable_sqft_${row.key}`}>
+          Cleanable sq ft
+        </label>
+        <input
+          id={`line_billable_sqft_${row.key}`}
+          name="line_billable_sqft"
+          className={styles.input}
+          inputMode="numeric"
+          placeholder={defaultSqft != null ? String(defaultSqft) : '12000'}
+          value={row.billable_sqft}
+          onChange={(e) => updateRow(row.key, { billable_sqft: e.target.value })}
+          aria-invalid={sqftError ? true : undefined}
+          aria-describedby={sqftError ? `line_billable_sqft_error_${row.key}` : undefined}
+        />
+        {sqftError ? (
+          <p id={`line_billable_sqft_error_${row.key}`} className={styles.hint} role="alert">
+            {sqftError}
+          </p>
+        ) : null}
+      </div>
+      <div>
+        <label className={styles.label} htmlFor={`line_times_week_${row.key}`}>
+          Times per week
+        </label>
+        <input
+          id={`line_times_week_${row.key}`}
+          name="line_times_per_week"
+          className={styles.input}
+          inputMode="decimal"
+          placeholder="Uses cadence"
+          value={row.times_per_week}
+          onChange={(e) => updateRow(row.key, { times_per_week: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className={styles.label} htmlFor={`line_times_month_${row.key}`}>
+          Times per month
+        </label>
+        <input
+          id={`line_times_month_${row.key}`}
+          name="line_times_per_month"
+          className={styles.input}
+          inputMode="decimal"
+          placeholder="Optional"
+          value={row.times_per_month}
+          onChange={(e) => updateRow(row.key, { times_per_month: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className={styles.label} htmlFor={`line_production_${row.key}`}>
+          Sq ft per labor hour
+        </label>
+        <input
+          id={`line_production_${row.key}`}
+          name="line_production_sqft_per_hour"
+          className={styles.input}
+          inputMode="decimal"
+          placeholder="Optional"
+          value={row.production_sqft_per_hour}
+          onChange={(e) => updateRow(row.key, { production_sqft_per_hour: e.target.value })}
+        />
+      </div>
+      {bid ? (
+        <div>
+          <p className={styles.hint}>Commercial square-foot bid</p>
+          <ul className={styles.hint}>
+            {sqftBidSummaryLines(bid).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className={styles.hint}>Enter a rate and square footage to price this commercial bid.</p>
+      )}
+    </div>
+  );
+}
+
 function JobTypeFields({
   row,
   updateRow,
   layout,
   catalog,
   propertyKind,
+  sqftBidsEnabled = false,
+  defaultSqft = null,
 }: {
   row: QuoteLineItemDraft;
   updateRow: (key: string, patch: Partial<QuoteLineItemDraft>) => void;
   layout: 'grid' | 'cards';
   catalog: JobTypeCatalogEntry[];
   propertyKind?: CustomerPropertyKind | null;
+  sqftBidsEnabled?: boolean;
+  defaultSqft?: number | null;
 }) {
   const jobTypes = catalogEntriesForProperty(catalog, propertyKind);
+  const pricingOptions = QUOTE_LINE_PRICING_METHOD_OPTIONS.filter(
+    (option) => option.value !== 'per_sqft' || sqftBidsEnabled,
+  );
+  const sqftBid = previewSqftLine(row, defaultSqft);
+  const amountValue =
+    row.pricing_method === 'per_sqft' && sqftBid
+      ? (sqftBid.amountCents / 100).toFixed(2)
+      : row.amount_dollars;
   const hiddenServiceLabel = resolvedQuoteLineServiceLabel(row, catalog, propertyKind);
 
   const jobTypeSelect = (
@@ -435,7 +634,8 @@ function JobTypeFields({
               className={styles.input}
               inputMode="decimal"
               placeholder="0.00"
-              value={row.amount_dollars}
+              value={amountValue}
+              readOnly={row.pricing_method === 'per_sqft'}
               onChange={(e) => updateRow(row.key, { amount_dollars: e.target.value })}
             />
           </div>
@@ -527,7 +727,7 @@ function JobTypeFields({
                 })
               }
             >
-              {QUOTE_LINE_PRICING_METHOD_OPTIONS.map(({ value, label }) => (
+              {pricingOptions.map(({ value, label }) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -535,6 +735,12 @@ function JobTypeFields({
             </select>
           </div>
         </div>
+        <SqftBidInputs
+          row={row}
+          updateRow={updateRow}
+          defaultSqft={defaultSqft}
+          enabled={sqftBidsEnabled}
+        />
       </div>
     );
   }
@@ -584,7 +790,8 @@ function JobTypeFields({
         className={styles.input}
         inputMode="decimal"
         placeholder="0.00"
-        value={row.amount_dollars}
+        value={amountValue}
+        readOnly={row.pricing_method === 'per_sqft'}
         onChange={(e) => updateRow(row.key, { amount_dollars: e.target.value })}
         aria-label="Line list amount USD"
       />
@@ -626,9 +833,21 @@ function JobTypeFields({
       <input
         type="hidden"
         name="line_pricing_method"
-        value={row.pricing_method}
+        value={
+          sqftBidsEnabled
+            ? row.pricing_method
+            : row.pricing_method === 'per_sqft'
+              ? 'flat'
+              : row.pricing_method
+        }
         readOnly
         aria-hidden
+      />
+      <SqftBidInputs
+        row={row}
+        updateRow={updateRow}
+        defaultSqft={defaultSqft}
+        enabled={sqftBidsEnabled}
       />
     </>
   );
@@ -644,6 +863,8 @@ export function QuoteLineItemsEditor({
   jobTypeCatalog = [],
   quotePropertyKind = null,
   autoScheduleEnabled = false,
+  sqftBidsEnabled = false,
+  defaultSqft = null,
 }: {
   initialRows?: QuoteLineItemRow[] | null;
   layout?: 'grid' | 'cards';
@@ -655,6 +876,9 @@ export function QuoteLineItemsEditor({
   jobTypeCatalog?: JobTypeCatalogEntry[];
   quotePropertyKind?: CustomerPropertyKind | null;
   autoScheduleEnabled?: boolean;
+  /** Commercial segment and a commercial property. Hides per-sq-ft pricing otherwise. */
+  sqftBidsEnabled?: boolean;
+  defaultSqft?: number | null;
 }) {
   const [internalRows, setInternalRows] = useState<QuoteLineItemDraft[]>(() => {
     const fromDb = draftsFromQuoteLineRows(initialRows ?? null);
@@ -681,6 +905,34 @@ export function QuoteLineItemsEditor({
     },
     [controlled, controlledRows, onRowsChange],
   );
+
+  useEffect(() => {
+    if (!quotePropertyKind || jobTypeCatalog.length === 0) return;
+    setRows((prev) => {
+      let changed = false;
+      const next = prev.map((row) => {
+        if (!row.service_template_id && !row.service_label.trim()) return row;
+        const match = jobTypeTemplateForKind(jobTypeCatalog, {
+          serviceTemplateId: row.service_template_id || null,
+          serviceLabel: row.service_label,
+          propertyKind: quotePropertyKind,
+        });
+        if (match) {
+          if (match.id === row.service_template_id) return row;
+          changed = true;
+          return {
+            ...row,
+            service_template_id: match.id,
+            service_label: row.service_label.trim() || match.service_label,
+          };
+        }
+        if (!row.service_template_id) return row;
+        changed = true;
+        return { ...row, service_template_id: '' };
+      });
+      return changed ? next : prev;
+    });
+  }, [quotePropertyKind, jobTypeCatalog, setRows]);
 
   const updateRow = useCallback(
     (key: string, patch: Partial<QuoteLineItemDraft>) => {
@@ -739,6 +991,8 @@ export function QuoteLineItemsEditor({
                     layout="grid"
                     catalog={jobTypeCatalog}
                     propertyKind={quotePropertyKind}
+                    sqftBidsEnabled={sqftBidsEnabled}
+                    defaultSqft={defaultSqft}
                   />
                   <div className={styles.lineItemActions}>
                     <button
@@ -786,6 +1040,8 @@ export function QuoteLineItemsEditor({
                 layout="cards"
                 catalog={jobTypeCatalog}
                 propertyKind={quotePropertyKind}
+                sqftBidsEnabled={sqftBidsEnabled}
+                defaultSqft={defaultSqft}
               />
               <AutoScheduleFields
                 row={row}

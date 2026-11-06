@@ -9,6 +9,8 @@ import {
 } from '@/lib/billing/tenantFeatureGate';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
+import { propertyKindWriteError } from '@/lib/tenant/serviceSegment';
 import { parseCustomerPropertyKind } from '@/lib/tenant/quoteStructuredFields';
 import { parseScheduleRole } from '@/lib/tenant/scheduleRoleLabels';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
@@ -245,6 +247,10 @@ export async function createCustomServiceTypeAction(
   }
 
   const admin = createAdminClient();
+  const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
+  const kindError = propertyKindWriteError(capabilities, propertyKind);
+  if (kindError) return { error: kindError };
+
   try {
     await assertTenantFeatureEnabled(admin, membership.tenantId, 'customServiceTypes');
   } catch (error) {

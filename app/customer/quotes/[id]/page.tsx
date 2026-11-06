@@ -22,6 +22,7 @@ import { parseAcceptanceSnapshotLines } from '@/lib/customer/quoteAcceptanceSnap
 import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationalSettings';
 import { CustomerQuoteReview } from '../CustomerQuoteReview';
 import type { CustomerQuoteLineView } from '../CustomerQuoteLineCards';
+import { breakdownFromStoredSqftBid } from '@/lib/tenant/sqftBid';
 import type { CustomerQuoteVersionRow } from '../CustomerQuoteVersionHistory';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +39,13 @@ type LineRow = Pick<
   | 'amount_cents'
   | 'line_discount_kind'
   | 'line_discount_value'
+  | 'pricing_method'
+  | 'sqft_rate_cents'
+  | 'billable_sqft'
+  | 'bid_visits'
+  | 'bid_period'
+  | 'production_sqft_per_hour'
+  | 'estimated_hours'
 >;
 
 type PropertyEmbed = Pick<
@@ -85,6 +93,7 @@ function toLineViews(lines: LineRow[]): CustomerQuoteLineView[] {
     amount_cents: line.amount_cents,
     line_discount_kind: line.line_discount_kind,
     line_discount_value: line.line_discount_value,
+    sqftBid: breakdownFromStoredSqftBid(line),
   }));
 }
 
@@ -99,6 +108,7 @@ function snapshotToLineViews(
     amount_cents: line.amount_cents,
     line_discount_kind: line.line_discount_kind,
     line_discount_value: line.line_discount_value,
+    sqftBid: line.sqftBid,
   }));
 }
 
@@ -193,7 +203,14 @@ export default async function CustomerQuoteDetailPage({ params }: PageProps) {
         frequency_detail,
         amount_cents,
         line_discount_kind,
-        line_discount_value
+        line_discount_value,
+        pricing_method,
+        estimated_hours,
+        sqft_rate_cents,
+        billable_sqft,
+        bid_visits,
+        bid_period,
+        production_sqft_per_hour
       )
     `,
     )

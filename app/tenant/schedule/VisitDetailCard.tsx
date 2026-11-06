@@ -53,6 +53,7 @@ import { VisitScheduleEditPanel } from './VisitScheduleEditPanel';
 import { VisitJobPriceForm } from './VisitJobPriceForm';
 import { VisitJobDetailsForm } from './VisitJobDetailsForm';
 import { ConsultationIntakeForm } from './ConsultationIntakeForm';
+import type { TenantServiceSegment } from '@/lib/tenant/serviceSegment';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import type {
   ConsultationIntake,
@@ -142,12 +143,14 @@ export function VisitDetailCard({
   relatedRecords,
   scrollToFieldActions = false,
   jobTypeLabels = [],
+  serviceSegment = 'both',
 }: {
   initial: VisitDetailSnapshot;
   employeeOptions?: EmployeeOption[];
   relatedRecords?: RelatedRecordsSnapshot | null;
   scrollToFieldActions?: boolean;
   jobTypeLabels?: string[];
+  serviceSegment?: TenantServiceSegment;
 }) {
   const [visit, setVisit] = useState(initial);
 
@@ -230,6 +233,7 @@ export function VisitDetailCard({
         defaultAmountCents={defaultAmountCents}
         hasBillableAmount={hasBillableAmount}
         onVisitPatch={onVisitPatch}
+        serviceSegment={serviceSegment}
       />
     );
   }
@@ -282,6 +286,7 @@ export function VisitDetailCard({
               initial={visit.consultationIntake}
               requiredFields={visit.consultationRequiredFields}
               canEdit={canManage && visit.status !== 'cancelled'}
+              serviceSegment={serviceSegment}
             />
           ) : null}
 

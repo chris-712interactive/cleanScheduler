@@ -13,6 +13,8 @@ import { BusinessAddressForm } from './BusinessAddressForm';
 import { BusinessProfileForm } from './BusinessProfileForm';
 import { BrandingForm } from './BrandingForm';
 import { WorkWeekForm } from './WorkWeekForm';
+import { ServiceSegmentForm } from './ServiceSegmentForm';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import layoutStyles from './business-settings.module.scss';
 import formStyles from '../settings.module.scss';
 
@@ -69,6 +71,7 @@ export default async function TenantBusinessSettingsPage() {
   }
 
   const snapshot = tenantBusinessSnapshotFromRow(tenantRow);
+  const serviceSegment = await loadTenantServiceSegment(supabase, membership.tenantId);
   const workDayLabels = summarizeWorkDaySchedule(snapshot.workDays);
   const addressSummary = [snapshot.city, snapshot.state].filter(Boolean).join(', ');
 
@@ -110,6 +113,9 @@ export default async function TenantBusinessSettingsPage() {
           </header>
 
           <nav className={layoutStyles.sectionNav} aria-label="Business settings sections">
+            <a className={layoutStyles.sectionNavLink} href="#business-services">
+              Services
+            </a>
             <a className={layoutStyles.sectionNavLink} href="#business-profile">
               Profile
             </a>
@@ -123,6 +129,29 @@ export default async function TenantBusinessSettingsPage() {
               Address
             </a>
           </nav>
+
+          <section
+            className={layoutStyles.settingsSection}
+            id="business-services"
+            aria-labelledby="business-services-heading"
+          >
+            <header className={layoutStyles.sectionHeader}>
+              <h3 id="business-services-heading" className={layoutStyles.sectionTitle}>
+                Residential, commercial, or both
+              </h3>
+              <p className={layoutStyles.sectionLead}>
+                This chooses which property types, quote tools, booking options, and schedule
+                presets your team sees. Existing locations stay on file if you narrow it later.
+              </p>
+            </header>
+            <div className={layoutStyles.formWrap}>
+              <ServiceSegmentForm
+                tenantSlug={membership.tenantSlug}
+                serviceSegment={serviceSegment}
+                readOnly={!canEdit}
+              />
+            </div>
+          </section>
 
           <section
             className={layoutStyles.settingsSection}

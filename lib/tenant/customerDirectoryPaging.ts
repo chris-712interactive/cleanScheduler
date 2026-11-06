@@ -19,11 +19,15 @@ export function buildCustomerDirectorySearchParams(params: {
   status?: CustomerDirectoryStatusParam;
   page?: number;
   zone?: string | null;
+  segment?: 'residential' | 'commercial' | null;
 }): string {
   const search = new URLSearchParams();
   if (params.q?.trim()) search.set('q', params.q.trim());
   if (params.status && params.status !== 'all') search.set('status', params.status);
   if (params.zone?.trim()) search.set('zone', params.zone.trim());
+  if (params.segment === 'residential' || params.segment === 'commercial') {
+    search.set('segment', params.segment);
+  }
   if (params.page && params.page > 1) search.set('page', String(params.page));
   const q = search.toString();
   return q ? `?${q}` : '';

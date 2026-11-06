@@ -4,11 +4,18 @@ import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitBookingRequestAction, type BookingRequestActionState } from './actions';
+import type { BookingServiceOption } from '@/lib/tenant/serviceSegment';
 import styles from './book.module.scss';
 
 const initial: BookingRequestActionState = {};
 
-export function BookingRequestForm({ tenantSlug }: { tenantSlug: string }) {
+export function BookingRequestForm({
+  tenantSlug,
+  services,
+}: {
+  tenantSlug: string;
+  services: BookingServiceOption[];
+}) {
   const [state, formAction, pending] = useActionState(submitBookingRequestAction, initial);
   useFeedbackToast({
     error: state.error,
@@ -65,12 +72,11 @@ export function BookingRequestForm({ tenantSlug }: { tenantSlug: string }) {
         <span>Service type (optional)</span>
         <select name="service_interest" defaultValue="" disabled={pending}>
           <option value="">Select a service</option>
-          <option value="Standard clean">Standard clean</option>
-          <option value="Deep clean">Deep clean</option>
-          <option value="Move-in / move-out">Move-in / move-out</option>
-          <option value="Office / commercial">Office / commercial</option>
-          <option value="Recurring service">Recurring service</option>
-          <option value="Other">Other</option>
+          {services.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </label>
       <label className={styles.field}>

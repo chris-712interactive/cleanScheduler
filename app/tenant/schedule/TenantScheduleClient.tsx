@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ScheduleVisitVM } from '@/lib/tenant/scheduleVisitTypes';
+import { propertyKindFamily, type ServiceDirectorySegment } from '@/lib/tenant/serviceSegment';
 import type { ScheduleView } from '@/lib/tenant/scheduleDateRange';
 import {
   buildUtcMonthGrid,
@@ -110,6 +111,7 @@ export function TenantScheduleClient({
   locationFilter: initialLocationFilter = 'all',
   locationOptions = [],
   tenantTimezone,
+  distinguishSegments = false,
 }: {
   tenantSlug: string;
   tenantTimezone: string;
@@ -123,6 +125,7 @@ export function TenantScheduleClient({
   fieldEmployeeMode?: boolean;
   locationFilter?: string;
   locationOptions?: { id: string; label: string }[];
+  distinguishSegments?: boolean;
 }) {
   const [visits, setVisits] = useState(initialVisits);
   const [dateKey, setDateKey] = useState(initialDateKey);
@@ -132,6 +135,7 @@ export function TenantScheduleClient({
   const [locationFilter, setLocationFilter] = useState(
     normalizeLocationFilter(initialLocationFilter),
   );
+  const [segmentFilter, setSegmentFilter] = useState<ServiceDirectorySegment>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [nowLinePct, setNowLinePct] = useState<number | null>(null);
   const fetchSeq = useRef(0);
@@ -247,11 +251,19 @@ export function TenantScheduleClient({
   }, [dateKey, view, locationFilter, fetchVisits]);
 
   const filteredVisits = useMemo(() => {
-    if (employeeFilter === 'all') return visits;
-    const targetUserId = employeeFilter === 'me' ? currentUserId : employeeFilter;
-    if (!targetUserId) return visits;
-    return visits.filter((visit) => visit.assigneeUserIds.includes(targetUserId));
-  }, [visits, employeeFilter, currentUserId]);
+    const byEmployee =
+      employeeFilter === 'all'
+        ? visits
+        : visits.filter((visit) => {
+            const targetUserId = employeeFilter === 'me' ? currentUserId : employeeFilter;
+            return Boolean(targetUserId) && visit.assigneeUserIds.includes(targetUserId);
+          });
+    if (!distinguishSegments || segmentFilter === 'all') return byEmployee;
+    return byEmployee.filter((visit) => {
+      if (!visit.propertyKind) return false;
+      return propertyKindFamily(visit.propertyKind) === segmentFilter;
+    });
+  }, [visits, employeeFilter, currentUserId, distinguishSegments, segmentFilter]);
 
   const todayKey = calendarDateKeyNow(tenantTimezone);
   const isLocalToday = dateKey === todayKey;
@@ -499,6 +511,24 @@ export function TenantScheduleClient({
               </select>
             </label>
           ) : null}
+          {distinguishSegments ? (
+            <label className={styles.scheduleFilterField}>
+              <span className={styles.scheduleFilterLabel}>Service line</span>
+              <select
+                className={styles.filterSelect}
+                aria-label="Service line filter"
+                value={segmentFilter}
+                onChange={(event) =>
+                  setSegmentFilter(event.target.value as ServiceDirectorySegment)
+                }
+                disabled={isLoading}
+              >
+                <option value="all">Residential and commercial</option>
+                <option value="residential">Residential</option>
+                <option value="commercial">Commercial</option>
+              </select>
+            </label>
+          ) : null}
           <label className={styles.scheduleFilterField}>
             <span className={styles.scheduleFilterLabel}>Crew member</span>
             <select
@@ -570,6 +600,7 @@ export function TenantScheduleClient({
                   heightPct={heightPct}
                   column={placement.column}
                   columnCount={placement.columnCount}
+                  distinguishSegments={distinguishSegments}
                 />
               );
             })}

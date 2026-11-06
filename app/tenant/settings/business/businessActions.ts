@@ -5,6 +5,7 @@ import { resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
 import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
+import { parseTenantServiceSegment } from '@/lib/tenant/serviceSegment';
 import {
   legacyWorkWeekFromSchedules,
   parseBrandColor,
@@ -293,5 +294,29 @@ export async function updateBusinessAddressAction(
     };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save business address.' };
+  }
+}
+
+export async function updateServiceSegmentAction(
+  _prev: BusinessSettingsActionState,
+  formData: FormData,
+): Promise<BusinessSettingsActionState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  if (!slug) return { error: 'Workspace is required.' };
+
+  try {
+    const membership = await requireBusinessSettingsAccess(slug);
+    const serviceSegment = parseTenantServiceSegment(formData.get('service_segment'));
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from('tenant_operational_settings')
+      .update({ service_segment: serviceSegment })
+      .eq('tenant_id', membership.tenantId);
+    if (error) return { error: error.message };
+    return { success: 'Service line saved. Refresh open pages to see the matching tools.' };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not save the service line.' };
   }
 }

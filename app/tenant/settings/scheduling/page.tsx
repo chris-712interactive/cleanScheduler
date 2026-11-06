@@ -6,6 +6,7 @@ import { resolveScheduleOptimizerPolicy } from '@/lib/schedule/optimizer/policy'
 import { createAdminClient } from '@/lib/supabase/server';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { SchedulingPolicyForm } from './SchedulingPolicyForm';
+import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import styles from './scheduling-settings.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export default async function TenantSchedulingSettingsPage() {
   const admin = createAdminClient();
   const { data } = await admin
     .from('tenant_operational_settings')
-    .select('schedule_optimizer_policy')
+    .select('schedule_optimizer_policy, service_segment')
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
 
@@ -42,6 +43,7 @@ export default async function TenantSchedulingSettingsPage() {
           tenantSlug={tenantSlug ?? ''}
           initialPolicy={policy}
           readOnly={!canEdit}
+          schedulePresets={capabilitiesForSegment(data?.service_segment).schedulePresets}
         />
       </Stack>
     </>

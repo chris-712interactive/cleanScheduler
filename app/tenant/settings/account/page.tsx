@@ -18,6 +18,8 @@ import { hasMinimumTenantRole } from '@/lib/auth/tenantRoleAccess';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
 import { EmployeeAvailabilityForm } from '@/app/tenant/employees/EmployeeAvailabilityForm';
 import { EmployeeSchedulingProfileForm } from '@/app/tenant/employees/EmployeeSchedulingProfileForm';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { crewSchedulingProfileFromRow } from '@/lib/schedule/optimizer/crewProfile';
 import { loadMemberScheduleProfile } from '@/lib/schedule/memberScheduleProfile';
 import { tenantBusinessSnapshotFromRow } from '@/lib/tenant/tenantBusinessSettings';
@@ -566,6 +568,9 @@ async function AccountSchedulingProfile({
           longitude: crewRow?.home_longitude ?? null,
         }}
         canEditLimits={canEditLimits}
+        allowedPropertyKinds={
+          capabilitiesForSegment(await loadTenantServiceSegment(admin, tenantId)).propertyKinds
+        }
         zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
         partners={partnerIds.map((id) => ({
           id,

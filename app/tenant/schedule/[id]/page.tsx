@@ -16,6 +16,7 @@ import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
 import { VisitDetailCard } from '../VisitDetailCard';
 import { createAdminClient } from '@/lib/supabase/server';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import {
   previewVisitCoverage,
   propertyHasCoverageSubscription,
@@ -195,7 +196,10 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
   const accessCodesText = loadedAccessCodes?.unreadable
     ? propertyAccessCodeReadError()
     : formatPropertyAccessCodes(loadedAccessCodes?.codes ?? emptyPropertyAccessCodes());
-  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const [tier, serviceSegment] = await Promise.all([
+    resolveTenantPlanTier(admin, membership.tenantId),
+    loadTenantServiceSegment(admin, membership.tenantId),
+  ]);
   const canUseProofPhotos = isFeatureEnabled(tier, 'proofOfServicePhotos');
   const canUseGpsCheckIn = isFeatureEnabled(tier, 'gpsVerifiedCheckIn');
   const proofPhotosSharedWithCustomers = isFeatureEnabled(tier, 'proofOfServicePortalShare');
@@ -324,6 +328,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       ) : null}
 
       <VisitDetailCard
+        serviceSegment={serviceSegment}
         employeeOptions={employeeOptions}
         jobTypeLabels={jobTypeLabels}
         relatedRecords={!isFieldEmployee ? relatedRecords : null}

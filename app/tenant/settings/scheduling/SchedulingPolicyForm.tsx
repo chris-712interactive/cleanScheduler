@@ -48,10 +48,12 @@ export function SchedulingPolicyForm({
   tenantSlug,
   initialPolicy,
   readOnly = false,
+  schedulePresets,
 }: {
   tenantSlug: string;
   initialPolicy: ScheduleOptimizerPolicy;
   readOnly?: boolean;
+  schedulePresets?: SchedulePolicyPresetId[];
 }) {
   const [state, formAction, pending] = useActionState(updateScheduleOptimizerPolicyAction, initial);
   useFeedbackToast({ error: state.error, success: state.success, pending });
@@ -59,6 +61,10 @@ export function SchedulingPolicyForm({
   const [query, setQuery] = useState('');
   const [appliedPresetId, setAppliedPresetId] = useState<SchedulePolicyPresetId | null>(null);
   const [appliedTick, setAppliedTick] = useState(0);
+
+  const presets = schedulePresets
+    ? PRESETS.filter((preset) => schedulePresets.includes(preset.id))
+    : PRESETS;
 
   const visibleFactors = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -70,8 +76,8 @@ export function SchedulingPolicyForm({
   }, [query]);
 
   const activePresetId =
-    PRESETS.find((preset) => policyMatchesPreset(policy, preset.id))?.id ?? null;
-  const appliedPreset = PRESETS.find((preset) => preset.id === appliedPresetId);
+    presets.find((preset) => policyMatchesPreset(policy, preset.id))?.id ?? null;
+  const appliedPreset = presets.find((preset) => preset.id === appliedPresetId);
   const showAppliedNote = appliedPreset !== undefined && appliedPreset.id === activePresetId;
 
   const applyPreset = (id: SchedulePolicyPresetId) => {
@@ -109,7 +115,7 @@ export function SchedulingPolicyForm({
           empty.
         </p>
         <div className={styles.presetRow} role="group" aria-label="Starting point">
-          {PRESETS.map((preset) => {
+          {presets.map((preset) => {
             const selected = activePresetId === preset.id;
             return (
               <Button

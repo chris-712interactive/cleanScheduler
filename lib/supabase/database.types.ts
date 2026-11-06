@@ -2345,6 +2345,7 @@ export type Database = {
           mileage_count_return_home: boolean;
           mileage_count_between_stops: boolean;
           mileage_count_office_legs: boolean;
+          service_segment: Database['public']['Enums']['tenant_service_segment'];
           schedule_optimizer_policy: Json;
           allow_passkey_sign_in: boolean;
           mfa_required: boolean;
@@ -2401,6 +2402,7 @@ export type Database = {
           mileage_count_return_home?: boolean;
           mileage_count_between_stops?: boolean;
           mileage_count_office_legs?: boolean;
+          service_segment?: Database['public']['Enums']['tenant_service_segment'];
           schedule_optimizer_policy?: Json;
           allow_passkey_sign_in?: boolean;
           mfa_required?: boolean;
@@ -2457,6 +2459,7 @@ export type Database = {
           mileage_count_return_home?: boolean;
           mileage_count_between_stops?: boolean;
           mileage_count_office_legs?: boolean;
+          service_segment?: Database['public']['Enums']['tenant_service_segment'];
           schedule_optimizer_policy?: Json;
           allow_passkey_sign_in?: boolean;
           mfa_required?: boolean;
@@ -3251,6 +3254,11 @@ export type Database = {
           auto_schedule_on_accept: boolean;
           auto_schedule_visit_count: number | null;
           service_template_id: string | null;
+          sqft_rate_cents: number | null;
+          billable_sqft: number | null;
+          bid_visits: number | null;
+          bid_period: string;
+          production_sqft_per_hour: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -3271,6 +3279,11 @@ export type Database = {
           auto_schedule_on_accept?: boolean;
           auto_schedule_visit_count?: number | null;
           service_template_id?: string | null;
+          sqft_rate_cents?: number | null;
+          billable_sqft?: number | null;
+          bid_visits?: number | null;
+          bid_period?: string;
+          production_sqft_per_hour?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -3291,6 +3304,11 @@ export type Database = {
           auto_schedule_on_accept?: boolean;
           auto_schedule_visit_count?: number | null;
           service_template_id?: string | null;
+          sqft_rate_cents?: number | null;
+          billable_sqft?: number | null;
+          bid_visits?: number | null;
+          bid_period?: string;
+          production_sqft_per_hour?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -6421,6 +6439,7 @@ export type Database = {
         'open' | 'waiting_on_tenant' | 'waiting_on_platform' | 'resolved' | 'closed';
       quote_acceptance_signature_kind: 'typed_name' | 'drawn_png';
       accepted_quote_schedule_mode: 'prompt_staff' | 'auto_schedule';
+      tenant_service_segment: 'residential' | 'commercial' | 'both';
       scheduled_visit_purpose: 'service' | 'consultation';
       tenant_invoice_expectation: 'prepay' | 'pay_after_service';
       tenant_invoice_payment_recorded_via: 'manual' | 'stripe_checkout';

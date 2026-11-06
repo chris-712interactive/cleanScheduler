@@ -16,6 +16,8 @@ import {
 import { EmployeeMemberEditForm } from '../EmployeeMemberEditForm';
 import { EmployeeAvailabilityForm } from '../EmployeeAvailabilityForm';
 import { EmployeeSchedulingProfileForm } from '../EmployeeSchedulingProfileForm';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { OfficeScheduleEligibilityForm } from '../OfficeScheduleEligibilityForm';
 import { officeRoleCanOptOut, schedulingProfileScope } from '@/lib/schedule/scheduleEligibility';
 import { crewSchedulingProfileFromRow } from '@/lib/schedule/optimizer/crewProfile';
@@ -432,6 +434,11 @@ export default async function TenantEmployeeEditPage({ params, searchParams }: P
                   zones={(zones ?? []).map((zone) => ({ id: zone.id, label: zone.name }))}
                   partners={partners}
                   canEditLimits={canSetCrewSchedulingLimits(membership.role as TenantRole)}
+                  allowedPropertyKinds={
+                    capabilitiesForSegment(
+                      await loadTenantServiceSegment(admin, membership.tenantId),
+                    ).propertyKinds
+                  }
                   scope={scheduleScope === 'consultation' ? 'consultation' : 'full'}
                   homeGeocode={{
                     reason: crewRow?.home_geocode_reason ?? null,

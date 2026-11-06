@@ -37,6 +37,8 @@ function OfferForm({
   plans,
   templates,
   readOnly,
+  allowPerSqft,
+  allowBedsBaths,
 }: {
   tenantSlug: string;
   offer: OfferDraft;
@@ -44,6 +46,8 @@ function OfferForm({
   plans: Option[];
   templates: Option[];
   readOnly: boolean;
+  allowPerSqft: boolean;
+  allowBedsBaths: boolean;
 }) {
   const [state, action, pending] = useActionState(saveInstantBookingOffer, initial);
   const [retireState, retireAction, retirePending] = useActionState(
@@ -84,8 +88,12 @@ function OfferForm({
             disabled={readOnly || pending}
           >
             <option value="flat">Flat rate</option>
-            <option value="per_sqft">Base plus per square foot</option>
-            <option value="beds_baths">Base plus beds and baths</option>
+            {allowPerSqft || offer.pricingMethod === 'per_sqft' ? (
+              <option value="per_sqft">Base plus per square foot</option>
+            ) : null}
+            {allowBedsBaths || offer.pricingMethod === 'beds_baths' ? (
+              <option value="beds_baths">Base plus beds and baths</option>
+            ) : null}
           </select>
         </label>
         <label className={styles.field}>
@@ -202,6 +210,8 @@ export function InstantBookingOffers({
   plans,
   templates,
   readOnly,
+  allowPerSqft,
+  allowBedsBaths,
 }: {
   tenantSlug: string;
   offers: OfferDraft[];
@@ -209,6 +219,8 @@ export function InstantBookingOffers({
   plans: Option[];
   templates: Option[];
   readOnly: boolean;
+  allowPerSqft: boolean;
+  allowBedsBaths: boolean;
 }) {
   const blank: OfferDraft = {
     name: '',
@@ -235,6 +247,8 @@ export function InstantBookingOffers({
           plans={plans}
           templates={templates}
           readOnly={readOnly}
+          allowPerSqft={allowPerSqft}
+          allowBedsBaths={allowBedsBaths}
         />
       ))}
       {!readOnly ? (
@@ -245,6 +259,8 @@ export function InstantBookingOffers({
           plans={plans}
           templates={templates}
           readOnly={false}
+          allowPerSqft={allowPerSqft}
+          allowBedsBaths={allowBedsBaths}
         />
       ) : null}
     </div>

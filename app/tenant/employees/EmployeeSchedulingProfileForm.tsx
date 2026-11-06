@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
+import { crewPropertyKindHelp } from '@/lib/tenant/serviceSegment';
 import { formatTagList } from '@/lib/schedule/optimizer/preferences';
 import type { CrewSchedulingProfile } from '@/lib/schedule/optimizer/crewProfile';
 import {
@@ -118,6 +119,7 @@ export function EmployeeSchedulingProfileForm({
   scope = 'full',
   homeGeocode = null,
   canEditLimits,
+  allowedPropertyKinds,
 }: {
   tenantSlug: string;
   targetUserId: string;
@@ -133,7 +135,17 @@ export function EmployeeSchedulingProfileForm({
     latitude: number | null;
     longitude: number | null;
   } | null;
+  allowedPropertyKinds?: string[];
 }) {
+  const propertyKindChoices = allowedPropertyKinds
+    ? KINDS.filter((kind) => allowedPropertyKinds.includes(kind.id))
+    : KINDS;
+  const preservedPropertyKinds = (profile.propertyKinds ?? []).filter(
+    (kind) =>
+      allowedPropertyKinds != null &&
+      !allowedPropertyKinds.includes(kind) &&
+      !propertyKindChoices.some((choice) => choice.id === kind),
+  );
   const [state, action, pending] = useActionState(updateCrewSchedulingProfileAction, initial);
   useFeedbackToast({ error: state.error, success: state.success, pending });
   const saved = profileSnapshot(profile);
@@ -454,7 +466,15 @@ export function EmployeeSchedulingProfileForm({
                   <fieldset className={styles.block}>
                     <legend className={styles.legend}>Property types</legend>
                     <div className={styles.personList}>
-                      {KINDS.map((kind) => {
+                      {preservedPropertyKinds.map((kind) => (
+                        <label key={kind} className={styles.person} data-selected="true">
+                          <input type="checkbox" checked disabled />
+                          <span>
+                            {KINDS.find((option) => option.id === kind)?.label ?? kind} (kept)
+                          </span>
+                        </label>
+                      ))}
+                      {propertyKindChoices.map((kind) => {
                         const selected = kinds.includes(kind.id);
                         return (
                           <label
@@ -478,7 +498,9 @@ export function EmployeeSchedulingProfileForm({
                         );
                       })}
                     </div>
-                    <p className={styles.note}>Leave these off to allow every type.</p>
+                    <p className={styles.note}>
+                      {crewPropertyKindHelp(preservedPropertyKinds.length > 0)}
+                    </p>
                   </fieldset>
                   <div className={styles.checks}>
                     <label className={styles.check} data-selected={pets || undefined}>

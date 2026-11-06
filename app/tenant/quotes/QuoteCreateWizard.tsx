@@ -1,16 +1,23 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/Button';
 import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import type { QuoteScopeTemplateId } from '@/lib/tenant/quoteScopeTemplates';
+import type { QuoteAddonTemplate } from '@/lib/tenant/quoteScopeTemplates';
 import {
-  QUOTE_ADDON_LIBRARY,
-  QUOTE_SCOPE_TEMPLATES,
-  type QuoteScopeTemplateId,
-} from '@/lib/tenant/quoteScopeTemplates';
+  capabilitiesForSegment,
+  defaultPropertyKind,
+  pricingPropertyKind,
+  propertyKindFamily,
+  sqftBidAllowedForProperty,
+  type TenantServiceSegment,
+} from '@/lib/tenant/serviceSegment';
+import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
+import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import { loadPropertyAccessCodesAction } from './propertyAccessCodeActions';
@@ -66,6 +73,7 @@ export function QuoteCreateWizard({
   autoScheduleEnabled = false,
   consultationByCustomerId = {},
   defaults,
+  serviceSegment = 'both',
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -73,6 +81,7 @@ export function QuoteCreateWizard({
   jobTypeCatalog?: JobTypeCatalogEntry[];
   autoScheduleEnabled?: boolean;
   consultationByCustomerId?: Record<string, QuoteConsultationPromptInfo>;
+  serviceSegment?: TenantServiceSegment;
   defaults?: {
     customerId?: string;
     propertyId?: string;
@@ -130,10 +139,18 @@ export function QuoteCreateWizard({
   const [inlineCity, setInlineCity] = useState('');
   const [inlineState, setInlineState] = useState('');
   const [inlinePostal, setInlinePostal] = useState('');
-  const [inlinePropertyKind, setInlinePropertyKind] = useState('residential');
+  const capabilities = useTenantSegmentCapabilities(serviceSegment);
+  const propertyKindOptions = PROPERTY_KIND_OPTIONS.filter((option) =>
+    capabilities.propertyKinds.includes(option.value),
+  );
+  const scopeTemplates = capabilities.scopeTemplates;
+  const [inlinePropertyKind, setInlinePropertyKind] = useState(() =>
+    defaultPropertyKind(capabilitiesForSegment(serviceSegment)),
+  );
 
   const [quotePropertyType, setQuotePropertyType] = useState<string>(
-    consultationPrefill?.propertyKind ?? 'residential',
+    consultationPrefill?.propertyKind ??
+      defaultPropertyKind(capabilitiesForSegment(serviceSegment)),
   );
   const [quotePropertySqft, setQuotePropertySqft] = useState(consultationPrefill?.sqft ?? '');
   const [quotePropertyBedrooms, setQuotePropertyBedrooms] = useState(
@@ -187,15 +204,15 @@ export function QuoteCreateWizard({
   }, [propertyId, propertySource, tenantSlug]);
 
   const [scopeTemplateId, setScopeTemplateId] = useState<QuoteScopeTemplateId>(
-    consultationPrefill?.scopeInclusions.length ? 'custom' : 'residential_standard',
+    consultationPrefill?.scopeInclusions.length ? 'custom' : (scopeTemplates[0]?.id ?? 'custom'),
   );
   const [scopeInclusions, setScopeInclusions] = useState<string[]>(() =>
     consultationPrefill?.scopeInclusions.length
       ? consultationPrefill.scopeInclusions
-      : (QUOTE_SCOPE_TEMPLATES[0]?.inclusions ?? []),
+      : (scopeTemplates[0]?.inclusions ?? []),
   );
   const [scopeExclusions, setScopeExclusions] = useState(
-    () => consultationPrefill?.scopeExclusions ?? QUOTE_SCOPE_TEMPLATES[0]?.defaultExclusions ?? '',
+    () => consultationPrefill?.scopeExclusions ?? scopeTemplates[0]?.defaultExclusions ?? '',
   );
 
   const consultationCrew = consultationPrefill?.crewSize ?? '';
@@ -226,6 +243,18 @@ export function QuoteCreateWizard({
   const propertyOptions = useMemo(() => {
     return customerPropertyGroups.find((g) => g.customerId === customerId)?.options ?? [];
   }, [customerPropertyGroups, customerId]);
+  const selectedLocation =
+    propertySource === 'existing'
+      ? (propertyOptions.find((option) => option.id === propertyId) ?? null)
+      : null;
+  const creatingLocation = customerSource === 'new' || propertySource === 'new';
+  const effectivePropertyKind =
+    pricingPropertyKind({
+      locationKind:
+        selectedLocation?.propertyKind ?? (creatingLocation ? inlinePropertyKind : null),
+      manualKind: quotePropertyType as CustomerPropertyKind,
+    }) ?? (quotePropertyType as CustomerPropertyKind);
+  const locationKindLocked = Boolean(selectedLocation?.propertyKind);
 
   useEffect(() => {
     if (crewSizeTouched.current) return;
@@ -261,21 +290,21 @@ export function QuoteCreateWizard({
           ? Boolean(inlineAddress.trim())
           : Boolean(propertyId);
 
-  const applyScopeTemplate = useCallback((id: QuoteScopeTemplateId) => {
-    const template = QUOTE_SCOPE_TEMPLATES.find((t) => t.id === id);
+  const applyScopeTemplate = (id: QuoteScopeTemplateId) => {
+    const template = scopeTemplates.find((t) => t.id === id);
     if (!template) return;
     setScopeTemplateId(id);
     setScopeInclusions(template.inclusions);
     setScopeExclusions(template.defaultExclusions);
-  }, []);
+  };
 
-  const toggleInclusion = useCallback((item: string) => {
+  const toggleInclusion = (item: string) => {
     setScopeInclusions((prev) =>
       prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item],
     );
-  }, []);
+  };
 
-  const addAddonLine = useCallback((addon: (typeof QUOTE_ADDON_LIBRARY)[number]) => {
+  const addAddonLine = (addon: QuoteAddonTemplate) => {
     setLineRows((prev) => [
       ...prev,
       {
@@ -286,7 +315,7 @@ export function QuoteCreateWizard({
         amount_dollars: addon.amount_dollars,
       },
     ]);
-  }, []);
+  };
 
   const pricedLineCount = quoteLineDraftsForTotalsPreview(lineRows).length;
 
@@ -493,9 +522,9 @@ export function QuoteCreateWizard({
         name="inline_property_kind"
         className={styles.select}
         value={inlinePropertyKind}
-        onChange={(e) => setInlinePropertyKind(e.target.value)}
+        onChange={(e) => setInlinePropertyKind(e.target.value as CustomerPropertyKind)}
       >
-        {PROPERTY_KIND_OPTIONS.map((o) => (
+        {propertyKindOptions.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
@@ -521,7 +550,7 @@ export function QuoteCreateWizard({
       <input ref={saveIntentInputRef} type="hidden" name="save_intent" defaultValue="draft" />
       <input type="hidden" name="scope_inclusions" value={JSON.stringify(scopeInclusions)} />
       <input type="hidden" name="scope_template_id" value={scopeTemplateId} />
-      <input type="hidden" name="quote_property_kind" value={quotePropertyType} />
+      <input type="hidden" name="quote_property_kind" value={effectivePropertyKind} />
 
       {state.error && state.schedulePath ? (
         <QuoteConsultationPrompt
@@ -782,62 +811,81 @@ export function QuoteCreateWizard({
               <div>
                 <label className={styles.label} htmlFor="quote_property_type_select">
                   Property type
+                  {capabilities.offersBoth ? (
+                    <>
+                      {' '}
+                      <PropertyKindBadge kind={effectivePropertyKind} compact />
+                    </>
+                  ) : null}
                 </label>
                 <select
                   id="quote_property_type_select"
                   className={styles.select}
-                  value={quotePropertyType}
-                  onChange={(e) => setQuotePropertyType(e.target.value)}
+                  value={effectivePropertyKind}
+                  disabled={locationKindLocked}
+                  onChange={(e) => {
+                    const next = e.target.value as CustomerPropertyKind;
+                    setQuotePropertyType(next);
+                    if (creatingLocation) setInlinePropertyKind(next);
+                  }}
                 >
-                  {PROPERTY_KIND_OPTIONS.map((o) => (
+                  {propertyKindOptions.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label className={styles.label} htmlFor="quote_property_sqft">
-                  Sq ft (cleanable)
-                </label>
-                <input
-                  id="quote_property_sqft"
-                  name="quote_property_sqft"
-                  className={styles.input}
-                  inputMode="numeric"
-                  value={quotePropertySqft}
-                  onChange={(e) => setQuotePropertySqft(e.target.value)}
-                  placeholder="2400"
-                />
-              </div>
-              <div>
-                <label className={styles.label} htmlFor="quote_property_bedrooms">
-                  Bedrooms
-                </label>
-                <input
-                  id="quote_property_bedrooms"
-                  name="quote_property_bedrooms"
-                  className={styles.input}
-                  inputMode="numeric"
-                  value={quotePropertyBedrooms}
-                  onChange={(e) => setQuotePropertyBedrooms(e.target.value)}
-                  placeholder="3"
-                />
-              </div>
-              <div>
-                <label className={styles.label} htmlFor="quote_property_bathrooms">
-                  Bathrooms
-                </label>
-                <input
-                  id="quote_property_bathrooms"
-                  name="quote_property_bathrooms"
-                  className={styles.input}
-                  inputMode="decimal"
-                  value={quotePropertyBathrooms}
-                  onChange={(e) => setQuotePropertyBathrooms(e.target.value)}
-                  placeholder="2.5"
-                />
-              </div>
+              {capabilities.showSqft &&
+              propertyKindFamily(effectivePropertyKind) !== 'residential' ? (
+                <div>
+                  <label className={styles.label} htmlFor="quote_property_sqft">
+                    Sq ft (cleanable)
+                  </label>
+                  <input
+                    id="quote_property_sqft"
+                    name="quote_property_sqft"
+                    className={styles.input}
+                    inputMode="numeric"
+                    value={quotePropertySqft}
+                    onChange={(e) => setQuotePropertySqft(e.target.value)}
+                    placeholder="2400"
+                  />
+                </div>
+              ) : null}
+              {capabilities.showBedsBaths &&
+              propertyKindFamily(effectivePropertyKind) === 'residential' ? (
+                <>
+                  <div>
+                    <label className={styles.label} htmlFor="quote_property_bedrooms">
+                      Bedrooms
+                    </label>
+                    <input
+                      id="quote_property_bedrooms"
+                      name="quote_property_bedrooms"
+                      className={styles.input}
+                      inputMode="numeric"
+                      value={quotePropertyBedrooms}
+                      onChange={(e) => setQuotePropertyBedrooms(e.target.value)}
+                      placeholder="3"
+                    />
+                  </div>
+                  <div>
+                    <label className={styles.label} htmlFor="quote_property_bathrooms">
+                      Bathrooms
+                    </label>
+                    <input
+                      id="quote_property_bathrooms"
+                      name="quote_property_bathrooms"
+                      className={styles.input}
+                      inputMode="decimal"
+                      value={quotePropertyBathrooms}
+                      onChange={(e) => setQuotePropertyBathrooms(e.target.value)}
+                      placeholder="2.5"
+                    />
+                  </div>
+                </>
+              ) : null}
               <div>
                 <label className={styles.label} htmlFor="quote_property_stories">
                   Stories
@@ -935,7 +983,7 @@ export function QuoteCreateWizard({
               the customer to review.
             </p>
             <div className={styles.scopeTemplateRow}>
-              {QUOTE_SCOPE_TEMPLATES.map((template) => (
+              {scopeTemplates.map((template) => (
                 <button
                   key={template.id}
                   type="button"
@@ -971,8 +1019,9 @@ export function QuoteCreateWizard({
                   />
                 ) : (
                   <ul className={styles.scopeChecklist}>
-                    {QUOTE_SCOPE_TEMPLATES.find((t) => t.id === scopeTemplateId)?.inclusions.map(
-                      (item) => (
+                    {scopeTemplates
+                      .find((t) => t.id === scopeTemplateId)
+                      ?.inclusions.map((item) => (
                         <li key={item}>
                           <label className={styles.scopeCheckItem}>
                             <input
@@ -983,8 +1032,7 @@ export function QuoteCreateWizard({
                             <span>{item}</span>
                           </label>
                         </li>
-                      ),
-                    )}
+                      ))}
                   </ul>
                 )}
               </div>
@@ -1024,23 +1072,33 @@ export function QuoteCreateWizard({
               onRowsChange={setLineRows}
               hideLegend
               jobTypeCatalog={jobTypeCatalog}
-              quotePropertyKind={quotePropertyType as CustomerPropertyKind}
+              quotePropertyKind={effectivePropertyKind}
               autoScheduleEnabled={autoScheduleEnabled}
+              sqftBidsEnabled={sqftBidAllowedForProperty(capabilities, effectivePropertyKind)}
+              defaultSqft={
+                Number.isInteger(Number(quotePropertySqft)) && Number(quotePropertySqft) > 0
+                  ? Number(quotePropertySqft)
+                  : null
+              }
             />
-            <h3 className={styles.wizardSubheading}>Add from library</h3>
-            <div className={styles.addonLibraryRow}>
-              {QUOTE_ADDON_LIBRARY.map((addon) => (
-                <Button
-                  key={addon.service_label}
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => addAddonLine(addon)}
-                >
-                  + {addon.service_label} (${addon.amount_dollars.replace('.00', '')})
-                </Button>
-              ))}
-            </div>
+            {capabilities.addons.length > 0 ? (
+              <>
+                <h3 className={styles.wizardSubheading}>Home add-ons</h3>
+                <div className={styles.addonLibraryRow}>
+                  {capabilities.addons.map((addon) => (
+                    <Button
+                      key={addon.service_label}
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => addAddonLine(addon)}
+                    >
+                      + {addon.service_label} (${addon.amount_dollars.replace('.00', '')})
+                    </Button>
+                  ))}
+                </div>
+              </>
+            ) : null}
             <details className={styles.wizardDetails}>
               <summary>Tax &amp; quote-level discount</summary>
               <QuoteHeaderPricingFields

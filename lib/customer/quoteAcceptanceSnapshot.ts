@@ -1,6 +1,7 @@
 import { parseQuoteLineFrequency, type QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import { parseQuoteLineDiscountKind } from '@/lib/tenant/quoteHeaderPricingForm';
 import type { Database } from '@/lib/supabase/database.types';
+import { breakdownFromStoredSqftBid, type SqftBidBreakdown } from '@/lib/tenant/sqftBid';
 
 type QuoteLineDiscountKind = Database['public']['Enums']['quote_line_discount_kind'];
 
@@ -13,6 +14,7 @@ export type AcceptanceSnapshotLine = {
   amount_cents: number;
   line_discount_kind: QuoteLineDiscountKind;
   line_discount_value: number;
+  sqftBid: SqftBidBreakdown | null;
 };
 
 /**
@@ -39,14 +41,29 @@ export function parseAcceptanceSnapshotLines(payload: unknown): AcceptanceSnapsh
     const line_discount_value =
       Number.isFinite(rawDiscVal) && rawDiscVal >= 0 ? Math.round(rawDiscVal) : 0;
     if (!service_label || !Number.isFinite(amount_cents) || amount_cents < 0) continue;
+    const amount = Math.round(amount_cents);
+    const numeric = (value: unknown) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
     out.push({
       sort_order: Number.isFinite(sort_order) ? sort_order : out.length,
       service_label,
       frequency,
       frequency_detail,
-      amount_cents: Math.round(amount_cents),
+      amount_cents: amount,
       line_discount_kind,
       line_discount_value,
+      sqftBid: breakdownFromStoredSqftBid({
+        pricing_method: o.pricing_method == null ? null : String(o.pricing_method),
+        amount_cents: amount,
+        sqft_rate_cents: numeric(o.sqft_rate_cents),
+        billable_sqft: numeric(o.billable_sqft),
+        bid_visits: numeric(o.bid_visits),
+        bid_period: o.bid_period == null ? null : String(o.bid_period),
+        production_sqft_per_hour: numeric(o.production_sqft_per_hour),
+        estimated_hours: numeric(o.estimated_hours),
+      }),
     });
   }
   return out.sort((a, b) => a.sort_order - b.sort_order);

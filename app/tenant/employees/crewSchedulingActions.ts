@@ -12,6 +12,8 @@ import {
   canSetCrewSchedulingLimits,
 } from '@/lib/tenant/employeePermissions';
 import type { TenantRole } from '@/lib/auth/types';
+import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
+import { mergeCrewPropertyKinds } from '@/lib/tenant/serviceSegment';
 
 export interface CrewSchedulingActionState {
   error?: string;
@@ -171,6 +173,15 @@ export async function updateCrewSchedulingProfileAction(
     return { success: true };
   }
 
+  const existingPropertyKinds = existingHome?.property_kinds ?? [];
+  const submittedPropertyKinds = mayEditOffice
+    ? mergeCrewPropertyKinds({
+        capabilities: await loadTenantSegmentCapabilities(admin, membership.tenantId),
+        submittedKinds: checked(formData, 'property_kind', PROPERTY_KINDS),
+        existingKinds: existingPropertyKinds,
+      })
+    : savedIds(existingPropertyKinds, PROPERTY_KINDS);
+
   const row: Database['public']['Tables']['tenant_member_scheduling_profiles']['Insert'] = {
     tenant_id: membership.tenantId,
     user_id: targetUserId,
@@ -187,9 +198,7 @@ export async function updateCrewSchedulingProfileAction(
       ? parseTagList(String(formData.get('attribute_tags') ?? ''))
       : savedTags(existingHome?.attribute_tags),
     language_codes: languageCodes,
-    property_kinds: mayEditOffice
-      ? checked(formData, 'property_kind', PROPERTY_KINDS)
-      : savedIds(existingHome?.property_kinds, PROPERTY_KINDS),
+    property_kinds: submittedPropertyKinds,
     handles_pets: mayEditOffice
       ? formData.get('handles_pets') === 'on'
       : (existingHome?.handles_pets ?? true),

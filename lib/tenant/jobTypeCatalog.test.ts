@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   findCatalogEntry,
+  jobTypeTemplateForKind,
   matchJobTypeByLabel,
   resolveVisitDurationHours,
   uniqueJobTypeLabels,
@@ -64,6 +65,27 @@ describe('findCatalogEntry', () => {
       propertyKind: 'residential',
     });
     expect(entry?.estimated_hours).toBe(4);
+  });
+});
+
+describe('jobTypeTemplateForKind', () => {
+  it('keeps the same service when the quote location changes from home to commercial', () => {
+    const match = jobTypeTemplateForKind(catalog, {
+      serviceTemplateId: 'a',
+      serviceLabel: 'Deep cleaning',
+      propertyKind: 'commercial',
+    });
+    expect(match?.id).toBe('b');
+    expect(match?.job_type).toBe('commercial');
+  });
+
+  it('keeps the current row when it already matches the location kind', () => {
+    expect(
+      jobTypeTemplateForKind(catalog, {
+        serviceTemplateId: 'a',
+        propertyKind: 'residential',
+      })?.id,
+    ).toBe('a');
   });
 });
 

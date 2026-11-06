@@ -1,6 +1,7 @@
 import type { QuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import { parseQuoteLineFrequency } from '@/lib/tenant/quoteLineFrequency';
 import type { Database } from '@/lib/supabase/database.types';
+import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import {
   parseDiscountDollarsToCents,
   parseDiscountPercentToBps,
@@ -12,6 +13,7 @@ import {
   parseAutoScheduleFlag,
   parseAutoScheduleVisitCount,
 } from '@/lib/tenant/quoteLineAutoSchedule';
+import { computeSqftBid, resolveBillableSqft, type SqftBidPeriod } from '@/lib/tenant/sqftBid';
 
 export type QuoteLineDiscountKind = Database['public']['Enums']['quote_line_discount_kind'];
 export type QuoteLinePricingMethod = Database['public']['Enums']['quote_line_pricing_method'];
@@ -30,7 +32,21 @@ export interface ParsedQuoteLineItem {
   auto_schedule_on_accept: boolean;
   auto_schedule_visit_count: number | null;
   service_template_id: string | null;
+  sqft_rate_cents: number | null;
+  billable_sqft: number | null;
+  bid_visits: number | null;
+  bid_period: SqftBidPeriod;
+  production_sqft_per_hour: number | null;
 }
+
+export type QuoteLineParseOptions = {
+  /** When false, a per_sqft line is rejected. Commercial segments pass true. */
+  allowPerSqft?: boolean;
+  /** Property the quote is pricing. Square-foot bids require commercial. */
+  propertyKind?: CustomerPropertyKind | null;
+  /** Property square footage used when a line does not override it. */
+  defaultSqft?: number | null;
+};
 
 function parseDollarsToCents(
   raw: string,
@@ -46,12 +62,35 @@ function parseDollarsToCents(
   return { ok: true, cents };
 }
 
+function parseOptionalCount(raw: string): number | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const n = Number(t.replace(/,/g, ''));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
+function emptyBidFields(): Pick<
+  ParsedQuoteLineItem,
+  'sqft_rate_cents' | 'billable_sqft' | 'bid_visits' | 'bid_period' | 'production_sqft_per_hour'
+> {
+  return {
+    sqft_rate_cents: null,
+    billable_sqft: null,
+    bid_visits: null,
+    bid_period: 'visit',
+    production_sqft_per_hour: null,
+  };
+}
+
 /**
  * Reads parallel `line_*` fields from FormData (see QuoteLineItemsEditor).
  * Drops completely blank rows. Validates non-empty lines.
+ * `per_sqft` lines ignore the typed dollar amount and recompute it from rate × sqft × visits.
  */
 export function parseQuoteLineItemsFromForm(
   formData: FormData,
+  options: QuoteLineParseOptions = {},
 ): { ok: true; lines: ParsedQuoteLineItem[] } | { ok: false; error: string } {
   const services = formData.getAll('line_service').map((v) => String(v));
   const frequencies = formData.getAll('line_frequency').map((v) => String(v));
@@ -67,6 +106,11 @@ export function parseQuoteLineItemsFromForm(
     .map((v) => String(v));
   const serviceTemplateIds = formData.getAll('line_service_template_id').map((v) => String(v));
   const displayTitles = formData.getAll('line_display_title').map((v) => String(v));
+  const sqftRates = formData.getAll('line_sqft_rate').map((v) => String(v));
+  const billableSqfts = formData.getAll('line_billable_sqft').map((v) => String(v));
+  const timesPerWeek = formData.getAll('line_times_per_week').map((v) => String(v));
+  const timesPerMonth = formData.getAll('line_times_per_month').map((v) => String(v));
+  const productionRates = formData.getAll('line_production_sqft_per_hour').map((v) => String(v));
 
   const n = Math.max(
     services.length,
@@ -81,6 +125,8 @@ export function parseQuoteLineItemsFromForm(
     autoScheduleVisitCounts.length,
     serviceTemplateIds.length,
     displayTitles.length,
+    sqftRates.length,
+    billableSqfts.length,
   );
   const lines: ParsedQuoteLineItem[] = [];
 
@@ -99,10 +145,13 @@ export function parseQuoteLineItemsFromForm(
     const service_template_id = (serviceTemplateIds[i] ?? '').trim() || null;
     const display_title = (displayTitles[i] ?? '').trim() || null;
 
+    const rateRaw = sqftRates[i] ?? '';
+    const sqftRaw = billableSqfts[i] ?? '';
     const rowBlank =
       !service_label &&
       !service_template_id &&
       !amountRaw.trim() &&
+      !rateRaw.trim() &&
       line_discount_kind === 'none' &&
       !discInputRaw.trim();
     if (rowBlank) continue;
@@ -118,8 +167,51 @@ export function parseQuoteLineItemsFromForm(
       };
     }
 
-    const parsed = parseDollarsToCents(amountRaw);
-    if (!parsed.ok) return parsed;
+    let amount_cents = 0;
+    let bid = emptyBidFields();
+    let estimatedFromBid: number | null = null;
+    if (pricing_method === 'per_sqft') {
+      if (!options.allowPerSqft) {
+        return {
+          ok: false,
+          error: 'Square-foot bids are only available for commercial cleaning workspaces.',
+        };
+      }
+      if (options.propertyKind !== 'commercial') {
+        return { ok: false, error: 'Square-foot bids are only for commercial properties.' };
+      }
+      const rateParsed = parseDollarsToCents(rateRaw || '0');
+      if (!rateRaw.trim()) {
+        return { ok: false, error: 'Enter a rate per square foot for each square-foot line.' };
+      }
+      if (!rateParsed.ok) return { ok: false, error: 'Enter a valid rate per square foot.' };
+      const sqftResolved = resolveBillableSqft(sqftRaw, options.defaultSqft);
+      if (!sqftResolved.ok) return sqftResolved;
+      const sqft = sqftResolved.sqft;
+      const production = parseOptionalCount(productionRates[i] ?? '');
+      const computed = computeSqftBid({
+        rateCentsPerSqft: rateParsed.cents,
+        sqft: sqft ?? 0,
+        frequency,
+        timesPerWeek: parseOptionalCount(timesPerWeek[i] ?? ''),
+        timesPerMonth: parseOptionalCount(timesPerMonth[i] ?? ''),
+        productionSqftPerHour: production,
+      });
+      if (!computed.ok) return computed;
+      amount_cents = computed.breakdown.amountCents;
+      estimatedFromBid = computed.breakdown.estimatedHoursPerVisit;
+      bid = {
+        sqft_rate_cents: computed.breakdown.rateCentsPerSqft,
+        billable_sqft: computed.breakdown.billableSqft,
+        bid_visits: computed.breakdown.visitsInPeriod,
+        bid_period: computed.breakdown.period,
+        production_sqft_per_hour: computed.breakdown.productionSqftPerHour,
+      };
+    } else {
+      const parsed = parseDollarsToCents(amountRaw);
+      if (!parsed.ok) return parsed;
+      amount_cents = parsed.cents;
+    }
 
     let line_discount_value = 0;
     if (line_discount_kind === 'percent') {
@@ -132,8 +224,8 @@ export function parseQuoteLineItemsFromForm(
       line_discount_value = d.cents;
     }
 
-    let estimated_hours: number | null = null;
-    if (hoursRaw) {
+    let estimated_hours: number | null = estimatedFromBid;
+    if (estimated_hours == null && hoursRaw) {
       const h = Number(hoursRaw.replace(/,/g, ''));
       if (!Number.isFinite(h) || h < 0) {
         return { ok: false, error: 'Enter a valid estimated hours value on each service line.' };
@@ -159,7 +251,7 @@ export function parseQuoteLineItemsFromForm(
       display_title,
       frequency,
       frequency_detail: frequency_detail_raw ? frequency_detail_raw : null,
-      amount_cents: parsed.cents,
+      amount_cents,
       line_discount_kind,
       line_discount_value,
       pricing_method,
@@ -167,6 +259,7 @@ export function parseQuoteLineItemsFromForm(
       auto_schedule_on_accept,
       auto_schedule_visit_count,
       service_template_id: (serviceTemplateIds[i] ?? '').trim() || null,
+      ...bid,
     });
   }
 

@@ -81,6 +81,88 @@ BEGIN
     END IF;
   END IF;
 
+  IF to_regclass('public.tenant_operational_settings') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_operational_settings'
+        AND column_name = 'service_segment'
+    ) THEN
+      missing := array_append(missing, 'tenant_operational_settings.service_segment');
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relname = 'tenant_operational_settings' AND c.relrowsecurity
+    ) THEN
+      missing := array_append(missing, 'tenant_operational_settings RLS not enabled');
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.role_table_grants
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_operational_settings'
+        AND grantee IN ('anon', 'authenticated')
+        AND privilege_type IN ('SELECT', 'INSERT', 'UPDATE', 'DELETE')
+    ) THEN
+      missing := array_append(missing, 'tenant_operational_settings granted to anon or authenticated');
+    END IF;
+  END IF;
+
+  IF to_regclass('public.tenant_quote_line_items') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_quote_line_items'
+        AND column_name = 'sqft_rate_cents'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_quote_line_items'
+        AND column_name = 'billable_sqft'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_quote_line_items'
+        AND column_name = 'bid_visits'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_quote_line_items'
+        AND column_name = 'bid_period'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_quote_line_items'
+        AND column_name = 'production_sqft_per_hour'
+    ) THEN
+      missing := array_append(missing, 'tenant_quote_line_items square-foot bid columns');
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relname = 'tenant_quote_line_items' AND c.relrowsecurity
+    ) THEN
+      missing := array_append(missing, 'tenant_quote_line_items RLS not enabled');
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname = 'public'
+        AND tablename = 'tenant_quote_line_items'
+        AND cmd = 'SELECT'
+    ) THEN
+      missing := array_append(missing, 'tenant_quote_line_items SELECT policy');
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.role_table_grants
+      WHERE table_schema = 'public'
+        AND table_name = 'tenant_quote_line_items'
+        AND grantee IN ('anon', 'authenticated')
+        AND privilege_type IN ('SELECT', 'INSERT', 'UPDATE', 'DELETE')
+    ) THEN
+      missing := array_append(missing, 'tenant_quote_line_items granted to anon or authenticated');
+    END IF;
+  END IF;
+
   IF array_length(missing, 1) IS NOT NULL THEN
     RAISE EXCEPTION 'Tenant isolation RLS smoke failed — missing: %', array_to_string(missing, ', ');
   END IF;

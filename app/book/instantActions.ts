@@ -4,9 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import {
-  offerMatchesBookingSegment,
-  parseBookingServiceAudience,
-  resolveTenantBookingSegment,
+  instantOfferAllowedForSegment,
+  instantPricingMethodAllowed,
 } from '@/lib/booking/bookingAudience';
 import { randomUUID } from 'node:crypto';
 import { publicSlotPayload, rateLimitAllows, trustedClientIp } from '@/lib/booking/bookingGuards';
@@ -15,6 +14,7 @@ import {
   finalizeInstantBookingRecord,
   holdInstantBooking,
   parseInstantFrequency,
+  loadTemplateJobTypes,
   prepareInstantBooking,
   visibleInstantOffers,
 } from '@/lib/booking/confirmInstantBooking';
@@ -103,7 +103,7 @@ async function authorizedInstantTenant(tenantSlug: string) {
   const { data: ops } = await admin
     .from('tenant_operational_settings')
     .select(
-      'public_booking_mode, public_booking_request_enabled, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
+      'public_booking_mode, public_booking_request_enabled, service_segment, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
     )
     .eq('tenant_id', tenant.id)
     .maybeSingle();
@@ -112,7 +112,12 @@ async function authorizedInstantTenant(tenantSlug: string) {
   const modeError = publicBookingModeError(mode, 'instant');
   if (modeError || !ops) return { error: modeError ?? PUBLIC_BOOKING_UNAVAILABLE };
 
-  return { admin, tenant, policy: instantBookingPolicyFromRow(ops) };
+  return {
+    admin,
+    tenant,
+    policy: instantBookingPolicyFromRow(ops),
+    serviceSegment: ops.service_segment,
+  };
 }
 
 async function clientRateLimit(
@@ -161,8 +166,16 @@ export async function previewInstantBookingAction(
     .select('*')
     .eq('tenant_id', gated.tenant.id)
     .eq('id', offerId);
-  const offer = visibleInstantOffers(offers ?? [])[0];
+  const templateJobTypes = await loadTemplateJobTypes(
+    gated.admin,
+    gated.tenant.id,
+    (offers ?? []).map((offer) => offer.service_template_id),
+  );
+  const offer = visibleInstantOffers(offers ?? [], gated.serviceSegment, templateJobTypes)[0];
   if (!offer) return { error: 'Choose a service to continue.' };
+  if (!instantPricingMethodAllowed(offer.pricing_method, gated.serviceSegment)) {
+    return { error: 'That price is not available for this cleaning company.' };
+  }
 
   const postalCode = String(formData.get('postal_code') ?? '').trim();
   const { data: coverageRows } = await gated.admin
@@ -350,12 +363,22 @@ export async function confirmInstantBookingAction(
   });
   if (!prepared.ok) return { error: prepared.error };
 
-  const segment = resolveTenantBookingSegment();
   if (
-    !offerMatchesBookingSegment(
-      parseBookingServiceAudience(prepared.prepared.offer.audience),
-      segment,
-    )
+    !instantOfferAllowedForSegment(
+      {
+        audience: prepared.prepared.offer.audience,
+        pricingMethod: prepared.prepared.offer.pricing_method,
+        templateJobType: prepared.prepared.offer.service_template_id
+          ? (
+              await loadTemplateJobTypes(gated.admin, gated.tenant.id, [
+                prepared.prepared.offer.service_template_id,
+              ])
+            ).get(prepared.prepared.offer.service_template_id)
+          : null,
+      },
+      gated.serviceSegment,
+    ) ||
+    !instantPricingMethodAllowed(prepared.prepared.offer.pricing_method, gated.serviceSegment)
   ) {
     return { error: 'That service is not available to book.' };
   }

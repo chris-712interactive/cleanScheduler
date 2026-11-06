@@ -21,6 +21,7 @@ import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
 import { normalizeMessagingChannelsFromDb } from '@/lib/sms/sentMessagingChannels';
 import { DEFAULT_CONSULTATION_DURATION_MINUTES } from '@/lib/tenant/consultationDuration';
 import { OperationalSettingsForm } from '../OperationalSettingsForm';
+import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { EmployeeHoursPolicyForm } from './EmployeeHoursPolicyForm';
 import { MileageSettingsForm } from './MileageSettingsForm';
 import styles from './operations-settings.module.scss';
@@ -66,7 +67,7 @@ export default async function TenantOperationsSettingsPage() {
   const { data: opsRow } = await supabase
     .from('tenant_operational_settings')
     .select(
-      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_visit_reminder, email_notify_on_my_way, email_notify_review_request, email_notify_invoice_overdue, sms_notify_invoice_overdue, email_notify_customer_message, email_notify_staff_reply, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, consultation_required_fields, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels, public_booking_request_enabled',
+      'accepted_quote_schedule_mode, invoice_expectation, allowed_customer_payment_methods, email_notify_quote_sent, email_notify_quote_accepted, email_notify_quote_declined, sms_notify_quote_sent, sms_notify_quote_accepted, sms_notify_quote_declined, sms_notify_visit_reminder, email_notify_visit_reminder, email_notify_on_my_way, email_notify_review_request, email_notify_invoice_overdue, sms_notify_invoice_overdue, email_notify_customer_message, email_notify_staff_reply, check_reminder_hold_days, check_hold_through_deposit, require_consultation_before_quote, consultation_duration_minutes, consultation_required_fields, recurring_starts_after_initial, allow_same_day_initial_recurring, messaging_channels, public_booking_request_enabled, service_segment',
     )
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -175,6 +176,7 @@ export default async function TenantOperationsSettingsPage() {
         <OperationalSettingsForm
           tenantSlug={membership.tenantSlug}
           snapshot={opsSnapshot}
+          consultationGroups={capabilitiesForSegment(opsRow?.service_segment).consultationGroups}
           readOnly={!canEdit}
           smsEditable={smsAllowed}
           smsTrialLocked={smsTrialLocked}

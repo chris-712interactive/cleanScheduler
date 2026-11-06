@@ -43,12 +43,19 @@ type VisitListRow = {
           | 'state'
           | 'postal_code'
           | 'community_name'
+          | 'property_kind'
         >[]
       | null;
   } | null;
   tenant_customer_properties: Pick<
     Tables<'tenant_customer_properties'>,
-    'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code' | 'community_name'
+    | 'address_line1'
+    | 'address_line2'
+    | 'city'
+    | 'state'
+    | 'postal_code'
+    | 'community_name'
+    | 'property_kind'
   > | null;
   tenant_quotes: { title: string; amount_cents: number | null } | null;
   tenant_scheduled_visit_assignees:
@@ -99,6 +106,8 @@ function mapVisitRows(rows: VisitListRow[]): ScheduleVisitVM[] {
       assignees,
       assigneeUserIds: assignees.map((a) => a.userId),
       checkedInAt: v.checked_in_at,
+      propertyKind:
+        v.tenant_customer_properties?.property_kind ?? fallbackProperty?.property_kind ?? null,
     };
   });
 }
@@ -145,7 +154,8 @@ export async function loadScheduleVisits(params: {
           city,
           state,
           postal_code,
-          community_name
+          community_name,
+          property_kind
         )
       ),
       tenant_customer_properties (
@@ -154,7 +164,8 @@ export async function loadScheduleVisits(params: {
         city,
         state,
         postal_code,
-        community_name
+        community_name,
+        property_kind
       ),
       tenant_quotes (
         title,

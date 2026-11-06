@@ -112,6 +112,7 @@ export type CustomerImportCommitResult = {
   propertiesAdded?: number;
   skipped?: number;
   failed?: number;
+  segmentSkipSummary?: string | null;
   invites?: CustomerImportInviteSummary;
 };
 

@@ -52,6 +52,11 @@ export type QuoteDetailEmbedRow = Tables<'tenant_quotes'> & {
         | 'auto_schedule_on_accept'
         | 'auto_schedule_visit_count'
         | 'service_template_id'
+        | 'sqft_rate_cents'
+        | 'billable_sqft'
+        | 'bid_visits'
+        | 'bid_period'
+        | 'production_sqft_per_hour'
       >[]
     | null;
 };

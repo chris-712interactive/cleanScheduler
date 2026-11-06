@@ -11,17 +11,20 @@ export function CustomerDirectorySearchForm({
   status,
   zone,
   zones,
+  segment = null,
 }: {
   q: string;
   status: CustomerDirectoryStatusParam;
   zone: string | null;
   zones: Array<{ id: string; name: string }>;
+  segment?: 'residential' | 'commercial' | null;
 }) {
   const clearHref = `/customers${buildCustomerDirectorySearchParams({ status })}`;
 
   return (
     <form method="get" className={styles.searchRow} aria-label="Search customers" role="search">
       {status !== 'all' ? <input type="hidden" name="status" value={status} /> : null}
+      {segment ? <input type="hidden" name="segment" value={segment} /> : null}
       <label className={styles.searchLabel} htmlFor="customer_directory_q">
         Search customers
       </label>

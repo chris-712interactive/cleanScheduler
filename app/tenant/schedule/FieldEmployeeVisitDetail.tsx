@@ -10,6 +10,7 @@ import { VisitProofPhotos } from '@/components/visits/VisitProofPhotos';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { ConsultationIntakeForm } from './ConsultationIntakeForm';
 import type { VisitDetailSnapshot } from './VisitDetailCard';
+import type { TenantServiceSegment } from '@/lib/tenant/serviceSegment';
 import styles from './visitDetail.module.scss';
 
 function statusLabel(visit: VisitDetailSnapshot): string {
@@ -34,8 +35,10 @@ export function FieldEmployeeVisitDetail({
   defaultAmountCents,
   hasBillableAmount,
   onVisitPatch,
+  serviceSegment = 'both',
 }: {
   visit: VisitDetailSnapshot;
+  serviceSegment?: TenantServiceSegment;
   showFieldWork: boolean;
   showCheckIn: boolean;
   showComplete: boolean;
@@ -125,6 +128,7 @@ export function FieldEmployeeVisitDetail({
           initial={visit.consultationIntake}
           requiredFields={visit.consultationRequiredFields}
           canEdit={visit.status !== 'cancelled'}
+          serviceSegment={serviceSegment}
         />
       ) : null}
 

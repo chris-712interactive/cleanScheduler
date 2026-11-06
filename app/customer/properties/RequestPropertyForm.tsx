@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import { defaultRequestPropertyKind } from '@/lib/tenant/serviceSegment';
 import { requestCustomerPropertyAction, type RequestPropertyState } from './actions';
 import styles from './properties.module.scss';
 
@@ -13,7 +14,12 @@ const initial: RequestPropertyState = {};
 export function RequestPropertyForm({
   links,
 }: {
-  links: { tenantId: string; customerId: string; tenantName: string }[];
+  links: {
+    tenantId: string;
+    customerId: string;
+    tenantName: string;
+    propertyKinds: { value: string; label: string }[];
+  }[];
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(requestCustomerPropertyAction, initial);
@@ -27,7 +33,14 @@ export function RequestPropertyForm({
   const [postal, setPostal] = useState('');
   const [label, setLabel] = useState('');
   const [note, setNote] = useState('');
-  const [kind, setKind] = useState('residential');
+  const allowedKinds = link?.propertyKinds ?? PROPERTY_KIND_OPTIONS;
+  const [kind, setKind] = useState(() =>
+    defaultRequestPropertyKind(links[0]?.propertyKinds ?? PROPERTY_KIND_OPTIONS),
+  );
+
+  useEffect(() => {
+    setKind((current) => defaultRequestPropertyKind(allowedKinds, current));
+  }, [link?.customerId, allowedKinds]);
 
   useEffect(() => {
     if (!state.savedAt) return;
@@ -64,7 +77,7 @@ export function RequestPropertyForm({
       <label className={styles.field}>
         Type
         <select name="property_kind" value={kind} onChange={(event) => setKind(event.target.value)}>
-          {PROPERTY_KIND_OPTIONS.map((option) => (
+          {allowedKinds.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

@@ -10,6 +10,8 @@ import { resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { isReportEnabled, reportsBySection } from '@/lib/reports/reportCatalog';
 import { getReportsHubMetrics } from '@/lib/reports/hubMetrics';
 import styles from './reports.module.scss';
+import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment, segmentCustomersTitleHint } from '@/lib/tenant/serviceSegment';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +23,9 @@ export default async function TenantReportsHubPage() {
   const tier = await resolveTenantPlanTier(admin, membership.tenantId);
   const supabase = createTenantPortalDbClient();
   const metrics = await getReportsHubMetrics(supabase, membership.tenantId);
+  const segmentHint = segmentCustomersTitleHint(
+    capabilitiesForSegment(await loadTenantServiceSegment(admin, membership.tenantId)),
+  );
 
   const sections = reportsBySection();
 
@@ -28,7 +33,7 @@ export default async function TenantReportsHubPage() {
     <>
       <PageHeader
         title="Reports"
-        titleHint="Financial close, operations, and payroll exports for your cleaning business."
+        titleHint={`Financial close, operations, and payroll exports. ${segmentHint} Customer and schedule tabs split residential and commercial work; these totals stay combined.`}
       />
 
       <Link href="/reports/close" className={styles.closeBanner}>

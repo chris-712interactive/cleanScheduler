@@ -93,6 +93,7 @@ export function OperationalSettingsForm({
   reviewRequestEmailEditable = false,
   invoiceReminderSmsEditable = false,
   smsUsageSummary,
+  consultationGroups = ['all', 'home', 'commercial'],
 }: {
   tenantSlug: string;
   snapshot: OperationalSettingsFormSnapshot;
@@ -106,6 +107,7 @@ export function OperationalSettingsForm({
   reviewRequestEmailEditable?: boolean;
   invoiceReminderSmsEditable?: boolean;
   smsUsageSummary?: string | null;
+  consultationGroups?: Array<'all' | 'home' | 'commercial'>;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const allowed = new Set(snapshot.allowed_customer_payment_methods);
@@ -262,27 +264,29 @@ export function OperationalSettingsForm({
               ['home', 'Homes and short-term rentals'],
               ['commercial', 'Commercial spaces'],
             ] as const
-          ).map(([appliesTo, title]) => (
-            <div key={appliesTo}>
-              <p className={styles.subsectionTitle}>{title}</p>
-              <div className={styles.paymentGrid}>
-                {CONSULTATION_INTAKE_FIELDS.filter((field) => field.appliesTo === appliesTo).map(
-                  (field) => (
-                    <label key={field.key} className={styles.paymentToggle}>
-                      <input
-                        type="checkbox"
-                        name="consultation_required_fields"
-                        value={field.key}
-                        defaultChecked={snapshot.consultation_required_fields.includes(field.key)}
-                        disabled={readOnly}
-                      />
-                      <span>{field.label}</span>
-                    </label>
-                  ),
-                )}
+          )
+            .filter(([appliesTo]) => consultationGroups.includes(appliesTo))
+            .map(([appliesTo, title]) => (
+              <div key={appliesTo}>
+                <p className={styles.subsectionTitle}>{title}</p>
+                <div className={styles.paymentGrid}>
+                  {CONSULTATION_INTAKE_FIELDS.filter((field) => field.appliesTo === appliesTo).map(
+                    (field) => (
+                      <label key={field.key} className={styles.paymentToggle}>
+                        <input
+                          type="checkbox"
+                          name="consultation_required_fields"
+                          value={field.key}
+                          defaultChecked={snapshot.consultation_required_fields.includes(field.key)}
+                          disabled={readOnly}
+                        />
+                        <span>{field.label}</span>
+                      </label>
+                    ),
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
 
         <div>

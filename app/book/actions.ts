@@ -9,6 +9,8 @@ import {
 } from '@/lib/booking/publicBookingMode';
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
+import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
+import { bookingServiceAllowed, bookingServiceDeniedMessage } from '@/lib/tenant/serviceSegment';
 
 export type BookingRequestActionState = {
   error?: string;
@@ -84,6 +86,13 @@ export async function submitBookingRequestAction(
 
   const modeError = publicBookingModeError(publicBookingModeFromRow(ops), 'request');
   if (modeError) return { error: modeError };
+
+  // Instant-booking work should keep using bookingServiceAllowed so a booking-mode
+  // setting and this service segment stay independent checks.
+  const capabilities = await loadTenantSegmentCapabilities(admin, tenant.id);
+  if (!bookingServiceAllowed(capabilities, serviceInterest)) {
+    return { error: bookingServiceDeniedMessage() };
+  }
 
   const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
   const { count } = await admin

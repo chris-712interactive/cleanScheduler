@@ -26,6 +26,7 @@ export function CustomerDirectoryPagination({
   q,
   status,
   zone,
+  segment = null,
 }: {
   currentPage: number;
   totalPages: number;
@@ -35,10 +36,11 @@ export function CustomerDirectoryPagination({
   q: string;
   status: CustomerDirectoryStatusParam;
   zone?: string | null;
+  segment?: 'residential' | 'commercial' | null;
 }) {
   if (totalCount === 0) return null;
 
-  const base = { q, status, zone: zone ?? null };
+  const base = { q, status, zone: zone ?? null, segment: segment ?? null };
   const prevHref =
     currentPage > 1
       ? `/customers${buildCustomerDirectorySearchParams({ ...base, page: currentPage - 1 })}`

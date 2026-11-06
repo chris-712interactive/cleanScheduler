@@ -209,6 +209,7 @@ export async function fetchCustomerDirectoryPage(
     statusFilter: CustomerDirectoryStatusParam;
     page: number;
     zoneId?: string | null;
+    propertyKinds?: string[] | null;
   },
 ): Promise<CustomerDirectoryFetchResult> {
   let searchOrFilter: string | null = null;
@@ -220,6 +221,32 @@ export async function fetchCustomerDirectoryPage(
       return { ok: false, phase: 'search', message: zoneCustomers.error };
     }
     zoneCustomerIds = zoneCustomers.customerIds;
+    if (zoneCustomerIds.length === 0) {
+      const statusCounts = await fetchCustomerDirectoryStatusCounts(admin, params.tenantId);
+      return {
+        ok: true,
+        rows: [],
+        totalCount: 0,
+        statusCounts: statusCounts ?? { all: 0, active: 0, inactive: 0 },
+        page: 1,
+      };
+    }
+  }
+
+  if (params.propertyKinds && params.propertyKinds.length > 0) {
+    const { data, error } = await admin
+      .from('tenant_customer_properties')
+      .select('customer_id')
+      .eq('tenant_id', params.tenantId)
+      .in(
+        'property_kind',
+        params.propertyKinds as Database['public']['Enums']['customer_property_kind'][],
+      );
+    if (error) return { ok: false, phase: 'search', message: error.message };
+    const segmentIds = [...new Set((data ?? []).map((row) => row.customer_id))];
+    zoneCustomerIds = zoneCustomerIds
+      ? zoneCustomerIds.filter((id) => segmentIds.includes(id))
+      : segmentIds;
     if (zoneCustomerIds.length === 0) {
       const statusCounts = await fetchCustomerDirectoryStatusCounts(admin, params.tenantId);
       return {

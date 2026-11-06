@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
-import {
-  offerMatchesBookingSegment,
-  parseBookingServiceAudience,
-  resolveTenantBookingSegment,
-} from '@/lib/booking/bookingAudience';
+import { instantOfferAllowedForSegment } from '@/lib/booking/bookingAudience';
+import { loadTemplateJobTypes } from '@/lib/booking/confirmInstantBooking';
 import { allowedFrequencies, type InstantBookingFrequency } from '@/lib/booking/priceInstantOffer';
 import { instantBookingPolicyFromRow } from '@/lib/booking/loadInstantSlots';
 import {
@@ -28,6 +25,7 @@ import { getStripe } from '@/lib/stripe/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { BookingRequestForm } from './BookingRequestForm';
 import { InstantBookingFlow } from './InstantBookingFlow';
+import { capabilitiesForSegment, parseTenantServiceSegment } from '@/lib/tenant/serviceSegment';
 import styles from './book.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -66,7 +64,7 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
   const { data: ops } = await admin
     .from('tenant_operational_settings')
     .select(
-      'public_booking_mode, public_booking_request_enabled, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
+      'public_booking_mode, public_booking_request_enabled, service_segment, instant_booking_lead_time_hours, instant_booking_window_days, instant_booking_buffer_minutes, instant_booking_slot_step_minutes, instant_booking_deposit_cents, instant_booking_collect_card, instant_booking_allow_recurring, instant_booking_allow_weekly, instant_booking_allow_biweekly, instant_booking_allow_monthly, instant_booking_travel_mph',
     )
     .eq('tenant_id', tenant.id)
     .maybeSingle();
@@ -170,14 +168,29 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
     const policy = instantBookingPolicyFromRow(ops);
     const { data: offerRows } = await admin
       .from('tenant_instant_booking_offers')
-      .select('id, name, duration_minutes, pricing_method, audience, is_active, sort_order')
+      .select(
+        'id, name, duration_minutes, pricing_method, audience, is_active, sort_order, service_template_id',
+      )
       .eq('tenant_id', tenant.id)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
-    const segment = resolveTenantBookingSegment();
+    const templateJobTypes = await loadTemplateJobTypes(
+      admin,
+      tenant.id,
+      (offerRows ?? []).map((offer) => offer.service_template_id),
+    );
     const offers = (offerRows ?? []).filter((offer) =>
-      offerMatchesBookingSegment(parseBookingServiceAudience(offer.audience), segment),
+      instantOfferAllowedForSegment(
+        {
+          audience: offer.audience,
+          pricingMethod: offer.pricing_method,
+          templateJobType: offer.service_template_id
+            ? templateJobTypes.get(offer.service_template_id)
+            : null,
+        },
+        ops.service_segment,
+      ),
     );
     const frequencies = allowedFrequencies(policy).map((value) => ({
       value,
@@ -223,7 +236,12 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
           Request a quote or cleaning. Tell us about your property and we will follow up — this does
           not book a time on the calendar automatically.
         </p>
-        <BookingRequestForm tenantSlug={tenant.slug} />
+        <BookingRequestForm
+          tenantSlug={tenant.slug}
+          services={
+            capabilitiesForSegment(parseTenantServiceSegment(ops?.service_segment)).bookingServices
+          }
+        />
       </div>
     </main>
   );
