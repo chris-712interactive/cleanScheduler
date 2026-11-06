@@ -119,7 +119,88 @@ export function firstVisitAndRecurringCents(
   };
 }
 
-/** Any failed finalize after Checkout is terminal: refund a charge, or flag the office. */
+export type BookingResolutionCode = 'slot_taken' | 'capacity' | 'amount_mismatch' | 'generic';
+
+export function customerCreateFailureCode(error: string): 'capacity' | 'generic' {
+  const text = error.toLowerCase();
+  if (
+    text.includes('allows up to') ||
+    text.includes('not taking new customers') ||
+    text.includes('active customers') ||
+    text.includes('plan limit')
+  ) {
+    return 'capacity';
+  }
+  return 'generic';
+}
+
+/** Paid customer creation never stays on hold: refund, drop the lock, and flag the office. */
+export function paidCustomerCreateDisposition(error: string): {
+  code: 'capacity' | 'generic';
+  refund: true;
+  releaseHold: true;
+  flagForOffice: true;
+} {
+  return {
+    code: customerCreateFailureCode(error),
+    refund: true,
+    releaseHold: true,
+    flagForOffice: true,
+  };
+}
+
+/** A Checkout total that is not the deposit is not accepted. */
+export function amountMismatchDisposition(): {
+  code: 'amount_mismatch';
+  refund: true;
+  releaseHold: true;
+  flagForOffice: true;
+} {
+  return {
+    code: 'amount_mismatch',
+    refund: true,
+    releaseHold: true,
+    flagForOffice: true,
+  };
+}
+
+export function parseBookingResolutionCode(raw: string | null | undefined): BookingResolutionCode {
+  if (
+    raw === 'slot_taken' ||
+    raw === 'capacity' ||
+    raw === 'amount_mismatch' ||
+    raw === 'generic'
+  ) {
+    return raw;
+  }
+  return 'generic';
+}
+
+export function bookingResolutionMessage(input: {
+  code: BookingResolutionCode;
+  depositRefunded: boolean;
+  paymentCollected: boolean;
+}): string {
+  const ending = !input.paymentCollected
+    ? 'The office will follow up.'
+    : input.depositRefunded
+      ? 'The deposit was refunded.'
+      : 'The office will refund the deposit.';
+  switch (input.code) {
+    case 'slot_taken':
+      return `That time is no longer open. ${ending}`;
+    case 'capacity':
+      return `This company cannot take another customer right now. ${ending}`;
+    case 'amount_mismatch':
+      return `The payment did not match the deposit. ${ending}`;
+    case 'generic':
+      return `The visit could not be booked. ${ending}`;
+    default: {
+      const _exhaustive: never = input.code;
+      return _exhaustive;
+    }
+  }
+}
 export function checkoutFinalizeOutcome(input: {
   paymentCollected: boolean;
 }): 'refund' | 'flag_for_office' {

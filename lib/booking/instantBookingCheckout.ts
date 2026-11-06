@@ -7,9 +7,13 @@ import {
 } from '@/lib/booking/confirmInstantBooking';
 import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
 import {
+  amountMismatchDisposition,
   balanceDueCents,
-  checkoutFinalizeOutcome,
+  bookingResolutionMessage,
   depositWritePlan,
+  paidCustomerCreateDisposition,
+  parseBookingResolutionCode,
+  type BookingResolutionCode,
 } from '@/lib/booking/bookingGuards';
 import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import {
@@ -161,34 +165,52 @@ export async function startInstantBookingCheckout(
 export type InstantCheckoutResult =
   { ok: true; visitId: string } | { ok: false; retry: boolean; error: string };
 
-async function refundPaidBooking(
+async function settlePaidFailure(
   admin: Admin,
   stripe: Stripe,
-  input: { tenantId: string; bookingId: string; paymentIntentId: string; connectAccountId: string },
-): Promise<'refunded' | 'needs_review'> {
-  try {
-    await stripe.refunds.create(
-      { payment_intent: input.paymentIntentId },
-      {
-        stripeAccount: input.connectAccountId,
-        idempotencyKey: `instant-booking-refund-${input.bookingId}`,
-      },
-    );
-    await admin
-      .from('tenant_instant_bookings')
-      .update({ status: 'refunded' })
-      .eq('id', input.bookingId)
-      .eq('tenant_id', input.tenantId);
-    await admin.from('tenant_booking_slot_locks').delete().eq('booking_id', input.bookingId);
-    return 'refunded';
-  } catch {
-    await admin
-      .from('tenant_instant_bookings')
-      .update({ status: 'needs_review' })
-      .eq('id', input.bookingId)
-      .eq('tenant_id', input.tenantId);
-    return 'needs_review';
+  input: {
+    tenantId: string;
+    bookingId: string;
+    paymentIntentId: string | null;
+    connectAccountId: string;
+    code: BookingResolutionCode;
+    flagForOffice: boolean;
+    refund: boolean;
+  },
+): Promise<string> {
+  let depositRefunded = false;
+  if (input.refund && input.paymentIntentId) {
+    try {
+      await stripe.refunds.create(
+        { payment_intent: input.paymentIntentId },
+        {
+          stripeAccount: input.connectAccountId,
+          idempotencyKey: `instant-booking-refund-${input.bookingId}`,
+        },
+      );
+      depositRefunded = true;
+    } catch {
+      depositRefunded = false;
+    }
   }
+
+  const status = input.flagForOffice || !depositRefunded ? 'needs_review' : 'refunded';
+  await admin
+    .from('tenant_instant_bookings')
+    .update({
+      status,
+      resolution_code: input.code,
+      deposit_refunded: depositRefunded,
+    })
+    .eq('id', input.bookingId)
+    .eq('tenant_id', input.tenantId);
+  await admin.from('tenant_booking_slot_locks').delete().eq('booking_id', input.bookingId);
+
+  return bookingResolutionMessage({
+    code: input.code,
+    depositRefunded,
+    paymentCollected: Boolean(input.paymentIntentId),
+  });
 }
 
 async function paymentInvoiceForSession(
@@ -335,18 +357,25 @@ export async function completeInstantBookingCheckout(
   const { data: booking } = await admin
     .from('tenant_instant_bookings')
     .select(
-      'id, status, visit_id, deposit_cents, stripe_checkout_session_id, stripe_payment_intent_id, currency',
+      'id, status, visit_id, deposit_cents, stripe_checkout_session_id, stripe_payment_intent_id, currency, resolution_code, deposit_refunded',
     )
     .eq('id', input.bookingId)
     .eq('tenant_id', input.tenantId)
     .maybeSingle();
 
   if (!booking) return { ok: false, retry: false, error: 'Booking not found.' };
-  if (booking.status === 'refunded') {
-    return { ok: false, retry: false, error: 'The deposit was refunded.' };
-  }
-  if (booking.status === 'needs_review') {
-    return { ok: false, retry: false, error: 'Payment needs office review.' };
+  if (booking.status === 'refunded' || booking.status === 'needs_review') {
+    return {
+      ok: false,
+      retry: false,
+      error: bookingResolutionMessage({
+        code: parseBookingResolutionCode(
+          booking.resolution_code ?? (booking.status === 'refunded' ? 'slot_taken' : 'generic'),
+        ),
+        depositRefunded: booking.deposit_refunded || booking.status === 'refunded',
+        paymentCollected: booking.deposit_cents > 0 || Boolean(booking.stripe_payment_intent_id),
+      }),
+    };
   }
   if (booking.status === 'confirmed' && booking.visit_id) {
     await notifyInstantBookingConfirmed(admin, {
@@ -383,7 +412,20 @@ export async function completeInstantBookingCheckout(
       return { ok: false, retry: false, error: 'Payment is not complete yet.' };
     }
     if (session.amount_total !== booking.deposit_cents) {
-      return { ok: false, retry: false, error: 'Payment amount does not match the deposit.' };
+      const mismatch = amountMismatchDisposition();
+      const error = await settlePaidFailure(admin, stripe, {
+        tenantId: input.tenantId,
+        bookingId: booking.id,
+        paymentIntentId:
+          typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : (session.payment_intent?.id ?? null),
+        connectAccountId: account,
+        code: mismatch.code,
+        flagForOffice: mismatch.flagForOffice,
+        refund: mismatch.refund,
+      });
+      return { ok: false, retry: false, error };
     }
   } else if (session.status !== 'complete') {
     return { ok: false, retry: false, error: 'Card setup is not complete yet.' };
@@ -403,39 +445,34 @@ export async function completeInstantBookingCheckout(
   }
 
   const attached = await attachBookingCustomer(admin, input.tenantId, booking.id);
-  if ('error' in attached) return { ok: false, retry: true, error: attached.error };
+  if ('error' in attached) {
+    const disposition = paidCustomerCreateDisposition(attached.error);
+    const error = await settlePaidFailure(admin, stripe, {
+      tenantId: input.tenantId,
+      bookingId: booking.id,
+      paymentIntentId: session.mode === 'payment' ? paymentIntentId : null,
+      connectAccountId: account,
+      code: disposition.code,
+      flagForOffice: disposition.flagForOffice,
+      refund: disposition.refund && session.mode === 'payment',
+    });
+    return { ok: false, retry: false, error };
+  }
 
   const finalized = await finalizeInstantBookingRecord(admin, input.tenantId, booking.id);
   if ('error' in finalized) {
-    const outcome = checkoutFinalizeOutcome({
-      paymentCollected: session.mode === 'payment' && Boolean(paymentIntentId),
+    const paid = session.mode === 'payment' && Boolean(paymentIntentId);
+    const code = finalized.code === 'slot_taken' ? 'slot_taken' : 'generic';
+    const error = await settlePaidFailure(admin, stripe, {
+      tenantId: input.tenantId,
+      bookingId: booking.id,
+      paymentIntentId: paid ? paymentIntentId : null,
+      connectAccountId: account,
+      code,
+      flagForOffice: !paid,
+      refund: paid,
     });
-    if (outcome === 'refund' && paymentIntentId) {
-      const refund = await refundPaidBooking(admin, stripe, {
-        tenantId: input.tenantId,
-        bookingId: booking.id,
-        paymentIntentId,
-        connectAccountId: account,
-      });
-      return {
-        ok: false,
-        retry: false,
-        error:
-          refund === 'refunded'
-            ? 'The visit could not be booked. The deposit was refunded.'
-            : 'The visit could not be booked. The office will refund the deposit.',
-      };
-    }
-    await admin
-      .from('tenant_instant_bookings')
-      .update({ status: 'needs_review' })
-      .eq('id', booking.id)
-      .eq('tenant_id', input.tenantId);
-    return {
-      ok: false,
-      retry: false,
-      error: 'The visit could not be booked. The office will follow up.',
-    };
+    return { ok: false, retry: false, error };
   }
 
   await recordBookingDeposit(admin, {

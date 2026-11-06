@@ -2,7 +2,7 @@
 
 **Status:** Shipped  
 **Tier:** All plans that include `publicBookingRequest` (Starter and above)  
-**Migration:** `0119_instant_online_booking.sql`, then `0120_instant_booking_qa_fixes.sql`, then `0121_instant_booking_round2.sql`
+**Migration:** `0119_instant_online_booking.sql`, then `0120_instant_booking_qa_fixes.sql`, then `0121_instant_booking_round2.sql`, then `0122_instant_booking_paid_failure.sql`
 
 ## What it is
 

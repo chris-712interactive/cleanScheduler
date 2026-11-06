@@ -8,7 +8,12 @@ import {
 } from '@/lib/booking/bookingAudience';
 import { allowedFrequencies, type InstantBookingFrequency } from '@/lib/booking/priceInstantOffer';
 import { instantBookingPolicyFromRow } from '@/lib/booking/loadInstantSlots';
-import { balanceDueCents, bookingReturnState } from '@/lib/booking/bookingGuards';
+import {
+  balanceDueCents,
+  bookingResolutionMessage,
+  bookingReturnState,
+  parseBookingResolutionCode,
+} from '@/lib/booking/bookingGuards';
 import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
 import { completeInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
 import {
@@ -115,7 +120,9 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
     const { data: fresh } = booking
       ? await admin
           .from('tenant_instant_bookings')
-          .select('id, status, visit_id, title, starts_at, price_cents, deposit_cents')
+          .select(
+            'id, status, visit_id, title, starts_at, price_cents, deposit_cents, resolution_code, deposit_refunded, stripe_payment_intent_id',
+          )
           .eq('tenant_id', tenant.id)
           .eq('public_token', bookingToken)
           .maybeSingle()
@@ -133,11 +140,16 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
     const message =
       state === 'confirmed' && fresh
         ? `${fresh.title} is on the calendar for ${formatNextAppointmentWhen(fresh.starts_at, tenant.timezone)}. Price $${formatCentsAsDollars(fresh.price_cents)}.${fresh.deposit_cents > 0 ? ` Balance due $${formatCentsAsDollars(balanceDueCents(fresh.price_cents, fresh.deposit_cents))}.` : ''}`
-        : state === 'refunded'
-          ? 'That time was no longer open. The deposit was refunded, and the visit was not booked.'
-          : state === 'needs_review'
-            ? 'We received your payment but could not place the visit. The office will follow up. Please do not book again for this payment.'
-            : 'We are still confirming this booking. Please wait here instead of choosing another time.';
+        : state === 'refunded' || state === 'needs_review'
+          ? bookingResolutionMessage({
+              code: parseBookingResolutionCode(
+                fresh?.resolution_code ?? (state === 'refunded' ? 'slot_taken' : 'generic'),
+              ),
+              depositRefunded: Boolean(fresh?.deposit_refunded) || state === 'refunded',
+              paymentCollected:
+                (fresh?.deposit_cents ?? 0) > 0 || Boolean(fresh?.stripe_payment_intent_id),
+            })
+          : 'We are still confirming this booking. Please wait here instead of choosing another time.';
 
     return (
       <main className={styles.page}>

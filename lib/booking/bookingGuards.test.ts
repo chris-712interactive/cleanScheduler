@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  amountMismatchDisposition,
   balanceDueCents,
+  bookingResolutionMessage,
   bookingReturnState,
   checkoutFinalizeOutcome,
+  customerCreateFailureCode,
   depositWritePlan,
   emailsEqual,
   escapeIlikePattern,
   firstVisitAndRecurringCents,
+  paidCustomerCreateDisposition,
   previewFeedback,
   previewMatchesOffer,
   propertyFactPatch,
@@ -69,7 +73,46 @@ describe('booking QA guards', () => {
     expect(previewMatchesOffer('offer-a', 'offer-b')).toBe(false);
   });
 
-  it('settles every failed paid finalize, and keeps the full price on later visits', () => {
+  it('refunds and flags a paid booking that cannot create the customer', () => {
+    const limitMessage =
+      'Starter allows up to 500 for Active customers. Upgrade or purchase an add-on to continue.';
+    expect(customerCreateFailureCode(limitMessage)).toBe('capacity');
+    expect(paidCustomerCreateDisposition(limitMessage)).toEqual({
+      code: 'capacity',
+      refund: true,
+      releaseHold: true,
+      flagForOffice: true,
+    });
+    expect(paidCustomerCreateDisposition('Could not save your contact details.')).toMatchObject({
+      code: 'generic',
+      refund: true,
+      flagForOffice: true,
+      releaseHold: true,
+    });
+  });
+
+  it('refunds and flags a checkout whose amount is not the deposit', () => {
+    expect(amountMismatchDisposition()).toEqual({
+      code: 'amount_mismatch',
+      refund: true,
+      releaseHold: true,
+      flagForOffice: true,
+    });
+  });
+
+  it('tells the customer the real reason a deposit was returned', () => {
+    const paid = { depositRefunded: true, paymentCollected: true };
+    expect(bookingResolutionMessage({ code: 'slot_taken', ...paid })).toMatch(/no longer open/);
+    expect(bookingResolutionMessage({ code: 'capacity', ...paid })).toMatch(/another customer/);
+    expect(bookingResolutionMessage({ code: 'amount_mismatch', ...paid })).toMatch(/did not match/);
+    expect(bookingResolutionMessage({ code: 'generic', ...paid })).toMatch(/could not be booked/);
+    expect(bookingResolutionMessage({ code: 'capacity', ...paid })).not.toMatch(/no longer open/);
+    expect(bookingResolutionMessage({ code: 'amount_mismatch', ...paid })).not.toMatch(
+      /no longer open/,
+    );
+  });
+
+  it('settles a paid finalize and keeps the full price on later visits', () => {
     expect(checkoutFinalizeOutcome({ paymentCollected: true })).toBe('refund');
     expect(checkoutFinalizeOutcome({ paymentCollected: false })).toBe('flag_for_office');
     expect(firstVisitAndRecurringCents(12000, 12000)).toEqual({

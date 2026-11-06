@@ -5980,6 +5980,8 @@ export type Database = {
           notified_at: string | null;
           intake: Json | null;
           invoice_id: string | null;
+          resolution_code: string | null;
+          deposit_refunded: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -6012,6 +6014,8 @@ export type Database = {
           notified_at?: string | null;
           intake?: Json | null;
           invoice_id?: string | null;
+          resolution_code?: string | null;
+          deposit_refunded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -6044,6 +6048,8 @@ export type Database = {
           notified_at?: string | null;
           intake?: Json | null;
           invoice_id?: string | null;
+          resolution_code?: string | null;
+          deposit_refunded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
