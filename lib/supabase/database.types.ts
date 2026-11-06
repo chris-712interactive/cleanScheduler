@@ -5956,7 +5956,7 @@ export type Database = {
           tenant_id: string;
           public_token: string;
           offer_id: string | null;
-          customer_id: string;
+          customer_id: string | null;
           property_id: string | null;
           visit_id: string | null;
           recurring_rule_id: string | null;
@@ -5978,6 +5978,8 @@ export type Database = {
           stripe_payment_intent_id: string | null;
           hold_expires_at: string | null;
           notified_at: string | null;
+          intake: Json | null;
+          invoice_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -5986,7 +5988,7 @@ export type Database = {
           tenant_id: string;
           public_token: string;
           offer_id?: string | null;
-          customer_id: string;
+          customer_id?: string | null;
           property_id?: string | null;
           visit_id?: string | null;
           recurring_rule_id?: string | null;
@@ -6008,6 +6010,8 @@ export type Database = {
           stripe_payment_intent_id?: string | null;
           hold_expires_at?: string | null;
           notified_at?: string | null;
+          intake?: Json | null;
+          invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -6016,7 +6020,7 @@ export type Database = {
           tenant_id?: string;
           public_token?: string;
           offer_id?: string | null;
-          customer_id?: string;
+          customer_id?: string | null;
           property_id?: string | null;
           visit_id?: string | null;
           recurring_rule_id?: string | null;
@@ -6038,6 +6042,8 @@ export type Database = {
           stripe_payment_intent_id?: string | null;
           hold_expires_at?: string | null;
           notified_at?: string | null;
+          intake?: Json | null;
+          invoice_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -6051,7 +6057,15 @@ export type Database = {
           booking_id: string;
           starts_at: string;
           ends_at: string;
+          visit_ends_at: string | null;
           expires_at: string | null;
+          place_lat: number | null;
+          place_lng: number | null;
+          place_city: string | null;
+          place_state: string | null;
+          place_postal: string | null;
+          travel_mph: number;
+          buffer_minutes: number;
           created_at: string;
         };
         Insert: {
@@ -6061,7 +6075,15 @@ export type Database = {
           booking_id: string;
           starts_at: string;
           ends_at: string;
+          visit_ends_at?: string | null;
           expires_at?: string | null;
+          place_lat?: number | null;
+          place_lng?: number | null;
+          place_city?: string | null;
+          place_state?: string | null;
+          place_postal?: string | null;
+          travel_mph?: number;
+          buffer_minutes?: number;
           created_at?: string;
         };
         Update: {
@@ -6071,8 +6093,70 @@ export type Database = {
           booking_id?: string;
           starts_at?: string;
           ends_at?: string;
+          visit_ends_at?: string | null;
           expires_at?: string | null;
+          place_lat?: number | null;
+          place_lng?: number | null;
+          place_city?: string | null;
+          place_state?: string | null;
+          place_postal?: string | null;
+          travel_mph?: number;
+          buffer_minutes?: number;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_instant_slot_tokens: {
+        Row: {
+          token: string;
+          tenant_id: string;
+          offer_id: string;
+          assignee_user_id: string;
+          starts_at: string;
+          ends_at: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          token: string;
+          tenant_id: string;
+          offer_id: string;
+          assignee_user_id: string;
+          starts_at: string;
+          ends_at: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          token?: string;
+          tenant_id?: string;
+          offer_id?: string;
+          assignee_user_id?: string;
+          starts_at?: string;
+          ends_at?: string;
+          expires_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      public_rate_limit_buckets: {
+        Row: {
+          scope: string;
+          client_key: string;
+          window_started_at: string;
+          hit_count: number;
+        };
+        Insert: {
+          scope: string;
+          client_key: string;
+          window_started_at: string;
+          hit_count?: number;
+        };
+        Update: {
+          scope?: string;
+          client_key?: string;
+          window_started_at?: string;
+          hit_count?: number;
         };
         Relationships: [];
       };
@@ -6201,8 +6285,8 @@ export type Database = {
           p_tenant_id: string;
           p_public_token: string;
           p_offer_id: string;
-          p_customer_id: string;
-          p_property_id: string;
+          p_customer_id: string | null;
+          p_property_id: string | null;
           p_assignee_user_id: string;
           p_frequency: Database['public']['Enums']['instant_booking_frequency'];
           p_starts_at: string;
@@ -6218,8 +6302,24 @@ export type Database = {
           p_rrule_definition: string;
           p_buffer_minutes: number;
           p_hold_minutes: number;
+          p_place_lat: number | null;
+          p_place_lng: number | null;
+          p_place_city: string;
+          p_place_state: string;
+          p_place_postal: string;
+          p_travel_mph: number;
+          p_intake: Json;
         };
         Returns: Json;
+      };
+      consume_public_rate_limit: {
+        Args: {
+          p_scope: string;
+          p_client_key: string;
+          p_limit: number;
+          p_window_seconds: number;
+        };
+        Returns: number;
       };
       finalize_instant_booking: {
         Args: {
@@ -6294,7 +6394,7 @@ export type Database = {
       public_booking_mode: 'off' | 'request' | 'instant';
       instant_booking_pricing_method: 'flat' | 'per_sqft' | 'beds_baths';
       instant_booking_frequency: 'one_time' | 'weekly' | 'biweekly' | 'monthly';
-      instant_booking_status: 'hold' | 'confirmed' | 'expired' | 'cancelled';
+      instant_booking_status: 'hold' | 'confirmed' | 'expired' | 'cancelled' | 'refunded' | 'needs_review';
       booking_service_audience: 'residential' | 'commercial' | 'both';
       tenant_service_template_kind: 'service_line' | 'scope_template' | 'addon';
       service_template_schedule_role: 'initial' | 'recurring' | 'standard';

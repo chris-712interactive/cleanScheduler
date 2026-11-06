@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/Button';
+import { SmsOptInCheckboxLabel } from '@/components/legal/SmsOptInCheckboxLabel';
+import { previewMatchesOffer } from '@/lib/booking/bookingGuards';
 import {
   confirmInstantBookingAction,
   previewInstantBookingAction,
@@ -68,12 +70,13 @@ export function InstantBookingFlow({
     confirmInitial,
   );
   const [details, setDetails] = useState<Record<string, string>>({});
-  const [slotKey, setSlotKey] = useState('');
+  const [slotToken, setSlotToken] = useState('');
   const [frequency, setFrequency] = useState(frequencies[0]?.value ?? 'one_time');
+  const [previewOfferId, setPreviewOfferId] = useState<string | null>(null);
 
   const offer = offers.find((item) => item.id === offerId) ?? offers[0];
-  const slots = preview.slots ?? [];
-  const selected = slots.find((slot) => `${slot.startsAt}|${slot.assigneeUserId}` === slotKey);
+  const slots = previewMatchesOffer(previewOfferId, offer?.id ?? '') ? (preview.slots ?? []) : [];
+  const selected = slots.find((slot) => slot.token === slotToken);
 
   useEffect(() => {
     if (confirmState.checkoutUrl) window.location.assign(confirmState.checkoutUrl);
@@ -106,8 +109,10 @@ export function InstantBookingFlow({
           const data = new FormData(event.currentTarget);
           const next: Record<string, string> = {};
           for (const key of DETAIL_FIELDS) next[key] = String(data.get(key) ?? '');
+          next.sms_opt_in = data.get('sms_opt_in') === 'on' ? 'on' : '';
           setDetails(next);
-          setSlotKey('');
+          setPreviewOfferId(offer?.id ?? null);
+          setSlotToken('');
         }}
       >
         <input type="hidden" name="tenant_slug" value={tenantSlug} />
@@ -128,7 +133,10 @@ export function InstantBookingFlow({
                 name="offer_choice"
                 value={item.id}
                 checked={item.id === offer?.id}
-                onChange={() => setOfferId(item.id)}
+                onChange={() => {
+                  setOfferId(item.id);
+                  setSlotToken('');
+                }}
               />
               <span>
                 {item.name}
@@ -230,7 +238,10 @@ export function InstantBookingFlow({
           </label>
         </div>
 
-        {preview.error ? <p className={styles.error}>{preview.error}</p> : null}
+        <label className={styles.choice}>
+          <input type="checkbox" name="sms_opt_in" value="on" />
+          <SmsOptInCheckboxLabel />
+        </label>
         <PreviewButton />
       </form>
 
@@ -241,32 +252,29 @@ export function InstantBookingFlow({
           {DETAIL_FIELDS.map((key) => (
             <input key={key} type="hidden" name={key} value={details[key] ?? ''} />
           ))}
+          {details.sms_opt_in === 'on' ? (
+            <input type="hidden" name="sms_opt_in" value="on" />
+          ) : null}
           <h2 className={styles.stepTitle}>
             {preview.priceLabel}
             {preview.depositLabel ? ` · ${preview.depositLabel} due today` : ''}
           </h2>
           <fieldset className={styles.choiceSet}>
             <legend className={styles.stepTitle}>Time</legend>
-            {slots.map((slot) => {
-              const key = `${slot.startsAt}|${slot.assigneeUserId}`;
-              return (
-                <label key={key} className={styles.choice}>
-                  <input
-                    type="radio"
-                    name="slot"
-                    value={key}
-                    checked={slotKey === key}
-                    onChange={() => setSlotKey(key)}
-                    required
-                  />
-                  <span>{slot.label}</span>
-                </label>
-              );
-            })}
+            {slots.map((slot) => (
+              <label key={slot.token} className={styles.choice}>
+                <input
+                  type="radio"
+                  name="slot_token"
+                  value={slot.token}
+                  checked={slotToken === slot.token}
+                  onChange={() => setSlotToken(slot.token)}
+                  required
+                />
+                <span>{slot.label}</span>
+              </label>
+            ))}
           </fieldset>
-          <input type="hidden" name="starts_at" value={selected?.startsAt ?? ''} />
-          <input type="hidden" name="ends_at" value={selected?.endsAt ?? ''} />
-          <input type="hidden" name="assignee_user_id" value={selected?.assigneeUserId ?? ''} />
 
           <label className={styles.field}>
             How often
@@ -294,7 +302,10 @@ export function InstantBookingFlow({
         </form>
       ) : null}
 
-      {preview.slots && preview.slots.length === 0 && !preview.error ? (
+      {preview.slots &&
+      previewMatchesOffer(previewOfferId, offer?.id ?? '') &&
+      preview.slots.length === 0 &&
+      !preview.error ? (
         <p className={styles.error}>
           No open times in the booking window. Contact the office and they can find another day.
         </p>

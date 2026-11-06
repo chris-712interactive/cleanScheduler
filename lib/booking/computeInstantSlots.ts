@@ -118,20 +118,14 @@ export function slotBlockedForCrew(input: {
   const bufferMs = Math.max(0, input.bufferMinutes) * 60_000;
   for (const item of input.busy) {
     if (item.assigneeUserId !== input.assigneeUserId) continue;
-    if (item.kind === 'lock') {
-      const slotEndPadded = padIso(input.endsAt, bufferMs);
-      if (rangesOverlap(input.startsAt, slotEndPadded, item.startsAt, item.endsAt)) return true;
-      continue;
-    }
-
     const travel =
-      item.kind === 'visit'
-        ? (approximateTravelMinutes(
+      item.kind === 'time_off'
+        ? 0
+        : (approximateTravelMinutes(
             item.place ?? null,
             input.destination ?? null,
             input.travelMph,
-          ) ?? 0)
-        : 0;
+          ) ?? 0);
     const padMs = bufferMs + Math.ceil(Math.max(0, travel)) * 60_000;
     if (
       rangesOverlap(

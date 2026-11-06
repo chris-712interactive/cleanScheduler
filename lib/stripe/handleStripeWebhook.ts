@@ -54,6 +54,10 @@ async function dispatchStripeWebhookEvent(
           tenantId: session.metadata.tenant_id,
           bookingId: session.metadata.booking_id,
           connectAccountId,
+        }).then((result) => {
+          if (!result.ok && result.retry) {
+            throw new Error(result.error);
+          }
         });
         break;
       }

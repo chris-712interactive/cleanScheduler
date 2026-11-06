@@ -25,6 +25,12 @@ import type { PlaceHint } from '@/lib/schedule/optimizer/geo';
 import { postal5 } from '@/lib/schedule/optimizer/geo';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
+import {
+  emailsEqual,
+  escapeIlikePattern,
+  propertyFactPatch,
+  smsOptInGranted,
+} from '@/lib/booking/bookingGuards';
 
 type Admin = SupabaseClient<Database>;
 
@@ -224,10 +230,12 @@ async function findCustomerByEmail(
 ): Promise<string | null> {
   const { data: identities } = await admin
     .from('customer_identities')
-    .select('id')
-    .ilike('email', email)
+    .select('id, email')
+    .ilike('email', escapeIlikePattern(email))
     .limit(20);
-  const identityIds = (identities ?? []).map((row) => row.id);
+  const identityIds = (identities ?? [])
+    .filter((row) => emailsEqual(row.email, email))
+    .map((row) => row.id);
   if (identityIds.length === 0) return null;
   const { data: customers } = await admin
     .from('customers')
@@ -256,8 +264,10 @@ export async function ensureBookingCustomer(
     latitude: number | null;
     longitude: number | null;
     geocodeReason: string | null;
+    smsOptIn: boolean;
   },
 ): Promise<{ customerId: string; propertyId: string } | { error: string }> {
+  const optedIn = smsOptInGranted({ phone: input.phone, optedIn: input.smsOptIn });
   const existingId = await findCustomerByEmail(admin, input.tenantId, input.email);
   let customerId = existingId;
 
@@ -318,8 +328,8 @@ export async function ensureBookingCustomer(
       customer_id: customerId,
       preferred_contact_method: 'email',
       preferred_payment_method: 'card',
-      sms_transactional_opt_in: Boolean(input.phone),
-      sms_transactional_opt_in_at: input.phone ? new Date().toISOString() : null,
+      sms_transactional_opt_in: optedIn,
+      sms_transactional_opt_in_at: optedIn ? new Date().toISOString() : null,
     });
     if (profile.error) {
       await admin.from('customer_tenant_links').delete().eq('customer_id', customerId);
@@ -343,19 +353,32 @@ export async function ensureBookingCustomer(
     return sameLine && samePostal;
   });
   if (matched) {
-    await admin
-      .from('tenant_customer_properties')
-      .update({
-        bedrooms: input.bedrooms,
-        bathrooms: input.bathrooms,
-        sqft: input.sqft,
-        service_zone_id: input.zoneId,
-        latitude: input.latitude,
-        longitude: input.longitude,
-        geocode_reason: input.geocodeReason,
-      })
-      .eq('id', matched.id)
-      .eq('tenant_id', input.tenantId);
+    const patch = propertyFactPatch({
+      bedrooms: input.bedrooms,
+      bathrooms: input.bathrooms,
+      sqft: input.sqft,
+      zoneId: input.zoneId,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      geocodeReason: input.geocodeReason,
+    });
+    if (Object.keys(patch).length > 0) {
+      await admin
+        .from('tenant_customer_properties')
+        .update(patch)
+        .eq('id', matched.id)
+        .eq('tenant_id', input.tenantId);
+    }
+    if (optedIn) {
+      await admin
+        .from('tenant_customer_profiles')
+        .update({
+          sms_transactional_opt_in: true,
+          sms_transactional_opt_in_at: new Date().toISOString(),
+        })
+        .eq('tenant_id', input.tenantId)
+        .eq('customer_id', customerId);
+    }
     return { customerId, propertyId: matched.id };
   }
 
@@ -388,17 +411,32 @@ export async function ensureBookingCustomer(
   return { customerId, propertyId: property.data.id };
 }
 
+export type BookingIntake = {
+  addressLine1: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  sqft: number | null;
+  zoneId: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  geocodeReason: string | null;
+  smsOptIn: boolean;
+};
+
 export async function holdInstantBooking(
   admin: Admin,
   input: {
     tenantId: string;
     prepared: PreparedInstantBooking;
-    customerId: string;
-    propertyId: string;
     email: string;
     phone: string | null;
     name: string;
     bufferMinutes: number;
+    travelMph: number;
+    intake: BookingIntake;
   },
 ): Promise<{ bookingId: string; publicToken: string } | { error: string }> {
   if (input.prepared.frequency !== 'one_time') {
@@ -421,8 +459,8 @@ export async function holdInstantBooking(
     p_tenant_id: input.tenantId,
     p_public_token: publicToken,
     p_offer_id: input.prepared.offer.id,
-    p_customer_id: input.customerId,
-    p_property_id: input.propertyId,
+    p_customer_id: null,
+    p_property_id: null,
     p_assignee_user_id: input.prepared.assigneeUserId,
     p_frequency: input.prepared.frequency,
     p_starts_at: input.prepared.startsAt,
@@ -438,6 +476,13 @@ export async function holdInstantBooking(
     p_rrule_definition: input.prepared.rrule ?? '',
     p_buffer_minutes: input.bufferMinutes,
     p_hold_minutes: 20,
+    p_place_lat: input.prepared.destination?.point?.lat ?? null,
+    p_place_lng: input.prepared.destination?.point?.lng ?? null,
+    p_place_city: input.prepared.destination?.city ?? '',
+    p_place_state: input.prepared.destination?.state ?? '',
+    p_place_postal: input.prepared.destination?.postalCode ?? '',
+    p_travel_mph: input.travelMph,
+    p_intake: input.intake as Json,
   });
 
   if (error) {
@@ -455,26 +500,99 @@ export async function finalizeInstantBookingRecord(
   tenantId: string,
   bookingId: string,
 ): Promise<
-  { finalized: boolean; visitId: string; recurringRuleId: string | null } | { error: string }
+  | { finalized: boolean; visitId: string; recurringRuleId: string | null }
+  | { error: string; code: 'slot_taken' | 'other' }
 > {
   const { data, error } = await admin.rpc('finalize_instant_booking', {
     p_booking_id: bookingId,
     p_tenant_id: tenantId,
   });
   if (error || data == null) {
-    if (error?.message.includes('hold_expired')) {
-      return { error: 'That hold expired. Choose the time again.' };
-    }
     if (error?.message.includes('slot_taken')) {
-      return { error: 'That time was just taken. Choose another.' };
+      return { error: 'That time was just taken. Choose another.', code: 'slot_taken' };
     }
-    return { error: 'Could not confirm the visit. Please try again.' };
+    return { error: 'Could not confirm the visit. Please try again.', code: 'other' };
   }
   const payload = readFinalizePayload(data);
-  if (!payload.visit_id) return { error: 'Could not confirm the visit. Please try again.' };
+  if (!payload.visit_id) {
+    return { error: 'Could not confirm the visit. Please try again.', code: 'other' };
+  }
   return {
     finalized: payload.finalized === true,
     visitId: payload.visit_id,
     recurringRuleId: payload.recurring_rule_id ?? null,
   };
+}
+
+function readIntake(value: Json): BookingIntake | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const row = value as Record<string, Json | undefined>;
+  const addressLine1 = typeof row.addressLine1 === 'string' ? row.addressLine1 : '';
+  const city = typeof row.city === 'string' ? row.city : '';
+  const state = typeof row.state === 'string' ? row.state : '';
+  const postalCode = typeof row.postalCode === 'string' ? row.postalCode : '';
+  if (!addressLine1 || !city || !state || !postalCode) return null;
+  const numberOrNull = (key: string) => (typeof row[key] === 'number' ? row[key] : null);
+  return {
+    addressLine1,
+    city,
+    state,
+    postalCode,
+    bedrooms: numberOrNull('bedrooms'),
+    bathrooms: numberOrNull('bathrooms'),
+    sqft: numberOrNull('sqft'),
+    zoneId: typeof row.zoneId === 'string' ? row.zoneId : null,
+    latitude: numberOrNull('latitude'),
+    longitude: numberOrNull('longitude'),
+    geocodeReason: typeof row.geocodeReason === 'string' ? row.geocodeReason : null,
+    smsOptIn: row.smsOptIn === true,
+  };
+}
+
+/** Creates or matches the customer only after the slot is held. */
+export async function attachBookingCustomer(
+  admin: Admin,
+  tenantId: string,
+  bookingId: string,
+): Promise<{ customerId: string; propertyId: string } | { error: string }> {
+  const { data: booking } = await admin
+    .from('tenant_instant_bookings')
+    .select('id, customer_id, property_id, customer_email, customer_phone, customer_name, intake')
+    .eq('id', bookingId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (!booking) return { error: 'Booking not found.' };
+  if (booking.customer_id && booking.property_id) {
+    return { customerId: booking.customer_id, propertyId: booking.property_id };
+  }
+  const intake = readIntake(booking.intake);
+  if (!intake) return { error: 'Booking details are missing.' };
+
+  const customer = await ensureBookingCustomer(admin, {
+    tenantId,
+    name: booking.customer_name,
+    email: booking.customer_email,
+    phone: booking.customer_phone,
+    addressLine1: intake.addressLine1,
+    city: intake.city,
+    state: intake.state,
+    postalCode: intake.postalCode,
+    bedrooms: intake.bedrooms,
+    bathrooms: intake.bathrooms,
+    sqft: intake.sqft,
+    zoneId: intake.zoneId,
+    latitude: intake.latitude,
+    longitude: intake.longitude,
+    geocodeReason: intake.geocodeReason,
+    smsOptIn: intake.smsOptIn,
+  });
+  if ('error' in customer) return customer;
+
+  const { error } = await admin
+    .from('tenant_instant_bookings')
+    .update({ customer_id: customer.customerId, property_id: customer.propertyId })
+    .eq('id', bookingId)
+    .eq('tenant_id', tenantId);
+  if (error) return { error: 'Could not save your contact details.' };
+  return customer;
 }

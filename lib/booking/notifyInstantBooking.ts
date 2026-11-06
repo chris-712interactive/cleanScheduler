@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
+import { balanceDueCents, shouldAttemptBookingNotification } from '@/lib/booking/bookingGuards';
 import { formatNextAppointmentWhen } from '@/lib/datetime/formatInTimeZone';
 import {
   emailDeliveryFields,
@@ -23,13 +24,16 @@ async function sendOne(input: {
   replyTo?: string;
 }): Promise<void> {
   if (!isResendConfigured()) return;
-  await sendTransactionalEmail({
+  const sent = await sendTransactionalEmail({
     to: input.to,
     subject: input.subject,
     text: input.text,
     html: input.html,
     ...(input.fromName ? { fromName: input.fromName, replyTo: input.replyTo } : {}),
   });
+  if (!sent.ok) {
+    throw new Error(sent.error);
+  }
 }
 
 export async function notifyInstantBookingConfirmed(
@@ -43,13 +47,18 @@ export async function notifyInstantBookingConfirmed(
   const { data: booking } = await admin
     .from('tenant_instant_bookings')
     .select(
-      'id, notified_at, customer_email, customer_phone, customer_name, title, starts_at, price_cents, deposit_cents, currency, frequency',
+      'id, status, notified_at, customer_id, customer_email, customer_phone, customer_name, title, starts_at, price_cents, deposit_cents, currency, frequency',
     )
     .eq('id', input.bookingId)
     .eq('tenant_id', input.tenantId)
     .maybeSingle();
 
-  if (!booking || booking.notified_at) return;
+  if (
+    !booking ||
+    !shouldAttemptBookingNotification({ status: booking.status, notifiedAt: booking.notified_at })
+  ) {
+    return;
+  }
 
   const { data: tenant } = await admin
     .from('tenants')
@@ -65,11 +74,13 @@ export async function notifyInstantBookingConfirmed(
   const brand = (await loadTenantEmailBrand(admin, input.tenantId)) ?? platformEmailBrand();
   const delivery = emailDeliveryFields(brand);
 
+  const balance = balanceDueCents(booking.price_cents, booking.deposit_cents);
   const customerFacts = [
     { label: 'Service', value: booking.title },
     { label: 'When', value: when },
     { label: 'Price', value: price },
     deposit ? { label: 'Deposit paid', value: deposit } : null,
+    deposit ? { label: 'Balance due', value: `$${formatCentsAsDollars(balance)}` } : null,
     booking.frequency !== 'one_time' ? { label: 'Repeats', value: booking.frequency } : null,
   ].filter((row): row is { label: string; value: string } => row !== null);
 
@@ -124,7 +135,20 @@ export async function notifyInstantBookingConfirmed(
     .eq('tenant_id', input.tenantId)
     .maybeSingle();
 
-  if (booking.customer_phone && ops?.sms_notify_visit_reminder) {
+  const { data: profile } = booking.customer_id
+    ? await admin
+        .from('tenant_customer_profiles')
+        .select('sms_transactional_opt_in')
+        .eq('tenant_id', input.tenantId)
+        .eq('customer_id', booking.customer_id)
+        .maybeSingle()
+    : { data: null };
+
+  if (
+    booking.customer_phone &&
+    profile?.sms_transactional_opt_in &&
+    ops?.sms_notify_visit_reminder
+  ) {
     await sendTransactionalSms({
       admin,
       tenantId: input.tenantId,

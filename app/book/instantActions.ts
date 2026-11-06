@@ -8,15 +8,20 @@ import {
   parseBookingServiceAudience,
   resolveTenantBookingSegment,
 } from '@/lib/booking/bookingAudience';
+import { randomUUID } from 'node:crypto';
+import { publicSlotPayload, rateLimitAllows, trustedClientIp } from '@/lib/booking/bookingGuards';
 import {
-  ensureBookingCustomer,
+  attachBookingCustomer,
   finalizeInstantBookingRecord,
   holdInstantBooking,
   parseInstantFrequency,
   prepareInstantBooking,
   visibleInstantOffers,
 } from '@/lib/booking/confirmInstantBooking';
-import { startInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
+import {
+  recordBookingDeposit,
+  startInstantBookingCheckout,
+} from '@/lib/booking/instantBookingCheckout';
 import {
   instantBookingPolicyFromRow,
   loadInstantSlotsForTenant,
@@ -37,14 +42,11 @@ import { formatNextAppointmentWhen } from '@/lib/datetime/formatInTimeZone';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { getPortalContext } from '@/lib/portal';
-import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import type { PlaceHint } from '@/lib/schedule/optimizer/geo';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export type InstantSlotChoice = {
-  startsAt: string;
-  endsAt: string;
-  assigneeUserId: string;
+  token: string;
   label: string;
 };
 
@@ -117,14 +119,21 @@ async function authorizedInstantTenant(tenantSlug: string) {
 }
 
 async function clientRateLimit(
+  admin: ReturnType<typeof createAdminClient>,
   scope: string,
   limit: number,
   windowMs: number,
 ): Promise<string | null> {
   const headerList = await headers();
-  const ip = getClientIdentifier(headerList);
-  const result = checkRateLimit(`instant-book:${scope}:${ip}`, limit, windowMs);
-  if (!result.allowed) return 'Too many attempts. Please try again later.';
+  const { data, error } = await admin.rpc('consume_public_rate_limit', {
+    p_scope: scope,
+    p_client_key: trustedClientIp(headerList),
+    p_limit: limit,
+    p_window_seconds: Math.ceil(windowMs / 1000),
+  });
+  if (error || typeof data !== 'number' || !rateLimitAllows(data, limit)) {
+    return 'Too many attempts. Please try again later.';
+  }
   return null;
 }
 
@@ -132,7 +141,12 @@ export async function previewInstantBookingAction(
   _prev: InstantPreviewState,
   formData: FormData,
 ): Promise<InstantPreviewState> {
-  const limited = await clientRateLimit('preview', PREVIEW_LIMIT, PREVIEW_WINDOW_MS);
+  const limited = await clientRateLimit(
+    createAdminClient(),
+    'instant_preview',
+    PREVIEW_LIMIT,
+    PREVIEW_WINDOW_MS,
+  );
   if (limited) return { error: limited };
 
   const honeypot = String(formData.get('company') ?? '').trim();
@@ -206,15 +220,41 @@ export async function previewInstantBookingAction(
   if ('error' in loaded) return { error: loaded.error };
 
   const deposit = depositForPrice(priced.amountCents, gated.policy.depositCents);
+  const expiresAt = new Date(Date.now() + 20 * 60 * 1000).toISOString();
+  await gated.admin
+    .from('tenant_instant_slot_tokens')
+    .delete()
+    .eq('tenant_id', gated.tenant.id)
+    .lt('expires_at', new Date().toISOString());
+  const slots = loaded.slots.map((slot) => {
+    const token = randomUUID().replace(/-/g, '');
+    return {
+      token,
+      offer_id: offer.id,
+      assignee_user_id: slot.assigneeUserId,
+      starts_at: slot.startsAt,
+      ends_at: slot.endsAt,
+      label: formatNextAppointmentWhen(slot.startsAt, loaded.timezone),
+    };
+  });
+  if (slots.length > 0) {
+    const { error: tokenError } = await gated.admin.from('tenant_instant_slot_tokens').insert(
+      slots.map((slot) => ({
+        token: slot.token,
+        tenant_id: gated.tenant.id,
+        offer_id: slot.offer_id,
+        assignee_user_id: slot.assignee_user_id,
+        starts_at: slot.starts_at,
+        ends_at: slot.ends_at,
+        expires_at: expiresAt,
+      })),
+    );
+    if (tokenError) return { error: 'Could not check crew availability.' };
+  }
   return {
     priceLabel: `$${formatCentsAsDollars(priced.amountCents)}`,
     depositLabel: deposit > 0 ? `$${formatCentsAsDollars(deposit)}` : null,
-    slots: loaded.slots.map((slot) => ({
-      startsAt: slot.startsAt,
-      endsAt: slot.endsAt,
-      assigneeUserId: slot.assigneeUserId,
-      label: formatNextAppointmentWhen(slot.startsAt, loaded.timezone),
-    })),
+    slots: slots.map((slot) => publicSlotPayload(slot)),
   };
 }
 
@@ -222,7 +262,12 @@ export async function confirmInstantBookingAction(
   _prev: InstantConfirmState,
   formData: FormData,
 ): Promise<InstantConfirmState> {
-  const limited = await clientRateLimit('confirm', CONFIRM_LIMIT, CONFIRM_WINDOW_MS);
+  const limited = await clientRateLimit(
+    createAdminClient(),
+    'instant_confirm',
+    CONFIRM_LIMIT,
+    CONFIRM_WINDOW_MS,
+  );
   if (limited) return { error: limited };
 
   const honeypot = String(formData.get('company') ?? '').trim();
@@ -267,6 +312,20 @@ export async function confirmInstantBookingAction(
     return { error: 'Too many bookings from this email. Please try again later.' };
   }
 
+  const token = String(formData.get('slot_token') ?? '').trim();
+  const { data: slotToken } = await gated.admin
+    .from('tenant_instant_slot_tokens')
+    .select('token, offer_id, assignee_user_id, starts_at, ends_at, expires_at')
+    .eq('token', token)
+    .eq('tenant_id', gated.tenant.id)
+    .maybeSingle();
+  if (!slotToken || new Date(slotToken.expires_at).getTime() <= Date.now()) {
+    return { error: 'That time is no longer available. Choose another.' };
+  }
+  if (slotToken.offer_id !== String(formData.get('offer_id') ?? '').trim()) {
+    return { error: 'Choose a service, then pick a time again.' };
+  }
+
   const { data: coverageRows } = await gated.admin
     .from('tenant_instant_booking_zone_coverage')
     .select('service_zone_id, postal_codes')
@@ -275,11 +334,11 @@ export async function confirmInstantBookingAction(
   const prepared = await prepareInstantBooking(gated.admin, {
     tenantId: gated.tenant.id,
     policy: gated.policy,
-    offerId: String(formData.get('offer_id') ?? '').trim(),
+    offerId: slotToken.offer_id,
     frequency,
-    startsAt: String(formData.get('starts_at') ?? '').trim(),
-    endsAt: String(formData.get('ends_at') ?? '').trim(),
-    assigneeUserId: String(formData.get('assignee_user_id') ?? '').trim(),
+    startsAt: slotToken.starts_at,
+    endsAt: slotToken.ends_at,
+    assigneeUserId: slotToken.assignee_user_id,
     addressLine1,
     city,
     state,
@@ -304,43 +363,32 @@ export async function confirmInstantBookingAction(
     return { error: 'That service is not available to book.' };
   }
 
-  const geocoded = await lookupUsAddress({
-    line1: addressLine1,
-    city,
-    state,
-    postalCode,
-  }).catch(() => ({ point: null, reason: null }));
-
-  const customer = await ensureBookingCustomer(gated.admin, {
-    tenantId: gated.tenant.id,
-    name,
-    email,
-    phone,
-    addressLine1,
-    city,
-    state,
-    postalCode,
-    bedrooms: optionalWhole(String(formData.get('bedrooms') ?? '')),
-    bathrooms: optionalNumber(String(formData.get('bathrooms') ?? '')),
-    sqft: optionalWhole(String(formData.get('sqft') ?? '')),
-    zoneId: prepared.prepared.zoneId,
-    latitude: geocoded.point?.lat ?? null,
-    longitude: geocoded.point?.lng ?? null,
-    geocodeReason: geocoded.reason,
-  });
-  if ('error' in customer) return { error: customer.error };
-
+  const smsOptIn = formData.get('sms_opt_in') === 'on';
   const held = await holdInstantBooking(gated.admin, {
     tenantId: gated.tenant.id,
     prepared: prepared.prepared,
-    customerId: customer.customerId,
-    propertyId: customer.propertyId,
     email,
     phone,
     name,
     bufferMinutes: gated.policy.bufferMinutes,
+    travelMph: gated.policy.travelMph,
+    intake: {
+      addressLine1,
+      city,
+      state,
+      postalCode,
+      bedrooms: optionalWhole(String(formData.get('bedrooms') ?? '')),
+      bathrooms: optionalNumber(String(formData.get('bathrooms') ?? '')),
+      sqft: optionalWhole(String(formData.get('sqft') ?? '')),
+      zoneId: prepared.prepared.zoneId,
+      latitude: prepared.prepared.destination?.point?.lat ?? null,
+      longitude: prepared.prepared.destination?.point?.lng ?? null,
+      geocodeReason: null,
+      smsOptIn,
+    },
   });
   if ('error' in held) return { error: held.error };
+  await gated.admin.from('tenant_instant_slot_tokens').delete().eq('token', token);
 
   const needsCheckout = prepared.prepared.depositCents > 0 || gated.policy.collectCard;
   if (needsCheckout) {
@@ -349,7 +397,6 @@ export async function confirmInstantBookingAction(
       tenantSlug: gated.tenant.slug,
       bookingId: held.bookingId,
       publicToken: held.publicToken,
-      customerId: customer.customerId,
       email,
       name,
       title: prepared.prepared.offer.name,
@@ -361,19 +408,25 @@ export async function confirmInstantBookingAction(
     return { checkoutUrl: checkout.url };
   }
 
+  const attached = await attachBookingCustomer(gated.admin, gated.tenant.id, held.bookingId);
+  if ('error' in attached) return { error: attached.error };
+
   const finalized = await finalizeInstantBookingRecord(
     gated.admin,
     gated.tenant.id,
     held.bookingId,
   );
   if ('error' in finalized) return { error: finalized.error };
-  if (finalized.finalized) {
-    await notifyInstantBookingConfirmed(gated.admin, {
-      tenantId: gated.tenant.id,
-      bookingId: held.bookingId,
-      visitId: finalized.visitId,
-    });
-  }
+  await recordBookingDeposit(gated.admin, {
+    tenantId: gated.tenant.id,
+    bookingId: held.bookingId,
+    visitId: finalized.visitId,
+  });
+  await notifyInstantBookingConfirmed(gated.admin, {
+    tenantId: gated.tenant.id,
+    bookingId: held.bookingId,
+    visitId: finalized.visitId,
+  }).catch(() => undefined);
   revalidatePath('/schedule');
 
   return {

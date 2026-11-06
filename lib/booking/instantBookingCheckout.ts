@@ -1,8 +1,12 @@
 import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
-import { finalizeInstantBookingRecord } from '@/lib/booking/confirmInstantBooking';
+import {
+  attachBookingCustomer,
+  finalizeInstantBookingRecord,
+} from '@/lib/booking/confirmInstantBooking';
 import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
+import { balanceDueCents } from '@/lib/booking/bookingGuards';
 import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import {
   parseConnectApplicationFeeBps,
@@ -24,46 +28,6 @@ async function connectAccountId(admin: Admin, tenantId: string): Promise<string 
   return data?.stripe_account_id ?? null;
 }
 
-async function stripeCustomerId(
-  admin: Admin,
-  stripe: Stripe,
-  stripeAccount: string,
-  input: { tenantId: string; customerId: string; email: string; name: string },
-): Promise<string | { error: string }> {
-  const { data: existing } = await admin
-    .from('tenant_customer_stripe_customers')
-    .select('stripe_customer_id')
-    .eq('tenant_id', input.tenantId)
-    .eq('customer_id', input.customerId)
-    .maybeSingle();
-  if (existing?.stripe_customer_id) return existing.stripe_customer_id;
-
-  const created = await stripe.customers.create(
-    {
-      email: input.email,
-      name: input.name,
-      metadata: {
-        tenant_id: input.tenantId,
-        customer_id: input.customerId,
-        kind: 'instant_booking',
-      },
-    },
-    { stripeAccount },
-  );
-
-  const { error } = await admin.from('tenant_customer_stripe_customers').upsert(
-    {
-      tenant_id: input.tenantId,
-      customer_id: input.customerId,
-      stripe_customer_id: created.id,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'tenant_id,customer_id' },
-  );
-  if (error) return { error: 'Could not save the card customer.' };
-  return created.id;
-}
-
 export async function startInstantBookingCheckout(
   admin: Admin,
   input: {
@@ -71,7 +35,6 @@ export async function startInstantBookingCheckout(
     tenantSlug: string;
     bookingId: string;
     publicToken: string;
-    customerId: string;
     email: string;
     name: string;
     title: string;
@@ -95,14 +58,31 @@ export async function startInstantBookingCheckout(
 
   const velocity = await assertConnectPaymentVelocityAllowed(admin, {
     tenantId: input.tenantId,
-    customerId: input.customerId,
+    customerId: null,
     actorUserId: null,
     kind: 'instant_booking',
   });
   if (!velocity.ok) return { error: velocity.message };
 
-  const customer = await stripeCustomerId(admin, stripe, account, input);
-  if (typeof customer !== 'string') return customer;
+  let customer: string;
+  try {
+    const created = await stripe.customers.create(
+      {
+        email: input.email,
+        name: input.name,
+        metadata: {
+          tenant_id: input.tenantId,
+          kind: 'instant_booking',
+          booking_id: input.bookingId,
+        },
+      },
+      { stripeAccount: account },
+    );
+    customer = created.id;
+  } catch {
+    await admin.from('tenant_instant_bookings').delete().eq('id', input.bookingId);
+    return { error: 'Could not start checkout.' };
+  }
 
   const origin = getPublicOrigin(input.tenantSlug);
   const successUrl = `${origin}/book?booking=${encodeURIComponent(input.publicToken)}`;
@@ -174,6 +154,91 @@ export async function startInstantBookingCheckout(
   return { url: session.url };
 }
 
+export type InstantCheckoutResult =
+  { ok: true; visitId: string } | { ok: false; retry: boolean; error: string };
+
+async function refundPaidBooking(
+  admin: Admin,
+  stripe: Stripe,
+  input: { tenantId: string; bookingId: string; paymentIntentId: string; connectAccountId: string },
+): Promise<'refunded' | 'needs_review'> {
+  try {
+    await stripe.refunds.create(
+      { payment_intent: input.paymentIntentId },
+      {
+        stripeAccount: input.connectAccountId,
+        idempotencyKey: `instant-booking-refund-${input.bookingId}`,
+      },
+    );
+    await admin
+      .from('tenant_instant_bookings')
+      .update({ status: 'refunded' })
+      .eq('id', input.bookingId)
+      .eq('tenant_id', input.tenantId);
+    await admin.from('tenant_booking_slot_locks').delete().eq('booking_id', input.bookingId);
+    return 'refunded';
+  } catch {
+    await admin
+      .from('tenant_instant_bookings')
+      .update({ status: 'needs_review' })
+      .eq('id', input.bookingId)
+      .eq('tenant_id', input.tenantId);
+    return 'needs_review';
+  }
+}
+
+export async function recordBookingDeposit(
+  admin: Admin,
+  input: { tenantId: string; bookingId: string; visitId: string },
+): Promise<void> {
+  const { data: booking } = await admin
+    .from('tenant_instant_bookings')
+    .select(
+      'id, invoice_id, customer_id, property_id, title, price_cents, deposit_cents, currency, stripe_checkout_session_id, stripe_payment_intent_id',
+    )
+    .eq('id', input.bookingId)
+    .eq('tenant_id', input.tenantId)
+    .maybeSingle();
+  if (!booking || booking.deposit_cents <= 0 || booking.invoice_id || !booking.customer_id) return;
+
+  const invoice = await admin
+    .from('tenant_invoices')
+    .insert({
+      tenant_id: input.tenantId,
+      customer_id: booking.customer_id,
+      property_id: booking.property_id,
+      visit_id: input.visitId,
+      title: `${booking.title} deposit`,
+      status: 'open',
+      currency: booking.currency || 'usd',
+      amount_cents: booking.price_cents,
+      amount_paid_cents: 0,
+      source: 'checkout',
+      notes: `Online booking. Deposit ${booking.deposit_cents} cents. Balance due ${balanceDueCents(booking.price_cents, booking.deposit_cents)} cents.`,
+    })
+    .select('id')
+    .single();
+  if (invoice.error || !invoice.data) return;
+
+  const payment = await admin.from('tenant_invoice_payments').insert({
+    tenant_id: input.tenantId,
+    invoice_id: invoice.data.id,
+    amount_cents: booking.deposit_cents,
+    method: 'card',
+    recorded_via: 'stripe_checkout',
+    stripe_checkout_session_id: booking.stripe_checkout_session_id,
+    stripe_payment_intent_id: booking.stripe_payment_intent_id,
+    notes: 'Instant booking deposit',
+  });
+  if (payment.error) return;
+
+  await admin
+    .from('tenant_instant_bookings')
+    .update({ invoice_id: invoice.data.id })
+    .eq('id', booking.id)
+    .eq('tenant_id', input.tenantId);
+}
+
 export async function completeInstantBookingCheckout(
   admin: Admin,
   stripe: Stripe,
@@ -182,24 +247,39 @@ export async function completeInstantBookingCheckout(
     bookingId: string;
     connectAccountId?: string | null;
   },
-): Promise<{ ok: true; visitId: string } | { ok: false; error: string }> {
+): Promise<InstantCheckoutResult> {
   const { data: booking } = await admin
     .from('tenant_instant_bookings')
-    .select('id, status, visit_id, deposit_cents, stripe_checkout_session_id, currency')
+    .select(
+      'id, status, visit_id, deposit_cents, stripe_checkout_session_id, stripe_payment_intent_id, currency',
+    )
     .eq('id', input.bookingId)
     .eq('tenant_id', input.tenantId)
     .maybeSingle();
 
-  if (!booking) return { ok: false, error: 'Booking not found.' };
+  if (!booking) return { ok: false, retry: false, error: 'Booking not found.' };
+  if (booking.status === 'refunded') {
+    return { ok: false, retry: false, error: 'The deposit was refunded.' };
+  }
+  if (booking.status === 'needs_review') {
+    return { ok: false, retry: false, error: 'Payment needs office review.' };
+  }
   if (booking.status === 'confirmed' && booking.visit_id) {
+    await notifyInstantBookingConfirmed(admin, {
+      tenantId: input.tenantId,
+      bookingId: booking.id,
+      visitId: booking.visit_id,
+    });
     return { ok: true, visitId: booking.visit_id };
   }
   if (!booking.stripe_checkout_session_id) {
-    return { ok: false, error: 'Checkout has not started.' };
+    return { ok: false, retry: false, error: 'Checkout has not started.' };
   }
 
   const account = input.connectAccountId ?? (await connectAccountId(admin, input.tenantId));
-  if (!account) return { ok: false, error: 'Card payment is not available for this company yet.' };
+  if (!account) {
+    return { ok: false, retry: true, error: 'Card payment is not available for this company yet.' };
+  }
 
   const session = await stripe.checkout.sessions.retrieve(
     booking.stripe_checkout_session_id,
@@ -211,18 +291,18 @@ export async function completeInstantBookingCheckout(
     session.metadata?.booking_id !== booking.id ||
     session.metadata.tenant_id !== input.tenantId
   ) {
-    return { ok: false, error: 'Checkout does not match this booking.' };
+    return { ok: false, retry: false, error: 'Checkout does not match this booking.' };
   }
 
   if (session.mode === 'payment') {
     if (session.payment_status !== 'paid') {
-      return { ok: false, error: 'Payment is not complete yet.' };
+      return { ok: false, retry: false, error: 'Payment is not complete yet.' };
     }
     if (session.amount_total !== booking.deposit_cents) {
-      return { ok: false, error: 'Payment amount does not match the deposit.' };
+      return { ok: false, retry: false, error: 'Payment amount does not match the deposit.' };
     }
   } else if (session.status !== 'complete') {
-    return { ok: false, error: 'Card setup is not complete yet.' };
+    return { ok: false, retry: false, error: 'Card setup is not complete yet.' };
   }
 
   const paymentIntentId =
@@ -238,15 +318,40 @@ export async function completeInstantBookingCheckout(
       .eq('tenant_id', input.tenantId);
   }
 
+  const attached = await attachBookingCustomer(admin, input.tenantId, booking.id);
+  if ('error' in attached) return { ok: false, retry: true, error: attached.error };
+
   const finalized = await finalizeInstantBookingRecord(admin, input.tenantId, booking.id);
-  if ('error' in finalized) return { ok: false, error: finalized.error };
-  if (finalized.finalized) {
-    await notifyInstantBookingConfirmed(admin, {
-      tenantId: input.tenantId,
-      bookingId: booking.id,
-      visitId: finalized.visitId,
-    });
-    revalidatePath('/schedule');
+  if ('error' in finalized) {
+    if (finalized.code === 'slot_taken' && paymentIntentId && session.mode === 'payment') {
+      const outcome = await refundPaidBooking(admin, stripe, {
+        tenantId: input.tenantId,
+        bookingId: booking.id,
+        paymentIntentId,
+        connectAccountId: account,
+      });
+      return {
+        ok: false,
+        retry: false,
+        error:
+          outcome === 'refunded'
+            ? 'That time was taken. The deposit was refunded.'
+            : 'That time was taken. The office will refund the deposit.',
+      };
+    }
+    return { ok: false, retry: true, error: finalized.error };
   }
+
+  await recordBookingDeposit(admin, {
+    tenantId: input.tenantId,
+    bookingId: booking.id,
+    visitId: finalized.visitId,
+  });
+  await notifyInstantBookingConfirmed(admin, {
+    tenantId: input.tenantId,
+    bookingId: booking.id,
+    visitId: finalized.visitId,
+  });
+  revalidatePath('/schedule');
   return { ok: true, visitId: finalized.visitId };
 }

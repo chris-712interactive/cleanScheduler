@@ -175,7 +175,9 @@ export async function loadInstantSlotsForTenant(
       .gt('ends_at', rangeStart),
     admin
       .from('tenant_booking_slot_locks')
-      .select('assignee_user_id, starts_at, ends_at, expires_at')
+      .select(
+        'assignee_user_id, starts_at, ends_at, visit_ends_at, expires_at, place_lat, place_lng, place_city, place_state, place_postal',
+      )
       .eq('tenant_id', input.tenantId)
       .lt('starts_at', horizonEnd)
       .gt('ends_at', rangeStart),
@@ -212,11 +214,21 @@ export async function loadInstantSlotsForTenant(
 
   for (const lock of locksResult.data ?? []) {
     if (lock.expires_at && new Date(lock.expires_at).getTime() <= now.getTime()) continue;
+    const point =
+      lock.place_lat != null && lock.place_lng != null
+        ? { lat: lock.place_lat, lng: lock.place_lng }
+        : null;
     busy.push({
       assigneeUserId: lock.assignee_user_id,
       startsAt: lock.starts_at,
-      endsAt: lock.ends_at,
+      endsAt: lock.visit_ends_at ?? lock.ends_at,
       kind: 'lock',
+      place: {
+        point,
+        city: lock.place_city,
+        state: lock.place_state,
+        postalCode: lock.place_postal,
+      },
     });
   }
 

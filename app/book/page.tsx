@@ -8,6 +8,7 @@ import {
 } from '@/lib/booking/bookingAudience';
 import { allowedFrequencies, type InstantBookingFrequency } from '@/lib/booking/priceInstantOffer';
 import { instantBookingPolicyFromRow } from '@/lib/booking/loadInstantSlots';
+import { balanceDueCents, bookingReturnState } from '@/lib/booking/bookingGuards';
 import { completeInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
 import {
   PUBLIC_BOOKING_UNAVAILABLE,
@@ -110,30 +111,38 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
       }
     }
 
-    const { data: fresh } = await admin
-      .from('tenant_instant_bookings')
-      .select('status, title, starts_at, price_cents')
-      .eq('tenant_id', tenant.id)
-      .eq('public_token', bookingToken)
-      .maybeSingle();
+    const { data: fresh } = booking
+      ? await admin
+          .from('tenant_instant_bookings')
+          .select('status, title, starts_at, price_cents, deposit_cents')
+          .eq('tenant_id', tenant.id)
+          .eq('public_token', bookingToken)
+          .maybeSingle()
+      : { data: null };
 
-    if (fresh?.status === 'confirmed') {
-      return (
-        <main className={styles.page}>
-          <div className={styles.inner}>
-            <h1 className={styles.brand}>{businessName}</h1>
-            <div className={styles.form} role="status">
-              <h2 className={styles.stepTitle}>You&apos;re booked</h2>
-              <p>
-                {fresh.title} is on the calendar for{' '}
-                {formatNextAppointmentWhen(fresh.starts_at, tenant.timezone)}. Price $
-                {formatCentsAsDollars(fresh.price_cents)}.
-              </p>
-            </div>
+    const state = bookingReturnState(fresh?.status);
+    const message =
+      state === 'confirmed' && fresh
+        ? `${fresh.title} is on the calendar for ${formatNextAppointmentWhen(fresh.starts_at, tenant.timezone)}. Price $${formatCentsAsDollars(fresh.price_cents)}.${fresh.deposit_cents > 0 ? ` Balance due $${formatCentsAsDollars(balanceDueCents(fresh.price_cents, fresh.deposit_cents))}.` : ''}`
+        : state === 'refunded'
+          ? 'That time was no longer open. The deposit was refunded, and the visit was not booked.'
+          : state === 'needs_review'
+            ? 'We received your payment but could not place the visit. The office will follow up. Please do not book again for this payment.'
+            : 'We are still confirming this booking. Please wait here instead of choosing another time.';
+
+    return (
+      <main className={styles.page}>
+        <div className={styles.inner}>
+          <h1 className={styles.brand}>{businessName}</h1>
+          <div className={styles.form} role="status">
+            <h2 className={styles.stepTitle}>
+              {state === 'confirmed' ? "You're booked" : 'Booking status'}
+            </h2>
+            <p>{message}</p>
           </div>
-        </main>
-      );
-    }
+        </div>
+      </main>
+    );
   }
 
   if (mode === 'instant' && ops) {
