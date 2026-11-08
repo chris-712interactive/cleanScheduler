@@ -132,6 +132,21 @@ export function rateLimitAllows(hitCount: number, limit: number): boolean {
   return hitCount <= limit;
 }
 
+/** A visit is placed only after a deposit charge or a saved card. */
+export function instantBookingPlacesVisit(input: {
+  depositCents: number;
+  collectCard: boolean;
+}): boolean {
+  return input.depositCents > 0 || input.collectCard;
+}
+
+/** A hold with no expiry, or an expiry still in the future, blocks another hold. */
+export function openHoldStillActive(holdExpiresAt: string | null, nowMs: number): boolean {
+  if (!holdExpiresAt) return true;
+  const expiresAt = new Date(holdExpiresAt).getTime();
+  return !Number.isFinite(expiresAt) || expiresAt > nowMs;
+}
+
 export function firstVisitAndRecurringCents(
   priceCents: number,
   depositCents: number,

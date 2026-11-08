@@ -11,6 +11,8 @@ import {
   escapeIlikePattern,
   firstVisitAndRecurringCents,
   groupSlotsByDate,
+  instantBookingPlacesVisit,
+  openHoldStillActive,
   paidCustomerCreateDisposition,
   previewFeedback,
   previewMatchesOffer,
@@ -224,6 +226,19 @@ describe('booking QA guards', () => {
     expect(rateLimitWindowStartMs(1_000_500, 1_000)).toBe(1_000_000);
     expect(rateLimitAllows(5, 5)).toBe(true);
     expect(rateLimitAllows(6, 5)).toBe(false);
+  });
+
+  it('places an instant visit only when a deposit or a saved card is required', () => {
+    expect(instantBookingPlacesVisit({ depositCents: 0, collectCard: false })).toBe(false);
+    expect(instantBookingPlacesVisit({ depositCents: 5000, collectCard: false })).toBe(true);
+    expect(instantBookingPlacesVisit({ depositCents: 0, collectCard: true })).toBe(true);
+  });
+
+  it('blocks a second hold while the first one is still open', () => {
+    const now = Date.parse('2026-11-07T18:00:00.000Z');
+    expect(openHoldStillActive(null, now)).toBe(true);
+    expect(openHoldStillActive('2026-11-07T18:20:00.000Z', now)).toBe(true);
+    expect(openHoldStillActive('2026-11-07T17:00:00.000Z', now)).toBe(false);
   });
 });
 

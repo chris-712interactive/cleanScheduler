@@ -16,7 +16,7 @@
 
 Existing workspaces stay on their current behavior. A form that was turned off becomes **Off**. Everyone else stays **Request only**. Instant booking is opt-in.
 
-The mode is enforced on the page and on every public submit action. A request posted while the mode is instant, or an instant booking posted while the mode is request or off, is rejected.
+The mode is enforced on the page and on every public submit action. An instant booking posted while the mode is request or off is rejected. A quote request posted while the mode is instant is rejected too, except when instant booking is on and neither a deposit nor a saved card is required. In that case the public page takes a quote request and does not place a visit.
 
 ## Tenant setup
 
@@ -39,7 +39,7 @@ Booking eligibility uses the offer’s price and linked job type, not a stamped 
 2. Enter contact details and the home. Square footage is required for per-sqft pricing. Beds and baths are required for beds-and-baths pricing.
 3. See a price and open times. Each day is a heading, and the open times for that day sit in a row of buttons. Times come from business hours, each crew member’s hours, approved time off, scheduled visits, and unexpired holds. The buffer and an estimated drive (straight-line minutes, or same-city / same-state fallback from `lib/schedule/optimizer/geo.ts`) must fit between jobs.
 4. Choose one-time or a repeat frequency and confirm.
-5. If a deposit or saved card is configured, Stripe Checkout runs on the tenant’s Connect account. The visit is created only after Checkout completes (return URL and the Connect webhook both finalize, and the database function is safe to call twice). With no payment, the visit is created immediately.
+5. If a deposit is configured, Stripe Checkout charges it on the tenant’s Connect account. If the deposit is $0, Checkout saves a card instead. A customer who already has a card on file skips a new card setup. The visit is created only after that step (return URL and the Connect webhook both finalize, and the database function is safe to call twice). With neither a deposit nor a saved card required, the public page takes a quote request and does not place a visit.
 6. The customer gets a confirmation email. SMS reuses the existing visit-reminder template when visit-reminder SMS is on and a phone was entered. The office email (site contact email, otherwise the business email) is notified. The visit shows on the schedule.
 
 ## Concurrency and security
@@ -48,19 +48,20 @@ Booking eligibility uses the offer’s price and linked job type, not a stamped 
 
 Both functions are `security definer`, revoked from `anon` and `authenticated`, and granted to `service_role` only. New tables use the same member RLS policy as the rest of the tenant data. Public routes never use the anon key.
 
-Preview is rate-limited per IP. Confirm is rate-limited per IP and per email. A honeypot field drops bot posts. The action also checks that the host tenant matches the submitted slug.
+Preview is rate-limited per IP. Confirm is rate-limited per IP and per email. A second hold from the same email is refused while the first hold is still open. A honeypot field drops bot posts. When `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are both set, seeing times, confirming a time, and sending a quote request require a Cloudflare Turnstile check. The action also checks that the host tenant matches the submitted slug.
 
 ## Key files
 
-| Layer               | Path                                    |
-| ------------------- | --------------------------------------- |
-| Public page         | `app/book/page.tsx`                     |
-| Request action      | `app/book/actions.ts`                   |
-| Instant actions     | `app/book/instantActions.ts`            |
-| Slot math           | `lib/booking/computeInstantSlots.ts`    |
-| Booking transaction | `lib/booking/confirmInstantBooking.ts`  |
-| Checkout            | `lib/booking/instantBookingCheckout.ts` |
-| Settings            | `app/tenant/settings/booking-requests/` |
+| Layer               | Path                                                        |
+| ------------------- | ----------------------------------------------------------- |
+| Public page         | `app/book/page.tsx`                                         |
+| Request action      | `app/book/actions.ts`                                       |
+| Instant actions     | `app/book/instantActions.ts`                                |
+| Slot math           | `lib/booking/computeInstantSlots.ts`                        |
+| Booking transaction | `lib/booking/confirmInstantBooking.ts`                      |
+| Checkout            | `lib/booking/instantBookingCheckout.ts`                     |
+| Person check        | `lib/booking/turnstile.ts`, `app/book/BookingTurnstile.tsx` |
+| Settings            | `app/tenant/settings/booking-requests/`                     |
 
 ## Out of scope
 

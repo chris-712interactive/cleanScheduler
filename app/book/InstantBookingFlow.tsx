@@ -15,6 +15,7 @@ import {
   type InstantConfirmState,
   type InstantPreviewState,
 } from './instantActions';
+import { BookingTurnstile } from './BookingTurnstile';
 import styles from './book.module.scss';
 
 type Offer = {
@@ -45,10 +46,10 @@ const DETAIL_FIELDS = [
   'sqft',
 ] as const;
 
-function PreviewButton() {
+function PreviewButton({ blocked }: { blocked: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant="primary" disabled={pending}>
+    <Button type="submit" variant="primary" disabled={pending || blocked}>
       {pending ? 'Checking times…' : 'See times and price'}
     </Button>
   );
@@ -60,12 +61,14 @@ export function InstantBookingFlow({
   frequencies,
   collectCard,
   depositConfigured,
+  turnstileSiteKey = null,
 }: {
   tenantSlug: string;
   offers: Offer[];
   frequencies: Frequency[];
   collectCard: boolean;
   depositConfigured: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const [offerId, setOfferId] = useState(offers[0]?.id ?? '');
   const [preview, previewAction] = useActionState(previewInstantBookingAction, previewInitial);
@@ -78,6 +81,8 @@ export function InstantBookingFlow({
   const [frequency, setFrequency] = useState(frequencies[0]?.value ?? 'one_time');
   const [previewOfferId, setPreviewOfferId] = useState<string | null>(null);
 
+  const [previewChallenge, setPreviewChallenge] = useState('');
+  const [confirmChallenge, setConfirmChallenge] = useState('');
   const offer = offers.find((item) => item.id === offerId) ?? offers[0];
   const slots = previewMatchesOffer(previewOfferId, offer?.id ?? '') ? (preview.slots ?? []) : [];
   const selected = slots.find((slot) => slot.token === slotToken);
@@ -253,7 +258,8 @@ export function InstantBookingFlow({
         }) === 'error' ? (
           <p className={styles.error}>{preview.error}</p>
         ) : null}
-        <PreviewButton />
+        <BookingTurnstile siteKey={turnstileSiteKey} onToken={setPreviewChallenge} />
+        <PreviewButton blocked={Boolean(turnstileSiteKey) && !previewChallenge} />
       </form>
 
       {slots.length > 0 && preview.priceLabel ? (
@@ -311,12 +317,21 @@ export function InstantBookingFlow({
           </label>
 
           {confirmState.error ? <p className={styles.error}>{confirmState.error}</p> : null}
-          <Button type="submit" variant="primary" disabled={confirmPending || !selected}>
+          <BookingTurnstile siteKey={turnstileSiteKey} onToken={setConfirmChallenge} />
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={
+              confirmPending || !selected || (Boolean(turnstileSiteKey) && !confirmChallenge)
+            }
+          >
             {confirmPending
               ? 'Booking…'
-              : depositConfigured || collectCard
+              : depositConfigured
                 ? 'Continue to payment'
-                : 'Confirm visit'}
+                : collectCard
+                  ? 'Save a card to hold this time'
+                  : 'Confirm visit'}
           </Button>
         </form>
       ) : null}

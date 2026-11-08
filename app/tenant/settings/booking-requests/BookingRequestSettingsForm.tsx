@@ -227,7 +227,9 @@ export function BookingRequestSettingsForm({
               <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>Payment</h2>
                 <p className={styles.sectionLead}>
-                  A deposit is collected at booking. Leave it at 0 to skip the charge.
+                  Instant booking places a visit only after a deposit or a saved card. Leave the
+                  deposit at 0 and turn on save a card to hold the time without charging today. With
+                  both off, the public page takes a quote request instead.
                 </p>
               </div>
               <div className={styles.fieldGrid}>

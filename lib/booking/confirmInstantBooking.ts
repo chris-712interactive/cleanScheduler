@@ -266,7 +266,7 @@ export async function prepareInstantBooking(
   };
 }
 
-async function findCustomerByEmail(
+export async function findCustomerByEmail(
   admin: Admin,
   tenantId: string,
   email: string,

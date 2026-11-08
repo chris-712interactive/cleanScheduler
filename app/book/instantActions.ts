@@ -8,7 +8,15 @@ import {
   instantPricingMethodAllowed,
 } from '@/lib/booking/bookingAudience';
 import { randomUUID } from 'node:crypto';
-import { publicSlotPayload, rateLimitAllows, trustedClientIp } from '@/lib/booking/bookingGuards';
+import {
+  publicSlotPayload,
+  rateLimitAllows,
+  trustedClientIp,
+  escapeIlikePattern,
+  instantBookingPlacesVisit,
+  openHoldStillActive,
+} from '@/lib/booking/bookingGuards';
+import { bookingChallengeError } from '@/lib/booking/bookingChallenge';
 import {
   attachBookingCustomer,
   finalizeInstantBookingRecord,
@@ -18,7 +26,10 @@ import {
   prepareInstantBooking,
   visibleInstantOffers,
 } from '@/lib/booking/confirmInstantBooking';
-import { startInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
+import {
+  customerHasSavedConnectCard,
+  startInstantBookingCheckout,
+} from '@/lib/booking/instantBookingCheckout';
 import {
   instantBookingPolicyFromRow,
   loadInstantSlotsForTenant,
@@ -160,12 +171,20 @@ export async function previewInstantBookingAction(
   const honeypot = String(formData.get('company') ?? '').trim();
   if (honeypot) return { slots: [] };
 
+  const challenge = await bookingChallengeError(formData);
+  if (challenge) return { error: challenge };
+
   const tenantSlug = String(formData.get('tenant_slug') ?? '')
     .trim()
     .toLowerCase();
   const offerId = String(formData.get('offer_id') ?? '').trim();
   const gated = await authorizedInstantTenant(tenantSlug);
   if ('error' in gated) return { error: gated.error };
+  if (!instantBookingPlacesVisit(gated.policy)) {
+    return {
+      error: 'This company confirms new visits with the office. Send a quote request instead.',
+    };
+  }
 
   const { data: offers } = await gated.admin
     .from('tenant_instant_booking_offers')
@@ -295,11 +314,19 @@ export async function confirmInstantBookingAction(
   const honeypot = String(formData.get('company') ?? '').trim();
   if (honeypot) return { success: true, title: 'Visit', whenLabel: '', priceLabel: '' };
 
+  const challenge = await bookingChallengeError(formData);
+  if (challenge) return { error: challenge };
+
   const tenantSlug = String(formData.get('tenant_slug') ?? '')
     .trim()
     .toLowerCase();
   const gated = await authorizedInstantTenant(tenantSlug);
   if ('error' in gated) return { error: gated.error };
+  if (!instantBookingPlacesVisit(gated.policy)) {
+    return {
+      error: 'This company confirms new visits with the office. Send a quote request instead.',
+    };
+  }
 
   const name = String(formData.get('name') ?? '').trim();
   const email = String(formData.get('email') ?? '')
@@ -332,6 +359,20 @@ export async function confirmInstantBookingAction(
     .gte('created_at', since);
   if ((count ?? 0) >= CONFIRM_LIMIT) {
     return { error: 'Too many bookings from this email. Please try again later.' };
+  }
+
+  const { data: openHolds } = await gated.admin
+    .from('tenant_instant_bookings')
+    .select('hold_expires_at')
+    .eq('tenant_id', gated.tenant.id)
+    .eq('status', 'hold')
+    .ilike('customer_email', escapeIlikePattern(email))
+    .limit(5);
+  if ((openHolds ?? []).some((row) => openHoldStillActive(row.hold_expires_at, Date.now()))) {
+    return {
+      error:
+        'You already have a time on hold. Finish that booking, or wait for the hold to expire, before choosing another.',
+    };
   }
 
   const token = String(formData.get('slot_token') ?? '').trim();
@@ -423,7 +464,11 @@ export async function confirmInstantBookingAction(
   await gated.admin.from('tenant_instant_slot_tokens').delete().eq('token', token);
 
   const needsCheckout = prepared.prepared.depositCents > 0 || gated.policy.collectCard;
-  if (needsCheckout) {
+  const cardOnFile =
+    prepared.prepared.depositCents === 0 &&
+    gated.policy.collectCard &&
+    (await customerHasSavedConnectCard(gated.admin, gated.tenant.id, email));
+  if (needsCheckout && !cardOnFile) {
     const checkout = await startInstantBookingCheckout(gated.admin, {
       tenantId: gated.tenant.id,
       tenantSlug: gated.tenant.slug,
