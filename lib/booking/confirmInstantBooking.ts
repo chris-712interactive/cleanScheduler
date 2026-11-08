@@ -21,6 +21,7 @@ import { matchBookingZone, type BookingZoneCoverage } from '@/lib/booking/servic
 import { assertTenantCanCreateAutomationWorkflow } from '@/lib/billing/automationWorkflows';
 import { assertMeteredLimit } from '@/lib/billing/checkLimit';
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
+import { findMatchingInstantSlot } from '@/lib/booking/computeInstantSlots';
 import type { PlaceHint } from '@/lib/schedule/optimizer/geo';
 import { postal5 } from '@/lib/schedule/optimizer/geo';
 import type { Database, Json } from '@/lib/supabase/database.types';
@@ -233,12 +234,11 @@ export async function prepareInstantBooking(
   });
   if ('error' in loaded) return { ok: false, error: loaded.error };
 
-  const slot = loaded.slots.find(
-    (candidate) =>
-      candidate.startsAt === input.startsAt &&
-      candidate.endsAt === input.endsAt &&
-      candidate.assigneeUserId === input.assigneeUserId,
-  );
+  const slot = findMatchingInstantSlot(loaded.slots, {
+    startsAt: input.startsAt,
+    endsAt: input.endsAt,
+    assigneeUserId: input.assigneeUserId,
+  });
   if (!slot) return { ok: false, error: 'That time is no longer available. Choose another.' };
 
   const rrule = recurringRuleFromFrequency({
@@ -266,7 +266,7 @@ export async function prepareInstantBooking(
   };
 }
 
-async function findCustomerByEmail(
+export async function findCustomerByEmail(
   admin: Admin,
   tenantId: string,
   email: string,

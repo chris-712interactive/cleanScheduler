@@ -1,7 +1,14 @@
 'use server';
 
 import { sendMarketingLeadNotificationEmail } from '@/lib/email/sendMarketingLeadNotification';
+import { headers } from 'next/headers';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import { bookingChallengeError } from '@/lib/booking/bookingChallenge';
+import {
+  instantBookingPlacesVisit,
+  rateLimitAllows,
+  trustedClientIp,
+} from '@/lib/booking/bookingGuards';
 import {
   PUBLIC_BOOKING_UNAVAILABLE,
   publicBookingModeError,
@@ -31,6 +38,9 @@ export async function submitBookingRequestAction(
   if (honeypot) {
     return { success: true };
   }
+
+  const challenge = await bookingChallengeError(formData);
+  if (challenge) return { error: challenge };
 
   const name = String(formData.get('name') ?? '').trim();
   const email = String(formData.get('email') ?? '')
@@ -80,12 +90,21 @@ export async function submitBookingRequestAction(
 
   const { data: ops } = await admin
     .from('tenant_operational_settings')
-    .select('public_booking_mode, public_booking_request_enabled')
+    .select(
+      'public_booking_mode, public_booking_request_enabled, instant_booking_deposit_cents, instant_booking_collect_card',
+    )
     .eq('tenant_id', tenant.id)
     .maybeSingle();
 
-  const modeError = publicBookingModeError(publicBookingModeFromRow(ops), 'request');
-  if (modeError) return { error: modeError };
+  const mode = publicBookingModeFromRow(ops);
+  const requestWhileCardRequired =
+    mode === 'instant' &&
+    !instantBookingPlacesVisit({
+      depositCents: ops?.instant_booking_deposit_cents ?? 0,
+      collectCard: Boolean(ops?.instant_booking_collect_card),
+    });
+  const modeError = publicBookingModeError(mode, 'request');
+  if (modeError && !requestWhileCardRequired) return { error: modeError };
 
   // Instant-booking work should keep using bookingServiceAllowed so a booking-mode
   // setting and this service segment stay independent checks.
@@ -103,6 +122,17 @@ export async function submitBookingRequestAction(
     .gte('created_at', since);
 
   if ((count ?? 0) >= RATE_LIMIT_MAX) {
+    return { error: 'Too many requests. Please try again later.' };
+  }
+
+  const headerList = await headers();
+  const { data: hits, error: limitError } = await admin.rpc('consume_public_rate_limit', {
+    p_scope: 'booking_request',
+    p_client_key: trustedClientIp(headerList),
+    p_limit: RATE_LIMIT_MAX,
+    p_window_seconds: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
+  });
+  if (limitError || typeof hits !== 'number' || !rateLimitAllows(hits, RATE_LIMIT_MAX)) {
     return { error: 'Too many requests. Please try again later.' };
   }
 

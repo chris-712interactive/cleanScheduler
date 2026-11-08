@@ -10,6 +10,7 @@ import {
   bookingResolutionMessage,
   bookingReturnState,
   parseBookingResolutionCode,
+  instantBookingPlacesVisit,
 } from '@/lib/booking/bookingGuards';
 import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
 import { completeInstantBookingCheckout } from '@/lib/booking/instantBookingCheckout';
@@ -20,6 +21,7 @@ import {
 } from '@/lib/booking/publicBookingMode';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { formatNextAppointmentWhen } from '@/lib/datetime/formatInTimeZone';
+import { publicEnv } from '@/lib/env';
 import { getPortalContext } from '@/lib/portal';
 import { getStripe } from '@/lib/stripe/server';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -166,81 +168,88 @@ export default async function PublicBookingRequestPage({ searchParams }: PagePro
 
   if (mode === 'instant' && ops) {
     const policy = instantBookingPolicyFromRow(ops);
-    const { data: offerRows } = await admin
-      .from('tenant_instant_booking_offers')
-      .select(
-        'id, name, duration_minutes, pricing_method, audience, is_active, sort_order, service_template_id',
-      )
-      .eq('tenant_id', tenant.id)
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
+    if (instantBookingPlacesVisit(policy)) {
+      const { data: offerRows } = await admin
+        .from('tenant_instant_booking_offers')
+        .select(
+          'id, name, duration_minutes, pricing_method, audience, is_active, sort_order, service_template_id',
+        )
+        .eq('tenant_id', tenant.id)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
 
-    const templateJobTypes = await loadTemplateJobTypes(
-      admin,
-      tenant.id,
-      (offerRows ?? []).map((offer) => offer.service_template_id),
-    );
-    const offers = (offerRows ?? []).filter((offer) =>
-      instantOfferAllowedForSegment(
-        {
-          audience: offer.audience,
-          pricingMethod: offer.pricing_method,
-          templateJobType: offer.service_template_id
-            ? templateJobTypes.get(offer.service_template_id)
-            : null,
-        },
-        ops.service_segment,
-      ),
-    );
-    const frequencies = allowedFrequencies(policy).map((value) => ({
-      value,
-      label: FREQUENCY_LABELS[value],
-    }));
+      const templateJobTypes = await loadTemplateJobTypes(
+        admin,
+        tenant.id,
+        (offerRows ?? []).map((offer) => offer.service_template_id),
+      );
+      const offers = (offerRows ?? []).filter((offer) =>
+        instantOfferAllowedForSegment(
+          {
+            audience: offer.audience,
+            pricingMethod: offer.pricing_method,
+            templateJobType: offer.service_template_id
+              ? templateJobTypes.get(offer.service_template_id)
+              : null,
+          },
+          ops.service_segment,
+        ),
+      );
+      const frequencies = allowedFrequencies(policy).map((value) => ({
+        value,
+        label: FREQUENCY_LABELS[value],
+      }));
 
-    return (
-      <main className={styles.page}>
-        <div className={styles.inner}>
-          <h1 className={styles.brand}>{businessName}</h1>
-          <p className={styles.lead}>
-            Pick a service, tell us about the home, and choose an open time. We will book the visit
-            right away.
-          </p>
-          {offers.length === 0 ? (
-            <p className={styles.unavailable}>
-              Online booking is not ready yet. The office has not published a service.
+      return (
+        <main className={styles.page}>
+          <div className={styles.inner}>
+            <h1 className={styles.brand}>{businessName}</h1>
+            <p className={styles.lead}>
+              Pick a service, tell us about the home, and choose an open time. A card is required
+              before the visit is placed on the calendar.
             </p>
-          ) : (
-            <InstantBookingFlow
-              tenantSlug={tenant.slug}
-              offers={offers.map((offer) => ({
-                id: offer.id,
-                name: offer.name,
-                durationMinutes: offer.duration_minutes,
-                pricingMethod: offer.pricing_method,
-              }))}
-              frequencies={frequencies}
-              collectCard={policy.collectCard}
-              depositConfigured={policy.depositCents > 0}
-            />
-          )}
-        </div>
-      </main>
-    );
+            {offers.length === 0 ? (
+              <p className={styles.unavailable}>
+                Online booking is not ready yet. The office has not published a service.
+              </p>
+            ) : (
+              <InstantBookingFlow
+                tenantSlug={tenant.slug}
+                offers={offers.map((offer) => ({
+                  id: offer.id,
+                  name: offer.name,
+                  durationMinutes: offer.duration_minutes,
+                  pricingMethod: offer.pricing_method,
+                }))}
+                frequencies={frequencies}
+                collectCard={policy.collectCard}
+                depositConfigured={policy.depositCents > 0}
+                turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null}
+              />
+            )}
+          </div>
+        </main>
+      );
+    }
   }
+
+  const turnstileSiteKey = publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null;
 
   return (
     <main className={styles.page}>
       <div className={styles.inner}>
         <h1 className={styles.brand}>{businessName}</h1>
         <p className={styles.lead}>
-          Request a quote or cleaning. Tell us about your property and we will follow up — this does
-          not book a time on the calendar automatically.
+          {mode === 'instant'
+            ? 'Instant booking is off until the office requires a deposit or a saved card. Send a request and they will follow up. This does not book a time on the calendar.'
+            : 'Request a quote or cleaning. Tell us about your property and we will follow up — this does not book a time on the calendar automatically.'}
         </p>
         <BookingRequestForm
           tenantSlug={tenant.slug}
           services={
             capabilitiesForSegment(parseTenantServiceSegment(ops?.service_segment)).bookingServices
           }
+          turnstileSiteKey={turnstileSiteKey}
         />
       </div>
     </main>

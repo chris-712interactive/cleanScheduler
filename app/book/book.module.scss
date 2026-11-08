@@ -72,10 +72,67 @@
 .choiceSet {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+.dayGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dayHeading {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.timeGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.timeChoice {
+  position: relative;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+  }
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 5.75rem;
+    min-height: 2.5rem;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  input:checked + span {
+    border-color: color-mix(in srgb, var(--color-brand-primary) 50%, var(--color-border));
+    background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-surface));
+  }
+
+  input:focus-visible + span {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
 }
 
 .choice {

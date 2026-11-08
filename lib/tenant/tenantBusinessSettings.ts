@@ -252,14 +252,46 @@ export function legacyWorkWeekFromSchedules(days: WorkDaySchedule[]): {
   };
 }
 
+function formatWorkTimeLabel(value: string): string {
+  if (!/^\d{2}:\d{2}$/.test(value)) return value;
+  const date = new Date(`1970-01-01T${value}:00`);
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function workDayRangeLabel(days: WorkDaySchedule[]): string {
+  const first = days[0];
+  const last = days[days.length - 1];
+  if (!first || !last) return '';
+  if (first.weekday === last.weekday) return WORK_WEEK_DAY_LABEL[first.weekday];
+  return `${WORK_WEEK_DAY_LABEL[first.weekday]}–${WORK_WEEK_DAY_LABEL[last.weekday]}`;
+}
+
 export function summarizeWorkDaySchedule(days: WorkDaySchedule[]): string {
   const open = days.filter((day) => day.enabled);
   if (open.length === 0) return 'No open days';
-  const sameHours = open.every((day) => day.start === open[0]?.start && day.end === open[0]?.end);
-  const labels = open.map((day) => WORK_WEEK_DAY_LABEL[day.weekday]).join(', ');
-  if (sameHours && open[0]) return `${labels} · ${open[0].start}–${open[0].end}`;
-  return open
-    .map((day) => `${WORK_WEEK_DAY_LABEL[day.weekday]} ${day.start}–${day.end}`)
+
+  const groups: WorkDaySchedule[][] = [];
+  for (const day of open) {
+    const current = groups[groups.length - 1];
+    const previous = current?.[current.length - 1];
+    const previousIndex = previous ? WORK_WEEK_DAY_KEYS.indexOf(previous.weekday) : -2;
+    const index = WORK_WEEK_DAY_KEYS.indexOf(day.weekday);
+    const sameHours = previous && previous.start === day.start && previous.end === day.end;
+    if (current && sameHours && index === previousIndex + 1) {
+      current.push(day);
+    } else {
+      groups.push([day]);
+    }
+  }
+
+  return groups
+    .map((group) => {
+      const first = group[0];
+      if (!first) return '';
+      const hours = `${formatWorkTimeLabel(first.start)}–${formatWorkTimeLabel(first.end)}`;
+      return `${workDayRangeLabel(group)} · ${hours}`;
+    })
+    .filter(Boolean)
     .join(', ');
 }
 

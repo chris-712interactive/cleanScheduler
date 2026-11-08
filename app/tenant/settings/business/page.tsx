@@ -112,144 +112,141 @@ export default async function TenantBusinessSettingsPage() {
             </div>
           </header>
 
-          <nav className={layoutStyles.sectionNav} aria-label="Business settings sections">
-            <a className={layoutStyles.sectionNavLink} href="#business-services">
-              Services
-            </a>
-            <a className={layoutStyles.sectionNavLink} href="#business-profile">
-              Profile
-            </a>
-            <a className={layoutStyles.sectionNavLink} href="#business-branding">
-              Branding
-            </a>
-            <a className={layoutStyles.sectionNavLink} href="#business-hours">
-              Hours
-            </a>
-            <a className={layoutStyles.sectionNavLink} href="#business-address">
-              Address
-            </a>
-          </nav>
-
-          <section
-            className={layoutStyles.settingsSection}
-            id="business-services"
-            aria-labelledby="business-services-heading"
-          >
-            <header className={layoutStyles.sectionHeader}>
-              <h3 id="business-services-heading" className={layoutStyles.sectionTitle}>
-                Residential, commercial, or both
-              </h3>
-              <p className={layoutStyles.sectionLead}>
-                This chooses which property types, quote tools, booking options, and schedule
-                presets your team sees. Existing locations stay on file if you narrow it later.
-              </p>
-            </header>
-            <div className={layoutStyles.formWrap}>
-              <ServiceSegmentForm
-                tenantSlug={membership.tenantSlug}
-                serviceSegment={serviceSegment}
-                readOnly={!canEdit}
-              />
-            </div>
-          </section>
-
-          <section
-            className={layoutStyles.settingsSection}
-            id="business-profile"
-            aria-labelledby="business-profile-heading"
-          >
-            <header className={layoutStyles.sectionHeader}>
-              <h3 id="business-profile-heading" className={layoutStyles.sectionTitle}>
-                Business profile
-              </h3>
-              <p className={layoutStyles.sectionLead}>
-                Name, contact info, and timezone used for scheduling and reports.
-              </p>
-            </header>
-            <div className={layoutStyles.formWrap}>
-              <BusinessProfileForm
-                tenantSlug={membership.tenantSlug}
-                snapshot={snapshot}
-                readOnly={!canEdit}
-              />
-            </div>
-          </section>
-
-          <section
-            className={layoutStyles.settingsSection}
-            id="business-branding"
-            aria-labelledby="business-branding-heading"
-          >
-            <header className={layoutStyles.sectionHeader}>
-              <h3 id="business-branding-heading" className={layoutStyles.sectionTitle}>
+          <div className={layoutStyles.shell}>
+            <nav className={layoutStyles.nav} aria-label="Business settings sections">
+              <a className={layoutStyles.navLink} href="#business-services">
+                Services
+              </a>
+              <a className={layoutStyles.navLink} href="#business-profile">
+                Profile
+              </a>
+              <a className={layoutStyles.navLink} href="#business-branding">
                 Branding
-              </h3>
-              <p className={layoutStyles.sectionLead}>
-                Your logo and brand color on customer-facing pages and PDFs.
-              </p>
-            </header>
-            <BrandingForm
-              tenantSlug={membership.tenantSlug}
-              snapshot={snapshot}
-              readOnly={!canEdit}
-            />
-          </section>
+              </a>
+              <a className={layoutStyles.navLink} href="#business-hours">
+                Hours
+              </a>
+              <a className={layoutStyles.navLink} href="#business-address">
+                Address
+              </a>
+            </nav>
 
-          <section
-            className={layoutStyles.settingsSection}
-            id="business-hours"
-            aria-labelledby="business-hours-heading"
-          >
-            <header className={layoutStyles.sectionHeader}>
-              <h3 id="business-hours-heading" className={layoutStyles.sectionTitle}>
-                Hours of operation
-              </h3>
-              <p className={layoutStyles.sectionLead}>
-                Open days and the hours for each day. Scheduling uses these hours when it looks for
-                the next available visit.
-              </p>
-            </header>
-            <div className={layoutStyles.formWrap}>
-              <WorkWeekForm
-                tenantSlug={membership.tenantSlug}
-                snapshot={snapshot}
-                readOnly={!canEdit}
-              />
-            </div>
-          </section>
+            <div className={layoutStyles.main}>
+              <section
+                className={layoutStyles.settingsSection}
+                id="business-services"
+                aria-labelledby="business-services-heading"
+              >
+                <header className={layoutStyles.sectionHeader}>
+                  <h3 id="business-services-heading" className={layoutStyles.sectionTitle}>
+                    Residential, commercial, or both
+                  </h3>
+                  <p className={layoutStyles.sectionLead}>
+                    This chooses which property types, quote tools, booking options, and schedule
+                    presets your team sees. Existing locations stay on file if you narrow it later.
+                  </p>
+                </header>
+                <ServiceSegmentForm
+                  tenantSlug={membership.tenantSlug}
+                  serviceSegment={serviceSegment}
+                  readOnly={!canEdit}
+                />
+              </section>
 
-          <section
-            className={layoutStyles.settingsSection}
-            id="business-address"
-            aria-labelledby="business-address-heading"
-          >
-            <header className={layoutStyles.sectionHeader}>
-              <h3 id="business-address-heading" className={layoutStyles.sectionTitle}>
-                Business address
-              </h3>
-              <p className={layoutStyles.sectionLead}>
-                Your main business location — used on documents and tax summaries when applicable.
-              </p>
-            </header>
-            <div className={layoutStyles.formWrap}>
-              <BusinessAddressForm
-                tenantSlug={membership.tenantSlug}
-                snapshot={snapshot}
-                readOnly={!canEdit}
-                geocodeMessage={missingGeocodeMessage({
-                  reason: tenantRow.geocode_reason,
-                  latitude: tenantRow.latitude,
-                  longitude: tenantRow.longitude,
-                  addressParts: [
-                    tenantRow.address_line1,
-                    tenantRow.city,
-                    tenantRow.state,
-                    tenantRow.postal_code,
-                  ],
-                })}
-              />
+              <section
+                className={layoutStyles.settingsSection}
+                id="business-profile"
+                aria-labelledby="business-profile-heading"
+              >
+                <header className={layoutStyles.sectionHeader}>
+                  <h3 id="business-profile-heading" className={layoutStyles.sectionTitle}>
+                    Business profile
+                  </h3>
+                  <p className={layoutStyles.sectionLead}>
+                    Name, contact info, and timezone used for scheduling and reports.
+                  </p>
+                </header>
+                <BusinessProfileForm
+                  tenantSlug={membership.tenantSlug}
+                  snapshot={snapshot}
+                  readOnly={!canEdit}
+                />
+              </section>
+
+              <section
+                className={layoutStyles.settingsSection}
+                id="business-branding"
+                aria-labelledby="business-branding-heading"
+              >
+                <header className={layoutStyles.sectionHeader}>
+                  <h3 id="business-branding-heading" className={layoutStyles.sectionTitle}>
+                    Branding
+                  </h3>
+                  <p className={layoutStyles.sectionLead}>
+                    Your logo and brand color on customer-facing pages and PDFs.
+                  </p>
+                </header>
+                <BrandingForm
+                  tenantSlug={membership.tenantSlug}
+                  snapshot={snapshot}
+                  readOnly={!canEdit}
+                />
+              </section>
+
+              <section
+                className={layoutStyles.settingsSection}
+                id="business-hours"
+                aria-labelledby="business-hours-heading"
+              >
+                <header className={layoutStyles.sectionHeader}>
+                  <h3 id="business-hours-heading" className={layoutStyles.sectionTitle}>
+                    Hours of operation
+                  </h3>
+                  <p className={layoutStyles.sectionLead}>
+                    Open days and the hours for each day. Scheduling uses these hours when it looks
+                    for the next available visit.
+                  </p>
+                </header>
+                <WorkWeekForm
+                  tenantSlug={membership.tenantSlug}
+                  snapshot={snapshot}
+                  readOnly={!canEdit}
+                />
+              </section>
+
+              <section
+                className={layoutStyles.settingsSection}
+                id="business-address"
+                aria-labelledby="business-address-heading"
+              >
+                <header className={layoutStyles.sectionHeader}>
+                  <h3 id="business-address-heading" className={layoutStyles.sectionTitle}>
+                    Business address
+                  </h3>
+                  <p className={layoutStyles.sectionLead}>
+                    Your main business location — used on documents and tax summaries when
+                    applicable.
+                  </p>
+                </header>
+                <BusinessAddressForm
+                  tenantSlug={membership.tenantSlug}
+                  snapshot={snapshot}
+                  readOnly={!canEdit}
+                  geocodeMessage={missingGeocodeMessage({
+                    reason: tenantRow.geocode_reason,
+                    latitude: tenantRow.latitude,
+                    longitude: tenantRow.longitude,
+                    addressParts: [
+                      tenantRow.address_line1,
+                      tenantRow.city,
+                      tenantRow.state,
+                      tenantRow.postal_code,
+                    ],
+                  })}
+                />
+              </section>
             </div>
-          </section>
+          </div>
         </div>
       </Stack>
     </>

@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import {
   attachBookingCustomer,
+  findCustomerByEmail,
   finalizeInstantBookingRecord,
 } from '@/lib/booking/confirmInstantBooking';
 import { notifyInstantBookingConfirmed } from '@/lib/booking/notifyInstantBooking';
@@ -34,6 +35,35 @@ async function connectAccountId(admin: Admin, tenantId: string): Promise<string 
     .eq('tenant_id', tenantId)
     .maybeSingle();
   return data?.stripe_account_id ?? null;
+}
+
+/** A returning customer who already saved a card on this company can skip a new card setup. */
+export async function customerHasSavedConnectCard(
+  admin: Admin,
+  tenantId: string,
+  email: string,
+): Promise<boolean> {
+  const customerId = await findCustomerByEmail(admin, tenantId, email);
+  if (!customerId) return false;
+  const { data } = await admin
+    .from('tenant_customer_stripe_customers')
+    .select('stripe_customer_id')
+    .eq('tenant_id', tenantId)
+    .eq('customer_id', customerId)
+    .maybeSingle();
+  if (!data?.stripe_customer_id) return false;
+  const account = await connectAccountId(admin, tenantId);
+  const stripe = getStripe();
+  if (!account || !stripe) return false;
+  try {
+    const methods = await stripe.paymentMethods.list(
+      { customer: data.stripe_customer_id, type: 'card', limit: 1 },
+      { stripeAccount: account },
+    );
+    return methods.data.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 export async function startInstantBookingCheckout(

@@ -40,6 +40,8 @@ const publicEnvSchema = z.object({
   // Optional now, required as those features come online.
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  /** Cloudflare Turnstile site key. Public booking checks it when the secret is also set. */
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
 });
 
 // Manually pluck NEXT_PUBLIC_* vars: webpack inlines them at build time, so
@@ -57,6 +59,7 @@ function getPublicEnv(): z.infer<typeof publicEnvSchema> {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   });
 
   if (!parsed.success) {
@@ -180,6 +183,8 @@ const serverEnvSchema = z.object({
   SUPABASE_DISALLOW_PROJECT_REF: z.string().optional(),
   /** Optional. 32-byte base64 key for property gate, door, and garage codes. Never stored in the database. */
   PROPERTY_ACCESS_CODE_KEY: z.string().optional(),
+  /** Cloudflare Turnstile secret. With the site key, public booking requires a passing check. */
+  TURNSTILE_SECRET_KEY: z.string().optional(),
 });
 
 // We lazy-instantiate so importing this module from a client component does

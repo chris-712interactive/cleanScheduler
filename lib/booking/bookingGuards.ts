@@ -82,9 +82,32 @@ export function bookingReturnState(status: string | null | undefined): BookingRe
 export function publicSlotPayload(slot: {
   token: string;
   label: string;
+  dateLabel: string;
+  timeLabel: string;
   assigneeUserId?: string;
-}): { token: string; label: string } {
-  return { token: slot.token, label: slot.label };
+}): { token: string; label: string; dateLabel: string; timeLabel: string } {
+  return {
+    token: slot.token,
+    label: slot.label,
+    dateLabel: slot.dateLabel,
+    timeLabel: slot.timeLabel,
+  };
+}
+
+/** Keep chronological slots under the first date heading they belong to. */
+export function groupSlotsByDate<T extends { dateLabel: string }>(
+  slots: T[],
+): { date: string; slots: T[] }[] {
+  const groups: { date: string; slots: T[] }[] = [];
+  for (const slot of slots) {
+    const current = groups[groups.length - 1];
+    if (current && current.date === slot.dateLabel) {
+      current.slots.push(slot);
+    } else {
+      groups.push({ date: slot.dateLabel, slots: [slot] });
+    }
+  }
+  return groups;
 }
 
 /**
@@ -107,6 +130,21 @@ export function rateLimitWindowStartMs(nowMs: number, windowMs: number): number 
 
 export function rateLimitAllows(hitCount: number, limit: number): boolean {
   return hitCount <= limit;
+}
+
+/** A visit is placed only after a deposit charge or a saved card. */
+export function instantBookingPlacesVisit(input: {
+  depositCents: number;
+  collectCard: boolean;
+}): boolean {
+  return input.depositCents > 0 || input.collectCard;
+}
+
+/** A hold with no expiry, or an expiry still in the future, blocks another hold. */
+export function openHoldStillActive(holdExpiresAt: string | null, nowMs: number): boolean {
+  if (!holdExpiresAt) return true;
+  const expiresAt = new Date(holdExpiresAt).getTime();
+  return !Number.isFinite(expiresAt) || expiresAt > nowMs;
 }
 
 export function firstVisitAndRecurringCents(

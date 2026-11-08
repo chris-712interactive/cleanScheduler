@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeInstantSlots } from '@/lib/booking/computeInstantSlots';
+import { computeInstantSlots, findMatchingInstantSlot } from '@/lib/booking/computeInstantSlots';
 import { localWallClockInTimeZoneToUtcIso } from '@/lib/schedule/nextWorkDayVisitWindow';
 import type { EffectiveMemberSchedule } from '@/lib/tenant/memberAvailabilityDays';
 
@@ -131,5 +131,22 @@ describe('computeInstantSlots', () => {
     });
     expect(open.map((slot) => slot.startsAt)).not.toContain(atLocal(8));
     expect(open.map((slot) => slot.startsAt)).toContain(atLocal(12));
+  });
+});
+
+describe('findMatchingInstantSlot', () => {
+  it('matches a database timestamp that writes the same instant with an offset', () => {
+    const slot = {
+      startsAt: '2026-11-09T13:00:00.000Z',
+      endsAt: '2026-11-09T15:00:00.000Z',
+      assigneeUserId: 'crew-a',
+    };
+    expect(
+      findMatchingInstantSlot([slot], {
+        startsAt: '2026-11-09T13:00:00+00:00',
+        endsAt: '2026-11-09T15:00:00+00:00',
+        assigneeUserId: 'crew-a',
+      }),
+    ).toBe(slot);
   });
 });

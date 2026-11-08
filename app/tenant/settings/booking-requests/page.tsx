@@ -67,9 +67,10 @@ export default async function TenantBookingRequestsSettingsPage() {
           .order('name', { ascending: true }),
         admin
           .from('tenant_service_templates')
-          .select('id, name')
+          .select('id, name, job_type, sort_order')
           .eq('tenant_id', membership.tenantId)
           .eq('is_active', true)
+          .order('sort_order', { ascending: true })
           .order('name', { ascending: true }),
       ])
     : [
@@ -138,32 +139,42 @@ export default async function TenantBookingRequestsSettingsPage() {
                 name: zone.name,
                 postalCodes: coverageByZone.get(zone.id) ?? '',
               }))}
-            />
-            {mode === 'instant' ? (
-              <InstantBookingOffers
-                tenantSlug={membership.tenantSlug}
-                readOnly={!canEdit}
-                allowPerSqft={capabilitiesForSegment(ops?.service_segment).sqftBids}
-                allowBedsBaths={capabilitiesForSegment(ops?.service_segment).showBedsBaths}
-                zones={(zones ?? []).map((zone) => ({ id: zone.id, name: zone.name }))}
-                plans={plans ?? []}
-                templates={templates ?? []}
-                offers={(offers ?? []).map((offer) => ({
-                  id: offer.id,
-                  name: offer.name,
-                  durationMinutes: offer.duration_minutes,
-                  pricingMethod: offer.pricing_method,
-                  baseDollars: formatCentsAsDollars(offer.base_amount_cents),
-                  perSqftDollars: formatCentsAsDollars(offer.per_sqft_cents),
-                  perBedroomDollars: formatCentsAsDollars(offer.per_bedroom_cents),
-                  perBathroomDollars: formatCentsAsDollars(offer.per_bathroom_cents),
-                  servicePlanId: offer.service_plan_id ?? '',
-                  serviceTemplateId: offer.service_template_id ?? '',
-                  zoneIds: offer.zone_ids ?? [],
-                  isActive: offer.is_active,
-                }))}
-              />
-            ) : null}
+            >
+              {mode === 'instant' ? (
+                <InstantBookingOffers
+                  tenantSlug={membership.tenantSlug}
+                  readOnly={!canEdit}
+                  allowPerSqft={capabilitiesForSegment(ops?.service_segment).sqftBids}
+                  allowBedsBaths={capabilitiesForSegment(ops?.service_segment).showBedsBaths}
+                  zones={(zones ?? []).map((zone) => ({ id: zone.id, name: zone.name }))}
+                  plans={plans ?? []}
+                  templates={[...(templates ?? [])]
+                    .sort(
+                      (left, right) =>
+                        left.sort_order - right.sort_order || left.name.localeCompare(right.name),
+                    )
+                    .map((template) => ({
+                      id: template.id,
+                      name: template.name,
+                      jobType: template.job_type,
+                    }))}
+                  offers={(offers ?? []).map((offer) => ({
+                    id: offer.id,
+                    name: offer.name,
+                    durationMinutes: offer.duration_minutes,
+                    pricingMethod: offer.pricing_method,
+                    baseDollars: formatCentsAsDollars(offer.base_amount_cents),
+                    perSqftDollars: formatCentsAsDollars(offer.per_sqft_cents),
+                    perBedroomDollars: formatCentsAsDollars(offer.per_bedroom_cents),
+                    perBathroomDollars: formatCentsAsDollars(offer.per_bathroom_cents),
+                    servicePlanId: offer.service_plan_id ?? '',
+                    serviceTemplateId: offer.service_template_id ?? '',
+                    zoneIds: offer.zone_ids ?? [],
+                    isActive: offer.is_active,
+                  }))}
+                />
+              ) : null}
+            </BookingRequestSettingsForm>
           </>
         )}
       </Stack>

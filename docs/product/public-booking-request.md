@@ -8,7 +8,9 @@
 
 A lite public **quote / booking request** form at `https://{tenant-slug}.{apex}/book` (also `/request`). Submissions create `tenant_marketing_leads` rows with `source = quote_request` and email the office.
 
-This is **not** the only public booking mode. Settings → Online booking can turn the page off or switch it to instant self-booking. See `docs/product/instant-online-booking.md`.
+This is **not** the only public booking mode. Settings → Online booking can turn the page off or switch it to instant self-booking. See `docs/product/instant-online-booking.md`. Instant booking that does not require a deposit or a saved card shows this same request form, and that submit is accepted.
+
+A honeypot field drops bot posts. The same email can send 5 requests an hour, and the same IP address can send 5 an hour. When `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are both set, the form also requires a Cloudflare Turnstile check.
 
 ## Tenant setup
 

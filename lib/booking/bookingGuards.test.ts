@@ -10,6 +10,9 @@ import {
   emailsEqual,
   escapeIlikePattern,
   firstVisitAndRecurringCents,
+  groupSlotsByDate,
+  instantBookingPlacesVisit,
+  openHoldStillActive,
   paidCustomerCreateDisposition,
   previewFeedback,
   previewMatchesOffer,
@@ -176,10 +179,39 @@ describe('booking QA guards', () => {
     expect(
       publicSlotPayload({
         token: 'tok_abc',
-        label: 'Wednesday at 9:00 AM',
+        label: 'Wednesday, May 12 at 9:00 AM',
+        dateLabel: 'Wednesday, May 12',
+        timeLabel: '9:00 AM',
         assigneeUserId: 'user-1',
       }),
-    ).toEqual({ token: 'tok_abc', label: 'Wednesday at 9:00 AM' });
+    ).toEqual({
+      token: 'tok_abc',
+      label: 'Wednesday, May 12 at 9:00 AM',
+      dateLabel: 'Wednesday, May 12',
+      timeLabel: '9:00 AM',
+    });
+  });
+
+  it('groups open times under the day they belong to', () => {
+    expect(
+      groupSlotsByDate([
+        { token: 'a', dateLabel: 'Monday, November 9', timeLabel: '8:00 AM' },
+        { token: 'b', dateLabel: 'Monday, November 9', timeLabel: '8:30 AM' },
+        { token: 'c', dateLabel: 'Tuesday, November 10', timeLabel: '8:00 AM' },
+      ]),
+    ).toEqual([
+      {
+        date: 'Monday, November 9',
+        slots: [
+          { token: 'a', dateLabel: 'Monday, November 9', timeLabel: '8:00 AM' },
+          { token: 'b', dateLabel: 'Monday, November 9', timeLabel: '8:30 AM' },
+        ],
+      },
+      {
+        date: 'Tuesday, November 10',
+        slots: [{ token: 'c', dateLabel: 'Tuesday, November 10', timeLabel: '8:00 AM' }],
+      },
+    ]);
   });
 
   it('uses the platform client IP instead of a spoofed forwarded hop', () => {
@@ -194,6 +226,19 @@ describe('booking QA guards', () => {
     expect(rateLimitWindowStartMs(1_000_500, 1_000)).toBe(1_000_000);
     expect(rateLimitAllows(5, 5)).toBe(true);
     expect(rateLimitAllows(6, 5)).toBe(false);
+  });
+
+  it('places an instant visit only when a deposit or a saved card is required', () => {
+    expect(instantBookingPlacesVisit({ depositCents: 0, collectCard: false })).toBe(false);
+    expect(instantBookingPlacesVisit({ depositCents: 5000, collectCard: false })).toBe(true);
+    expect(instantBookingPlacesVisit({ depositCents: 0, collectCard: true })).toBe(true);
+  });
+
+  it('blocks a second hold while the first one is still open', () => {
+    const now = Date.parse('2026-11-07T18:00:00.000Z');
+    expect(openHoldStillActive(null, now)).toBe(true);
+    expect(openHoldStillActive('2026-11-07T18:20:00.000Z', now)).toBe(true);
+    expect(openHoldStillActive('2026-11-07T17:00:00.000Z', now)).toBe(false);
   });
 });
 

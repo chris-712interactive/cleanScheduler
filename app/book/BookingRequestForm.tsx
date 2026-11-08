@@ -1,10 +1,11 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitBookingRequestAction, type BookingRequestActionState } from './actions';
 import type { BookingServiceOption } from '@/lib/tenant/serviceSegment';
+import { BookingTurnstile } from './BookingTurnstile';
 import styles from './book.module.scss';
 
 const initial: BookingRequestActionState = {};
@@ -12,11 +13,14 @@ const initial: BookingRequestActionState = {};
 export function BookingRequestForm({
   tenantSlug,
   services,
+  turnstileSiteKey = null,
 }: {
   tenantSlug: string;
   services: BookingServiceOption[];
+  turnstileSiteKey?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(submitBookingRequestAction, initial);
+  const [challengeToken, setChallengeToken] = useState('');
   useFeedbackToast({
     error: state.error,
     success: state.success,
@@ -93,7 +97,12 @@ export function BookingRequestForm({
         <span>How can we help?</span>
         <textarea name="message" rows={4} required disabled={pending} />
       </label>
-      <Button type="submit" variant="primary" disabled={pending}>
+      <BookingTurnstile siteKey={turnstileSiteKey} onToken={setChallengeToken} />
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={pending || (Boolean(turnstileSiteKey) && !challengeToken)}
+      >
         {pending ? 'Sending…' : 'Request a quote'}
       </Button>
     </form>

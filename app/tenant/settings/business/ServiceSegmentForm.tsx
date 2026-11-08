@@ -6,7 +6,7 @@ import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { SERVICE_SEGMENT_OPTIONS, type TenantServiceSegment } from '@/lib/tenant/serviceSegment';
 import { SettingsSaveButton } from '../SettingsSaveButton';
 import { updateServiceSegmentAction, type BusinessSettingsActionState } from './businessActions';
-import styles from '../settings.module.scss';
+import layoutStyles from './business-settings.module.scss';
 
 const initial: BusinessSettingsActionState = {};
 
@@ -27,22 +27,26 @@ export function ServiceSegmentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.settingsForm}>
+    <form onSubmit={handleSubmit} className={layoutStyles.form}>
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
-      <fieldset className={styles.settingsForm} disabled={readOnly}>
-        <legend className={styles.fieldLabel}>Services you offer</legend>
-        {SERVICE_SEGMENT_OPTIONS.map((option) => (
-          <label key={option.value} className={styles.fieldLabel}>
-            <input
-              type="radio"
-              name="service_segment"
-              value={option.value}
-              defaultChecked={serviceSegment === option.value}
-            />{' '}
-            {option.label}
-            <span className={styles.fieldHint}>{option.hint}</span>
-          </label>
-        ))}
+      <fieldset className={layoutStyles.choiceFieldset} disabled={readOnly}>
+        <legend className={layoutStyles.visuallyHidden}>Services you offer</legend>
+        <div className={layoutStyles.choiceGrid}>
+          {SERVICE_SEGMENT_OPTIONS.map((option) => (
+            <label key={option.value} className={layoutStyles.choiceCard}>
+              <input
+                type="radio"
+                name="service_segment"
+                value={option.value}
+                defaultChecked={serviceSegment === option.value}
+              />
+              <span>
+                <span className={layoutStyles.choiceTitle}>{option.label}</span>
+                <span className={layoutStyles.choiceHint}>{option.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
       </fieldset>
       {readOnly ? null : <SettingsSaveButton pending={pending} />}
     </form>
