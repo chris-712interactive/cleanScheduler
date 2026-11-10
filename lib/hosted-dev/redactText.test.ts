@@ -40,6 +40,14 @@ describe('hosted dev artifact redaction', () => {
   });
 });
 
+function jobSource(workflow: string, name: string): string {
+  const start = workflow.indexOf(`\n  ${name}:\n`);
+  if (start < 0) throw new Error(`missing job ${name}`);
+  const rest = workflow.slice(start + 1);
+  const next = rest.indexOf('\n  hosted-dev-', 1);
+  return next < 0 ? rest : rest.slice(0, next);
+}
+
 describe('hosted dev workflow contract', () => {
   const workflow = readFileSync('.github/workflows/hosted-dev.yml', 'utf8');
 
@@ -59,7 +67,19 @@ describe('hosted dev workflow contract', () => {
     expect(workflow).toContain('npm ci --ignore-scripts');
     expect(workflow).not.toContain('pull_request');
     expect(workflow).not.toContain('workflow_run');
-    const smoke = workflow.split('hosted-dev-isolated')[0] ?? '';
+    expect(workflow).not.toContain('A copy that exists only on dev does not run');
+
+    const smoke = jobSource(workflow, 'hosted-dev-smoke');
+    const isolated = jobSource(workflow, 'hosted-dev-isolated');
     expect(smoke).not.toContain('secrets.');
+    expect(smoke).not.toContain('environment:');
+    expect(smoke).not.toContain('hosted-dev-isolated');
+    expect(isolated).toContain('environment: hosted-dev-isolated');
+    expect(isolated).toContain('secrets.QA_TENANT_RESIDENTIAL_PASSWORD');
+    expect(isolated).toContain("vars.HOSTED_DEV_ISOLATED == '1'");
+    expect(isolated).toContain("endsWith(github.workflow_ref, '@refs/heads/main')");
+    expect(workflow.match(/^ {4}environment: hosted-dev-isolated$/gm)).toEqual([
+      '    environment: hosted-dev-isolated',
+    ]);
   });
 });
