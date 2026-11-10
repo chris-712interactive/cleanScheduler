@@ -18,8 +18,12 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
-# Test coverage
+# Test coverage and hosted-dev artifacts
 coverage/
+hosted-dev-results/
+test-results/
+playwright-report/
+blob-report/
 
 # Environment files
 .env

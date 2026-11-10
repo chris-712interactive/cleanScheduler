@@ -1,0 +1,187 @@
+name: Hosted dev
+
+# GitHub only reads this file from the default branch (main) for deployment_status
+# and workflow_dispatch. A copy that exists only on dev does not run.
+# Smoke never receives repository credentials. It checks out the dev tip.
+# Isolated runs only from this file's copy on main, checks out that same
+# trusted main tree (not the deployed commit), and only when
+# HOSTED_DEV_ISOLATED is 1. The candidate SHA must be the current origin/dev
+# tip. Automatic runs do not receive a database URL.
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      git_sha:
+        description: Deployed dev commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hosted-dev
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && endsWith(github.workflow_ref, '@refs/heads/main')) ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'dev' &&
+       github.event.deployment.task == 'deploy' &&
+       github.event.deployment.production_environment == false &&
+       github.event.deployment.transient_environment == false &&
+       github.event.deployment.creator.login == 'vercel[bot]' &&
+       (github.event.deployment.ref == github.event.deployment.sha ||
+        github.event.deployment.ref == 'dev' ||
+        github.event.deployment.ref == 'refs/heads/dev'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.check.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: true
+      - id: check
+        env:
+          CANDIDATE_SHA: ${{ github.event.deployment.sha || github.event.inputs.git_sha }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$CANDIDATE_SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "Refusing a value that is not a commit SHA." >&2
+            exit 1
+          fi
+          ok=0
+          for _ in 1 2 3 4 5; do
+            git fetch origin dev
+            if [ "$(git rev-parse origin/dev)" = "$CANDIDATE_SHA" ]; then
+              ok=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "Refusing a commit that is not the current origin/dev tip." >&2
+            exit 1
+          fi
+          echo "sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+
+  hosted-dev-smoke:
+    needs: authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.authorize.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.22.1
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Read-only hosted dev smoke
+        env:
+          HOSTED_DEV_BASE_URL: https://dev.cleanscheduler.com
+          HOSTED_DEV_EXPECT_SHA: ${{ needs.authorize.outputs.sha }}
+          HOSTED_DEV_BOOKING_URL: ${{ vars.HOSTED_DEV_BOOKING_URL }}
+          HOSTED_DEV_DENY_SUPABASE_PROJECT_REF: ${{ vars.HOSTED_DEV_DENY_SUPABASE_PROJECT_REF }}
+        run: npm run test:hosted-dev
+      - if: always()
+        run: |
+          if [ -f hosted-dev-results/report.md ]; then
+            cat hosted-dev-results/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -d hosted-dev-results ] && [ ! -f hosted-dev-results/.redaction-complete ]; then
+            find hosted-dev-results -type f \( -name '*.zip' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.webp' \) -delete
+          fi
+      - if: always() && hashFiles('hosted-dev-results/.redaction-complete') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hosted-dev-smoke-${{ needs.authorize.outputs.sha }}
+          path: hosted-dev-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  hosted-dev-isolated:
+    needs: [authorize, hosted-dev-smoke]
+    if: >-
+      needs.hosted-dev-smoke.result == 'success' &&
+      vars.HOSTED_DEV_ISOLATED == '1' &&
+      endsWith(github.workflow_ref, '@refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: refs/heads/main
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Require the deployed SHA to still be the dev tip
+        env:
+          EXPECT_SHA: ${{ needs.authorize.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin dev
+          if [ "$(git rev-parse origin/dev)" != "$EXPECT_SHA" ]; then
+            echo "Refusing secrets because origin/dev is no longer the deployed SHA." >&2
+            exit 1
+          fi
+          git config --unset-all http.https://github.com/.extraheader || true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.22.1
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Opt-in isolated reads and RLS
+        env:
+          HOSTED_DEV_BASE_URL: https://dev.cleanscheduler.com
+          HOSTED_DEV_EXPECT_SHA: ${{ needs.authorize.outputs.sha }}
+          HOSTED_DEV_ISOLATED: '1'
+          HOSTED_DEV_MUTATIONS: ${{ vars.HOSTED_DEV_MUTATIONS }}
+          HOSTED_DEV_DENY_SUPABASE_PROJECT_REF: ${{ vars.HOSTED_DEV_DENY_SUPABASE_PROJECT_REF }}
+          QA_TENANT_RESIDENTIAL_EMAIL: ${{ secrets.QA_TENANT_RESIDENTIAL_EMAIL }}
+          QA_TENANT_RESIDENTIAL_PASSWORD: ${{ secrets.QA_TENANT_RESIDENTIAL_PASSWORD }}
+          QA_TENANT_RESIDENTIAL_SLUG: ${{ secrets.QA_TENANT_RESIDENTIAL_SLUG }}
+          QA_TENANT_RESIDENTIAL_SEGMENT: ${{ vars.QA_TENANT_RESIDENTIAL_SEGMENT }}
+          QA_TENANT_COMMERCIAL_EMAIL: ${{ secrets.QA_TENANT_COMMERCIAL_EMAIL }}
+          QA_TENANT_COMMERCIAL_PASSWORD: ${{ secrets.QA_TENANT_COMMERCIAL_PASSWORD }}
+          QA_TENANT_COMMERCIAL_SLUG: ${{ secrets.QA_TENANT_COMMERCIAL_SLUG }}
+          QA_TENANT_COMMERCIAL_SEGMENT: ${{ vars.QA_TENANT_COMMERCIAL_SEGMENT }}
+          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
+          QA_ADMIN_PASSWORD: ${{ secrets.QA_ADMIN_PASSWORD }}
+          QA_CUSTOMER_EMAIL: ${{ secrets.QA_CUSTOMER_EMAIL }}
+          QA_CUSTOMER_PASSWORD: ${{ secrets.QA_CUSTOMER_PASSWORD }}
+          QA_DEV_SUPABASE_URL: ${{ secrets.QA_DEV_SUPABASE_URL }}
+          QA_DEV_SUPABASE_ANON_KEY: ${{ secrets.QA_DEV_SUPABASE_ANON_KEY }}
+          QA_RLS_TENANT_A_ID: ${{ secrets.QA_RLS_TENANT_A_ID }}
+          QA_RLS_TENANT_B_ID: ${{ secrets.QA_RLS_TENANT_B_ID }}
+          QA_RLS_MARKER_A: ${{ secrets.QA_RLS_MARKER_A }}
+          QA_RLS_MARKER_B: ${{ secrets.QA_RLS_MARKER_B }}
+          QA_RLS_USER_A_EMAIL: ${{ secrets.QA_RLS_USER_A_EMAIL }}
+          QA_RLS_USER_A_PASSWORD: ${{ secrets.QA_RLS_USER_A_PASSWORD }}
+          QA_RLS_USER_B_EMAIL: ${{ secrets.QA_RLS_USER_B_EMAIL }}
+          QA_RLS_USER_B_PASSWORD: ${{ secrets.QA_RLS_USER_B_PASSWORD }}
+        run: npm run test:hosted-dev:isolated
+      - if: always()
+        run: |
+          if [ -f hosted-dev-results/report.md ]; then
+            cat hosted-dev-results/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -d hosted-dev-results ] && [ ! -f hosted-dev-results/.redaction-complete ]; then
+            find hosted-dev-results -type f \( -name '*.zip' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.webp' \) -delete
+          fi
+      - if: always() && hashFiles('hosted-dev-results/.redaction-complete') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hosted-dev-isolated-${{ needs.authorize.outputs.sha }}
+          path: hosted-dev-results
+          retention-days: 7
+          if-no-files-found: ignore
