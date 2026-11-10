@@ -73,9 +73,12 @@ describe('deployment identity', () => {
     expect(
       decideIdentity({
         httpStatus: 200,
-        body: { ...devIdentity, vercelEnv: 'production', targetEnv: null },
+        body: { ...devIdentity, vercelEnv: 'production', targetEnv: 'dev' },
       }),
     ).toMatchObject({ reason: expect.stringMatching(/production/) });
+    expect(
+      decideIdentity({ httpStatus: 200, body: { ...devIdentity, gitRef: null } }),
+    ).toMatchObject({ reason: expect.stringMatching(/missing/) });
     expect(
       decideIdentity({
         httpStatus: 200,

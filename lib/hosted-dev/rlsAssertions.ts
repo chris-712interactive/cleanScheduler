@@ -22,6 +22,30 @@ export function assertTenantId(tenantId: string): void {
   }
 }
 
+/** Platform admins bypass tenant RLS. The access token is the one Auth just issued. */
+export function platformAdminFixtureBlock(accessToken: string): string | null {
+  const segment = accessToken.split('.')[1];
+  if (!segment) return 'BLOCKED: fixture auth token is not a JWT.';
+  let payload: unknown;
+  try {
+    payload = JSON.parse(Buffer.from(segment, 'base64url').toString('utf8'));
+  } catch {
+    return 'BLOCKED: fixture auth token payload could not be read.';
+  }
+  if (!payload || typeof payload !== 'object') {
+    return 'BLOCKED: fixture auth token payload could not be read.';
+  }
+  const record = payload as { app_metadata?: { app_role?: unknown }; role?: unknown };
+  const appRole = record.app_metadata?.app_role;
+  if (appRole === 'admin' || appRole === 'super_admin') {
+    return 'BLOCKED: fixture user is a platform admin, so tenant RLS would not apply.';
+  }
+  if (record.role === 'service_role') {
+    return 'BLOCKED: fixture token is the service role, so tenant RLS would not apply.';
+  }
+  return null;
+}
+
 export function quoteProbePath(filter: { title?: string; tenantId?: string }): string {
   if (!filter.title && !filter.tenantId) {
     throw new Error('BLOCKED: quote probe needs a marker or a tenant id.');

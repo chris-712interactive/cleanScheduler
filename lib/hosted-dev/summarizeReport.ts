@@ -8,6 +8,8 @@ export type ReportSection = {
   detail: string;
 };
 
+type PwResult = { status?: string; error?: { message?: string } };
+
 type PwSuite = {
   title?: string;
   suites?: PwSuite[];
@@ -15,7 +17,8 @@ type PwSuite = {
     title?: string;
     ok?: boolean;
     tests?: {
-      results?: { status?: string; error?: { message?: string } }[];
+      status?: string;
+      results?: PwResult[];
     }[];
   }[];
 };
@@ -27,19 +30,38 @@ export type HostedDevReport = {
   blockedNotPassed: ReportSection[];
 };
 
+const IDENTITY_SPEC = 'deployment identity is hosted dev';
+const MUTATION_SPEC = 'mutation and payment coverage is refused';
+const MUTATION_ROW = 'mutations, payments, refunds, bank links, sends, and cron';
+
+function skipped(spec: NonNullable<PwSuite['specs']>[number]): boolean {
+  return (spec.tests ?? []).some(
+    (test) =>
+      test.status === 'skipped' ||
+      (test.results ?? []).some((result) => result.status === 'skipped'),
+  );
+}
+
 function walk(suite: PwSuite, into: ReportSection[]): void {
   for (const spec of suite.specs ?? []) {
     const result = spec.tests?.[0]?.results?.at(-1);
     const message = result?.error?.message ?? '';
-    const status: SectionStatus = spec.ok
-      ? 'pass'
-      : message.includes('BLOCKED:')
-        ? 'blocked'
-        : 'fail';
+    const status: SectionStatus = skipped(spec)
+      ? 'fail'
+      : spec.ok
+        ? 'pass'
+        : message.includes('BLOCKED:')
+          ? 'blocked'
+          : 'fail';
     into.push({
       id: spec.title ?? 'untitled',
       status,
-      detail: status === 'pass' ? 'executed' : message.split('\n')[0]?.slice(0, 400) || status,
+      detail:
+        status === 'pass'
+          ? 'executed'
+          : skipped(spec)
+            ? 'Skipped. Not a pass.'
+            : message.split('\n')[0]?.slice(0, 400) || status,
     });
   }
   for (const child of suite.suites ?? []) walk(child, into);
@@ -76,17 +98,33 @@ export function catalogBlocked(env: Record<string, string | undefined>): ReportS
     blocked.push({
       id: 'direct SQL RLS',
       status: 'blocked',
-      detail: 'QA_DEV_DATABASE_URL is not set. Direct SQL RLS did not run.',
-    });
-  }
-  if (env.HOSTED_DEV_MUTATIONS !== '1') {
-    blocked.push({
-      id: 'mutations, payments, refunds, bank links, sends, and cron',
-      status: 'blocked',
-      detail: mutationGate().reason,
+      detail:
+        'QA_DEV_DATABASE_URL is not set. Direct SQL RLS did not run. Automatic GitHub runs do not receive this URL.',
     });
   }
   return blocked;
+}
+
+function missingIsolatedRows(
+  executed: ReportSection[],
+  env: Record<string, string | undefined>,
+): ReportSection[] {
+  if (env.HOSTED_DEV_ISOLATED !== '1') return [];
+  const titles = executed.map((section) => section.id).join('\n');
+  const required: { id: string; present: RegExp }[] = [
+    {
+      id: 'authenticated tenant, admin, and customer reads',
+      present: /residential workspace|commercial workspace|platform admin|customer portal/i,
+    },
+    { id: 'cross-tenant RLS', present: /cross-tenant quote/i },
+  ];
+  return required
+    .filter((row) => !row.present.test(titles))
+    .map((row) => ({
+      id: row.id,
+      status: 'fail' as const,
+      detail: 'Not executed. Setup failed or the result file has no row. Not a pass.',
+    }));
 }
 
 export function buildHostedDevReport(input: {
@@ -95,29 +133,33 @@ export function buildHostedDevReport(input: {
   env: Record<string, string | undefined>;
   identityNote: string;
 }): HostedDevReport {
-  const executed = sectionsFromPlaywright(input.playwright);
-  const blockedNotPassed = [
-    ...executed.filter((section) => section.status === 'blocked'),
-    ...catalogBlocked(input.env),
-  ];
-  const failed = executed.some(
-    (section) => section.status === 'fail' || section.status === 'blocked',
+  const executed = sectionsFromPlaywright(input.playwright).filter(
+    (section) => section.id !== MUTATION_SPEC,
   );
+  const identity: ReportSection = {
+    id: 'deployment identity',
+    status: input.identityNote.startsWith('ok') ? 'pass' : 'fail',
+    detail: input.identityNote,
+  };
+  const mutations: ReportSection = {
+    id: MUTATION_ROW,
+    status: 'blocked',
+    detail: mutationGate().reason,
+  };
+  const gaps = missingIsolatedRows(executed, input.env);
   const sections: ReportSection[] = [
-    {
-      id: 'deployment identity',
-      status: input.identityNote.startsWith('ok')
-        ? 'pass'
-        : input.identityNote.startsWith('missing')
-          ? 'fail'
-          : 'fail',
-      detail: input.identityNote,
-    },
-    ...executed.filter((section) => section.id !== 'deployment identity is hosted dev'),
+    identity,
+    ...executed.filter((section) => section.id !== IDENTITY_SPEC),
+    ...gaps,
     ...catalogBlocked(input.env),
+    mutations,
   ];
+  const blockedNotPassed = sections.filter((section) => section.status !== 'pass');
+  const mutationsRequested = input.env.HOSTED_DEV_MUTATIONS === '1';
+  const executedProblem = executed.some((section) => section.status !== 'pass');
+  const failed = sections.some((section) => section.status === 'fail');
   return {
-    overall: failed || sections.some((section) => section.status === 'fail') ? 'fail' : 'pass',
+    overall: executedProblem || failed || gaps.length > 0 || mutationsRequested ? 'fail' : 'pass',
     target: input.target,
     sections,
     blockedNotPassed,
@@ -130,7 +172,7 @@ export function renderHostedDevReport(report: HostedDevReport): string {
     '',
     `Target: ${report.target}`,
     '',
-    'Blocked items were not treated as passed.',
+    'Blocked and failed items were not treated as passed.',
     '',
     '| Section | Status | Detail |',
     '| --- | --- | --- |',

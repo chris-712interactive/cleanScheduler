@@ -5,7 +5,7 @@ import { redactText, secretsFromEnv } from '../../lib/hosted-dev/redactText.ts';
 
 const root = 'hosted-dev-results';
 const secrets = secretsFromEnv(process.env);
-const textExtensions = new Set(['.json', '.md', '.txt', '.log', '.yml']);
+const textExtensions = new Set(['.json', '.md', '.txt', '.log', '.yml', '.html', '.htm', '.har']);
 
 async function walk(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true }).catch(() => []);
@@ -35,26 +35,38 @@ function redactZip(filePath: string): Promise<void> {
 const PYTHON = String.raw`
 import os, sys, zipfile, tempfile, shutil, re
 path = sys.argv[1]
-secrets = [s for s in os.environ.get("HOSTED_DEV_REDACT_SECRETS", "").split("\n") if len(s) >= 8]
+secrets = [s for s in os.environ.get("HOSTED_DEV_REDACT_SECRETS", "").split("\n") if s]
 secrets.sort(key=len, reverse=True)
 email = re.compile(rb"[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}", re.I)
 jwt = re.compile(rb"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}")
-stripe = re.compile(rb"(?:sk|pk|rk|whsec)_(?:live|test)_[A-Za-z0-9]+")
+stripe = re.compile(rb"(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]+")
+webhook = re.compile(rb"whsec_[A-Za-z0-9]+")
+supabase_secret = re.compile(rb"sb_secret_[A-Za-z0-9_\-]+")
 postgres = re.compile(rb"postgres(?:ql)?://\S+")
-text_ext = (".json", ".txt", ".log", ".md", ".trace", ".network", ".stacks")
+text_ext = (".json", ".txt", ".log", ".md", ".html", ".htm", ".har", ".trace", ".network", ".stacks", ".yml")
+binary_ext = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
 tmp = tempfile.mkdtemp()
 out = os.path.join(tmp, "redacted.zip")
+omitted = []
 with zipfile.ZipFile(path, "r") as src, zipfile.ZipFile(out, "w") as dst:
     for info in src.infolist():
+        name = info.filename.lower()
+        if name.endswith(binary_ext):
+            omitted.append(info.filename)
+            continue
         data = src.read(info.filename)
-        if info.filename.lower().endswith(text_ext) or info.filename.endswith(".trace"):
+        if name.endswith(text_ext) or name.endswith(".trace"):
             for secret in secrets:
                 data = data.replace(secret.encode(), b"[redacted]")
             data = postgres.sub(b"[redacted-database-url]", data)
             data = stripe.sub(b"[redacted-stripe]", data)
+            data = webhook.sub(b"[redacted-webhook]", data)
+            data = supabase_secret.sub(b"[redacted-supabase-secret]", data)
             data = jwt.sub(b"[redacted-jwt]", data)
             data = email.sub(b"[redacted-email]", data)
         dst.writestr(info, data)
+    if omitted:
+        dst.writestr("redacted-omitted-binaries.txt", "\n".join(omitted).encode())
 os.replace(out, path)
 shutil.rmtree(tmp)
 `;

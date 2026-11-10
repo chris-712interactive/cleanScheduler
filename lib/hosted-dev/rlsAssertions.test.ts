@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertFixtureMarker,
   assertViewerIsolation,
+  platformAdminFixtureBlock,
   quoteProbePath,
 } from '@/lib/hosted-dev/rlsAssertions';
 
@@ -52,4 +53,17 @@ describe('cross-tenant quote assertions', () => {
     expect(leaked).toMatchObject({ ok: false, kind: 'fail' });
     expect(assertFixtureMarker('qa-hosted-dev-a')).toBeUndefined();
   });
+
+  it('blocks a platform-admin fixture token and allows a customer token', () => {
+    const admin = jwt({ app_metadata: { app_role: 'super_admin' } });
+    const customer = jwt({ app_metadata: { app_role: 'customer' }, role: 'authenticated' });
+    expect(platformAdminFixtureBlock(admin)).toMatch(/platform admin/);
+    expect(platformAdminFixtureBlock(customer)).toBeNull();
+    expect(platformAdminFixtureBlock('not-a-jwt')).toMatch(/not a JWT/);
+  });
 });
+
+function jwt(payload: object): string {
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  return `header.${body}.sig`;
+}

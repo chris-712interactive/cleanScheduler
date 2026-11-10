@@ -130,13 +130,16 @@ export function decideIdentity(input: {
   if (identity.plaidEnv === 'production') {
     return { status: 'reject', reason: 'Plaid environment is production.' };
   }
-  if (identity.gitRef && identity.gitRef !== 'dev') {
-    return { status: 'reject', reason: 'Deployed git ref is not dev.' };
+  if (identity.gitRef !== 'dev') {
+    return {
+      status: 'reject',
+      reason: identity.gitRef ? 'Deployed git ref is not dev.' : 'Deployed git ref is missing.',
+    };
   }
   if (identity.targetEnv && identity.targetEnv !== 'dev') {
     return { status: 'reject', reason: 'Vercel target environment is not dev.' };
   }
-  if (identity.vercelEnv === 'production' && identity.targetEnv !== 'dev') {
+  if (identity.vercelEnv === 'production') {
     return { status: 'reject', reason: 'Vercel environment is production.' };
   }
   if (identity.supabaseHost && !SUPABASE_HOST.test(identity.supabaseHost)) {

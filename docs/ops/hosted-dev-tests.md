@@ -32,7 +32,8 @@ Dedicated QA users only. The suite does not create accounts, send invites, or su
 - Platform admin: founder or sales dashboard, and the tenant list for a founder, with no edits
 - Customer: home, quotes, visits, and invoices, with no payment
 - Two fixture users, through the dev Supabase Auth password grant and `tenant_quotes` select, must see only their own `qa-hosted-dev-*` quote
-- Direct `psql` runs only when `QA_DEV_DATABASE_URL` is the same dev project the identity endpoint reported
+- Direct `psql` runs only on a machine where you set `QA_DEV_DATABASE_URL` yourself, and only when that URL is the dev project the identity endpoint reported. GitHub does not inject that URL.
+- The Auth token for each RLS fixture user is rejected when it is a platform admin or the service role.
 
 `HOSTED_DEV_MUTATIONS=1` does not enable writes. It fails the run and records the suppression gap.
 
@@ -42,14 +43,15 @@ Workflow: `.github/workflows/hosted-dev.yml`.
 
 GitHub runs `deployment_status` and `workflow_dispatch` from the default branch, `main`. Merging this file to `dev` does not start it. After it is on `main`:
 
-- A successful Vercel deployment whose GitHub environment is exactly `dev`, whose creator is `vercel[bot]`, which is not a production deployment, and whose commit is on `origin/dev`, checks out that commit and runs smoke.
+- A successful Vercel deployment whose GitHub environment is exactly `dev`, whose creator is `vercel[bot]`, which is not a production deployment, and whose commit is the current `origin/dev` tip, runs smoke from that tip. An older ancestor, including a reverted commit, does not run. The tip check retries five times, ten seconds apart.
 - Preview and Production deployments do not run the jobs.
-- The live check target is always `https://dev.cleanscheduler.com`. The `*.vercel.app` status URL is not opened. If the alias SHA differs from the event SHA, smoke fails after the bounded retry.
-- One run is queued at a time. The ancestor check retries five times, ten seconds apart.
-- Smoke installs dependencies with `npm ci --ignore-scripts` and has no repository credentials.
-- Isolated is skipped unless the workflow file that is executing is the `main` copy and the repository variable `HOSTED_DEV_ISOLATED` is `1`. Missing QA configuration fails that job. It does not pass quietly.
-- Manual dispatch also has to be started from `main`, with the deployed dev SHA. The SHA must be on `origin/dev`.
-- Reports and masked failure screenshots upload as artifacts for seven days. Traces and text results are redacted for secrets, emails, tokens, and database URLs. Isolated tests do not record Playwright traces, because a trace would contain the password.
+- The live check target is always `https://dev.cleanscheduler.com`. The `*.vercel.app` status URL is not opened. If the alias SHA differs from the tip, smoke fails after the bounded retry.
+- One run is queued at a time.
+- Smoke installs dependencies with `npm ci --ignore-scripts` and has no QA credentials. It does execute the tip's own test script.
+- Isolated is skipped unless the workflow file that is executing is the `main` copy and the repository variable `HOSTED_DEV_ISOLATED` is `1`. That job checks out `main`, not the deployed commit, and refuses to start if `origin/dev` moved. Checkout, Node setup, and artifact upload in that job are pinned to full commit SHAs. Missing QA configuration fails that job. It does not pass quietly.
+- Automatic runs do not receive `QA_DEV_DATABASE_URL` or the RLS user ids. Direct SQL stays a manual local run.
+- Manual dispatch has to be started from `main`, and the SHA has to be the current `origin/dev` tip.
+- Reports upload as artifacts for seven days. Text, HTML, and HAR contents are redacted, including short configured secrets, `sb_secret_…`, and `whsec_…`. Images inside trace zips are removed. Isolated tests do not record Playwright traces.
 
 No Vercel token is required. The existing CI workflow is not modified.
 
@@ -91,10 +93,18 @@ Set these on the dev QA users and fixture quotes only. Do not copy production va
 
 Markers must match `qa-hosted-dev-` plus 1–48 letters, numbers, or hyphens. They are the `tenant_quotes.title` values, one on each fixture tenant. The two users must be members of only their own tenant and must not be platform admins. Turn off MFA for these users; a two-factor challenge is blocked rather than bypassed.
 
-Optional direct SQL, still the dev project only:
+Optional direct SQL, local only, still the dev project only. Do not add these to the GitHub workflow:
 
 - `QA_DEV_DATABASE_URL`
 - `QA_RLS_USER_A_ID`
 - `QA_RLS_USER_B_ID`
 
-People who can push to `dev` can change the checked-out tests. Isolated credentials are injected only by the `main` workflow, after the commit is shown to be on `origin/dev`, and only into the Playwright step. Treat push access to `dev` as access to those QA secrets once the variable is enabled.
+## Residual risk
+
+Isolated tests log into the live dev site. The current `dev` tip, once deployed, still receives those passwords in the real sign-in request. A malicious tip can collect them there even though the test script itself comes from `main`.
+
+`main` must contain this suite before the isolated job can run. If `dev` changes the UI before `main` does, the isolated job fails until `main` is updated. That failure is intentional.
+
+Smoke still runs the tip's test script. That job has no QA passwords, anon key, or database URL. A malicious tip can make network calls from smoke, and it cannot read the isolated job's secrets.
+
+The fixture JWT check rejects `admin`, `super_admin`, and `service_role`. It reads the token Auth returned. It does not prove the database role separately from that token.

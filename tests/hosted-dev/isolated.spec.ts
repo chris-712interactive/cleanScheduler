@@ -9,6 +9,7 @@ import {
   assertFixtureMarker,
   assertTenantId,
   assertViewerIsolation,
+  platformAdminFixtureBlock,
   quoteProbePath,
 } from '../../lib/hosted-dev/rlsAssertions';
 import {
@@ -175,6 +176,10 @@ test('cross-tenant quote reads honor RLS for the two fixture users', async ({ re
     requiredEnv('QA_RLS_USER_B_EMAIL'),
     requiredEnv('QA_RLS_USER_B_PASSWORD'),
   );
+  for (const token of [tokenA, tokenB]) {
+    const adminBlock = platformAdminFixtureBlock(token);
+    if (adminBlock) throw new Error(adminBlock);
+  }
   const asA = await viewQuotes(supabaseUrl, anonKey, tokenA, markerA, markerB, tenantB);
   const asB = await viewQuotes(supabaseUrl, anonKey, tokenB, markerB, markerA, tenantA);
   const verdictA = assertViewerIsolation({

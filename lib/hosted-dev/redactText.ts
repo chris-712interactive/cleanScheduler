@@ -1,13 +1,15 @@
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g;
-const STRIPE = /\b(?:sk|pk|rk|whsec)_(?:live|test)_[A-Za-z0-9]+\b/g;
+const STRIPE = /\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]+\b/g;
+const WEBHOOK = /\bwhsec_[A-Za-z0-9]+\b/g;
+const SUPABASE_SECRET = /\bsb_secret_[A-Za-z0-9_-]+\b/g;
 const POSTGRES_URL = /\bpostgres(?:ql)?:\/\/[^\s"'<>]+/gi;
 const BEARER = /Bearer\s+[A-Za-z0-9._~+/-]+=*/gi;
 
 export function redactText(input: string, secrets: readonly string[]): string {
   let output = input;
   const unique = [
-    ...new Set(secrets.map((secret) => secret.trim()).filter((secret) => secret.length >= 8)),
+    ...new Set(secrets.map((secret) => secret.trim()).filter((secret) => secret.length > 0)),
   ];
   unique.sort((a, b) => b.length - a.length);
   for (const secret of unique) {
@@ -16,6 +18,8 @@ export function redactText(input: string, secrets: readonly string[]): string {
   return output
     .replace(POSTGRES_URL, '[redacted-database-url]')
     .replace(STRIPE, '[redacted-stripe]')
+    .replace(WEBHOOK, '[redacted-webhook]')
+    .replace(SUPABASE_SECRET, '[redacted-supabase-secret]')
     .replace(JWT, '[redacted-jwt]')
     .replace(BEARER, 'Bearer [redacted]')
     .replace(EMAIL, '[redacted-email]');

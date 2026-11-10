@@ -2,8 +2,11 @@ name: Hosted dev
 
 # GitHub only reads this file from the default branch (main) for deployment_status
 # and workflow_dispatch. A copy that exists only on dev does not run.
-# Smoke never receives repository credentials. Isolated runs only from the
-# main copy of this file, and only when HOSTED_DEV_ISOLATED is 1.
+# Smoke never receives repository credentials. It checks out the dev tip.
+# Isolated runs only from this file's copy on main, checks out that same
+# trusted main tree (not the deployed commit), and only when
+# HOSTED_DEV_ISOLATED is 1. The candidate SHA must be the current origin/dev
+# tip. Automatic runs do not receive a database URL.
 on:
   deployment_status:
   workflow_dispatch:
@@ -56,14 +59,14 @@ jobs:
           ok=0
           for _ in 1 2 3 4 5; do
             git fetch origin dev
-            if git merge-base --is-ancestor "$CANDIDATE_SHA" origin/dev; then
+            if [ "$(git rev-parse origin/dev)" = "$CANDIDATE_SHA" ]; then
               ok=1
               break
             fi
             sleep 10
           done
           if [ "$ok" -ne 1 ]; then
-            echo "Refusing a commit that is not on origin/dev." >&2
+            echo "Refusing a commit that is not the current origin/dev tip." >&2
             exit 1
           fi
           echo "sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
@@ -112,11 +115,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ needs.authorize.outputs.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
+          ref: refs/heads/main
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Require the deployed SHA to still be the dev tip
+        env:
+          EXPECT_SHA: ${{ needs.authorize.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin dev
+          if [ "$(git rev-parse origin/dev)" != "$EXPECT_SHA" ]; then
+            echo "Refusing secrets because origin/dev is no longer the deployed SHA." >&2
+            exit 1
+          fi
+          git config --unset-all http.https://github.com/.extraheader || true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.22.1
           cache: npm
@@ -151,9 +166,6 @@ jobs:
           QA_RLS_USER_A_PASSWORD: ${{ secrets.QA_RLS_USER_A_PASSWORD }}
           QA_RLS_USER_B_EMAIL: ${{ secrets.QA_RLS_USER_B_EMAIL }}
           QA_RLS_USER_B_PASSWORD: ${{ secrets.QA_RLS_USER_B_PASSWORD }}
-          QA_RLS_USER_A_ID: ${{ secrets.QA_RLS_USER_A_ID }}
-          QA_RLS_USER_B_ID: ${{ secrets.QA_RLS_USER_B_ID }}
-          QA_DEV_DATABASE_URL: ${{ secrets.QA_DEV_DATABASE_URL }}
         run: npm run test:hosted-dev:isolated
       - if: always()
         run: |
@@ -161,7 +173,7 @@ jobs:
             cat hosted-dev-results/report.md >> "$GITHUB_STEP_SUMMARY"
           fi
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hosted-dev-isolated-${{ needs.authorize.outputs.sha }}
           path: hosted-dev-results
