@@ -51,7 +51,7 @@ GitHub runs `deployment_status` and `workflow_dispatch` from the default branch,
 - Isolated is skipped unless the workflow file that is executing is the `main` copy and the repository variable `HOSTED_DEV_ISOLATED` is `1`. That job checks out `main`, not the deployed commit, and refuses to start if `origin/dev` moved. Checkout, Node setup, and artifact upload in that job are pinned to full commit SHAs. Missing QA configuration fails that job. It does not pass quietly.
 - Automatic runs do not receive `QA_DEV_DATABASE_URL` or the RLS user ids. Direct SQL stays a manual local run.
 - Manual dispatch has to be started from `main`, and the SHA has to be the current `origin/dev` tip.
-- Reports upload as artifacts for seven days. Text, HTML, and HAR contents are redacted, including short configured secrets, `sb_secret_…`, and `whsec_…`. Images inside trace zips are removed. Isolated tests do not record Playwright traces.
+- Reports upload as artifacts for seven days. Text, HTML, and HAR contents are redacted, including short configured secrets, `sb_secret_…`, `whsec_…`, and any Authorization or Bearer value. Trace-zip entries are scrubbed even when the name has no extension. Images are removed by magic bytes, not by file name. Isolated tests do not record Playwright traces.
 
 No Vercel token is required. The existing CI workflow is not modified.
 

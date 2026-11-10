@@ -23,6 +23,15 @@ describe('hosted dev artifact redaction', () => {
     expect(redacted).not.toContain('sb_secret_');
     expect(redacted).not.toContain('whsec_plainvalue');
   });
+
+  it('redacts non-JWT bearer and authorization values', () => {
+    const redacted = redactText(
+      '{"name":"authorization","value":"Bearer not-a-jwt=token"} authorization: Bearer custom-session',
+      [],
+    );
+    expect(redacted).not.toContain('not-a-jwt=token');
+    expect(redacted).not.toContain('custom-session');
+  });
 });
 
 describe('hosted dev workflow contract', () => {

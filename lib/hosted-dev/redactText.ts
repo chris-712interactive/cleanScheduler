@@ -4,7 +4,13 @@ const STRIPE = /\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]+\b/g;
 const WEBHOOK = /\bwhsec_[A-Za-z0-9]+\b/g;
 const SUPABASE_SECRET = /\bsb_secret_[A-Za-z0-9_-]+\b/g;
 const POSTGRES_URL = /\bpostgres(?:ql)?:\/\/[^\s"'<>]+/gi;
-const BEARER = /Bearer\s+[A-Za-z0-9._~+/-]+=*/gi;
+const BEARER = /Bearer\s+[^\s"']+/gi;
+const AUTH_NAME_VALUE =
+  /("name"\s*:\s*"authorization"\s*,\s*"value"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
+const AUTH_VALUE_NAME =
+  /("value"\s*:\s*")((?:\\.|[^"\\])*)("\s*,\s*"name"\s*:\s*"authorization")/gi;
+const AUTH_FIELD = /("authorization"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
+const AUTH_PLAIN = /(authorization\s*:\s*)(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\S+)/gi;
 
 export function redactText(input: string, secrets: readonly string[]): string {
   let output = input;
@@ -22,6 +28,10 @@ export function redactText(input: string, secrets: readonly string[]): string {
     .replace(SUPABASE_SECRET, '[redacted-supabase-secret]')
     .replace(JWT, '[redacted-jwt]')
     .replace(BEARER, 'Bearer [redacted]')
+    .replace(AUTH_NAME_VALUE, '$1[redacted]$3')
+    .replace(AUTH_VALUE_NAME, '$1[redacted]$3')
+    .replace(AUTH_FIELD, '$1[redacted]$3')
+    .replace(AUTH_PLAIN, '$1[redacted]')
     .replace(EMAIL, '[redacted-email]');
 }
 
