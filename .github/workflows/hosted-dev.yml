@@ -1,12 +1,18 @@
 name: Hosted dev
 
-# GitHub only reads this file from the default branch (main) for deployment_status
-# and workflow_dispatch. A copy that exists only on dev does not run.
-# Smoke never receives repository credentials. It checks out the dev tip.
-# Isolated runs only from this file's copy on main, checks out that same
-# trusted main tree (not the deployed commit), and only when
-# HOSTED_DEV_ISOLATED is 1. The candidate SHA must be the current origin/dev
-# tip. Automatic runs do not receive a database URL.
+# deployment_status executes this file from the deployed commit. A Vercel
+# deploy of dev runs the dev copy, not the main copy. Actions run
+# 42820960835 did that from dev at 69bbe28 before this file was on main.
+# Someone who can push to dev can replace every condition in this file and
+# still receive repository secrets. The conditions below are defense in depth.
+#
+# The secret boundary is the GitHub Actions environment hosted-dev-isolated.
+# Its deployment branch policy must allow only the branch main. QA secrets
+# must live on that environment and must not also exist as repository secrets.
+# The isolated job declares the environment, so GitHub withholds those secrets
+# unless github.ref is refs/heads/main. An empty ref (deployment by raw SHA)
+# does not match. Smoke does not declare an environment and has no QA secrets.
+# Leave HOSTED_DEV_ISOLATED unset. Isolated stays opt-in and fails closed.
 on:
   deployment_status:
   workflow_dispatch:
@@ -25,6 +31,9 @@ concurrency:
 
 jobs:
   authorize:
+    # The deployment environment name must be exactly dev.
+    # production_environment false was observed on a Production deployment,
+    # so that boolean is not sufficient on its own.
     if: >-
       (github.event_name == 'workflow_dispatch' && endsWith(github.workflow_ref, '@refs/heads/main')) ||
       (github.event_name == 'deployment_status' &&
@@ -111,10 +120,12 @@ jobs:
 
   hosted-dev-isolated:
     needs: [authorize, hosted-dev-smoke]
+    # Bypassable if this file is edited on dev. Not the secret boundary.
     if: >-
       needs.hosted-dev-smoke.result == 'success' &&
       vars.HOSTED_DEV_ISOLATED == '1' &&
       endsWith(github.workflow_ref, '@refs/heads/main')
+    environment: hosted-dev-isolated
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -140,6 +151,8 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
+      # QA_* secrets below must exist only on the hosted-dev-isolated environment.
+      # Repository copies are readable from a dev workflow that omits environment.
       - name: Opt-in isolated reads and RLS
         env:
           HOSTED_DEV_BASE_URL: https://dev.cleanscheduler.com

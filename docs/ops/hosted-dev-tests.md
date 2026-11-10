@@ -17,7 +17,7 @@ Blocked sections are listed in `hosted-dev-results/report.md`. They are not coun
 
 ## What smoke covers
 
-- Marketing home, pricing, sign-in, password reset, and trial page render without submitting those forms
+- Marketing home, pricing, sign-in, password reset, and trial page render without submitting those forms. The check fails on `POST`, `PUT`, `PATCH`, and `DELETE` to the dev host. It allows `OPTIONS`. On hosted Vercel deploys, Next.js injects `https://vercel.live/_next-live/feedback/feedback.js`, which calls `fetch("/", { method: "OPTIONS" })` to read `x-robots-tag` before showing the toolbar. That request has no body and does not run the trial or password-reset actions. The 2026-11-10 failure was this OPTIONS while `/forgot-password` was open. `/start-trial` rendered and did not POST.
 - `admin`, `my`, and an unknown tenant host redirect to sign-in on that same host
 - `www.dev.cleanscheduler.com` returns to the apex
 - Cron routes, the Stripe webhook, and the Plaid link-token route reject unauthenticated calls
@@ -41,14 +41,26 @@ Dedicated QA users only. The suite does not create accounts, send invites, or su
 
 Workflow: `.github/workflows/hosted-dev.yml`.
 
-GitHub runs `deployment_status` and `workflow_dispatch` from the default branch, `main`. Merging this file to `dev` does not start it. After it is on `main`:
+`deployment_status` runs the workflow file from the deployed commit, not from the default branch. [Actions run 42820960835](https://github.com/chris-712interactive/cleanScheduler/actions/runs/42820960835) ran from `dev` at `69bbe28` on 2026-11-10 13:02Z, before this file existed on `main`. A push to `dev` can delete every condition in that file and still receive repository secrets. YAML conditions are defense in depth. They are not the secret boundary.
 
-- A successful Vercel deployment whose GitHub environment is exactly `dev`, whose creator is `vercel[bot]`, which is not a production deployment, and whose commit is the current `origin/dev` tip, runs smoke from that tip. An older ancestor, including a reverted commit, does not run. The tip check retries five times, ten seconds apart.
-- Preview and Production deployments do not run the jobs.
+The secret boundary is a GitHub Actions environment named `hosted-dev-isolated`.
+
+- Its deployment branch policy allows only the branch `main`. GitHub matches that rule against the workflow run's `GITHUB_REF` (`refs/heads/main`).
+- The QA secrets below are environment secrets on `hosted-dev-isolated`. They are not repository secrets. A job that never declares the environment can still read repository secrets, including a workflow edited on `dev`.
+- The isolated job sets `environment: hosted-dev-isolated`. GitHub applies the branch policy before it injects those secrets. A run whose `GITHUB_REF` is `refs/heads/dev`, and a deployment whose ref is a raw commit SHA (`GITHUB_REF` empty), do not match `main`. The job fails closed. The runner does not receive the secrets.
+- Smoke does not set an environment and does not receive QA secrets.
+- Do not add `dev` to the branch policy. That would give the secrets to the workflow file GitHub executes for a dev deploy.
+
+What the workflow still checks, after this file is on the branch GitHub executes:
+
+- A successful Vercel deployment whose GitHub environment name is exactly `dev`, whose creator is `vercel[bot]`, which is not marked production, and whose commit is the current `origin/dev` tip, runs smoke from that tip. An older ancestor, including a reverted commit, does not run. The tip check retries five times, ten seconds apart.
+- The name check stays required. A deployment named `Production` has been seen with `production_environment: false`. That boolean is an extra filter. It does not by itself mean the target is dev. Preview and Production deployments do not run the jobs.
 - The live check target is always `https://dev.cleanscheduler.com`. The `*.vercel.app` status URL is not opened. If the alias SHA differs from the tip, smoke fails after the bounded retry.
 - One run is queued at a time.
 - Smoke installs dependencies with `npm ci --ignore-scripts` and has no QA credentials. It does execute the tip's own test script.
-- Isolated is skipped unless the workflow file that is executing is the `main` copy and the repository variable `HOSTED_DEV_ISOLATED` is `1`. That job checks out `main`, not the deployed commit, and refuses to start if `origin/dev` moved. Checkout, Node setup, and artifact upload in that job are pinned to full commit SHAs. Missing QA configuration fails that job. It does not pass quietly.
+- Isolated stays opt-in. Leave the repository variable `HOSTED_DEV_ISOLATED` unset. The job's `if` also requires smoke to succeed and `github.workflow_ref` to end with `@refs/heads/main`. Editing the workflow on `dev` can remove that `if`. The environment policy still withholds the secrets.
+- The isolated job checks out `main`, not the deployed commit, and refuses to start if `origin/dev` moved. Checkout, Node setup, and artifact upload in that job are pinned to full commit SHAs. Missing QA configuration fails that job. It does not pass quietly.
+- Automatic `deployment_status` runs from `dev` do not receive isolated secrets, even if `HOSTED_DEV_ISOLATED` is later set to `1`, because `github.ref` is not `main`. To run isolated reads, dispatch the workflow from `main` after the environment, the branch policy, and the environment secrets exist, and only then set the variable to `1`. This change does not set it.
 - Automatic runs do not receive `QA_DEV_DATABASE_URL` or the RLS user ids. Direct SQL stays a manual local run.
 - Manual dispatch has to be started from `main`, and the SHA has to be the current `origin/dev` tip.
 - Reports upload as artifacts for seven days only after `scripts/hosted-dev/redact-artifacts.mts` finishes and writes `.redaction-complete`. If that script fails, trace zips and images are deleted and nothing is uploaded. Text, HTML, and HAR contents are redacted, including short configured secrets, `sb_secret_…`, `whsec_…`, and the whole Authorization or Bearer value. Trace-zip entries are scrubbed even when the name has no extension. Images are removed by magic bytes, not by file name. Isolated tests do not record Playwright traces.
@@ -57,18 +69,18 @@ No Vercel token is required. The existing CI workflow is not modified.
 
 ## Repository variables
 
-| Name                                   | Purpose                                                           |
-| -------------------------------------- | ----------------------------------------------------------------- |
-| `HOSTED_DEV_ISOLATED`                  | Set to `1` to run authenticated reads and RLS after smoke passes. |
-| `HOSTED_DEV_MUTATIONS`                 | Leave unset. `1` fails on purpose.                                |
-| `HOSTED_DEV_BOOKING_URL`               | Optional allowlisted `/book` URL for the read-only booking check. |
-| `HOSTED_DEV_DENY_SUPABASE_PROJECT_REF` | Optional production Supabase project ref. A match fails closed.   |
-| `QA_TENANT_RESIDENTIAL_SEGMENT`        | Optional. Defaults to `residential`.                              |
-| `QA_TENANT_COMMERCIAL_SEGMENT`         | Optional. Defaults to `commercial`.                               |
+| Name                                   | Purpose                                                                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `HOSTED_DEV_ISOLATED`                  | Leave unset. `1` asks the isolated job to run. Secrets stay withheld unless the run ref is allowed by the environment. |
+| `HOSTED_DEV_MUTATIONS`                 | Leave unset. `1` fails on purpose.                                                                                     |
+| `HOSTED_DEV_BOOKING_URL`               | Optional allowlisted `/book` URL for the read-only booking check.                                                      |
+| `HOSTED_DEV_DENY_SUPABASE_PROJECT_REF` | Optional production Supabase project ref. A match fails closed.                                                        |
+| `QA_TENANT_RESIDENTIAL_SEGMENT`        | Optional. Defaults to `residential`.                                                                                   |
+| `QA_TENANT_COMMERCIAL_SEGMENT`         | Optional. Defaults to `commercial`.                                                                                    |
 
-## Repository secrets for the isolated job
+## Environment secrets for the isolated job
 
-Set these on the dev QA users and fixture quotes only. Do not copy production values.
+Create these on the `hosted-dev-isolated` environment. Do not create them as repository Actions secrets, and do not put them in repository variables. Values are the dev QA users and fixture quotes only. Do not copy production values.
 
 - `QA_TENANT_RESIDENTIAL_EMAIL`
 - `QA_TENANT_RESIDENTIAL_PASSWORD`
@@ -93,18 +105,41 @@ Set these on the dev QA users and fixture quotes only. Do not copy production va
 
 Markers must match `qa-hosted-dev-` plus 1–48 letters, numbers, or hyphens. They are the `tenant_quotes.title` values, one on each fixture tenant. The two users must be members of only their own tenant and must not be platform admins. Turn off MFA for these users; a two-factor challenge is blocked rather than bypassed.
 
-Optional direct SQL, local only, still the dev project only. Do not add these to the GitHub workflow:
+Optional direct SQL, local only, still the dev project only. Do not add these to GitHub at all:
 
 - `QA_DEV_DATABASE_URL`
 - `QA_RLS_USER_A_ID`
 - `QA_RLS_USER_B_ID`
 
+### GitHub settings still required
+
+Creating the environment needs repository administration. The token available to this change received HTTP 403 (`administration=write`) from `PUT /repos/chris-712interactive/cleanScheduler/environments/hosted-dev-isolated`. Listing Actions secrets and variables also returned 403. Nothing below is already applied. `HOSTED_DEV_ISOLATED` was not set. No secret values were read or written.
+
+On 2026-11-10 the repository environments were `dev`, `Preview`, and `Production`. `hosted-dev-isolated` was not among them. The `dev` environment had no deployment branch policy.
+
+Apply these steps before adding any QA secret. If a workflow run names `hosted-dev-isolated` before you create it, GitHub creates that environment with no branch policy and no secrets. Do not add secrets to an environment that still says "No restriction".
+
+1. Open [Environments](https://github.com/chris-712interactive/cleanScheduler/settings/environments).
+2. Choose **New environment**. Name it `hosted-dev-isolated`. Open **Configure**.
+3. Under **Deployment branches and tags**, choose **Selected branches and tags**.
+4. Add one deployment branch rule. Ref type: **Branch**. Name pattern: `main`.
+5. Do not add a rule for `dev`, `*`, tags, or `refs/pull/*/merge`. A branch pattern of `main` matches `refs/heads/main` only.
+6. Leave required reviewers and the wait timer empty. Reviewers are not a substitute for the branch rule.
+7. Under **Environment secrets**, add each name in the list above. Do not add `QA_DEV_DATABASE_URL`, `QA_RLS_USER_A_ID`, or `QA_RLS_USER_B_ID`.
+8. Open [Actions secrets and variables](https://github.com/chris-712interactive/cleanScheduler/settings/secrets/actions). Under **Repository secrets**, delete any secret whose name is in the list above. A repository copy stays readable by a workflow on `dev` that does not declare the environment.
+9. Under **Repository variables**, leave `HOSTED_DEV_ISOLATED` unset. Do not set it to `1` as part of this hardening.
+10. On the environment page, confirm the policy is **Selected branches and tags** and the only rule is branch `main` before any isolated dispatch.
+
 ## Residual risk
 
-Isolated tests log into the live dev site. The current `dev` tip, once deployed, still receives those passwords in the real sign-in request. A malicious tip can collect them there even though the test script itself comes from `main`.
+The environment policy is the control that stops a modified `dev` workflow from receiving QA secrets. It works only after the steps above are done and the repository secret copies are gone. Until then, any repository secret with these names is still available to the workflow file on `dev`.
 
-`main` must contain this suite before the isolated job can run. If `dev` changes the UI before `main` does, the isolated job fails until `main` is updated. That failure is intentional.
+Do not add `dev` to the branch policy to make automatic isolated runs pass. Automatic `deployment_status` runs from `dev` are supposed to fail closed for secrets.
 
-Smoke still runs the tip's test script. That job has no QA passwords, anon key, or database URL. A malicious tip can make network calls from smoke, and it cannot read the isolated job's secrets.
+Once a `main` dispatch is allowed to receive the secrets, isolated tests log into the live dev site. The deployed `dev` app sees those passwords in the sign-in request. A malicious tip can collect them there even though the test script is checked out from `main`.
+
+`main` must contain this suite before that dispatch can pass. If `dev` changes the UI before `main` does, the isolated job fails until `main` is updated. That failure is intentional.
+
+Smoke still runs the tip's test script. That job has no QA passwords, anon key, or database URL. A malicious tip can make network calls from smoke. It cannot read environment secrets that were never repository secrets and that smoke does not declare.
 
 The fixture JWT check rejects `admin`, `super_admin`, and `service_role`. It reads the token Auth returned. It does not prove the database role separately from that token.
