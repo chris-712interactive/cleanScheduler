@@ -1,8 +1,22 @@
 import { expect, test, type Request } from '@playwright/test';
 import { assertHttpsDevUrl, isAllowedDevHostname } from '../../lib/hosted-dev/hostedDevUrl';
 
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * A plain visit must not submit a form. Trial signup and password reset are
+ * POST server actions, so those methods still fail the check.
+ *
+ * OPTIONS is not a submission. Next.js injects the Vercel toolbar on hosted
+ * deployments (`https://vercel.live/_next-live/feedback/feedback.js`). That
+ * script calls `fetch("/", { method: "OPTIONS" })` and reads `x-robots-tag`
+ * before deciding whether to show the toolbar. The request has no body and
+ * does not invoke an app server action. The 2026-11-10 smoke trace recorded
+ * that OPTIONS while `/forgot-password` was open, with referer
+ * `/forgot-password`. `/start-trial` itself did not POST.
+ */
 function isAppMutation(request: Request): boolean {
-  if (request.method() === 'GET' || request.method() === 'HEAD') return false;
+  if (!WRITE_METHODS.has(request.method())) return false;
   return isAllowedDevHostname(new URL(request.url()).hostname);
 }
 

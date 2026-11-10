@@ -17,7 +17,7 @@ Blocked sections are listed in `hosted-dev-results/report.md`. They are not coun
 
 ## What smoke covers
 
-- Marketing home, pricing, sign-in, password reset, and trial page render without submitting those forms
+- Marketing home, pricing, sign-in, password reset, and trial page render without submitting those forms. The check fails on `POST`, `PUT`, `PATCH`, and `DELETE` to the dev host. It allows `OPTIONS`. On hosted Vercel deploys, Next.js injects `https://vercel.live/_next-live/feedback/feedback.js`, which calls `fetch("/", { method: "OPTIONS" })` to read `x-robots-tag` before showing the toolbar. That request has no body and does not run the trial or password-reset actions. The 2026-11-10 failure was this OPTIONS while `/forgot-password` was open. `/start-trial` rendered and did not POST.
 - `admin`, `my`, and an unknown tenant host redirect to sign-in on that same host
 - `www.dev.cleanscheduler.com` returns to the apex
 - Cron routes, the Stripe webhook, and the Plaid link-token route reject unauthenticated calls
