@@ -98,7 +98,10 @@ jobs:
           if [ -f hosted-dev-results/report.md ]; then
             cat hosted-dev-results/report.md >> "$GITHUB_STEP_SUMMARY"
           fi
-      - if: always()
+          if [ -d hosted-dev-results ] && [ ! -f hosted-dev-results/.redaction-complete ]; then
+            find hosted-dev-results -type f \( -name '*.zip' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.webp' \) -delete
+          fi
+      - if: always() && hashFiles('hosted-dev-results/.redaction-complete') != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hosted-dev-smoke-${{ needs.authorize.outputs.sha }}
@@ -172,7 +175,10 @@ jobs:
           if [ -f hosted-dev-results/report.md ]; then
             cat hosted-dev-results/report.md >> "$GITHUB_STEP_SUMMARY"
           fi
-      - if: always()
+          if [ -d hosted-dev-results ] && [ ! -f hosted-dev-results/.redaction-complete ]; then
+            find hosted-dev-results -type f \( -name '*.zip' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.webp' \) -delete
+          fi
+      - if: always() && hashFiles('hosted-dev-results/.redaction-complete') != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hosted-dev-isolated-${{ needs.authorize.outputs.sha }}

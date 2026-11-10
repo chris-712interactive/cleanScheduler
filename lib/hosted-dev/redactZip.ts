@@ -1,5 +1,5 @@
 import { inflateRawSync, deflateRawSync } from 'node:zlib';
-import { redactText } from '@/lib/hosted-dev/redactText';
+import { redactText } from './redactText';
 
 export type ZipEntry = { name: string; data: Buffer };
 

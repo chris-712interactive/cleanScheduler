@@ -32,6 +32,12 @@ describe('hosted dev artifact redaction', () => {
     expect(redacted).not.toContain('not-a-jwt=token');
     expect(redacted).not.toContain('custom-session');
   });
+
+  it('redacts the whole basic authorization header value', () => {
+    const redacted = redactText('Authorization: Basic dXNlcjpwYXNz', []);
+    expect(redacted).not.toContain('dXNlcjpwYXNz');
+    expect(redacted).toBe('Authorization: [redacted]');
+  });
 });
 
 describe('hosted dev workflow contract', () => {
