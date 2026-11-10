@@ -17,6 +17,8 @@
     "check:rls-smoke": "node scripts/check-rls-smoke.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test -c playwright.smoke.config.ts",
+    "test:hosted-dev": "node scripts/hosted-dev/run-smoke.mts",
+    "test:hosted-dev:isolated": "node scripts/hosted-dev/run-isolated.mts",
     "check:engines": "node scripts/check-engines.mjs",
     "marketing:screenshots": "playwright test -c playwright.config.ts",
     "db:types": "supabase gen types typescript --linked --schema public",
