@@ -1,6 +1,24 @@
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-const ENCODED_EMAIL = /[A-Z0-9._%+-]+%40[A-Z0-9._%+-]{2,}/gi;
-const SENSITIVE_QUERY = /([?&](?:token|code|email)=)[^&#\s"'<>]*/gi;
+// `%40`, and the same at-sign after one or more extra encodings (`%2540`, …).
+const ENCODED_EMAIL = /[A-Z0-9._%+-]+%(?:25)*40[A-Z0-9._%+-]{2,}/gi;
+const SENSITIVE_QUERY_KEY_NAMES = [
+  'access_token',
+  'refresh_token',
+  'id_token',
+  'token',
+  'code',
+  'email',
+] as const;
+/**
+ * Credential assignments in a query or fragment. Longer names come first.
+ * WHATWG search params do not split on `;`. `URL.search` and the path still
+ * keep `;token=` in the string that is logged, so that assignment is scrubbed
+ * as text. This does not treat `;` as a second query grammar.
+ */
+const SENSITIVE_PARAM = new RegExp(
+  `([#?&;](?:${SENSITIVE_QUERY_KEY_NAMES.join('|')})=)[^&#\\s"'<>]*`,
+  'gi',
+);
 const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g;
 const STRIPE = /\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]+\b/g;
 const WEBHOOK = /\bwhsec_[A-Za-z0-9]+\b/g;
@@ -23,7 +41,7 @@ export function redactText(input: string, secrets: readonly string[]): string {
   for (const secret of unique) {
     output = output.split(secret).join('[redacted]');
   }
-  return output
+  output = output
     .replace(POSTGRES_URL, '[redacted-database-url]')
     .replace(STRIPE, '[redacted-stripe]')
     .replace(WEBHOOK, '[redacted-webhook]')
@@ -33,20 +51,21 @@ export function redactText(input: string, secrets: readonly string[]): string {
     .replace(AUTH_NAME_VALUE, '$1[redacted]$3')
     .replace(AUTH_VALUE_NAME, '$1[redacted]$3')
     .replace(AUTH_FIELD, '$1[redacted]$3')
-    .replace(AUTH_PLAIN, '$1[redacted]')
-    .replace(SENSITIVE_QUERY, '$1[redacted]')
+    .replace(AUTH_PLAIN, '$1[redacted]');
+  return redactPlaintextSecrets(output);
+}
+
+/** Redact addresses and credential assignments in a heading or other short plain string. */
+export function redactPlaintextSecrets(input: string): string {
+  return input
+    .replace(SENSITIVE_PARAM, '$1[redacted]')
     .replace(EMAIL, '[redacted-email]')
     .replace(ENCODED_EMAIL, '[redacted-email]');
 }
 
-/** Redact addresses in a heading or other short plain string. */
-export function redactPlaintextSecrets(input: string): string {
-  return input.replace(EMAIL, '[redacted-email]').replace(ENCODED_EMAIL, '[redacted-email]');
-}
+const SENSITIVE_QUERY_KEYS = new Set<string>(SENSITIVE_QUERY_KEY_NAMES);
 
-const SENSITIVE_QUERY_KEYS = new Set(['token', 'code', 'email']);
-
-/** Landing URLs logged by hosted-dev checks. Drops addresses and auth query values. */
+/** Landing URLs logged by hosted-dev checks. Drops addresses and auth query or fragment values. */
 export function redactLandingUrl(raw: string): string {
   let url: URL;
   try {
