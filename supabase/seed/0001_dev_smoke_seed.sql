@@ -5,7 +5,9 @@
 --   Quick DEV smoke-test seed so portal auth guards can pass.
 --
 -- What it does:
---   1) Sets app_role='admin' on one existing auth user
+--   1) Sets app_role='employee' on one existing auth user
+--      Workspace authority is the tenant membership below, not a platform role.
+--      Do not stamp platform admin or super_admin onto this tenant user.
 --   2) Upserts user_profiles row for that user
 --   3) Upserts tenant 'acme' (or your chosen slug)
 --   4) Upserts tenant_memberships owner/admin link for that user
@@ -34,7 +36,7 @@ selected_user as (
 updated_auth as (
   update auth.users au
   set raw_app_meta_data = coalesce(au.raw_app_meta_data, '{}'::jsonb) || jsonb_build_object(
-    'app_role', 'admin',
+    'app_role', 'employee',
     'tenant_role', (select tenant_role::text from params),
     'current_tenant_id', coalesce((
       select t.id::text
@@ -48,7 +50,7 @@ updated_auth as (
 ),
 upsert_profile as (
   insert into public.user_profiles (user_id, app_role, display_name)
-  select su.user_id, 'admin'::public.app_role, su.display_name
+  select su.user_id, 'employee'::public.app_role, su.display_name
   from selected_user su
   on conflict (user_id)
   do update set
