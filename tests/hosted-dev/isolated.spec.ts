@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { expect, test, type Page } from '@playwright/test';
+import { errors, expect, test, type Page } from '@playwright/test';
 import { assertDevDatabaseUrl } from '../../lib/hosted-dev/databaseTarget';
 import { decideIdentity } from '../../lib/hosted-dev/deploymentIdentity';
 import { assertHttpsDevUrl } from '../../lib/hosted-dev/hostedDevUrl';
@@ -15,8 +15,10 @@ import {
 import {
   copySessionCookies,
   expectDevBanner,
+  gotoSameHost,
   maskAndCapture,
   optionalSegment,
+  redactedLandingUrl,
   requiredEnv,
   signIn,
 } from './support';
@@ -37,22 +39,22 @@ async function readWorkspace(page: Page, slug: string, segment: string): Promise
   await openTenant(page, slug, '/schedule');
   await expect(page.getByRole('heading', { name: 'Schedule', exact: true })).toBeVisible();
   await expectDevBanner(page);
-  await page.goto('/schedule/recurring');
+  await gotoSameHost(page, '/schedule/recurring');
   await expect(page.getByRole('heading', { name: 'Recurring visits' })).toBeVisible();
-  await page.goto('/customers');
+  await gotoSameHost(page, '/customers');
   await expect(page.getByRole('heading', { name: 'Customers', exact: true })).toBeVisible();
-  await page.goto('/quotes');
+  await gotoSameHost(page, '/quotes');
   await expect(page.getByRole('heading', { name: 'Quotes', exact: true })).toBeVisible();
-  await page.goto('/billing');
+  await gotoSameHost(page, '/billing');
   await expect(page.getByRole('heading', { name: 'Billing', exact: true })).toBeVisible();
-  await page.goto('/settings/business');
+  await gotoSameHost(page, '/settings/business');
   await expect(page.getByRole('heading', { name: 'Business settings' })).toBeVisible();
   await expect(page.locator('input[name="service_segment"]:checked')).toHaveValue(segment);
   if (segment === 'residential') {
-    await page.goto('/customers');
+    await gotoSameHost(page, '/customers');
     await expect(page.getByRole('link', { name: 'Commercial', exact: true })).toHaveCount(0);
   } else if (segment === 'commercial') {
-    await page.goto('/customers');
+    await gotoSameHost(page, '/customers');
     await expect(page.getByRole('link', { name: 'Residential', exact: true })).toHaveCount(0);
   }
 }
@@ -98,12 +100,28 @@ test('a residential session does not open the commercial workspace', async ({ br
     await openTenant(otherPage, commercialSlug, '/customers');
     const denied = otherPage.getByRole('heading', { name: 'No access to this workspace' });
     const customers = otherPage.getByRole('heading', { name: 'Customers', exact: true });
-    if (await denied.isVisible().catch(() => false)) return;
-    if (await customers.isVisible().catch(() => false)) {
-      throw new Error('FAIL: residential session opened the commercial customer list.');
+    const signInHeading = otherPage.getByRole('heading', { name: 'Sign in to Clean Scheduler' });
+    let sawOutcome = false;
+    try {
+      await denied.or(customers).or(signInHeading).waitFor({ state: 'visible', timeout: 15_000 });
+      sawOutcome = true;
+    } catch (error) {
+      if (!(error instanceof errors.TimeoutError)) throw error;
+    }
+    const landing = redactedLandingUrl(otherPage.url());
+    if (sawOutcome && (await customers.isVisible())) {
+      throw new Error(
+        `FAIL: residential session opened the commercial customer list at ${landing}.`,
+      );
+    }
+    if (sawOutcome && (await denied.isVisible())) return;
+    if (sawOutcome && (await signInHeading.isVisible())) {
+      throw new Error(
+        `BLOCKED: the commercial host showed sign-in at ${landing}. Membership denial was not observed.`,
+      );
     }
     throw new Error(
-      'BLOCKED: the residential session cookie did not authenticate on the commercial host, so membership denial was not observed.',
+      `BLOCKED: the commercial host showed neither workspace denial, the customer list, nor sign-in at ${landing}.`,
     );
   } finally {
     await home.close();
@@ -114,12 +132,18 @@ test('a residential session does not open the commercial workspace', async ({ br
 test('platform admin can open the tenant list without changing it', async ({ page }) => {
   await page.goto('https://admin.dev.cleanscheduler.com/sign-in?next=%2F');
   await signIn(page, requiredEnv('QA_ADMIN_EMAIL'), requiredEnv('QA_ADMIN_PASSWORD'));
+  const landed = assertHttpsDevUrl(page.url());
+  if (landed.hostname !== 'admin.dev.cleanscheduler.com') {
+    throw new Error(
+      `FAIL: platform staff left the admin host after sign-in and landed on ${redactedLandingUrl(page.url())}.`,
+    );
+  }
   const founder = page.getByRole('heading', { name: 'Founder dashboard' });
   const sales = page.getByRole('heading', { name: 'Sales dashboard' });
   await expect(founder.or(sales)).toBeVisible();
   await expectDevBanner(page);
   if (await founder.isVisible()) {
-    await page.goto('/tenants');
+    await gotoSameHost(page, '/tenants');
     await expect(page.getByRole('heading', { name: 'Tenants', exact: true })).toBeVisible();
   }
 });
@@ -129,11 +153,11 @@ test('customer portal reads quotes, visits, and invoices without paying', async 
   await signIn(page, requiredEnv('QA_CUSTOMER_EMAIL'), requiredEnv('QA_CUSTOMER_PASSWORD'));
   await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
   await expectDevBanner(page);
-  await page.goto('/quotes');
+  await gotoSameHost(page, '/quotes');
   await expect(page.getByRole('heading', { name: 'Quotes', exact: true })).toBeVisible();
-  await page.goto('/visits');
+  await gotoSameHost(page, '/visits');
   await expect(page.getByRole('heading', { name: 'Upcoming visits' })).toBeVisible();
-  await page.goto('/invoices');
+  await gotoSameHost(page, '/invoices');
   await expect(page.getByRole('heading', { name: 'Invoices', exact: true })).toBeVisible();
   expect(page.url()).not.toContain('stripe.com');
 });

@@ -28,9 +28,11 @@ Blocked sections are listed in `hosted-dev-results/report.md`. They are not coun
 Dedicated QA users only. The suite does not create accounts, send invites, or submit payment, booking, or message forms.
 
 - Residential and commercial owners: schedule, recurring list, customers, quotes, billing, and the saved service segment. It does not click save.
-- Residential session copied onto the commercial host must see “No access to this workspace”, not that customer list
-- Platform admin: founder or sales dashboard, and the tenant list for a founder, with no edits
-- Customer: home, quotes, visits, and invoices, with no payment
+- Sign-in submits in the background. The helper waits until the browser leaves `/sign-in` before the next navigation. `domcontentloaded` on the already open sign-in page is not a finished login. A two-factor stop at `/sign-in/mfa` is blocked. If the sign-in page is still open after 20 seconds, the run is blocked because the session cookie was not confirmed.
+- Paths opened after sign-in are resolved on the host already open. Playwright’s base URL is `https://dev.cleanscheduler.com`, so a relative `goto('/quotes')` would request the marketing apex. `/quotes`, `/schedule/recurring`, and `/tenants` on that apex are marketing 404s (“We can't find that page”). The suite builds an absolute URL on the current host instead.
+- Residential session copied onto the commercial host waits until one heading is visible, then reports that outcome with the landing URL (email addresses redacted). “No access to this workspace” passes. “Customers” fails. “Sign in to Clean Scheduler” is blocked. A page that shows none of those three is a separate blocked result. The check does not guess that the cookie failed to authenticate.
+- Platform admin: founder or sales dashboard on `admin.dev.cleanscheduler.com`, and the tenant list for a founder, with no edits. Platform staff (`super_admin`, `admin`, and `sales`) who sign in on that admin host stay there, including when they also have a workspace membership. The session cookie is not sent to another host, so a redirect onto a workspace host lands on that host’s sign-in page. Until the deployed dev app keeps them on the admin host, the QA platform admin needs no active tenant memberships. After that deploy, a workspace membership must not pull this sign-in off the admin host.
+- Customer: home, quotes, visits, and invoices, with no payment. Those paths stay on `my.dev.cleanscheduler.com`.
 - Two fixture users, through the dev Supabase Auth password grant and `tenant_quotes` select, must see only their own `qa-hosted-dev-*` quote
 - Direct `psql` runs only on a machine where you set `QA_DEV_DATABASE_URL` yourself, and only when that URL is the dev project the identity endpoint reported. GitHub does not inject that URL.
 - The Auth token for each RLS fixture user is rejected when it is a platform admin or the service role.
@@ -103,7 +105,7 @@ Create these on the `hosted-dev-isolated` environment. Do not create them as rep
 - `QA_RLS_MARKER_A`
 - `QA_RLS_MARKER_B`
 
-Markers must match `qa-hosted-dev-` plus 1–48 letters, numbers, or hyphens. They are the `tenant_quotes.title` values, one on each fixture tenant. The two users must be members of only their own tenant and must not be platform admins. Turn off MFA for these users; a two-factor challenge is blocked rather than bypassed.
+Markers must match `qa-hosted-dev-` plus 1–48 letters, numbers, or hyphens. They are the `tenant_quotes.title` values, one on each fixture tenant. Each RLS user is a member of only their own fixture tenant. The membership role may be owner, admin, employee, or viewer. “Tenant admin” means that membership role on that tenant only. It is not a platform role. `app_metadata.app_role` must not be `admin` or `super_admin`, and the token must not be `service_role`. Those platform roles bypass tenant RLS. The suite blocks when the Auth token says so. It does not count that read as a pass. Turn off MFA for these users; a two-factor challenge is blocked rather than bypassed.
 
 Optional direct SQL, local only, still the dev project only. Do not add these to GitHub at all:
 
