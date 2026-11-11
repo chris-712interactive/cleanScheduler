@@ -31,6 +31,10 @@ describe('classifyPostLoginHost', () => {
       kind: 'tenant',
       tenantSlug: 'acme',
     });
+    expect(classifyPostLoginHost('http://admin.evil.lvh.me:3000')).toEqual({
+      kind: 'marketing',
+      tenantSlug: null,
+    });
   });
 });
 
@@ -135,6 +139,18 @@ describe('resolvePostLoginDestination', () => {
     expect(result.url).toBe('http://admin.lvh.me:3000/tenants');
   });
 
+  it('does not keep platform staff on a nested host that starts with admin', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'admin',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.evil.lvh.me:3000',
+    });
+    expect(result.kind).toBe('workspace');
+    expect(result.url).toBe('http://acme.lvh.me:3000/');
+  });
+
   it('keeps sales staff on the admin host when they also belong to a workspace', () => {
     const result = resolvePostLoginDestination({
       appRole: 'sales',
@@ -183,6 +199,27 @@ describe('resolvePostLoginDestination', () => {
       currentOrigin: 'http://lvh.me:3000',
     });
     expect(result.url).toBe('http://second.lvh.me:3000/');
+  });
+
+  it('sends platform staff to the canonical admin origin', () => {
+    const nested = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: '/',
+      currentOrigin: 'http://admin.evil.lvh.me:3000',
+    });
+    expect(nested.url).toBe('http://admin.lvh.me:3000/');
+    expect(nested.url).not.toContain('evil');
+
+    const deepLink = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: '/tenants',
+      currentOrigin: 'http://admin.lvh.me:9999',
+    });
+    expect(deepLink.url).toBe('http://admin.lvh.me:3000/tenants');
   });
 
   it('uses white-label customer origin when provided', () => {

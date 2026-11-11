@@ -27,6 +27,7 @@ export function SignInForm({
   showPasskey?: boolean;
 }) {
   const [returnOrigin, setReturnOrigin] = useState('');
+  const [documentNavigation, setDocumentNavigation] = useState(false);
 
   const [passwordState, passwordAction, passwordPending] = useActionState(
     signInWithPassword,
@@ -36,6 +37,13 @@ export function SignInForm({
   useEffect(() => {
     setReturnOrigin(window.location.origin);
   }, []);
+
+  useEffect(() => {
+    const target = passwordState.redirectTo;
+    if (!target || !/^https?:\/\//i.test(target)) return;
+    setDocumentNavigation(true);
+    window.location.assign(target);
+  }, [passwordState.redirectTo]);
 
   const activeError = passwordState.error;
   useFeedbackToast({ error: activeError ?? urlError, pending: passwordPending });
@@ -66,8 +74,8 @@ export function SignInForm({
             placeholder="••••••••"
           />
         </FormField>
-        <Button type="submit" fullWidth loading={passwordPending}>
-          {passwordPending ? 'Signing in...' : 'Sign in'}
+        <Button type="submit" fullWidth loading={passwordPending || documentNavigation}>
+          {passwordPending || documentNavigation ? 'Signing in...' : 'Sign in'}
         </Button>
         <p className={styles.helpText}>
           <Link href="/forgot-password">Forgot password?</Link>

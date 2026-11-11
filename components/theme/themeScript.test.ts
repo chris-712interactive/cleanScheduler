@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_THEME_PREFERENCE,
   isLightOnlyPath,
+  isMarketingHostname,
   parseThemePreference,
+  themeScript,
 } from '@/components/theme/themeScript';
 
 describe('themeScript helpers', () => {
@@ -18,6 +20,13 @@ describe('themeScript helpers', () => {
     expect(parseThemePreference('light')).toBe('light');
     expect(parseThemePreference('dark')).toBe('dark');
     expect(parseThemePreference('system')).toBe('system');
+  });
+
+  it('treats a nested admin host as marketing and the real admin host as a portal', () => {
+    expect(isMarketingHostname('admin.lvh.me', 'lvh.me:3000')).toBe(false);
+    expect(isMarketingHostname('admin.evil.lvh.me', 'lvh.me:3000')).toBe(true);
+    expect(isMarketingHostname('acme.lvh.me', 'lvh.me:3000')).toBe(false);
+    expect(themeScript).toContain("prefix.indexOf('.')");
   });
 
   it('treats start-trial and sign-in as light-only paths', () => {

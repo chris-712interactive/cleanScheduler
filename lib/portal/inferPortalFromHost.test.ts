@@ -25,5 +25,9 @@ describe('inferPortalFromHost', () => {
     expect(inferPortalFromHost('admin.cleanscheduler.com', 'cleanscheduler.com').kind).toBe(
       'admin',
     );
+    expect(inferPortalFromHost('admin.evil.cleanscheduler.com', 'cleanscheduler.com')).toEqual({
+      kind: 'marketing',
+      tenantSlug: null,
+    });
   });
 });

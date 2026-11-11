@@ -6,6 +6,7 @@
  * request is hitting, plus the resolved tenant slug when applicable.
  */
 import { headers } from 'next/headers';
+import { platformHostLabel } from '@/lib/portal/platformHostLabel';
 import type { PortalKind } from '@/proxy';
 
 const RESERVED_SUBDOMAINS = new Set([
@@ -34,18 +35,7 @@ function getApexHost(): string {
 }
 
 function extractSubdomainLabel(host: string, apex: string): string | null {
-  const apexWithoutPort = apex.split(':')[0]!.toLowerCase();
-  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
-
-  if (hostWithoutPort === apexWithoutPort) return null;
-
-  if (hostWithoutPort.endsWith(`.${apexWithoutPort}`)) {
-    const prefix = hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
-    const firstLabel = prefix.split('.')[0];
-    return firstLabel ?? null;
-  }
-
-  return null;
+  return platformHostLabel(host, apex);
 }
 
 /** Fallback for `/api/*` requests where middleware does not set `x-tenant-slug`. */
