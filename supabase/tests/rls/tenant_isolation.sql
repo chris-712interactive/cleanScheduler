@@ -163,6 +163,36 @@ BEGIN
     END IF;
   END IF;
 
+  IF to_regclass('public.user_profiles') IS NOT NULL
+     AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.role_table_grants
+      WHERE table_schema = 'public'
+        AND table_name = 'user_profiles'
+        AND grantee IN ('anon', 'authenticated', 'PUBLIC')
+        AND privilege_type = 'UPDATE'
+    ) THEN
+      missing := array_append(missing, 'user_profiles table UPDATE granted to anon, authenticated, or public');
+    END IF;
+
+    IF has_column_privilege('authenticated', 'public.user_profiles', 'app_role', 'UPDATE') THEN
+      missing := array_append(missing, 'authenticated can update user_profiles.app_role');
+    END IF;
+
+    IF NOT has_column_privilege('authenticated', 'public.user_profiles', 'display_name', 'UPDATE') THEN
+      missing := array_append(missing, 'authenticated cannot update user_profiles.display_name');
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_trigger
+      WHERE tgname = 'user_profiles_guard_privileged_columns'
+        AND tgrelid = 'public.user_profiles'::regclass
+        AND NOT tgisinternal
+    ) THEN
+      missing := array_append(missing, 'user_profiles_guard_privileged_columns trigger');
+    END IF;
+  END IF;
+
   IF array_length(missing, 1) IS NOT NULL THEN
     RAISE EXCEPTION 'Tenant isolation RLS smoke failed — missing: %', array_to_string(missing, ', ');
   END IF;

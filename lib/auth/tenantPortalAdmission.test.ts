@@ -3,7 +3,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isPlatformAdminRole, isPlatformStaffRole } from '@/lib/auth/platformRoles';
 import { decideTenantPortalAdmission } from '@/lib/auth/tenantPortalAdmission';
-import { appRoleForNewTenantMember, appRoleForTenantMember } from '@/lib/auth/tenantMemberAppRole';
+import {
+  appRoleCopiedOnTenantRoleEdit,
+  appRoleForNewTenantMember,
+  appRoleForTenantMember,
+} from '@/lib/auth/tenantMemberAppRole';
 import type { TenantRole } from '@/lib/auth/types';
 
 const HOST = 'tenant-commercial';
@@ -124,6 +128,39 @@ describe('tenant member platform role', () => {
     expect(appRoleForTenantMember('sales')).toBe('sales');
   });
 
+  it('does not copy a self-written profile app_role into auth on a tenant role edit', () => {
+    expect(
+      appRoleCopiedOnTenantRoleEdit({
+        authAppRole: 'employee',
+        profileAppRole: 'super_admin',
+      }),
+    ).toBe('employee');
+    expect(
+      appRoleCopiedOnTenantRoleEdit({
+        authAppRole: 'employee',
+        profileAppRole: 'admin',
+      }),
+    ).toBe('employee');
+    expect(
+      appRoleCopiedOnTenantRoleEdit({
+        authAppRole: 'customer',
+        profileAppRole: 'sales',
+      }),
+    ).toBe('employee');
+    expect(
+      appRoleCopiedOnTenantRoleEdit({
+        authAppRole: 'super_admin',
+        profileAppRole: 'employee',
+      }),
+    ).toBe('super_admin');
+    expect(
+      appRoleCopiedOnTenantRoleEdit({
+        authAppRole: null,
+        profileAppRole: 'admin',
+      }),
+    ).toBe('employee');
+  });
+
   it('signup, invite, member edits, and the dev seed do not stamp platform admin', () => {
     const files = [
       'app/marketing/onboarding/actions.ts',
@@ -154,6 +191,13 @@ describe('tenant member platform role', () => {
     expect(onboarding).toContain('appRoleForNewTenantMember');
     expect(invite).toContain('appRoleForNewTenantMember');
     expect(invite).toContain('appRoleForTenantMember');
-    expect(members).toContain('appRoleForTenantMember');
+    const roleEdit = members.slice(
+      members.indexOf('export async function updateTenantMemberRoleAction'),
+      members.indexOf('export async function setTenantMemberActiveAction'),
+    );
+    expect(roleEdit).toContain('preservePlatformRoleFromAuth: true');
+    expect(roleEdit).not.toContain('appRole:');
+    expect(roleEdit).not.toContain(".select('app_role')");
+    expect(roleEdit).not.toContain('profileRow');
   });
 });

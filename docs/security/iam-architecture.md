@@ -6,7 +6,7 @@
 
 | Type           | Store                                    | Used for                                         |
 | -------------- | ---------------------------------------- | ------------------------------------------------ |
-| Platform user  | Supabase Auth + `user_profiles.app_role` | Founder admin, sales closer, cross-portal access |
+| Platform user  | Supabase Auth `app_metadata.app_role`    | Founder admin, sales closer, cross-portal access |
 | Tenant member  | `tenant_memberships` + JWT `tenant_role` | Workspace operations portal                      |
 | Customer user  | Supabase Auth + `customer_identities`    | Branded customer portal                          |
 | Machine (API)  | `tenant_api_keys` (hashed)               | Tenant REST API (Pro plan)                       |
@@ -35,9 +35,9 @@
 - `current_tenant_id` — active workspace context
 - `masquerade_target_tenant_id` — support masquerade target
 
-`admin` and `super_admin` are platform staff only. Trial owners, invited tenant admins, and other workspace members are stored as `employee`. Their authority is `tenant_memberships.role`. A platform admin does not open a workspace they are not a member of unless `app_metadata.masquerade_target_tenant_id` is that tenant. `user_metadata` is not a source for `app_role` or the masquerade target.
+`admin` and `super_admin` are platform staff only. Trial owners, invited tenant admins, and other workspace members are stored as `employee`. Their authority is `tenant_memberships.role`. A platform admin does not open a workspace they are not a member of unless `app_metadata.masquerade_target_tenant_id` is that tenant. `user_metadata` is not a source for `app_role` or the masquerade target. `user_profiles.app_role` is a server-written copy of the Auth claim. It is not a source for platform identity. A signed-in user may update display name and photo columns on their own profile. They cannot update `app_role`, `user_id`, or `created_at` (`0124_user_profiles_privileged_columns.sql`).
 
-Claims are synchronized via `lib/auth/syncUserAuthClaims.ts` on role changes.
+Claims are synchronized via `lib/auth/syncUserAuthClaims.ts` on role changes. A workspace role edit keeps an existing platform role only when that role is already in Auth `app_metadata`.
 
 ## Service role usage
 

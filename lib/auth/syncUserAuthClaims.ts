@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import type { AppRole, TenantRole } from '@/lib/auth/types';
+import { appRoleCopiedOnTenantRoleEdit } from '@/lib/auth/tenantMemberAppRole';
+import { extractClaims, type AppRole, type TenantRole } from '@/lib/auth/types';
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -9,17 +10,29 @@ export async function syncUserAuthClaims(
   userId: string,
   claims: {
     appRole?: AppRole;
+    /**
+     * Recompute platform role from this user's current Auth `app_metadata`.
+     * Ignores `appRole` when both are set, so a profile column cannot be copied in.
+     */
+    preservePlatformRoleFromAuth?: boolean;
     tenantRole?: TenantRole | null;
     currentTenantId?: string | null;
   },
-): Promise<void> {
+): Promise<AppRole | null> {
   const { data: userRes, error: userErr } = await admin.auth.admin.getUserById(userId);
   if (userErr || !userRes.user) {
     throw new Error(userErr?.message ?? 'User not found for claim sync.');
   }
 
   const meta = { ...(userRes.user.app_metadata ?? {}) };
-  if (claims.appRole !== undefined) meta.app_role = claims.appRole;
+  let resolvedAppRole = extractClaims(userRes.user).appRole;
+  if (claims.preservePlatformRoleFromAuth) {
+    resolvedAppRole = appRoleCopiedOnTenantRoleEdit({ authAppRole: resolvedAppRole });
+    meta.app_role = resolvedAppRole;
+  } else if (claims.appRole !== undefined) {
+    meta.app_role = claims.appRole;
+    resolvedAppRole = claims.appRole;
+  }
   if (claims.tenantRole !== undefined) {
     if (claims.tenantRole) meta.tenant_role = claims.tenantRole;
     else delete meta.tenant_role;
@@ -31,4 +44,5 @@ export async function syncUserAuthClaims(
 
   const { error } = await admin.auth.admin.updateUserById(userId, { app_metadata: meta });
   if (error) throw new Error(error.message);
+  return resolvedAppRole;
 }

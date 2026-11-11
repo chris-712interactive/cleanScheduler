@@ -12,13 +12,18 @@
  * - PLATFORM_STAFF_ALLOWLIST=<user uuid>[,<user uuid>...]
  * - NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the environment
  *
- * Allowlisted user ids keep platform admin. Everyone else is demoted only when
- * user_profiles.app_role is admin AND they have a tenant membership. super_admin,
- * sales, and admin users with no membership are left alone. Auth metadata is
- * changed only when its app_role is admin.
+ * Allowlisted user ids keep their platform role. Put every real platform
+ * admin, super admin, and sales user on that list before you run this,
+ * including staff who also belong to a workspace.
+ * Everyone else is demoted when user_profiles.app_role is admin, super_admin,
+ * or sales AND they have a tenant membership (inactive memberships count).
+ * The same labels with no membership are left alone. Auth app_metadata.app_role
+ * is set to employee when it is admin, super_admin, or sales.
  */
 import { createClient } from '@supabase/supabase-js';
 import {
+  MISLABELED_TENANT_PLATFORM_ROLES,
+  isMislabeledTenantPlatformRole,
   parseStaffAllowlist,
   shouldDemoteMislabeledPlatformAdmin,
 } from '../lib/auth/platformAdminDemotion.ts';
@@ -34,7 +39,7 @@ function usage(): string {
     '  PLATFORM_STAFF_ALLOWLIST=<user uuid>[,<user uuid>...]',
     '  NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the environment',
     'An empty or invalid allowlist is rejected so staff are not demoted by accident.',
-    'The allowlist is the set of user ids that must keep platform admin.',
+    'The allowlist is the set of user ids that must keep platform admin, super admin, or sales.',
   ].join('\n');
 }
 
@@ -75,7 +80,7 @@ async function main(): Promise<void> {
   });
 
   const pageSize = 500;
-  let from = 0;
+  let afterUserId = '';
   let scanned = 0;
   let demoted = 0;
   let keptAllowlisted = 0;
@@ -83,14 +88,22 @@ async function main(): Promise<void> {
   let skippedAuthRole = 0;
 
   for (;;) {
-    const { data, error } = await admin
+    let query = admin
       .from('user_profiles')
       .select('user_id, app_role')
-      .eq('app_role', 'admin')
-      .range(from, from + pageSize - 1);
+      .in('app_role', [...MISLABELED_TENANT_PLATFORM_ROLES])
+      .order('user_id', { ascending: true })
+      .limit(pageSize);
+    if (afterUserId) query = query.gt('user_id', afterUserId);
+    const { data, error } = await query;
     if (error) refuse(error.message);
     const rows = data ?? [];
     if (rows.length === 0) break;
+    const lastUserId = rows[rows.length - 1]?.user_id;
+    if (typeof lastUserId !== 'string' || lastUserId.length === 0) {
+      refuse('Refusing to continue: a profile page did not end with a user id.');
+    }
+    afterUserId = lastUserId;
 
     for (const row of rows) {
       const userId = typeof row.user_id === 'string' ? row.user_id : '';
@@ -118,34 +131,32 @@ async function main(): Promise<void> {
       const { data: userRes, error: userErr } = await admin.auth.admin.getUserById(userId);
       if (userErr || !userRes.user) refuse(userErr?.message ?? 'Auth user could not be loaded.');
       const meta = { ...(userRes.user.app_metadata ?? {}) };
-      const authRole = meta.app_role;
-      if (authRole === 'super_admin' || authRole === 'sales') {
-        skippedAuthRole += 1;
-        continue;
-      }
-      if (authRole === 'admin') {
+      const authRole = typeof meta.app_role === 'string' ? meta.app_role : null;
+      if (isMislabeledTenantPlatformRole(authRole)) {
         meta.app_role = 'employee';
         const { error: metaErr } = await admin.auth.admin.updateUserById(userId, {
           app_metadata: meta,
         });
         if (metaErr) refuse(metaErr.message);
+      } else if (authRole && authRole !== 'employee' && authRole !== 'customer') {
+        skippedAuthRole += 1;
+        continue;
       }
 
       const { error: profileErr } = await admin
         .from('user_profiles')
         .update({ app_role: 'employee', updated_at: new Date().toISOString() })
         .eq('user_id', userId)
-        .eq('app_role', 'admin');
+        .in('app_role', [...MISLABELED_TENANT_PLATFORM_ROLES]);
       if (profileErr) refuse(profileErr.message);
       demoted += 1;
     }
 
     if (rows.length < pageSize) break;
-    from += pageSize;
   }
 
   console.log(
-    `Scanned ${scanned} profiles labeled admin. Demoted ${demoted}. Allowlisted ${keptAllowlisted}. Left without a tenant membership ${skippedNoMembership}. Left because auth role was not admin ${skippedAuthRole}.`,
+    `Scanned ${scanned} profiles labeled admin, super_admin, or sales. Demoted ${demoted}. Allowlisted ${keptAllowlisted}. Left without a tenant membership ${skippedNoMembership}. Left because auth role was unrecognized ${skippedAuthRole}.`,
   );
 }
 
