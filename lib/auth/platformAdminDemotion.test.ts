@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  demoteAuthAppRole,
   parseStaffAllowlist,
   shouldDemoteMislabeledPlatformAdmin,
 } from '@/lib/auth/platformAdminDemotion';
@@ -34,7 +35,63 @@ describe('platform admin demotion policy', () => {
     ).toBe(true);
   });
 
-  it('keeps allowlisted staff, super admins, sales, and admins with no membership', () => {
+  it('demotes tenant members labeled super_admin or sales when they are not allowlisted', () => {
+    const allowlist = parseStaffAllowlist(STAFF);
+    if (!allowlist) throw new Error('Expected a staff allowlist.');
+    expect(
+      shouldDemoteMislabeledPlatformAdmin({
+        appRole: 'super_admin',
+        hasTenantMembership: true,
+        userId: TENANT_USER,
+        allowlist,
+      }),
+    ).toBe(true);
+    expect(
+      shouldDemoteMislabeledPlatformAdmin({
+        appRole: 'sales',
+        hasTenantMembership: true,
+        userId: TENANT_USER,
+        allowlist,
+      }),
+    ).toBe(true);
+  });
+
+  it('clears a mislabeled profile even when Auth uses an unrecognized role', () => {
+    expect(demoteAuthAppRole('super_admin')).toEqual({
+      nextAuthRole: 'employee',
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('admin')).toEqual({
+      nextAuthRole: 'employee',
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('sales')).toEqual({
+      nextAuthRole: 'employee',
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('owner')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: true,
+    });
+    expect(demoteAuthAppRole('employee')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('customer')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole(null)).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
+  });
+
+  it('keeps allowlisted staff and platform labels with no membership', () => {
     const allowlist = parseStaffAllowlist(STAFF);
     if (!allowlist) throw new Error('Expected a staff allowlist.');
     expect(
@@ -49,14 +106,22 @@ describe('platform admin demotion policy', () => {
       shouldDemoteMislabeledPlatformAdmin({
         appRole: 'super_admin',
         hasTenantMembership: true,
-        userId: TENANT_USER,
+        userId: STAFF,
         allowlist,
       }),
     ).toBe(false);
     expect(
       shouldDemoteMislabeledPlatformAdmin({
         appRole: 'sales',
-        hasTenantMembership: true,
+        hasTenantMembership: false,
+        userId: TENANT_USER,
+        allowlist,
+      }),
+    ).toBe(false);
+    expect(
+      shouldDemoteMislabeledPlatformAdmin({
+        appRole: 'super_admin',
+        hasTenantMembership: false,
         userId: TENANT_USER,
         allowlist,
       }),
