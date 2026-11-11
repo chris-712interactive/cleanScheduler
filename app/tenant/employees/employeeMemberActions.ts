@@ -24,7 +24,6 @@ import {
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
 import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
-import { appRoleForTenantMember } from '@/lib/auth/tenantMemberAppRole';
 import { assertActiveAdministratorRemains } from '@/lib/tenant/workspaceAdminGuards';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
@@ -223,23 +222,17 @@ export async function updateTenantMemberRoleAction(
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
 
-  const { data: profileRow, error: profileReadError } = await admin
-    .from('user_profiles')
-    .select('app_role')
-    .eq('user_id', targetUserId)
-    .maybeSingle();
-  if (profileReadError) return { error: profileReadError.message };
-
-  const nextAppRole = appRoleForTenantMember(profileRow?.app_role ?? null);
+  let nextAppRole: Awaited<ReturnType<typeof syncUserAuthClaims>>;
   try {
-    await syncUserAuthClaims(admin, targetUserId, {
-      appRole: nextAppRole,
+    nextAppRole = await syncUserAuthClaims(admin, targetUserId, {
+      preservePlatformRoleFromAuth: true,
       tenantRole: nextRole,
       currentTenantId: membership.tenantId,
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not update auth claims.' };
   }
+  if (!nextAppRole) return { error: 'Could not update auth claims.' };
 
   const { error: profErr } = await admin
     .from('user_profiles')
