@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { redactLandingUrl, redactText } from '@/lib/hosted-dev/redactText';
+import { redactLandingUrl, redactPlaintextSecrets, redactText } from '@/lib/hosted-dev/redactText';
 
 describe('hosted dev artifact redaction', () => {
   it('removes secrets, emails, tokens, and database URLs', () => {
@@ -57,6 +57,64 @@ describe('hosted dev artifact redaction', () => {
     expect(landing).not.toContain('sekret-token');
     expect(landing).not.toContain('sekret-code');
     expect(landing.startsWith('https://admin.dev.cleanscheduler.com/')).toBe(true);
+  });
+
+  it('redacts token-like values in the fragment and the extra oauth query keys', () => {
+    const raw = [
+      'https://admin.dev.cleanscheduler.com/cb',
+      '?access_token=query-access&ACCESS_TOKEN=query-access-again',
+      '&refresh_token=query-refresh&id_token=query-id',
+      '#token=fragment-token&Token=fragment-token-again',
+      '&access_token=fragment-access&refresh_token=fragment-refresh&id_token=fragment-id',
+    ].join('');
+    for (const redacted of [redactText(raw, []), redactLandingUrl(raw)]) {
+      expect(redacted).not.toContain('query-access');
+      expect(redacted).not.toContain('query-access-again');
+      expect(redacted).not.toContain('query-refresh');
+      expect(redacted).not.toContain('query-id');
+      expect(redacted).not.toContain('fragment-token');
+      expect(redacted).not.toContain('fragment-token-again');
+      expect(redacted).not.toContain('fragment-access');
+      expect(redacted).not.toContain('fragment-refresh');
+      expect(redacted).not.toContain('fragment-id');
+      expect(redacted).toContain('access_token=[redacted]');
+      expect(redacted).toContain('id_token=[redacted]');
+    }
+  });
+
+  it('redacts a double-encoded address in a path and in a non-url log line', () => {
+    const path =
+      'https://admin.dev.cleanscheduler.com/users/jane%2540example.com/sign-in?next=%2Fhome';
+    const note = 'mailbox jane%2540example.com bounced before sign-in';
+    for (const redacted of [redactText(path, []), redactLandingUrl(path), redactText(note, [])]) {
+      expect(redacted).not.toContain('jane');
+      expect(redacted).not.toContain('%2540');
+      expect(redacted).not.toContain('%40');
+      expect(redacted).toContain('[redacted-email]');
+    }
+    expect(redactPlaintextSecrets(note)).not.toContain('%2540');
+  });
+
+  it('scrubs a semicolon token assignment that the URL parser would still log', () => {
+    // searchParams does not split on `;`. The raw search is `?next=1;token=…`.
+    const raw = 'https://admin.dev.cleanscheduler.com/cb?next=1;token=semicolon-token&ok=1';
+    const landing = redactLandingUrl(raw);
+    expect(landing).not.toContain('semicolon-token');
+    expect(landing).toContain('next=1');
+    expect(landing).toContain(';token=[redacted]');
+    expect(redactText(`landed ${raw}`, [])).not.toContain('semicolon-token');
+
+    const embedded = redactLandingUrl(
+      'https://admin.dev.cleanscheduler.com/cb?token=value-with-semicolon;still-secret',
+    );
+    expect(embedded).not.toContain('value-with-semicolon');
+    expect(embedded).not.toContain('still-secret');
+
+    const pathToken = redactLandingUrl(
+      'https://admin.dev.cleanscheduler.com/cb;token=path-token?ok=1',
+    );
+    expect(pathToken).not.toContain('path-token');
+    expect(pathToken).toContain(';token=[redacted]');
   });
 });
 
