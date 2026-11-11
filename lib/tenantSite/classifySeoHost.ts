@@ -1,4 +1,5 @@
 import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
+import { platformHostLabel } from '@/lib/portal/platformHostLabel';
 
 const RESERVED_SUBDOMAINS = new Set([
   'admin',
@@ -27,12 +28,7 @@ export type SeoHostClassification =
   | { kind: 'custom-domain'; hostname: string };
 
 function subdomainLabel(host: string, apexDomain: string): string | null {
-  const apexWithoutPort = apexDomain.split(':')[0]!.toLowerCase();
-  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
-  if (hostWithoutPort === apexWithoutPort) return null;
-  if (!hostWithoutPort.endsWith(`.${apexWithoutPort}`)) return null;
-  const prefix = hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
-  return prefix.split('.')[0] ?? null;
+  return platformHostLabel(host, apexDomain);
 }
 
 /**

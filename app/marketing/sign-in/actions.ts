@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
 import { needsMfaChallenge } from '@/lib/auth/mfa';
+import { postLoginUsesDocumentNavigation } from '@/lib/auth/postLoginNavigation';
 import { resolvePostLoginDestinationForUser } from '@/lib/auth/resolvePostLoginDestination';
 import { parseAllowedAuthRedirectOrigin } from '@/lib/auth/whiteLabelRedirectOrigin';
 import { createClient } from '@/lib/supabase/server';
@@ -11,6 +12,8 @@ import { createClient } from '@/lib/supabase/server';
 export interface SignInState {
   error?: string;
   success?: string;
+  /** Absolute URL loaded with a document navigation, not the client router. */
+  redirectTo?: string;
 }
 
 function getOriginFromHeaders(h: Headers): string {
@@ -78,6 +81,14 @@ export async function signInWithPassword(
     nextPath,
     currentOrigin,
   });
+  // A server-action redirect() is a client navigation when JavaScript submitted
+  // the form. On the admin host that reuses the marketing homepage for `/`.
+  // A document load runs the proxy rewrite and paints the signed-in shell.
+  // A no-JS submit still gets the HTTP redirect.
+  const flightResponse = h.get('accept')?.includes('text/x-component') ?? false;
+  if (flightResponse && postLoginUsesDocumentNavigation(destination.url)) {
+    return { redirectTo: destination.url };
+  }
   redirect(destination.url);
 }
 

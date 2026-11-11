@@ -22,7 +22,7 @@ Sales users **cannot** access tenants, fraud, accounting, audit, SEO, inquiries,
 | `super_admin` / `admin` | Yes               | Yes                 | Yes           |
 | `sales`                 | Yes (limited nav) | Yes                 | No            |
 
-Invite a closer from **Settings → Invite sales**. MFA is required. They land on `admin.<apex>` after sign-in. Platform staff who sign in on the admin host stay there even when they also have a workspace membership. A membership role named admin is not this platform role.
+Invite a closer from **Settings → Invite sales**. MFA is required. They land on the canonical `admin.<apex>` origin after sign-in. A nested hostname whose first label is `admin` (for example `admin.evil.<apex>`) is not the admin portal. Platform staff who sign in on the real admin host stay on that canonical origin even when they also have a workspace membership. Password sign-in to `/` loads that page as a document request, so the first paint is the founder or sales dashboard. A membership role named admin is not this platform role. Session cookies stay on the host that set them. There is no cross-host handoff.
 
 ## Routes
 
