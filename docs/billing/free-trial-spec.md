@@ -48,9 +48,12 @@ Marketing onboarding form (/start-trial)
 Employee invite acceptance also confirms at create (the invite link is the confirmation).
 Customer portal invites confirm at create (the invite link is the confirmation). Referral referee signup may still honor `ONBOARDING_EMAIL_CONFIRM_MODE`.
 
-**Post-login routing:** Signing in on any host (apex, wrong tenant, etc.) resolves the
-correct portal from role/membership (`resolvePostLoginDestination`) and redirects
-there. Access-denied pages offer a primary CTA to that destination.
+**Post-login routing:** Signing in resolves the correct portal from role and membership
+(`resolvePostLoginDestination`) and redirects there. A workspace membership wins when
+sign-in did not happen on the admin host. Platform staff (`super_admin`, `admin`,
+`sales`) who sign in on the admin host stay on that host, even if they also belong to
+a workspace. The session cookie is host-scoped, so leaving the admin host would show
+sign-in on the other host. Access-denied pages offer a primary CTA to that destination.
 
 ### B. During trial
 

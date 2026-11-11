@@ -110,6 +110,67 @@ describe('resolvePostLoginDestination', () => {
     expect(result.url).toBe('http://admin.lvh.me:3000/');
   });
 
+  it('keeps platform staff on the admin host when they also belong to a workspace', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'admin',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('admin');
+    expect(result.url).toBe('http://admin.lvh.me:3000/');
+    expect(result.ctaLabel).toBe('Open admin');
+  });
+
+  it('keeps an admin-host deep link for platform staff who have a workspace', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/tenants',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('admin');
+    expect(result.url).toBe('http://admin.lvh.me:3000/tenants');
+  });
+
+  it('keeps sales staff on the admin host when they also belong to a workspace', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'sales',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('admin');
+    expect(result.url).toBe('http://admin.lvh.me:3000/');
+  });
+
+  it('still opens the workspace when platform staff sign in on the marketing host', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'sales',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://lvh.me:3000',
+    });
+    expect(result.kind).toBe('workspace');
+    expect(result.url).toBe('http://acme.lvh.me:3000/');
+  });
+
+  it('sends a workspace member who is not platform staff away from the admin host', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'employee',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('workspace');
+    expect(result.url).toBe('http://acme.lvh.me:3000/');
+  });
+
   it('prefers current_tenant_id when multiple memberships exist', () => {
     const result = resolvePostLoginDestination({
       appRole: 'admin',

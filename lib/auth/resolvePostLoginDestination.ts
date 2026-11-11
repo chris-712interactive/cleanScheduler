@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
+import { isPlatformStaffRole } from '@/lib/auth/platformRoles';
 import { extractClaims, type AppRole } from '@/lib/auth/types';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
@@ -134,6 +135,21 @@ function preferredTenantSlug(
 }
 
 function homeForRole(input: ResolvePostLoginDestinationInput): PostLoginDestination {
+  // Session cookies are stored for the host that set them. Platform staff who
+  // finish sign-in on the admin host stay there even when they also belong to
+  // a workspace. Sending them to that workspace drops the cookie and shows
+  // sign-in on the other host.
+  if (
+    classifyPostLoginHost(input.currentOrigin).kind === 'admin' &&
+    isPlatformStaffRole(input.appRole)
+  ) {
+    return {
+      url: joinOriginPath(input.currentOrigin, '/'),
+      kind: 'admin',
+      ctaLabel: 'Open admin',
+    };
+  }
+
   const tenantSlug = preferredTenantSlug(input.memberships, input.currentTenantId);
   if (tenantSlug) {
     return {
@@ -184,6 +200,7 @@ function hostMatchesDestination(
 /**
  * After successful auth, pick the absolute URL for the user’s home portal
  * (or preserve an explicit deep link when already on a matching host).
+ * Platform staff who signed in on the admin host stay on that host.
  */
 export function resolvePostLoginDestination(
   input: ResolvePostLoginDestinationInput,
