@@ -12,6 +12,8 @@ import {
 } from '@/lib/tenant/fieldEmployeeAccess';
 import { readRequestAuthGrant } from '@/lib/auth/readRequestAuthGrant';
 import type { RequestAuthGrantTenant } from '@/lib/auth/requestAuthGrant';
+import { isPlatformAdminRole } from '@/lib/auth/platformRoles';
+import { decideTenantPortalAdmission } from '@/lib/auth/tenantPortalAdmission';
 import { decideWorkspaceGate } from '@/lib/auth/workspaceGate';
 import { enforceTenantAuthPolicy } from './enforceTenantAuthPolicy';
 import { requirePortalAccess } from './portalAccess';
@@ -209,7 +211,7 @@ export async function requireTenantPortalAccess(
     browserPathname: accessOptions?.browserPathname ?? headerBrowserPath,
   };
 
-  const isPlatformAdmin = auth.claims.appRole === 'super_admin' || auth.claims.appRole === 'admin';
+  const isPlatformAdmin = isPlatformAdminRole(auth.claims.appRole);
   const grant = await readRequestAuthGrant();
   const grantedTenant =
     grant && grant.uid === auth.user.id && grant.tenant?.tenantSlug === slug ? grant.tenant : null;
@@ -285,24 +287,42 @@ export async function requireTenantPortalAccess(
     return membership;
   }
 
-  // Founder / platform ops: no tenant_memberships row required if the tenant
-  // exists (support, demos, pre-invite debugging).
-  if (isPlatformAdmin) {
-    const tenant = await lookupTenantBySlug(slug);
-    if (tenant) {
-      await assertTenantWorkspaceUnlocked(tenant.id, {
-        ...mergedOptions,
-        bypassAdminSuspension: true,
-      });
-      return {
-        tenantId: tenant.id,
-        tenantSlug: tenant.slug,
-        tenantName: tenant.name,
-        role: 'admin',
-        roleId: null,
-      };
-    }
+  // No membership. Platform admin is not a pass into every workspace.
+  // Support entry requires a masquerade claim aimed at this tenant.
+  const masqueradeTarget = auth.claims.masqueradeTargetTenantId;
+  let hostTenant: { id: string; slug: string; name: string } | null = null;
+  let hostTenantResolved = false;
+  if (isPlatformAdmin && masqueradeTarget) {
+    hostTenant = await lookupTenantBySlug(slug);
+    hostTenantResolved = true;
+  }
+
+  const admission = decideTenantPortalAdmission({
+    appRole: auth.claims.appRole,
+    masqueradeTargetTenantId: masqueradeTarget,
+    hostTenantId: hostTenant?.id ?? null,
+    hostTenantResolved,
+  });
+
+  if (admission.kind === 'deny' && admission.reason === 'unknown_tenant') {
     redirect('/access-denied?reason=unknown_tenant');
+  }
+
+  if (admission.kind === 'masquerade') {
+    if (!hostTenant) {
+      redirect('/access-denied?reason=unknown_tenant');
+    }
+    await assertTenantWorkspaceUnlocked(hostTenant.id, {
+      ...mergedOptions,
+      bypassAdminSuspension: true,
+    });
+    return {
+      tenantId: hostTenant.id,
+      tenantSlug: hostTenant.slug,
+      tenantName: hostTenant.name,
+      role: 'admin',
+      roleId: null,
+    };
   }
 
   if (await hasInactiveMembership(auth.user.id, slug)) {

@@ -46,20 +46,19 @@ function parseTenantRole(value: unknown): TenantRole | null {
 /**
  * Extract normalized app claims from Supabase user metadata.
  *
- * We favor `app_metadata` for role-bearing claims (server-controlled), but
- * fall back to `user_metadata` for local-dev ergonomics while auth wiring is
- * still maturing.
+ * `app_role` and `masquerade_target_tenant_id` come only from server-written
+ * `app_metadata`. `user_metadata` is editable by the signed-in user, so it is
+ * not a source for platform role or a support session. Tenant id and tenant
+ * role hints may still fall back; workspace authority is the membership row.
  */
 export function extractClaims(user: User): AppClaims {
   const appMeta = user.app_metadata ?? {};
   const userMeta = user.user_metadata ?? {};
 
   return {
-    appRole: parseAppRole(appMeta.app_role ?? userMeta.app_role),
+    appRole: parseAppRole(appMeta.app_role),
     currentTenantId: asString(appMeta.current_tenant_id ?? userMeta.current_tenant_id),
     tenantRole: parseTenantRole(appMeta.tenant_role ?? userMeta.tenant_role),
-    masqueradeTargetTenantId: asString(
-      appMeta.masquerade_target_tenant_id ?? userMeta.masquerade_target_tenant_id,
-    ),
+    masqueradeTargetTenantId: asString(appMeta.masquerade_target_tenant_id),
   };
 }
