@@ -94,7 +94,37 @@ jobs:
           node-version: 22.22.1
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: Install Playwright OS packages (best effort)
+        timeout-minutes: 3
+        continue-on-error: true
+        run: |
+          set +e
+          # Not `playwright install --with-deps`. On GitHub-hosted ubuntu-24.04
+          # the Chromium libraries are already installed, and that flag's apt
+          # call only fetches optional fonts. A DNS failure for
+          # azure.archive.ubuntu.com retries for many minutes and fails the
+          # job. Bound the attempt. Chromium is installed above and must still
+          # launch in the next step.
+          timeout -k 15s 120s npx playwright install-deps chromium
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::warning title=Playwright OS packages skipped::install-deps exited ${status}. Continuing with the installed Chromium and the libraries already on the runner."
+          fi
+          exit 0
+      - name: Verify Playwright Chromium launches
+        run: |
+          timeout -k 10s 60s node <<'EOF'
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch();
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          EOF
       - name: Read-only hosted dev smoke
         env:
           HOSTED_DEV_BASE_URL: https://dev.cleanscheduler.com
@@ -150,7 +180,37 @@ jobs:
           node-version: 22.22.1
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: Install Playwright OS packages (best effort)
+        timeout-minutes: 3
+        continue-on-error: true
+        run: |
+          set +e
+          # Not `playwright install --with-deps`. On GitHub-hosted ubuntu-24.04
+          # the Chromium libraries are already installed, and that flag's apt
+          # call only fetches optional fonts. A DNS failure for
+          # azure.archive.ubuntu.com retries for many minutes and fails the
+          # job. Bound the attempt. Chromium is installed above and must still
+          # launch in the next step.
+          timeout -k 15s 120s npx playwright install-deps chromium
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::warning title=Playwright OS packages skipped::install-deps exited ${status}. Continuing with the installed Chromium and the libraries already on the runner."
+          fi
+          exit 0
+      - name: Verify Playwright Chromium launches
+        run: |
+          timeout -k 10s 60s node <<'EOF'
+          const { chromium } = require('@playwright/test');
+          (async () => {
+            const browser = await chromium.launch();
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          EOF
       # QA_* secrets below must exist only on the hosted-dev-isolated environment.
       # Repository copies are readable from a dev workflow that omits environment.
       - name: Opt-in isolated reads and RLS
