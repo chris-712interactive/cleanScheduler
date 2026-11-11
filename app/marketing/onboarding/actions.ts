@@ -22,6 +22,7 @@ import { checkRateLimit, getClientIdentifier } from '@/lib/security/rateLimit';
 import { normalizeSlug, validateSlug } from './utils';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
 import { parseTenantServiceSegment } from '@/lib/tenant/serviceSegment';
+import { appRoleForNewTenantMember } from '@/lib/auth/tenantMemberAppRole';
 
 export interface TenantOnboardingState {
   error?: string;
@@ -128,7 +129,7 @@ export async function createTenantAndOwner(
     password,
     email_confirm: autoConfirmEmail,
     app_metadata: {
-      app_role: 'admin',
+      app_role: appRoleForNewTenantMember(),
       tenant_role: 'owner',
     },
     user_metadata: {
@@ -226,7 +227,7 @@ export async function createTenantAndOwner(
   const profileUpsert = await admin.from('user_profiles').upsert(
     {
       user_id: userId,
-      app_role: 'admin',
+      app_role: appRoleForNewTenantMember(),
       display_name: displayName,
       first_name: firstName,
       last_name: lastName || null,
@@ -245,7 +246,7 @@ export async function createTenantAndOwner(
 
   await admin.auth.admin.updateUserById(userId, {
     app_metadata: {
-      app_role: 'admin',
+      app_role: appRoleForNewTenantMember(),
       tenant_role: 'owner',
       current_tenant_id: tenantId,
     },

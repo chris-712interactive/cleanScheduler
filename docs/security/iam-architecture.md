@@ -1,6 +1,6 @@
 # IAM Architecture
 
-**Last updated:** May 24, 2026
+**Last updated:** November 11, 2026
 
 ## Identity types
 
@@ -31,9 +31,11 @@
 ## JWT claims (app_metadata)
 
 - `app_role` — platform role (`super_admin`, `admin`, `sales`, `employee`, `customer`)
-- `tenant_role` — workspace role (`owner`, `admin`, `employee`, `viewer`)
+- `tenant_role` — workspace role hint (`owner`, `admin`, `employee`, `viewer`)
 - `current_tenant_id` — active workspace context
 - `masquerade_target_tenant_id` — support masquerade target
+
+`admin` and `super_admin` are platform staff only. Trial owners, invited tenant admins, and other workspace members are stored as `employee`. Their authority is `tenant_memberships.role`. A platform admin does not open a workspace they are not a member of unless `app_metadata.masquerade_target_tenant_id` is that tenant. `user_metadata` is not a source for `app_role` or the masquerade target.
 
 Claims are synchronized via `lib/auth/syncUserAuthClaims.ts` on role changes.
 
@@ -43,7 +45,7 @@ Claims are synchronized via `lib/auth/syncUserAuthClaims.ts` on role changes.
 
 ## Privileged access
 
-- Platform admin: `admin.<domain>` portal, masquerade, audit log.
+- Platform admin: `admin.<domain>` portal, masquerade into one targeted workspace, audit log. Platform admin alone does not open every workspace.
 - Platform sales: `admin.<domain>` portal limited to Outreach, Pipeline, and Settings. MFA required. No masquerade, tenant purge, fraud, or accounting.
 - Plaid/bank: owner/admin only, MFA required, Business+ plan.
 - Integrations: owner/admin for API key create/revoke (audited).
