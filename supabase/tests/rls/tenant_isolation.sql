@@ -198,6 +198,93 @@ BEGIN
     END IF;
   END IF;
 
+  IF to_regprocedure('public.has_tenant_membership(uuid)') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public'
+        AND p.proname = 'has_tenant_membership'
+        AND pg_get_function_identity_arguments(p.oid) = 'target_tenant_id uuid'
+        AND p.prosecdef
+        AND EXISTS (
+          SELECT 1
+          FROM unnest(coalesce(p.proconfig, array[]::text[])) cfg
+          WHERE cfg = 'search_path=public'
+        )
+    ) THEN
+      missing := array_append(missing, 'has_tenant_membership security definer search_path=public');
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated')
+       AND NOT has_function_privilege(
+         'authenticated',
+         'public.has_tenant_membership(uuid)',
+         'EXECUTE'
+       ) THEN
+      missing := array_append(missing, 'authenticated execute has_tenant_membership');
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role')
+       AND NOT has_function_privilege(
+         'service_role',
+         'public.has_tenant_membership(uuid)',
+         'EXECUTE'
+       ) THEN
+      missing := array_append(missing, 'service_role execute has_tenant_membership');
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon')
+       AND has_function_privilege('anon', 'public.has_tenant_membership(uuid)', 'EXECUTE') THEN
+      missing := array_append(missing, 'anon can execute has_tenant_membership');
+    END IF;
+  END IF;
+
+  IF to_regprocedure('public.can_read_hiring_desk(uuid)') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public'
+        AND p.proname = 'can_read_hiring_desk'
+        AND pg_get_function_identity_arguments(p.oid) = 'target_tenant_id uuid'
+        AND p.prosecdef
+        AND EXISTS (
+          SELECT 1
+          FROM unnest(coalesce(p.proconfig, array[]::text[])) cfg
+          WHERE cfg = 'search_path=public'
+        )
+    ) THEN
+      missing := array_append(missing, 'can_read_hiring_desk security definer search_path=public');
+    END IF;
+  END IF;
+
+  IF to_regprocedure('public.is_platform_admin()') IS NOT NULL
+     AND EXISTS (
+       SELECT 1
+       FROM pg_proc p
+       JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'public'
+         AND p.proname = 'is_platform_admin'
+         AND pg_get_function_identity_arguments(p.oid) = ''
+         AND p.prosecdef
+     ) THEN
+    missing := array_append(missing, 'is_platform_admin should stay security invoker');
+  END IF;
+
+  IF to_regprocedure('public.current_app_role()') IS NOT NULL
+     AND EXISTS (
+       SELECT 1
+       FROM pg_proc p
+       JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'public'
+         AND p.proname = 'current_app_role'
+         AND pg_get_function_identity_arguments(p.oid) = ''
+         AND p.prosecdef
+     ) THEN
+    missing := array_append(missing, 'current_app_role should stay security invoker');
+  END IF;
+
   IF array_length(missing, 1) IS NOT NULL THEN
     RAISE EXCEPTION 'Tenant isolation RLS smoke failed — missing: %', array_to_string(missing, ', ');
   END IF;

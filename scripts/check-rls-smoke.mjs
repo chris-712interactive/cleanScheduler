@@ -10,7 +10,10 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
-const sqlPath = path.join(repoRoot, 'supabase/tests/rls/tenant_isolation.sql');
+const sqlPaths = [
+  path.join(repoRoot, 'supabase/tests/rls/tenant_isolation.sql'),
+  path.join(repoRoot, 'supabase/tests/rls/tenant_quotes_member_read.sql'),
+];
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 
@@ -19,19 +22,23 @@ if (!databaseUrl) {
   process.exit(0);
 }
 
-if (!existsSync(sqlPath)) {
-  console.error(`check:rls-smoke — missing ${sqlPath}`);
-  process.exit(1);
+for (const sqlPath of sqlPaths) {
+  if (!existsSync(sqlPath)) {
+    console.error(`check:rls-smoke — missing ${sqlPath}`);
+    process.exit(1);
+  }
+
+  const result = spawnSync('psql', [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-f', sqlPath], {
+    stdio: 'inherit',
+    env: process.env,
+  });
+
+  if (result.error) {
+    console.error('check:rls-smoke — psql not available:', result.error.message);
+    process.exit(1);
+  }
+
+  if ((result.status ?? 1) !== 0) {
+    process.exit(result.status ?? 1);
+  }
 }
-
-const result = spawnSync('psql', [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-f', sqlPath], {
-  stdio: 'inherit',
-  env: process.env,
-});
-
-if (result.error) {
-  console.error('check:rls-smoke — psql not available:', result.error.message);
-  process.exit(1);
-}
-
-process.exit(result.status ?? 1);
