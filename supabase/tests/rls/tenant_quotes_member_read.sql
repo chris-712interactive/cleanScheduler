@@ -3,6 +3,8 @@
 -- cannot read another tenant's row, and does not hit SQLSTATE 42501 when
 -- authenticated has no SELECT grant on tenant_memberships.
 -- The whole script rolls back. It does not keep fixture rows.
+-- A missing table, auth.uid(), or authenticated role is a failure. Skipping
+-- would let check:rls-smoke pass without reading a quote.
 --
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls/tenant_quotes_member_read.sql
 
@@ -114,8 +116,8 @@ BEGIN
      OR to_regclass('auth.users') IS NULL
      OR to_regprocedure('auth.uid()') IS NULL
      OR NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-    RAISE NOTICE 'Skipping tenant quote member read — auth session or quote tables are not present.';
-    RETURN;
+    RAISE EXCEPTION
+      'tenant quote member read requires public.tenant_quotes, public.tenant_memberships, auth.users, auth.uid(), and role authenticated';
   END IF;
 
   IF NOT EXISTS (
