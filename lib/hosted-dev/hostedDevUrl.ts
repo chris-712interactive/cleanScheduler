@@ -35,3 +35,22 @@ export function assertHttpsDevUrl(raw: string): URL {
   }
   return url;
 }
+
+/**
+ * Resolve `path` on the host already open in the browser.
+ * Playwright's base URL is the marketing apex, so a relative `/quotes` would
+ * leave a tenant, admin, or customer host and hit a marketing 404.
+ */
+export function devUrlOnSameHost(currentUrl: string, path: string): string {
+  const current = assertHttpsDevUrl(currentUrl);
+  let target: URL;
+  try {
+    target = new URL(path, `${current.origin}/`);
+  } catch {
+    throw new Error('BLOCKED: path could not be resolved on the current host.');
+  }
+  if (target.origin !== current.origin) {
+    throw new Error('BLOCKED: path would leave the current host.');
+  }
+  return assertHttpsDevUrl(target.href).href;
+}
