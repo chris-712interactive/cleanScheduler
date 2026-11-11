@@ -1,4 +1,6 @@
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const ENCODED_EMAIL = /[A-Z0-9._%+-]+%40[A-Z0-9._%+-]{2,}/gi;
+const SENSITIVE_QUERY = /([?&](?:token|code|email)=)[^&#\s"'<>]*/gi;
 const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g;
 const STRIPE = /\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]+\b/g;
 const WEBHOOK = /\bwhsec_[A-Za-z0-9]+\b/g;
@@ -32,7 +34,30 @@ export function redactText(input: string, secrets: readonly string[]): string {
     .replace(AUTH_VALUE_NAME, '$1[redacted]$3')
     .replace(AUTH_FIELD, '$1[redacted]$3')
     .replace(AUTH_PLAIN, '$1[redacted]')
-    .replace(EMAIL, '[redacted-email]');
+    .replace(SENSITIVE_QUERY, '$1[redacted]')
+    .replace(EMAIL, '[redacted-email]')
+    .replace(ENCODED_EMAIL, '[redacted-email]');
+}
+
+/** Redact addresses in a heading or other short plain string. */
+export function redactPlaintextSecrets(input: string): string {
+  return input.replace(EMAIL, '[redacted-email]').replace(ENCODED_EMAIL, '[redacted-email]');
+}
+
+const SENSITIVE_QUERY_KEYS = new Set(['token', 'code', 'email']);
+
+/** Landing URLs logged by hosted-dev checks. Drops addresses and auth query values. */
+export function redactLandingUrl(raw: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return '[unreadable url]';
+  }
+  for (const key of [...url.searchParams.keys()]) {
+    if (SENSITIVE_QUERY_KEYS.has(key.toLowerCase())) url.searchParams.set(key, '[redacted]');
+  }
+  return redactPlaintextSecrets(`${url.origin}${url.pathname}${url.search}${url.hash}`);
 }
 
 export function secretsFromEnv(env: Record<string, string | undefined>): string[] {
