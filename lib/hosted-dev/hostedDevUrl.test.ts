@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { assertHttpsDevUrl, isAllowedDevHostname } from '@/lib/hosted-dev/hostedDevUrl';
+import {
+  assertHttpsDevUrl,
+  devUrlOnSameHost,
+  isAllowedDevHostname,
+} from '@/lib/hosted-dev/hostedDevUrl';
 
 describe('hosted dev host allowlist', () => {
   it('allows the apex and one subdomain label', () => {
@@ -30,5 +34,29 @@ describe('hosted dev host allowlist', () => {
     );
     expect(() => assertHttpsDevUrl('https://dev.cleanscheduler.com:8443')).toThrow(/port/);
     expect(() => assertHttpsDevUrl('https://cleanscheduler.com')).toThrow(/outside/);
+  });
+
+  it('resolves a later path on the host already open, not the marketing apex', () => {
+    expect(
+      devUrlOnSameHost('https://admin.dev.cleanscheduler.com/sign-in?next=%2F', '/tenants'),
+    ).toBe('https://admin.dev.cleanscheduler.com/tenants');
+    expect(devUrlOnSameHost('https://my.dev.cleanscheduler.com/', '/quotes')).toBe(
+      'https://my.dev.cleanscheduler.com/quotes',
+    );
+    expect(
+      devUrlOnSameHost(
+        'https://qa-hosted-dev-absent.dev.cleanscheduler.com/schedule',
+        '/schedule/recurring',
+      ),
+    ).toBe('https://qa-hosted-dev-absent.dev.cleanscheduler.com/schedule/recurring');
+    expect(() =>
+      devUrlOnSameHost(
+        'https://my.dev.cleanscheduler.com/',
+        'https://dev.cleanscheduler.com/quotes',
+      ),
+    ).toThrow(/leave the current host/);
+    expect(() =>
+      devUrlOnSameHost('https://my.dev.cleanscheduler.com/', '//evil.example/quotes'),
+    ).toThrow(/leave the current host|outside/);
   });
 });

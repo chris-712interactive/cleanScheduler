@@ -1,5 +1,7 @@
-import { expect, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
-import { assertHttpsDevUrl } from '../../lib/hosted-dev/hostedDevUrl';
+import { errors, expect, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
+import { assertHttpsDevUrl, devUrlOnSameHost } from '../../lib/hosted-dev/hostedDevUrl';
+
+const SIGN_IN_SETTLE_MS = 20_000;
 
 export function requiredEnv(name: string): string {
   const value = process.env[name]?.trim() ?? '';
@@ -15,13 +17,46 @@ export async function signIn(page: Page, email: string, password: string): Promi
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await page.waitForLoadState('domcontentloaded');
+  // The sign-in page is already loaded. domcontentloaded resolves immediately
+  // while the password action is still a background request. Navigating away
+  // before the URL changes can cancel that request before the session cookie
+  // is stored. Wait until the browser actually leaves the form.
+  try {
+    await page.waitForURL(
+      (url) => url.pathname === '/sign-in/mfa' || !url.pathname.startsWith('/sign-in'),
+      { timeout: SIGN_IN_SETTLE_MS, waitUntil: 'commit' },
+    );
+  } catch (error) {
+    if (!(error instanceof errors.TimeoutError)) throw error;
+    throw new Error(
+      'BLOCKED: sign-in did not finish. The sign-in page was still open, so the session cookie was not confirmed.',
+    );
+  }
   assertHttpsDevUrl(page.url());
-  if (page.url().includes('/sign-in/mfa')) {
+  if (new URL(page.url()).pathname === '/sign-in/mfa') {
     throw new Error(
       'BLOCKED: this QA user stopped on two-factor verification. Use a dedicated dev user without MFA.',
     );
   }
+}
+
+/** Open `path` on the host already showing, not on the marketing apex. */
+export async function gotoSameHost(page: Page, path: string): Promise<void> {
+  await page.goto(devUrlOnSameHost(page.url(), path));
+  assertHttpsDevUrl(page.url());
+}
+
+export function redactedLandingUrl(raw: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return '[unreadable url]';
+  }
+  return `${url.origin}${url.pathname}${url.search}`.replace(
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+    '[redacted-email]',
+  );
 }
 
 export async function expectDevBanner(page: Page): Promise<void> {

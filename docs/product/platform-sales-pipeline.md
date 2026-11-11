@@ -22,7 +22,7 @@ Sales users **cannot** access tenants, fraud, accounting, audit, SEO, inquiries,
 | `super_admin` / `admin` | Yes               | Yes                 | Yes           |
 | `sales`                 | Yes (limited nav) | Yes                 | No            |
 
-Invite a closer from **Settings → Invite sales**. MFA is required. They land on `admin.<apex>` after sign-in.
+Invite a closer from **Settings → Invite sales**. MFA is required. They land on `admin.<apex>` after sign-in. Platform staff who sign in on the admin host stay there even when they also have a workspace membership. A membership role named admin is not this platform role.
 
 ## Routes
 
