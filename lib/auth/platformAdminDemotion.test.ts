@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  demoteAuthAppRole,
   parseStaffAllowlist,
   shouldDemoteMislabeledPlatformAdmin,
 } from '@/lib/auth/platformAdminDemotion';
@@ -53,6 +54,41 @@ describe('platform admin demotion policy', () => {
         allowlist,
       }),
     ).toBe(true);
+  });
+
+  it('clears a mislabeled profile even when Auth uses an unrecognized role', () => {
+    expect(demoteAuthAppRole('super_admin')).toEqual({
+      nextAuthRole: 'employee',
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('admin')).toEqual({
+      nextAuthRole: 'employee',
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('sales')).toEqual({
+      nextAuthRole: 'employee',
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('owner')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: true,
+    });
+    expect(demoteAuthAppRole('employee')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('customer')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole(null)).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
+    expect(demoteAuthAppRole('')).toEqual({
+      nextAuthRole: null,
+      authRoleUnrecognized: false,
+    });
   });
 
   it('keeps allowlisted staff and platform labels with no membership', () => {

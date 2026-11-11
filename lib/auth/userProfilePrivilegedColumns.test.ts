@@ -9,8 +9,11 @@ describe('user_profiles privileged column migration', () => {
   );
 
   it('revokes table update and does not grant app_role back to authenticated', () => {
-    expect(sql).toMatch(/revoke update on table public\.user_profiles from authenticated/i);
-    expect(sql).toMatch(/revoke update on table public\.user_profiles from anon/i);
+    expect(sql).toMatch(
+      /revoke update, trigger on table public\.user_profiles from authenticated/i,
+    );
+    expect(sql).toMatch(/revoke update, trigger on table public\.user_profiles from anon/i);
+    expect(sql).toMatch(/revoke update, trigger on table public\.user_profiles from public/i);
     const columnGrant = sql.match(
       /grant update \([^)]*\) on table public\.user_profiles to authenticated/i,
     );

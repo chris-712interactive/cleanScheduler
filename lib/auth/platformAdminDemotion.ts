@@ -14,6 +14,22 @@ export function isMislabeledTenantPlatformRole(
 }
 
 /**
+ * How a demotion run treats Auth `app_metadata.app_role`.
+ * Staff labels are rewritten to employee. Any other value is left unchanged.
+ * The profile label is still cleared by the caller, including when Auth is unrecognized.
+ */
+export function demoteAuthAppRole(authRole: string | null | undefined): {
+  nextAuthRole: 'employee' | null;
+  authRoleUnrecognized: boolean;
+} {
+  if (isMislabeledTenantPlatformRole(authRole)) {
+    return { nextAuthRole: 'employee', authRoleUnrecognized: false };
+  }
+  const recognized = !authRole || authRole === 'employee' || authRole === 'customer';
+  return { nextAuthRole: null, authRoleUnrecognized: !recognized };
+}
+
+/**
  * Parses a required staff allowlist. Returns null when the value is missing,
  * empty, or contains anything that is not a user id. An unusable allowlist
  * must not demote anyone.

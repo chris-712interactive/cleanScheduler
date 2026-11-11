@@ -2,14 +2,15 @@
 -- 0124_user_profiles_privileged_columns.sql
 -- A signed-in user can update their own user_profiles row (policy
 -- user_profiles_self_update). Table UPDATE was never revoked from
--- authenticated, so PostgREST could change app_role. Platform identity is
--- Auth app_metadata, written by service_role. This migration does not demote
--- existing rows.
+-- authenticated, so PostgREST could change app_role. TRIGGER is revoked too,
+-- so a member cannot add a BEFORE UPDATE trigger that rewrites app_role.
+-- Platform identity is Auth app_metadata, written by service_role.
+-- This migration does not demote existing rows.
 -- =============================================================================
 
-revoke update on table public.user_profiles from public;
-revoke update on table public.user_profiles from anon;
-revoke update on table public.user_profiles from authenticated;
+revoke update, trigger on table public.user_profiles from public;
+revoke update, trigger on table public.user_profiles from anon;
+revoke update, trigger on table public.user_profiles from authenticated;
 
 grant update (
   display_name,

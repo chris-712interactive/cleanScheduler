@@ -179,6 +179,11 @@ BEGIN
       missing := array_append(missing, 'authenticated can update user_profiles.app_role');
     END IF;
 
+    IF has_table_privilege('authenticated', 'public.user_profiles', 'TRIGGER')
+       OR has_table_privilege('anon', 'public.user_profiles', 'TRIGGER') THEN
+      missing := array_append(missing, 'anon or authenticated has TRIGGER on user_profiles');
+    END IF;
+
     IF NOT has_column_privilege('authenticated', 'public.user_profiles', 'display_name', 'UPDATE') THEN
       missing := array_append(missing, 'authenticated cannot update user_profiles.display_name');
     END IF;

@@ -18,12 +18,13 @@
  * Everyone else is demoted when user_profiles.app_role is admin, super_admin,
  * or sales AND they have a tenant membership (inactive memberships count).
  * The same labels with no membership are left alone. Auth app_metadata.app_role
- * is set to employee when it is admin, super_admin, or sales.
+ * is set to employee when it is admin, super_admin, or sales. Any other Auth
+ * role is left unchanged, and the profile label is still set to employee.
  */
 import { createClient } from '@supabase/supabase-js';
 import {
   MISLABELED_TENANT_PLATFORM_ROLES,
-  isMislabeledTenantPlatformRole,
+  demoteAuthAppRole,
   parseStaffAllowlist,
   shouldDemoteMislabeledPlatformAdmin,
 } from '../lib/auth/platformAdminDemotion.ts';
@@ -132,15 +133,15 @@ async function main(): Promise<void> {
       if (userErr || !userRes.user) refuse(userErr?.message ?? 'Auth user could not be loaded.');
       const meta = { ...(userRes.user.app_metadata ?? {}) };
       const authRole = typeof meta.app_role === 'string' ? meta.app_role : null;
-      if (isMislabeledTenantPlatformRole(authRole)) {
-        meta.app_role = 'employee';
+      const authDecision = demoteAuthAppRole(authRole);
+      if (authDecision.nextAuthRole) {
+        meta.app_role = authDecision.nextAuthRole;
         const { error: metaErr } = await admin.auth.admin.updateUserById(userId, {
           app_metadata: meta,
         });
         if (metaErr) refuse(metaErr.message);
-      } else if (authRole && authRole !== 'employee' && authRole !== 'customer') {
+      } else if (authDecision.authRoleUnrecognized) {
         skippedAuthRole += 1;
-        continue;
       }
 
       const { error: profileErr } = await admin
@@ -156,7 +157,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Scanned ${scanned} profiles labeled admin, super_admin, or sales. Demoted ${demoted}. Allowlisted ${keptAllowlisted}. Left without a tenant membership ${skippedNoMembership}. Left because auth role was unrecognized ${skippedAuthRole}.`,
+    `Scanned ${scanned} profiles labeled admin, super_admin, or sales. Demoted ${demoted}. Allowlisted ${keptAllowlisted}. Left without a tenant membership ${skippedNoMembership}. Profile demoted and Auth left unchanged because its role was unrecognized ${skippedAuthRole}.`,
   );
 }
 
