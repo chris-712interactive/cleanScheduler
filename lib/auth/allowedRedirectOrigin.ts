@@ -51,10 +51,32 @@ export function parseAllowedRedirectOrigin(raw: string | null | undefined): stri
   return `${url.protocol}//${url.host}`;
 }
 
+const REDIRECT_CHECK_ORIGIN = 'https://auth-redirect.invalid';
+
+/**
+ * Relative `next` values must stay on the origin that serves them.
+ * Browsers treat `/\host` like `//host` (a protocol-relative URL).
+ */
+function isSafeAppPath(path: string): boolean {
+  if (!path.startsWith('/') || path.startsWith('//')) return false;
+  if (path.includes('\\')) return false;
+  try {
+    const resolved = new URL(path, REDIRECT_CHECK_ORIGIN);
+    return (
+      resolved.origin === REDIRECT_CHECK_ORIGIN &&
+      resolved.username === '' &&
+      resolved.password === ''
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Safe `next` after password sign-in or when embedded in OAuth callback URLs.
  * Allows same-site paths (single leading `/`) or full http(s) URLs whose host
  * is the configured apex or a subdomain (for example the customer portal host).
+ * `//host`, `/\host`, and other forms the browser sends off-origin become `/`.
  */
 export function sanitizeAuthenticationNext(raw: string | null | undefined): string {
   if (!raw || typeof raw !== 'string') return '/';
@@ -62,8 +84,7 @@ export function sanitizeAuthenticationNext(raw: string | null | undefined): stri
   if (!trimmed) return '/';
 
   if (trimmed.startsWith('/')) {
-    if (trimmed.startsWith('//')) return '/';
-    return trimmed;
+    return isSafeAppPath(trimmed) ? trimmed : '/';
   }
 
   const allowedOrigin = parseAllowedRedirectOrigin(trimmed);
