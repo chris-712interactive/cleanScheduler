@@ -25,7 +25,7 @@
 1. **Middleware** — session presence for protected portals.
 2. **Portal guards** — `lib/auth/portalAccess.ts`, `lib/auth/tenantAccess.ts`.
 3. **Role helpers** — `lib/auth/tenantRoleAccess.ts`, `lib/tenant/employeePermissions.ts`.
-4. **Postgres RLS** — `has_tenant_membership()`, `is_platform_admin()` in migrations.
+4. **Postgres RLS** — `has_tenant_membership()`, `is_platform_admin()` in migrations. `has_tenant_membership(uuid)` is `security definer` with `search_path = public` (`0125_tenant_membership_rls_helpers.sql`). It is still true only when `auth.uid()` has an active row in `tenant_memberships` for that tenant. `authenticated` is not granted `SELECT` on `tenant_memberships`; the membership read policy calls the helper, so a table grant would recurse. `is_platform_admin()` and `current_app_role()` only read the JWT and stay invoker. `can_read_hiring_desk(uuid)` is definer for the same reason: hiring tables are readable by `authenticated`, and the helper reads memberships and role permissions. The hiring predicate is unchanged.
 5. **Feature entitlements** — plan tier gates in `lib/billing/tenantFeatureGate.ts`.
 
 ## JWT claims (app_metadata)
