@@ -18,7 +18,9 @@ import {
   gotoSameHost,
   maskAndCapture,
   optionalSegment,
-  redactedLandingUrl,
+  portalHeading,
+  redactLandingUrl,
+  redactedHeadingText,
   requiredEnv,
   signIn,
 } from './support';
@@ -42,11 +44,11 @@ async function readWorkspace(page: Page, slug: string, segment: string): Promise
   await gotoSameHost(page, '/schedule/recurring');
   await expect(page.getByRole('heading', { name: 'Recurring visits' })).toBeVisible();
   await gotoSameHost(page, '/customers');
-  await expect(page.getByRole('heading', { name: 'Customers', exact: true })).toBeVisible();
+  await expect(portalHeading(page, 'Customers')).toBeVisible();
   await gotoSameHost(page, '/quotes');
-  await expect(page.getByRole('heading', { name: 'Quotes', exact: true })).toBeVisible();
+  await expect(portalHeading(page, 'Quotes')).toBeVisible();
   await gotoSameHost(page, '/billing');
-  await expect(page.getByRole('heading', { name: 'Billing', exact: true })).toBeVisible();
+  await expect(portalHeading(page, 'Billing')).toBeVisible();
   await gotoSameHost(page, '/settings/business');
   await expect(page.getByRole('heading', { name: 'Business settings' })).toBeVisible();
   await expect(page.locator('input[name="service_segment"]:checked')).toHaveValue(segment);
@@ -99,8 +101,10 @@ test('a residential session does not open the commercial workspace', async ({ br
     const otherPage = await other.newPage();
     await openTenant(otherPage, commercialSlug, '/customers');
     const denied = otherPage.getByRole('heading', { name: 'No access to this workspace' });
-    const customers = otherPage.getByRole('heading', { name: 'Customers', exact: true });
-    const signInHeading = otherPage.getByRole('heading', { name: 'Sign in to Clean Scheduler' });
+    const customers = portalHeading(otherPage, 'Customers');
+    const signInHeading = otherPage.getByRole('heading', {
+      name: 'Sign in to Clean Scheduler',
+    });
     let sawOutcome = false;
     try {
       await denied.or(customers).or(signInHeading).waitFor({ state: 'visible', timeout: 15_000 });
@@ -108,7 +112,7 @@ test('a residential session does not open the commercial workspace', async ({ br
     } catch (error) {
       if (!(error instanceof errors.TimeoutError)) throw error;
     }
-    const landing = redactedLandingUrl(otherPage.url());
+    const landing = redactLandingUrl(otherPage.url());
     if (sawOutcome && (await customers.isVisible())) {
       throw new Error(
         `FAIL: residential session opened the commercial customer list at ${landing}.`,
@@ -120,8 +124,9 @@ test('a residential session does not open the commercial workspace', async ({ br
         `BLOCKED: the commercial host showed sign-in at ${landing}. Membership denial was not observed.`,
       );
     }
+    const heading = await redactedHeadingText(otherPage);
     throw new Error(
-      `BLOCKED: the commercial host showed neither workspace denial, the customer list, nor sign-in at ${landing}.`,
+      `BLOCKED: the commercial host showed neither workspace denial, the customer list, nor sign-in at ${landing}. Heading: ${heading}.`,
     );
   } finally {
     await home.close();
@@ -135,7 +140,7 @@ test('platform admin can open the tenant list without changing it', async ({ pag
   const landed = assertHttpsDevUrl(page.url());
   if (landed.hostname !== 'admin.dev.cleanscheduler.com') {
     throw new Error(
-      `FAIL: platform staff left the admin host after sign-in and landed on ${redactedLandingUrl(page.url())}.`,
+      `FAIL: platform staff left the admin host after sign-in and landed on ${redactLandingUrl(page.url())}.`,
     );
   }
   const founder = page.getByRole('heading', { name: 'Founder dashboard' });
@@ -154,9 +159,9 @@ test('customer portal reads quotes, visits, and invoices without paying', async 
   await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
   await expectDevBanner(page);
   await gotoSameHost(page, '/quotes');
-  await expect(page.getByRole('heading', { name: 'Quotes', exact: true })).toBeVisible();
+  await expect(portalHeading(page, 'Quotes')).toBeVisible();
   await gotoSameHost(page, '/visits');
-  await expect(page.getByRole('heading', { name: 'Upcoming visits' })).toBeVisible();
+  await expect(portalHeading(page, 'Upcoming visits')).toBeVisible();
   await gotoSameHost(page, '/invoices');
   await expect(page.getByRole('heading', { name: 'Invoices', exact: true })).toBeVisible();
   expect(page.url()).not.toContain('stripe.com');

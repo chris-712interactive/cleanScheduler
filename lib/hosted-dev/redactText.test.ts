@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { redactText } from '@/lib/hosted-dev/redactText';
+import { redactLandingUrl, redactText } from '@/lib/hosted-dev/redactText';
 
 describe('hosted dev artifact redaction', () => {
   it('removes secrets, emails, tokens, and database URLs', () => {
@@ -37,6 +37,26 @@ describe('hosted dev artifact redaction', () => {
     const redacted = redactText('Authorization: Basic dXNlcjpwYXNz', []);
     expect(redacted).not.toContain('dXNlcjpwYXNz');
     expect(redacted).toBe('Authorization: [redacted]');
+  });
+
+  it('redacts encoded addresses and token, code, and email query values', () => {
+    const raw =
+      'https://admin.dev.cleanscheduler.com/users/jane%40example.com/sign-in?email=jane%40example.com&token=sekret-token&code=sekret-code&next=%2F';
+    const redacted = redactText(raw, []);
+    expect(redacted).not.toContain('jane');
+    expect(redacted).not.toContain('%40');
+    expect(redacted).not.toContain('sekret-token');
+    expect(redacted).not.toContain('sekret-code');
+    expect(redacted).toContain('[redacted-email]');
+    expect(redacted).toContain('token=[redacted]');
+    expect(redacted).toContain('code=[redacted]');
+
+    const landing = redactLandingUrl(raw);
+    expect(landing).not.toContain('jane');
+    expect(landing).not.toContain('%40');
+    expect(landing).not.toContain('sekret-token');
+    expect(landing).not.toContain('sekret-code');
+    expect(landing.startsWith('https://admin.dev.cleanscheduler.com/')).toBe(true);
   });
 });
 
