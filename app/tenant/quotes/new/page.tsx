@@ -18,7 +18,6 @@ import {
 import { loadQuotePickerEligibleCustomerIds } from '@/lib/tenant/quoteCustomerPicker';
 import { QuoteCreateWizard } from '../QuoteCreateWizard';
 import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
-import { capabilitiesForSegment, propertyKindAllowed } from '@/lib/tenant/serviceSegment';
 import type { CustomerPropertyGroup } from '../quoteFormTypes';
 import styles from '../quotes.module.scss';
 
@@ -155,10 +154,7 @@ export default async function TenantQuoteNewPage({ searchParams }: PageProps) {
     loadTenantServiceSegment(admin, membership.tenantId),
   ]);
   const autoScheduleEnabled = isTenantAutoScheduleEnabled(ops.acceptedQuoteScheduleMode);
-  const capabilities = capabilitiesForSegment(serviceSegment);
-  const customerPropertyGroups = buildCustomerPropertyGroups(
-    propertyRows.filter((row) => propertyKindAllowed(capabilities, row.property_kind)),
-  );
+  const customerPropertyGroups = buildCustomerPropertyGroups(propertyRows);
 
   return (
     <>

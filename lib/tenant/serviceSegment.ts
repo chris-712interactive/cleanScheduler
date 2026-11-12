@@ -192,6 +192,35 @@ export function propertyKindDeniedMessage(capabilities: SegmentCapabilities): st
   return 'That property type is not available for this workspace.';
 }
 
+/** Names the location when a quote is blocked by that location's saved property type. */
+export function locationPropertyKindDeniedMessage(
+  capabilities: SegmentCapabilities,
+  locationLabel: string,
+  kind: CustomerPropertyKind,
+): string {
+  const name = locationLabel.trim();
+  const subject = name ? `Service location ${name}` : 'This service location';
+  const denied = propertyKindDeniedMessage(capabilities);
+  const sentence = `${denied.charAt(0).toLowerCase()}${denied.slice(1)}`;
+  const fix = PROPERTY_KIND_LABEL[defaultPropertyKind(capabilities)];
+  return `${subject} is set to ${PROPERTY_KIND_LABEL[kind]}; ${sentence} Change its property type to ${fix}.`;
+}
+
+/**
+ * An existing location locks the quote's property type. A kind this workspace
+ * does not offer stays editable so the quote can correct the location.
+ */
+export function quoteLocationKindLock(input: {
+  locationKind: CustomerPropertyKind | null | undefined;
+  capabilities: SegmentCapabilities;
+}): { locked: boolean; disallowedKind: CustomerPropertyKind | null } {
+  if (!input.locationKind) return { locked: false, disallowedKind: null };
+  if (propertyKindAllowed(input.capabilities, input.locationKind)) {
+    return { locked: true, disallowedKind: null };
+  }
+  return { locked: false, disallowedKind: input.locationKind };
+}
+
 /**
  * Block a new or changed property kind the segment does not offer.
  * Saving a location that already has a disallowed kind (from before the setting changed) still succeeds.

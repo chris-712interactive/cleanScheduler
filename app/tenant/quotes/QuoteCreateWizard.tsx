@@ -1,18 +1,21 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/Button';
-import { PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
+import { PROPERTY_KIND_LABEL, PROPERTY_KIND_OPTIONS } from '@/lib/tenant/propertyKindLabels';
 import type { QuoteScopeTemplateId } from '@/lib/tenant/quoteScopeTemplates';
 import type { QuoteAddonTemplate } from '@/lib/tenant/quoteScopeTemplates';
 import {
   capabilitiesForSegment,
   defaultPropertyKind,
+  locationPropertyKindDeniedMessage,
   pricingPropertyKind,
   propertyKindFamily,
+  quoteLocationKindLock,
   sqftBidAllowedForProperty,
   type TenantServiceSegment,
 } from '@/lib/tenant/serviceSegment';
@@ -248,13 +251,24 @@ export function QuoteCreateWizard({
       ? (propertyOptions.find((option) => option.id === propertyId) ?? null)
       : null;
   const creatingLocation = customerSource === 'new' || propertySource === 'new';
-  const effectivePropertyKind =
-    pricingPropertyKind({
-      locationKind:
-        selectedLocation?.propertyKind ?? (creatingLocation ? inlinePropertyKind : null),
-      manualKind: quotePropertyType as CustomerPropertyKind,
-    }) ?? (quotePropertyType as CustomerPropertyKind);
-  const locationKindLocked = Boolean(selectedLocation?.propertyKind);
+  const kindLock = quoteLocationKindLock({
+    locationKind: selectedLocation?.propertyKind ?? null,
+    capabilities,
+  });
+  const [locationKindCorrection, setLocationKindCorrection] = useState<CustomerPropertyKind>(() =>
+    defaultPropertyKind(capabilitiesForSegment(serviceSegment)),
+  );
+  useEffect(() => {
+    setLocationKindCorrection(defaultPropertyKind(capabilitiesForSegment(serviceSegment)));
+  }, [selectedLocation?.id, serviceSegment]);
+  const effectivePropertyKind = kindLock.disallowedKind
+    ? locationKindCorrection
+    : (pricingPropertyKind({
+        locationKind:
+          selectedLocation?.propertyKind ?? (creatingLocation ? inlinePropertyKind : null),
+        manualKind: quotePropertyType as CustomerPropertyKind,
+      }) ?? (quotePropertyType as CustomerPropertyKind));
+  const locationKindLocked = kindLock.locked;
 
   useEffect(() => {
     if (crewSizeTouched.current) return;
@@ -551,6 +565,9 @@ export function QuoteCreateWizard({
       <input type="hidden" name="scope_inclusions" value={JSON.stringify(scopeInclusions)} />
       <input type="hidden" name="scope_template_id" value={scopeTemplateId} />
       <input type="hidden" name="quote_property_kind" value={effectivePropertyKind} />
+      {kindLock.disallowedKind ? (
+        <input type="hidden" name="correct_location_property_kind" value={locationKindCorrection} />
+      ) : null}
 
       {state.error && state.schedulePath ? (
         <QuoteConsultationPrompt
@@ -718,9 +735,23 @@ export function QuoteCreateWizard({
                           {propertyOptions.map((p) => (
                             <option key={p.id} value={p.id}>
                               {p.label}
+                              {p.propertyKind &&
+                              !capabilities.propertyKinds.includes(p.propertyKind)
+                                ? ` (${PROPERTY_KIND_LABEL[p.propertyKind]})`
+                                : ''}
                             </option>
                           ))}
                         </select>
+                        {kindLock.disallowedKind && selectedLocation ? (
+                          <p className={styles.error} role="alert">
+                            {locationPropertyKindDeniedMessage(
+                              capabilities,
+                              selectedLocation.label,
+                              kindLock.disallowedKind,
+                            )}{' '}
+                            <Link href={`/customers/${customerId}`}>Edit this location</Link>
+                          </p>
+                        ) : null}
                       </>
                     ) : (
                       <>
@@ -809,6 +840,16 @@ export function QuoteCreateWizard({
             </p>
             <div className={styles.wizardGridFour}>
               <div>
+                {kindLock.disallowedKind && selectedLocation ? (
+                  <p className={styles.error} role="alert">
+                    {locationPropertyKindDeniedMessage(
+                      capabilities,
+                      selectedLocation.label,
+                      kindLock.disallowedKind,
+                    )}{' '}
+                    <Link href={`/customers/${customerId}`}>Edit this location</Link>
+                  </p>
+                ) : null}
                 <label className={styles.label} htmlFor="quote_property_type_select">
                   Property type
                   {capabilities.offersBoth ? (
@@ -821,10 +862,14 @@ export function QuoteCreateWizard({
                 <select
                   id="quote_property_type_select"
                   className={styles.select}
-                  value={effectivePropertyKind}
+                  value={kindLock.disallowedKind ? locationKindCorrection : effectivePropertyKind}
                   disabled={locationKindLocked}
                   onChange={(e) => {
                     const next = e.target.value as CustomerPropertyKind;
+                    if (kindLock.disallowedKind) {
+                      setLocationKindCorrection(next);
+                      return;
+                    }
                     setQuotePropertyType(next);
                     if (creatingLocation) setInlinePropertyKind(next);
                   }}

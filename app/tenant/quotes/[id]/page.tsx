@@ -606,6 +606,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
             jobTypeCatalog={jobTypeCatalog}
             quotePropertyKind={quotePropertyKind}
             autoScheduleEnabled={autoScheduleEnabled}
+            serviceSegment={serviceSegment}
             sqftBidsEnabled={capabilitiesForSegment(serviceSegment).sqftBids}
             defaultSqft={parseQuotePropertySnapshot(row.property_snapshot).sqft ?? null}
             snapshot={{

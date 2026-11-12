@@ -10,9 +10,11 @@ import {
   parseServiceDirectorySegment,
   parseTenantServiceSegment,
   pricingPropertyKind,
+  locationPropertyKindDeniedMessage,
   propertyKindAllowed,
   propertyKindSelectOptions,
   propertyKindWriteError,
+  quoteLocationKindLock,
   propertyKindsForDirectorySegment,
   resolvePropertyKindWrite,
   sqftBidAllowedForProperty,
@@ -74,6 +76,46 @@ describe('capabilitiesForSegment', () => {
     expect(caps.scopeTemplates.map((template) => template.id)).toEqual(
       expect.arrayContaining(['residential_standard', 'commercial_office']),
     );
+  });
+});
+
+describe('commercial quote location kind', () => {
+  it('names the service location when its saved type is outside the workspace', () => {
+    const caps = capabilitiesForSegment('commercial');
+    expect(locationPropertyKindDeniedMessage(caps, 'Main office', 'residential')).toBe(
+      'Service location Main office is set to Residential; this workspace only serves commercial properties. Change its property type to Commercial.',
+    );
+    expect(locationPropertyKindDeniedMessage(caps, 'Lake house', 'short_term_rental')).toContain(
+      'Short-term rental',
+    );
+  });
+
+  it('keeps an allowed location locked and opens a disallowed one for correction', () => {
+    const caps = capabilitiesForSegment('commercial');
+    expect(quoteLocationKindLock({ locationKind: 'commercial', capabilities: caps })).toEqual({
+      locked: true,
+      disallowedKind: null,
+    });
+    expect(quoteLocationKindLock({ locationKind: 'residential', capabilities: caps })).toEqual({
+      locked: false,
+      disallowedKind: 'residential',
+    });
+    expect(
+      quoteLocationKindLock({ locationKind: 'short_term_rental', capabilities: caps }),
+    ).toEqual({
+      locked: false,
+      disallowedKind: 'short_term_rental',
+    });
+    expect(quoteLocationKindLock({ locationKind: null, capabilities: caps })).toEqual({
+      locked: false,
+      disallowedKind: null,
+    });
+  });
+
+  it('defaults a new record to commercial only for a commercial workspace', () => {
+    expect(defaultPropertyKind(capabilitiesForSegment('commercial'))).toBe('commercial');
+    expect(defaultPropertyKind(capabilitiesForSegment('residential'))).toBe('residential');
+    expect(defaultPropertyKind(capabilitiesForSegment('both'))).toBe('residential');
   });
 });
 

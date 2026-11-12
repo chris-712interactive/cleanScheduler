@@ -18,7 +18,11 @@ import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import { bindSubscriptionToOriginalProperty } from '@/lib/billing/applySubscriptionCoverage';
 import { propertyIdToBind } from '@/lib/billing/subscriptionCoverage';
 import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
-import { propertyKindWriteError, resolvePropertyKindWrite } from '@/lib/tenant/serviceSegment';
+import {
+  defaultPropertyKind,
+  propertyKindWriteError,
+  resolvePropertyKindWrite,
+} from '@/lib/tenant/serviceSegment';
 
 export interface PropertyFormState {
   error?: string;
@@ -33,10 +37,13 @@ const KINDS = new Set<Database['public']['Enums']['customer_property_kind']>([
   'other',
 ]);
 
-function normalizeKind(raw: string): Database['public']['Enums']['customer_property_kind'] {
+function normalizeKind(
+  raw: string,
+  fallback: Database['public']['Enums']['customer_property_kind'],
+): Database['public']['Enums']['customer_property_kind'] {
   return KINDS.has(raw as Database['public']['Enums']['customer_property_kind'])
     ? (raw as Database['public']['Enums']['customer_property_kind'])
-    : 'residential';
+    : fallback;
 }
 
 async function revalidateCustomerPaths(customerId: string) {
@@ -55,7 +62,7 @@ export async function addCustomerProperty(
     .toLowerCase();
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const label = String(formData.get('label') ?? '').trim();
-  const kind = normalizeKind(String(formData.get('property_kind') ?? '').trim());
+  const postedKind = String(formData.get('property_kind') ?? '').trim();
   const line1 = String(formData.get('address_line1') ?? '').trim();
   const line2 = String(formData.get('address_line2') ?? '').trim();
   const city = String(formData.get('city') ?? '').trim();
@@ -82,6 +89,7 @@ export async function addCustomerProperty(
   const membership = await requireTenantPortalAccess(slug, `/customers/${customerId}`);
   const admin = createAdminClient();
   const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
+  const kind = normalizeKind(postedKind, defaultPropertyKind(capabilities));
   const kindError = propertyKindWriteError(capabilities, kind);
   if (kindError) return { error: kindError };
 
@@ -190,7 +198,7 @@ export async function updateCustomerProperty(
   const customerId = String(formData.get('customer_id') ?? '').trim();
   const propertyId = String(formData.get('property_id') ?? '').trim();
   const label = String(formData.get('label') ?? '').trim();
-  const kind = normalizeKind(String(formData.get('property_kind') ?? '').trim());
+  const postedKind = String(formData.get('property_kind') ?? '').trim();
   const line1 = String(formData.get('address_line1') ?? '').trim();
   const line2 = String(formData.get('address_line2') ?? '').trim();
   const city = String(formData.get('city') ?? '').trim();
@@ -225,6 +233,7 @@ export async function updateCustomerProperty(
   }
 
   const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
+  const kind = normalizeKind(postedKind, defaultPropertyKind(capabilities));
   const resolvedKind = resolvePropertyKindWrite({
     capabilities,
     postedKind: kind,
