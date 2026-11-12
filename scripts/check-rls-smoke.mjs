@@ -13,6 +13,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const sqlPaths = [
   path.join(repoRoot, 'supabase/tests/rls/tenant_isolation.sql'),
   path.join(repoRoot, 'supabase/tests/rls/tenant_quotes_member_read.sql'),
+  path.join(repoRoot, 'supabase/tests/rls/support_session_tenant_read.sql'),
 ];
 
 const databaseUrl = process.env.DATABASE_URL?.trim();

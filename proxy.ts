@@ -442,6 +442,7 @@ export async function proxy(request: NextRequest) {
 
     const isProtectedPortal =
       kind !== 'marketing' && kind !== 'site' && !isPublicCustomerInvite && !isPublicCustomerJoin;
+    const isMasqueradeHandoff = kind === 'tenant' && requestedPath === '/auth/masquerade-handoff';
 
     let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
     let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> =
@@ -471,7 +472,7 @@ export async function proxy(request: NextRequest) {
       return redirect;
     }
 
-    if (isProtectedPortal && !userId) {
+    if (isProtectedPortal && !userId && !isMasqueradeHandoff) {
       const nextPath = request.nextUrl.pathname + request.nextUrl.search;
       const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
       const redirect = NextResponse.redirect(redirectUrl);

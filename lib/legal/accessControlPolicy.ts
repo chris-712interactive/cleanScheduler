@@ -105,7 +105,7 @@ export const ACCESS_CONTROL_POLICY_SECTIONS: PolicySection[] = [
       'Privileged access includes platform administrator accounts, Supabase service role keys, Vercel/Stripe/Plaid dashboard access, and support masquerade sessions.',
     ],
     bullets: [
-      'Masquerade requires platform admin role, creates masquerade_sessions record, and logs start/end to audit_log_entries.',
+      'Masquerade requires platform admin role, creates a masquerade_sessions record, and logs start, handoff, and end to audit_log_entries. Tenant row access during support requires that open session. A one-time handoff signs the staff user in on the tenant host. The auth cookie domain is not widened.',
       'Masquerade sessions expire after 60 minutes.',
       'Service role keys are used only in trusted server paths after application-level authorization checks.',
     ],
