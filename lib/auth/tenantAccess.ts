@@ -13,11 +13,11 @@ import {
 import { readRequestAuthGrant } from '@/lib/auth/readRequestAuthGrant';
 import type { RequestAuthGrantTenant } from '@/lib/auth/requestAuthGrant';
 import { isPlatformAdminRole } from '@/lib/auth/platformRoles';
-import { clearMasqueradeAppMetadata } from '@/lib/admin/expireStaleMasquerade';
 import {
-  liveMasqueradeSessionMatches,
-  MASQUERADE_MAX_DURATION_MS,
-} from '@/lib/auth/masqueradeSession';
+  clearMasqueradeAppMetadata,
+  expireStaleMasqueradeIfNeeded,
+} from '@/lib/admin/expireStaleMasquerade';
+import { liveMasqueradeSessionMatches } from '@/lib/auth/masqueradeSession';
 import { decideTenantPortalAdmission } from '@/lib/auth/tenantPortalAdmission';
 import { decideWorkspaceGate } from '@/lib/auth/workspaceGate';
 import { enforceTenantAuthPolicy } from './enforceTenantAuthPolicy';
@@ -300,6 +300,7 @@ export async function requireTenantPortalAccess(
   let hostTenantResolved = false;
   let hasLiveMasqueradeSession = false;
   if (isPlatformAdmin && masqueradeTarget) {
+    await expireStaleMasqueradeIfNeeded(auth);
     hostTenant = await lookupTenantBySlug(slug);
     hostTenantResolved = true;
     const admin = createAdminClient();
@@ -323,21 +324,6 @@ export async function requireTenantPortalAccess(
       });
 
     if (!sessionError && !hasLiveMasqueradeSession) {
-      if (openSession?.id && openSession.started_at) {
-        const started = new Date(openSession.started_at).getTime();
-        if (Number.isFinite(started) && nowMs - started > MASQUERADE_MAX_DURATION_MS) {
-          await admin
-            .from('masquerade_sessions')
-            .update({ ended_at: new Date(nowMs).toISOString() })
-            .eq('id', openSession.id);
-          await admin.from('audit_log_entries').insert({
-            actor_user_id: auth.user.id,
-            action: 'masquerade.end',
-            target_tenant_id: openSession.target_tenant_id,
-            payload: { reason: 'session_ttl_expired' },
-          });
-        }
-      }
       await clearMasqueradeAppMetadata(admin, auth.user.id);
     }
   }

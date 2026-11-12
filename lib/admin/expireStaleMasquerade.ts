@@ -1,7 +1,12 @@
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
-import { liveMasqueradeSessionMatches } from '@/lib/auth/masqueradeSession';
+import {
+  clearedMasqueradeAppMetadata,
+  liveMasqueradeSessionMatches,
+  masqueradeSessionPastTtl,
+  shouldAuditMasqueradeTtlClose,
+} from '@/lib/auth/masqueradeSession';
 import type { AuthContext } from '@/lib/auth/types';
 
 export { MASQUERADE_MAX_DURATION_MS } from '@/lib/auth/masqueradeSession';
@@ -18,10 +23,7 @@ export async function clearMasqueradeAppMetadata(
 ): Promise<void> {
   const { data: userRes, error } = await admin.auth.admin.getUserById(userId);
   if (error || !userRes.user) return;
-  const meta = { ...(userRes.user.app_metadata ?? {}) };
-  if (!('masquerade_target_tenant_id' in meta) && !('current_tenant_id' in meta)) return;
-  delete meta.masquerade_target_tenant_id;
-  delete meta.current_tenant_id;
+  const meta = clearedMasqueradeAppMetadata({ ...(userRes.user.app_metadata ?? {}) });
   await admin.auth.admin.updateUserById(userId, { app_metadata: meta });
 }
 
@@ -42,27 +44,33 @@ export async function expireStaleMasqueradeIfNeeded(auth: AuthContext): Promise<
     .maybeSingle();
 
   if (!openSession?.started_at) return;
+  const nowMs = Date.now();
   if (
     liveMasqueradeSessionMatches(openSession, {
       userId: auth.user.id,
       tenantId: openSession.target_tenant_id,
-      nowMs: Date.now(),
+      nowMs,
     })
   ) {
     return;
   }
+  if (!masqueradeSessionPastTtl(openSession.started_at, nowMs)) return;
 
-  await admin
+  const { data: closed } = await admin
     .from('masquerade_sessions')
-    .update({ ended_at: new Date().toISOString() })
-    .eq('id', openSession.id);
+    .update({ ended_at: new Date(nowMs).toISOString() })
+    .eq('id', openSession.id)
+    .is('ended_at', null)
+    .select('id');
 
-  await admin.from('audit_log_entries').insert({
-    actor_user_id: auth.user.id,
-    action: 'masquerade.end',
-    target_tenant_id: openSession.target_tenant_id,
-    payload: { reason: 'session_ttl_expired' },
-  });
+  if (shouldAuditMasqueradeTtlClose(closed?.map((row) => row.id))) {
+    await admin.from('audit_log_entries').insert({
+      actor_user_id: auth.user.id,
+      action: 'masquerade.end',
+      target_tenant_id: openSession.target_tenant_id,
+      payload: { reason: 'session_ttl_expired' },
+    });
+  }
 
   await clearMasqueradeAppMetadata(admin, auth.user.id);
 
