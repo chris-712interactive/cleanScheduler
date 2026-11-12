@@ -39,6 +39,7 @@ import {
   isTenantSuspendedEscapePath,
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { resolveTenantMembershipForSlug } from '@/lib/auth/resolveTenantMembershipForSlug';
+import { pathnameWithSearchWithoutHandoff } from '@/lib/auth/signInNextPath';
 import { AUTH_GRANT_HEADER, issueRequestAuthGrant } from '@/lib/auth/requestAuthGrant';
 import { serverEnv } from '@/lib/env';
 import {
@@ -442,6 +443,7 @@ export async function proxy(request: NextRequest) {
 
     const isProtectedPortal =
       kind !== 'marketing' && kind !== 'site' && !isPublicCustomerInvite && !isPublicCustomerJoin;
+    const isMasqueradeHandoff = kind === 'tenant' && requestedPath === '/auth/masquerade-handoff';
 
     let tenantMembership: Awaited<ReturnType<typeof resolveTenantMembershipForSlug>> = null;
     let tenantSubscription: Awaited<ReturnType<typeof resolveTenantSubscriptionAccessForSlug>> =
@@ -471,8 +473,11 @@ export async function proxy(request: NextRequest) {
       return redirect;
     }
 
-    if (isProtectedPortal && !userId) {
-      const nextPath = request.nextUrl.pathname + request.nextUrl.search;
+    if (isProtectedPortal && !userId && !isMasqueradeHandoff) {
+      const nextPath = pathnameWithSearchWithoutHandoff(
+        request.nextUrl.pathname,
+        request.nextUrl.search,
+      );
       const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
       const redirect = NextResponse.redirect(redirectUrl);
       applyCookies(redirect, cookiesToSet);
