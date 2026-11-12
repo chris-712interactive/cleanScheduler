@@ -45,6 +45,7 @@ import {
 } from '@/lib/visits/consultationIntake';
 import { loadConsultationRequiredFields } from '@/lib/tenant/customerConsultation';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { defaultPropertyKindForTenant } from '@/lib/tenant/loadTenantServiceSegment';
 import type { Json } from '@/lib/supabase/database.types';
 
 export interface VisitFieldActionState {
@@ -53,6 +54,23 @@ export interface VisitFieldActionState {
   visitPatch?: VisitDetailPatch;
   /** Client navigates here. A server `redirect()` from this action crashes the visit page. */
   redirectTo?: string;
+}
+
+async function consultationPropertyKind(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  propertyId: string | null,
+): Promise<CustomerPropertyKind> {
+  if (propertyId) {
+    const { data: property } = await admin
+      .from('tenant_customer_properties')
+      .select('property_kind')
+      .eq('id', propertyId)
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    if (property?.property_kind) return property.property_kind;
+  }
+  return defaultPropertyKindForTenant(admin, tenantId);
 }
 
 async function loadVisitForActor(
@@ -176,16 +194,11 @@ export async function saveConsultationIntakeAction(
     canManageScheduledVisit(actorRole) || isVisitAssignee(loaded.assigneeIds, auth.user.id);
   if (!canEdit) return { error: 'You cannot update this consultation.' };
 
-  let propertyKind: CustomerPropertyKind = 'residential';
-  if (loaded.visit.property_id) {
-    const { data: property } = await admin
-      .from('tenant_customer_properties')
-      .select('property_kind')
-      .eq('id', loaded.visit.property_id)
-      .eq('tenant_id', membership.tenantId)
-      .maybeSingle();
-    if (property?.property_kind) propertyKind = property.property_kind;
-  }
+  const propertyKind = await consultationPropertyKind(
+    admin,
+    membership.tenantId,
+    loaded.visit.property_id,
+  );
 
   const intake = parseConsultationIntakeForm(formData, propertyKind);
   const requiredFields = await loadConsultationRequiredFields(admin, membership.tenantId);
@@ -417,16 +430,11 @@ export async function completeVisitWithPaymentAction(
     ? parseStoredConsultationIntake(loaded.visit.consultation_intake)
     : null;
   if (consultationComplete) {
-    let propertyKind: CustomerPropertyKind = 'residential';
-    if (loaded.visit.property_id) {
-      const { data: property } = await admin
-        .from('tenant_customer_properties')
-        .select('property_kind')
-        .eq('id', loaded.visit.property_id)
-        .eq('tenant_id', membership.tenantId)
-        .maybeSingle();
-      if (property?.property_kind) propertyKind = property.property_kind;
-    }
+    const propertyKind = await consultationPropertyKind(
+      admin,
+      membership.tenantId,
+      loaded.visit.property_id,
+    );
     const intake = storedIntake ?? parseConsultationIntakeForm(new FormData(), propertyKind);
     const requiredFields = await loadConsultationRequiredFields(admin, membership.tenantId);
     const intakeErrors = consultationIntakeErrors(intake, requiredFields);

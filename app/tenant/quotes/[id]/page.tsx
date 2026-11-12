@@ -90,6 +90,7 @@ function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyG
     {
       id: string;
       label: string;
+      storedLabel: string;
       propertyKind: PropertyPickRow['property_kind'];
       sqft: number | null;
     }[]
@@ -99,6 +100,7 @@ function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyG
     list.push({
       id: p.id,
       label: propertyOptionLabel(p),
+      storedLabel: p.label?.trim() || '',
       propertyKind: p.property_kind,
       sqft: p.sqft,
     });
@@ -606,6 +608,7 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
             jobTypeCatalog={jobTypeCatalog}
             quotePropertyKind={quotePropertyKind}
             autoScheduleEnabled={autoScheduleEnabled}
+            serviceSegment={serviceSegment}
             sqftBidsEnabled={capabilitiesForSegment(serviceSegment).sqftBids}
             defaultSqft={parseQuotePropertySnapshot(row.property_snapshot).sqft ?? null}
             snapshot={{

@@ -17,6 +17,7 @@ import {
 } from '@/lib/tenant/customerIdentityName';
 import { customerHasPortalLogin } from '@/lib/tenant/customerPortalInvite';
 import { createClient } from '@/lib/supabase/server';
+import { defaultPropertyKindForTenant } from '@/lib/tenant/loadTenantServiceSegment';
 import { shouldAutoConfirmEmail } from '@/lib/auth/emailConfirmMode';
 
 type Admin = SupabaseClient<Database>;
@@ -355,7 +356,7 @@ async function updateExistingReferralRefereeProfile(
         tenant_id: input.tenantId,
         customer_id: input.customerId,
         label: 'Primary service location',
-        property_kind: 'residential',
+        property_kind: await defaultPropertyKindForTenant(admin, input.tenantId),
         is_primary: true,
         ...propertyPayload,
       });
@@ -451,7 +452,7 @@ async function createReferralRefereeCustomer(
     tenant_id: input.tenantId,
     customer_id: customerId,
     label: 'Primary service location',
-    property_kind: 'residential',
+    property_kind: await defaultPropertyKindForTenant(admin, input.tenantId),
     address_line1: input.serviceAddressLine1 || null,
     address_line2: input.serviceAddressLine2 || null,
     city: input.serviceCity || null,

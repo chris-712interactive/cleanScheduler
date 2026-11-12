@@ -4,7 +4,10 @@ import {
   instantOfferAllowedForSegment,
   instantPricingMethodAllowed,
 } from '@/lib/booking/bookingAudience';
-import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import {
+  defaultPropertyKindForTenant,
+  loadTenantServiceSegment,
+} from '@/lib/tenant/loadTenantServiceSegment';
 import {
   loadInstantSlotsForTenant,
   type InstantBookingPolicy,
@@ -431,7 +434,7 @@ export async function ensureBookingCustomer(
       tenant_id: input.tenantId,
       customer_id: customerId,
       label: 'Booked online',
-      property_kind: 'residential',
+      property_kind: await defaultPropertyKindForTenant(admin, input.tenantId),
       address_line1: input.addressLine1,
       city: input.city,
       state: input.state,

@@ -17,6 +17,7 @@ import { getVisitRelatedRecords } from '@/lib/tenant/relatedRecords';
 import { VisitDetailCard } from '../VisitDetailCard';
 import { createAdminClient } from '@/lib/supabase/server';
 import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
+import { capabilitiesForSegment, defaultPropertyKind } from '@/lib/tenant/serviceSegment';
 import {
   previewVisitCoverage,
   propertyHasCoverageSubscription,
@@ -340,7 +341,9 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           title:
             row.title || (row.visit_purpose === 'consultation' ? 'Consultation' : 'Cleaning visit'),
           visitPurpose: row.visit_purpose ?? 'service',
-          propertyKind: (prop?.property_kind as CustomerPropertyKind | undefined) ?? 'residential',
+          propertyKind:
+            (prop?.property_kind as CustomerPropertyKind | undefined) ??
+            defaultPropertyKind(capabilitiesForSegment(serviceSegment)),
           consultationIntake:
             row.visit_purpose === 'consultation'
               ? parseStoredConsultationIntake(row.consultation_intake)
