@@ -1,6 +1,11 @@
 import { errors, expect, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 import { assertHttpsDevUrl, devUrlOnSameHost } from '../../lib/hosted-dev/hostedDevUrl';
-import { redactLandingUrl, redactPlaintextSecrets } from '../../lib/hosted-dev/redactText';
+import {
+  redactJoinedText,
+  redactLandingUrl,
+  redactPlaintextSecrets,
+  secretsFromEnv,
+} from '../../lib/hosted-dev/redactText';
 import { classifySignInNavigation } from '../../lib/hosted-dev/signInNavigation';
 
 export { redactLandingUrl };
@@ -101,7 +106,7 @@ export async function expectDevBanner(page: Page): Promise<void> {
 
 export async function maskAndCapture(page: Page, info: TestInfo): Promise<void> {
   if (info.status === info.expectedStatus) return;
-  await page
+  const texts = await page
     .evaluate(() => {
       document.querySelectorAll('input, textarea').forEach((element) => {
         if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
@@ -111,21 +116,40 @@ export async function maskAndCapture(page: Page, info: TestInfo): Promise<void> 
       document.querySelectorAll('h1, h2').forEach((element) => {
         element.textContent = '[redacted heading]';
       });
+      const groups: string[][] = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      const email = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-      const encodedEmail = /[A-Z0-9._%+-]+%40[A-Z0-9._%+-]{2,}/gi;
       let node = walker.nextNode();
+      let parent: Node | null = null;
       while (node) {
-        if (node.textContent) {
-          const next = node.textContent
-            .replace(email, '[redacted-email]')
-            .replace(encodedEmail, '[redacted-email]');
-          if (next !== node.textContent) node.textContent = next;
+        const text = node.textContent ?? '';
+        if (node.parentNode && node.parentNode === parent && groups.length > 0) {
+          groups[groups.length - 1]?.push(text);
+        } else {
+          groups.push([text]);
+          parent = node.parentNode;
         }
         node = walker.nextNode();
       }
+      return groups;
     })
-    .catch(() => undefined);
+    .catch(() => null);
+  if (texts) {
+    const secrets = secretsFromEnv(process.env);
+    const redacted = texts.flatMap((group) => redactJoinedText(group, secrets));
+    await page
+      .evaluate((next) => {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        let index = 0;
+        while (node) {
+          const replacement = next[index] ?? '';
+          if (node.textContent !== replacement) node.textContent = replacement;
+          index += 1;
+          node = walker.nextNode();
+        }
+      }, redacted)
+      .catch(() => undefined);
+  }
   const safeTitle = info.title.replace(/[^a-z0-9]+/gi, '-').slice(0, 60);
   await page
     .screenshot({
