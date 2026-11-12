@@ -98,7 +98,13 @@ export async function startMasqueradeAction(formData: FormData): Promise<void> {
   redirect(masqueradeHandoffRedirect(getPublicOrigin(tenantSlug), handoffToken));
 }
 
-export async function endMasqueradeAction(): Promise<void> {
+export async function endMasqueradeAction(
+  prev: { error?: string },
+  formData: FormData,
+): Promise<{ error?: string }> {
+  // useActionState always passes the previous state and the form payload.
+  void prev;
+  void formData;
   const admin = createAdminClient();
   const auth = await requireAuth('/');
 
@@ -109,18 +115,24 @@ export async function endMasqueradeAction(): Promise<void> {
 
   const targetTenantId = auth.claims.masqueradeTargetTenantId;
 
-  await admin
+  const { error: closeErr } = await admin
     .from('masquerade_sessions')
     .update({ ended_at: new Date().toISOString() })
     .eq('admin_user_id', auth.user.id)
     .is('ended_at', null);
+  if (closeErr) {
+    return { error: 'Support mode could not be closed. Try again.' };
+  }
 
-  await admin.from('audit_log_entries').insert({
+  const { error: auditErr } = await admin.from('audit_log_entries').insert({
     actor_user_id: auth.user.id,
     action: 'masquerade.end',
     target_tenant_id: targetTenantId,
     payload: {},
   });
+  if (auditErr) {
+    console.error('[endMasqueradeAction] end audit was not saved');
+  }
 
   const { data: userRes, error: uErr } = await admin.auth.admin.getUserById(auth.user.id);
   if (uErr || !userRes.user) {
@@ -129,7 +141,17 @@ export async function endMasqueradeAction(): Promise<void> {
 
   const meta = clearedMasqueradeAppMetadata({ ...(userRes.user.app_metadata ?? {}) });
 
-  await admin.auth.admin.updateUserById(auth.user.id, { app_metadata: meta });
+  const { error: metaErr } = await admin.auth.admin.updateUserById(auth.user.id, {
+    app_metadata: meta,
+  });
+  if (metaErr) {
+    console.error('[endMasqueradeAction] staff metadata was not cleared');
+  }
+  if (auditErr || metaErr) {
+    return {
+      error: 'Support mode was closed, but the end record or staff metadata could not be updated.',
+    };
+  }
 
   const h = await headers();
   const portal = h.get('x-portal');

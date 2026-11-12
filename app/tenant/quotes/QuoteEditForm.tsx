@@ -9,6 +9,7 @@ import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
 import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { customerLocationEditHref } from '@/lib/tenant/customerLocationHref';
 import {
   capabilitiesForSegment,
   defaultPropertyKind,
@@ -254,7 +255,9 @@ export function QuoteEditForm({
               selectedLocation.storedLabel ?? '',
               kindLock.disallowedKind,
             )}{' '}
-            <Link href={`/customers/${customerId}`}>Edit this location</Link>
+            <Link href={customerLocationEditHref(customerId, selectedLocation.id)}>
+              Edit this location
+            </Link>
           </p>
           <label className={styles.label} htmlFor="edit_correct_location_property_kind">
             Property type

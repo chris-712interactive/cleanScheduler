@@ -10,9 +10,8 @@
 --   ended_at is null
 --   started_at <= now() + 60 seconds   (clock skew)
 --   started_at >= now() - 1 hour
--- The 60-second future bound is enforced here. PR #246's TypeScript helper
--- (liveMasqueradeSessionMatches) uses the same one-hour TTL but does not yet
--- reject a far-future started_at. Rebase onto that helper after it merges.
+-- The 60-second future bound is enforced here and in
+-- liveMasqueradeSessionMatches (one-hour TTL and 60-second clock skew).
 --
 -- Left on is_platform_admin() alone (platform console data, not a tenant row):
 --   user_profiles, tenants, marketing_inquiries, masquerade_sessions (select),

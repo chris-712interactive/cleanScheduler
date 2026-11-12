@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useActionState, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionPropertiesPatch } from '@/lib/hooks/useServerActionPropertiesPatch';
 import {
@@ -11,6 +11,7 @@ import {
 import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { buildScheduleConsultationPath } from '@/lib/tenant/customerConsultation';
 import type { PropertyConsultationPrompt } from '@/lib/tenant/propertyConsultationRequest';
+import { customerLocationDomId } from '@/lib/tenant/customerLocationHref';
 import { formatPropertyAddressLine } from '@/lib/tenant/formatPropertyAddress';
 import {
   propertyKindSelectOptions,
@@ -40,6 +41,20 @@ const initial: PropertyFormState = {};
 function zoneLabel(zones: ServiceZoneOption[], zoneId: string | null): string | null {
   if (!zoneId) return null;
   return zones.find((z) => z.id === zoneId)?.name ?? null;
+}
+
+function LocationCard({ propertyId, children }: { propertyId: string; children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const card = ref.current;
+    if (!card) return;
+    if (window.location.hash === `#${customerLocationDomId(propertyId)}`) card.open = true;
+  }, [propertyId]);
+  return (
+    <details ref={ref} id={customerLocationDomId(propertyId)} className={styles.propertyCard}>
+      {children}
+    </details>
+  );
 }
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
@@ -198,7 +213,7 @@ export function CustomerPropertySection({
             });
             const consultation = propertyConsultations[p.id];
             return (
-              <details key={p.id} className={styles.propertyCard}>
+              <LocationCard key={p.id} propertyId={p.id}>
                 <summary className={styles.propertySummary}>
                   <span className={styles.propertyTitle}>
                     {p.label?.trim() || 'Unnamed location'}
@@ -276,7 +291,7 @@ export function CustomerPropertySection({
                     }
                   />
                 </div>
-              </details>
+              </LocationCard>
             );
           })
         )}
