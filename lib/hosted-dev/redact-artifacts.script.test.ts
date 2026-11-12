@@ -46,4 +46,47 @@ describe('redact-artifacts script', () => {
       await rm(directory, { recursive: true, force: true });
     }
   });
+
+  it('redacts json and cookie secrets in every text artifact before the marker', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'hosted-dev-redact-text-'));
+    try {
+      await writeFile(
+        path.join(directory, 'notes.log'),
+        'https://admin.dev.cleanscheduler.com/cb#refresh_token=left;right-secret\n',
+      );
+      await writeFile(
+        path.join(directory, 'page.html'),
+        '{"refresh_token":"opaque-refresh-secret"}\nsb-abcdefghijklmnop-auth-token=opaque-cookie-session\n',
+      );
+      await execFileAsync(process.execPath, ['scripts/hosted-dev/redact-artifacts.mts'], {
+        cwd: process.cwd(),
+        env: { ...process.env, HOSTED_DEV_RESULTS_DIR: directory },
+      });
+      const log = await readFile(path.join(directory, 'notes.log'), 'utf8');
+      const html = await readFile(path.join(directory, 'page.html'), 'utf8');
+      expect(log).not.toContain('right-secret');
+      expect(html).not.toContain('opaque-refresh-secret');
+      expect(html).not.toContain('opaque-cookie-session');
+      expect(await readFile(path.join(directory, '.redaction-complete'), 'utf8')).toBe('ok\n');
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('does not write the marker when a binary artifact was not redacted', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'hosted-dev-redact-bin-'));
+    try {
+      await writeFile(path.join(directory, 'notes.log'), 'token=visible-secret\n');
+      await writeFile(path.join(directory, 'blob.dat'), Buffer.from([0x00, 0x01, 0x02]));
+      await expect(
+        execFileAsync(process.execPath, ['scripts/hosted-dev/redact-artifacts.mts'], {
+          cwd: process.cwd(),
+          env: { ...process.env, HOSTED_DEV_RESULTS_DIR: directory },
+        }),
+      ).rejects.toThrow(/did not cover every artifact/);
+      await expect(readFile(path.join(directory, '.redaction-complete'), 'utf8')).rejects.toThrow();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
 });

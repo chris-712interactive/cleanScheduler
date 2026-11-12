@@ -10,6 +10,8 @@ export interface CustomerPropertyGroup {
   options: {
     id: string;
     label: string;
+    /** Stored `tenant_customer_properties.label`, without the picker suffix. */
+    storedLabel?: string;
     requiredCrewSize?: number;
     propertyKind?: CustomerPropertyKind;
     sqft?: number | null;

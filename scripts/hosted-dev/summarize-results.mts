@@ -5,6 +5,7 @@ import { HOSTED_DEV_ORIGIN } from '../../lib/hosted-dev/hostedDevUrl.ts';
 register(new URL('./ts-resolver.mts', import.meta.url));
 const { buildHostedDevReport, renderHostedDevReport } =
   await import('../../lib/hosted-dev/summarizeReport.ts');
+const { redactText, secretsFromEnv } = await import('../../lib/hosted-dev/redactText.ts');
 
 const target = process.env.HOSTED_DEV_BASE_URL?.trim() || HOSTED_DEV_ORIGIN;
 const playwright = await readFile('hosted-dev-results/playwright.json', 'utf8')
@@ -33,7 +34,12 @@ const report = buildHostedDevReport({
   env: process.env,
   identityNote,
 });
-await writeFile('hosted-dev-results/report.json', `${JSON.stringify(report, null, 2)}\n`);
-await writeFile('hosted-dev-results/report.md', renderHostedDevReport(report));
-console.log(renderHostedDevReport(report));
+const secrets = secretsFromEnv(process.env);
+const rendered = redactText(renderHostedDevReport(report), secrets);
+await writeFile(
+  'hosted-dev-results/report.json',
+  `${redactText(JSON.stringify(report, null, 2), secrets)}\n`,
+);
+await writeFile('hosted-dev-results/report.md', rendered);
+console.log(rendered);
 if (report.overall === 'fail') process.exitCode = 1;

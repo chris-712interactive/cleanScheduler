@@ -1,13 +1,22 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { submitServerActionForm } from '@/lib/forms/submitServerActionForm';
 import { useServerActionQuoteSnapshot } from '@/lib/hooks/useServerActionQuoteSnapshot';
 import type { QuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
 import type { JobTypeCatalogEntry } from '@/lib/tenant/jobTypeCatalog';
+import { PROPERTY_KIND_LABEL } from '@/lib/tenant/propertyKindLabels';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
-import { pricingPropertyKind } from '@/lib/tenant/serviceSegment';
+import {
+  capabilitiesForSegment,
+  defaultPropertyKind,
+  locationPropertyKindDeniedMessage,
+  pricingPropertyKind,
+  quoteLocationKindLock,
+  type TenantServiceSegment,
+} from '@/lib/tenant/serviceSegment';
 import { updateTenantQuote, type QuoteFormState } from './actions';
 import type { QuoteCustomerOption } from './QuoteCreateForm';
 import type { CustomerPropertyGroup } from './QuoteCreateForm';
@@ -43,6 +52,7 @@ export function QuoteEditForm({
   consultationPrompt = null,
   sqftBidsEnabled = false,
   defaultSqft = null,
+  serviceSegment = 'both',
 }: {
   tenantSlug: string;
   customerOptions: QuoteCustomerOption[];
@@ -56,6 +66,7 @@ export function QuoteEditForm({
   consultationPrompt?: QuoteConsultationPromptInfo | null;
   sqftBidsEnabled?: boolean;
   defaultSqft?: number | null;
+  serviceSegment?: TenantServiceSegment;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [rowsRevision, setRowsRevision] = useState(0);
@@ -96,11 +107,23 @@ export function QuoteEditForm({
     setEditPropertyId(propertyDefault);
   }, [propertyDefault, customerId]);
   const selectedLocation = propertyOptions.find((option) => option.id === editPropertyId);
-  const effectivePropertyKind =
-    pricingPropertyKind({
-      locationKind: selectedLocation?.propertyKind ?? null,
-      manualKind: quotePropertyKind,
-    }) ?? quotePropertyKind;
+  const capabilities = capabilitiesForSegment(serviceSegment);
+  const kindLock = quoteLocationKindLock({
+    locationKind: selectedLocation?.propertyKind ?? null,
+    capabilities,
+  });
+  const [locationKindCorrection, setLocationKindCorrection] = useState<CustomerPropertyKind>(() =>
+    defaultPropertyKind(capabilities),
+  );
+  useEffect(() => {
+    setLocationKindCorrection(defaultPropertyKind(capabilitiesForSegment(serviceSegment)));
+  }, [selectedLocation?.id, serviceSegment]);
+  const effectivePropertyKind = kindLock.disallowedKind
+    ? locationKindCorrection
+    : (pricingPropertyKind({
+        locationKind: selectedLocation?.propertyKind ?? null,
+        manualKind: quotePropertyKind,
+      }) ?? quotePropertyKind);
 
   const statusSelectOptions = useMemo(() => {
     const base = [...TENANT_QUOTE_STATUS_EDIT_OPTIONS];
@@ -217,9 +240,42 @@ export function QuoteEditForm({
         {propertyOptions.map((p) => (
           <option key={p.id} value={p.id}>
             {p.label}
+            {p.propertyKind && !capabilities.propertyKinds.includes(p.propertyKind)
+              ? ` (${PROPERTY_KIND_LABEL[p.propertyKind]})`
+              : ''}
           </option>
         ))}
       </select>
+      {kindLock.disallowedKind && selectedLocation ? (
+        <div>
+          <p className={styles.error} role="alert">
+            {locationPropertyKindDeniedMessage(
+              capabilities,
+              selectedLocation.storedLabel ?? '',
+              kindLock.disallowedKind,
+            )}{' '}
+            <Link href={`/customers/${customerId}`}>Edit this location</Link>
+          </p>
+          <label className={styles.label} htmlFor="edit_correct_location_property_kind">
+            Property type
+          </label>
+          <select
+            id="edit_correct_location_property_kind"
+            name="correct_location_property_kind"
+            className={styles.select}
+            value={locationKindCorrection}
+            onChange={(event) =>
+              setLocationKindCorrection(event.target.value as CustomerPropertyKind)
+            }
+          >
+            {capabilities.propertyKinds.map((kind) => (
+              <option key={kind} value={kind}>
+                {PROPERTY_KIND_LABEL[kind]}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       {customerId && propertyOptions.length === 0 ? (
         <p className={styles.hint}>Add service locations on the customer profile first.</p>
       ) : null}

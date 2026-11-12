@@ -13,6 +13,11 @@ import {
 import { readRequestAuthGrant } from '@/lib/auth/readRequestAuthGrant';
 import type { RequestAuthGrantTenant } from '@/lib/auth/requestAuthGrant';
 import { isPlatformAdminRole } from '@/lib/auth/platformRoles';
+import {
+  clearMasqueradeAppMetadata,
+  expireStaleMasqueradeIfNeeded,
+} from '@/lib/admin/expireStaleMasquerade';
+import { liveMasqueradeSessionMatches } from '@/lib/auth/masqueradeSession';
 import { decideTenantPortalAdmission } from '@/lib/auth/tenantPortalAdmission';
 import { decideWorkspaceGate } from '@/lib/auth/workspaceGate';
 import { enforceTenantAuthPolicy } from './enforceTenantAuthPolicy';
@@ -288,13 +293,39 @@ export async function requireTenantPortalAccess(
   }
 
   // No membership. Platform admin is not a pass into every workspace.
-  // Support entry requires a masquerade claim aimed at this tenant.
+  // Support entry requires a masquerade claim aimed at this tenant and a
+  // matching open, unexpired masquerade_sessions row.
   const masqueradeTarget = auth.claims.masqueradeTargetTenantId;
   let hostTenant: { id: string; slug: string; name: string } | null = null;
   let hostTenantResolved = false;
+  let hasLiveMasqueradeSession = false;
   if (isPlatformAdmin && masqueradeTarget) {
+    await expireStaleMasqueradeIfNeeded(auth);
     hostTenant = await lookupTenantBySlug(slug);
     hostTenantResolved = true;
+    const admin = createAdminClient();
+    const { data: openSession, error: sessionError } = await admin
+      .from('masquerade_sessions')
+      .select('id, admin_user_id, target_tenant_id, started_at, ended_at')
+      .eq('admin_user_id', auth.user.id)
+      .eq('target_tenant_id', masqueradeTarget)
+      .is('ended_at', null)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nowMs = Date.now();
+    hasLiveMasqueradeSession =
+      !sessionError &&
+      liveMasqueradeSessionMatches(openSession, {
+        userId: auth.user.id,
+        tenantId: masqueradeTarget,
+        nowMs,
+      });
+
+    if (!sessionError && !hasLiveMasqueradeSession) {
+      await clearMasqueradeAppMetadata(admin, auth.user.id);
+    }
   }
 
   const admission = decideTenantPortalAdmission({
@@ -302,6 +333,7 @@ export async function requireTenantPortalAccess(
     masqueradeTargetTenantId: masqueradeTarget,
     hostTenantId: hostTenant?.id ?? null,
     hostTenantResolved,
+    hasLiveMasqueradeSession,
   });
 
   if (admission.kind === 'deny' && admission.reason === 'unknown_tenant') {

@@ -7,6 +7,7 @@ import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { ensurePropertyGeocoded } from '@/lib/geo/ensurePropertyGeocoded';
 import { syncedFullNameFromParts } from '@/lib/people/personName';
 import { formatCustomerDisplayName } from '@/lib/tenant/customerIdentityName';
+import { defaultPropertyKindForTenant } from '@/lib/tenant/loadTenantServiceSegment';
 import {
   formatSuggestionClock,
   loadDaySchedulingSuggestions,
@@ -522,7 +523,7 @@ async function ensureLeadCustomer(
       tenant_id: tenantId,
       customer_id: customer.data.id,
       label: 'Primary service location',
-      property_kind: 'residential',
+      property_kind: await defaultPropertyKindForTenant(admin, tenantId),
       address_line1: lead.service_address_line1,
       city: lead.service_city,
       state: lead.service_state,

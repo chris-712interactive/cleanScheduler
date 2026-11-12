@@ -20,6 +20,7 @@ describe('decideTenantPortalAdmission', () => {
       masqueradeTargetTenantId: null,
       hostTenantId: HOST,
       hostTenantResolved: true,
+      hasLiveMasqueradeSession: false,
     });
     expect(decision).toEqual({ kind: 'deny', reason: 'membership' });
   });
@@ -30,6 +31,7 @@ describe('decideTenantPortalAdmission', () => {
       masqueradeTargetTenantId: null,
       hostTenantId: HOST,
       hostTenantResolved: true,
+      hasLiveMasqueradeSession: false,
     });
     expect(decision).toEqual({ kind: 'deny', reason: 'membership' });
   });
@@ -40,6 +42,7 @@ describe('decideTenantPortalAdmission', () => {
       masqueradeTargetTenantId: OTHER,
       hostTenantId: HOST,
       hostTenantResolved: true,
+      hasLiveMasqueradeSession: true,
     });
     expect(decision).toEqual({ kind: 'deny', reason: 'membership' });
   });
@@ -51,6 +54,7 @@ describe('decideTenantPortalAdmission', () => {
         masqueradeTargetTenantId: HOST,
         hostTenantId: HOST,
         hostTenantResolved: true,
+        hasLiveMasqueradeSession: true,
       }),
     ).toEqual({ kind: 'masquerade' });
     expect(
@@ -59,8 +63,20 @@ describe('decideTenantPortalAdmission', () => {
         masqueradeTargetTenantId: HOST,
         hostTenantId: HOST,
         hostTenantResolved: true,
+        hasLiveMasqueradeSession: true,
       }),
     ).toEqual({ kind: 'masquerade' });
+  });
+
+  it('denies app_metadata without any live masquerade session', () => {
+    const decision = decideTenantPortalAdmission({
+      appRole: 'admin',
+      masqueradeTargetTenantId: HOST,
+      hostTenantId: HOST,
+      hostTenantResolved: true,
+      hasLiveMasqueradeSession: false,
+    });
+    expect(decision).toEqual({ kind: 'deny', reason: 'membership' });
   });
 
   it('does not treat a masquerade claim as access for a non-staff user', () => {
@@ -69,6 +85,7 @@ describe('decideTenantPortalAdmission', () => {
       masqueradeTargetTenantId: HOST,
       hostTenantId: HOST,
       hostTenantResolved: true,
+      hasLiveMasqueradeSession: true,
     });
     expect(decision).toEqual({ kind: 'deny', reason: 'membership' });
   });
@@ -79,6 +96,7 @@ describe('decideTenantPortalAdmission', () => {
       masqueradeTargetTenantId: HOST,
       hostTenantId: HOST,
       hostTenantResolved: true,
+      hasLiveMasqueradeSession: true,
     });
     expect(decision).toEqual({ kind: 'deny', reason: 'membership' });
   });
@@ -89,6 +107,7 @@ describe('decideTenantPortalAdmission', () => {
       masqueradeTargetTenantId: HOST,
       hostTenantId: null,
       hostTenantResolved: true,
+      hasLiveMasqueradeSession: true,
     });
     expect(decision).toEqual({ kind: 'deny', reason: 'unknown_tenant' });
   });
@@ -99,6 +118,7 @@ describe('decideTenantPortalAdmission', () => {
       masqueradeTargetTenantId: HOST,
       hostTenantId: null,
       hostTenantResolved: false,
+      hasLiveMasqueradeSession: true,
     });
     expect(decision).toEqual({ kind: 'deny', reason: 'membership' });
   });
