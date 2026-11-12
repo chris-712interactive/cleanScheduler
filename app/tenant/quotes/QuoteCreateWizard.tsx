@@ -19,6 +19,7 @@ import {
   sqftBidAllowedForProperty,
   type TenantServiceSegment,
 } from '@/lib/tenant/serviceSegment';
+import { customerLocationEditHref } from '@/lib/tenant/customerLocationHref';
 import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
 import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
@@ -99,8 +100,9 @@ export function QuoteCreateWizard({
   useEffect(() => {
     if (!state.quoteId || navigatedToQuoteRef.current) return;
     navigatedToQuoteRef.current = true;
-    router.replace(`/quotes/${state.quoteId}`);
-  }, [state.quoteId, router]);
+    const notice = state.warning ? `?notice=${state.warning}` : '';
+    router.replace(`/quotes/${state.quoteId}${notice}`);
+  }, [state.quoteId, state.warning, router]);
 
   const [step, setStep] = useState<StepId>('who');
   const [stepError, setStepError] = useState<string | null>(null);
@@ -837,7 +839,9 @@ export function QuoteCreateWizard({
                       selectedLocation.storedLabel ?? '',
                       kindLock.disallowedKind,
                     )}{' '}
-                    <Link href={`/customers/${customerId}`}>Edit this location</Link>
+                    <Link href={customerLocationEditHref(customerId, selectedLocation.id)}>
+                      Edit this location
+                    </Link>
                   </p>
                 ) : null}
                 <label className={styles.label} htmlFor="quote_property_type_select">

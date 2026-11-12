@@ -23,8 +23,11 @@ import {
 } from '@/lib/tenant/createTenantCustomerInline';
 import { enrichParsedQuoteLines } from '@/lib/tenant/enrichQuoteLineItems';
 import {
+  LOCATION_FACT_NOTICE,
+  inlinePropertyDeferringLocationFacts,
   parseCustomerPropertyKind,
   parseQuoteWizardStructuredFromForm,
+  quoteLocationFactPatch,
   type QuotePropertySnapshot,
 } from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
@@ -77,6 +80,8 @@ export interface QuoteFormState {
   quoteSnapshot?: QuoteEditSnapshot;
   /** Deep link when consultation gate blocks send. */
   schedulePath?: string;
+  /** Non-blocking notice after the quote itself was saved. */
+  warning?: typeof LOCATION_FACT_NOTICE;
 }
 
 export type MoveQuoteStatusResult =
@@ -503,30 +508,22 @@ async function syncPropertyFactsFromSnapshot(
   tenantId: string,
   propertyId: string | null,
   snapshot: QuotePropertySnapshot,
-) {
-  if (!propertyId) return;
+): Promise<typeof LOCATION_FACT_NOTICE | undefined> {
+  if (!propertyId) return undefined;
 
-  const patch: {
-    bedrooms?: number;
-    bathrooms?: number;
-    sqft?: number;
-    stories?: number;
-    site_notes?: string;
-  } = {};
+  const patch = quoteLocationFactPatch(snapshot);
+  if (Object.keys(patch).length === 0) return undefined;
 
-  if (snapshot.bedrooms != null) patch.bedrooms = snapshot.bedrooms;
-  if (snapshot.bathrooms != null) patch.bathrooms = snapshot.bathrooms;
-  if (snapshot.sqft != null) patch.sqft = snapshot.sqft;
-  if (snapshot.stories != null) patch.stories = snapshot.stories;
-  if (snapshot.access_notes?.trim()) patch.site_notes = snapshot.access_notes.trim();
-
-  if (Object.keys(patch).length === 0) return;
-
-  await admin
+  const { error } = await admin
     .from('tenant_customer_properties')
     .update(patch)
     .eq('id', propertyId)
     .eq('tenant_id', tenantId);
+  if (error) {
+    console.error('[createTenantQuote] location facts were not copied');
+    return LOCATION_FACT_NOTICE;
+  }
+  return undefined;
 }
 
 function parseInlinePropertyKind(raw: string): CustomerPropertyKind {
@@ -596,7 +593,7 @@ export async function createTenantQuote(
       lastName: inlineLastName,
       email: inlineEmail,
       phone: inlinePhone,
-      property: {
+      property: inlinePropertyDeferringLocationFacts({
         address_line1: inlinePropertyAddress || undefined,
         city: inlinePropertyCity || undefined,
         state: inlinePropertyState || undefined,
@@ -607,7 +604,7 @@ export async function createTenantQuote(
         bathrooms: structured.propertySnapshot.bathrooms ?? undefined,
         sqft: structured.propertySnapshot.sqft ?? undefined,
         stories: structured.propertySnapshot.stories ?? undefined,
-      },
+      }),
     });
     if (!created.ok) {
       return { error: created.error };
@@ -650,7 +647,7 @@ export async function createTenantQuote(
         admin,
         tenantId: membership.tenantId,
         customerId,
-        property: {
+        property: inlinePropertyDeferringLocationFacts({
           address_line1: inlinePropertyAddress || undefined,
           city: inlinePropertyCity || undefined,
           state: inlinePropertyState || undefined,
@@ -661,7 +658,7 @@ export async function createTenantQuote(
           bathrooms: structured.propertySnapshot.bathrooms ?? undefined,
           sqft: structured.propertySnapshot.sqft ?? undefined,
           stories: structured.propertySnapshot.stories ?? undefined,
-        },
+        }),
       });
       if (!createdProperty.ok) {
         return { error: createdProperty.error };
@@ -768,23 +765,6 @@ export async function createTenantQuote(
   const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
   if (!crewSize.ok) return { error: crewSize.error };
 
-  await syncPropertyFactsFromSnapshot(
-    admin,
-    membership.tenantId,
-    propertyId,
-    structured.propertySnapshot,
-  );
-
-  if (propertyId && formData.get('save_access_codes') === '1') {
-    const savedCodes = await savePropertyAccessCodes(
-      admin,
-      membership.tenantId,
-      propertyId,
-      parsePropertyAccessCodesFromForm(formData),
-    );
-    if (!savedCodes.ok) return { error: savedCodes.error };
-  }
-
   const rpc = await admin.rpc('tenant_quote_create_with_line_items', {
     p_tenant_id: membership.tenantId,
     p_customer_id: customerId,
@@ -815,6 +795,28 @@ export async function createTenantQuote(
       error:
         'We could not save this quote. If you recently updated the app, apply pending database migrations and try again.',
     };
+  }
+
+  const factWarning = await syncPropertyFactsFromSnapshot(
+    admin,
+    membership.tenantId,
+    propertyId,
+    structured.propertySnapshot,
+  );
+
+  if (propertyId && formData.get('save_access_codes') === '1') {
+    const savedCodes = await savePropertyAccessCodes(
+      admin,
+      membership.tenantId,
+      propertyId,
+      parsePropertyAccessCodesFromForm(formData),
+    );
+    if (!savedCodes.ok) {
+      return {
+        error: `The quote was saved, but entry codes could not be stored. ${savedCodes.error}`,
+        warning: factWarning,
+      };
+    }
   }
 
   const verify = await admin
@@ -889,7 +891,7 @@ export async function createTenantQuote(
   if (initialStatus === 'sent') {
     invalidateCustomerQuoteBadge(customerId);
   }
-  return { success: true, quoteId: newId };
+  return { success: true, quoteId: newId, warning: factWarning };
 }
 
 export async function updateTenantQuote(

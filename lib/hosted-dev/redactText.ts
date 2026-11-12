@@ -11,10 +11,13 @@ const AUTH_VALUE_NAME =
 const AUTH_FIELD = /("authorization"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
 const AUTH_PLAIN = /(authorization\s*:\s*)(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\r\n]*)/gi;
 
-const DECODE_PASSES = 3;
+const DECODE_PASSES = 12;
 const MAX_KEY_CHARS = 240;
 const IMAGE_TLDS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp']);
-const BOUNDARY = new Set(['#', '?', '&', ';', '/', ' ', '\t', '\n', '\r', '"', "'", '<', '>']);
+const BOUNDARY = new Set(['#', '?', '&', ';', '/', ' ', '\t', '\n', '\r', '"', "'", '<', '>', '+']);
+/** Ten nested `next=` wrappers plus the inner secret still have to scrub. */
+const MAX_ASSIGNMENT_DEPTH = 12;
+const SUPABASE_AUTH_COOKIE = 'sb-[a-z0-9]+-auth-token(?:\\.\\d+|-code-verifier)?';
 const SENSITIVE_KEYS = new Set([
   'accesstoken',
   'refreshtoken',
@@ -28,6 +31,7 @@ const SENSITIVE_KEYS = new Set([
   'code',
   'email',
   'password',
+  'handoff',
 ]);
 
 function safeDecode(value: string): string {
@@ -54,12 +58,27 @@ function normalizedKey(raw: string): string {
 
 function isSensitiveKey(raw: string): boolean {
   const decoded = decodeBounded(raw);
-  if (/^sb-[a-z0-9]+-auth-token$/i.test(decoded)) return true;
+  // Whole session cookie, chunked copies (`sb-<ref>-auth-token.0`), and the PKCE verifier.
+  if (/^sb-[a-z0-9]+-auth-token(?:\.\d+|-code-verifier)?$/i.test(decoded)) return true;
   return SENSITIVE_KEYS.has(normalizedKey(decoded));
 }
 
 function isBoundary(ch: string | undefined): boolean {
   return ch === undefined || BOUNDARY.has(ch);
+}
+
+/** `%20` and `%2B` are boundaries so `hello%2Btoken=` and `%20token=` still match. */
+function encodedBoundaryLength(input: string, index: number): number {
+  const encoded = input.slice(index, index + 3);
+  if (!/^%[0-9A-Fa-f]{2}$/.test(encoded)) return 0;
+  const decoded = safeDecode(encoded);
+  return decoded.length === 1 && isBoundary(decoded) ? 3 : 0;
+}
+
+function canStartKey(input: string, start: number): boolean {
+  if (start <= 0) return true;
+  if (isBoundary(input[start - 1])) return true;
+  return start >= 3 && encodedBoundaryLength(input, start - 3) === 3;
 }
 
 function isLocalChar(ch: string): boolean {
@@ -98,17 +117,24 @@ function encodedAtLength(input: string, at: number): number {
   return index + 2 - at;
 }
 
+/** Length of a real email domain. An image suffix (`user@gmail.com.png`) is left outside it. */
+function emailDomainLength(domain: string): number | null {
+  const dot = domain.lastIndexOf('.');
+  if (dot <= 0) return null;
+  const tld = domain.slice(dot + 1);
+  if (!/^[A-Za-z]{2,24}$/.test(tld)) return null;
+  if (IMAGE_TLDS.has(tld.toLowerCase())) return emailDomainLength(domain.slice(0, dot));
+  if (!/[A-Za-z]/.test(domain.slice(0, dot))) return null;
+  return domain.length;
+}
+
 function readDomain(input: string, start: number): { end: number } | null {
   let index = start;
   while (index < input.length && isDomainChar(input[index] ?? '')) index += 1;
   if (index === start) return null;
-  const domain = input.slice(start, index);
-  const dot = domain.lastIndexOf('.');
-  if (dot <= 0) return null;
-  const tld = domain.slice(dot + 1);
-  if (!/^[A-Za-z]{2,24}$/.test(tld) || IMAGE_TLDS.has(tld.toLowerCase())) return null;
-  if (!/[A-Za-z]/.test(domain.slice(0, dot))) return null;
-  return { end: index };
+  const accepted = emailDomainLength(input.slice(start, index));
+  if (accepted == null) return null;
+  return { end: start + accepted };
 }
 
 function redactEmails(input: string): string {
@@ -142,7 +168,12 @@ function pathSemicolonAssignment(input: string, keyStart: number): boolean {
   return true;
 }
 
-function endOfValue(input: string, start: number, stopAtQuestion: boolean): number {
+function endOfValue(
+  input: string,
+  start: number,
+  stopAtQuestion: boolean,
+  includeSpaces: boolean,
+): number {
   if (start >= input.length) return start;
   const quote = input[start];
   if (quote === '"' || quote === "'") {
@@ -157,8 +188,6 @@ function endOfValue(input: string, start: number, stopAtQuestion: boolean): numb
       ch === '#' ||
       ch === '<' ||
       ch === '>' ||
-      ch === ' ' ||
-      ch === '\t' ||
       ch === '\n' ||
       ch === '\r' ||
       ch === '"' ||
@@ -166,6 +195,7 @@ function endOfValue(input: string, start: number, stopAtQuestion: boolean): numb
     ) {
       break;
     }
+    if ((ch === ' ' || ch === '\t') && !includeSpaces) break;
     if (stopAtQuestion && ch === '?') break;
     index += 1;
   }
@@ -180,22 +210,36 @@ function matchAssignment(
   input: string,
   start: number,
 ): { valueStart: number; sensitive: boolean } | null {
-  if (start > 0 && !isBoundary(input[start - 1])) return null;
+  if (!canStartKey(input, start)) return null;
   let index = start;
+  let keyEnd = start;
   while (index < input.length && index - start < MAX_KEY_CHARS) {
     const ch = input[index] ?? '';
-    if (ch === '=') {
-      return classify(input.slice(start, index), index + 1);
+    if (ch === ' ' || ch === '\t') {
+      if (keyEnd === start) return null;
+      index += 1;
+      continue;
     }
     if (ch === '%') {
       const encoded = input.slice(index, index + 3);
       if (!/^%[0-9A-Fa-f]{2}$/.test(encoded)) return null;
-      if (safeDecode(encoded) === '=') return classify(input.slice(start, index), index + 3);
+      const decoded = safeDecode(encoded);
+      if (decoded === '=') {
+        if (keyEnd === start) return null;
+        return classify(input.slice(start, keyEnd), index + 3);
+      }
+      if (decoded.length === 1 && isBoundary(decoded)) return null;
       index += 3;
+      keyEnd = index;
       continue;
+    }
+    if (ch === '=') {
+      if (keyEnd === start) return null;
+      return classify(input.slice(start, keyEnd), index + 1);
     }
     if (isBoundary(ch)) return null;
     index += 1;
+    keyEnd = index;
   }
   return null;
 }
@@ -211,28 +255,46 @@ function classify(
 }
 
 function scrubAssignments(input: string, depth: number): string {
-  if (depth > 3) return input;
+  if (depth > MAX_ASSIGNMENT_DEPTH) return input;
   let out = '';
   let index = 0;
   while (index < input.length) {
-    const hit = index === 0 || isBoundary(input[index - 1]) ? matchAssignment(input, index) : null;
+    const hit = canStartKey(input, index) ? matchAssignment(input, index) : null;
     if (!hit) {
+      const skip = encodedBoundaryLength(input, index);
+      if (skip > 0 && matchAssignment(input, index + skip)) {
+        out += input.slice(index, index + skip);
+        index += skip;
+        continue;
+      }
       out += input[index] ?? '';
       index += 1;
       continue;
     }
-    const valueEnd = endOfValue(input, hit.valueStart, pathSemicolonAssignment(input, index));
+    const stopAtQuestion = pathSemicolonAssignment(input, index);
+    const tightEnd = endOfValue(input, hit.valueStart, stopAtQuestion, false);
+    const key = input
+      .slice(index, hit.valueStart)
+      .replace(/\s*=$/u, '')
+      .replace(/%3d$/i, '')
+      .trim();
+    const tightRaw = input.slice(hit.valueStart, tightEnd);
+    const tightQuote = tightRaw[0] === '"' || tightRaw[0] === "'" ? tightRaw[0] : '';
+    const tightInner =
+      tightQuote && tightRaw.endsWith(tightQuote) && tightRaw.length >= 2
+        ? tightRaw.slice(1, -1)
+        : tightRaw;
+    if (hit.sensitive && isHttpStatusValue(key, tightInner)) {
+      out += input.slice(index, tightEnd);
+      index = tightEnd;
+      continue;
+    }
+    const valueEnd = endOfValue(input, hit.valueStart, stopAtQuestion, hit.sensitive);
     const rawValue = input.slice(hit.valueStart, valueEnd);
     const quote = rawValue[0] === '"' || rawValue[0] === "'" ? rawValue[0] : '';
     const inner =
       quote && rawValue.endsWith(quote) && rawValue.length >= 2 ? rawValue.slice(1, -1) : rawValue;
     if (hit.sensitive) {
-      const key = input.slice(index, hit.valueStart).replace(/=$/u, '').replace(/%3d$/i, '');
-      if (isHttpStatusValue(key, inner)) {
-        out += input.slice(index, valueEnd);
-        index = valueEnd;
-        continue;
-      }
       out += input.slice(index, hit.valueStart);
       out += '[redacted]';
       index = valueEnd;
@@ -276,13 +338,30 @@ export function redactText(input: string, secrets: readonly string[]): string {
   return redactPlaintextSecrets(output);
 }
 
+function redactCookiePair(input: string): string {
+  const cookie = SUPABASE_AUTH_COOKIE;
+  const value = '((?:\\\\.|[^"\\\\])*)';
+  const nameThenValue = new RegExp(
+    `("name"\\s*:\\s*")(${cookie})("\\s*,\\s*"value"\\s*:\\s*")${value}(")`,
+    'gi',
+  );
+  const valueThenName = new RegExp(
+    `("value"\\s*:\\s*")${value}("\\s*,\\s*"name"\\s*:\\s*")(${cookie})(")`,
+    'gi',
+  );
+  return input
+    .replace(nameThenValue, '$1$2$3[redacted]$5')
+    .replace(valueThenName, '$1[redacted]$3$4$5');
+}
+
 function redactStructuredSecrets(input: string): string {
   const pattern =
-    /("(?:access_token|refresh_token|id_token|provider_token|provider_refresh_token|code_verifier|client_secret|token_hash|idToken|accessToken|password|token|code|email)"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
-  return input.replace(pattern, (match, prefix: string, value: string, suffix: string) => {
+    /("(?:access_token|refresh_token|id_token|provider_token|provider_refresh_token|code_verifier|client_secret|token_hash|idToken|accessToken|password|token|code|email|handoff)"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
+  const secrets = input.replace(pattern, (match, prefix: string, value: string, suffix: string) => {
     if (/"code"\s*:\s*"$/i.test(prefix) && /^\d{3}$/.test(value)) return match;
     return `${prefix}[redacted]${suffix}`;
   });
+  return redactCookiePair(secrets);
 }
 
 /** Redact addresses and credential assignments in a heading or other short plain string. */
