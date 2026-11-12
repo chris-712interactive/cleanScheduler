@@ -1,15 +1,15 @@
 import { createHash, randomBytes } from 'node:crypto';
+import {
+  MASQUERADE_CLOCK_SKEW_MS,
+  MASQUERADE_MAX_DURATION_MS,
+  liveMasqueradeSessionMatches,
+} from '@/lib/auth/masqueradeSession';
 
-/** Support entry stays open for one hour from `masquerade_sessions.started_at`. */
-export const SUPPORT_SESSION_TTL_MS = 60 * 60 * 1000;
+/** Same one-hour support TTL as `liveMasqueradeSessionMatches`. */
+export const SUPPORT_SESSION_TTL_MS = MASQUERADE_MAX_DURATION_MS;
 
-/**
- * `started_at` may sit this far in the future and still count as live.
- * Matches `has_live_support_session` in migration 0126. PR #246's
- * `liveMasqueradeSessionMatches` uses the same TTL and does not yet apply
- * this skew bound.
- */
-export const SUPPORT_SESSION_FUTURE_SKEW_MS = 60 * 1000;
+/** Same future-start skew as `liveMasqueradeSessionMatches`. */
+export const SUPPORT_SESSION_FUTURE_SKEW_MS = MASQUERADE_CLOCK_SKEW_MS;
 
 /** One-time tenant-host handoff. The URL token expires within this window. */
 export const MASQUERADE_HANDOFF_TTL_MS = 60 * 1000;
@@ -95,20 +95,23 @@ export function isPlatformAdminAppMetadata(appMetadata: unknown): boolean {
 
 /**
  * Open, unexpired support session for this staff user and tenant.
- * `started_at` more than 60 seconds ahead does not count. The exact one-hour
- * mark still counts.
+ * Delegates to `liveMasqueradeSessionMatches` so admission and the handoff
+ * use the same TTL and 60-second clock skew.
  */
 export function supportSessionIsLive(
   session: SupportSessionClock | null | undefined,
   expected: { userId: string; tenantId: string; nowMs: number },
 ): boolean {
-  if (!session) return false;
-  if (session.endedAtMs != null) return false;
-  if (session.adminUserId !== expected.userId) return false;
-  if (session.targetTenantId !== expected.tenantId) return false;
-  if (!Number.isFinite(session.startedAtMs)) return false;
-  if (session.startedAtMs > expected.nowMs + SUPPORT_SESSION_FUTURE_SKEW_MS) return false;
-  return expected.nowMs - session.startedAtMs <= SUPPORT_SESSION_TTL_MS;
+  if (!session || !Number.isFinite(session.startedAtMs)) return false;
+  return liveMasqueradeSessionMatches(
+    {
+      admin_user_id: session.adminUserId,
+      target_tenant_id: session.targetTenantId,
+      started_at: new Date(session.startedAtMs).toISOString(),
+      ended_at: session.endedAtMs == null ? null : new Date(session.endedAtMs).toISOString(),
+    },
+    expected,
+  );
 }
 
 export function handoffFromRow(row: {

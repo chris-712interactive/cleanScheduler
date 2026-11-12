@@ -61,6 +61,7 @@ export async function redeemStoredMasqueradeHandoff(input: {
           .update({ used_at: usedAtIso })
           .eq('id', id)
           .is('used_at', null)
+          .gt('expires_at', usedAtIso)
           .select('id')
           .maybeSingle();
         return !error && Boolean(data?.id);

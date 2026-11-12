@@ -230,6 +230,38 @@ describe('redeemMasqueradeHandoff', () => {
     expect(fake.calls.some((call) => call.startsWith('session:'))).toBe(false);
   });
 
+  it('retries the same token after a failed sign-in releases the claim', async () => {
+    let usedAtMs: number | null = null;
+    let attempts = 0;
+    const fake = deps({
+      findHandoffByHash: async () => handoff({ usedAtMs }),
+      markUsed: async () => {
+        if (usedAtMs != null) return false;
+        usedAtMs = NOW;
+        return true;
+      },
+      releaseUsed: async () => {
+        usedAtMs = null;
+      },
+      establishSession: async () => {
+        attempts += 1;
+        return attempts > 1;
+      },
+    });
+    const failed = await redeemMasqueradeHandoff(
+      { token: TOKEN, hostTenantId: TENANT_A, nowMs: NOW },
+      fake,
+    );
+    expect(failed).toEqual({ ok: false, reason: 'session_not_established' });
+    expect(usedAtMs).toBeNull();
+    const retried = await redeemMasqueradeHandoff(
+      { token: TOKEN, hostTenantId: TENANT_A, nowMs: NOW },
+      fake,
+    );
+    expect(retried).toEqual({ ok: true });
+    expect(usedAtMs).toBe(NOW);
+  });
+
   it('releases the token when the tenant-host session is not created', async () => {
     const fake = deps({
       establishSession: async () => false,

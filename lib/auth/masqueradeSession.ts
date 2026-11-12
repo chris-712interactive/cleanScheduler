@@ -60,3 +60,15 @@ export function shouldAuditMasqueradeTtlClose(
 ): boolean {
   return (closedIds?.length ?? 0) > 0;
 }
+
+/** Every still-open row whose start is past the one-hour TTL. A future start is not included. */
+export function openMasqueradeSessionsPastTtl<
+  T extends { started_at: string | null; ended_at: string | null },
+>(rows: readonly T[], nowMs: number): T[] {
+  return rows.filter(
+    (row) =>
+      row.ended_at == null &&
+      row.started_at != null &&
+      masqueradeSessionPastTtl(row.started_at, nowMs),
+  );
+}

@@ -400,12 +400,14 @@ BEGIN
 
   EXECUTE 'SET LOCAL ROLE authenticated';
   SELECT count(*) INTO customer_count FROM public.customers WHERE id = customer_a;
-  IF customer_count <> 0 THEN
-    RAISE EXCEPTION 'closing the older session should hide tenant A, saw %', customer_count;
+  SELECT count(*) INTO quote_count FROM public.tenant_quotes WHERE id = quote_a;
+  IF customer_count <> 0 OR quote_count <> 0 THEN
+    RAISE EXCEPTION 'starting support for B should hide tenant A customers=% quotes=%', customer_count, quote_count;
   END IF;
   SELECT count(*) INTO customer_count FROM public.customers WHERE id = customer_b;
-  IF customer_count <> 1 THEN
-    RAISE EXCEPTION 'the remaining open session should see tenant B, saw %', customer_count;
+  SELECT count(*) INTO quote_count FROM public.tenant_quotes WHERE id = quote_b;
+  IF customer_count <> 1 OR quote_count <> 1 THEN
+    RAISE EXCEPTION 'the session for B should see tenant B customers=% quotes=%', customer_count, quote_count;
   END IF;
   EXECUTE 'RESET ROLE';
 
@@ -418,8 +420,11 @@ BEGIN
   SELECT count(*) INTO customer_count
   FROM public.customers
   WHERE id IN (customer_a, customer_b);
-  IF customer_count <> 0 THEN
-    RAISE EXCEPTION 'ending every open session should hide both tenants, saw %', customer_count;
+  SELECT count(*) INTO quote_count
+  FROM public.tenant_quotes
+  WHERE id IN (quote_a, quote_b);
+  IF customer_count <> 0 OR quote_count <> 0 THEN
+    RAISE EXCEPTION 'ending every open session should hide both tenants customers=% quotes=%', customer_count, quote_count;
   END IF;
   EXECUTE 'RESET ROLE';
 
