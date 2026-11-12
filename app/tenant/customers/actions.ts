@@ -22,6 +22,7 @@ import { attributeRefereeByReferrerCustomer } from '@/lib/referrals/referralAttr
 import { resolveTenantCustomerIdByEmail } from '@/lib/referrals/loadCustomerReferralAttribution';
 import { tenantReferralsNavEnabled } from '@/lib/referrals/tenantReferralsNav';
 import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
+import { defaultPropertyKindForTenant } from '@/lib/tenant/loadTenantServiceSegment';
 
 export interface CustomerFormState {
   error?: string;
@@ -170,11 +171,12 @@ export async function createTenantCustomer(
     postalCode: servicePostalCode,
   });
 
+  const propertyKind = await defaultPropertyKindForTenant(admin, membership.tenantId);
   const propertyInsert = await admin.from('tenant_customer_properties').insert({
     tenant_id: membership.tenantId,
     customer_id: customerId,
     label: 'Primary service location',
-    property_kind: 'residential',
+    property_kind: propertyKind,
     address_line1: serviceAddressLine1 || null,
     address_line2: serviceAddressLine2 || null,
     city: serviceCity || null,

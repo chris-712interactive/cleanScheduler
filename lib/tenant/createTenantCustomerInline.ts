@@ -4,6 +4,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { assertLimitNotExceeded, resolveTenantPlanTier } from '@/lib/billing/entitlements';
 import { syncedFullNameFromParts } from '@/lib/tenant/customerIdentityName';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
+import { defaultPropertyKindForTenant } from '@/lib/tenant/loadTenantServiceSegment';
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -146,7 +147,9 @@ export async function createTenantCustomerInlineForQuote(options: {
       tenant_id: options.tenantId,
       customer_id: customerId,
       label: 'Primary service location',
-      property_kind: options.property?.property_kind ?? 'residential',
+      property_kind:
+        options.property?.property_kind ??
+        (await defaultPropertyKindForTenant(options.admin, options.tenantId)),
       address_line1: options.property?.address_line1?.trim() || null,
       address_line2: options.property?.address_line2?.trim() || null,
       city: options.property?.city?.trim() || null,
@@ -227,7 +230,9 @@ export async function createTenantPropertyInlineForQuote(options: {
       tenant_id: options.tenantId,
       customer_id: options.customerId,
       label,
-      property_kind: options.property.property_kind ?? 'residential',
+      property_kind:
+        options.property.property_kind ??
+        (await defaultPropertyKindForTenant(options.admin, options.tenantId)),
       address_line1: line1,
       address_line2: options.property.address_line2?.trim() || null,
       city: options.property.city?.trim() || null,

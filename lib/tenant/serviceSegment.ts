@@ -192,6 +192,98 @@ export function propertyKindDeniedMessage(capabilities: SegmentCapabilities): st
   return 'That property type is not available for this workspace.';
 }
 
+/** Names the location when a quote is blocked by that location's saved property type. */
+export function locationPropertyKindDeniedMessage(
+  capabilities: SegmentCapabilities,
+  locationLabel: string,
+  kind: CustomerPropertyKind,
+): string {
+  const name = locationLabel.trim();
+  const subject = name ? `Service location ${name}` : 'This service location';
+  const denied = propertyKindDeniedMessage(capabilities);
+  const sentence = `${denied.charAt(0).toLowerCase()}${denied.slice(1)}`;
+  const example = PROPERTY_KIND_LABEL[defaultPropertyKind(capabilities)];
+  return `${subject} is set to ${PROPERTY_KIND_LABEL[kind]}; ${sentence} Change its property type to one this workspace offers, such as ${example}.`;
+}
+
+export type QuoteLocationKindPlan =
+  | { ok: false; error: string; kindToWrite: null }
+  | {
+      ok: true;
+      resultingKind: CustomerPropertyKind | null;
+      /** Set only for a real mismatch. Callers write this after the quote row exists. */
+      kindToWrite: CustomerPropertyKind | null;
+    };
+
+function postedLocationKind(raw: string | null | undefined): CustomerPropertyKind | null {
+  const value = raw?.trim() ?? '';
+  if (
+    value === 'residential' ||
+    value === 'commercial' ||
+    value === 'short_term_rental' ||
+    value === 'other'
+  ) {
+    return value;
+  }
+  return null;
+}
+
+/**
+ * Decide the location kind a quote would use, without writing it.
+ * A posted correction applies only when the saved kind is outside the workspace.
+ * The resulting kind is rejected even when it matches the quote's stored job type.
+ */
+export function planQuoteLocationKind(input: {
+  capabilities: SegmentCapabilities;
+  savedKind: CustomerPropertyKind | null;
+  locationLabel: string;
+  postedCorrection: string | null | undefined;
+}): QuoteLocationKindPlan {
+  const saved = input.savedKind;
+  const mismatch = saved != null && !propertyKindAllowed(input.capabilities, saved);
+  const posted = postedLocationKind(input.postedCorrection);
+  const correction =
+    mismatch && posted && propertyKindAllowed(input.capabilities, posted) ? posted : null;
+  const resultingKind = correction ?? saved;
+  if (resultingKind && !propertyKindAllowed(input.capabilities, resultingKind)) {
+    return {
+      ok: false,
+      error: locationPropertyKindDeniedMessage(
+        input.capabilities,
+        input.locationLabel,
+        resultingKind,
+      ),
+      kindToWrite: null,
+    };
+  }
+  return { ok: true, resultingKind, kindToWrite: correction };
+}
+
+/** A failed quote save leaves the location kind where it was. */
+export function locationKindAfterQuoteAttempt(input: {
+  savedKind: CustomerPropertyKind;
+  kindToWrite: CustomerPropertyKind | null;
+  quoteSaved: boolean;
+}): CustomerPropertyKind {
+  if (!input.quoteSaved || !input.kindToWrite) return input.savedKind;
+  return input.kindToWrite;
+}
+
+/**
+ * An existing location locks the quote's property type. A kind this workspace
+ * does not offer stays editable so the quote can correct the location.
+ */
+export function quoteLocationKindLock(input: {
+  locationKind: CustomerPropertyKind | null | undefined;
+  capabilities: SegmentCapabilities;
+}): { locked: boolean; disallowedKind: CustomerPropertyKind | null } {
+  if (!input.locationKind) return { locked: false, disallowedKind: null };
+  if (propertyKindAllowed(input.capabilities, input.locationKind)) {
+    return { locked: true, disallowedKind: null };
+  }
+  return { locked: false, disallowedKind: input.locationKind };
+}
+
 /**
  * Block a new or changed property kind the segment does not offer.
  * Saving a location that already has a disallowed kind (from before the setting changed) still succeeds.
