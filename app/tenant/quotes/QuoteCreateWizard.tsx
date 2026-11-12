@@ -100,8 +100,9 @@ export function QuoteCreateWizard({
   useEffect(() => {
     if (!state.quoteId || navigatedToQuoteRef.current) return;
     navigatedToQuoteRef.current = true;
-    router.replace(`/quotes/${state.quoteId}`);
-  }, [state.quoteId, router]);
+    const notice = state.warning ? `?notice=${state.warning}` : '';
+    router.replace(`/quotes/${state.quoteId}${notice}`);
+  }, [state.quoteId, state.warning, router]);
 
   const [step, setStep] = useState<StepId>('who');
   const [stepError, setStepError] = useState<string | null>(null);

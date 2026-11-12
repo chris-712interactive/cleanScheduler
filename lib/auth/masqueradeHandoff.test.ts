@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   pathnameWithSearchWithoutHandoff,
-  searchWithoutHandoffForSignedIn,
+  searchWithoutHandoffParam,
 } from '@/lib/auth/signInNextPath';
 import { signInQueryErrorMessage } from '@/lib/auth/signInQueryError';
 import {
@@ -337,37 +337,33 @@ describe('handoff secret is not copied into sign-in', () => {
     expect(pathnameWithSearchWithoutHandoff('/tenants', '')).toBe('/tenants');
   });
 
-  it('strips the handoff query for a signed-in browser on any other path', () => {
+  it('strips every handoff casing from the request and from next', () => {
+    expect(pathnameWithSearchWithoutHandoff('/sign-in', '?Handoff=SECRET&next=/quotes')).toBe(
+      '/sign-in?next=%2Fquotes',
+    );
+    expect(pathnameWithSearchWithoutHandoff('/quotes', '?HANDOFF=SECRET')).toBe('/quotes');
     expect(
-      searchWithoutHandoffForSignedIn('?handoff=raw-token&tab=visits', {
-        signedIn: true,
-        handoffRoute: false,
-      }),
+      pathnameWithSearchWithoutHandoff(
+        '/quotes',
+        '?next=%2Fauth%2Fmasquerade-handoff%3Fhandoff%3DSECRETTOKEN',
+      ),
+    ).toBe('/quotes?next=%2Fauth%2Fmasquerade-handoff');
+    expect(
+      pathnameWithSearchWithoutHandoff(
+        '/quotes',
+        '?next=%2Fquotes%3FHandoff%3DSECRETTOKEN%26tab%3Dvisits',
+      ),
+    ).toBe('/quotes?next=%2Fquotes%3Ftab%3Dvisits');
+
+    expect(
+      searchWithoutHandoffParam('?handoff=raw-token&tab=visits', { handoffRoute: false }),
     ).toBe('?tab=visits');
+    expect(searchWithoutHandoffParam('?Handoff=raw-token', { handoffRoute: false })).toBe('');
+    expect(searchWithoutHandoffParam('?handoff=raw-token', { handoffRoute: true })).toBeNull();
+    expect(searchWithoutHandoffParam('?tab=visits', { handoffRoute: false })).toBeNull();
     expect(
-      searchWithoutHandoffForSignedIn('?handoff=raw-token', {
-        signedIn: true,
-        handoffRoute: false,
-      }),
-    ).toBe('');
-    expect(
-      searchWithoutHandoffForSignedIn('?handoff=raw-token', {
-        signedIn: true,
-        handoffRoute: true,
-      }),
-    ).toBeNull();
-    expect(
-      searchWithoutHandoffForSignedIn('?handoff=raw-token', {
-        signedIn: false,
-        handoffRoute: false,
-      }),
-    ).toBeNull();
-    expect(
-      searchWithoutHandoffForSignedIn('?tab=visits', {
-        signedIn: true,
-        handoffRoute: false,
-      }),
-    ).toBeNull();
+      searchWithoutHandoffParam('?next=%2Fcb%3Fhandoff%3DSECRET', { handoffRoute: false }),
+    ).toBe('?next=%2Fcb');
   });
 
   it('maps the handoff failure code to a sentence', () => {
@@ -385,7 +381,7 @@ describe('masquerade handoff wiring', () => {
     expect(proxy).toContain(`requestedPath === '${MASQUERADE_HANDOFF_PATH}'`);
     expect(proxy).toContain('!isMasqueradeHandoff');
     expect(proxy).toContain('pathnameWithSearchWithoutHandoff');
-    expect(proxy).toContain('searchWithoutHandoffForSignedIn');
+    expect(proxy).toContain('searchWithoutHandoffParam');
     const route = readFileSync(
       resolve(process.cwd(), 'app/tenant/auth/masquerade-handoff/route.ts'),
       'utf8',

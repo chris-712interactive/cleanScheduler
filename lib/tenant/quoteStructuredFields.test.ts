@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  LOCATION_FACT_SYNC_WARNING,
   inlinePropertyDeferringLocationFacts,
   parseQuoteWizardStructuredFromForm,
   quoteLocationFactPatch,
+  quoteSaveNotice,
 } from '@/lib/tenant/quoteStructuredFields';
 
 describe('quote access notes', () => {
@@ -33,7 +35,7 @@ describe('quote access notes', () => {
         site_notes: 'Side gate',
         stories: 2,
       }),
-    ).toEqual({ address_line1: '1 Main', stories: 2 });
+    ).toEqual({ address_line1: '1 Main' });
     expect(
       quoteLocationFactPatch({
         bedrooms: 3,
@@ -62,6 +64,10 @@ describe('quote access notes', () => {
     expect(sync).toBeGreaterThan(rejected);
     expect(body).toContain('inlinePropertyDeferringLocationFacts');
     expect(body.indexOf('inlinePropertyDeferringLocationFacts')).toBeLessThan(rpc);
+    const codes = body.indexOf('savePropertyAccessCodes');
+    expect(codes).toBeGreaterThan(rejected);
+    expect(quoteSaveNotice('location-facts')).toBe(LOCATION_FACT_SYNC_WARNING);
+    expect(quoteSaveNotice('other')).toBeUndefined();
   });
 
   it('uses the workspace default when the quote property type is omitted', () => {

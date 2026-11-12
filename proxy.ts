@@ -41,7 +41,7 @@ import {
 import { resolveTenantMembershipForSlug } from '@/lib/auth/resolveTenantMembershipForSlug';
 import {
   pathnameWithSearchWithoutHandoff,
-  searchWithoutHandoffForSignedIn,
+  searchWithoutHandoffParam,
 } from '@/lib/auth/signInNextPath';
 import { AUTH_GRANT_HEADER, issueRequestAuthGrant } from '@/lib/auth/requestAuthGrant';
 import { serverEnv } from '@/lib/env';
@@ -447,8 +447,7 @@ export async function proxy(request: NextRequest) {
     const isProtectedPortal =
       kind !== 'marketing' && kind !== 'site' && !isPublicCustomerInvite && !isPublicCustomerJoin;
     const isMasqueradeHandoff = kind === 'tenant' && requestedPath === '/auth/masquerade-handoff';
-    const strippedHandoffSearch = searchWithoutHandoffForSignedIn(request.nextUrl.search, {
-      signedIn: Boolean(userId),
+    const strippedHandoffSearch = searchWithoutHandoffParam(request.nextUrl.search, {
       handoffRoute: isMasqueradeHandoff,
     });
     if (strippedHandoffSearch !== null) {

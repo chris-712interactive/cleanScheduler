@@ -23,6 +23,7 @@ import {
 } from '@/lib/tenant/createTenantCustomerInline';
 import { enrichParsedQuoteLines } from '@/lib/tenant/enrichQuoteLineItems';
 import {
+  LOCATION_FACT_NOTICE,
   inlinePropertyDeferringLocationFacts,
   parseCustomerPropertyKind,
   parseQuoteWizardStructuredFromForm,
@@ -79,6 +80,8 @@ export interface QuoteFormState {
   quoteSnapshot?: QuoteEditSnapshot;
   /** Deep link when consultation gate blocks send. */
   schedulePath?: string;
+  /** Non-blocking notice after the quote itself was saved. */
+  warning?: typeof LOCATION_FACT_NOTICE;
 }
 
 export type MoveQuoteStatusResult =
@@ -505,17 +508,22 @@ async function syncPropertyFactsFromSnapshot(
   tenantId: string,
   propertyId: string | null,
   snapshot: QuotePropertySnapshot,
-) {
-  if (!propertyId) return;
+): Promise<typeof LOCATION_FACT_NOTICE | undefined> {
+  if (!propertyId) return undefined;
 
   const patch = quoteLocationFactPatch(snapshot);
-  if (Object.keys(patch).length === 0) return;
+  if (Object.keys(patch).length === 0) return undefined;
 
-  await admin
+  const { error } = await admin
     .from('tenant_customer_properties')
     .update(patch)
     .eq('id', propertyId)
     .eq('tenant_id', tenantId);
+  if (error) {
+    console.error('[createTenantQuote] location facts were not copied');
+    return LOCATION_FACT_NOTICE;
+  }
+  return undefined;
 }
 
 function parseInlinePropertyKind(raw: string): CustomerPropertyKind {
@@ -757,16 +765,6 @@ export async function createTenantQuote(
   const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
   if (!crewSize.ok) return { error: crewSize.error };
 
-  if (propertyId && formData.get('save_access_codes') === '1') {
-    const savedCodes = await savePropertyAccessCodes(
-      admin,
-      membership.tenantId,
-      propertyId,
-      parsePropertyAccessCodesFromForm(formData),
-    );
-    if (!savedCodes.ok) return { error: savedCodes.error };
-  }
-
   const rpc = await admin.rpc('tenant_quote_create_with_line_items', {
     p_tenant_id: membership.tenantId,
     p_customer_id: customerId,
@@ -799,12 +797,27 @@ export async function createTenantQuote(
     };
   }
 
-  await syncPropertyFactsFromSnapshot(
+  const factWarning = await syncPropertyFactsFromSnapshot(
     admin,
     membership.tenantId,
     propertyId,
     structured.propertySnapshot,
   );
+
+  if (propertyId && formData.get('save_access_codes') === '1') {
+    const savedCodes = await savePropertyAccessCodes(
+      admin,
+      membership.tenantId,
+      propertyId,
+      parsePropertyAccessCodesFromForm(formData),
+    );
+    if (!savedCodes.ok) {
+      return {
+        error: `The quote was saved, but entry codes could not be stored. ${savedCodes.error}`,
+        warning: factWarning,
+      };
+    }
+  }
 
   const verify = await admin
     .from('tenant_quotes')
@@ -878,7 +891,7 @@ export async function createTenantQuote(
   if (initialStatus === 'sent') {
     invalidateCustomerQuoteBadge(customerId);
   }
-  return { success: true, quoteId: newId };
+  return { success: true, quoteId: newId, warning: factWarning };
 }
 
 export async function updateTenantQuote(

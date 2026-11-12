@@ -124,12 +124,15 @@ export async function endMasqueradeAction(
     return { error: 'Support mode could not be closed. Try again.' };
   }
 
-  await admin.from('audit_log_entries').insert({
+  const { error: auditErr } = await admin.from('audit_log_entries').insert({
     actor_user_id: auth.user.id,
     action: 'masquerade.end',
     target_tenant_id: targetTenantId,
     payload: {},
   });
+  if (auditErr) {
+    console.error('[endMasqueradeAction] end audit was not saved');
+  }
 
   const { data: userRes, error: uErr } = await admin.auth.admin.getUserById(auth.user.id);
   if (uErr || !userRes.user) {
@@ -138,7 +141,17 @@ export async function endMasqueradeAction(
 
   const meta = clearedMasqueradeAppMetadata({ ...(userRes.user.app_metadata ?? {}) });
 
-  await admin.auth.admin.updateUserById(auth.user.id, { app_metadata: meta });
+  const { error: metaErr } = await admin.auth.admin.updateUserById(auth.user.id, {
+    app_metadata: meta,
+  });
+  if (metaErr) {
+    console.error('[endMasqueradeAction] staff metadata was not cleared');
+  }
+  if (auditErr || metaErr) {
+    return {
+      error: 'Support mode was closed, but the end record or staff metadata could not be updated.',
+    };
+  }
 
   const h = await headers();
   const portal = h.get('x-portal');

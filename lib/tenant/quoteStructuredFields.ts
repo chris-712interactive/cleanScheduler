@@ -79,8 +79,24 @@ export type QuoteLocationFactPatch = {
   site_notes?: string;
 };
 
-/** Beds, baths, sqft, and site notes are copied onto a location only after the quote RPC succeeds. */
-const LOCATION_FACTS_AFTER_RPC = ['bedrooms', 'bathrooms', 'sqft', 'site_notes'] as const;
+/** Beds, baths, sqft, stories, and site notes are copied onto a location only after the quote RPC succeeds. */
+const LOCATION_FACTS_AFTER_RPC = [
+  'bedrooms',
+  'bathrooms',
+  'sqft',
+  'stories',
+  'site_notes',
+] as const;
+
+export const LOCATION_FACT_NOTICE = 'location-facts';
+
+export const LOCATION_FACT_SYNC_WARNING =
+  'The quote was saved, but bedrooms, bathrooms, square feet, stories, or site notes could not be copied onto the location.';
+
+export function quoteSaveNotice(code: string | undefined): string | undefined {
+  if (code === LOCATION_FACT_NOTICE) return LOCATION_FACT_SYNC_WARNING;
+  return undefined;
+}
 
 export function quoteLocationFactPatch(snapshot: QuotePropertySnapshot): QuoteLocationFactPatch {
   const patch: QuoteLocationFactPatch = {};
@@ -92,7 +108,7 @@ export function quoteLocationFactPatch(snapshot: QuotePropertySnapshot): QuoteLo
   return patch;
 }
 
-/** Drop location facts that must wait for the quote RPC. Address and stories stay. */
+/** Drop location facts that must wait for the quote RPC. The address stays. */
 export function inlinePropertyDeferringLocationFacts<T extends object>(property: T): T {
   const next = { ...property } as T & Record<string, unknown>;
   for (const key of LOCATION_FACTS_AFTER_RPC) {

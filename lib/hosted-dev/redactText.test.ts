@@ -284,6 +284,30 @@ describe('hosted dev artifact redaction', () => {
     const plus = redactText('hello+token=plus-secret', []);
     expect(plus).not.toContain('plus-secret');
     expect(plus).toContain('hello+token=[redacted]');
+
+    const cookieObjects = [
+      '{"name":"sb-abc-auth-token.0","value":"chunk-cookie-secret"}',
+      '{"value":"pkce-cookie-secret","name":"sb-abc-auth-token-code-verifier"}',
+    ].join(' ');
+    const cookieJson = redactText(cookieObjects, []);
+    expect(cookieJson).not.toContain('chunk-cookie-secret');
+    expect(cookieJson).not.toContain('pkce-cookie-secret');
+    expect(cookieJson).toContain('"value":"[redacted]"');
+    expect(cookieJson).toContain('sb-abc-auth-token.0');
+
+    const handoff = redactText('?handoff=handoff-secret&Handoff=other-handoff', []);
+    expect(handoff).not.toContain('handoff-secret');
+    expect(handoff).not.toContain('other-handoff');
+
+    expect(redactText('hello%2Btoken=plus-encoded-secret', [])).not.toContain(
+      'plus-encoded-secret',
+    );
+    expect(redactText('%20token=space-encoded-secret', [])).not.toContain('space-encoded-secret');
+    expect(redactText('token =spaced-secret', [])).not.toContain('spaced-secret');
+
+    let layered = 'token=ten-layer-secret';
+    for (let layer = 0; layer < 10; layer += 1) layered = `next=${encodeURIComponent(layered)}`;
+    expect(redactPlaintextSecrets(layered)).not.toContain('ten-layer-secret');
   });
 
   it('does not treat an image filename as an encoded address', () => {

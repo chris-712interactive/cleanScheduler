@@ -37,6 +37,7 @@ import type { CustomerPropertyGroup } from '../QuoteCreateForm';
 import {
   parseQuotePropertySnapshot,
   parseQuoteScopeSnapshot,
+  quoteSaveNotice,
 } from '@/lib/tenant/quoteStructuredFields';
 import {
   absorbLegacyQuoteAccessCodes,
@@ -124,10 +125,17 @@ function countSnapshotLines(payload: unknown): number {
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function TenantQuoteDetailPage({ params }: PageProps) {
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+export default async function TenantQuoteDetailPage({ params, searchParams }: PageProps) {
   const { id: rawId } = await params;
+  const notice = quoteSaveNotice(firstParam((await searchParams).notice));
   const id = rawId.trim();
   if (!UUID_RE.test(id)) {
     notFound();
@@ -384,6 +392,11 @@ export default async function TenantQuoteDetailPage({ params }: PageProps) {
   return (
     <>
       <QuotePipelineLiveSync tenantId={membership.tenantId} quoteId={row.id} />
+      {notice ? (
+        <p className={styles.error} role="status">
+          {notice}
+        </p>
+      ) : null}
       <PageHeader
         title={row.title}
         description={`${QUOTE_STATUS_LABEL[row.status]} · ${formatQuoteMoney(row.amount_cents, row.currency)} · Version ${row.version_number}`}
