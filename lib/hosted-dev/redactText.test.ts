@@ -179,9 +179,10 @@ describe('hosted dev artifact redaction', () => {
       expect(redacted).not.toContain('camel-access');
       expect(redacted).not.toContain('bare-secret');
       expect(redacted).not.toContain('quoted-secret');
-      expect(redacted).toContain('token=[redacted] right');
-      expect(redacted).toContain('refresh_token=[redacted] right');
+      expect(redacted).not.toContain('left');
+      expect(redacted).not.toContain('right');
       expect(redacted).toContain('token=[redacted]');
+      expect(redacted).toContain('refresh_token=[redacted]');
       expect(redacted).toContain('next=keep');
     }
   });
@@ -247,6 +248,66 @@ describe('hosted dev artifact redaction', () => {
     const tail = redactJoinedText(['#refresh_token=', 'left;right-secret'], []);
     expect(tail.join('')).not.toContain('right-secret');
     expect(tail[1]).toBe('');
+  });
+
+  it('redacts chunked auth cookies, image-suffixed emails, spaced secrets, and nested next', () => {
+    const cookies = [
+      'sb-abcdefghijklmnop-auth-token.0=chunk-zero-value',
+      'sb-abcdefghijklmnop-auth-token.1=chunk-one-value',
+      'sb-abcdefghijklmnop-auth-token-code-verifier=pkce-verifier-value',
+    ].join('\n');
+    const cookieRedacted = redactText(cookies, []);
+    expect(cookieRedacted).not.toContain('chunk-zero-value');
+    expect(cookieRedacted).not.toContain('chunk-one-value');
+    expect(cookieRedacted).not.toContain('pkce-verifier-value');
+    expect(cookieRedacted).toContain('sb-abcdefghijklmnop-auth-token.0=[redacted]');
+    expect(cookieRedacted).toContain('sb-abcdefghijklmnop-auth-token-code-verifier=[redacted]');
+
+    const imageEmail = redactPlaintextSecrets('saved user@gmail.com.png beside img%2540x2.png');
+    expect(imageEmail).not.toContain('user@gmail.com');
+    expect(imageEmail).not.toContain('gmail');
+    expect(imageEmail).toContain('[redacted-email].png');
+    expect(imageEmail).toContain('img%2540x2.png');
+
+    const spaced = redactText('token=left right-secret', []);
+    expect(spaced).not.toContain('right-secret');
+    expect(spaced).not.toContain('left');
+    expect(spaced).toBe('token=[redacted]');
+
+    const nested = redactPlaintextSecrets(
+      'https://admin.dev.cleanscheduler.com/sign-in?next=/sign-in?next=/sign-in?next=/sign-in?next=/cb?token=four-secret&ok=1',
+    );
+    expect(nested).not.toContain('four-secret');
+    expect(nested).toContain('token=[redacted]');
+    expect(nested).toContain('ok=1');
+
+    const plus = redactText('hello+token=plus-secret', []);
+    expect(plus).not.toContain('plus-secret');
+    expect(plus).toContain('hello+token=[redacted]');
+
+    const cookieObjects = [
+      '{"name":"sb-abc-auth-token.0","value":"chunk-cookie-secret"}',
+      '{"value":"pkce-cookie-secret","name":"sb-abc-auth-token-code-verifier"}',
+    ].join(' ');
+    const cookieJson = redactText(cookieObjects, []);
+    expect(cookieJson).not.toContain('chunk-cookie-secret');
+    expect(cookieJson).not.toContain('pkce-cookie-secret');
+    expect(cookieJson).toContain('"value":"[redacted]"');
+    expect(cookieJson).toContain('sb-abc-auth-token.0');
+
+    const handoff = redactText('?handoff=handoff-secret&Handoff=other-handoff', []);
+    expect(handoff).not.toContain('handoff-secret');
+    expect(handoff).not.toContain('other-handoff');
+
+    expect(redactText('hello%2Btoken=plus-encoded-secret', [])).not.toContain(
+      'plus-encoded-secret',
+    );
+    expect(redactText('%20token=space-encoded-secret', [])).not.toContain('space-encoded-secret');
+    expect(redactText('token =spaced-secret', [])).not.toContain('spaced-secret');
+
+    let layered = 'token=ten-layer-secret';
+    for (let layer = 0; layer < 10; layer += 1) layered = `next=${encodeURIComponent(layered)}`;
+    expect(redactPlaintextSecrets(layered)).not.toContain('ten-layer-secret');
   });
 
   it('does not treat an image filename as an encoded address', () => {

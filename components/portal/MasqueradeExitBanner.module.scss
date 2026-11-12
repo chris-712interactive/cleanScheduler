@@ -5,3 +5,9 @@
   align-items: center;
   justify-content: center;
 }
+
+.error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+}
