@@ -1,6 +1,6 @@
 # Access Review Runbook
 
-**Last updated:** May 24, 2026  
+**Last updated:** November 11, 2026  
 **Cadence:** Quarterly (January, April, July, October)
 
 ## Scope
@@ -18,7 +18,7 @@ Review access for:
 1. Open founder admin audit log: `admin.<domain>/audit`
 2. Export or note last 90 days of `masquerade.start` / `masquerade.end` events
 3. List all Supabase users with `app_role` in (`super_admin`, `admin`, `sales`)
-4. Verify each platform admin still requires access; remove stale accounts
+4. Verify each platform admin still requires access; remove stale accounts. Workspace owners and tenant admins should be `employee` here, with authority on `tenant_memberships.role`. `scripts/demote-mislabeled-platform-admins.mts` can demote tenant members whose profile `app_role` is `admin`, `super_admin`, or `sales`. It does not run on deploy. It connects only with `--apply`, `CONFIRM_PLATFORM_ADMIN_DEMOTION=demote-tenant-platform-admins`, and a non-empty `PLATFORM_STAFF_ALLOWLIST`. That list must include every user who should keep platform admin, super admin, or sales, including staff who also have a workspace membership. Users with no membership are left alone. Inactive memberships still count.
 5. Confirm all infrastructure dashboard users have MFA enabled
 6. Check for masquerade sessions older than 60 minutes still open (should auto-expire)
 7. Document review date, reviewer, and findings below

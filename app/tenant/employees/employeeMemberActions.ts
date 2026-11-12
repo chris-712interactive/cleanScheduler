@@ -222,16 +222,17 @@ export async function updateTenantMemberRoleAction(
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
 
-  const nextAppRole = nextRole === 'admin' ? 'admin' : 'employee';
+  let nextAppRole: Awaited<ReturnType<typeof syncUserAuthClaims>>;
   try {
-    await syncUserAuthClaims(admin, targetUserId, {
-      appRole: nextAppRole,
+    nextAppRole = await syncUserAuthClaims(admin, targetUserId, {
+      preservePlatformRoleFromAuth: true,
       tenantRole: nextRole,
       currentTenantId: membership.tenantId,
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not update auth claims.' };
   }
+  if (!nextAppRole) return { error: 'Could not update auth claims.' };
 
   const { error: profErr } = await admin
     .from('user_profiles')

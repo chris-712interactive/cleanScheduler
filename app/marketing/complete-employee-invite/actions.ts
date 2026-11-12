@@ -16,6 +16,7 @@ import {
   countTeamSeatUsage,
   teamSeatGateErrorMessage,
 } from '@/lib/billing/teamSeats';
+import { appRoleForNewTenantMember, appRoleForTenantMember } from '@/lib/auth/tenantMemberAppRole';
 
 function tenantPortalLandingPath(tenantSlug: string, role: TenantRole): string {
   const origin = getPublicOrigin(tenantSlug);
@@ -31,10 +32,6 @@ export interface CompleteEmployeeInviteState {
   error?: string;
   success?: string;
   duplicateAccount?: boolean;
-}
-
-function appRoleForTenantRole(tr: TenantRole): 'admin' | 'employee' {
-  return tr === 'admin' ? 'admin' : 'employee';
 }
 
 async function loadActiveEmployeeInvite(admin: SupabaseClient<Database>, token: string) {
@@ -158,7 +155,7 @@ export async function linkExistingEmployeeInviteAction(
     };
   }
 
-  const nextAppRole = appRoleForTenantRole(invitedRole);
+  const nextAppRole = appRoleForTenantMember(appRole);
 
   try {
     const tier = await resolveTenantPlanTier(admin, invite.tenant_id);
@@ -263,7 +260,7 @@ export async function acceptEmployeeInviteAction(
   const { invite } = loaded;
   const email = invite.email_normalized;
   const invitedRole = invite.invited_role as TenantRole;
-  const nextAppRole = appRoleForTenantRole(invitedRole);
+  const nextAppRole = appRoleForNewTenantMember();
   const displayName = email.split('@')[0] || 'Team member';
 
   const created = await admin.auth.admin.createUser({
