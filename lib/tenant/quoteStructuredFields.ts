@@ -144,7 +144,10 @@ function parseScopeInclusionsJson(raw: string): string[] {
 }
 
 /** Reads wizard hidden + visible fields into structured quote columns. */
-export function parseQuoteWizardStructuredFromForm(formData: FormData): {
+export function parseQuoteWizardStructuredFromForm(
+  formData: FormData,
+  fallbackKind: CustomerPropertyKind = 'residential',
+): {
   scopeSnapshot: QuoteScopeSnapshot;
   propertySnapshot: QuotePropertySnapshot;
   internalNotes: string | null;
@@ -161,10 +164,9 @@ export function parseQuoteWizardStructuredFromForm(formData: FormData): {
     exclusions: scopeExclusions || null,
   };
 
+  const postedKind = String(formData.get('quote_property_kind') ?? '').trim();
   const propertySnapshot: QuotePropertySnapshot = {
-    property_kind: parseCustomerPropertyKind(
-      String(formData.get('quote_property_kind') ?? 'residential'),
-    ),
+    property_kind: postedKind ? parseCustomerPropertyKind(postedKind) : fallbackKind,
     sqft: parseOptionalSmallInt(String(formData.get('quote_property_sqft') ?? '')),
     bedrooms: parseOptionalSmallInt(String(formData.get('quote_property_bedrooms') ?? '')),
     bathrooms: parseOptionalDecimal(String(formData.get('quote_property_bathrooms') ?? '')),

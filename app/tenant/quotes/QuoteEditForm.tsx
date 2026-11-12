@@ -251,7 +251,7 @@ export function QuoteEditForm({
           <p className={styles.error} role="alert">
             {locationPropertyKindDeniedMessage(
               capabilities,
-              selectedLocation.label,
+              selectedLocation.storedLabel ?? '',
               kindLock.disallowedKind,
             )}{' '}
             <Link href={`/customers/${customerId}`}>Edit this location</Link>

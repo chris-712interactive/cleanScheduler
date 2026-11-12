@@ -59,6 +59,7 @@ function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyG
     {
       id: string;
       label: string;
+      storedLabel: string;
       requiredCrewSize: number;
       propertyKind: PropertyPickRow['property_kind'];
     }[]
@@ -68,6 +69,7 @@ function buildCustomerPropertyGroups(rows: PropertyPickRow[]): CustomerPropertyG
     list.push({
       id: p.id,
       label: propertyOptionLabel(p),
+      storedLabel: p.label?.trim() || '',
       requiredCrewSize: p.required_crew_size,
       propertyKind: p.property_kind,
     });

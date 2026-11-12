@@ -10,7 +10,9 @@ import {
   parseServiceDirectorySegment,
   parseTenantServiceSegment,
   pricingPropertyKind,
+  locationKindAfterQuoteAttempt,
   locationPropertyKindDeniedMessage,
+  planQuoteLocationKind,
   propertyKindAllowed,
   propertyKindSelectOptions,
   propertyKindWriteError,
@@ -83,7 +85,7 @@ describe('commercial quote location kind', () => {
   it('names the service location when its saved type is outside the workspace', () => {
     const caps = capabilitiesForSegment('commercial');
     expect(locationPropertyKindDeniedMessage(caps, 'Main office', 'residential')).toBe(
-      'Service location Main office is set to Residential; this workspace only serves commercial properties. Change its property type to Commercial.',
+      'Service location Main office is set to Residential; this workspace only serves commercial properties. Change its property type to one this workspace offers, such as Commercial.',
     );
     expect(locationPropertyKindDeniedMessage(caps, 'Lake house', 'short_term_rental')).toContain(
       'Short-term rental',
@@ -110,6 +112,74 @@ describe('commercial quote location kind', () => {
       locked: false,
       disallowedKind: null,
     });
+  });
+
+  it('does not change the location when the quote save fails', () => {
+    const caps = capabilitiesForSegment('commercial');
+    const plan = planQuoteLocationKind({
+      capabilities: caps,
+      savedKind: 'residential',
+      locationLabel: 'Main office',
+      postedCorrection: 'commercial',
+    });
+    expect(plan.ok).toBe(true);
+    if (!plan.ok) return;
+    expect(plan.kindToWrite).toBe('commercial');
+    expect(
+      locationKindAfterQuoteAttempt({
+        savedKind: 'residential',
+        kindToWrite: plan.kindToWrite,
+        quoteSaved: false,
+      }),
+    ).toBe('residential');
+    expect(
+      locationKindAfterQuoteAttempt({
+        savedKind: 'residential',
+        kindToWrite: plan.kindToWrite,
+        quoteSaved: true,
+      }),
+    ).toBe('commercial');
+  });
+
+  it('rejects an update when the location stays outside the workspace, even if the quote job type matches', () => {
+    const caps = capabilitiesForSegment('commercial');
+    const named =
+      'Service location Main office is set to Residential; this workspace only serves commercial properties. Change its property type to one this workspace offers, such as Commercial.';
+    for (const postedCorrection of [null, '', 'residential']) {
+      const plan = planQuoteLocationKind({
+        capabilities: caps,
+        savedKind: 'residential',
+        locationLabel: 'Main office',
+        postedCorrection,
+      });
+      expect(plan).toEqual({ ok: false, error: named, kindToWrite: null });
+    }
+  });
+
+  it('ignores a posted correction when the saved kind is already allowed', () => {
+    const commercial = capabilitiesForSegment('commercial');
+    const allowed = planQuoteLocationKind({
+      capabilities: commercial,
+      savedKind: 'commercial',
+      locationLabel: 'Main office',
+      postedCorrection: 'other',
+    });
+    expect(allowed).toEqual({ ok: true, resultingKind: 'commercial', kindToWrite: null });
+    expect(
+      locationKindAfterQuoteAttempt({
+        savedKind: 'commercial',
+        kindToWrite: allowed.ok ? allowed.kindToWrite : 'other',
+        quoteSaved: true,
+      }),
+    ).toBe('commercial');
+
+    const mixed = planQuoteLocationKind({
+      capabilities: capabilitiesForSegment('both'),
+      savedKind: 'residential',
+      locationLabel: 'Main office',
+      postedCorrection: 'commercial',
+    });
+    expect(mixed).toEqual({ ok: true, resultingKind: 'residential', kindToWrite: null });
   });
 
   it('defaults a new record to commercial only for a commercial workspace', () => {

@@ -31,8 +31,7 @@ import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
 import {
   defaultPropertyKind,
-  locationPropertyKindDeniedMessage,
-  propertyKindAllowed,
+  planQuoteLocationKind,
   propertyKindWriteError,
   savedQuoteJobType,
   type SegmentCapabilities,
@@ -441,36 +440,26 @@ async function propertyFactsForQuote(
   };
 }
 
-function allowedLocationKindCorrection(
-  formData: FormData,
-  capabilities: SegmentCapabilities,
-): CustomerPropertyKind | null {
-  const raw = String(formData.get('correct_location_property_kind') ?? '').trim();
-  if (
-    raw !== 'residential' &&
-    raw !== 'commercial' &&
-    raw !== 'short_term_rental' &&
-    raw !== 'other'
-  ) {
-    return null;
-  }
-  return propertyKindAllowed(capabilities, raw) ? raw : null;
-}
-
-async function applyLocationKindCorrection(
+async function writeLocationKindAfterQuoteSave(
   admin: ReturnType<typeof createAdminClient>,
   tenantId: string,
   propertyId: string | null,
-  formData: FormData,
-  capabilities: SegmentCapabilities,
-): Promise<void> {
-  const next = allowedLocationKindCorrection(formData, capabilities);
-  if (!propertyId || !next) return;
-  await admin
+  kind: CustomerPropertyKind | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!propertyId || !kind) return { ok: true };
+  const updated = await admin
     .from('tenant_customer_properties')
-    .update({ property_kind: next })
+    .update({ property_kind: kind })
     .eq('id', propertyId)
     .eq('tenant_id', tenantId);
+  if (updated.error) {
+    return {
+      ok: false,
+      error:
+        'The quote was saved, but the location property type could not be updated. Open the quote and save it again.',
+    };
+  }
+  return { ok: true };
 }
 
 async function persistQuotedCrewSize(
@@ -522,7 +511,6 @@ async function syncPropertyFactsFromSnapshot(
     bathrooms?: number;
     sqft?: number;
     stories?: number;
-    property_kind?: CustomerPropertyKind;
     site_notes?: string;
   } = {};
 
@@ -530,7 +518,6 @@ async function syncPropertyFactsFromSnapshot(
   if (snapshot.bathrooms != null) patch.bathrooms = snapshot.bathrooms;
   if (snapshot.sqft != null) patch.sqft = snapshot.sqft;
   if (snapshot.stories != null) patch.stories = snapshot.stories;
-  if (snapshot.property_kind) patch.property_kind = snapshot.property_kind;
   if (snapshot.access_notes?.trim()) patch.site_notes = snapshot.access_notes.trim();
 
   if (Object.keys(patch).length === 0) return;
@@ -575,7 +562,6 @@ export async function createTenantQuote(
   const inlinePropertyState = String(formData.get('inline_property_state') ?? '').trim();
   const inlinePropertyPostal = String(formData.get('inline_property_postal_code') ?? '').trim();
   const inlinePropertyKindRaw = String(formData.get('inline_property_kind') ?? '').trim();
-  const structured = parseQuoteWizardStructuredFromForm(formData);
 
   if (!slug || !title) {
     return { error: 'Workspace and quote title are required.' };
@@ -584,6 +570,10 @@ export async function createTenantQuote(
   const membership = await requireTenantPortalAccess(slug, '/quotes/new');
   const admin = createAdminClient();
   const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
+  const structured = parseQuoteWizardStructuredFromForm(
+    formData,
+    defaultPropertyKind(capabilities),
+  );
   const inlinePropertyKind = inlinePropertyKindRaw
     ? parseInlinePropertyKind(inlinePropertyKindRaw)
     : defaultPropertyKind(capabilities);
@@ -691,18 +681,15 @@ export async function createTenantQuote(
     propertyId = defaultPropertyId;
   }
 
-  await applyLocationKindCorrection(admin, membership.tenantId, propertyId, formData, capabilities);
   const propertyFacts = await propertyFactsForQuote(admin, membership.tenantId, propertyId);
-  if (propertyFacts.kind && !propertyKindAllowed(capabilities, propertyFacts.kind)) {
-    return {
-      error: locationPropertyKindDeniedMessage(
-        capabilities,
-        propertyFacts.label,
-        propertyFacts.kind,
-      ),
-    };
-  }
-  const linePropertyKind = propertyFacts.kind ?? quotedKind;
+  const locationKindPlan = planQuoteLocationKind({
+    capabilities,
+    savedKind: propertyFacts.kind,
+    locationLabel: propertyFacts.label,
+    postedCorrection: String(formData.get('correct_location_property_kind') ?? ''),
+  });
+  if (!locationKindPlan.ok) return { error: locationKindPlan.error };
+  const linePropertyKind = locationKindPlan.resultingKind ?? quotedKind;
   const parsedLines = parseQuoteLineItemsFromForm(formData, {
     allowPerSqft: capabilities.sqftBids,
     propertyKind: linePropertyKind,
@@ -846,6 +833,14 @@ export async function createTenantQuote(
     };
   }
 
+  const kindSaved = await writeLocationKindAfterQuoteSave(
+    admin,
+    membership.tenantId,
+    propertyId,
+    locationKindPlan.kindToWrite,
+  );
+  if (!kindSaved.ok) return { error: kindSaved.error };
+
   await applyQuoteStatusAndStage(admin, membership.tenantId, newId, initialStatus);
 
   const crewSaved = await persistQuotedCrewSize(
@@ -976,28 +971,27 @@ export async function updateTenantQuote(
   }
 
   const fromWizard = formData.has('scope_template_id');
-  const structured = fromWizard ? parseQuoteWizardStructuredFromForm(formData) : null;
+  const structured = fromWizard
+    ? parseQuoteWizardStructuredFromForm(formData, defaultPropertyKind(capabilities))
+    : null;
   if (structured) applySegmentToPropertySnapshot(capabilities, structured.propertySnapshot);
 
-  await applyLocationKindCorrection(admin, membership.tenantId, propertyId, formData, capabilities);
   const propertyFacts = await propertyFactsForQuote(admin, membership.tenantId, propertyId);
+  const locationKindPlan = planQuoteLocationKind({
+    capabilities,
+    savedKind: propertyFacts.kind,
+    locationLabel: propertyFacts.label,
+    postedCorrection: String(formData.get('correct_location_property_kind') ?? ''),
+  });
+  if (!locationKindPlan.ok) return { error: locationKindPlan.error };
   const previousKind = (existing.job_type as CustomerPropertyKind | null) ?? null;
   const nextKind = savedQuoteJobType({
-    locationKind: propertyFacts.kind,
+    locationKind: locationKindPlan.resultingKind,
     formKind: structured?.jobType ?? null,
     storedKind: previousKind,
   });
-  if (nextKind) {
+  if (nextKind && !locationKindPlan.resultingKind) {
     const kindError = propertyKindWriteError(capabilities, nextKind, previousKind);
-    if (kindError && propertyFacts.kind && propertyFacts.kind === nextKind) {
-      return {
-        error: locationPropertyKindDeniedMessage(
-          capabilities,
-          propertyFacts.label,
-          propertyFacts.kind,
-        ),
-      };
-    }
     if (kindError) return { error: kindError };
   }
 
@@ -1112,6 +1106,14 @@ export async function updateTenantQuote(
     }
     return { error: rpc.error.message };
   }
+
+  const kindSaved = await writeLocationKindAfterQuoteSave(
+    admin,
+    membership.tenantId,
+    propertyId,
+    locationKindPlan.kindToWrite,
+  );
+  if (!kindSaved.ok) return { error: kindSaved.error };
 
   await applyQuoteStatusAndStage(admin, membership.tenantId, quoteId, status);
 

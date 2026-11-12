@@ -742,16 +742,6 @@ export function QuoteCreateWizard({
                             </option>
                           ))}
                         </select>
-                        {kindLock.disallowedKind && selectedLocation ? (
-                          <p className={styles.error} role="alert">
-                            {locationPropertyKindDeniedMessage(
-                              capabilities,
-                              selectedLocation.label,
-                              kindLock.disallowedKind,
-                            )}{' '}
-                            <Link href={`/customers/${customerId}`}>Edit this location</Link>
-                          </p>
-                        ) : null}
                       </>
                     ) : (
                       <>
@@ -844,7 +834,7 @@ export function QuoteCreateWizard({
                   <p className={styles.error} role="alert">
                     {locationPropertyKindDeniedMessage(
                       capabilities,
-                      selectedLocation.label,
+                      selectedLocation.storedLabel ?? '',
                       kindLock.disallowedKind,
                     )}{' '}
                     <Link href={`/customers/${customerId}`}>Edit this location</Link>

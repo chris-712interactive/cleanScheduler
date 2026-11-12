@@ -17,4 +17,11 @@ describe('quote access notes', () => {
     expect(structured.customerNotes).not.toContain('4412');
     expect(structured.customerNotes).not.toContain('1553');
   });
+
+  it('uses the workspace default when the quote property type is omitted', () => {
+    const form = new FormData();
+    form.set('scope_inclusions', '[]');
+    expect(parseQuoteWizardStructuredFromForm(form, 'commercial').jobType).toBe('commercial');
+    expect(parseQuoteWizardStructuredFromForm(form).jobType).toBe('residential');
+  });
 });
