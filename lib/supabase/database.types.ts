@@ -969,6 +969,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      masquerade_handoff_tokens: {
+        Row: {
+          id: string;
+          token_hash: string;
+          admin_user_id: string;
+          target_tenant_id: string;
+          masquerade_session_id: string;
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          token_hash: string;
+          admin_user_id: string;
+          target_tenant_id: string;
+          masquerade_session_id: string;
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          token_hash?: string;
+          admin_user_id?: string;
+          target_tenant_id?: string;
+          masquerade_session_id?: string;
+          expires_at?: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'masquerade_handoff_tokens_masquerade_session_id_fkey';
+            columns: ['masquerade_session_id'];
+            isOneToOne: false;
+            referencedRelation: 'masquerade_sessions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'masquerade_handoff_tokens_target_tenant_id_fkey';
+            columns: ['target_tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       masquerade_sessions: {
         Row: {
           id: string;

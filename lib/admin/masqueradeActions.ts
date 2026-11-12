@@ -6,6 +6,12 @@ import { requireAuth } from '@/lib/auth/session';
 import { clearedMasqueradeAppMetadata } from '@/lib/auth/masqueradeSession';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { headers } from 'next/headers';
+import {
+  MASQUERADE_HANDOFF_TTL_MS,
+  createMasqueradeHandoffToken,
+  hashMasqueradeHandoffToken,
+  masqueradeHandoffRedirect,
+} from '@/lib/auth/masqueradeHandoff';
 
 export async function startMasqueradeAction(formData: FormData): Promise<void> {
   const tenantSlug = String(formData.get('tenant_slug') ?? '').trim();
@@ -31,17 +37,27 @@ export async function startMasqueradeAction(formData: FormData): Promise<void> {
     redirect('/tenants');
   }
 
-  await admin.from('masquerade_sessions').insert({
-    admin_user_id: auth.user.id,
-    target_tenant_id: tenantId,
-  });
+  const endedAt = new Date().toISOString();
+  const { error: closeErr } = await admin
+    .from('masquerade_sessions')
+    .update({ ended_at: endedAt })
+    .eq('admin_user_id', auth.user.id)
+    .is('ended_at', null);
+  if (closeErr) {
+    redirect(`/tenants/${tenantSlug}?error=masquerade_session`);
+  }
 
-  await admin.from('audit_log_entries').insert({
-    actor_user_id: auth.user.id,
-    action: 'masquerade.start',
-    target_tenant_id: tenantId,
-    payload: { tenant_slug: tenantSlug },
-  });
+  const { data: insertedSession, error: sessionErr } = await admin
+    .from('masquerade_sessions')
+    .insert({
+      admin_user_id: auth.user.id,
+      target_tenant_id: tenantId,
+    })
+    .select('id')
+    .single();
+  if (sessionErr || !insertedSession) {
+    redirect(`/tenants/${tenantSlug}?error=masquerade_session`);
+  }
 
   const { data: userRes, error: uErr } = await admin.auth.admin.getUserById(auth.user.id);
   if (uErr || !userRes.user) {
@@ -60,7 +76,26 @@ export async function startMasqueradeAction(formData: FormData): Promise<void> {
     redirect(`/tenants/${tenantSlug}?error=masquerade_update`);
   }
 
-  redirect(getPublicOrigin(tenantSlug));
+  const handoffToken = createMasqueradeHandoffToken();
+  const { error: handoffErr } = await admin.from('masquerade_handoff_tokens').insert({
+    token_hash: hashMasqueradeHandoffToken(handoffToken),
+    admin_user_id: auth.user.id,
+    target_tenant_id: tenantId,
+    masquerade_session_id: insertedSession.id,
+    expires_at: new Date(Date.now() + MASQUERADE_HANDOFF_TTL_MS).toISOString(),
+  });
+  if (handoffErr) {
+    redirect(`/tenants/${tenantSlug}?error=masquerade_handoff`);
+  }
+
+  await admin.from('audit_log_entries').insert({
+    actor_user_id: auth.user.id,
+    action: 'masquerade.start',
+    target_tenant_id: tenantId,
+    payload: { tenant_slug: tenantSlug },
+  });
+
+  redirect(masqueradeHandoffRedirect(getPublicOrigin(tenantSlug), handoffToken));
 }
 
 export async function endMasqueradeAction(): Promise<void> {
@@ -74,21 +109,11 @@ export async function endMasqueradeAction(): Promise<void> {
 
   const targetTenantId = auth.claims.masqueradeTargetTenantId;
 
-  const { data: openSession } = await admin
+  await admin
     .from('masquerade_sessions')
-    .select('id')
+    .update({ ended_at: new Date().toISOString() })
     .eq('admin_user_id', auth.user.id)
-    .is('ended_at', null)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (openSession?.id) {
-    await admin
-      .from('masquerade_sessions')
-      .update({ ended_at: new Date().toISOString() })
-      .eq('id', openSession.id);
-  }
+    .is('ended_at', null);
 
   await admin.from('audit_log_entries').insert({
     actor_user_id: auth.user.id,
