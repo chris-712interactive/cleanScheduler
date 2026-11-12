@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { redactLandingUrl, redactPlaintextSecrets, redactText } from '@/lib/hosted-dev/redactText';
+import {
+  redactJoinedText,
+  redactLandingUrl,
+  redactPlaintextSecrets,
+  redactText,
+} from '@/lib/hosted-dev/redactText';
 
 describe('hosted dev artifact redaction', () => {
   it('removes secrets, emails, tokens, and database URLs', () => {
@@ -115,6 +120,159 @@ describe('hosted dev artifact redaction', () => {
     );
     expect(pathToken).not.toContain('path-token');
     expect(pathToken).toContain(';token=[redacted]');
+    expect(pathToken).toContain('?ok=1');
+  });
+
+  it('scrubs a semicolon secret before URLSearchParams re-encodes it', () => {
+    const raw =
+      'https://admin.dev.cleanscheduler.com/cb?next=1;token=semicolon-secret&access_token=query-access&ok=1';
+    for (const redacted of [redactLandingUrl(raw), redactText(raw, [])]) {
+      expect(redacted).not.toContain('semicolon-secret');
+      expect(redacted).not.toContain('query-access');
+      expect(redacted).toContain('ok=1');
+      expect(redacted).toContain('access_token=[redacted]');
+    }
+  });
+
+  it('redacts encoded keys, encoded equals, and secrets nested in next', () => {
+    const cases = [
+      'https://admin.dev.cleanscheduler.com/cb?token%3Deq-secret&next=1',
+      'https://admin.dev.cleanscheduler.com/cb?next=1#acc%65ss_token=frag-secret',
+      'https://admin.dev.cleanscheduler.com/cb?next=1#%74oken=hash-secret',
+      'https://admin.dev.cleanscheduler.com/cb?%2574oken=double-secret&ok=1',
+      'https://admin.dev.cleanscheduler.com/sign-in?next=%2Fcb%3Ftoken%3Dnested-secret&ok=1',
+      'https://admin.dev.cleanscheduler.com/sign-in?next=%2Fcb%23access_token%3Dnested-hash&ok=1',
+    ];
+    for (const raw of cases) {
+      for (const redacted of [
+        redactText(raw, []),
+        redactLandingUrl(raw),
+        redactPlaintextSecrets(raw),
+      ]) {
+        expect(redacted, raw).not.toMatch(
+          /eq-secret|frag-secret|hash-secret|double-secret|nested-secret|nested-hash/,
+        );
+      }
+    }
+    expect(redactText(cases[0] ?? '', [])).toContain('next=1');
+    expect(redactLandingUrl(cases[3] ?? '')).toContain('ok=1');
+    expect(redactLandingUrl(cases[4] ?? '')).toContain('ok=1');
+    expect(redactLandingUrl(cases[5] ?? '')).toContain('ok=1');
+  });
+
+  it('redacts the extra credential names and unquoted or quoted token tails', () => {
+    const raw = [
+      'https://admin.dev.cleanscheduler.com/cb#provider_token=prov-token&provider_refresh_token=prov-refresh',
+      '?code_verifier=verifier-secret&client_secret=client-secret&token_hash=hash-secret',
+      '?idToken=camel-id&accessToken=camel-access',
+      'landed token=bare-secret next',
+      'https://admin.dev.cleanscheduler.com/cb?token="quoted-secret"&ok=1',
+      'https://admin.dev.cleanscheduler.com/cb?token=left right&next=keep#refresh_token=left right',
+    ].join('\n');
+    for (const redacted of [redactText(raw, []), redactPlaintextSecrets(raw)]) {
+      expect(redacted).not.toContain('prov-token');
+      expect(redacted).not.toContain('prov-refresh');
+      expect(redacted).not.toContain('verifier-secret');
+      expect(redacted).not.toContain('client-secret');
+      expect(redacted).not.toContain('hash-secret');
+      expect(redacted).not.toContain('camel-id');
+      expect(redacted).not.toContain('camel-access');
+      expect(redacted).not.toContain('bare-secret');
+      expect(redacted).not.toContain('quoted-secret');
+      expect(redacted).toContain('token=[redacted] right');
+      expect(redacted).toContain('refresh_token=[redacted] right');
+      expect(redacted).toContain('token=[redacted]');
+      expect(redacted).toContain('next=keep');
+    }
+  });
+
+  it('redacts a credential through semicolon and question-mark tails', () => {
+    const fragment = redactText(
+      'https://admin.dev.cleanscheduler.com/cb#refresh_token=left;right-secret',
+      [],
+    );
+    expect(fragment).not.toContain('right-secret');
+    expect(fragment).not.toContain('left');
+    expect(fragment).toContain('#refresh_token=[redacted]');
+
+    const landing = redactLandingUrl(
+      'https://admin.dev.cleanscheduler.com/cb#access_token=left?right-secret&ok=1',
+    );
+    expect(landing).not.toContain('right-secret');
+    expect(landing).toContain('#access_token=[redacted]');
+    expect(landing).toContain('ok=1');
+
+    const pathToken = redactText('https://admin.dev.cleanscheduler.com/cb;token=x?ok=1', []);
+    expect(pathToken).not.toContain('token=x');
+    expect(pathToken).toContain(';token=[redacted]');
+    expect(pathToken).toContain('?ok=1');
+  });
+
+  it('stops an assignment at whitespace and keeps an http status', () => {
+    const prose = redactText('code=200 OK request=/health\nemail=sent to the office', []);
+    expect(prose).toContain('code=200 OK request=/health');
+    expect(prose).toContain('email=[redacted]');
+    expect(prose).not.toContain('sent to the office');
+    const report = [
+      '| deployment identity | fail | reject: identity token=bare-secret rejected |',
+      '| public booking read | blocked | HOSTED_DEV_BOOKING_URL is not set. |',
+    ].join('\n');
+    const redacted = redactText(report, []);
+    expect(redacted).not.toContain('bare-secret');
+    expect(redacted).toContain('public booking read');
+    expect(redacted).toContain('HOSTED_DEV_BOOKING_URL is not set.');
+  });
+
+  it('redacts json credentials, auth cookies, passwords, and joined text nodes', () => {
+    const raw = [
+      '{"refresh_token":"opaque-refresh-secret","access_token":"opaque-access-secret","code":"200"}',
+      'sb-abcdefghijklmnop-auth-token=opaque-cookie-session',
+      'password=password-secret',
+      'Authorization: Bearer bearer-opaque-secret',
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
+    ].join('\n');
+    const redacted = redactText(raw, []);
+    expect(redacted).not.toContain('opaque-refresh-secret');
+    expect(redacted).not.toContain('opaque-access-secret');
+    expect(redacted).not.toContain('opaque-cookie-session');
+    expect(redacted).not.toContain('password-secret');
+    expect(redacted).not.toContain('bearer-opaque-secret');
+    expect(redacted).not.toContain('eyJhbGciOiJIUzI1NiJ9');
+    expect(redacted).toContain('"code":"200"');
+
+    const joined = redactJoinedText(['token=', 'split-secret'], []);
+    expect(joined[0]).toContain('token=[redacted]');
+    expect(joined.join('')).not.toContain('split-secret');
+    expect(joined[1]).toBe('');
+    const tail = redactJoinedText(['#refresh_token=', 'left;right-secret'], []);
+    expect(tail.join('')).not.toContain('right-secret');
+    expect(tail[1]).toBe('');
+  });
+
+  it('does not treat an image filename as an encoded address', () => {
+    const raw = 'saved img%2540x2.png beside jane%2540example.com';
+    const redacted = redactPlaintextSecrets(raw);
+    expect(redacted).toContain('img%2540x2.png');
+    expect(redacted).not.toContain('jane');
+    expect(redacted).toContain('[redacted-email]');
+  });
+
+  it('stays linear on a long percent run', () => {
+    const once = redactText('%25'.repeat(1000) + 'xx', []);
+    expect(once).toContain('%25');
+    const measure = (count: number) => {
+      const input = '%25'.repeat(count) + 'xx';
+      const started = performance.now();
+      const redacted = redactText(input, []);
+      return { elapsed: performance.now() - started, redacted, input };
+    };
+    measure(2000);
+    const small = measure(4000);
+    const large = measure(16000);
+    expect(small.redacted).toBe(small.input);
+    expect(large.redacted).toBe(large.input);
+    expect(large.elapsed).toBeLessThan(1000);
+    expect(large.elapsed).toBeLessThan(small.elapsed * 12 + 50);
   });
 });
 

@@ -8,7 +8,7 @@ const { redactZipBuffer } = await import('../../lib/hosted-dev/redactZip.ts');
 
 const root = process.env.HOSTED_DEV_RESULTS_DIR?.trim() || 'hosted-dev-results';
 const secrets = secretsFromEnv(process.env);
-const textExtensions = new Set(['.json', '.md', '.txt', '.log', '.yml', '.html', '.htm', '.har']);
+const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 const markerPath = path.join(root, '.redaction-complete');
 
 async function walk(directory: string): Promise<string[]> {
@@ -42,23 +42,34 @@ async function deleteUnredacted(files: string[]): Promise<void> {
 
 const files = await walk(root);
 await rm(markerPath, { force: true });
+let uncovered = false;
 try {
   for (const filePath of files) {
     if (filePath === markerPath) continue;
     const extension = path.extname(filePath).toLowerCase();
+    if (imageExtensions.has(extension)) continue;
     if (extension === '.zip') {
       const original = await readFile(filePath);
       await writeFile(filePath, redactZipBuffer(original, secrets));
       continue;
     }
-    if (!textExtensions.has(extension)) continue;
-    const original = await readFile(filePath, 'utf8');
-    const redacted = redactText(original, secrets);
-    if (redacted !== original) await writeFile(filePath, redacted);
+    const original = await readFile(filePath);
+    if (original.includes(0)) {
+      uncovered = true;
+      continue;
+    }
+    const text = original.toString('utf8');
+    const redacted = redactText(text, secrets);
+    if (redacted !== text) await writeFile(filePath, redacted);
   }
-  await writeFile(markerPath, 'ok\n');
 } catch (error) {
   await deleteUnredacted(files);
   console.error(error instanceof Error ? error.message : 'Trace redaction failed.');
   process.exit(1);
 }
+if (uncovered) {
+  await deleteUnredacted(files);
+  console.error('Trace redaction did not cover every artifact.');
+  process.exit(1);
+}
+await writeFile(markerPath, 'ok\n');
