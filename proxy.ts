@@ -39,6 +39,7 @@ import {
   isTenantSuspendedEscapePath,
 } from '@/lib/billing/tenantSubscriptionAccess';
 import { resolveTenantMembershipForSlug } from '@/lib/auth/resolveTenantMembershipForSlug';
+import { pathnameWithSearchWithoutHandoff } from '@/lib/auth/signInNextPath';
 import { AUTH_GRANT_HEADER, issueRequestAuthGrant } from '@/lib/auth/requestAuthGrant';
 import { serverEnv } from '@/lib/env';
 import {
@@ -473,7 +474,10 @@ export async function proxy(request: NextRequest) {
     }
 
     if (isProtectedPortal && !userId && !isMasqueradeHandoff) {
-      const nextPath = request.nextUrl.pathname + request.nextUrl.search;
+      const nextPath = pathnameWithSearchWithoutHandoff(
+        request.nextUrl.pathname,
+        request.nextUrl.search,
+      );
       const redirectUrl = buildMarketingUrl(request, '/sign-in', nextPath);
       const redirect = NextResponse.redirect(redirectUrl);
       applyCookies(redirect, cookiesToSet);

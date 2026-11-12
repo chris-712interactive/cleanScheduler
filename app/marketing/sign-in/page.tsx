@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
+import { signInQueryErrorMessage } from '@/lib/auth/signInQueryError';
 import { getAuthContext } from '@/lib/auth/session';
 import { getPortalContext } from '@/lib/portal';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
@@ -40,7 +41,9 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   }
 
   const signInUrlError =
-    rawError && AUTHORIZATION_QUERY_ERRORS.has(rawError) ? undefined : rawError;
+    rawError && AUTHORIZATION_QUERY_ERRORS.has(rawError)
+      ? undefined
+      : signInQueryErrorMessage(rawError);
 
   const defaultEmail = firstParam(params.email)?.trim().toLowerCase() ?? '';
   const portal = await getPortalContext();

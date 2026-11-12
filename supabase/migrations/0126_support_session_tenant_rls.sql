@@ -838,6 +838,28 @@ revoke insert, update, delete on table public.masquerade_sessions from anon;
 revoke insert, update, delete on table public.masquerade_sessions from authenticated;
 grant select, insert, update, delete on table public.masquerade_sessions to service_role;
 
+-- One open support session per staff user. Close older open rows first so
+-- databases that already stacked sessions can take the unique index.
+with ranked as (
+  select
+    id,
+    row_number() over (
+      partition by admin_user_id
+      order by started_at desc, id desc
+    ) as n
+  from public.masquerade_sessions
+  where ended_at is null
+)
+update public.masquerade_sessions as session
+set ended_at = now()
+from ranked
+where session.id = ranked.id
+  and ranked.n > 1;
+
+create unique index masquerade_sessions_one_open_per_staff
+  on public.masquerade_sessions (admin_user_id)
+  where ended_at is null;
+
 -- -----------------------------------------------------------------------------
 -- One-time support handoff tokens. Only a hash is stored. Service role only.
 -- -----------------------------------------------------------------------------

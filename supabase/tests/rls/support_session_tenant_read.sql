@@ -377,6 +377,52 @@ BEGIN
     RAISE EXCEPTION 'staff JWT changed masquerade started_at';
   END IF;
 
+  IF to_regclass('public.masquerade_sessions_one_open_per_staff') IS NULL THEN
+    RAISE EXCEPTION 'masquerade_sessions_one_open_per_staff is missing';
+  END IF;
+
+  BEGIN
+    INSERT INTO public.masquerade_sessions (admin_user_id, target_tenant_id, started_at)
+    VALUES (staff_id, tenant_b, now());
+    RAISE EXCEPTION 'a second open support session was inserted';
+  EXCEPTION
+    WHEN unique_violation THEN
+      NULL;
+  END;
+
+  UPDATE public.masquerade_sessions
+  SET ended_at = now()
+  WHERE admin_user_id = staff_id
+    AND ended_at IS NULL;
+
+  INSERT INTO public.masquerade_sessions (admin_user_id, target_tenant_id, started_at)
+  VALUES (staff_id, tenant_b, now());
+
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO customer_count FROM public.customers WHERE id = customer_a;
+  IF customer_count <> 0 THEN
+    RAISE EXCEPTION 'closing the older session should hide tenant A, saw %', customer_count;
+  END IF;
+  SELECT count(*) INTO customer_count FROM public.customers WHERE id = customer_b;
+  IF customer_count <> 1 THEN
+    RAISE EXCEPTION 'the remaining open session should see tenant B, saw %', customer_count;
+  END IF;
+  EXECUTE 'RESET ROLE';
+
+  UPDATE public.masquerade_sessions
+  SET ended_at = now()
+  WHERE admin_user_id = staff_id
+    AND ended_at IS NULL;
+
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO customer_count
+  FROM public.customers
+  WHERE id IN (customer_a, customer_b);
+  IF customer_count <> 0 THEN
+    RAISE EXCEPTION 'ending every open session should hide both tenants, saw %', customer_count;
+  END IF;
+  EXECUTE 'RESET ROLE';
+
   PERFORM set_config('request.jwt.claim.sub', member_id::text, true);
   PERFORM set_config(
     'request.jwt.claims',

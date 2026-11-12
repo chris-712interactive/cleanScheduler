@@ -65,6 +65,13 @@ export async function redeemStoredMasqueradeHandoff(input: {
           .maybeSingle();
         return !error && Boolean(data?.id);
       },
+      releaseUsed: async (id) => {
+        const { error } = await admin
+          .from('masquerade_handoff_tokens')
+          .update({ used_at: null })
+          .eq('id', id);
+        if (error) throw new Error('masquerade handoff release failed');
+      },
       establishSession: input.establishSession,
       audit: async (event) => {
         const { error } = await admin.from('audit_log_entries').insert({

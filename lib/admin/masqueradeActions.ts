@@ -37,6 +37,16 @@ export async function startMasqueradeAction(formData: FormData): Promise<void> {
     redirect('/tenants');
   }
 
+  const endedAt = new Date().toISOString();
+  const { error: closeErr } = await admin
+    .from('masquerade_sessions')
+    .update({ ended_at: endedAt })
+    .eq('admin_user_id', auth.user.id)
+    .is('ended_at', null);
+  if (closeErr) {
+    redirect(`/tenants/${tenantSlug}?error=masquerade_session`);
+  }
+
   const { data: insertedSession, error: sessionErr } = await admin
     .from('masquerade_sessions')
     .insert({
@@ -99,21 +109,11 @@ export async function endMasqueradeAction(): Promise<void> {
 
   const targetTenantId = auth.claims.masqueradeTargetTenantId;
 
-  const { data: openSession } = await admin
+  await admin
     .from('masquerade_sessions')
-    .select('id')
+    .update({ ended_at: new Date().toISOString() })
     .eq('admin_user_id', auth.user.id)
-    .is('ended_at', null)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (openSession?.id) {
-    await admin
-      .from('masquerade_sessions')
-      .update({ ended_at: new Date().toISOString() })
-      .eq('id', openSession.id);
-  }
+    .is('ended_at', null);
 
   await admin.from('audit_log_entries').insert({
     actor_user_id: auth.user.id,

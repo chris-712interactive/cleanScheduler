@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { pathnameWithSearchWithoutHandoff } from '@/lib/auth/signInNextPath';
+import { signInQueryErrorMessage } from '@/lib/auth/signInQueryError';
 import {
   MASQUERADE_HANDOFF_PATH,
   SUPPORT_SESSION_FUTURE_SKEW_MS,
@@ -70,6 +72,9 @@ function deps(overrides: Partial<MasqueradeHandoffDeps> = {}): MasqueradeHandoff
     markUsed: async () => {
       calls.push('mark');
       return true;
+    },
+    releaseUsed: async () => {
+      calls.push('release');
     },
     establishSession: async (email) => {
       calls.push(`session:${email}`);
@@ -225,6 +230,20 @@ describe('redeemMasqueradeHandoff', () => {
     expect(fake.calls.some((call) => call.startsWith('session:'))).toBe(false);
   });
 
+  it('releases the token when the tenant-host session is not created', async () => {
+    const fake = deps({
+      establishSession: async () => false,
+    });
+    const result = await redeemMasqueradeHandoff(
+      { token: TOKEN, hostTenantId: TENANT_A, nowMs: NOW },
+      fake,
+    );
+    expect(result).toEqual({ ok: false, reason: 'session_not_established' });
+    expect(fake.calls).toContain('mark');
+    expect(fake.calls).toContain('release');
+    expect(fake.calls).not.toContain('audit');
+  });
+
   it('still succeeds when the audit write fails after the session is established', async () => {
     const fake = deps({
       audit: async () => {
@@ -239,11 +258,32 @@ describe('redeemMasqueradeHandoff', () => {
   });
 });
 
+describe('handoff secret is not copied into sign-in', () => {
+  it('strips the handoff query before it becomes next', () => {
+    expect(
+      pathnameWithSearchWithoutHandoff(
+        '/auth/masquerade-handoff',
+        '?handoff=raw-token&next=https://evil.com',
+      ),
+    ).toBe('/auth/masquerade-handoff?next=https%3A%2F%2Fevil.com');
+    expect(pathnameWithSearchWithoutHandoff('/tenants', '')).toBe('/tenants');
+  });
+
+  it('maps the handoff failure code to a sentence', () => {
+    expect(signInQueryErrorMessage('masquerade_handoff')).toBe(
+      'Support sign-in did not complete. Start support again from the admin tenant page.',
+    );
+    expect(signInQueryErrorMessage('auth')).toBe('auth');
+    expect(signInQueryErrorMessage(undefined)).toBeUndefined();
+  });
+});
+
 describe('masquerade handoff wiring', () => {
   it('keeps the tenant handoff path public to the proxy and host-only', () => {
     const proxy = readFileSync(resolve(process.cwd(), 'proxy.ts'), 'utf8');
     expect(proxy).toContain(`requestedPath === '${MASQUERADE_HANDOFF_PATH}'`);
     expect(proxy).toContain('!isMasqueradeHandoff');
+    expect(proxy).toContain('pathnameWithSearchWithoutHandoff');
     const route = readFileSync(
       resolve(process.cwd(), 'app/tenant/auth/masquerade-handoff/route.ts'),
       'utf8',

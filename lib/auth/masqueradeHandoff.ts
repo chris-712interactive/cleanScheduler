@@ -47,6 +47,8 @@ export type MasqueradeHandoffDeps = {
   findSession: (sessionId: string) => Promise<SupportSessionClock | null>;
   loadUser: (userId: string) => Promise<HandoffStaffUser | null>;
   markUsed: (id: string, usedAtIso: string) => Promise<boolean>;
+  /** Clears `used_at` when the tenant-host session was not created. */
+  releaseUsed: (id: string) => Promise<void>;
   establishSession: (email: string) => Promise<boolean>;
   audit: (event: {
     actorUserId: string;
@@ -165,8 +167,9 @@ export function supportSessionFromRow(
 
 /**
  * Redeem a one-time handoff. The raw token is hashed before lookup and is not
- * passed to the audit callback. A failed check does not mark the token used,
- * except a lost race on `markUsed`.
+ * passed to the audit callback. A failed check does not mark the token used.
+ * If the tenant-host session is not created, the claim is released so the
+ * same URL can be retried until it expires.
  */
 export async function redeemMasqueradeHandoff(
   input: { token: string; hostTenantId: string; nowMs: number },
@@ -204,7 +207,14 @@ export async function redeemMasqueradeHandoff(
   if (!marked) return { ok: false, reason: 'reused' };
 
   const established = await deps.establishSession(email);
-  if (!established) return { ok: false, reason: 'session_not_established' };
+  if (!established) {
+    try {
+      await deps.releaseUsed(row.id);
+    } catch {
+      // The token stays consumed if the release fails. Staff can start support again.
+    }
+    return { ok: false, reason: 'session_not_established' };
+  }
 
   try {
     await deps.audit({
