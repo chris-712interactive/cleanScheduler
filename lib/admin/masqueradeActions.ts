@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAuth } from '@/lib/auth/session';
+import { clearedMasqueradeAppMetadata } from '@/lib/auth/masqueradeSession';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { headers } from 'next/headers';
 
@@ -101,9 +102,7 @@ export async function endMasqueradeAction(): Promise<void> {
     redirect(`${getPublicOrigin('admin')}/tenants`);
   }
 
-  const meta = { ...(userRes.user.app_metadata ?? {}) };
-  delete meta.masquerade_target_tenant_id;
-  delete meta.current_tenant_id;
+  const meta = clearedMasqueradeAppMetadata({ ...(userRes.user.app_metadata ?? {}) });
 
   await admin.auth.admin.updateUserById(auth.user.id, { app_metadata: meta });
 
