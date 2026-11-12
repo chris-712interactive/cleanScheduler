@@ -27,6 +27,7 @@ const SENSITIVE_KEYS = new Set([
   'token',
   'code',
   'email',
+  'password',
 ]);
 
 function safeDecode(value: string): string {
@@ -52,7 +53,9 @@ function normalizedKey(raw: string): string {
 }
 
 function isSensitiveKey(raw: string): boolean {
-  return SENSITIVE_KEYS.has(normalizedKey(raw));
+  const decoded = decodeBounded(raw);
+  if (/^sb-[a-z0-9]+-auth-token$/i.test(decoded)) return true;
+  return SENSITIVE_KEYS.has(normalizedKey(decoded));
 }
 
 function isBoundary(ch: string | undefined): boolean {
@@ -129,7 +132,17 @@ function redactEmails(input: string): string {
   return out;
 }
 
-function endOfValue(input: string, start: number): number {
+/** A `;token=` in the path stops at `?`. A value already in a query or fragment does not. */
+function pathSemicolonAssignment(input: string, keyStart: number): boolean {
+  if (keyStart <= 0 || input[keyStart - 1] !== ';') return false;
+  for (let index = 0; index < keyStart; index += 1) {
+    const ch = input[index];
+    if (ch === '?' || ch === '#') return false;
+  }
+  return true;
+}
+
+function endOfValue(input: string, start: number, stopAtQuestion: boolean): number {
   if (start >= input.length) return start;
   const quote = input[start];
   if (quote === '"' || quote === "'") {
@@ -139,12 +152,28 @@ function endOfValue(input: string, start: number): number {
   let index = start;
   while (index < input.length) {
     const ch = input[index];
-    // `;` starts another assignment (`next=1;token=`). `?` ends a path
-    // assignment so `/cb;token=secret?ok=1` keeps the query.
-    if (ch === '&' || ch === '#' || ch === '?' || ch === ';' || ch === '<' || ch === '>') break;
+    if (
+      ch === '&' ||
+      ch === '#' ||
+      ch === '<' ||
+      ch === '>' ||
+      ch === ' ' ||
+      ch === '\t' ||
+      ch === '\n' ||
+      ch === '\r' ||
+      ch === '"' ||
+      ch === "'"
+    ) {
+      break;
+    }
+    if (stopAtQuestion && ch === '?') break;
     index += 1;
   }
   return index;
+}
+
+function isHttpStatusValue(rawKey: string, value: string): boolean {
+  return normalizedKey(rawKey) === 'code' && /^\d{3}$/.test(value);
 }
 
 function matchAssignment(
@@ -192,21 +221,27 @@ function scrubAssignments(input: string, depth: number): string {
       index += 1;
       continue;
     }
-    const valueEnd = endOfValue(input, hit.valueStart);
+    const valueEnd = endOfValue(input, hit.valueStart, pathSemicolonAssignment(input, index));
     const rawValue = input.slice(hit.valueStart, valueEnd);
+    const quote = rawValue[0] === '"' || rawValue[0] === "'" ? rawValue[0] : '';
+    const inner =
+      quote && rawValue.endsWith(quote) && rawValue.length >= 2 ? rawValue.slice(1, -1) : rawValue;
     if (hit.sensitive) {
+      const key = input.slice(index, hit.valueStart).replace(/=$/u, '').replace(/%3d$/i, '');
+      if (isHttpStatusValue(key, inner)) {
+        out += input.slice(index, valueEnd);
+        index = valueEnd;
+        continue;
+      }
       out += input.slice(index, hit.valueStart);
       out += '[redacted]';
       index = valueEnd;
       continue;
     }
-    const quote = rawValue[0] === '"' || rawValue[0] === "'" ? rawValue[0] : '';
-    const inner =
-      quote && rawValue.endsWith(quote) && rawValue.length >= 2 ? rawValue.slice(1, -1) : rawValue;
     const decoded = decodeBounded(inner);
     const nested = scrubAssignments(decoded, depth + 1);
     if (nested !== decoded) {
-      const encoded = encodeURIComponent(nested);
+      const encoded = rawValue.includes('%') ? encodeURIComponent(nested) : nested;
       out += input.slice(index, hit.valueStart);
       out += quote ? `${quote}${encoded}${quote}` : encoded;
       index = valueEnd;
@@ -241,9 +276,25 @@ export function redactText(input: string, secrets: readonly string[]): string {
   return redactPlaintextSecrets(output);
 }
 
+function redactStructuredSecrets(input: string): string {
+  const pattern =
+    /("(?:access_token|refresh_token|id_token|provider_token|provider_refresh_token|code_verifier|client_secret|token_hash|idToken|accessToken|password|token|code|email)"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
+  return input.replace(pattern, (match, prefix: string, value: string, suffix: string) => {
+    if (/"code"\s*:\s*"$/i.test(prefix) && /^\d{3}$/.test(value)) return match;
+    return `${prefix}[redacted]${suffix}`;
+  });
+}
+
 /** Redact addresses and credential assignments in a heading or other short plain string. */
 export function redactPlaintextSecrets(input: string): string {
-  return redactEmails(scrubAssignments(input, 0));
+  return redactEmails(scrubAssignments(redactStructuredSecrets(input), 0));
+}
+
+/** Redact sibling text nodes as one string so `token=` and its value are not split. */
+export function redactJoinedText(parts: readonly string[], secrets: readonly string[]): string[] {
+  if (parts.length === 0) return [];
+  const redacted = redactText(parts.join(''), secrets);
+  return [redacted, ...parts.slice(1).map(() => '')];
 }
 
 /** Landing URLs logged by hosted-dev checks. Drops addresses and auth query or fragment values. */

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { redactLandingUrl, redactPlaintextSecrets, redactText } from '@/lib/hosted-dev/redactText';
+import {
+  redactJoinedText,
+  redactLandingUrl,
+  redactPlaintextSecrets,
+  redactText,
+} from '@/lib/hosted-dev/redactText';
 
 describe('hosted dev artifact redaction', () => {
   it('removes secrets, emails, tokens, and database URLs', () => {
@@ -174,10 +179,74 @@ describe('hosted dev artifact redaction', () => {
       expect(redacted).not.toContain('camel-access');
       expect(redacted).not.toContain('bare-secret');
       expect(redacted).not.toContain('quoted-secret');
-      expect(redacted).not.toContain('right');
+      expect(redacted).toContain('token=[redacted] right');
+      expect(redacted).toContain('refresh_token=[redacted] right');
       expect(redacted).toContain('token=[redacted]');
       expect(redacted).toContain('next=keep');
     }
+  });
+
+  it('redacts a credential through semicolon and question-mark tails', () => {
+    const fragment = redactText(
+      'https://admin.dev.cleanscheduler.com/cb#refresh_token=left;right-secret',
+      [],
+    );
+    expect(fragment).not.toContain('right-secret');
+    expect(fragment).not.toContain('left');
+    expect(fragment).toContain('#refresh_token=[redacted]');
+
+    const landing = redactLandingUrl(
+      'https://admin.dev.cleanscheduler.com/cb#access_token=left?right-secret&ok=1',
+    );
+    expect(landing).not.toContain('right-secret');
+    expect(landing).toContain('#access_token=[redacted]');
+    expect(landing).toContain('ok=1');
+
+    const pathToken = redactText('https://admin.dev.cleanscheduler.com/cb;token=x?ok=1', []);
+    expect(pathToken).not.toContain('token=x');
+    expect(pathToken).toContain(';token=[redacted]');
+    expect(pathToken).toContain('?ok=1');
+  });
+
+  it('stops an assignment at whitespace and keeps an http status', () => {
+    const prose = redactText('code=200 OK request=/health\nemail=sent to the office', []);
+    expect(prose).toContain('code=200 OK request=/health');
+    expect(prose).toContain('email=[redacted]');
+    expect(prose).not.toContain('sent to the office');
+    const report = [
+      '| deployment identity | fail | reject: identity token=bare-secret rejected |',
+      '| public booking read | blocked | HOSTED_DEV_BOOKING_URL is not set. |',
+    ].join('\n');
+    const redacted = redactText(report, []);
+    expect(redacted).not.toContain('bare-secret');
+    expect(redacted).toContain('public booking read');
+    expect(redacted).toContain('HOSTED_DEV_BOOKING_URL is not set.');
+  });
+
+  it('redacts json credentials, auth cookies, passwords, and joined text nodes', () => {
+    const raw = [
+      '{"refresh_token":"opaque-refresh-secret","access_token":"opaque-access-secret","code":"200"}',
+      'sb-abcdefghijklmnop-auth-token=opaque-cookie-session',
+      'password=password-secret',
+      'Authorization: Bearer bearer-opaque-secret',
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
+    ].join('\n');
+    const redacted = redactText(raw, []);
+    expect(redacted).not.toContain('opaque-refresh-secret');
+    expect(redacted).not.toContain('opaque-access-secret');
+    expect(redacted).not.toContain('opaque-cookie-session');
+    expect(redacted).not.toContain('password-secret');
+    expect(redacted).not.toContain('bearer-opaque-secret');
+    expect(redacted).not.toContain('eyJhbGciOiJIUzI1NiJ9');
+    expect(redacted).toContain('"code":"200"');
+
+    const joined = redactJoinedText(['token=', 'split-secret'], []);
+    expect(joined[0]).toContain('token=[redacted]');
+    expect(joined.join('')).not.toContain('split-secret');
+    expect(joined[1]).toBe('');
+    const tail = redactJoinedText(['#refresh_token=', 'left;right-secret'], []);
+    expect(tail.join('')).not.toContain('right-secret');
+    expect(tail[1]).toBe('');
   });
 
   it('does not treat an image filename as an encoded address', () => {

@@ -1,6 +1,11 @@
 import { errors, expect, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 import { assertHttpsDevUrl, devUrlOnSameHost } from '../../lib/hosted-dev/hostedDevUrl';
-import { redactLandingUrl, redactPlaintextSecrets } from '../../lib/hosted-dev/redactText';
+import {
+  redactJoinedText,
+  redactLandingUrl,
+  redactPlaintextSecrets,
+  secretsFromEnv,
+} from '../../lib/hosted-dev/redactText';
 import { classifySignInNavigation } from '../../lib/hosted-dev/signInNavigation';
 
 export { redactLandingUrl };
@@ -111,18 +116,26 @@ export async function maskAndCapture(page: Page, info: TestInfo): Promise<void> 
       document.querySelectorAll('h1, h2').forEach((element) => {
         element.textContent = '[redacted heading]';
       });
-      const collected: string[] = [];
+      const groups: string[][] = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let node = walker.nextNode();
+      let parent: Node | null = null;
       while (node) {
-        collected.push(node.textContent ?? '');
+        const text = node.textContent ?? '';
+        if (node.parentNode && node.parentNode === parent && groups.length > 0) {
+          groups[groups.length - 1]?.push(text);
+        } else {
+          groups.push([text]);
+          parent = node.parentNode;
+        }
         node = walker.nextNode();
       }
-      return collected;
+      return groups;
     })
     .catch(() => null);
   if (texts) {
-    const redacted = texts.map((text) => redactPlaintextSecrets(text));
+    const secrets = secretsFromEnv(process.env);
+    const redacted = texts.flatMap((group) => redactJoinedText(group, secrets));
     await page
       .evaluate((next) => {
         const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
