@@ -5,6 +5,7 @@ import {
   liveMasqueradeSessionMatches,
   MASQUERADE_CLOCK_SKEW_MS,
   MASQUERADE_MAX_DURATION_MS,
+  openMasqueradeSessionsPastTtl,
   shouldAuditMasqueradeTtlClose,
   type MasqueradeSessionClock,
 } from '@/lib/auth/masqueradeSession';
@@ -68,6 +69,34 @@ describe('live masquerade session', () => {
     });
     expect(Object.prototype.hasOwnProperty.call(payload, 'masquerade_target_tenant_id')).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(payload, 'current_tenant_id')).toBe(true);
+  });
+
+  it('selects every open row past the TTL, not only the newest', () => {
+    const expiredA = session({
+      target_tenant_id: HOST,
+      started_at: new Date(NOW - MASQUERADE_MAX_DURATION_MS - 1).toISOString(),
+    });
+    const expiredOlder = session({
+      target_tenant_id: OTHER,
+      started_at: new Date(NOW - MASQUERADE_MAX_DURATION_MS - 60_000).toISOString(),
+    });
+    const liveB = session({
+      target_tenant_id: OTHER,
+      started_at: new Date(NOW - 60_000).toISOString(),
+    });
+    const future = session({
+      started_at: new Date(NOW + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    const past = openMasqueradeSessionsPastTtl(
+      [
+        { ...expiredA, id: 'a' },
+        { ...expiredOlder, id: 'older' },
+        { ...liveB, id: 'b' },
+        { ...future, id: 'future' },
+      ],
+      NOW,
+    );
+    expect(past.map((row) => row.id)).toEqual(['a', 'older']);
   });
 
   it('audits a ttl close only when this update ended the row', () => {

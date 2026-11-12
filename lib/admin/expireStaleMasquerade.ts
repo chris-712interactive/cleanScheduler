@@ -4,7 +4,7 @@ import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
   clearedMasqueradeAppMetadata,
   liveMasqueradeSessionMatches,
-  masqueradeSessionPastTtl,
+  openMasqueradeSessionsPastTtl,
   shouldAuditMasqueradeTtlClose,
 } from '@/lib/auth/masqueradeSession';
 import type { AuthContext } from '@/lib/auth/types';
@@ -34,43 +34,50 @@ export async function expireStaleMasqueradeIfNeeded(auth: AuthContext): Promise<
   if (!auth.claims.masqueradeTargetTenantId) return;
 
   const admin = createAdminClient();
-  const { data: openSession } = await admin
+  const { data: openSessions } = await admin
     .from('masquerade_sessions')
     .select('id, started_at, target_tenant_id, admin_user_id, ended_at')
     .eq('admin_user_id', auth.user.id)
-    .is('ended_at', null)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .is('ended_at', null);
 
-  if (!openSession?.started_at) return;
   const nowMs = Date.now();
-  if (
-    liveMasqueradeSessionMatches(openSession, {
-      userId: auth.user.id,
-      tenantId: openSession.target_tenant_id,
-      nowMs,
-    })
-  ) {
-    return;
-  }
-  if (!masqueradeSessionPastTtl(openSession.started_at, nowMs)) return;
+  const expired = openMasqueradeSessionsPastTtl(openSessions ?? [], nowMs);
+  if (expired.length === 0) return;
 
+  const expiredIds = expired.map((row) => row.id);
   const { data: closed } = await admin
     .from('masquerade_sessions')
     .update({ ended_at: new Date(nowMs).toISOString() })
-    .eq('id', openSession.id)
+    .in('id', expiredIds)
     .is('ended_at', null)
     .select('id');
 
-  if (shouldAuditMasqueradeTtlClose(closed?.map((row) => row.id))) {
-    await admin.from('audit_log_entries').insert({
-      actor_user_id: auth.user.id,
-      action: 'masquerade.end',
-      target_tenant_id: openSession.target_tenant_id,
-      payload: { reason: 'session_ttl_expired' },
-    });
+  const closedIds = new Set(closed?.map((row) => row.id) ?? []);
+  if (shouldAuditMasqueradeTtlClose([...closedIds])) {
+    const audits = expired
+      .filter((row) => closedIds.has(row.id))
+      .map((row) => ({
+        actor_user_id: auth.user.id,
+        action: 'masquerade.end',
+        target_tenant_id: row.target_tenant_id,
+        payload: { reason: 'session_ttl_expired' },
+      }));
+    if (audits.length > 0) {
+      await admin.from('audit_log_entries').insert(audits);
+    }
   }
+
+  const claimTenantId = auth.claims.masqueradeTargetTenantId;
+  const claimStillLive = (openSessions ?? []).some(
+    (row) =>
+      !closedIds.has(row.id) &&
+      liveMasqueradeSessionMatches(row, {
+        userId: auth.user.id,
+        tenantId: claimTenantId ?? '',
+        nowMs,
+      }),
+  );
+  if (claimStillLive) return;
 
   await clearMasqueradeAppMetadata(admin, auth.user.id);
 
