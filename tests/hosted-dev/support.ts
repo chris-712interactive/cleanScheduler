@@ -101,7 +101,7 @@ export async function expectDevBanner(page: Page): Promise<void> {
 
 export async function maskAndCapture(page: Page, info: TestInfo): Promise<void> {
   if (info.status === info.expectedStatus) return;
-  await page
+  const texts = await page
     .evaluate(() => {
       document.querySelectorAll('input, textarea').forEach((element) => {
         if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
@@ -111,21 +111,32 @@ export async function maskAndCapture(page: Page, info: TestInfo): Promise<void> 
       document.querySelectorAll('h1, h2').forEach((element) => {
         element.textContent = '[redacted heading]';
       });
+      const collected: string[] = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      const email = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-      const encodedEmail = /[A-Z0-9._%+-]+%40[A-Z0-9._%+-]{2,}/gi;
       let node = walker.nextNode();
       while (node) {
-        if (node.textContent) {
-          const next = node.textContent
-            .replace(email, '[redacted-email]')
-            .replace(encodedEmail, '[redacted-email]');
-          if (next !== node.textContent) node.textContent = next;
-        }
+        collected.push(node.textContent ?? '');
         node = walker.nextNode();
       }
+      return collected;
     })
-    .catch(() => undefined);
+    .catch(() => null);
+  if (texts) {
+    const redacted = texts.map((text) => redactPlaintextSecrets(text));
+    await page
+      .evaluate((next) => {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        let index = 0;
+        while (node) {
+          const replacement = next[index] ?? '';
+          if (node.textContent !== replacement) node.textContent = replacement;
+          index += 1;
+          node = walker.nextNode();
+        }
+      }, redacted)
+      .catch(() => undefined);
+  }
   const safeTitle = info.title.replace(/[^a-z0-9]+/gi, '-').slice(0, 60);
   await page
     .screenshot({

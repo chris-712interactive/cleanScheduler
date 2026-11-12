@@ -1,29 +1,8 @@
-const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-// `%40`, and the same at-sign after one or more extra encodings (`%2540`, …).
-const ENCODED_EMAIL = /[A-Z0-9._%+-]+%(?:25)*40[A-Z0-9._%+-]{2,}/gi;
-const SENSITIVE_QUERY_KEY_NAMES = [
-  'access_token',
-  'refresh_token',
-  'id_token',
-  'token',
-  'code',
-  'email',
-] as const;
-/**
- * Credential assignments in a query or fragment. Longer names come first.
- * WHATWG search params do not split on `;`. `URL.search` and the path still
- * keep `;token=` in the string that is logged, so that assignment is scrubbed
- * as text. This does not treat `;` as a second query grammar.
- */
-const SENSITIVE_PARAM = new RegExp(
-  `([#?&;](?:${SENSITIVE_QUERY_KEY_NAMES.join('|')})=)[^&#\\s"'<>]*`,
-  'gi',
-);
-const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g;
+const POSTGRES_URL = /\bpostgres(?:ql)?:\/\/[^\s"'<>]+/gi;
 const STRIPE = /\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]+\b/g;
 const WEBHOOK = /\bwhsec_[A-Za-z0-9]+\b/g;
 const SUPABASE_SECRET = /\bsb_secret_[A-Za-z0-9_-]+\b/g;
-const POSTGRES_URL = /\bpostgres(?:ql)?:\/\/[^\s"'<>]+/gi;
+const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g;
 const BEARER = /Bearer\s+[^\s"']+/gi;
 const AUTH_NAME_VALUE =
   /("name"\s*:\s*"authorization"\s*,\s*"value"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
@@ -31,6 +10,213 @@ const AUTH_VALUE_NAME =
   /("value"\s*:\s*")((?:\\.|[^"\\])*)("\s*,\s*"name"\s*:\s*"authorization")/gi;
 const AUTH_FIELD = /("authorization"\s*:\s*")((?:\\.|[^"\\])*)(")/gi;
 const AUTH_PLAIN = /(authorization\s*:\s*)(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\r\n]*)/gi;
+
+const DECODE_PASSES = 3;
+const MAX_KEY_CHARS = 240;
+const IMAGE_TLDS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp']);
+const BOUNDARY = new Set(['#', '?', '&', ';', '/', ' ', '\t', '\n', '\r', '"', "'", '<', '>']);
+const SENSITIVE_KEYS = new Set([
+  'accesstoken',
+  'refreshtoken',
+  'idtoken',
+  'providertoken',
+  'providerrefreshtoken',
+  'codeverifier',
+  'clientsecret',
+  'tokenhash',
+  'token',
+  'code',
+  'email',
+]);
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function decodeBounded(value: string, passes = DECODE_PASSES): string {
+  let current = value;
+  for (let pass = 0; pass < passes; pass += 1) {
+    const next = safeDecode(current);
+    if (next === current) break;
+    current = next;
+  }
+  return current;
+}
+
+function normalizedKey(raw: string): string {
+  return decodeBounded(raw).replace(/[_-]/g, '').toLowerCase();
+}
+
+function isSensitiveKey(raw: string): boolean {
+  return SENSITIVE_KEYS.has(normalizedKey(raw));
+}
+
+function isBoundary(ch: string | undefined): boolean {
+  return ch === undefined || BOUNDARY.has(ch);
+}
+
+function isLocalChar(ch: string): boolean {
+  return (
+    (ch >= 'A' && ch <= 'Z') ||
+    (ch >= 'a' && ch <= 'z') ||
+    (ch >= '0' && ch <= '9') ||
+    ch === '.' ||
+    ch === '_' ||
+    ch === '%' ||
+    ch === '+' ||
+    ch === '-'
+  );
+}
+
+function isDomainChar(ch: string): boolean {
+  return (
+    (ch >= 'A' && ch <= 'Z') ||
+    (ch >= 'a' && ch <= 'z') ||
+    (ch >= '0' && ch <= '9') ||
+    ch === '.' ||
+    ch === '-'
+  );
+}
+
+/** Length of `%40`, `%2540`, … at `at`. Bounded so a long `%25` run stays linear. */
+function encodedAtLength(input: string, at: number): number {
+  if (input[at] !== '%') return 0;
+  let index = at + 1;
+  let repeats = 0;
+  while (repeats < 6 && input.slice(index, index + 2).toLowerCase() === '25') {
+    index += 2;
+    repeats += 1;
+  }
+  if (input.slice(index, index + 2).toLowerCase() !== '40') return 0;
+  return index + 2 - at;
+}
+
+function readDomain(input: string, start: number): { end: number } | null {
+  let index = start;
+  while (index < input.length && isDomainChar(input[index] ?? '')) index += 1;
+  if (index === start) return null;
+  const domain = input.slice(start, index);
+  const dot = domain.lastIndexOf('.');
+  if (dot <= 0) return null;
+  const tld = domain.slice(dot + 1);
+  if (!/^[A-Za-z]{2,24}$/.test(tld) || IMAGE_TLDS.has(tld.toLowerCase())) return null;
+  if (!/[A-Za-z]/.test(domain.slice(0, dot))) return null;
+  return { end: index };
+}
+
+function redactEmails(input: string): string {
+  let out = '';
+  let cursor = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    const atLength =
+      input[index] === '@' ? 1 : input[index] === '%' ? encodedAtLength(input, index) : 0;
+    if (atLength === 0) continue;
+    let localStart = index;
+    while (localStart > 0 && isLocalChar(input[localStart - 1] ?? '')) localStart -= 1;
+    if (localStart === index) continue;
+    const domain = readDomain(input, index + atLength);
+    if (!domain) continue;
+    out += input.slice(cursor, localStart);
+    out += '[redacted-email]';
+    cursor = domain.end;
+    index = domain.end - 1;
+  }
+  out += input.slice(cursor);
+  return out;
+}
+
+function endOfValue(input: string, start: number): number {
+  if (start >= input.length) return start;
+  const quote = input[start];
+  if (quote === '"' || quote === "'") {
+    const close = input.indexOf(quote, start + 1);
+    return close === -1 ? input.length : close + 1;
+  }
+  let index = start;
+  while (index < input.length) {
+    const ch = input[index];
+    // `;` starts another assignment (`next=1;token=`). `?` ends a path
+    // assignment so `/cb;token=secret?ok=1` keeps the query.
+    if (ch === '&' || ch === '#' || ch === '?' || ch === ';' || ch === '<' || ch === '>') break;
+    index += 1;
+  }
+  return index;
+}
+
+function matchAssignment(
+  input: string,
+  start: number,
+): { valueStart: number; sensitive: boolean } | null {
+  if (start > 0 && !isBoundary(input[start - 1])) return null;
+  let index = start;
+  while (index < input.length && index - start < MAX_KEY_CHARS) {
+    const ch = input[index] ?? '';
+    if (ch === '=') {
+      return classify(input.slice(start, index), index + 1);
+    }
+    if (ch === '%') {
+      const encoded = input.slice(index, index + 3);
+      if (!/^%[0-9A-Fa-f]{2}$/.test(encoded)) return null;
+      if (safeDecode(encoded) === '=') return classify(input.slice(start, index), index + 3);
+      index += 3;
+      continue;
+    }
+    if (isBoundary(ch)) return null;
+    index += 1;
+  }
+  return null;
+}
+
+function classify(
+  rawKey: string,
+  valueStart: number,
+): { valueStart: number; sensitive: boolean } | null {
+  const key = decodeBounded(rawKey);
+  if (isSensitiveKey(key)) return { valueStart, sensitive: true };
+  if (/^[A-Za-z][A-Za-z0-9._~-]{0,60}$/.test(key)) return { valueStart, sensitive: false };
+  return null;
+}
+
+function scrubAssignments(input: string, depth: number): string {
+  if (depth > 3) return input;
+  let out = '';
+  let index = 0;
+  while (index < input.length) {
+    const hit = index === 0 || isBoundary(input[index - 1]) ? matchAssignment(input, index) : null;
+    if (!hit) {
+      out += input[index] ?? '';
+      index += 1;
+      continue;
+    }
+    const valueEnd = endOfValue(input, hit.valueStart);
+    const rawValue = input.slice(hit.valueStart, valueEnd);
+    if (hit.sensitive) {
+      out += input.slice(index, hit.valueStart);
+      out += '[redacted]';
+      index = valueEnd;
+      continue;
+    }
+    const quote = rawValue[0] === '"' || rawValue[0] === "'" ? rawValue[0] : '';
+    const inner =
+      quote && rawValue.endsWith(quote) && rawValue.length >= 2 ? rawValue.slice(1, -1) : rawValue;
+    const decoded = decodeBounded(inner);
+    const nested = scrubAssignments(decoded, depth + 1);
+    if (nested !== decoded) {
+      const encoded = encodeURIComponent(nested);
+      out += input.slice(index, hit.valueStart);
+      out += quote ? `${quote}${encoded}${quote}` : encoded;
+      index = valueEnd;
+      continue;
+    }
+    out += input.slice(index, valueEnd);
+    index = valueEnd;
+  }
+  return out;
+}
 
 export function redactText(input: string, secrets: readonly string[]): string {
   let output = input;
@@ -57,24 +243,20 @@ export function redactText(input: string, secrets: readonly string[]): string {
 
 /** Redact addresses and credential assignments in a heading or other short plain string. */
 export function redactPlaintextSecrets(input: string): string {
-  return input
-    .replace(SENSITIVE_PARAM, '$1[redacted]')
-    .replace(EMAIL, '[redacted-email]')
-    .replace(ENCODED_EMAIL, '[redacted-email]');
+  return redactEmails(scrubAssignments(input, 0));
 }
-
-const SENSITIVE_QUERY_KEYS = new Set<string>(SENSITIVE_QUERY_KEY_NAMES);
 
 /** Landing URLs logged by hosted-dev checks. Drops addresses and auth query or fragment values. */
 export function redactLandingUrl(raw: string): string {
+  const scrubbed = redactPlaintextSecrets(raw);
   let url: URL;
   try {
-    url = new URL(raw);
+    url = new URL(scrubbed);
   } catch {
     return '[unreadable url]';
   }
   for (const key of [...url.searchParams.keys()]) {
-    if (SENSITIVE_QUERY_KEYS.has(key.toLowerCase())) url.searchParams.set(key, '[redacted]');
+    if (isSensitiveKey(key)) url.searchParams.set(key, '[redacted]');
   }
   return redactPlaintextSecrets(`${url.origin}${url.pathname}${url.search}${url.hash}`);
 }

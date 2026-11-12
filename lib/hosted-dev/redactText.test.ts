@@ -115,6 +115,95 @@ describe('hosted dev artifact redaction', () => {
     );
     expect(pathToken).not.toContain('path-token');
     expect(pathToken).toContain(';token=[redacted]');
+    expect(pathToken).toContain('?ok=1');
+  });
+
+  it('scrubs a semicolon secret before URLSearchParams re-encodes it', () => {
+    const raw =
+      'https://admin.dev.cleanscheduler.com/cb?next=1;token=semicolon-secret&access_token=query-access&ok=1';
+    for (const redacted of [redactLandingUrl(raw), redactText(raw, [])]) {
+      expect(redacted).not.toContain('semicolon-secret');
+      expect(redacted).not.toContain('query-access');
+      expect(redacted).toContain('ok=1');
+      expect(redacted).toContain('access_token=[redacted]');
+    }
+  });
+
+  it('redacts encoded keys, encoded equals, and secrets nested in next', () => {
+    const cases = [
+      'https://admin.dev.cleanscheduler.com/cb?token%3Deq-secret&next=1',
+      'https://admin.dev.cleanscheduler.com/cb?next=1#acc%65ss_token=frag-secret',
+      'https://admin.dev.cleanscheduler.com/cb?next=1#%74oken=hash-secret',
+      'https://admin.dev.cleanscheduler.com/cb?%2574oken=double-secret&ok=1',
+      'https://admin.dev.cleanscheduler.com/sign-in?next=%2Fcb%3Ftoken%3Dnested-secret&ok=1',
+      'https://admin.dev.cleanscheduler.com/sign-in?next=%2Fcb%23access_token%3Dnested-hash&ok=1',
+    ];
+    for (const raw of cases) {
+      for (const redacted of [
+        redactText(raw, []),
+        redactLandingUrl(raw),
+        redactPlaintextSecrets(raw),
+      ]) {
+        expect(redacted, raw).not.toMatch(
+          /eq-secret|frag-secret|hash-secret|double-secret|nested-secret|nested-hash/,
+        );
+      }
+    }
+    expect(redactText(cases[0] ?? '', [])).toContain('next=1');
+    expect(redactLandingUrl(cases[3] ?? '')).toContain('ok=1');
+    expect(redactLandingUrl(cases[4] ?? '')).toContain('ok=1');
+    expect(redactLandingUrl(cases[5] ?? '')).toContain('ok=1');
+  });
+
+  it('redacts the extra credential names and unquoted or quoted token tails', () => {
+    const raw = [
+      'https://admin.dev.cleanscheduler.com/cb#provider_token=prov-token&provider_refresh_token=prov-refresh',
+      '?code_verifier=verifier-secret&client_secret=client-secret&token_hash=hash-secret',
+      '?idToken=camel-id&accessToken=camel-access',
+      'landed token=bare-secret next',
+      'https://admin.dev.cleanscheduler.com/cb?token="quoted-secret"&ok=1',
+      'https://admin.dev.cleanscheduler.com/cb?token=left right&next=keep#refresh_token=left right',
+    ].join('\n');
+    for (const redacted of [redactText(raw, []), redactPlaintextSecrets(raw)]) {
+      expect(redacted).not.toContain('prov-token');
+      expect(redacted).not.toContain('prov-refresh');
+      expect(redacted).not.toContain('verifier-secret');
+      expect(redacted).not.toContain('client-secret');
+      expect(redacted).not.toContain('hash-secret');
+      expect(redacted).not.toContain('camel-id');
+      expect(redacted).not.toContain('camel-access');
+      expect(redacted).not.toContain('bare-secret');
+      expect(redacted).not.toContain('quoted-secret');
+      expect(redacted).not.toContain('right');
+      expect(redacted).toContain('token=[redacted]');
+      expect(redacted).toContain('next=keep');
+    }
+  });
+
+  it('does not treat an image filename as an encoded address', () => {
+    const raw = 'saved img%2540x2.png beside jane%2540example.com';
+    const redacted = redactPlaintextSecrets(raw);
+    expect(redacted).toContain('img%2540x2.png');
+    expect(redacted).not.toContain('jane');
+    expect(redacted).toContain('[redacted-email]');
+  });
+
+  it('stays linear on a long percent run', () => {
+    const once = redactText('%25'.repeat(1000) + 'xx', []);
+    expect(once).toContain('%25');
+    const measure = (count: number) => {
+      const input = '%25'.repeat(count) + 'xx';
+      const started = performance.now();
+      const redacted = redactText(input, []);
+      return { elapsed: performance.now() - started, redacted, input };
+    };
+    measure(2000);
+    const small = measure(4000);
+    const large = measure(16000);
+    expect(small.redacted).toBe(small.input);
+    expect(large.redacted).toBe(large.input);
+    expect(large.elapsed).toBeLessThan(1000);
+    expect(large.elapsed).toBeLessThan(small.elapsed * 12 + 50);
   });
 });
 
