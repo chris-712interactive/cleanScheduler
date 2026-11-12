@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseQuoteWizardStructuredFromForm } from '@/lib/tenant/quoteStructuredFields';
+import {
+  inlinePropertyDeferringLocationFacts,
+  parseQuoteWizardStructuredFromForm,
+  quoteLocationFactPatch,
+} from '@/lib/tenant/quoteStructuredFields';
 
 describe('quote access notes', () => {
   it('keeps customer-visible access notes and does not store entry codes on the quote', () => {
@@ -16,6 +21,47 @@ describe('quote access notes', () => {
     expect(structured.customerNotes).toContain('Dogs in the laundry room');
     expect(structured.customerNotes).not.toContain('4412');
     expect(structured.customerNotes).not.toContain('1553');
+  });
+
+  it('keeps beds, baths, sqft, and site notes off the location until the quote RPC succeeds', () => {
+    expect(
+      inlinePropertyDeferringLocationFacts({
+        address_line1: '1 Main',
+        bedrooms: 3,
+        bathrooms: 2,
+        sqft: 1400,
+        site_notes: 'Side gate',
+        stories: 2,
+      }),
+    ).toEqual({ address_line1: '1 Main', stories: 2 });
+    expect(
+      quoteLocationFactPatch({
+        bedrooms: 3,
+        bathrooms: 2.5,
+        sqft: 1400,
+        stories: 2,
+        access_notes: '  Side gate  ',
+      }),
+    ).toEqual({
+      bedrooms: 3,
+      bathrooms: 2.5,
+      sqft: 1400,
+      stories: 2,
+      site_notes: 'Side gate',
+    });
+
+    const source = readFileSync('app/tenant/quotes/actions.ts', 'utf8');
+    const start = source.indexOf('export async function createTenantQuote');
+    const end = source.indexOf('export async function updateTenantQuote');
+    const body = source.slice(start, end);
+    const rpc = body.indexOf("rpc('tenant_quote_create_with_line_items'");
+    const rejected = body.indexOf('if (rpc.error)');
+    const sync = body.indexOf('syncPropertyFactsFromSnapshot');
+    expect(rpc).toBeGreaterThan(-1);
+    expect(rejected).toBeGreaterThan(rpc);
+    expect(sync).toBeGreaterThan(rejected);
+    expect(body).toContain('inlinePropertyDeferringLocationFacts');
+    expect(body.indexOf('inlinePropertyDeferringLocationFacts')).toBeLessThan(rpc);
   });
 
   it('uses the workspace default when the quote property type is omitted', () => {

@@ -23,8 +23,10 @@ import {
 } from '@/lib/tenant/createTenantCustomerInline';
 import { enrichParsedQuoteLines } from '@/lib/tenant/enrichQuoteLineItems';
 import {
+  inlinePropertyDeferringLocationFacts,
   parseCustomerPropertyKind,
   parseQuoteWizardStructuredFromForm,
+  quoteLocationFactPatch,
   type QuotePropertySnapshot,
 } from '@/lib/tenant/quoteStructuredFields';
 import type { CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
@@ -506,20 +508,7 @@ async function syncPropertyFactsFromSnapshot(
 ) {
   if (!propertyId) return;
 
-  const patch: {
-    bedrooms?: number;
-    bathrooms?: number;
-    sqft?: number;
-    stories?: number;
-    site_notes?: string;
-  } = {};
-
-  if (snapshot.bedrooms != null) patch.bedrooms = snapshot.bedrooms;
-  if (snapshot.bathrooms != null) patch.bathrooms = snapshot.bathrooms;
-  if (snapshot.sqft != null) patch.sqft = snapshot.sqft;
-  if (snapshot.stories != null) patch.stories = snapshot.stories;
-  if (snapshot.access_notes?.trim()) patch.site_notes = snapshot.access_notes.trim();
-
+  const patch = quoteLocationFactPatch(snapshot);
   if (Object.keys(patch).length === 0) return;
 
   await admin
@@ -596,7 +585,7 @@ export async function createTenantQuote(
       lastName: inlineLastName,
       email: inlineEmail,
       phone: inlinePhone,
-      property: {
+      property: inlinePropertyDeferringLocationFacts({
         address_line1: inlinePropertyAddress || undefined,
         city: inlinePropertyCity || undefined,
         state: inlinePropertyState || undefined,
@@ -607,7 +596,7 @@ export async function createTenantQuote(
         bathrooms: structured.propertySnapshot.bathrooms ?? undefined,
         sqft: structured.propertySnapshot.sqft ?? undefined,
         stories: structured.propertySnapshot.stories ?? undefined,
-      },
+      }),
     });
     if (!created.ok) {
       return { error: created.error };
@@ -650,7 +639,7 @@ export async function createTenantQuote(
         admin,
         tenantId: membership.tenantId,
         customerId,
-        property: {
+        property: inlinePropertyDeferringLocationFacts({
           address_line1: inlinePropertyAddress || undefined,
           city: inlinePropertyCity || undefined,
           state: inlinePropertyState || undefined,
@@ -661,7 +650,7 @@ export async function createTenantQuote(
           bathrooms: structured.propertySnapshot.bathrooms ?? undefined,
           sqft: structured.propertySnapshot.sqft ?? undefined,
           stories: structured.propertySnapshot.stories ?? undefined,
-        },
+        }),
       });
       if (!createdProperty.ok) {
         return { error: createdProperty.error };
@@ -768,13 +757,6 @@ export async function createTenantQuote(
   const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
   if (!crewSize.ok) return { error: crewSize.error };
 
-  await syncPropertyFactsFromSnapshot(
-    admin,
-    membership.tenantId,
-    propertyId,
-    structured.propertySnapshot,
-  );
-
   if (propertyId && formData.get('save_access_codes') === '1') {
     const savedCodes = await savePropertyAccessCodes(
       admin,
@@ -816,6 +798,13 @@ export async function createTenantQuote(
         'We could not save this quote. If you recently updated the app, apply pending database migrations and try again.',
     };
   }
+
+  await syncPropertyFactsFromSnapshot(
+    admin,
+    membership.tenantId,
+    propertyId,
+    structured.propertySnapshot,
+  );
 
   const verify = await admin
     .from('tenant_quotes')

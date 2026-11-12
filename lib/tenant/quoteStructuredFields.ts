@@ -71,6 +71,36 @@ export function parseQuotePropertySnapshot(raw: unknown): QuotePropertySnapshot 
   };
 }
 
+export type QuoteLocationFactPatch = {
+  bedrooms?: number;
+  bathrooms?: number;
+  sqft?: number;
+  stories?: number;
+  site_notes?: string;
+};
+
+/** Beds, baths, sqft, and site notes are copied onto a location only after the quote RPC succeeds. */
+const LOCATION_FACTS_AFTER_RPC = ['bedrooms', 'bathrooms', 'sqft', 'site_notes'] as const;
+
+export function quoteLocationFactPatch(snapshot: QuotePropertySnapshot): QuoteLocationFactPatch {
+  const patch: QuoteLocationFactPatch = {};
+  if (snapshot.bedrooms != null) patch.bedrooms = snapshot.bedrooms;
+  if (snapshot.bathrooms != null) patch.bathrooms = snapshot.bathrooms;
+  if (snapshot.sqft != null) patch.sqft = snapshot.sqft;
+  if (snapshot.stories != null) patch.stories = snapshot.stories;
+  if (snapshot.access_notes?.trim()) patch.site_notes = snapshot.access_notes.trim();
+  return patch;
+}
+
+/** Drop location facts that must wait for the quote RPC. Address and stories stay. */
+export function inlinePropertyDeferringLocationFacts<T extends object>(property: T): T {
+  const next = { ...property } as T & Record<string, unknown>;
+  for (const key of LOCATION_FACTS_AFTER_RPC) {
+    delete next[key];
+  }
+  return next;
+}
+
 export function parseOptionalSmallInt(raw: string): number | null {
   const t = raw.trim();
   if (!t) return null;

@@ -19,6 +19,7 @@ import {
   sqftBidAllowedForProperty,
   type TenantServiceSegment,
 } from '@/lib/tenant/serviceSegment';
+import { customerLocationEditHref } from '@/lib/tenant/customerLocationHref';
 import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
 import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
@@ -837,7 +838,9 @@ export function QuoteCreateWizard({
                       selectedLocation.storedLabel ?? '',
                       kindLock.disallowedKind,
                     )}{' '}
-                    <Link href={`/customers/${customerId}`}>Edit this location</Link>
+                    <Link href={customerLocationEditHref(customerId, selectedLocation.id)}>
+                      Edit this location
+                    </Link>
                   </p>
                 ) : null}
                 <label className={styles.label} htmlFor="quote_property_type_select">

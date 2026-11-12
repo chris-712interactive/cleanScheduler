@@ -209,7 +209,12 @@ export async function redeemMasqueradeHandoff(
   const marked = await deps.markUsed(row.id, new Date(input.nowMs).toISOString());
   if (!marked) return { ok: false, reason: 'reused' };
 
-  const established = await deps.establishSession(email);
+  let established = false;
+  try {
+    established = await deps.establishSession(email);
+  } catch {
+    established = false;
+  }
   if (!established) {
     try {
       await deps.releaseUsed(row.id);

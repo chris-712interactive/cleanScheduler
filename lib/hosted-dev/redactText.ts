@@ -14,7 +14,9 @@ const AUTH_PLAIN = /(authorization\s*:\s*)(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'
 const DECODE_PASSES = 3;
 const MAX_KEY_CHARS = 240;
 const IMAGE_TLDS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp']);
-const BOUNDARY = new Set(['#', '?', '&', ';', '/', ' ', '\t', '\n', '\r', '"', "'", '<', '>']);
+const BOUNDARY = new Set(['#', '?', '&', ';', '/', ' ', '\t', '\n', '\r', '"', "'", '<', '>', '+']);
+/** Four nested `next=` wrappers plus the inner secret still have to scrub. */
+const MAX_ASSIGNMENT_DEPTH = 8;
 const SENSITIVE_KEYS = new Set([
   'accesstoken',
   'refreshtoken',
@@ -54,7 +56,8 @@ function normalizedKey(raw: string): string {
 
 function isSensitiveKey(raw: string): boolean {
   const decoded = decodeBounded(raw);
-  if (/^sb-[a-z0-9]+-auth-token$/i.test(decoded)) return true;
+  // Whole session cookie, chunked copies (`sb-<ref>-auth-token.0`), and the PKCE verifier.
+  if (/^sb-[a-z0-9]+-auth-token(?:\.\d+|-code-verifier)?$/i.test(decoded)) return true;
   return SENSITIVE_KEYS.has(normalizedKey(decoded));
 }
 
@@ -98,17 +101,24 @@ function encodedAtLength(input: string, at: number): number {
   return index + 2 - at;
 }
 
+/** Length of a real email domain. An image suffix (`user@gmail.com.png`) is left outside it. */
+function emailDomainLength(domain: string): number | null {
+  const dot = domain.lastIndexOf('.');
+  if (dot <= 0) return null;
+  const tld = domain.slice(dot + 1);
+  if (!/^[A-Za-z]{2,24}$/.test(tld)) return null;
+  if (IMAGE_TLDS.has(tld.toLowerCase())) return emailDomainLength(domain.slice(0, dot));
+  if (!/[A-Za-z]/.test(domain.slice(0, dot))) return null;
+  return domain.length;
+}
+
 function readDomain(input: string, start: number): { end: number } | null {
   let index = start;
   while (index < input.length && isDomainChar(input[index] ?? '')) index += 1;
   if (index === start) return null;
-  const domain = input.slice(start, index);
-  const dot = domain.lastIndexOf('.');
-  if (dot <= 0) return null;
-  const tld = domain.slice(dot + 1);
-  if (!/^[A-Za-z]{2,24}$/.test(tld) || IMAGE_TLDS.has(tld.toLowerCase())) return null;
-  if (!/[A-Za-z]/.test(domain.slice(0, dot))) return null;
-  return { end: index };
+  const accepted = emailDomainLength(input.slice(start, index));
+  if (accepted == null) return null;
+  return { end: start + accepted };
 }
 
 function redactEmails(input: string): string {
@@ -142,7 +152,12 @@ function pathSemicolonAssignment(input: string, keyStart: number): boolean {
   return true;
 }
 
-function endOfValue(input: string, start: number, stopAtQuestion: boolean): number {
+function endOfValue(
+  input: string,
+  start: number,
+  stopAtQuestion: boolean,
+  includeSpaces: boolean,
+): number {
   if (start >= input.length) return start;
   const quote = input[start];
   if (quote === '"' || quote === "'") {
@@ -157,8 +172,6 @@ function endOfValue(input: string, start: number, stopAtQuestion: boolean): numb
       ch === '#' ||
       ch === '<' ||
       ch === '>' ||
-      ch === ' ' ||
-      ch === '\t' ||
       ch === '\n' ||
       ch === '\r' ||
       ch === '"' ||
@@ -166,6 +179,7 @@ function endOfValue(input: string, start: number, stopAtQuestion: boolean): numb
     ) {
       break;
     }
+    if ((ch === ' ' || ch === '\t') && !includeSpaces) break;
     if (stopAtQuestion && ch === '?') break;
     index += 1;
   }
@@ -211,7 +225,7 @@ function classify(
 }
 
 function scrubAssignments(input: string, depth: number): string {
-  if (depth > 3) return input;
+  if (depth > MAX_ASSIGNMENT_DEPTH) return input;
   let out = '';
   let index = 0;
   while (index < input.length) {
@@ -221,18 +235,26 @@ function scrubAssignments(input: string, depth: number): string {
       index += 1;
       continue;
     }
-    const valueEnd = endOfValue(input, hit.valueStart, pathSemicolonAssignment(input, index));
+    const stopAtQuestion = pathSemicolonAssignment(input, index);
+    const tightEnd = endOfValue(input, hit.valueStart, stopAtQuestion, false);
+    const key = input.slice(index, hit.valueStart).replace(/=$/u, '').replace(/%3d$/i, '');
+    const tightRaw = input.slice(hit.valueStart, tightEnd);
+    const tightQuote = tightRaw[0] === '"' || tightRaw[0] === "'" ? tightRaw[0] : '';
+    const tightInner =
+      tightQuote && tightRaw.endsWith(tightQuote) && tightRaw.length >= 2
+        ? tightRaw.slice(1, -1)
+        : tightRaw;
+    if (hit.sensitive && isHttpStatusValue(key, tightInner)) {
+      out += input.slice(index, tightEnd);
+      index = tightEnd;
+      continue;
+    }
+    const valueEnd = endOfValue(input, hit.valueStart, stopAtQuestion, hit.sensitive);
     const rawValue = input.slice(hit.valueStart, valueEnd);
     const quote = rawValue[0] === '"' || rawValue[0] === "'" ? rawValue[0] : '';
     const inner =
       quote && rawValue.endsWith(quote) && rawValue.length >= 2 ? rawValue.slice(1, -1) : rawValue;
     if (hit.sensitive) {
-      const key = input.slice(index, hit.valueStart).replace(/=$/u, '').replace(/%3d$/i, '');
-      if (isHttpStatusValue(key, inner)) {
-        out += input.slice(index, valueEnd);
-        index = valueEnd;
-        continue;
-      }
       out += input.slice(index, hit.valueStart);
       out += '[redacted]';
       index = valueEnd;

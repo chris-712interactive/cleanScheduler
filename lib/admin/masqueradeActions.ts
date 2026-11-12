@@ -98,7 +98,13 @@ export async function startMasqueradeAction(formData: FormData): Promise<void> {
   redirect(masqueradeHandoffRedirect(getPublicOrigin(tenantSlug), handoffToken));
 }
 
-export async function endMasqueradeAction(): Promise<void> {
+export async function endMasqueradeAction(
+  prev: { error?: string },
+  formData: FormData,
+): Promise<{ error?: string }> {
+  // useActionState always passes the previous state and the form payload.
+  void prev;
+  void formData;
   const admin = createAdminClient();
   const auth = await requireAuth('/');
 
@@ -109,11 +115,14 @@ export async function endMasqueradeAction(): Promise<void> {
 
   const targetTenantId = auth.claims.masqueradeTargetTenantId;
 
-  await admin
+  const { error: closeErr } = await admin
     .from('masquerade_sessions')
     .update({ ended_at: new Date().toISOString() })
     .eq('admin_user_id', auth.user.id)
     .is('ended_at', null);
+  if (closeErr) {
+    return { error: 'Support mode could not be closed. Try again.' };
+  }
 
   await admin.from('audit_log_entries').insert({
     actor_user_id: auth.user.id,
