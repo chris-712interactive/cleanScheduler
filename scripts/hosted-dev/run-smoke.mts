@@ -6,6 +6,7 @@ assertHttpsDevUrl(origin);
 process.env.HOSTED_DEV_BASE_URL = origin;
 delete process.env.HOSTED_DEV_ISOLATED;
 delete process.env.HOSTED_DEV_REQUIRE_IDENTITY;
+delete process.env.HOSTED_DEV_MUTATIONS_CONFIRMED;
 
 function run(command: string, args: string[]): Promise<number> {
   return new Promise((resolve, reject) => {

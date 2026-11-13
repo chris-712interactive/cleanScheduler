@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { buildWebhookSignatureHeader } from '@/lib/integrations/integrationSecrets';
+import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
   endpointSubscribesToEvent,
   type TenantWebhookEventType,
@@ -13,6 +14,31 @@ export function truncateWebhookResponsePreview(value: string): string {
   const trimmed = value.trim();
   if (trimmed.length <= MAX_RESPONSE_PREVIEW) return trimmed;
   return `${trimmed.slice(0, MAX_RESPONSE_PREVIEW)}…`;
+}
+
+/**
+ * POST a tenant webhook. Suppression returns a local 204 and does not log the URL,
+ * body, or signature.
+ */
+export async function postTenantWebhook(
+  url: string,
+  body: string,
+  signature: string,
+): Promise<Response> {
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('webhook', 'deliver');
+    return new Response(null, { status: 204 });
+  }
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'cleanScheduler-Webhooks/1.0',
+      'X-CleanScheduler-Signature': signature,
+    },
+    body,
+    signal: AbortSignal.timeout(15_000),
+  });
 }
 
 function retryDelayMs(attemptCount: number): number {
@@ -134,16 +160,7 @@ export async function deliverTenantWebhookById(
   const signature = buildWebhookSignatureHeader(endpoint.signing_secret, body);
 
   try {
-    const response = await fetch(endpoint.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'cleanScheduler-Webhooks/1.0',
-        'X-CleanScheduler-Signature': signature,
-      },
-      body,
-      signal: AbortSignal.timeout(15_000),
-    });
+    const response = await postTenantWebhook(endpoint.url, body, signature);
 
     const responseText = truncateWebhookResponsePreview(await response.text());
 

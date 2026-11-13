@@ -12,6 +12,7 @@ import {
   retrieveConnectAccount,
 } from '@/lib/billing/stripeConnectServer';
 import { STRIPE_CONNECT_REQUIRES_PAID_SUBSCRIPTION_MESSAGE } from '@/lib/billing/requireConnect';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import { canAccessStripeConnect } from '@/lib/billing/tenantSubscriptionAccess';
 import {
   CONNECT_CHARGES_FROZEN_MESSAGE,
@@ -106,6 +107,10 @@ export async function refreshStripeConnectAccountAction(formData: FormData): Pro
 
   if (!row?.stripe_account_id) {
     redirect(`${paymentSetupPath()}?error=${encodeURIComponent('No Stripe account on file.')}`);
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(`${paymentSetupPath()}?connect=suppressed`);
   }
 
   const account = await retrieveConnectAccount(row.stripe_account_id);

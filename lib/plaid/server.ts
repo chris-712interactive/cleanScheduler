@@ -1,11 +1,14 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 import { serverEnv } from '@/lib/env';
+import { suppressedPlaidClient } from '@/lib/outbound/plaidSuppressed';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import { getPlaidRuntimeEnv } from '@/lib/plaid/plaidEnv';
 
 let plaidClient: PlaidApi | null = null;
 let plaidClientEnv: ReturnType<typeof getPlaidRuntimeEnv> | null = null;
 
 export function isPlaidConfigured(): boolean {
+  if (isOutboundSuppressed()) return true;
   return Boolean(
     serverEnv.PLAID_CLIENT_ID?.trim() && serverEnv.PLAID_SECRET?.trim() && serverEnv.PLAID_ENV,
   );
@@ -23,6 +26,7 @@ function plaidBasePathForEnv(envName: ReturnType<typeof getPlaidRuntimeEnv>): st
 }
 
 export function getPlaidClient(): PlaidApi {
+  if (isOutboundSuppressed()) return suppressedPlaidClient();
   if (!isPlaidConfigured()) {
     throw new Error('Plaid is not configured. Set PLAID_CLIENT_ID, PLAID_SECRET, and PLAID_ENV.');
   }

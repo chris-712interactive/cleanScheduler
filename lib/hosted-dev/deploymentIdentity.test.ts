@@ -18,6 +18,7 @@ const devIdentity = {
   supabaseHost: 'devproject.supabase.co',
   stripePublishableMode: 'test' as const,
   plaidEnv: 'sandbox',
+  outboundSuppressed: false,
 };
 
 describe('deployment identity', () => {
@@ -44,6 +45,7 @@ describe('deployment identity', () => {
       VERCEL_DEPLOYMENT_ID: 'dpl_123',
     });
     expect(identity.stripePublishableMode).toBe('test');
+    expect(identity.outboundSuppressed).toBe(false);
     expect(identity.supabaseHost).toBe('devproject.supabase.co');
     expect(JSON.stringify(identity)).not.toContain('super-secret-value');
     expect(JSON.stringify(identity)).not.toContain('sk_test_abc');
@@ -76,6 +78,29 @@ describe('deployment identity', () => {
         body: { ...devIdentity, vercelEnv: 'production', targetEnv: 'dev' },
       }),
     ).toMatchObject({ reason: expect.stringMatching(/production/) });
+    expect(
+      decideIdentity({
+        httpStatus: 200,
+        body: { ...devIdentity, outboundSuppressed: true },
+      }).status,
+    ).toBe('ok');
+    expect(
+      decideIdentity({
+        httpStatus: 200,
+        body: { ...devIdentity, outboundSuppressed: '1' },
+      }),
+    ).toMatchObject({ status: 'ok', identity: { outboundSuppressed: false } });
+    expect(
+      decideIdentity({
+        httpStatus: 200,
+        body: {
+          ...devIdentity,
+          appEnv: 'dev',
+          appDomain: 'cleanscheduler.com',
+          outboundSuppressed: true,
+        },
+      }),
+    ).toMatchObject({ reason: expect.stringMatching(/production host|not dev/) });
     expect(
       decideIdentity({ httpStatus: 200, body: { ...devIdentity, gitRef: null } }),
     ).toMatchObject({ reason: expect.stringMatching(/missing/) });

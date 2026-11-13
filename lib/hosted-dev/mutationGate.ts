@@ -1,17 +1,17 @@
-export type MutationGate = {
-  status: 'blocked';
-  reason: string;
-};
+export type MutationGate = { status: 'blocked'; reason: string } | { status: 'open' };
 
 /**
- * Writes, charges, refunds, bank links, sends, and cron batches stay blocked.
- * There is no dev-only switch that suppresses Resend, sent.dm, Stripe, and Plaid
- * together, so a green mutation run would be a false pass.
+ * Writes, charges, refunds, bank links, sends, and cron batches stay blocked
+ * until the deployment itself reports `outboundSuppressed: true`.
+ * A local env var on the test runner is not enough.
  */
-export function mutationGate(): MutationGate {
+export function mutationGate(input: { outboundSuppressed: boolean }): MutationGate {
+  if (input.outboundSuppressed === true) {
+    return { status: 'open' };
+  }
   return {
     status: 'blocked',
     reason:
-      'No dev-only outbound suppression switch exists for email, SMS, Stripe, and Plaid. Recurring writes, booking submission, sandbox charges, refunds, bank linking, and cron batches are blocked.',
+      'Deployment has not confirmed OUTBOUND_SUPPRESSED. Recurring writes, booking submission, sandbox charges, refunds, bank linking, sends, and cron batches stay blocked.',
   };
 }

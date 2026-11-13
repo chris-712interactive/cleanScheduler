@@ -60,6 +60,59 @@ describe('hosted dev report', () => {
     expect(report.sections.find((section) => section.id.startsWith('mutations'))).toMatchObject({
       status: 'blocked',
     });
+    expect(report.blockedNotPassed.some((section) => section.status === 'blocked')).toBe(true);
+  });
+
+  it('passes mutation coverage only when the deployment confirmed suppression and the checks ran', () => {
+    const passed = {
+      title: 'mutation: deployment identity confirms outbound suppression',
+      ok: true,
+      tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+    };
+    const report = buildHostedDevReport({
+      target: 'https://dev.cleanscheduler.com',
+      env: {
+        HOSTED_DEV_BOOKING_URL: env.HOSTED_DEV_BOOKING_URL,
+        QA_DEV_DATABASE_URL: env.QA_DEV_DATABASE_URL,
+        HOSTED_DEV_MUTATIONS: '1',
+      },
+      identityNote: 'ok sha=abc',
+      outboundSuppressed: true,
+      playwright: { suites: [{ specs: [passed] }] },
+    });
+    expect(report.sections.find((section) => section.id.startsWith('mutations'))).toMatchObject({
+      status: 'pass',
+    });
+    expect(report.overall).toBe('pass');
+    expect(report.blockedNotPassed.some((section) => section.id.startsWith('mutations'))).toBe(
+      false,
+    );
+  });
+
+  it('does not treat a local mutation request as a pass when suppression is off', () => {
+    const report = buildHostedDevReport({
+      target: 'https://dev.cleanscheduler.com',
+      env: { ...env, HOSTED_DEV_MUTATIONS: '1' },
+      identityNote: 'ok sha=abc',
+      outboundSuppressed: false,
+      playwright: {
+        suites: [
+          {
+            specs: [
+              {
+                title: 'mutation: deployment identity confirms outbound suppression',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(report.overall).toBe('fail');
+    expect(report.sections.find((section) => section.id.startsWith('mutations'))).toMatchObject({
+      status: 'blocked',
+    });
   });
 
   it('keeps authenticated and RLS rows when setup produces no Playwright file', () => {

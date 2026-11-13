@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import { getStripe } from '@/lib/stripe/server';
 import { parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import {
@@ -99,6 +100,8 @@ export async function syncTenantFromStripeSubscription(
   subscription: Stripe.Subscription,
   hints?: { tenantId?: string | null; stripeCustomerId?: string | null },
 ): Promise<boolean> {
+  if (subscription.id.startsWith('suppressed_')) return false;
+
   const tenantId = await resolveTenantIdForSubscription(admin, subscription, hints);
   if (!tenantId) {
     console.error(
@@ -237,6 +240,9 @@ export async function syncTenantPlatformBillingFromStripe(
   admin: Admin,
   tenantId: string,
 ): Promise<{ synced: boolean; reason?: string }> {
+  if (isOutboundSuppressed()) {
+    return { synced: false, reason: 'Outbound Stripe calls are suppressed.' };
+  }
   const stripe = getStripe();
   if (!stripe) {
     return { synced: false, reason: 'Stripe is not configured.' };

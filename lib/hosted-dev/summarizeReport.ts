@@ -127,25 +127,72 @@ function missingIsolatedRows(
     }));
 }
 
+const MUTATION_TEST_PREFIX = 'mutation:';
+
+function mutationSpecs(playwright: { suites?: PwSuite[] } | null): ReportSection[] {
+  return sectionsFromPlaywright(playwright).filter(
+    (section) => section.id.startsWith(MUTATION_TEST_PREFIX) || section.id === MUTATION_SPEC,
+  );
+}
+
+function mutationSection(input: {
+  env: Record<string, string | undefined>;
+  playwright: { suites?: PwSuite[] } | null;
+  outboundSuppressed: boolean;
+}): ReportSection {
+  const confirmed = input.outboundSuppressed === true && input.env.HOSTED_DEV_MUTATIONS === '1';
+  if (!confirmed) {
+    const gate = mutationGate({ outboundSuppressed: false });
+    return {
+      id: MUTATION_ROW,
+      status: 'blocked',
+      detail: gate.status === 'blocked' ? gate.reason : 'Outbound suppression is not confirmed.',
+    };
+  }
+  const specs = mutationSpecs(input.playwright).filter((section) => section.id !== MUTATION_SPEC);
+  if (specs.length === 0) {
+    return {
+      id: MUTATION_ROW,
+      status: 'fail',
+      detail: 'Suppression is confirmed but no mutation tests executed. Not a pass.',
+    };
+  }
+  const blocked = specs.find((section) => section.status === 'blocked');
+  if (blocked) {
+    return { id: MUTATION_ROW, status: 'blocked', detail: blocked.detail };
+  }
+  const failed = specs.find((section) => section.status !== 'pass');
+  if (failed) {
+    return { id: MUTATION_ROW, status: 'fail', detail: failed.detail };
+  }
+  return {
+    id: MUTATION_ROW,
+    status: 'pass',
+    detail:
+      'Deployment confirmed outbound suppression. QA-tenant mutation checks ran. Blocked items were not marked passed.',
+  };
+}
+
 export function buildHostedDevReport(input: {
   target: string;
   playwright: { suites?: PwSuite[] } | null;
   env: Record<string, string | undefined>;
   identityNote: string;
+  outboundSuppressed?: boolean;
 }): HostedDevReport {
   const executed = sectionsFromPlaywright(input.playwright).filter(
-    (section) => section.id !== MUTATION_SPEC,
+    (section) => section.id !== MUTATION_SPEC && !section.id.startsWith(MUTATION_TEST_PREFIX),
   );
   const identity: ReportSection = {
     id: 'deployment identity',
     status: input.identityNote.startsWith('ok') ? 'pass' : 'fail',
     detail: input.identityNote,
   };
-  const mutations: ReportSection = {
-    id: MUTATION_ROW,
-    status: 'blocked',
-    detail: mutationGate().reason,
-  };
+  const mutations = mutationSection({
+    env: input.env,
+    playwright: input.playwright,
+    outboundSuppressed: input.outboundSuppressed === true,
+  });
   const gaps = missingIsolatedRows(executed, input.env);
   const sections: ReportSection[] = [
     identity,
@@ -155,11 +202,15 @@ export function buildHostedDevReport(input: {
     mutations,
   ];
   const blockedNotPassed = sections.filter((section) => section.status !== 'pass');
-  const mutationsRequested = input.env.HOSTED_DEV_MUTATIONS === '1';
+  const mutationsRequestedWhileBlocked =
+    input.env.HOSTED_DEV_MUTATIONS === '1' && mutations.status === 'blocked';
   const executedProblem = executed.some((section) => section.status !== 'pass');
   const failed = sections.some((section) => section.status === 'fail');
   return {
-    overall: executedProblem || failed || gaps.length > 0 || mutationsRequested ? 'fail' : 'pass',
+    overall:
+      executedProblem || failed || gaps.length > 0 || mutationsRequestedWhileBlocked
+        ? 'fail'
+        : 'pass',
     target: input.target,
     sections,
     blockedNotPassed,

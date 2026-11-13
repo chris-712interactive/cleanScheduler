@@ -5,6 +5,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { estimateSmsSegmentCount, truncateSmsBodyPreview } from '@/lib/sms/estimateSmsSegments';
 import { normalizePhoneToE164 } from '@/lib/sms/normalizePhoneNumber';
 import { resolveMessagingChannels, type MessagingChannel } from '@/lib/sms/sentMessagingChannels';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
   getSentDmClient,
   isSentDmConfigured,
@@ -60,19 +61,27 @@ export async function sendTransactionalSms(params: {
     return { ok: false, error: smsGateErrorMessage(error) ?? 'SMS limit reached.' };
   }
 
-  const template = buildSentTemplateRequest(params.payload);
   const sandbox = shouldUseSentDmSandbox();
 
   try {
     const client = getSentDmClient();
     const idempotencyKey = params.idempotencyKey?.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 255);
-    const response = await client.messages.send({
-      to: [to],
-      template,
-      channel: channels,
-      sandbox,
-      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
-    });
+    const response = await client.messages.send(
+      isOutboundSuppressed()
+        ? {
+            to: [],
+            template: { id: 'suppressed', parameters: {} },
+            channel: channels,
+            sandbox,
+          }
+        : {
+            to: [to],
+            template: buildSentTemplateRequest(params.payload),
+            channel: channels,
+            sandbox,
+            ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+          },
+    );
 
     if (!response.success) {
       const errMsg = response.error?.message ?? response.error?.code ?? 'sent.dm send failed.';
