@@ -26,8 +26,9 @@ import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDraf
 import {
   claimQuoteSubmit,
   clearQuoteCreateIdempotencyKey,
-  quoteCreateIdempotencyKeyForVisit,
-  readQuoteCreateNavigationType,
+  markQuoteCreateIdempotencySubmitted,
+  quoteCreateWarningKeepsIdempotencyKey,
+  resolveQuoteCreateIdempotencyKey,
 } from '@/lib/tenant/quoteCreateIdempotency';
 import { quoteSaveNotice } from '@/lib/tenant/quoteStructuredFields';
 import { createTenantQuote, type QuoteFormState } from './actions';
@@ -110,9 +111,8 @@ export function QuoteCreateWizard({
 
   useEffect(() => {
     setIdempotencyKey(
-      quoteCreateIdempotencyKeyForVisit({
+      resolveQuoteCreateIdempotencyKey({
         storage: window.sessionStorage,
-        navigationType: readQuoteCreateNavigationType(),
         createId: () => crypto.randomUUID(),
       }),
     );
@@ -126,7 +126,9 @@ export function QuoteCreateWizard({
 
   useEffect(() => {
     if (!state.quoteId) return;
-    clearQuoteCreateIdempotencyKey(window.sessionStorage);
+    if (!quoteCreateWarningKeepsIdempotencyKey(state.warning)) {
+      clearQuoteCreateIdempotencyKey(window.sessionStorage);
+    }
     if (navigatedToQuoteRef.current) return;
     navigatedToQuoteRef.current = true;
     const notice = state.warning ? `?notice=${encodeURIComponent(state.warning)}` : '';
@@ -488,6 +490,7 @@ export function QuoteCreateWizard({
       return;
     }
     if (!claimQuoteSubmit(submitLock.current)) return;
+    markQuoteCreateIdempotencySubmitted(window.sessionStorage, window.location.pathname);
     setStepError(null);
     saveIntentRef.current = intent;
     setPendingIntent(intent);

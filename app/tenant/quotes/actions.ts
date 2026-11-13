@@ -55,11 +55,16 @@ import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import {
-  failedFollowUpKeys,
+  FOLLOW_UP_KEYS,
+  followUpWriteAllowed,
   hasPendingFollowUp,
   initialFollowUps,
+  isStalePending,
+  readFollowUpRecord,
   readFollowUps,
+  retryableFollowUpSteps,
   type FollowUpState,
+  type QuoteCreateFollowUpRecord,
   type QuoteCreateFollowUps,
 } from '@/lib/tenant/quoteCreateIdempotency';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
@@ -644,34 +649,6 @@ async function channelResult(run: () => Promise<{ ok: boolean }>): Promise<Follo
   }
 }
 
-async function deliverSentQuote(
-  admin: QuoteAdmin,
-  input: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
-  run: { email: boolean; sms: boolean; webhook: boolean },
-): Promise<Pick<QuoteCreateFollowUps, 'email' | 'sms' | 'webhook'>> {
-  const email = run.email
-    ? await channelResult(() => sendQuoteNotificationEmail(admin, 'quote_sent', input))
-    : 'skipped';
-  const sms = run.sms
-    ? await channelResult(() => sendQuoteNotificationSms(admin, 'quote_sent', input))
-    : 'skipped';
-  const webhook = run.webhook
-    ? await channelResult(() =>
-        emitQuoteWebhookEvent(admin, 'quote.sent', {
-          tenantId: input.tenantId,
-          quoteId: input.quoteId,
-          quoteTitle: input.quoteTitle,
-          customerId: input.customerId,
-          status: 'sent',
-        }),
-      )
-    : 'skipped';
-  if (email === 'failed' || sms === 'failed' || webhook === 'failed') {
-    console.error('[createTenantQuote] customer notification was not sent');
-  }
-  return { email, sms, webhook };
-}
-
 function formStateForQuote(quoteId: string, followUps: QuoteCreateFollowUps): QuoteFormState {
   const notices: Array<string | undefined> = [];
   if (followUps.locationFacts === 'failed') notices.push(LOCATION_FACT_NOTICE);
@@ -698,7 +675,7 @@ async function writeCreateRequest(
   admin: QuoteAdmin,
   tenantId: string,
   idempotencyKey: string,
-  patch: { quoteId?: string; followUps: QuoteCreateFollowUps },
+  patch: { quoteId?: string; followUps: QuoteCreateFollowUpRecord | QuoteCreateFollowUps },
 ) {
   const { error } = await admin
     .from('tenant_quote_create_requests')
@@ -709,6 +686,149 @@ async function writeCreateRequest(
     .eq('tenant_id', tenantId)
     .eq('idempotency_key', idempotencyKey);
   if (error) console.error('[createTenantQuote] idempotency state was not stored');
+}
+
+function stampOwnedFollowUps(
+  followUps: QuoteCreateFollowUps,
+  ownerToken: string,
+  claimedAt: string,
+): QuoteCreateFollowUpRecord {
+  const record = readFollowUpRecord(followUps);
+  for (const step of FOLLOW_UP_KEYS) {
+    if (record[step] !== 'pending') continue;
+    record.claimedAt[step] = claimedAt;
+    record.claimToken[step] = ownerToken;
+  }
+  return record;
+}
+
+async function loadFollowUpRow(
+  admin: QuoteAdmin,
+  tenantId: string,
+  idempotencyKey: string,
+): Promise<{ raw: Record<string, unknown>; record: QuoteCreateFollowUpRecord } | null> {
+  const { data, error } = await admin
+    .from('tenant_quote_create_requests')
+    .select('follow_ups')
+    .eq('tenant_id', tenantId)
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+  if (error || !data) return null;
+  const raw =
+    data.follow_ups && typeof data.follow_ups === 'object' && !Array.isArray(data.follow_ups)
+      ? (data.follow_ups as Record<string, unknown>)
+      : {};
+  return { raw, record: readFollowUpRecord(raw) };
+}
+
+/**
+ * Compare-and-set the whole follow-up object, and only when this step is still
+ * `fromState`. Postgres rechecks the WHERE after a waiting update, so a second
+ * replay does not take a step the first one already changed.
+ */
+async function casFollowUps(input: {
+  admin: QuoteAdmin;
+  tenantId: string;
+  idempotencyKey: string;
+  expected: Record<string, unknown>;
+  next: QuoteCreateFollowUpRecord;
+  step: keyof QuoteCreateFollowUps;
+  fromState: FollowUpState;
+}): Promise<boolean> {
+  const { data, error } = await input.admin
+    .from('tenant_quote_create_requests')
+    .update({ follow_ups: input.next as Json })
+    .eq('tenant_id', input.tenantId)
+    .eq('idempotency_key', input.idempotencyKey)
+    .filter('follow_ups', 'eq', JSON.stringify(input.expected))
+    .filter(`follow_ups->>${input.step}`, 'eq', input.fromState)
+    .select('idempotency_key')
+    .maybeSingle();
+  if (error) {
+    console.error('[createTenantQuote] idempotency state was not stored');
+    return false;
+  }
+  return Boolean(data);
+}
+
+async function claimFollowUpStep(input: {
+  admin: QuoteAdmin;
+  tenantId: string;
+  idempotencyKey: string;
+  step: keyof QuoteCreateFollowUps;
+  ownerToken: string;
+  nowMs: number;
+}): Promise<boolean> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const loaded = await loadFollowUpRow(input.admin, input.tenantId, input.idempotencyKey);
+    if (!loaded) return false;
+    const state = loaded.record[input.step];
+    if (state === 'ok' || state === 'skipped') return false;
+    const stale = isStalePending(loaded.record, input.step, input.nowMs);
+    if (state !== 'failed' && !stale) return false;
+    const next: QuoteCreateFollowUpRecord = {
+      ...loaded.record,
+      [input.step]: 'pending',
+      claimedAt: { ...loaded.record.claimedAt, [input.step]: new Date(input.nowMs).toISOString() },
+      claimToken: { ...loaded.record.claimToken, [input.step]: input.ownerToken },
+    };
+    if (
+      await casFollowUps({
+        admin: input.admin,
+        tenantId: input.tenantId,
+        idempotencyKey: input.idempotencyKey,
+        expected: loaded.raw,
+        next,
+        step: input.step,
+        fromState: state,
+      })
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function commitOwnedStep(input: {
+  admin: QuoteAdmin;
+  tenantId: string;
+  idempotencyKey: string;
+  step: keyof QuoteCreateFollowUps;
+  nextState: FollowUpState;
+  ownerToken: string;
+}): Promise<FollowUpState> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const loaded = await loadFollowUpRow(input.admin, input.tenantId, input.idempotencyKey);
+    if (!loaded) return input.nextState;
+    if (!followUpWriteAllowed(loaded.record, input.step, input.nextState, input.ownerToken)) {
+      return loaded.record[input.step];
+    }
+    if (
+      loaded.record[input.step] === input.nextState &&
+      loaded.record.claimToken[input.step] === input.ownerToken
+    ) {
+      return input.nextState;
+    }
+    const next: QuoteCreateFollowUpRecord = {
+      ...loaded.record,
+      [input.step]: input.nextState,
+      claimToken: { ...loaded.record.claimToken, [input.step]: input.ownerToken },
+    };
+    if (
+      await casFollowUps({
+        admin: input.admin,
+        tenantId: input.tenantId,
+        idempotencyKey: input.idempotencyKey,
+        expected: loaded.raw,
+        next,
+        step: input.step,
+        fromState: loaded.record[input.step],
+      })
+    ) {
+      return input.nextState;
+    }
+  }
+  return input.nextState;
 }
 
 type QuoteCreateClaim =
@@ -762,7 +882,7 @@ async function claimQuoteCreate(
   }
   const quoteId = existing.data?.quote_id ?? '';
   if (!QUOTE_ID_RE.test(quoteId)) return { state: 'in_flight' };
-  return { state: 'replay', quoteId, followUps: readFollowUps(existing.data?.follow_ups) };
+  return { state: 'replay', quoteId, followUps: readFollowUps(existing.data?.follow_ups) }; // states only; replay reloads claim clocks
 }
 
 async function releaseQuoteCreateClaim(
@@ -794,7 +914,12 @@ function replayIdleResult(quoteId: string, followUps: QuoteCreateFollowUps): Quo
 }
 
 function quoteReplayBlocked(quote: OwnedQuote): boolean {
-  return quote.isLocked || quote.status === 'accepted' || quote.status === 'expired';
+  return (
+    quote.isLocked ||
+    quote.status === 'accepted' ||
+    quote.status === 'declined' ||
+    quote.status === 'expired'
+  );
 }
 
 /**
@@ -816,14 +941,20 @@ async function finishCreatedQuote(input: {
   statusToApply: Database['public']['Enums']['quote_status'] | null;
   promotionSave: Parameters<typeof saveQuotePromotionSideEffects>[1] | null;
   followUps: QuoteCreateFollowUps;
+  ownerToken: string;
   run: Record<keyof QuoteCreateFollowUps, boolean>;
 }): Promise<QuoteFormState> {
   const followUps: QuoteCreateFollowUps = { ...input.followUps };
-  const persist = () =>
-    writeCreateRequest(input.admin, input.tenantId, input.idempotencyKey, {
-      quoteId: input.quoteId,
-      followUps,
+  const commit = async (step: keyof QuoteCreateFollowUps, nextState: FollowUpState) => {
+    followUps[step] = await commitOwnedStep({
+      admin: input.admin,
+      tenantId: input.tenantId,
+      idempotencyKey: input.idempotencyKey,
+      step,
+      nextState,
+      ownerToken: input.ownerToken,
     });
+  };
 
   if (input.run.locationFacts) {
     const notice = await syncPropertyFactsFromSnapshot(
@@ -833,7 +964,7 @@ async function finishCreatedQuote(input: {
       input.propertySnapshot,
     );
     followUps.locationFacts = notice ? 'failed' : 'ok';
-    await persist();
+    await commit('locationFacts', followUps.locationFacts);
   }
 
   if (input.run.entryCodes) {
@@ -844,7 +975,7 @@ async function finishCreatedQuote(input: {
       input.formData,
     );
     followUps.entryCodes = notice ? 'failed' : 'ok';
-    await persist();
+    await commit('entryCodes', followUps.entryCodes);
   }
 
   const verify = await input.admin
@@ -874,7 +1005,7 @@ async function finishCreatedQuote(input: {
         console.error('[createTenantQuote] location property type was not updated');
       }
     }
-    await persist();
+    await commit('locationKind', followUps.locationKind);
   }
 
   if (input.statusToApply) {
@@ -905,7 +1036,7 @@ async function finishCreatedQuote(input: {
       followUps.crew = crewSaved.ok ? 'ok' : 'failed';
       if (!crewSaved.ok) console.error('[createTenantQuote] crew size was not stored');
     }
-    await persist();
+    await commit('crew', followUps.crew);
   }
 
   if (input.run.promotions) {
@@ -920,30 +1051,43 @@ async function finishCreatedQuote(input: {
         followUps.promotions = 'failed';
       }
     }
-    await persist();
+    await commit('promotions', followUps.promotions);
   }
 
-  const notify =
-    input.run.email || input.run.sms || input.run.webhook
-      ? await deliverSentQuote(
-          input.admin,
-          {
-            tenantId: input.tenantId,
-            quoteId: input.quoteId,
-            quoteTitle: input.title,
-            customerId: input.customerId,
-          },
-          { email: input.run.email, sms: input.run.sms, webhook: input.run.webhook },
-        )
-      : null;
-  if (notify) {
-    if (input.run.email) followUps.email = notify.email;
-    if (input.run.sms) followUps.sms = notify.sms;
-    if (input.run.webhook) followUps.webhook = notify.webhook;
-    await persist();
+  const notifyInput = {
+    tenantId: input.tenantId,
+    quoteId: input.quoteId,
+    quoteTitle: input.title,
+    customerId: input.customerId,
+  };
+  if (input.run.email) {
+    followUps.email = await channelResult(() =>
+      sendQuoteNotificationEmail(input.admin, 'quote_sent', notifyInput),
+    );
+    await commit('email', followUps.email);
+  }
+  if (input.run.sms) {
+    followUps.sms = await channelResult(() =>
+      sendQuoteNotificationSms(input.admin, 'quote_sent', notifyInput),
+    );
+    await commit('sms', followUps.sms);
+  }
+  if (input.run.webhook) {
+    followUps.webhook = await channelResult(() =>
+      emitQuoteWebhookEvent(input.admin, 'quote.sent', { ...notifyInput, status: 'sent' }),
+    );
+    await commit('webhook', followUps.webhook);
+  }
+  if (
+    followUps.email === 'failed' ||
+    followUps.sms === 'failed' ||
+    followUps.webhook === 'failed'
+  ) {
+    console.error('[createTenantQuote] customer notification was not sent');
   }
 
-  const markedSent = input.statusToApply === 'sent' || Boolean(notify);
+  const markedSent =
+    input.statusToApply === 'sent' || input.run.email || input.run.sms || input.run.webhook;
   revalidateQuoteSurfaces(input.customerId, markedSent);
   const form = formStateForQuote(input.quoteId, followUps);
   if (extraFollowUpFailed) {
@@ -1023,6 +1167,20 @@ async function rebuildPromotionSave(
   }
 }
 
+function withRemainingPending(
+  quoteId: string,
+  form: QuoteFormState,
+  followUps: QuoteCreateFollowUps,
+) {
+  if (!hasPendingFollowUp(followUps)) return form;
+  return {
+    ...form,
+    quoteId,
+    success: true as const,
+    warning: joinQuoteNotices([form.warning, QUOTE_IN_FLIGHT_NOTICE]),
+  };
+}
+
 /** Replay of the same wizard key. Never changes quote status and never notifies a channel that already succeeded. */
 async function replayQuoteCreate(input: {
   admin: QuoteAdmin;
@@ -1035,14 +1193,38 @@ async function replayQuoteCreate(input: {
   const loaded = await loadOwnedQuote(input.admin, input.tenantId, input.quoteId);
   if (loaded.state !== 'found') return { error: CONFIRM_QUOTE_ERROR };
   const quote = loaded.quote;
+  const stored = await loadFollowUpRow(input.admin, input.tenantId, input.idempotencyKey);
+  const record = stored?.record ?? readFollowUpRecord(input.followUps);
+  const nowMs = Date.now();
+  const blocked = quoteReplayBlocked(quote);
+  const mayNotify = quote.status === 'sent' && !blocked;
+  const retryable = (blocked ? [] : retryableFollowUpSteps(record, nowMs)).filter((step) =>
+    step === 'email' || step === 'sms' || step === 'webhook' ? mayNotify : true,
+  );
 
-  const failed = failedFollowUpKeys(input.followUps);
-  if (quoteReplayBlocked(quote) || failed.length === 0) {
-    return replayIdleResult(quote.id, input.followUps);
+  if (retryable.length === 0) return replayIdleResult(quote.id, record);
+
+  const ownerToken = crypto.randomUUID();
+  const won = new Set<keyof QuoteCreateFollowUps>();
+  for (const step of retryable) {
+    if (
+      await claimFollowUpStep({
+        admin: input.admin,
+        tenantId: input.tenantId,
+        idempotencyKey: input.idempotencyKey,
+        step,
+        ownerToken,
+        nowMs,
+      })
+    ) {
+      won.add(step);
+    }
+  }
+  if (won.size === 0) {
+    const latest = await loadFollowUpRow(input.admin, input.tenantId, input.idempotencyKey);
+    return replayIdleResult(quote.id, latest?.record ?? record);
   }
 
-  const failedSet = new Set(failed);
-  const mayNotify = quote.status === 'sent';
   const capabilities = await loadTenantSegmentCapabilities(input.admin, input.tenantId);
   const structured = parseQuoteWizardStructuredFromForm(
     input.formData,
@@ -1057,7 +1239,7 @@ async function replayQuoteCreate(input: {
     postedCorrection: String(input.formData.get('correct_location_property_kind') ?? ''),
   });
   const crewSize = parseRequiredCrewSize(input.formData.get('required_crew_size'));
-  const promotionSave = failedSet.has('promotions')
+  const promotionSave = won.has('promotions')
     ? await rebuildPromotionSave(
         input.admin,
         input.tenantId,
@@ -1082,23 +1264,21 @@ async function replayQuoteCreate(input: {
     crewSize: crewSize.ok ? crewSize.size : null,
     statusToApply: null,
     promotionSave,
-    followUps: input.followUps,
+    followUps: record,
+    ownerToken,
     run: {
-      entryCodes: failedSet.has('entryCodes'),
-      locationFacts: failedSet.has('locationFacts'),
-      locationKind: failedSet.has('locationKind'),
-      crew: failedSet.has('crew'),
-      promotions: failedSet.has('promotions'),
-      email: mayNotify && failedSet.has('email'),
-      sms: mayNotify && failedSet.has('sms'),
-      webhook: mayNotify && failedSet.has('webhook'),
+      entryCodes: won.has('entryCodes'),
+      locationFacts: won.has('locationFacts'),
+      locationKind: won.has('locationKind'),
+      crew: won.has('crew'),
+      promotions: won.has('promotions'),
+      email: won.has('email'),
+      sms: won.has('sms'),
+      webhook: won.has('webhook'),
     },
   });
-  if (!hasPendingFollowUp(input.followUps)) return finished;
-  return {
-    ...finished,
-    warning: joinQuoteNotices([finished.warning, QUOTE_IN_FLIGHT_NOTICE]),
-  };
+  const latest = await loadFollowUpRow(input.admin, input.tenantId, input.idempotencyKey);
+  return withRemainingPending(quote.id, finished, latest?.record ?? record);
 }
 
 export async function createTenantQuote(
@@ -1398,7 +1578,12 @@ export async function createTenantQuote(
     };
   }
 
-  const followUps = initialFollowUps(initialStatus === 'sent');
+  const ownerToken = crypto.randomUUID();
+  const followUps = stampOwnedFollowUps(
+    initialFollowUps(initialStatus === 'sent'),
+    ownerToken,
+    new Date().toISOString(),
+  );
   await writeCreateRequest(admin, membership.tenantId, idempotencyKey, {
     quoteId: newId,
     followUps,
@@ -1427,6 +1612,7 @@ export async function createTenantQuote(
         quoteDiscountCents: priced.totalsBeforeWallet.quote_discount_cents,
       },
       followUps,
+      ownerToken,
       run: {
         entryCodes: true,
         locationFacts: true,
@@ -1440,14 +1626,17 @@ export async function createTenantQuote(
     });
   } catch {
     console.error('[createTenantQuote] follow-up after save failed');
-    const failed = { ...followUps };
-    (Object.keys(failed) as (keyof QuoteCreateFollowUps)[]).forEach((key) => {
-      if (failed[key] === 'pending') failed[key] = 'failed';
-    });
-    await writeCreateRequest(admin, membership.tenantId, idempotencyKey, {
-      quoteId: newId,
-      followUps: failed,
-    });
+    for (const step of FOLLOW_UP_KEYS) {
+      if (followUps[step] !== 'pending') continue;
+      await commitOwnedStep({
+        admin,
+        tenantId: membership.tenantId,
+        idempotencyKey,
+        step,
+        nextState: 'failed',
+        ownerToken,
+      });
+    }
     revalidateQuoteSurfaces(customerId, sending);
     return {
       success: true,
