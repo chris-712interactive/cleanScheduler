@@ -3463,6 +3463,45 @@ export type Database = {
           },
         ];
       };
+      tenant_quote_create_requests: {
+        Row: {
+          tenant_id: string;
+          idempotency_key: string;
+          quote_id: string | null;
+          follow_ups: Json;
+          created_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          idempotency_key: string;
+          quote_id?: string | null;
+          follow_ups?: Json;
+          created_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          idempotency_key?: string;
+          quote_id?: string | null;
+          follow_ups?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_quote_create_requests_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_quote_create_requests_quote_id_fkey';
+            columns: ['quote_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_quotes';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_quote_pipeline_stages: {
         Row: {
           id: string;

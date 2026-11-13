@@ -66,7 +66,7 @@ describe('quote access notes', () => {
     const finish = body.indexOf('finishCreatedQuote');
     expect(finish).toBeGreaterThan(rejected);
     const helperStart = source.indexOf('async function finishCreatedQuote');
-    const helperEnd = source.indexOf('async function resumeCreatedQuote');
+    const helperEnd = source.indexOf('async function rebuildPromotionSave');
     const helper = source.slice(helperStart, helperEnd);
     expect(helper.indexOf('syncPropertyFactsFromSnapshot')).toBeGreaterThan(-1);
     expect(helper.indexOf('storeQuoteEntryCodes')).toBeGreaterThan(

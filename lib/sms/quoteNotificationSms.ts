@@ -93,15 +93,15 @@ export async function sendQuoteNotificationSms(
   admin: Admin,
   event: QuoteNotificationEvent,
   params: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   const flags = await loadSmsOpsFlags(admin, params.tenantId);
-  if (!flags) return;
+  if (!flags) return { ok: true };
 
   const tname = await tenantName(admin, params.tenantId);
 
   if (event === 'quote_sent' && flags.sms_sent) {
     const { phone, prefersEmailOnly } = await customerPhoneAndContactPref(admin, params.customerId);
-    if (!phone || prefersEmailOnly) return;
+    if (!phone || prefersEmailOnly) return { ok: true };
 
     const link = await quoteUrlForCustomer(admin, params.tenantId, params.quoteId);
     const sent = await sendTransactionalSms({
@@ -117,8 +117,9 @@ export async function sendQuoteNotificationSms(
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_sent SMS failed:', sent.error);
+      return { ok: false };
     }
-    return;
+    return { ok: true };
   }
 
   const staffPhone = await tenantStaffPhone(admin, params.tenantId);
@@ -136,8 +137,9 @@ export async function sendQuoteNotificationSms(
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_accepted SMS failed:', sent.error);
+      return { ok: false };
     }
-    return;
+    return { ok: true };
   }
 
   if (event === 'quote_declined' && flags.sms_declined && staffPhone) {
@@ -153,6 +155,9 @@ export async function sendQuoteNotificationSms(
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_declined SMS failed:', sent.error);
+      return { ok: false };
     }
   }
+
+  return { ok: true };
 }

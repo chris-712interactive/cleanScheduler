@@ -103,7 +103,7 @@ export const QUOTE_FOLLOW_UP_WARNING =
   'The quote was saved, but some location or crew details could not be stored. Open the quote and save those details again.';
 
 export const QUOTE_NOTIFY_WARNING =
-  'The quote was saved and marked sent, but the customer could not be notified.';
+  'The quote was saved and marked sent, but the customer could not be notified. This page does not send it again.';
 
 const QUOTE_SAVE_NOTICES: Record<string, string> = {
   [LOCATION_FACT_NOTICE]: LOCATION_FACT_SYNC_WARNING,

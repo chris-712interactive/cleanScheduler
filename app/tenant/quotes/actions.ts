@@ -5,7 +5,7 @@ import { invalidateCustomerQuoteBadge } from '@/lib/portal/invalidatePortalCache
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import type { Database } from '@/lib/supabase/database.types';
+import type { Database, Json } from '@/lib/supabase/database.types';
 import {
   parseQuoteLineItemsFromForm,
   type ParsedQuoteLineItem,
@@ -53,6 +53,14 @@ import { loadTenantOperationalSettings } from '@/lib/tenant/loadTenantOperationa
 import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
+import {
+  failedFollowUpKeys,
+  hasPendingFollowUp,
+  initialFollowUps,
+  readFollowUps,
+  type FollowUpState,
+  type QuoteCreateFollowUps,
+} from '@/lib/tenant/quoteCreateIdempotency';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
 import { loadQuoteEditSnapshot } from '@/lib/tenant/loadQuoteEditSnapshot';
@@ -626,45 +634,148 @@ async function storeQuoteEntryCodes(
   return ENTRY_CODE_NOTICE;
 }
 
+async function channelResult(run: () => Promise<{ ok: boolean }>): Promise<FollowUpState> {
+  try {
+    const result = await run();
+    return result.ok ? 'ok' : 'failed';
+  } catch {
+    return 'failed';
+  }
+}
+
 async function deliverSentQuote(
   admin: QuoteAdmin,
   input: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
-): Promise<boolean> {
-  let delivered = true;
-  try {
-    await sendQuoteNotificationEmail(admin, 'quote_sent', input);
-  } catch {
-    delivered = false;
-  }
-  try {
-    await sendQuoteNotificationSms(admin, 'quote_sent', input);
-  } catch {
-    delivered = false;
-  }
-  try {
-    await emitQuoteWebhookEvent(admin, 'quote.sent', {
-      tenantId: input.tenantId,
-      quoteId: input.quoteId,
-      quoteTitle: input.quoteTitle,
-      customerId: input.customerId,
-      status: 'sent',
-    });
-  } catch {
-    delivered = false;
-  }
-  if (!delivered) {
+  run: { email: boolean; sms: boolean; webhook: boolean },
+): Promise<Pick<QuoteCreateFollowUps, 'email' | 'sms' | 'webhook'>> {
+  const email = run.email
+    ? await channelResult(() => sendQuoteNotificationEmail(admin, 'quote_sent', input))
+    : 'skipped';
+  const sms = run.sms
+    ? await channelResult(() => sendQuoteNotificationSms(admin, 'quote_sent', input))
+    : 'skipped';
+  const webhook = run.webhook
+    ? await channelResult(() =>
+        emitQuoteWebhookEvent(admin, 'quote.sent', {
+          tenantId: input.tenantId,
+          quoteId: input.quoteId,
+          quoteTitle: input.quoteTitle,
+          customerId: input.customerId,
+          status: 'sent',
+        }),
+      )
+    : 'skipped';
+  if (email === 'failed' || sms === 'failed' || webhook === 'failed') {
     console.error('[createTenantQuote] customer notification was not sent');
   }
-  return delivered;
+  return { email, sms, webhook };
 }
 
+function formStateForQuote(quoteId: string, followUps: QuoteCreateFollowUps): QuoteFormState {
+  const notices: Array<string | undefined> = [];
+  if (followUps.locationFacts === 'failed') notices.push(LOCATION_FACT_NOTICE);
+  if (followUps.entryCodes === 'failed') notices.push(ENTRY_CODE_NOTICE);
+  if (
+    followUps.locationKind === 'failed' ||
+    followUps.crew === 'failed' ||
+    followUps.promotions === 'failed'
+  ) {
+    notices.push(QUOTE_FOLLOW_UP_NOTICE);
+  }
+  if (
+    followUps.email === 'failed' ||
+    followUps.sms === 'failed' ||
+    followUps.webhook === 'failed'
+  ) {
+    notices.push(QUOTE_NOTIFY_NOTICE);
+  }
+  const warning = joinQuoteNotices(notices);
+  return warning ? { success: true, quoteId, warning } : { success: true, quoteId };
+}
+
+async function writeCreateRequest(
+  admin: QuoteAdmin,
+  tenantId: string,
+  idempotencyKey: string,
+  patch: { quoteId?: string; followUps: QuoteCreateFollowUps },
+) {
+  const { error } = await admin
+    .from('tenant_quote_create_requests')
+    .update({
+      ...(patch.quoteId ? { quote_id: patch.quoteId } : {}),
+      follow_ups: patch.followUps as Json,
+    })
+    .eq('tenant_id', tenantId)
+    .eq('idempotency_key', idempotencyKey);
+  if (error) console.error('[createTenantQuote] idempotency state was not stored');
+}
+
+type QuoteCreateClaim =
+  | { state: 'new' }
+  | { state: 'in_flight' }
+  | { state: 'replay'; quoteId: string; followUps: QuoteCreateFollowUps }
+  | { state: 'error' };
+
+async function claimQuoteCreate(
+  admin: QuoteAdmin,
+  tenantId: string,
+  idempotencyKey: string,
+): Promise<QuoteCreateClaim> {
+  const inserted = await admin
+    .from('tenant_quote_create_requests')
+    .insert({
+      tenant_id: tenantId,
+      idempotency_key: idempotencyKey,
+      follow_ups: {} as Json,
+    })
+    .select('quote_id, follow_ups')
+    .maybeSingle();
+
+  if (!inserted.error) return { state: 'new' };
+  if (inserted.error.code !== '23505') {
+    console.error('[createTenantQuote] idempotency claim failed');
+    return { state: 'error' };
+  }
+
+  const existing = await admin
+    .from('tenant_quote_create_requests')
+    .select('quote_id, follow_ups')
+    .eq('tenant_id', tenantId)
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+  if (existing.error) {
+    console.error('[createTenantQuote] idempotency claim failed');
+    return { state: 'error' };
+  }
+  const quoteId = existing.data?.quote_id ?? '';
+  if (!QUOTE_ID_RE.test(quoteId)) return { state: 'in_flight' };
+  return { state: 'replay', quoteId, followUps: readFollowUps(existing.data?.follow_ups) };
+}
+
+async function releaseQuoteCreateClaim(
+  admin: QuoteAdmin,
+  tenantId: string,
+  idempotencyKey: string,
+) {
+  const { error } = await admin
+    .from('tenant_quote_create_requests')
+    .delete()
+    .eq('tenant_id', tenantId)
+    .eq('idempotency_key', idempotencyKey);
+  if (error) console.error('[createTenantQuote] idempotency claim was not released');
+}
+
+const CONFIRM_QUOTE_ERROR =
+  'This quote could not be confirmed. Check the quotes list before saving again.';
+
 /**
- * Writes that run after the quote row exists. Failures become notice codes.
- * The caller always receives the quote id.
+ * Writes that run after the quote row exists. Only steps in `run` are attempted.
+ * Each finished step is stored before the next one starts.
  */
 async function finishCreatedQuote(input: {
   admin: QuoteAdmin;
   tenantId: string;
+  idempotencyKey: string;
   quoteId: string;
   customerId: string;
   propertyId: string | null;
@@ -674,23 +785,38 @@ async function finishCreatedQuote(input: {
   locationKindToWrite: CustomerPropertyKind | null | false;
   crewSize: number | null;
   statusToApply: Database['public']['Enums']['quote_status'] | null;
-  sendNotification: boolean;
   promotionSave: Parameters<typeof saveQuotePromotionSideEffects>[1] | null;
+  followUps: QuoteCreateFollowUps;
+  run: Record<keyof QuoteCreateFollowUps, boolean>;
 }): Promise<QuoteFormState> {
-  const notices: Array<string | undefined> = [];
+  const followUps: QuoteCreateFollowUps = { ...input.followUps };
+  const persist = () =>
+    writeCreateRequest(input.admin, input.tenantId, input.idempotencyKey, {
+      quoteId: input.quoteId,
+      followUps,
+    });
 
-  notices.push(
-    await syncPropertyFactsFromSnapshot(
+  if (input.run.locationFacts) {
+    const notice = await syncPropertyFactsFromSnapshot(
       input.admin,
       input.tenantId,
       input.propertyId,
       input.propertySnapshot,
-    ),
-  );
+    );
+    followUps.locationFacts = notice ? 'failed' : 'ok';
+    await persist();
+  }
 
-  notices.push(
-    await storeQuoteEntryCodes(input.admin, input.tenantId, input.propertyId, input.formData),
-  );
+  if (input.run.entryCodes) {
+    const notice = await storeQuoteEntryCodes(
+      input.admin,
+      input.tenantId,
+      input.propertyId,
+      input.formData,
+    );
+    followUps.entryCodes = notice ? 'failed' : 'ok';
+    await persist();
+  }
 
   const verify = await input.admin
     .from('tenant_quotes')
@@ -698,25 +824,28 @@ async function finishCreatedQuote(input: {
     .eq('id', input.quoteId)
     .eq('tenant_id', input.tenantId)
     .maybeSingle();
-  if (verify.error || !verify.data) {
+  let extraFollowUpFailed = Boolean(verify.error || !verify.data);
+  if (extraFollowUpFailed) {
     console.error('[createTenantQuote] saved quote could not be reloaded');
-    notices.push(QUOTE_FOLLOW_UP_NOTICE);
   }
 
-  if (input.locationKindToWrite === false) {
-    console.error('[createTenantQuote] location property type was not updated');
-    notices.push(QUOTE_FOLLOW_UP_NOTICE);
-  } else {
-    const kindSaved = await writeLocationKindAfterQuoteSave(
-      input.admin,
-      input.tenantId,
-      input.propertyId,
-      input.locationKindToWrite,
-    );
-    if (!kindSaved.ok) {
+  if (input.run.locationKind) {
+    if (input.locationKindToWrite === false) {
       console.error('[createTenantQuote] location property type was not updated');
-      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+      followUps.locationKind = 'failed';
+    } else {
+      const kindSaved = await writeLocationKindAfterQuoteSave(
+        input.admin,
+        input.tenantId,
+        input.propertyId,
+        input.locationKindToWrite,
+      );
+      followUps.locationKind = kindSaved.ok ? 'ok' : 'failed';
+      if (!kindSaved.ok) {
+        console.error('[createTenantQuote] location property type was not updated');
+      }
     }
+    await persist();
   }
 
   if (input.statusToApply) {
@@ -728,85 +857,182 @@ async function finishCreatedQuote(input: {
     );
     if (staged.error) {
       console.error('[createTenantQuote] quote status was not stored');
-      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+      extraFollowUpFailed = true;
     }
   }
 
-  if (input.crewSize == null) {
-    console.error('[createTenantQuote] crew size was not stored');
-    notices.push(QUOTE_FOLLOW_UP_NOTICE);
-  } else {
-    const crewSaved = await persistQuotedCrewSize(
-      input.admin,
-      input.tenantId,
-      input.quoteId,
-      input.propertyId,
-      input.crewSize,
-    );
-    if (!crewSaved.ok) {
+  if (input.run.crew) {
+    if (input.crewSize == null) {
       console.error('[createTenantQuote] crew size was not stored');
-      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+      followUps.crew = 'failed';
+    } else {
+      const crewSaved = await persistQuotedCrewSize(
+        input.admin,
+        input.tenantId,
+        input.quoteId,
+        input.propertyId,
+        input.crewSize,
+      );
+      followUps.crew = crewSaved.ok ? 'ok' : 'failed';
+      if (!crewSaved.ok) console.error('[createTenantQuote] crew size was not stored');
     }
+    await persist();
   }
 
-  if (input.promotionSave) {
-    try {
-      await saveQuotePromotionSideEffects(input.admin, input.promotionSave);
-    } catch {
-      console.error('[createTenantQuote] promotion details were not stored');
-      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+  if (input.run.promotions) {
+    if (!input.promotionSave) {
+      followUps.promotions = 'failed';
+    } else {
+      try {
+        await saveQuotePromotionSideEffects(input.admin, input.promotionSave);
+        followUps.promotions = 'ok';
+      } catch {
+        console.error('[createTenantQuote] promotion details were not stored');
+        followUps.promotions = 'failed';
+      }
     }
+    await persist();
   }
 
-  if (input.sendNotification) {
-    const delivered = await deliverSentQuote(input.admin, {
-      tenantId: input.tenantId,
-      quoteId: input.quoteId,
-      quoteTitle: input.title,
-      customerId: input.customerId,
-    });
-    if (!delivered) notices.push(QUOTE_NOTIFY_NOTICE);
+  const notify =
+    input.run.email || input.run.sms || input.run.webhook
+      ? await deliverSentQuote(
+          input.admin,
+          {
+            tenantId: input.tenantId,
+            quoteId: input.quoteId,
+            quoteTitle: input.title,
+            customerId: input.customerId,
+          },
+          { email: input.run.email, sms: input.run.sms, webhook: input.run.webhook },
+        )
+      : null;
+  if (notify) {
+    if (input.run.email) followUps.email = notify.email;
+    if (input.run.sms) followUps.sms = notify.sms;
+    if (input.run.webhook) followUps.webhook = notify.webhook;
+    await persist();
   }
 
-  const markedSent = input.statusToApply === 'sent' || input.sendNotification;
+  const markedSent = input.statusToApply === 'sent' || Boolean(notify);
   revalidateQuoteSurfaces(input.customerId, markedSent);
-  const warning = joinQuoteNotices(notices);
-  return warning
-    ? { success: true, quoteId: input.quoteId, warning }
-    : { success: true, quoteId: input.quoteId };
+  const form = formStateForQuote(input.quoteId, followUps);
+  if (extraFollowUpFailed) {
+    form.warning = joinQuoteNotices([form.warning, QUOTE_FOLLOW_UP_NOTICE]);
+  }
+  return form;
 }
 
-async function resumeCreatedQuote(input: {
+async function rebuildPromotionSave(
+  admin: QuoteAdmin,
+  tenantId: string,
+  customerId: string,
+  propertyId: string | null,
+  formData: FormData,
+): Promise<Parameters<typeof saveQuotePromotionSideEffects>[1] | null> {
+  try {
+    const capabilities = await loadTenantSegmentCapabilities(admin, tenantId);
+    const structured = parseQuoteWizardStructuredFromForm(
+      formData,
+      defaultPropertyKind(capabilities),
+    );
+    const propertyFacts = await propertyFactsForQuote(admin, tenantId, propertyId);
+    const locationKindPlan = planQuoteLocationKind({
+      capabilities,
+      savedKind: propertyFacts.kind,
+      locationLabel: propertyFacts.label,
+      postedCorrection: String(formData.get('correct_location_property_kind') ?? ''),
+    });
+    if (!locationKindPlan.ok) return null;
+    const parsedLines = parseQuoteLineItemsFromForm(formData, {
+      allowPerSqft: capabilities.sqftBids,
+      propertyKind: locationKindPlan.resultingKind,
+      defaultSqft: structured.propertySnapshot.sqft ?? propertyFacts.sqft,
+    });
+    if (!parsedLines.ok) return null;
+    const enrichedLines = await enrichParsedQuoteLines(
+      admin,
+      tenantId,
+      locationKindPlan.resultingKind,
+      parsedLines.lines,
+    );
+    if ('error' in enrichedLines) return null;
+    const pricing = parseQuoteHeaderPricingFromForm(formData);
+    if (!pricing.ok) return null;
+    const headerParsed = parseOptionalDollarsToCents(String(formData.get('amount_dollars') ?? ''));
+    if (!headerParsed.ok) return null;
+    const headerSubtotal = enrichedLines.lines.length > 0 ? null : headerParsed.cents;
+    const priced = await computeQuotePricingWithPromotions(admin, {
+      tenantId,
+      customerId,
+      lines: enrichedLines.lines.map((line) => ({
+        amount_cents: line.amount_cents,
+        line_discount_kind: line.line_discount_kind,
+        line_discount_value: line.line_discount_value,
+      })),
+      header_subtotal_cents: headerSubtotal,
+      tax_mode: pricing.tax_mode,
+      tax_rate_bps: pricing.tax_rate_bps,
+      manualPricing: {
+        quote_discount_kind: pricing.quote_discount_kind,
+        quote_discount_value: pricing.quote_discount_value,
+      },
+      rawPromoCode: '',
+      rawWalletCreditDollars: '',
+    });
+    if (!priced.ok) return null;
+    return {
+      tenantId,
+      quoteId: '',
+      customerId,
+      promotionFields: priced.promotionFields,
+      quoteDiscountCents: priced.totalsBeforeWallet.quote_discount_cents,
+    };
+  } catch {
+    console.error('[createTenantQuote] promotion details were not stored');
+    return null;
+  }
+}
+
+/** Replay of the same wizard key. Never changes quote status and never notifies a channel that already succeeded. */
+async function replayQuoteCreate(input: {
   admin: QuoteAdmin;
   tenantId: string;
-  quote: OwnedQuote;
+  idempotencyKey: string;
+  quoteId: string;
+  followUps: QuoteCreateFollowUps;
   formData: FormData;
   title: string;
 }): Promise<QuoteFormState> {
-  // The previous id is client-controlled. Resume only repairs follow-up writes.
-  // It must not change status or notify: that would skip the consultation gate
-  // and the locked/expired checks on moveTenantQuoteStatus, and a forged
-  // warning could send the same quote again.
-  if (
-    input.quote.isLocked ||
-    input.quote.status === 'accepted' ||
-    input.quote.status === 'expired'
-  ) {
-    return { success: true, quoteId: input.quote.id };
+  const loaded = await loadOwnedQuote(input.admin, input.tenantId, input.quoteId);
+  if (loaded.state !== 'found') return { error: CONFIRM_QUOTE_ERROR };
+  const quote = loaded.quote;
+
+  if (hasPendingFollowUp(input.followUps)) {
+    return { success: true, quoteId: quote.id, warning: QUOTE_FOLLOW_UP_NOTICE };
   }
 
+  const failed = failedFollowUpKeys(input.followUps);
+  if (
+    quote.isLocked ||
+    quote.status === 'accepted' ||
+    quote.status === 'expired' ||
+    failed.length === 0
+  ) {
+    return failed.length > 0
+      ? { success: true, quoteId: quote.id, warning: QUOTE_FOLLOW_UP_NOTICE }
+      : { success: true, quoteId: quote.id };
+  }
+
+  const failedSet = new Set(failed);
+  const mayNotify = quote.status === 'sent';
   const capabilities = await loadTenantSegmentCapabilities(input.admin, input.tenantId);
   const structured = parseQuoteWizardStructuredFromForm(
     input.formData,
     defaultPropertyKind(capabilities),
   );
   applySegmentToPropertySnapshot(capabilities, structured.propertySnapshot);
-
-  const propertyFacts = await propertyFactsForQuote(
-    input.admin,
-    input.tenantId,
-    input.quote.propertyId,
-  );
+  const propertyFacts = await propertyFactsForQuote(input.admin, input.tenantId, quote.propertyId);
   const locationKindPlan = planQuoteLocationKind({
     capabilities,
     savedKind: propertyFacts.kind,
@@ -814,21 +1040,42 @@ async function resumeCreatedQuote(input: {
     postedCorrection: String(input.formData.get('correct_location_property_kind') ?? ''),
   });
   const crewSize = parseRequiredCrewSize(input.formData.get('required_crew_size'));
+  const promotionSave = failedSet.has('promotions')
+    ? await rebuildPromotionSave(
+        input.admin,
+        input.tenantId,
+        quote.customerId,
+        quote.propertyId,
+        input.formData,
+      )
+    : null;
+  if (promotionSave) promotionSave.quoteId = quote.id;
 
   return finishCreatedQuote({
     admin: input.admin,
     tenantId: input.tenantId,
-    quoteId: input.quote.id,
-    customerId: input.quote.customerId,
-    propertyId: input.quote.propertyId,
-    title: input.title || input.quote.title,
+    idempotencyKey: input.idempotencyKey,
+    quoteId: quote.id,
+    customerId: quote.customerId,
+    propertyId: quote.propertyId,
+    title: input.title || quote.title,
     formData: input.formData,
     propertySnapshot: structured.propertySnapshot,
     locationKindToWrite: locationKindPlan.ok ? locationKindPlan.kindToWrite : false,
     crewSize: crewSize.ok ? crewSize.size : null,
     statusToApply: null,
-    sendNotification: false,
-    promotionSave: null,
+    promotionSave,
+    followUps: input.followUps,
+    run: {
+      entryCodes: failedSet.has('entryCodes'),
+      locationFacts: failedSet.has('locationFacts'),
+      locationKind: failedSet.has('locationKind'),
+      crew: failedSet.has('crew'),
+      promotions: failedSet.has('promotions'),
+      email: mayNotify && failedSet.has('email'),
+      sms: mayNotify && failedSet.has('sms'),
+      webhook: mayNotify && failedSet.has('webhook'),
+    },
   });
 }
 
@@ -862,49 +1109,17 @@ export async function createTenantQuote(
   const inlinePropertyPostal = String(formData.get('inline_property_postal_code') ?? '').trim();
   const inlinePropertyKindRaw = String(formData.get('inline_property_kind') ?? '').trim();
 
-  const previousQuoteId = String(_prev.quoteId ?? '').trim();
-  if ((!slug || !title) && !QUOTE_ID_RE.test(previousQuoteId)) {
+  if (!slug || !title) {
     return { error: 'Workspace and quote title are required.' };
   }
-  if (!slug) {
-    return { error: 'Workspace and quote title are required.' };
+
+  const idempotencyKey = String(formData.get('create_idempotency_key') ?? '').trim();
+  if (!QUOTE_ID_RE.test(idempotencyKey)) {
+    return { error: 'Refresh the quote form and save again.' };
   }
 
   const membership = await requireTenantPortalAccess(slug, '/quotes/new');
   const admin = createAdminClient();
-
-  if (QUOTE_ID_RE.test(previousQuoteId)) {
-    const existing = await loadOwnedQuote(admin, membership.tenantId, previousQuoteId);
-    if (existing.state === 'found') {
-      try {
-        return await resumeCreatedQuote({
-          admin,
-          tenantId: membership.tenantId,
-          quote: existing.quote,
-          formData,
-          title,
-        });
-      } catch {
-        console.error('[createTenantQuote] follow-up after save failed');
-        return {
-          success: true,
-          quoteId: existing.quote.id,
-          warning: QUOTE_FOLLOW_UP_NOTICE,
-        };
-      }
-    }
-    if (existing.state === 'error') {
-      return {
-        success: true,
-        quoteId: previousQuoteId,
-        warning: QUOTE_FOLLOW_UP_NOTICE,
-      };
-    }
-  }
-
-  if (!title) {
-    return { error: 'Workspace and quote title are required.' };
-  }
   const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
   const structured = parseQuoteWizardStructuredFromForm(
     formData,
@@ -1104,6 +1319,26 @@ export async function createTenantQuote(
   const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
   if (!crewSize.ok) return { error: crewSize.error };
 
+  const claim = await claimQuoteCreate(admin, membership.tenantId, idempotencyKey);
+  if (claim.state === 'error') return { error: CONFIRM_QUOTE_ERROR };
+  if (claim.state === 'in_flight') {
+    return {
+      error:
+        'This quote is already being saved. Wait a moment, then check the quotes list before saving again.',
+    };
+  }
+  if (claim.state === 'replay') {
+    return replayQuoteCreate({
+      admin,
+      tenantId: membership.tenantId,
+      idempotencyKey,
+      quoteId: claim.quoteId,
+      followUps: claim.followUps,
+      formData,
+      title,
+    });
+  }
+
   const rpc = await admin.rpc('tenant_quote_create_with_line_items', {
     p_tenant_id: membership.tenantId,
     p_customer_id: customerId,
@@ -1125,21 +1360,31 @@ export async function createTenantQuote(
   });
 
   if (rpc.error) {
+    await releaseQuoteCreateClaim(admin, membership.tenantId, idempotencyKey);
     return { error: rpc.error.message };
   }
 
   const newId = typeof rpc.data === 'string' ? rpc.data.trim() : '';
   if (!newId || !QUOTE_ID_RE.test(newId)) {
+    await releaseQuoteCreateClaim(admin, membership.tenantId, idempotencyKey);
     return {
       error:
         'We could not save this quote. If you recently updated the app, apply pending database migrations and try again.',
     };
   }
 
+  const followUps = initialFollowUps(initialStatus === 'sent');
+  await writeCreateRequest(admin, membership.tenantId, idempotencyKey, {
+    quoteId: newId,
+    followUps,
+  });
+
+  const sending = initialStatus === 'sent';
   try {
     return await finishCreatedQuote({
       admin,
       tenantId: membership.tenantId,
+      idempotencyKey,
       quoteId: newId,
       customerId,
       propertyId,
@@ -1149,7 +1394,6 @@ export async function createTenantQuote(
       locationKindToWrite: locationKindPlan.kindToWrite,
       crewSize: crewSize.size,
       statusToApply: initialStatus,
-      sendNotification: initialStatus === 'sent',
       promotionSave: {
         tenantId: membership.tenantId,
         quoteId: newId,
@@ -1157,10 +1401,29 @@ export async function createTenantQuote(
         promotionFields: priced.promotionFields,
         quoteDiscountCents: priced.totalsBeforeWallet.quote_discount_cents,
       },
+      followUps,
+      run: {
+        entryCodes: true,
+        locationFacts: true,
+        locationKind: true,
+        crew: true,
+        promotions: true,
+        email: sending,
+        sms: sending,
+        webhook: sending,
+      },
     });
   } catch {
     console.error('[createTenantQuote] follow-up after save failed');
-    revalidateQuoteSurfaces(customerId, initialStatus === 'sent');
+    const failed = { ...followUps };
+    (Object.keys(failed) as (keyof QuoteCreateFollowUps)[]).forEach((key) => {
+      if (failed[key] === 'pending') failed[key] = 'failed';
+    });
+    await writeCreateRequest(admin, membership.tenantId, idempotencyKey, {
+      quoteId: newId,
+      followUps: failed,
+    });
+    revalidateQuoteSurfaces(customerId, sending);
     return {
       success: true,
       quoteId: newId,

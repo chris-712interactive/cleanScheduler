@@ -23,6 +23,7 @@ import { customerLocationEditHref } from '@/lib/tenant/customerLocationHref';
 import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
 import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
+import { claimQuoteSubmit } from '@/lib/tenant/quoteCreateIdempotency';
 import { quoteSaveNotice } from '@/lib/tenant/quoteStructuredFields';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import { loadPropertyAccessCodesAction } from './propertyAccessCodeActions';
@@ -98,12 +99,17 @@ export function QuoteCreateWizard({
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
   const navigatedToQuoteRef = useRef(false);
   /** Set in the click handler, before requestSubmit, so a second click cannot start another create. */
-  const submitLockRef = useRef(false);
+  const submitLock = useRef({ held: false });
   const submitArmedRef = useRef(false);
+  const [idempotencyKey, setIdempotencyKey] = useState('');
+
+  useEffect(() => {
+    setIdempotencyKey(crypto.randomUUID());
+  }, []);
 
   useEffect(() => {
     if (state.quoteId || !state.error) return;
-    submitLockRef.current = false;
+    submitLock.current.held = false;
     submitArmedRef.current = false;
   }, [state.error, state.quoteId]);
 
@@ -454,20 +460,27 @@ export function QuoteCreateWizard({
   };
 
   const submitQuote = (intent: 'draft' | 'send') => {
-    if (submitLockRef.current || state.quoteId || blockSubmitRef.current || !termsActionsReady)
+    if (
+      !idempotencyKey ||
+      submitLock.current.held ||
+      state.quoteId ||
+      blockSubmitRef.current ||
+      !termsActionsReady
+    ) {
       return;
+    }
     const err = intent === 'send' ? validateBeforeSend() : validateBeforeSave();
     if (err) {
       setStepError(err);
       return;
     }
+    if (!claimQuoteSubmit(submitLock.current)) return;
     setStepError(null);
     saveIntentRef.current = intent;
     setPendingIntent(intent);
     if (saveIntentInputRef.current) {
       saveIntentInputRef.current.value = intent;
     }
-    submitLockRef.current = true;
     submitArmedRef.current = true;
     formRef.current?.requestSubmit();
   };
@@ -476,25 +489,28 @@ export function QuoteCreateWizard({
     if (state.quoteId || blockSubmitRef.current || step !== 'terms') {
       event.preventDefault();
       if (!state.quoteId) {
-        submitLockRef.current = false;
+        submitLock.current.held = false;
         submitArmedRef.current = false;
       }
       return;
     }
-    if (submitLockRef.current && !submitArmedRef.current) {
+    if (submitLock.current.held && !submitArmedRef.current) {
       event.preventDefault();
       return;
     }
     const err = validateBeforeSave();
     if (err) {
       event.preventDefault();
-      submitLockRef.current = false;
+      submitLock.current.held = false;
       submitArmedRef.current = false;
       setStepError(err);
       return;
     }
+    if (!submitLock.current.held && !claimQuoteSubmit(submitLock.current)) {
+      event.preventDefault();
+      return;
+    }
     submitArmedRef.current = false;
-    submitLockRef.current = true;
   };
 
   const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
@@ -594,6 +610,7 @@ export function QuoteCreateWizard({
       {/* Earlier steps stay mounted but hidden. Native required fields there
           (line_service_template_id) are not focusable, which blocks submit. */}
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="create_idempotency_key" value={idempotencyKey} />
       <input type="hidden" name="customer_source" value={customerSource} />
       <input type="hidden" name="property_source" value={propertySource} />
       <input ref={saveIntentInputRef} type="hidden" name="save_intent" defaultValue="draft" />
