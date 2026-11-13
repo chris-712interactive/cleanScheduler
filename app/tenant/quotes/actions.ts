@@ -1150,89 +1150,85 @@ async function finishCreatedQuote(input: {
     run: (providerKey: string) => Promise<{ ok: boolean }>,
   ) => {
     if (!heldChannels.has(step)) return;
-    const nowMs = Date.now();
-    const lease = await claimQuoteChannelSend({
-      admin: input.admin,
-      tenantId: input.tenantId,
-      idempotencyKey: input.idempotencyKey,
-      channel: step,
-      ownerToken: input.ownerToken,
-      quoteId: input.quoteId,
-      nowMs,
-    });
-    if (!lease.ok) {
-      await commit(step, 'failed', null);
-      return;
-    }
-    if (!lease.claimed) {
-      if (lease.state === 'ok') await commit(step, 'ok', null);
-      else if (input.revertChannel) await input.revertChannel(step);
-      return;
-    }
-    const providerKey = lease.providerKey;
-    const signal = AbortSignal.timeout(channelSendTimeoutMs());
-    const provider = run(providerKey);
-    let released = false;
-    const release = () => {
-      if (released) return;
-      released = true;
-      releaseQuoteChannelLease(input.idempotencyKey, step);
-    };
-    void provider.finally(release);
-    const timeout = new Promise<'timeout'>((resolve) => {
-      if (signal.aborted) {
-        resolve('timeout');
+    try {
+      const nowMs = Date.now();
+      const lease = await claimQuoteChannelSend({
+        admin: input.admin,
+        tenantId: input.tenantId,
+        idempotencyKey: input.idempotencyKey,
+        channel: step,
+        ownerToken: input.ownerToken,
+        quoteId: input.quoteId,
+        nowMs,
+      });
+      if (!lease.ok) {
+        await commit(step, 'failed', null);
         return;
       }
-      signal.addEventListener('abort', () => resolve('timeout'), { once: true });
-    });
-    const leaseInput = {
-      admin: input.admin,
-      tenantId: input.tenantId,
-      idempotencyKey: input.idempotencyKey,
-      channel: step,
-      ownerToken: input.ownerToken,
-    };
-    const recordLateChannelResult = async (state: 'ok' | 'failed') => {
-      try {
-        const settledLate = await settleQuoteChannelSend({
-          ...leaseInput,
-          state,
-          nowMs: Date.now(),
-        });
-        if (!settledLate) return;
-        await commit(step, state, null);
-      } catch {
-        console.error('[createTenantQuote] channel result was not stored');
+      if (!lease.claimed) {
+        if (lease.state === 'ok') await commit(step, 'ok', null);
+        else if (input.revertChannel) await input.revertChannel(step);
+        return;
       }
-    };
-    const winner = await Promise.race([
-      provider.then(
-        (result) => (result.ok ? ('ok' as const) : ('failed' as const)),
-        () => 'failed' as const,
-      ),
-      timeout,
-    ]);
-    if (winner === 'timeout') {
-      await markQuoteChannelUnknown(leaseInput);
-      await commit(step, 'unknown', lease.leaseExpiresAt);
-      void provider.then(
-        (result) => {
-          void recordLateChannelResult(result.ok ? 'ok' : 'failed');
-        },
-        () => {
-          void recordLateChannelResult('failed');
-        },
-      );
-      return;
+      const providerKey = lease.providerKey;
+      const signal = AbortSignal.timeout(channelSendTimeoutMs());
+      const provider = run(providerKey);
+      const timeout = new Promise<'timeout'>((resolve) => {
+        if (signal.aborted) {
+          resolve('timeout');
+          return;
+        }
+        signal.addEventListener('abort', () => resolve('timeout'), { once: true });
+      });
+      const leaseInput = {
+        admin: input.admin,
+        tenantId: input.tenantId,
+        idempotencyKey: input.idempotencyKey,
+        channel: step,
+        ownerToken: input.ownerToken,
+      };
+      const recordLateChannelResult = async (state: 'ok' | 'failed') => {
+        try {
+          const settledLate = await settleQuoteChannelSend({
+            ...leaseInput,
+            state,
+            nowMs: Date.now(),
+          });
+          if (!settledLate) return;
+          await commit(step, state, null);
+        } catch {
+          console.error('[createTenantQuote] channel result was not stored');
+        }
+      };
+      const winner = await Promise.race([
+        provider.then(
+          (result) => (result.ok ? ('ok' as const) : ('failed' as const)),
+          () => 'failed' as const,
+        ),
+        timeout,
+      ]);
+      if (winner === 'timeout') {
+        await markQuoteChannelUnknown(leaseInput);
+        await commit(step, 'unknown', lease.leaseExpiresAt);
+        void provider.then(
+          (result) => {
+            void recordLateChannelResult(result.ok ? 'ok' : 'failed');
+          },
+          () => {
+            void recordLateChannelResult('failed');
+          },
+        );
+        return;
+      }
+      const settled = await settleQuoteChannelSend({
+        ...leaseInput,
+        state: winner,
+        nowMs: Date.now(),
+      });
+      if (settled) await commit(step, winner, null);
+    } finally {
+      releaseQuoteChannelLease(input.idempotencyKey, step);
     }
-    release();
-    const settled = await settleQuoteChannelSend({
-      ...leaseInput,
-      state: winner,
-      nowMs: Date.now(),
-    });
-    if (settled) await commit(step, winner, null);
   };
   await sendChannel('email', (providerKey) =>
     sendQuoteNotificationEmail(input.admin, 'quote_sent', {

@@ -84,7 +84,8 @@ begin
      or p_provider_key is null
      or char_length(p_provider_key) < 1
      or char_length(p_provider_key) > 255
-     or p_lease_expires_at is null then
+     or p_lease_expires_at is null
+     or p_lease_expires_at <= now() then
     return jsonb_build_object('claimed', false, 'provider_key', null, 'state', null, 'lease_expires_at', null);
   end if;
 
@@ -118,7 +119,9 @@ begin
     return jsonb_build_object('claimed', false, 'provider_key', null, 'state', null, 'lease_expires_at', null);
   end if;
 
-  if existing.owner_token = p_owner_token and existing.state = 'sending' then
+  if existing.owner_token = p_owner_token
+     and existing.state = 'sending'
+     and existing.lease_expires_at > now() then
     return jsonb_build_object(
       'claimed', true,
       'provider_key', existing.provider_key,
