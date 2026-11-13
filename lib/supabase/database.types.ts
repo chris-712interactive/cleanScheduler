@@ -3463,6 +3463,54 @@ export type Database = {
           },
         ];
       };
+      tenant_quote_channel_sends: {
+        Row: {
+          tenant_id: string;
+          idempotency_key: string;
+          channel: string;
+          state: string;
+          owner_token: string;
+          provider_key: string;
+          lease_expires_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          idempotency_key: string;
+          channel: string;
+          state: string;
+          owner_token: string;
+          provider_key: string;
+          lease_expires_at: string;
+          updated_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          idempotency_key?: string;
+          channel?: string;
+          state?: string;
+          owner_token?: string;
+          provider_key?: string;
+          lease_expires_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_quote_channel_sends_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tenant_quote_channel_sends_request_fkey';
+            columns: ['tenant_id', 'idempotency_key'];
+            isOneToOne: false;
+            referencedRelation: 'tenant_quote_create_requests';
+            referencedColumns: ['tenant_id', 'idempotency_key'];
+          },
+        ];
+      };
       tenant_quote_create_requests: {
         Row: {
           tenant_id: string;
@@ -6442,6 +6490,17 @@ export type Database = {
       expire_sent_quotes_past_valid_until: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      claim_quote_channel_send: {
+        Args: {
+          p_tenant_id: string;
+          p_idempotency_key: string;
+          p_channel: string;
+          p_owner_token: string;
+          p_provider_key: string;
+          p_lease_expires_at: string;
+        };
+        Returns: Json;
       };
       tenant_quote_create_with_line_items: {
         Args: {

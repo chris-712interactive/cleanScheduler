@@ -21,11 +21,21 @@ const harness = vi.hoisted(() => {
     quoteLookupError: false,
     quoteTitle: 'Weekly clean',
     claimError: null as { code: string; message: string } | null,
+    leaseClaimError: null as { code: string; message: string } | null,
     failFollowUpCommits: false,
   };
   const requests = new Map<
     string,
     { quote_id: string | null; follow_ups: Record<string, unknown> }
+  >();
+  const leases = new Map<
+    string,
+    {
+      state: string;
+      owner_token: string;
+      provider_key: string;
+      lease_expires_at: string;
+    }
   >();
   const saveCodes = vi.fn(
     async (
@@ -45,24 +55,157 @@ const harness = vi.hoisted(() => {
       return { ok: true as const };
     },
   );
-  const sendEmail = vi.fn(async (input?: { quoteTitle?: string; customerId?: string }) => {
-    void input;
-    return { ok: state.emailOk };
-  });
-  const sendSms = vi.fn(async (input?: { quoteTitle?: string; customerId?: string }) => {
-    void input;
-    return { ok: state.smsOk };
-  });
-  const emitWebhook = vi.fn(async (input?: { quoteTitle?: string; customerId?: string }) => {
-    void input;
-    return { ok: state.webhookOk };
-  });
+  const sendEmail = vi.fn(
+    async (input?: { quoteTitle?: string; customerId?: string; idempotencyKey?: string }) => {
+      void input;
+      return { ok: state.emailOk };
+    },
+  );
+  const sendSms = vi.fn(
+    async (input?: { quoteTitle?: string; customerId?: string; idempotencyKey?: string }) => {
+      void input;
+      return { ok: state.smsOk };
+    },
+  );
+  const emitWebhook = vi.fn(
+    async (input?: { quoteTitle?: string; customerId?: string; eventId?: string }) => {
+      void input;
+      return { ok: state.webhookOk };
+    },
+  );
 
   function seedRequest(
     key: string,
     row: { quote_id: string | null; follow_ups: Record<string, unknown> },
   ) {
     requests.set(`tenant-1:${key}`, row);
+  }
+
+  function seedLease(
+    key: string,
+    channel: string,
+    row: {
+      state: string;
+      owner_token: string;
+      provider_key: string;
+      lease_expires_at: string;
+    },
+  ) {
+    leases.set(`tenant-1:${key}:${channel}`, { ...row });
+  }
+
+  function claimLease(args: Record<string, string>) {
+    const owner = args.p_owner_token ?? '';
+    const providerKey = args.p_provider_key ?? '';
+    const leaseExpiresAt = args.p_lease_expires_at ?? '';
+    const id = `${args.p_tenant_id}:${args.p_idempotency_key}:${args.p_channel}`;
+    const now = Date.now();
+    const expiryMs = Date.parse(leaseExpiresAt);
+    const row = leases.get(id);
+    if (!Number.isFinite(expiryMs) || expiryMs <= now) {
+      if (!row) {
+        return { claimed: false, provider_key: null, state: null, lease_expires_at: null };
+      }
+      return {
+        claimed: false,
+        provider_key: row.provider_key,
+        state: row.state,
+        lease_expires_at: row.lease_expires_at,
+      };
+    }
+    if (!row) {
+      const created = {
+        state: 'sending',
+        owner_token: owner,
+        provider_key: providerKey,
+        lease_expires_at: leaseExpiresAt,
+      };
+      leases.set(id, created);
+      return {
+        claimed: true,
+        provider_key: created.provider_key,
+        state: 'sending',
+        lease_expires_at: created.lease_expires_at,
+      };
+    }
+    if (
+      row.owner_token === owner &&
+      row.state === 'sending' &&
+      Date.parse(row.lease_expires_at) > now
+    ) {
+      return {
+        claimed: true,
+        provider_key: row.provider_key,
+        state: row.state,
+        lease_expires_at: row.lease_expires_at,
+      };
+    }
+    const expired = Date.parse(row.lease_expires_at) <= now;
+    if (
+      row.state === 'failed' ||
+      ((row.state === 'sending' || row.state === 'unknown') && expired)
+    ) {
+      row.state = 'sending';
+      row.owner_token = owner;
+      row.lease_expires_at = leaseExpiresAt;
+      return {
+        claimed: true,
+        provider_key: row.provider_key,
+        state: 'sending',
+        lease_expires_at: row.lease_expires_at,
+      };
+    }
+    return {
+      claimed: false,
+      provider_key: row.provider_key,
+      state: row.state,
+      lease_expires_at: row.lease_expires_at,
+    };
+  }
+
+  function leaseQuery() {
+    const filters: Record<string, unknown> = {};
+    let payload: Record<string, unknown> | null = null;
+    const api = {
+      select() {
+        return api;
+      },
+      update(row: Record<string, unknown>) {
+        payload = row;
+        return api;
+      },
+      eq(column: string, value: string) {
+        filters[column] = value;
+        return api;
+      },
+      in(column: string, values: string[]) {
+        filters[column] = values;
+        return api;
+      },
+      maybeSingle: () => Promise.resolve(run()),
+    };
+    return api;
+
+    function run() {
+      const id = `${String(filters.tenant_id)}:${String(filters.idempotency_key)}:${String(filters.channel)}`;
+      const row = leases.get(id);
+      if (!row || !payload) return { data: null, error: null };
+      if (filters.owner_token && row.owner_token !== filters.owner_token) {
+        return { data: null, error: null };
+      }
+      const stateFilter = filters.state;
+      if (Array.isArray(stateFilter) && !stateFilter.includes(row.state)) {
+        return { data: null, error: null };
+      }
+      if (typeof stateFilter === 'string' && row.state !== stateFilter) {
+        return { data: null, error: null };
+      }
+      if (typeof payload.state === 'string') row.state = payload.state;
+      if (typeof payload.lease_expires_at === 'string') {
+        row.lease_expires_at = payload.lease_expires_at;
+      }
+      return { data: { channel: row.state }, error: null };
+    }
   }
 
   function sameJson(left: unknown, right: unknown): boolean {
@@ -173,9 +316,14 @@ const harness = vi.hoisted(() => {
     return {
       from(table: string) {
         if (table === 'tenant_quote_create_requests') return requestQuery();
+        if (table === 'tenant_quote_channel_sends') return leaseQuery();
         return query(table);
       },
-      async rpc(name: string, args: { p_status?: string }) {
+      async rpc(name: string, args: Record<string, string>) {
+        if (name === 'claim_quote_channel_send') {
+          if (state.leaseClaimError) return { data: null, error: state.leaseClaimError };
+          return { data: claimLease(args), error: null };
+        }
         if (name !== 'tenant_quote_create_with_line_items') {
           return { data: null, error: { message: 'unexpected rpc' } };
         }
@@ -271,7 +419,9 @@ const harness = vi.hoisted(() => {
   return {
     state,
     requests,
+    leases,
     seedRequest,
+    seedLease,
     saveCodes,
     sendEmail,
     sendSms,
@@ -326,7 +476,10 @@ vi.mock('@/lib/portal/invalidatePortalCache', () => ({
   invalidateCustomerQuoteBadge: () => {},
 }));
 
-import { resetQuoteChannelSendLeases } from '@/lib/tenant/quoteCreateIdempotency';
+import {
+  resetQuoteChannelSendLeases,
+  setChannelSendTimeoutMsForTests,
+} from '@/lib/tenant/quoteCreateIdempotency';
 import { createTenantQuote, type QuoteFormState } from './actions';
 
 function withPendingClaim(followUps: Record<string, string>, ageMs = 0): Record<string, unknown> {
@@ -379,9 +532,12 @@ describe('createTenantQuote follow-up failures', () => {
     harness.state.quoteLookupError = false;
     harness.state.quoteTitle = 'Weekly clean';
     harness.state.claimError = null;
+    harness.state.leaseClaimError = null;
     harness.state.failFollowUpCommits = false;
     resetQuoteChannelSendLeases();
+    setChannelSendTimeoutMsForTests(null);
     harness.requests.clear();
+    harness.leases.clear();
     harness.saveCodes.mockClear();
     harness.sendEmail.mockClear();
     harness.sendSms.mockClear();
@@ -727,7 +883,7 @@ describe('createTenantQuote follow-up failures', () => {
       releaseSms({ ok: true });
       await first;
       expect(harness.sendSms).toHaveBeenCalledTimes(1);
-      expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).toBe('failed');
+      expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).toBe('ok');
     } finally {
       harness.sendSms.mockImplementation(async () => ({ ok: harness.state.smsOk }));
       vi.useRealTimers();
@@ -862,6 +1018,8 @@ describe('createTenantQuote follow-up failures', () => {
     expect(retry.warning).toBeUndefined();
     expect(harness.sendSms).toHaveBeenCalledTimes(2);
     expect(harness.sendEmail).toHaveBeenCalledTimes(1);
+    expect(harness.sendSms.mock.calls[0]?.[0]?.idempotencyKey).toBe(`quote-sms-${QUOTE_ID}`);
+    expect(harness.sendSms.mock.calls[1]?.[0]?.idempotencyKey).toBe(`quote-sms-${QUOTE_ID}`);
     expect(harness.sendSms.mock.calls[1]?.[0]).toMatchObject({
       quoteTitle: 'Stored weekly title',
       customerId: CUSTOMER_ID,
@@ -903,5 +1061,248 @@ describe('createTenantQuote follow-up failures', () => {
     expect(result.success).toBeUndefined();
     expect(result.error).toMatch(/Refresh the quote form/);
     expect(harness.state.rpcCalls).toBe(0);
+  });
+
+  it('sends on the same process after a missing lease function starts working', async () => {
+    harness.state.leaseClaimError = {
+      code: 'PGRST202',
+      message: 'Could not find the function public.claim_quote_channel_send in the schema cache',
+    };
+
+    const first = await createTenantQuote({}, quoteForm('send'));
+
+    expect(first.success).toBe(true);
+    expect(first.warning).toContain('quote-notify');
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.sendSms).not.toHaveBeenCalled();
+    expect(harness.emitWebhook).not.toHaveBeenCalled();
+    expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).toBe('failed');
+
+    harness.state.leaseClaimError = null;
+    const second = await createTenantQuote({}, quoteForm('send'));
+
+    expect(second).toEqual({ success: true, quoteId: QUOTE_ID });
+    expect(harness.sendEmail).toHaveBeenCalledTimes(1);
+    expect(harness.sendSms).toHaveBeenCalledTimes(1);
+    expect(harness.emitWebhook).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries on the same process after a lost lease expires', async () => {
+    const heldUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'ok',
+        locationFacts: 'ok',
+        locationKind: 'ok',
+        crew: 'ok',
+        promotions: 'ok',
+        email: 'ok',
+        sms: 'failed',
+        webhook: 'ok',
+        claimToken: { sms: 'owner-a' },
+      },
+    });
+    harness.seedLease(KEY, 'sms', {
+      state: 'sending',
+      owner_token: 'owner-a',
+      provider_key: `quote-sms-${QUOTE_ID}`,
+      lease_expires_at: heldUntil,
+    });
+    harness.state.quoteStatus = 'sent';
+
+    const blocked = await createTenantQuote({}, quoteForm('send'));
+
+    expect(harness.sendSms).not.toHaveBeenCalled();
+    expect(blocked.quoteId).toBe(QUOTE_ID);
+    const blockedRow = harness.requests.get(`tenant-1:${KEY}`)?.follow_ups;
+    expect(blockedRow?.sms).toBe('failed');
+    expect((blockedRow?.claimToken as { sms?: string } | undefined)?.sms).toBe('owner-a');
+
+    const until = new Date(Date.now() - 1000).toISOString();
+    const followUps = harness.requests.get(`tenant-1:${KEY}`)?.follow_ups;
+    if (followUps) {
+      followUps.sms = 'unknown';
+      followUps.unknownUntil = { sms: until };
+    }
+    const lease = harness.leases.get(`tenant-1:${KEY}:sms`);
+    if (lease) {
+      lease.state = 'unknown';
+      lease.lease_expires_at = until;
+    }
+
+    const retry = await createTenantQuote({}, quoteForm('send'));
+
+    expect(retry).toEqual({ success: true, quoteId: QUOTE_ID });
+    expect(harness.sendSms).toHaveBeenCalledTimes(1);
+    expect(harness.sendSms.mock.calls[0]?.[0]?.idempotencyKey).toBe(`quote-sms-${QUOTE_ID}`);
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.emitWebhook).not.toHaveBeenCalled();
+  });
+
+  it('does not send from another instance while a provider lease is still held', async () => {
+    resetQuoteChannelSendLeases();
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'ok',
+        locationFacts: 'ok',
+        locationKind: 'ok',
+        crew: 'ok',
+        promotions: 'ok',
+        email: 'ok',
+        sms: 'failed',
+        webhook: 'ok',
+        claimToken: { sms: 'owner-a' },
+      },
+    });
+    harness.seedLease(KEY, 'sms', {
+      state: 'sending',
+      owner_token: 'owner-a',
+      provider_key: `quote-sms-${QUOTE_ID}`,
+      lease_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    });
+    harness.state.quoteStatus = 'sent';
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(harness.sendSms).not.toHaveBeenCalled();
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.emitWebhook).not.toHaveBeenCalled();
+    expect(result.quoteId).toBe(QUOTE_ID);
+    const stored = harness.requests.get(`tenant-1:${KEY}`)?.follow_ups;
+    expect(stored?.sms).toBe('failed');
+    expect((stored?.claimToken as { sms?: string } | undefined)?.sms).toBe('owner-a');
+  });
+
+  it('records a timed-out SMS once it is delivered and does not let another instance send it', async () => {
+    setChannelSendTimeoutMsForTests(30);
+    let releaseSms: (result: { ok: boolean }) => void = () => {};
+    const smsGate = new Promise<{ ok: boolean }>((resolve) => {
+      releaseSms = resolve;
+    });
+    harness.sendSms.mockImplementation(() => smsGate);
+    try {
+      const first = createTenantQuote({}, quoteForm('send'));
+      await vi.waitFor(() => expect(harness.sendSms).toHaveBeenCalledTimes(1));
+      const firstResult = await first;
+
+      expect(firstResult.success).toBe(true);
+      expect(firstResult.warning).toContain('quote-in-flight');
+      expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).toBe('unknown');
+      expect(harness.sendSms.mock.calls[0]?.[0]?.idempotencyKey).toBe(`quote-sms-${QUOTE_ID}`);
+      expect(harness.sendEmail.mock.calls[0]?.[0]?.idempotencyKey).toBe(`quote-email-${QUOTE_ID}`);
+      expect(harness.emitWebhook.mock.calls[0]?.[0]?.eventId).toBe(`quote-webhook-${QUOTE_ID}`);
+
+      resetQuoteChannelSendLeases();
+      const second = await createTenantQuote({}, quoteForm('send'));
+
+      expect(harness.sendSms).toHaveBeenCalledTimes(1);
+      expect(second.warning).toContain('quote-in-flight');
+      expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).toBe('unknown');
+
+      releaseSms({ ok: true });
+      await vi.waitFor(() =>
+        expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).toBe('ok'),
+      );
+      resetQuoteChannelSendLeases();
+      const third = await createTenantQuote({}, quoteForm('send'));
+
+      expect(third).toEqual({ success: true, quoteId: QUOTE_ID });
+      expect(harness.sendSms).toHaveBeenCalledTimes(1);
+      expect(harness.sendEmail).toHaveBeenCalledTimes(1);
+      expect(harness.emitWebhook).toHaveBeenCalledTimes(1);
+    } finally {
+      harness.sendSms.mockImplementation(async () => ({ ok: harness.state.smsOk }));
+      setChannelSendTimeoutMsForTests(null);
+    }
+  });
+
+  it('does not retry a cooled-down channel when the quote is accepted, declined, expired, or locked', async () => {
+    const blocked = [
+      { status: 'accepted', locked: true },
+      { status: 'declined', locked: false },
+      { status: 'expired', locked: false },
+      { status: 'sent', locked: true },
+    ] as const;
+    const until = new Date(Date.now() - 1000).toISOString();
+
+    for (const current of blocked) {
+      harness.requests.clear();
+      harness.leases.clear();
+      resetQuoteChannelSendLeases();
+      harness.sendEmail.mockClear();
+      harness.sendSms.mockClear();
+      harness.emitWebhook.mockClear();
+      harness.state.quoteStatus = current.status;
+      harness.state.isLocked = current.locked;
+      harness.seedRequest(KEY, {
+        quote_id: QUOTE_ID,
+        follow_ups: {
+          entryCodes: 'failed',
+          locationFacts: 'ok',
+          locationKind: 'ok',
+          crew: 'failed',
+          promotions: 'ok',
+          email: 'failed',
+          sms: 'unknown',
+          webhook: 'failed',
+          unknownUntil: { sms: until },
+          claimToken: { sms: 'owner-a' },
+        },
+      });
+      harness.seedLease(KEY, 'sms', {
+        state: 'unknown',
+        owner_token: 'owner-a',
+        provider_key: `quote-sms-${QUOTE_ID}`,
+        lease_expires_at: until,
+      });
+
+      const result = await createTenantQuote({}, quoteForm('send'));
+
+      expect(result.quoteId).toBe(QUOTE_ID);
+      expect(result.success).toBe(true);
+      expect(harness.sendEmail).not.toHaveBeenCalled();
+      expect(harness.sendSms).not.toHaveBeenCalled();
+      expect(harness.emitWebhook).not.toHaveBeenCalled();
+      expect(harness.saveCodes).not.toHaveBeenCalled();
+      expect(harness.state.quoteStatus).toBe(current.status);
+      expect(harness.state.isLocked).toBe(current.locked);
+      expect(harness.state.rpcCalls).toBe(0);
+    }
+  });
+
+  it('retries an unknown channel after the lease expires when the quote is still sent', async () => {
+    const until = new Date(Date.now() - 1000).toISOString();
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'ok',
+        locationFacts: 'ok',
+        locationKind: 'ok',
+        crew: 'ok',
+        promotions: 'ok',
+        email: 'ok',
+        sms: 'unknown',
+        webhook: 'ok',
+        unknownUntil: { sms: until },
+        claimToken: { sms: 'owner-a' },
+      },
+    });
+    harness.seedLease(KEY, 'sms', {
+      state: 'unknown',
+      owner_token: 'owner-a',
+      provider_key: `quote-sms-${QUOTE_ID}`,
+      lease_expires_at: until,
+    });
+    harness.state.quoteStatus = 'sent';
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(result).toEqual({ success: true, quoteId: QUOTE_ID });
+    expect(harness.sendSms).toHaveBeenCalledTimes(1);
+    expect(harness.sendSms.mock.calls[0]?.[0]?.idempotencyKey).toBe(`quote-sms-${QUOTE_ID}`);
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.emitWebhook).not.toHaveBeenCalled();
   });
 });
