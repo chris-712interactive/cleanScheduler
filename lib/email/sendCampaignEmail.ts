@@ -1,11 +1,7 @@
 import { formatEmailFromAddress } from '@/lib/email/fromAddress';
 import { createResendClient } from '@/lib/email/resendClient';
 import { serverEnv } from '@/lib/env';
-import {
-  isOutboundSuppressed,
-  logOutboundSuppressed,
-  OUTBOUND_SUPPRESSED_MESSAGE,
-} from '@/lib/outbound/suppression';
+import { isOutboundSuppressed, suppressedProviderResult } from '@/lib/outbound/suppression';
 
 export interface SendCampaignEmailParams {
   to: string;
@@ -18,14 +14,13 @@ export interface SendCampaignEmailParams {
 
 export async function sendCampaignEmail(
   params: SendCampaignEmailParams,
-): Promise<{ ok: true; emailId: string | null } | { ok: false; error: string }> {
+): Promise<{ ok: true; emailId: string | null } | { ok: false; error: string; suppressed?: true }> {
   const to = params.to.trim();
   if (!to) {
     return { ok: false, error: 'Recipient address is empty.' };
   }
   if (isOutboundSuppressed()) {
-    logOutboundSuppressed('resend', 'emails.send');
-    return { ok: false, error: OUTBOUND_SUPPRESSED_MESSAGE };
+    return suppressedProviderResult('resend', 'emails.send');
   }
 
   const apiKey = serverEnv.RESEND_API_KEY?.trim();

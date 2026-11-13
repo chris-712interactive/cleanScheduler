@@ -5,11 +5,7 @@
  * follows the email brand (the cleaning company, or Clean Scheduler).
  */
 import { createResendClient } from '@/lib/email/resendClient';
-import {
-  isOutboundSuppressed,
-  logOutboundSuppressed,
-  OUTBOUND_SUPPRESSED_MESSAGE,
-} from '@/lib/outbound/suppression';
+import { isOutboundSuppressed, suppressedProviderResult } from '@/lib/outbound/suppression';
 import {
   emailFromName,
   emailReplyTo,
@@ -58,14 +54,13 @@ export interface SendTransactionalEmailParams {
 
 export async function sendTransactionalEmail(
   params: SendTransactionalEmailParams,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true } | { ok: false; error: string; suppressed?: true }> {
   const to = params.to.trim();
   if (!to) {
     return { ok: false, error: 'Recipient address is empty.' };
   }
   if (isOutboundSuppressed()) {
-    logOutboundSuppressed('resend', 'emails.send');
-    return { ok: false, error: OUTBOUND_SUPPRESSED_MESSAGE };
+    return suppressedProviderResult('resend', 'emails.send');
   }
 
   const apiKey = resendApiKey();

@@ -5,6 +5,7 @@ import {
   isOutboundSuppressed,
   logOutboundSuppressed,
   OUTBOUND_SUPPRESSED_MESSAGE,
+  suppressedProviderResult,
 } from '@/lib/outbound/suppression';
 import {
   endpointSubscribesToEvent,
@@ -21,8 +22,7 @@ export function truncateWebhookResponsePreview(value: string): string {
 }
 
 /**
- * POST a tenant webhook. Suppression returns a local 204 and does not log the URL,
- * body, or signature.
+ * POST a tenant webhook. Suppression does not call the URL and is not a 2xx.
  */
 export async function postTenantWebhook(
   url: string,
@@ -57,7 +57,10 @@ export async function emitTenantWebhook(params: {
   data: Record<string, unknown>;
   /** Stable id so a repeated claim does not enqueue a second delivery for the same endpoint. */
   eventId?: string;
-}): Promise<{ ok: boolean }> {
+}): Promise<{ ok: boolean; suppressed?: true }> {
+  if (isOutboundSuppressed()) {
+    return suppressedProviderResult('webhook', 'deliver');
+  }
   const eventId = params.eventId?.trim() || crypto.randomUUID();
   const envelope = {
     id: eventId,

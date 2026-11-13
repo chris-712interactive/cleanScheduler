@@ -53,11 +53,32 @@ describe('outbound suppression', () => {
     expect(() =>
       readOutboundSuppression({ OUTBOUND_SUPPRESSED: '1', VERCEL_ENV: 'Production' }),
     ).toThrow(/VERCEL_ENV=production/);
-    expect(() =>
+    expect(
       readOutboundSuppression({
         OUTBOUND_SUPPRESSED: '1',
         NODE_ENV: 'production',
         NEXT_PUBLIC_APP_DOMAIN: 'localhost',
+      }),
+    ).toBe(true);
+    expect(
+      readOutboundSuppression({
+        OUTBOUND_SUPPRESSED: '1',
+        NODE_ENV: 'production',
+        NEXT_PUBLIC_APP_DOMAIN: 'qa.dev.cleanscheduler.com',
+      }),
+    ).toBe(true);
+    expect(
+      readOutboundSuppression({
+        OUTBOUND_SUPPRESSED: '1',
+        NODE_ENV: 'test',
+        NEXT_PUBLIC_APP_DOMAIN: 'example.com',
+      }),
+    ).toBe(true);
+    expect(() =>
+      readOutboundSuppression({
+        OUTBOUND_SUPPRESSED: '1',
+        NODE_ENV: 'production',
+        NEXT_PUBLIC_APP_DOMAIN: 'example.com',
       }),
     ).toThrow(/NODE_ENV=production/);
     expect(
@@ -77,10 +98,30 @@ describe('outbound suppression', () => {
 
     const stripe = getStripe();
     expect(stripe).not.toBeNull();
-    await expect(stripe!.refunds.create({ charge: 'ch_secret' })).rejects.toThrow(/turned off/);
-    const session = await stripe!.checkout.sessions.create({ mode: 'payment' });
+    await expect(stripe!.refunds.create({ charge: 'ch_secret' })).rejects.toThrow(/suppressed/);
+    await expect(stripe!.accounts.create({ type: 'express' })).rejects.toThrow(/suppressed/);
+    await expect(
+      stripe!.subscriptions.update('sub_123', { cancel_at_period_end: true }),
+    ).rejects.toThrow(/suppressed/);
+    await expect(stripe!.checkout.sessions.create({ mode: 'payment' })).rejects.toThrow(
+      /suppressed/,
+    );
+    await expect(
+      stripe!.billingPortal.sessions.create({
+        customer: 'cus_123',
+        return_url: 'https://dev.cleanscheduler.com/billing',
+      }),
+    ).rejects.toThrow(/suppressed/);
+    await expect(
+      stripe!.accountLinks.create({
+        account: 'acct_123',
+        refresh_url: 'https://dev.cleanscheduler.com/billing',
+        return_url: 'https://dev.cleanscheduler.com/billing',
+        type: 'account_onboarding',
+      }),
+    ).rejects.toThrow(/suppressed/);
     const customers = await stripe!.customers.list({ email: 'person@example.com', limit: 1 });
-    expect(session.url).toBeNull();
+    expect(JSON.stringify(customers)).not.toContain('outbound-suppressed.invalid');
     expect(customers.data).toEqual([]);
     expect(() => stripe!.webhooks.constructEvent('{}', 'sig', 'whsec_secret')).toThrow(/refused/);
 
@@ -104,7 +145,7 @@ describe('outbound suppression', () => {
       text: 'secret',
       html: '<p>secret</p>',
     });
-    expect(email.ok).toBe(false);
+    expect(email).toMatchObject({ ok: false, suppressed: true });
     const campaign = await sendCampaignEmail({
       to: 'person@example.com',
       from: 'Clean Scheduler <news@example.com>',
@@ -113,7 +154,7 @@ describe('outbound suppression', () => {
       html: '<p>secret</p>',
       tags: [],
     });
-    expect(campaign.ok).toBe(false);
+    expect(campaign).toMatchObject({ ok: false, suppressed: true });
 
     const webhook = await postTenantWebhook(
       'https://hooks.example/path?email=person@example.com',

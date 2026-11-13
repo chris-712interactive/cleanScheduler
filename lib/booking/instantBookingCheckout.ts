@@ -24,6 +24,7 @@ import {
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import type { Database } from '@/lib/supabase/database.types';
 
 type Admin = SupabaseClient<Database>;
@@ -52,6 +53,7 @@ export async function customerHasSavedConnectCard(
     .eq('customer_id', customerId)
     .maybeSingle();
   if (!data?.stripe_customer_id) return false;
+  if (isOutboundSuppressed()) return false;
   const account = await connectAccountId(admin, tenantId);
   const stripe = getStripe();
   if (!account || !stripe) return false;
@@ -81,6 +83,11 @@ export async function startInstantBookingCheckout(
     collectCard: boolean;
   },
 ): Promise<{ url: string } | { error: string }> {
+  if (isOutboundSuppressed()) {
+    await admin.from('tenant_instant_bookings').delete().eq('id', input.bookingId);
+    return { error: OUTBOUND_SUPPRESSED_MESSAGE };
+  }
+
   const needsPayment = input.depositCents > 0;
   const needsCard = needsPayment || input.collectCard;
   if (!needsCard) return { error: 'No payment is due for this booking.' };

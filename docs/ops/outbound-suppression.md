@@ -28,13 +28,15 @@ curl -sS https://dev.cleanscheduler.com/api/health/deployment
 
 ## Production
 
-The process throws, including from `instrumentation.ts` at startup, when the flag is `1` and any of these is true:
+The process throws, including from `instrumentation.ts` at startup, when the flag is exactly `1` and the checks below say so. Order:
 
-- `VERCEL_ENV` is `production` in any letter case, or
-- `NEXT_PUBLIC_APP_DOMAIN` is `cleanscheduler.com`, `www.cleanscheduler.com`, or another `*.cleanscheduler.com` host that is not `dev.cleanscheduler.com` or `*.dev.cleanscheduler.com`, or
-- `NODE_ENV` is `production` and `VERCEL_ENV` is not `preview` or `development`.
+1. `VERCEL_ENV` is compared case-insensitively. `production` always refuses.
+2. A production host (`cleanscheduler.com`, `www.cleanscheduler.com`, or another `*.cleanscheduler.com` host outside `dev.cleanscheduler.com` and `*.dev.cleanscheduler.com`) always refuses.
+3. `VERCEL_ENV` of `preview` or `development` allows the flag. Vercel sets `NODE_ENV=production` on those builds, including the dev deployment, so this check comes before the Node check.
+4. Otherwise `NODE_ENV=production` refuses unless `NEXT_PUBLIC_APP_DOMAIN` is `localhost`, `127.0.0.1`, `dev.cleanscheduler.com`, or `*.dev.cleanscheduler.com`.
+5. `NODE_ENV=test` and `NODE_ENV=development` stay allowed, so local dev and unit tests can turn the switch on.
 
-Vercel sets `NODE_ENV=production` on preview deploys. Those stay allowed when `VERCEL_ENV` is `preview`. A local `next start` with no Vercel environment does not.
+A suppressed provider call is not stored or shown as a real success. Money and identity actions stop before they write and show “Outbound providers are suppressed on this environment”. Sends return `{ ok: false, suppressed: true }`. Callers keep a failed, pending, or queued row so the item can run after the switch is off. Webhook deliveries are not given `delivered_at`. SMS rows are not inserted, so they do not count against the allowance. Quote channel leases are not settled as ok.
 
 Hosted dev (`dev.cleanscheduler.com`) can enable it. A request `Host` header cannot.
 

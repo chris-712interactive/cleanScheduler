@@ -8,6 +8,7 @@ import {
 } from '@/lib/email/emailBrand';
 import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { sendTransactionalEmail, isResendConfigured } from '@/lib/email/resend';
+import { isOutboundSuppressed, suppressedProviderResult } from '@/lib/outbound/suppression';
 import {
   emailButtonHtml,
   emailFactsHtml,
@@ -102,7 +103,10 @@ export async function sendQuoteNotificationEmail(
     /** Stable per quote send. Resend collapses a retry that uses this same key. */
     idempotencyKey?: string;
   },
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; suppressed?: true }> {
+  if (isOutboundSuppressed()) {
+    return suppressedProviderResult('resend', 'emails.send');
+  }
   if (!isResendConfigured()) {
     console.warn(
       '[quoteNotifications] Skipping email: Resend not configured (RESEND_API_KEY / RESEND_FROM_EMAIL).',

@@ -106,6 +106,10 @@ export async function openTenantCustomerBillingPortalAction(formData: FormData):
     redirect(`/customers/${customerId}?error=${encodeURIComponent('Connect account missing.')}`);
   }
 
+  if (isOutboundSuppressed()) {
+    redirect(`/customers/${customerId}?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
+  }
+
   const stripe = getStripe();
   if (!stripe) {
     redirect(`/customers/${customerId}?error=${encodeURIComponent('Stripe not configured.')}`);

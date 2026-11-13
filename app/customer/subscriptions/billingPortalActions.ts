@@ -49,6 +49,10 @@ export async function openCustomerBillingPortalAction(formData: FormData): Promi
     );
   }
 
+  if (isOutboundSuppressed()) {
+    redirect(`/subscriptions?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
+  }
+
   const stripe = getStripe();
   if (!stripe) {
     redirect(`/subscriptions?error=${encodeURIComponent('Stripe is not configured.')}`);

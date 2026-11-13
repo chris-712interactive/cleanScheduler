@@ -6,17 +6,33 @@
  * a `NEXT_PUBLIC_` variable, so Next.js does not inline it into the browser.
  *
  * Set `OUTBOUND_SUPPRESSED=1` on the Vercel dev (or Preview) environment.
- * Any other value leaves providers live. The process refuses the flag when
- * `VERCEL_ENV` is production (any case), the host is a production
- * cleanscheduler.com name, or `NODE_ENV` is production outside a Vercel
- * preview or development deploy. Vercel sets `NODE_ENV=production` on preview
- * too, so that case stays allowed when `VERCEL_ENV` is preview or development.
+ * Any other value leaves providers live. The refusal order is:
+ * 1. `VERCEL_ENV=production` (any letter case) always refuses.
+ * 2. A production cleanscheduler.com host always refuses.
+ * 3. `VERCEL_ENV=preview` or `development` allows the flag. Vercel sets
+ *    `NODE_ENV=production` on those deploys, including dev.cleanscheduler.com.
+ * 4. Otherwise `NODE_ENV=production` refuses unless the app domain is
+ *    dev.cleanscheduler.com, a single-label host under it, or localhost.
+ * `NODE_ENV=test` and `development` stay allowed so local dev and unit tests work.
  */
 
 export const OUTBOUND_SUPPRESSED_ENV = 'OUTBOUND_SUPPRESSED';
 
-export const OUTBOUND_SUPPRESSED_MESSAGE =
-  'Outbound calls are turned off on this server. Nothing was sent, charged, or linked.';
+export const OUTBOUND_SUPPRESSED_MESSAGE = 'Outbound providers are suppressed on this environment';
+
+export type SuppressedProviderResult = {
+  ok: false;
+  suppressed: true;
+  error: string;
+};
+
+export function suppressedProviderResult(
+  provider: string,
+  operation: string,
+): SuppressedProviderResult {
+  logOutboundSuppressed(provider, operation);
+  return { ok: false, suppressed: true, error: OUTBOUND_SUPPRESSED_MESSAGE };
+}
 
 export class OutboundSuppressedError extends Error {
   constructor() {
@@ -35,6 +51,14 @@ function serverOnly(): void {
 
 function normalizedHost(raw: string | undefined): string {
   return (raw ?? '').trim().toLowerCase().replace(/:\d+$/, '').replace(/\.$/, '');
+}
+
+/** Hosts where a production Node process may still suppress outbound calls. */
+export function isLocalOrHostedDevDomain(raw: string | null | undefined): boolean {
+  const host = normalizedHost(raw ?? undefined);
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return true;
+  if (host === 'dev.cleanscheduler.com' || host.endsWith('.dev.cleanscheduler.com')) return true;
+  return false;
 }
 
 /** True for the production apex and its hosts. Hosted dev stays false. */
@@ -56,9 +80,9 @@ export function outboundSuppressionRefusal(env: EnvSource): string | null {
   if (isProductionOutboundHost(env.NEXT_PUBLIC_APP_DOMAIN)) {
     return 'OUTBOUND_SUPPRESSED cannot be enabled when the host is cleanscheduler.com.';
   }
+  if (vercelEnv === 'preview' || vercelEnv === 'development') return null;
   const nodeEnv = env.NODE_ENV?.trim().toLowerCase() ?? '';
-  const vercelAllowsDevSwitch = vercelEnv === 'preview' || vercelEnv === 'development';
-  if (nodeEnv === 'production' && !vercelAllowsDevSwitch) {
+  if (nodeEnv === 'production' && !isLocalOrHostedDevDomain(env.NEXT_PUBLIC_APP_DOMAIN)) {
     return 'OUTBOUND_SUPPRESSED cannot be enabled when NODE_ENV=production.';
   }
   return null;

@@ -11,12 +11,15 @@ const LIST_METHODS = new Set(['list', 'listLineItems', 'search']);
 const REFUSE_SUCCESS = new Set([
   'refunds.create',
   'accounts.create',
+  'accountLinks.create',
   'subscriptions.update',
   'subscriptions.cancel',
   'paymentIntents.create',
   'paymentIntents.confirm',
   'paymentIntents.capture',
   'charges.create',
+  'checkout.sessions.create',
+  'billingPortal.sessions.create',
 ]);
 
 function operationKey(path: string[]): string {
@@ -75,7 +78,7 @@ function stripeResult(path: string[]): Record<string, unknown> {
     object: resource.split('.').pop() ?? 'suppressed',
     status: method === 'cancel' ? 'canceled' : 'succeeded',
     livemode: false,
-    url: `https://outbound-suppressed.invalid/${id}`,
+    url: null,
   };
 }
 

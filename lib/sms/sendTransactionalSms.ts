@@ -5,11 +5,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { estimateSmsSegmentCount, truncateSmsBodyPreview } from '@/lib/sms/estimateSmsSegments';
 import { normalizePhoneToE164 } from '@/lib/sms/normalizePhoneNumber';
 import { resolveMessagingChannels, type MessagingChannel } from '@/lib/sms/sentMessagingChannels';
-import {
-  isOutboundSuppressed,
-  logOutboundSuppressed,
-  OUTBOUND_SUPPRESSED_MESSAGE,
-} from '@/lib/outbound/suppression';
+import { isOutboundSuppressed, suppressedProviderResult } from '@/lib/outbound/suppression';
 import {
   getSentDmClient,
   isSentDmConfigured,
@@ -32,7 +28,10 @@ export async function sendTransactionalSms(params: {
   relatedVisitId?: string;
   /** sent.dm dedupes this key for 24 hours. 1–255 letters, numbers, hyphens, or underscores. */
   idempotencyKey?: string;
-}): Promise<{ ok: true; segmentCount: number } | { ok: false; error: string }> {
+}): Promise<{ ok: true; segmentCount: number } | { ok: false; error: string; suppressed?: true }> {
+  if (isOutboundSuppressed()) {
+    return suppressedProviderResult('sentdm', 'messages.send');
+  }
   if (!isSentDmConfigured()) {
     return { ok: false, error: 'sent.dm is not configured on this server.' };
   }
@@ -45,10 +44,6 @@ export async function sendTransactionalSms(params: {
   const to = normalizePhoneToE164(params.toPhone);
   if (!to) {
     return { ok: false, error: 'Invalid phone number.' };
-  }
-  if (isOutboundSuppressed()) {
-    logOutboundSuppressed('sentdm', 'messages.send');
-    return { ok: false, error: OUTBOUND_SUPPRESSED_MESSAGE };
   }
 
   const segmentPerChannel = estimateSmsSegmentCount(bodyPreview);
