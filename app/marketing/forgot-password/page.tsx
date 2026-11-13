@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Container } from '@/components/layout/Container';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { NOINDEX_PAGE_METADATA } from '@/lib/marketing/marketingPageMetadata';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import styles from '../sign-in/sign-in.module.scss';
 
@@ -19,7 +20,11 @@ export default function ForgotPasswordPage() {
         <Container size="sm">
           <Card
             title="Reset your password"
-            description="Enter the email on your account. Supabase sends the reset link."
+            description={
+              isOutboundSuppressed()
+                ? 'Password reset email is turned off on this server. No message will be sent.'
+                : 'Enter the email on your account. Supabase sends the reset link.'
+            }
           >
             <ForgotPasswordForm />
             <p className={styles.helpText}>

@@ -7,6 +7,7 @@ import {
   syncCoverageGrantRefund,
 } from '@/lib/billing/applySubscriptionCoverage';
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import { resolveConnectTenantId } from '@/lib/stripe/connectChargeMirrorHandlers';
 import {
   stripePaymentIntentIdFromInvoice,
@@ -158,6 +159,7 @@ async function backfillPaymentFees(
   paymentRowId: string,
   paymentIntentId: string,
 ): Promise<void> {
+  if (isOutboundSuppressed()) return;
   try {
     const piFull = await stripe.paymentIntents.retrieve(
       paymentIntentId,

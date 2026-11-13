@@ -5,6 +5,7 @@ import { afterInvoicePaymentRecorded } from '@/lib/integrations/emitInvoiceWebho
 import { sendInvoiceReceiptEmail } from '@/lib/email/invoiceReceiptEmail';
 import { retrieveConnectSubscription, subscriptionPeriodIso } from '@/lib/stripe/stripeBasilCompat';
 import { settleWaitingVisits } from '@/lib/billing/applySubscriptionCoverage';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import { invoiceCollectibleCents } from '@/lib/promotions/invoiceCollectible';
 
 type Admin = SupabaseClient<Database>;
@@ -138,6 +139,7 @@ export async function handleTenantInvoiceCheckoutCompleted(
   if (!paymentRowId || !options?.stripe || !options?.connectAccountId || !pi) {
     return;
   }
+  if (isOutboundSuppressed()) return;
 
   try {
     const piFull = await options.stripe.paymentIntents.retrieve(

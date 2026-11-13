@@ -295,10 +295,61 @@ if (databaseUrl) {
   });
 }
 
-if (process.env.HOSTED_DEV_MUTATIONS === '1') {
+if (
+  process.env.HOSTED_DEV_MUTATIONS === '1' &&
+  process.env.HOSTED_DEV_MUTATIONS_CONFIRMED !== '1'
+) {
   test('mutation and payment coverage is refused', () => {
-    const gate = mutationGate();
+    const gate = mutationGate({ outboundSuppressed: false });
+    if (gate.status !== 'blocked') {
+      throw new Error('BLOCKED: outbound suppression was treated as open.');
+    }
     throw new Error(`BLOCKED: ${gate.reason}`);
+  });
+}
+
+if (process.env.HOSTED_DEV_MUTATIONS_CONFIRMED === '1') {
+  test('mutation: deployment identity confirms outbound suppression', async ({ request }) => {
+    const identityResponse = await request.get('/api/health/deployment', { maxRedirects: 0 });
+    expect(identityResponse.status()).toBe(200);
+    const body = (await identityResponse.json()) as { outboundSuppressed?: unknown };
+    if (body.outboundSuppressed !== true) {
+      throw new Error('BLOCKED: deployment did not confirm outbound suppression.');
+    }
+  });
+
+  test('mutation: residential QA tenant can add a customer without calling providers', async ({
+    page,
+  }) => {
+    const slug = requiredEnv('QA_TENANT_RESIDENTIAL_SLUG');
+    const contacted = new Set<string>();
+    page.on('request', (request) => {
+      try {
+        contacted.add(new URL(request.url()).hostname);
+      } catch {
+        // Ignore unparseable URLs.
+      }
+    });
+    await openTenant(page, slug, '/sign-in?next=%2Fcustomers%2Fnew');
+    await signIn(
+      page,
+      requiredEnv('QA_TENANT_RESIDENTIAL_EMAIL'),
+      requiredEnv('QA_TENANT_RESIDENTIAL_PASSWORD'),
+    );
+    await gotoSameHost(page, '/customers/new');
+    const marker = `QaSuppress${Date.now().toString(36)}`;
+    await page.getByLabel('First name').fill(marker);
+    await page.getByRole('button', { name: 'Add customer' }).click();
+    await expect(page.getByText(marker, { exact: true })).toBeVisible();
+    const leaked = [...contacted].filter((host) =>
+      /(^|\.)stripe\.com$|(^|\.)plaid\.com$|(^|\.)resend\.com$|(^|\.)sent\.dm$|(^|\.)sentdm\.com$/.test(
+        host,
+      ),
+    );
+    if (leaked.length > 0) {
+      throw new Error(`FAIL: outbound provider host contacted: ${leaked.join(', ')}`);
+    }
+    expect(page.url()).not.toContain('stripe.com');
   });
 }
 

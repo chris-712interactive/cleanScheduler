@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import {
   parseConnectApplicationFeeBps,
   paymentIntentApplicationFeeAmountCents,
@@ -62,6 +63,12 @@ export async function startGuestInvoicePayCheckoutAction(formData: FormData): Pr
   const remaining = inv.amount_cents - inv.amount_paid_cents;
   if (remaining <= 0) {
     redirect(`/pay/${encodeURIComponent(token)}`);
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(
+      `/pay/${encodeURIComponent(token)}?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`,
+    );
   }
 
   const stripe = getStripe();

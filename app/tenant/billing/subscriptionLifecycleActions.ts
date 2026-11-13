@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { createConnectCustomerBillingPortalSession } from '@/lib/billing/connectCustomerBillingPortal';
 
@@ -46,6 +47,10 @@ export async function cancelCustomerSubscriptionAtPeriodEndAction(
     .maybeSingle();
   if (!conn?.stripe_account_id) {
     redirect(`/customers/${customerId}?error=${encodeURIComponent('Connect account missing.')}`);
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(`/customers/${customerId}?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
   }
 
   const stripe = getStripe();
@@ -99,6 +104,10 @@ export async function openTenantCustomerBillingPortalAction(formData: FormData):
   }
   if (!conn?.stripe_account_id) {
     redirect(`/customers/${customerId}?error=${encodeURIComponent('Connect account missing.')}`);
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(`/customers/${customerId}?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
   }
 
   const stripe = getStripe();

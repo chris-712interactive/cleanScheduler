@@ -6,6 +6,7 @@ import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { customerPortalUrlFromRequest } from '@/lib/portal/customerPortalOrigin';
 import { createConnectCustomerBillingPortalSession } from '@/lib/billing/connectCustomerBillingPortal';
 
@@ -46,6 +47,10 @@ export async function openCustomerPaymentMethodsPortalAction(formData: FormData)
     redirect(
       `/payment-methods?error=${encodeURIComponent('Saved payment methods are not available for this provider yet. Pay an invoice or start a subscription first.')}`,
     );
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(`/payment-methods?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
   }
 
   const stripe = getStripe();

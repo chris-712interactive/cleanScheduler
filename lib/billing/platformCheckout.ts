@@ -1,4 +1,5 @@
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
   resolvePlatformPriceId,
   type PlatformBillingInterval,
@@ -28,6 +29,7 @@ export interface PlatformCheckoutParams {
 export async function createPlatformSubscriptionCheckoutUrl(
   params: PlatformCheckoutParams,
 ): Promise<string | null> {
+  if (isOutboundSuppressed()) return null;
   const stripe = getStripe();
   const billingInterval = params.billingInterval ?? 'month';
   const priceId = resolvePlatformPriceId(params.platformPlan, { interval: billingInterval });

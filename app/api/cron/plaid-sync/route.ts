@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { serverEnv } from '@/lib/env';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isPlaidConfigured } from '@/lib/plaid/server';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import { syncAllBankLinks } from '@/lib/plaid/syncBankTransactions';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,10 @@ export async function GET(request: Request) {
   const auth = request.headers.get('authorization');
   if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (isOutboundSuppressed()) {
+    return NextResponse.json({ suppressed: true, tenants: 0, errors: 0 });
   }
 
   if (!isPlaidConfigured()) {

@@ -16,6 +16,7 @@ import {
 } from '@/lib/integrations/integrationSecrets';
 import { parseWebhookEventTypesFromForm } from '@/lib/integrations/tenantWebhookEvents';
 import { emitTenantWebhook } from '@/lib/integrations/emitTenantWebhook';
+import { OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { recordPlatformAuditEvent } from '@/lib/audit/recordPlatformAuditEvent';
 
 export interface IntegrationActionState {
@@ -282,7 +283,7 @@ export async function sendTenantWebhookTestAction(
 
   if (!endpoint) return { error: 'Webhook endpoint not found.' };
 
-  await emitTenantWebhook({
+  const emitted = await emitTenantWebhook({
     admin,
     tenantId: membership.tenantId,
     eventType: 'quote.sent',
@@ -294,6 +295,9 @@ export async function sendTenantWebhookTestAction(
       test: true,
     },
   });
+  if (!emitted.ok) {
+    return { error: emitted.error ?? OUTBOUND_SUPPRESSED_MESSAGE };
+  }
 
   return { success: true };
 }

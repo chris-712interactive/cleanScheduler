@@ -1,5 +1,7 @@
 import SentDm from '@sentdm/sentdm';
 import { isDev, isLocal, serverEnv } from '@/lib/env';
+import { suppressedSentDmClient } from '@/lib/outbound/sentDmSuppressed';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 
 let sentClient: SentDm | null = null;
 
@@ -24,6 +26,7 @@ export function shouldUseSentDmSandbox(): boolean {
 }
 
 export function getSentDmClient(): SentDm {
+  if (isOutboundSuppressed()) return suppressedSentDmClient();
   if (!isSentDmConfigured()) {
     throw new Error(
       'sent.dm is not configured. Set SENT_DM_API_KEY and all SENT_DM_TEMPLATE_* variables.',

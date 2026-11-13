@@ -3,6 +3,7 @@
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { parseAllowedAuthRedirectOrigin } from '@/lib/auth/whiteLabelRedirectOrigin';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 
 export interface ForgotPasswordState {
   error?: string;
@@ -27,6 +28,9 @@ export async function requestPasswordReset(
 
   if (!email) {
     return { error: 'Email is required.' };
+  }
+  if (isOutboundSuppressed()) {
+    return { error: OUTBOUND_SUPPRESSED_MESSAGE };
   }
 
   const h = await headers();

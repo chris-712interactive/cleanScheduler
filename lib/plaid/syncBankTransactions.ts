@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Transaction } from 'plaid';
 import type { Database, Json } from '@/lib/supabase/database.types';
+import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
 import { getPlaidClient } from '@/lib/plaid/server';
 import { generatePaymentMatchSuggestions } from '@/lib/plaid/generateMatchSuggestions';
 
@@ -44,6 +45,10 @@ export async function syncBankTransactionsForTenant(
 
   if (linkErr) throw new Error(linkErr.message);
   if (!link) {
+    return { added: 0, modified: 0, removed: 0 };
+  }
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('plaid', 'transactionsSync');
     return { added: 0, modified: 0, removed: 0 };
   }
 

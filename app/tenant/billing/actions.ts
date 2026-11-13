@@ -10,6 +10,7 @@ import { createPlatformSubscriptionCheckoutUrl } from '@/lib/billing/platformChe
 import { parsePlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import { parsePlatformBillingInterval, resolvePlatformPriceId } from '@/lib/billing/platformPlans';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import type { Tables } from '@/lib/supabase/database.types';
 
 type TenantBillingRow = Tables<'tenant_billing_accounts'>;
@@ -82,6 +83,12 @@ export async function resumePlatformSubscriptionCheckout(formData: FormData): Pr
     );
   }
 
+  if (isOutboundSuppressed()) {
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`,
+    );
+  }
+
   const stripe = getStripe();
   const priceId = resolvePlatformPriceId(tier, { interval: billingInterval });
   if (!stripe || !priceId) {
@@ -132,6 +139,12 @@ export async function openPlatformBillingPortal(formData: FormData): Promise<voi
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
   const billing = billingRes.data as unknown as Pick<TenantBillingRow, 'stripe_customer_id'> | null;
+
+  if (isOutboundSuppressed()) {
+    redirect(
+      `${billingPath}?resume=error&message=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`,
+    );
+  }
 
   const customerId = billing?.stripe_customer_id?.trim();
   if (billingRes.error || !customerId) {
