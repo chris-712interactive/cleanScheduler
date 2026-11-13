@@ -44,6 +44,11 @@ export interface SendTransactionalEmailParams {
   /** Inbox display name. The address stays the verified `RESEND_FROM_EMAIL`. */
   fromName?: string;
   replyTo?: string;
+  /**
+   * Resend `Idempotency-Key` (SDK option, 1–256 characters, kept 24 hours).
+   * The same key and payload returns the original send instead of a second email.
+   */
+  idempotencyKey?: string;
 }
 
 export async function sendTransactionalEmail(
@@ -63,16 +68,20 @@ export async function sendTransactionalEmail(
   const resend = new Resend(apiKey);
   const fromName = params.fromName?.trim();
   const replyTo = params.replyTo?.trim();
+  const idempotencyKey = params.idempotencyKey?.trim();
 
   try {
-    const { error } = await resend.emails.send({
-      from: fromName ? formatEmailFromAddress(fromName, from) : from,
-      to,
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-      ...(replyTo ? { replyTo } : {}),
-    });
+    const { error } = await resend.emails.send(
+      {
+        from: fromName ? formatEmailFromAddress(fromName, from) : from,
+        to,
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+        ...(replyTo ? { replyTo } : {}),
+      },
+      idempotencyKey ? { idempotencyKey } : undefined,
+    );
     if (error) {
       const detail = [error.message, error.name].filter(Boolean).join(' — ');
       console.error('[resend] emails.send failed:', detail);

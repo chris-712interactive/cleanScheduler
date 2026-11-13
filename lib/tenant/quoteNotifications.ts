@@ -94,7 +94,14 @@ async function quoteUrlForCustomer(
 export async function sendQuoteNotificationEmail(
   admin: Admin,
   event: QuoteNotificationEvent,
-  params: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
+  params: {
+    tenantId: string;
+    quoteId: string;
+    quoteTitle: string;
+    customerId: string;
+    /** Stable per quote send. Resend collapses a retry that uses this same key. */
+    idempotencyKey?: string;
+  },
 ): Promise<{ ok: boolean }> {
   if (!isResendConfigured()) {
     console.warn(
@@ -157,6 +164,7 @@ export async function sendQuoteNotificationEmail(
       text,
       html,
       ...emailDeliveryFields(brand),
+      idempotencyKey: params.idempotencyKey,
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_sent email failed:', sent.error);
