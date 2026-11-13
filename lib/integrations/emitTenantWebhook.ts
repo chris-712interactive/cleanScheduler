@@ -1,7 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { buildWebhookSignatureHeader } from '@/lib/integrations/integrationSecrets';
-import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
+import {
+  isOutboundSuppressed,
+  logOutboundSuppressed,
+  OUTBOUND_SUPPRESSED_MESSAGE,
+} from '@/lib/outbound/suppression';
 import {
   endpointSubscribesToEvent,
   type TenantWebhookEventType,
@@ -27,7 +31,7 @@ export async function postTenantWebhook(
 ): Promise<Response> {
   if (isOutboundSuppressed()) {
     logOutboundSuppressed('webhook', 'deliver');
-    return new Response(null, { status: 204 });
+    return new Response(null, { status: 503 });
   }
   return fetch(url, {
     method: 'POST',
@@ -137,6 +141,19 @@ export async function deliverTenantWebhookById(
   }
 
   if (delivery.status === 'delivered') return 'skipped';
+
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('webhook', 'deliver');
+    await admin
+      .from('tenant_webhook_deliveries')
+      .update({
+        status: 'pending',
+        error_message: OUTBOUND_SUPPRESSED_MESSAGE,
+        next_retry_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      })
+      .eq('id', deliveryId);
+    return 'skipped';
+  }
 
   const endpointRaw = delivery.tenant_webhook_endpoints as
     | { url: string; signing_secret: string; enabled: boolean }

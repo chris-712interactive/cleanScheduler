@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
 import { getPlaidClient, isPlaidConfigured } from '@/lib/plaid/server';
 
 type Admin = SupabaseClient<Database>;
@@ -35,6 +36,10 @@ function shouldRemovePlaidItem(link: {
 
 /** Best-effort Plaid `/item/remove` for an active link row. */
 export async function removePlaidItemAtPlaid(accessToken: string): Promise<boolean> {
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('plaid', 'itemRemove');
+    return false;
+  }
   if (!isPlaidConfigured()) return false;
   try {
     const client = getPlaidClient();

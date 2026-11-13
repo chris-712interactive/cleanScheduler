@@ -1,12 +1,39 @@
 import type Stripe from 'stripe';
-import { logOutboundSuppressed, suppressedId } from '@/lib/outbound/suppression';
+import {
+  logOutboundSuppressed,
+  OutboundSuppressedError,
+  suppressedId,
+} from '@/lib/outbound/suppression';
 
 const LIST_METHODS = new Set(['list', 'listLineItems', 'search']);
+
+/** These must not look like Stripe accepted money, an account, or a cancel. */
+const REFUSE_SUCCESS = new Set([
+  'refunds.create',
+  'accounts.create',
+  'subscriptions.update',
+  'subscriptions.cancel',
+  'paymentIntents.create',
+  'paymentIntents.confirm',
+  'paymentIntents.capture',
+  'charges.create',
+]);
+
+function operationKey(path: string[]): string {
+  const method = path[path.length - 1] ?? 'call';
+  const resource = path.slice(0, -1).join('.');
+  return `${resource}.${method}`;
+}
 
 function stripeResult(path: string[]): Record<string, unknown> {
   const method = path[path.length - 1] ?? 'call';
   const resource = path.slice(0, -1).join('.');
-  logOutboundSuppressed('stripe', `${resource}.${method}`);
+  const key = operationKey(path);
+  if (REFUSE_SUCCESS.has(key)) {
+    logOutboundSuppressed('stripe', key);
+    throw new OutboundSuppressedError();
+  }
+  logOutboundSuppressed('stripe', key);
   const id = suppressedId('stripe', `${resource}_${method}`);
   if (LIST_METHODS.has(method)) {
     return { object: 'list', data: [], has_more: false, url: '/v1/suppressed' };
@@ -34,7 +61,7 @@ function stripeResult(path: string[]): Record<string, unknown> {
     return {
       id,
       object: resource,
-      url: `https://outbound-suppressed.invalid/${id}`,
+      url: null,
       mode: 'payment',
       payment_status: 'unpaid',
       status: 'open',
@@ -68,7 +95,11 @@ function stripeProxy(path: string[]): unknown {
     },
     apply() {
       if (path.includes('constructEvent') || path[0] === 'webhooks') refuseWebhook();
-      return Promise.resolve(stripeResult(path));
+      try {
+        return Promise.resolve(stripeResult(path));
+      } catch (error) {
+        return Promise.reject(error);
+      }
     },
   });
 }

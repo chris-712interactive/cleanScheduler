@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import { isOutboundSuppressed } from '@/lib/outbound/suppression';
+import { isOutboundSuppressed, OutboundSuppressedError } from '@/lib/outbound/suppression';
 import { getPlaidClient } from '@/lib/plaid/server';
 import { tryRemovePlaidLinkItem } from '@/lib/plaid/revokePlaidBankLink';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
@@ -27,6 +27,10 @@ export async function exchangeAndSaveBankLink(
   account: PlaidLinkAccountMetadata,
   institution: PlaidLinkInstitutionMetadata | null,
 ): Promise<void> {
+  if (isOutboundSuppressed()) {
+    throw new OutboundSuppressedError();
+  }
+
   const { data: existing } = await admin
     .from('bank_links')
     .select('id, plaid_access_token, plaid_item_id, status')
@@ -38,24 +42,16 @@ export async function exchangeAndSaveBankLink(
   const accessToken = exchange.data.access_token;
   const itemId = exchange.data.item_id;
 
-  let institutionId = institution?.institution_id ?? null;
-  let accountName = account.name || null;
-  let accountMask = account.mask || null;
-  let accountType = account.type || null;
-  let accountSubtype = account.subtype || null;
-
-  if (!isOutboundSuppressed()) {
-    const accountsRes = await client.accountsGet({ access_token: accessToken });
-    const plaidAccount = accountsRes.data.accounts.find((row) => row.account_id === account.id);
-    if (!plaidAccount) {
-      throw new Error('Selected bank account was not found on the Plaid item.');
-    }
-    institutionId = institution?.institution_id ?? accountsRes.data.item.institution_id ?? null;
-    accountName = account.name || plaidAccount.name || null;
-    accountMask = account.mask || plaidAccount.mask || null;
-    accountType = account.type || plaidAccount.type || null;
-    accountSubtype = account.subtype || plaidAccount.subtype || null;
+  const accountsRes = await client.accountsGet({ access_token: accessToken });
+  const plaidAccount = accountsRes.data.accounts.find((row) => row.account_id === account.id);
+  if (!plaidAccount) {
+    throw new Error('Selected bank account was not found on the Plaid item.');
   }
+  const institutionId = institution?.institution_id ?? accountsRes.data.item.institution_id ?? null;
+  const accountName = account.name || plaidAccount.name || null;
+  const accountMask = account.mask || plaidAccount.mask || null;
+  const accountType = account.type || plaidAccount.type || null;
+  const accountSubtype = account.subtype || plaidAccount.subtype || null;
 
   // Replace flow: new Plaid Item — revoke the previous Item before overwriting our row.
   if (existing && existing.plaid_item_id !== itemId) {

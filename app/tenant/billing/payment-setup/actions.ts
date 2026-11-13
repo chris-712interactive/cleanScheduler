@@ -46,6 +46,9 @@ export async function startStripeConnectOnboardingAction(formData: FormData): Pr
   const auth = await requirePortalAccess('tenant', '/billing/payment-setup');
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/payment-setup');
   await assertPaidSubscriptionForConnect(membership.tenantId);
+  if (isOutboundSuppressed()) {
+    redirect(`${paymentSetupPath()}?connect=suppressed`);
+  }
   const admin = createAdminClient();
 
   const { data: existing } = await admin

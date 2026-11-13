@@ -6,12 +6,24 @@
  * a `NEXT_PUBLIC_` variable, so Next.js does not inline it into the browser.
  *
  * Set `OUTBOUND_SUPPRESSED=1` on the Vercel dev (or Preview) environment.
- * Any other value leaves providers live. Production cannot turn it on:
- * `VERCEL_ENV=production` or a cleanscheduler.com host that is not the
- * hosted-dev tree throws, including at server startup.
+ * Any other value leaves providers live. The process refuses the flag when
+ * `VERCEL_ENV` is production (any case), the host is a production
+ * cleanscheduler.com name, or `NODE_ENV` is production outside a Vercel
+ * preview or development deploy. Vercel sets `NODE_ENV=production` on preview
+ * too, so that case stays allowed when `VERCEL_ENV` is preview or development.
  */
 
 export const OUTBOUND_SUPPRESSED_ENV = 'OUTBOUND_SUPPRESSED';
+
+export const OUTBOUND_SUPPRESSED_MESSAGE =
+  'Outbound calls are turned off on this server. Nothing was sent, charged, or linked.';
+
+export class OutboundSuppressedError extends Error {
+  constructor() {
+    super(OUTBOUND_SUPPRESSED_MESSAGE);
+    this.name = 'OutboundSuppressedError';
+  }
+}
 
 type EnvSource = Record<string, string | undefined>;
 
@@ -37,11 +49,17 @@ export function isProductionOutboundHost(raw: string | null | undefined): boolea
 
 export function outboundSuppressionRefusal(env: EnvSource): string | null {
   if (env.OUTBOUND_SUPPRESSED?.trim() !== '1') return null;
-  if (env.VERCEL_ENV?.trim() === 'production') {
+  const vercelEnv = env.VERCEL_ENV?.trim().toLowerCase() ?? '';
+  if (vercelEnv === 'production') {
     return 'OUTBOUND_SUPPRESSED cannot be enabled when VERCEL_ENV=production.';
   }
   if (isProductionOutboundHost(env.NEXT_PUBLIC_APP_DOMAIN)) {
     return 'OUTBOUND_SUPPRESSED cannot be enabled when the host is cleanscheduler.com.';
+  }
+  const nodeEnv = env.NODE_ENV?.trim().toLowerCase() ?? '';
+  const vercelAllowsDevSwitch = vercelEnv === 'preview' || vercelEnv === 'development';
+  if (nodeEnv === 'production' && !vercelAllowsDevSwitch) {
+    return 'OUTBOUND_SUPPRESSED cannot be enabled when NODE_ENV=production.';
   }
   return null;
 }

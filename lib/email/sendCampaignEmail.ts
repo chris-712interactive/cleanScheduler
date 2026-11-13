@@ -4,7 +4,7 @@ import { serverEnv } from '@/lib/env';
 import {
   isOutboundSuppressed,
   logOutboundSuppressed,
-  suppressedId,
+  OUTBOUND_SUPPRESSED_MESSAGE,
 } from '@/lib/outbound/suppression';
 
 export interface SendCampaignEmailParams {
@@ -25,7 +25,7 @@ export async function sendCampaignEmail(
   }
   if (isOutboundSuppressed()) {
     logOutboundSuppressed('resend', 'emails.send');
-    return { ok: true, emailId: suppressedId('resend', 'emails_send') };
+    return { ok: false, error: OUTBOUND_SUPPRESSED_MESSAGE };
   }
 
   const apiKey = serverEnv.RESEND_API_KEY?.trim();

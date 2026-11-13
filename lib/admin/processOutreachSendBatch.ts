@@ -9,6 +9,7 @@ import { OUTREACH_SEND_BATCH_SIZE } from '@/lib/admin/outreachTypes';
 import { createOutreachUnsubscribeToken } from '@/lib/admin/outreachUnsubscribeToken';
 import { campaignFromAddress, sendCampaignEmail } from '@/lib/email/sendCampaignEmail';
 import { serverEnv } from '@/lib/env';
+import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
 import { PRODUCT_NAME } from '@/lib/legal/site';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import type { Database } from '@/lib/supabase/database.types';
@@ -25,6 +26,10 @@ export async function processOutreachSendBatch(
   campaignsTouched: string[];
 }> {
   const batchSize = options?.batchSize ?? OUTREACH_SEND_BATCH_SIZE;
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('resend', 'emails.send');
+    return { processed: 0, sent: 0, failed: 0, campaignsTouched: [] };
+  }
   const platformFrom = serverEnv.RESEND_FROM_EMAIL?.trim();
   if (!platformFrom) {
     return { processed: 0, sent: 0, failed: 0, campaignsTouched: [] };

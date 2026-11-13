@@ -1,14 +1,13 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 import { serverEnv } from '@/lib/env';
 import { suppressedPlaidClient } from '@/lib/outbound/plaidSuppressed';
-import { isOutboundSuppressed } from '@/lib/outbound/suppression';
+import { isOutboundSuppressed, OutboundSuppressedError } from '@/lib/outbound/suppression';
 import { getPlaidRuntimeEnv } from '@/lib/plaid/plaidEnv';
 
 let plaidClient: PlaidApi | null = null;
 let plaidClientEnv: ReturnType<typeof getPlaidRuntimeEnv> | null = null;
 
 export function isPlaidConfigured(): boolean {
-  if (isOutboundSuppressed()) return true;
   return Boolean(
     serverEnv.PLAID_CLIENT_ID?.trim() && serverEnv.PLAID_SECRET?.trim() && serverEnv.PLAID_ENV,
   );
@@ -51,6 +50,9 @@ export function getPlaidClient(): PlaidApi {
 }
 
 export async function createPlaidLinkToken(tenantId: string): Promise<string> {
+  if (isOutboundSuppressed()) {
+    throw new OutboundSuppressedError();
+  }
   const client = getPlaidClient();
   const webhook = process.env.PLAID_WEBHOOK_URL?.trim() || undefined;
   const response = await client.linkTokenCreate({
@@ -70,6 +72,9 @@ export async function createPlaidUpdateLinkToken(
   tenantId: string,
   accessToken: string,
 ): Promise<string> {
+  if (isOutboundSuppressed()) {
+    throw new OutboundSuppressedError();
+  }
   const client = getPlaidClient();
   const response = await client.linkTokenCreate({
     user: { client_user_id: tenantId },

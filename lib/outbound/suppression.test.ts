@@ -50,6 +50,24 @@ describe('outbound suppression', () => {
     expect(() =>
       readOutboundSuppression({ OUTBOUND_SUPPRESSED: '1', VERCEL_ENV: 'production' }),
     ).toThrow(/VERCEL_ENV=production/);
+    expect(() =>
+      readOutboundSuppression({ OUTBOUND_SUPPRESSED: '1', VERCEL_ENV: 'Production' }),
+    ).toThrow(/VERCEL_ENV=production/);
+    expect(() =>
+      readOutboundSuppression({
+        OUTBOUND_SUPPRESSED: '1',
+        NODE_ENV: 'production',
+        NEXT_PUBLIC_APP_DOMAIN: 'localhost',
+      }),
+    ).toThrow(/NODE_ENV=production/);
+    expect(
+      readOutboundSuppression({
+        OUTBOUND_SUPPRESSED: '1',
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'preview',
+        NEXT_PUBLIC_APP_DOMAIN: 'dev.cleanscheduler.com',
+      }),
+    ).toBe(true);
   });
 
   it('short-circuits Stripe, Plaid, sent.dm, Resend, and webhooks before fetch', async () => {
@@ -59,12 +77,10 @@ describe('outbound suppression', () => {
 
     const stripe = getStripe();
     expect(stripe).not.toBeNull();
-    const refund = await stripe!.refunds.create({ charge: 'ch_secret' });
+    await expect(stripe!.refunds.create({ charge: 'ch_secret' })).rejects.toThrow(/turned off/);
     const session = await stripe!.checkout.sessions.create({ mode: 'payment' });
     const customers = await stripe!.customers.list({ email: 'person@example.com', limit: 1 });
-    expect(refund.id).toMatch(/^suppressed_stripe_refunds_create_/);
-    expect(session.id).toMatch(/^suppressed_stripe_checkout_sessions_create_/);
-    expect(session.url).not.toContain('stripe.com');
+    expect(session.url).toBeNull();
     expect(customers.data).toEqual([]);
     expect(() => stripe!.webhooks.constructEvent('{}', 'sig', 'whsec_secret')).toThrow(/refused/);
 
@@ -88,7 +104,7 @@ describe('outbound suppression', () => {
       text: 'secret',
       html: '<p>secret</p>',
     });
-    expect(email).toEqual({ ok: true });
+    expect(email.ok).toBe(false);
     const campaign = await sendCampaignEmail({
       to: 'person@example.com',
       from: 'Clean Scheduler <news@example.com>',
@@ -97,15 +113,15 @@ describe('outbound suppression', () => {
       html: '<p>secret</p>',
       tags: [],
     });
-    expect(campaign.ok).toBe(true);
-    if (campaign.ok) expect(campaign.emailId).toMatch(/^suppressed_resend_emails_send_/);
+    expect(campaign.ok).toBe(false);
 
     const webhook = await postTenantWebhook(
       'https://hooks.example/path?email=person@example.com',
       '{"to":"person@example.com","secret":"whsec"}',
       'v1=signature',
     );
-    expect(webhook.status).toBe(204);
+    expect(webhook.status).toBe(503);
+    expect(webhook.ok).toBe(false);
 
     expect(fetchSpy).not.toHaveBeenCalled();
     const logged = info.mock.calls.map((call) => call.join(' ')).join('\n');

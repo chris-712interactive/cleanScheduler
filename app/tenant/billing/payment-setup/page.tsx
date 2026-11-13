@@ -100,6 +100,7 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
   const connectParam = firstParam(sp.connect);
   const err = firstParam(sp.error);
   const synced = connectParam === 'synced';
+  const suppressed = connectParam === 'suppressed';
   const returnedFromStripe = connectParam === 'return';
 
   const db = createTenantPortalDbClient();
@@ -144,6 +145,12 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
       <FeedbackToasts
         messages={[
           err ? { title: err, variant: 'danger' } : null,
+          suppressed
+            ? {
+                title: 'Card setup is turned off on this server. No Stripe account was created.',
+                variant: 'danger',
+              }
+            : null,
           synced ? { title: 'Status updated from Stripe.', variant: 'success' } : null,
           returnedFromStripe && status !== 'complete'
             ? {

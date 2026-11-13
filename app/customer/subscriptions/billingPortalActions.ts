@@ -6,6 +6,7 @@ import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { customerPortalUrlFromRequest } from '@/lib/portal/customerPortalOrigin';
 import { createConnectCustomerBillingPortalSession } from '@/lib/billing/connectCustomerBillingPortal';
 
@@ -106,6 +107,10 @@ export async function cancelCustomerOwnSubscriptionAction(formData: FormData): P
     .maybeSingle();
   if (!conn?.stripe_account_id) {
     redirect(`/subscriptions?error=${encodeURIComponent('Connect account missing.')}`);
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(`/subscriptions?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
   }
 
   const stripe = getStripe();

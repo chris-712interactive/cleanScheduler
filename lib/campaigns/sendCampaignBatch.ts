@@ -12,6 +12,11 @@ import { DEFAULT_BRAND_COLOR } from '@/lib/tenant/tenantBusinessSettings';
 import type { Database } from '@/lib/supabase/database.types';
 import type { CampaignAudiencePreset, CampaignTemplateKey } from '@/lib/campaigns/types';
 import { serverEnv } from '@/lib/env';
+import {
+  isOutboundSuppressed,
+  logOutboundSuppressed,
+  OUTBOUND_SUPPRESSED_MESSAGE,
+} from '@/lib/outbound/suppression';
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -21,6 +26,11 @@ export async function sendEmailCampaignNow(params: {
   campaignId: string;
   actorUserId: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('resend', 'emails.send');
+    return { ok: false, error: OUTBOUND_SUPPRESSED_MESSAGE };
+  }
+
   const { data: campaign, error: campaignError } = await params.admin
     .from('tenant_email_campaigns')
     .select('*')

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { syncCoverageGrantRefund } from '@/lib/billing/applySubscriptionCoverage';
 
 export async function refundStripeInvoicePaymentAction(formData: FormData): Promise<void> {
@@ -41,6 +42,12 @@ export async function refundStripeInvoicePaymentAction(formData: FormData): Prom
   if (!conn?.stripe_account_id) {
     redirect(
       `/billing/invoices/${invoiceId}?error=${encodeURIComponent('Connect account missing.')}`,
+    );
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(
+      `/billing/invoices/${invoiceId}?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`,
     );
   }
 

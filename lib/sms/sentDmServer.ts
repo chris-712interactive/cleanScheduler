@@ -14,7 +14,6 @@ const TEMPLATE_ENV_KEYS = [
 ] as const;
 
 export function isSentDmConfigured(): boolean {
-  if (isOutboundSuppressed()) return true;
   const apiKey = serverEnv.SENT_DM_API_KEY?.trim();
   if (!apiKey) return false;
 

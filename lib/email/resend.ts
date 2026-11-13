@@ -5,7 +5,11 @@
  * follows the email brand (the cleaning company, or Clean Scheduler).
  */
 import { createResendClient } from '@/lib/email/resendClient';
-import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
+import {
+  isOutboundSuppressed,
+  logOutboundSuppressed,
+  OUTBOUND_SUPPRESSED_MESSAGE,
+} from '@/lib/outbound/suppression';
 import {
   emailFromName,
   emailReplyTo,
@@ -29,13 +33,11 @@ function resendFrom(): string | undefined {
 
 /** API key only. Inline mail also needs {@link isResendConfigured}. */
 export function isResendApiConfigured(): boolean {
-  if (isOutboundSuppressed()) return true;
   return Boolean(resendApiKey());
 }
 
 /** API key + from — required for inline HTML/text emails (e.g. quote notifications). */
 export function isResendConfigured(): boolean {
-  if (isOutboundSuppressed()) return true;
   return Boolean(resendApiKey() && resendFrom());
 }
 
@@ -63,7 +65,7 @@ export async function sendTransactionalEmail(
   }
   if (isOutboundSuppressed()) {
     logOutboundSuppressed('resend', 'emails.send');
-    return { ok: true };
+    return { ok: false, error: OUTBOUND_SUPPRESSED_MESSAGE };
   }
 
   const apiKey = resendApiKey();
