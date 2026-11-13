@@ -23,7 +23,10 @@ import {
 } from '@/lib/tenant/createTenantCustomerInline';
 import { enrichParsedQuoteLines } from '@/lib/tenant/enrichQuoteLineItems';
 import {
+  ENTRY_CODE_NOTICE,
   LOCATION_FACT_NOTICE,
+  QUOTE_FOLLOW_UP_NOTICE,
+  QUOTE_NOTIFY_NOTICE,
   inlinePropertyDeferringLocationFacts,
   parseCustomerPropertyKind,
   parseQuoteWizardStructuredFromForm,
@@ -80,8 +83,11 @@ export interface QuoteFormState {
   quoteSnapshot?: QuoteEditSnapshot;
   /** Deep link when consultation gate blocks send. */
   schedulePath?: string;
-  /** Non-blocking notice after the quote itself was saved. */
-  warning?: typeof LOCATION_FACT_NOTICE;
+  /**
+   * Comma-separated notice codes after the quote row exists.
+   * The quote page maps these to fixed copy. Never put secret or code values here.
+   */
+  warning?: string;
 }
 
 export type MoveQuoteStatusResult =
@@ -530,6 +536,284 @@ function parseInlinePropertyKind(raw: string): CustomerPropertyKind {
   return parseCustomerPropertyKind(raw);
 }
 
+const QUOTE_ID_RE = /^[0-9a-f-]{36}$/i;
+
+type QuoteAdmin = ReturnType<typeof createAdminClient>;
+
+type OwnedQuote = {
+  id: string;
+  status: Database['public']['Enums']['quote_status'];
+  customerId: string;
+  propertyId: string | null;
+  title: string;
+};
+
+function joinQuoteNotices(codes: Array<string | undefined>): string | undefined {
+  const unique: string[] = [];
+  for (const code of codes) {
+    if (!code) continue;
+    for (const part of code.split(',')) {
+      const trimmed = part.trim();
+      if (trimmed && !unique.includes(trimmed)) unique.push(trimmed);
+    }
+  }
+  return unique.length > 0 ? unique.join(',') : undefined;
+}
+
+function revalidateQuoteSurfaces(customerId: string, sent: boolean) {
+  try {
+    revalidatePath('/tenant/quotes', 'page');
+    revalidatePath('/tenant/quotes/new', 'page');
+    revalidatePath('/tenant/schedule', 'page');
+    revalidatePath(`/tenant/customers/${customerId}`, 'page');
+    if (sent) invalidateCustomerQuoteBadge(customerId);
+  } catch {
+    console.error('[createTenantQuote] cache revalidation failed');
+  }
+}
+
+async function loadOwnedQuote(
+  admin: QuoteAdmin,
+  tenantId: string,
+  quoteId: string,
+): Promise<{ state: 'found'; quote: OwnedQuote } | { state: 'missing' } | { state: 'error' }> {
+  const { data, error } = await admin
+    .from('tenant_quotes')
+    .select('id, status, customer_id, property_id, title')
+    .eq('id', quoteId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (error) {
+    console.error('[createTenantQuote] saved quote could not be reloaded');
+    return { state: 'error' };
+  }
+  if (!data?.id || !data.customer_id || !QUOTE_STATUSES.has(data.status)) {
+    return { state: 'missing' };
+  }
+  return {
+    state: 'found',
+    quote: {
+      id: data.id,
+      status: data.status,
+      customerId: data.customer_id,
+      propertyId: data.property_id,
+      title: data.title,
+    },
+  };
+}
+
+async function storeQuoteEntryCodes(
+  admin: QuoteAdmin,
+  tenantId: string,
+  propertyId: string | null,
+  formData: FormData,
+): Promise<typeof ENTRY_CODE_NOTICE | undefined> {
+  if (!propertyId || formData.get('save_access_codes') !== '1') return undefined;
+  try {
+    const saved = await savePropertyAccessCodes(
+      admin,
+      tenantId,
+      propertyId,
+      parsePropertyAccessCodesFromForm(formData),
+    );
+    if (saved.ok) return undefined;
+  } catch {
+    // Encryption or storage failed. Do not log the thrown value; it can carry code material.
+  }
+  console.error('[createTenantQuote] entry codes were not stored');
+  return ENTRY_CODE_NOTICE;
+}
+
+async function deliverSentQuote(
+  admin: QuoteAdmin,
+  input: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
+): Promise<boolean> {
+  try {
+    await sendQuoteNotificationEmail(admin, 'quote_sent', input);
+    await sendQuoteNotificationSms(admin, 'quote_sent', input);
+    await emitQuoteWebhookEvent(admin, 'quote.sent', {
+      tenantId: input.tenantId,
+      quoteId: input.quoteId,
+      quoteTitle: input.quoteTitle,
+      customerId: input.customerId,
+      status: 'sent',
+    });
+    return true;
+  } catch {
+    console.error('[createTenantQuote] customer notification was not sent');
+    return false;
+  }
+}
+
+/**
+ * Writes that run after the quote row exists. Failures become notice codes.
+ * The caller always receives the quote id.
+ */
+async function finishCreatedQuote(input: {
+  admin: QuoteAdmin;
+  tenantId: string;
+  quoteId: string;
+  customerId: string;
+  propertyId: string | null;
+  title: string;
+  formData: FormData;
+  propertySnapshot: QuotePropertySnapshot;
+  locationKindToWrite: CustomerPropertyKind | null | false;
+  crewSize: number | null;
+  statusToApply: Database['public']['Enums']['quote_status'] | null;
+  sendNotification: boolean;
+  promotionSave: Parameters<typeof saveQuotePromotionSideEffects>[1] | null;
+}): Promise<QuoteFormState> {
+  const notices: Array<string | undefined> = [];
+
+  notices.push(
+    await syncPropertyFactsFromSnapshot(
+      input.admin,
+      input.tenantId,
+      input.propertyId,
+      input.propertySnapshot,
+    ),
+  );
+
+  notices.push(
+    await storeQuoteEntryCodes(input.admin, input.tenantId, input.propertyId, input.formData),
+  );
+
+  const verify = await input.admin
+    .from('tenant_quotes')
+    .select('id')
+    .eq('id', input.quoteId)
+    .eq('tenant_id', input.tenantId)
+    .maybeSingle();
+  if (verify.error || !verify.data) {
+    console.error('[createTenantQuote] saved quote could not be reloaded');
+    notices.push(QUOTE_FOLLOW_UP_NOTICE);
+  }
+
+  if (input.locationKindToWrite === false) {
+    console.error('[createTenantQuote] location property type was not updated');
+    notices.push(QUOTE_FOLLOW_UP_NOTICE);
+  } else {
+    const kindSaved = await writeLocationKindAfterQuoteSave(
+      input.admin,
+      input.tenantId,
+      input.propertyId,
+      input.locationKindToWrite,
+    );
+    if (!kindSaved.ok) {
+      console.error('[createTenantQuote] location property type was not updated');
+      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+    }
+  }
+
+  if (input.statusToApply) {
+    const staged = await applyQuoteStatusAndStage(
+      input.admin,
+      input.tenantId,
+      input.quoteId,
+      input.statusToApply,
+    );
+    if (staged.error) {
+      console.error('[createTenantQuote] quote status was not stored');
+      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+    }
+  }
+
+  if (input.crewSize == null) {
+    console.error('[createTenantQuote] crew size was not stored');
+    notices.push(QUOTE_FOLLOW_UP_NOTICE);
+  } else {
+    const crewSaved = await persistQuotedCrewSize(
+      input.admin,
+      input.tenantId,
+      input.quoteId,
+      input.propertyId,
+      input.crewSize,
+    );
+    if (!crewSaved.ok) {
+      console.error('[createTenantQuote] crew size was not stored');
+      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+    }
+  }
+
+  if (input.promotionSave) {
+    try {
+      await saveQuotePromotionSideEffects(input.admin, input.promotionSave);
+    } catch {
+      console.error('[createTenantQuote] promotion details were not stored');
+      notices.push(QUOTE_FOLLOW_UP_NOTICE);
+    }
+  }
+
+  if (input.sendNotification) {
+    const delivered = await deliverSentQuote(input.admin, {
+      tenantId: input.tenantId,
+      quoteId: input.quoteId,
+      quoteTitle: input.title,
+      customerId: input.customerId,
+    });
+    if (!delivered) notices.push(QUOTE_NOTIFY_NOTICE);
+  }
+
+  const markedSent = input.statusToApply === 'sent' || input.sendNotification;
+  revalidateQuoteSurfaces(input.customerId, markedSent);
+  const warning = joinQuoteNotices(notices);
+  return warning
+    ? { success: true, quoteId: input.quoteId, warning }
+    : { success: true, quoteId: input.quoteId };
+}
+
+async function resumeCreatedQuote(input: {
+  admin: QuoteAdmin;
+  tenantId: string;
+  quote: OwnedQuote;
+  formData: FormData;
+  previousWarning: string | undefined;
+  saveIntent: string;
+  title: string;
+}): Promise<QuoteFormState> {
+  const capabilities = await loadTenantSegmentCapabilities(input.admin, input.tenantId);
+  const structured = parseQuoteWizardStructuredFromForm(
+    input.formData,
+    defaultPropertyKind(capabilities),
+  );
+  applySegmentToPropertySnapshot(capabilities, structured.propertySnapshot);
+
+  const propertyFacts = await propertyFactsForQuote(
+    input.admin,
+    input.tenantId,
+    input.quote.propertyId,
+  );
+  const locationKindPlan = planQuoteLocationKind({
+    capabilities,
+    savedKind: propertyFacts.kind,
+    locationLabel: propertyFacts.label,
+    postedCorrection: String(input.formData.get('correct_location_property_kind') ?? ''),
+  });
+  const crewSize = parseRequiredCrewSize(input.formData.get('required_crew_size'));
+  const wantsSend = input.saveIntent === 'send';
+  const notifyAgain = (input.previousWarning ?? '')
+    .split(',')
+    .some((part) => part.trim() === QUOTE_NOTIFY_NOTICE);
+  const sendNotification = wantsSend && (input.quote.status !== 'sent' || notifyAgain);
+
+  return finishCreatedQuote({
+    admin: input.admin,
+    tenantId: input.tenantId,
+    quoteId: input.quote.id,
+    customerId: input.quote.customerId,
+    propertyId: input.quote.propertyId,
+    title: input.title || input.quote.title,
+    formData: input.formData,
+    propertySnapshot: structured.propertySnapshot,
+    locationKindToWrite: locationKindPlan.ok ? locationKindPlan.kindToWrite : false,
+    crewSize: crewSize.ok ? crewSize.size : null,
+    statusToApply: wantsSend && input.quote.status !== 'sent' ? 'sent' : null,
+    sendNotification,
+    promotionSave: null,
+  });
+}
+
 export async function createTenantQuote(
   _prev: QuoteFormState,
   formData: FormData,
@@ -560,12 +844,51 @@ export async function createTenantQuote(
   const inlinePropertyPostal = String(formData.get('inline_property_postal_code') ?? '').trim();
   const inlinePropertyKindRaw = String(formData.get('inline_property_kind') ?? '').trim();
 
-  if (!slug || !title) {
+  const previousQuoteId = String(_prev.quoteId ?? '').trim();
+  if ((!slug || !title) && !QUOTE_ID_RE.test(previousQuoteId)) {
+    return { error: 'Workspace and quote title are required.' };
+  }
+  if (!slug) {
     return { error: 'Workspace and quote title are required.' };
   }
 
   const membership = await requireTenantPortalAccess(slug, '/quotes/new');
   const admin = createAdminClient();
+
+  if (QUOTE_ID_RE.test(previousQuoteId)) {
+    const existing = await loadOwnedQuote(admin, membership.tenantId, previousQuoteId);
+    if (existing.state === 'found') {
+      try {
+        return await resumeCreatedQuote({
+          admin,
+          tenantId: membership.tenantId,
+          quote: existing.quote,
+          formData,
+          previousWarning: _prev.warning,
+          saveIntent,
+          title,
+        });
+      } catch {
+        console.error('[createTenantQuote] follow-up after save failed');
+        return {
+          success: true,
+          quoteId: existing.quote.id,
+          warning: QUOTE_FOLLOW_UP_NOTICE,
+        };
+      }
+    }
+    if (existing.state === 'error') {
+      return {
+        success: true,
+        quoteId: previousQuoteId,
+        warning: QUOTE_FOLLOW_UP_NOTICE,
+      };
+    }
+  }
+
+  if (!title) {
+    return { error: 'Workspace and quote title are required.' };
+  }
   const capabilities = await loadTenantSegmentCapabilities(admin, membership.tenantId);
   const structured = parseQuoteWizardStructuredFromForm(
     formData,
@@ -797,101 +1120,37 @@ export async function createTenantQuote(
     };
   }
 
-  const factWarning = await syncPropertyFactsFromSnapshot(
-    admin,
-    membership.tenantId,
-    propertyId,
-    structured.propertySnapshot,
-  );
-
-  if (propertyId && formData.get('save_access_codes') === '1') {
-    const savedCodes = await savePropertyAccessCodes(
+  try {
+    return await finishCreatedQuote({
       admin,
-      membership.tenantId,
+      tenantId: membership.tenantId,
+      quoteId: newId,
+      customerId,
       propertyId,
-      parsePropertyAccessCodesFromForm(formData),
-    );
-    if (!savedCodes.ok) {
-      return {
-        error: `The quote was saved, but entry codes could not be stored. ${savedCodes.error}`,
-        warning: factWarning,
-      };
-    }
-  }
-
-  const verify = await admin
-    .from('tenant_quotes')
-    .select('id')
-    .eq('id', newId)
-    .eq('tenant_id', membership.tenantId)
-    .maybeSingle();
-
-  if (verify.error || !verify.data) {
-    revalidatePath('/tenant/quotes', 'page');
+      title,
+      formData,
+      propertySnapshot: structured.propertySnapshot,
+      locationKindToWrite: locationKindPlan.kindToWrite,
+      crewSize: crewSize.size,
+      statusToApply: initialStatus,
+      sendNotification: initialStatus === 'sent',
+      promotionSave: {
+        tenantId: membership.tenantId,
+        quoteId: newId,
+        customerId,
+        promotionFields: priced.promotionFields,
+        quoteDiscountCents: priced.totalsBeforeWallet.quote_discount_cents,
+      },
+    });
+  } catch {
+    console.error('[createTenantQuote] follow-up after save failed');
+    revalidateQuoteSurfaces(customerId, initialStatus === 'sent');
     return {
-      error:
-        verify.error?.message ??
-        'Quote saved but could not be opened. Check the quotes list and try again.',
+      success: true,
+      quoteId: newId,
+      warning: QUOTE_FOLLOW_UP_NOTICE,
     };
   }
-
-  const kindSaved = await writeLocationKindAfterQuoteSave(
-    admin,
-    membership.tenantId,
-    propertyId,
-    locationKindPlan.kindToWrite,
-  );
-  if (!kindSaved.ok) return { error: kindSaved.error };
-
-  await applyQuoteStatusAndStage(admin, membership.tenantId, newId, initialStatus);
-
-  const crewSaved = await persistQuotedCrewSize(
-    admin,
-    membership.tenantId,
-    newId,
-    propertyId,
-    crewSize.size,
-  );
-  if (!crewSaved.ok) return { error: crewSaved.error };
-
-  await saveQuotePromotionSideEffects(admin, {
-    tenantId: membership.tenantId,
-    quoteId: newId,
-    customerId,
-    promotionFields: priced.promotionFields,
-    quoteDiscountCents: priced.totalsBeforeWallet.quote_discount_cents,
-  });
-
-  if (initialStatus === 'sent') {
-    await sendQuoteNotificationEmail(admin, 'quote_sent', {
-      tenantId: membership.tenantId,
-      quoteId: newId,
-      quoteTitle: title,
-      customerId,
-    });
-    await sendQuoteNotificationSms(admin, 'quote_sent', {
-      tenantId: membership.tenantId,
-      quoteId: newId,
-      quoteTitle: title,
-      customerId,
-    });
-    await emitQuoteWebhookEvent(admin, 'quote.sent', {
-      tenantId: membership.tenantId,
-      quoteId: newId,
-      quoteTitle: title,
-      customerId,
-      status: 'sent',
-    });
-  }
-
-  revalidatePath('/tenant/quotes', 'page');
-  revalidatePath('/tenant/quotes/new', 'page');
-  revalidatePath('/tenant/schedule', 'page');
-  revalidatePath(`/tenant/customers/${customerId}`, 'page');
-  if (initialStatus === 'sent') {
-    invalidateCustomerQuoteBadge(customerId);
-  }
-  return { success: true, quoteId: newId, warning: factWarning };
 }
 
 export async function updateTenantQuote(

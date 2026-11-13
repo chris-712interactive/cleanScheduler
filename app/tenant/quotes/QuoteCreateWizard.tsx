@@ -23,6 +23,7 @@ import { customerLocationEditHref } from '@/lib/tenant/customerLocationHref';
 import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
 import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
+import { quoteSaveNotice } from '@/lib/tenant/quoteStructuredFields';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import { loadPropertyAccessCodesAction } from './propertyAccessCodeActions';
 import {
@@ -100,7 +101,7 @@ export function QuoteCreateWizard({
   useEffect(() => {
     if (!state.quoteId || navigatedToQuoteRef.current) return;
     navigatedToQuoteRef.current = true;
-    const notice = state.warning ? `?notice=${state.warning}` : '';
+    const notice = state.warning ? `?notice=${encodeURIComponent(state.warning)}` : '';
     router.replace(`/quotes/${state.quoteId}${notice}`);
   }, [state.quoteId, state.warning, router]);
 
@@ -444,7 +445,7 @@ export function QuoteCreateWizard({
   };
 
   const submitQuote = (intent: 'draft' | 'send') => {
-    if (blockSubmitRef.current || !termsActionsReady) return;
+    if (state.quoteId || blockSubmitRef.current || !termsActionsReady) return;
     const err = intent === 'send' ? validateBeforeSend() : validateBeforeSave();
     if (err) {
       setStepError(err);
@@ -460,7 +461,7 @@ export function QuoteCreateWizard({
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    if (blockSubmitRef.current || step !== 'terms') {
+    if (state.quoteId || blockSubmitRef.current || step !== 'terms') {
       event.preventDefault();
       return;
     }
@@ -549,6 +550,13 @@ export function QuoteCreateWizard({
     </>
   );
 
+  const savedNotice = quoteSaveNotice(state.warning);
+  const savedQuoteMessage = state.quoteId
+    ? savedNotice
+      ? `${savedNotice} Opening the saved quote.`
+      : 'Quote saved. Opening it…'
+    : null;
+
   return (
     <form
       ref={formRef}
@@ -569,6 +577,12 @@ export function QuoteCreateWizard({
       <input type="hidden" name="quote_property_kind" value={effectivePropertyKind} />
       {kindLock.disallowedKind ? (
         <input type="hidden" name="correct_location_property_kind" value={locationKindCorrection} />
+      ) : null}
+
+      {savedQuoteMessage ? (
+        <p className={styles.error} role="status">
+          {savedQuoteMessage}
+        </p>
       ) : null}
 
       {state.error && state.schedulePath ? (
@@ -1228,7 +1242,7 @@ export function QuoteCreateWizard({
                     type="button"
                     variant="secondary"
                     loading={pending && pendingIntent === 'draft'}
-                    disabled={pending}
+                    disabled={pending || Boolean(state.quoteId)}
                     onClick={() => submitQuote('draft')}
                   >
                     {pending && pendingIntent === 'draft' ? 'Saving…' : 'Save as draft'}
@@ -1237,7 +1251,7 @@ export function QuoteCreateWizard({
                     type="button"
                     variant="primary"
                     loading={pending && pendingIntent === 'send'}
-                    disabled={pending}
+                    disabled={pending || Boolean(state.quoteId)}
                     onClick={() => submitQuote('send')}
                   >
                     {pending && pendingIntent === 'send' ? 'Sending…' : 'Send to customer'}

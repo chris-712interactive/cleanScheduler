@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  ENTRY_CODE_SAVE_WARNING,
   LOCATION_FACT_SYNC_WARNING,
   inlinePropertyDeferringLocationFacts,
   parseQuoteWizardStructuredFromForm,
@@ -58,15 +59,24 @@ describe('quote access notes', () => {
     const body = source.slice(start, end);
     const rpc = body.indexOf("rpc('tenant_quote_create_with_line_items'");
     const rejected = body.indexOf('if (rpc.error)');
-    const sync = body.indexOf('syncPropertyFactsFromSnapshot');
     expect(rpc).toBeGreaterThan(-1);
     expect(rejected).toBeGreaterThan(rpc);
-    expect(sync).toBeGreaterThan(rejected);
     expect(body).toContain('inlinePropertyDeferringLocationFacts');
     expect(body.indexOf('inlinePropertyDeferringLocationFacts')).toBeLessThan(rpc);
-    const codes = body.indexOf('savePropertyAccessCodes');
-    expect(codes).toBeGreaterThan(rejected);
+    const finish = body.indexOf('finishCreatedQuote');
+    expect(finish).toBeGreaterThan(rejected);
+    const helperStart = source.indexOf('async function finishCreatedQuote');
+    const helperEnd = source.indexOf('async function resumeCreatedQuote');
+    const helper = source.slice(helperStart, helperEnd);
+    expect(helper.indexOf('syncPropertyFactsFromSnapshot')).toBeGreaterThan(-1);
+    expect(helper.indexOf('storeQuoteEntryCodes')).toBeGreaterThan(
+      helper.indexOf('syncPropertyFactsFromSnapshot'),
+    );
     expect(quoteSaveNotice('location-facts')).toBe(LOCATION_FACT_SYNC_WARNING);
+    expect(quoteSaveNotice('entry-codes')).toBe(ENTRY_CODE_SAVE_WARNING);
+    expect(quoteSaveNotice('location-facts,entry-codes')).toBe(
+      `${LOCATION_FACT_SYNC_WARNING} ${ENTRY_CODE_SAVE_WARNING}`,
+    );
     expect(quoteSaveNotice('other')).toBeUndefined();
   });
 
