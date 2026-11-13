@@ -10,6 +10,7 @@ const harness = vi.hoisted(() => {
   const state = {
     rpcCalls: 0,
     quoteStatus: 'draft',
+    isLocked: false,
     codeFailuresLeft: 0,
     codeThrows: false,
   };
@@ -113,6 +114,7 @@ const harness = vi.hoisted(() => {
           customer_id: CUSTOMER_ID,
           property_id: PROPERTY_ID,
           title: 'Weekly clean',
+          is_locked: state.isLocked,
         };
         return { data: single ? quote : [quote], error: null, count: 1 };
       }
@@ -206,6 +208,7 @@ describe('createTenantQuote follow-up failures', () => {
   beforeEach(() => {
     harness.state.rpcCalls = 0;
     harness.state.quoteStatus = 'draft';
+    harness.state.isLocked = false;
     harness.state.codeFailuresLeft = 0;
     harness.state.codeThrows = false;
     harness.saveCodes.mockClear();
@@ -273,6 +276,48 @@ describe('createTenantQuote follow-up failures', () => {
     });
     expect(JSON.stringify(result)).not.toContain(GATE_CODE);
     expect(errorSpy.mock.calls.flat().join(' ')).not.toContain(GATE_CODE);
+    expect(harness.state.rpcCalls).toBe(1);
+  });
+
+  it('does not send or change status when a previous id points at an accepted quote', async () => {
+    harness.state.quoteStatus = 'accepted';
+    harness.state.isLocked = true;
+
+    const result = await createTenantQuote(
+      { quoteId: QUOTE_ID, warning: 'quote-notify' },
+      quoteForm('send'),
+    );
+
+    expect(result).toEqual({ success: true, quoteId: QUOTE_ID });
+    expect(harness.state.rpcCalls).toBe(0);
+    expect(harness.state.quoteStatus).toBe('accepted');
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.sendSms).not.toHaveBeenCalled();
+    expect(harness.emitWebhook).not.toHaveBeenCalled();
+    expect(harness.saveCodes).not.toHaveBeenCalled();
+  });
+
+  it('does not send again when the previous warning claims the notification failed', async () => {
+    const first = await createTenantQuote({}, quoteForm('send'));
+    expect(first.quoteId).toBe(QUOTE_ID);
+    expect(harness.sendEmail).toHaveBeenCalledTimes(1);
+
+    const retry = await createTenantQuote({ ...first, warning: 'quote-notify' }, quoteForm('send'));
+
+    expect(retry.quoteId).toBe(QUOTE_ID);
+    expect(harness.state.rpcCalls).toBe(1);
+    expect(harness.sendEmail).toHaveBeenCalledTimes(1);
+    expect(harness.sendSms).toHaveBeenCalledTimes(1);
+    expect(harness.emitWebhook).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not treat a non-UUID previous id as an existing quote', async () => {
+    const result = await createTenantQuote(
+      { quoteId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
+      quoteForm('draft'),
+    );
+
+    expect(result).toEqual({ success: true, quoteId: QUOTE_ID });
     expect(harness.state.rpcCalls).toBe(1);
   });
 });

@@ -97,6 +97,15 @@ export function QuoteCreateWizard({
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createTenantQuote, initial);
   const navigatedToQuoteRef = useRef(false);
+  /** Set in the click handler, before requestSubmit, so a second click cannot start another create. */
+  const submitLockRef = useRef(false);
+  const submitArmedRef = useRef(false);
+
+  useEffect(() => {
+    if (state.quoteId || !state.error) return;
+    submitLockRef.current = false;
+    submitArmedRef.current = false;
+  }, [state.error, state.quoteId]);
 
   useEffect(() => {
     if (!state.quoteId || navigatedToQuoteRef.current) return;
@@ -445,7 +454,8 @@ export function QuoteCreateWizard({
   };
 
   const submitQuote = (intent: 'draft' | 'send') => {
-    if (state.quoteId || blockSubmitRef.current || !termsActionsReady) return;
+    if (submitLockRef.current || state.quoteId || blockSubmitRef.current || !termsActionsReady)
+      return;
     const err = intent === 'send' ? validateBeforeSend() : validateBeforeSave();
     if (err) {
       setStepError(err);
@@ -457,19 +467,34 @@ export function QuoteCreateWizard({
     if (saveIntentInputRef.current) {
       saveIntentInputRef.current.value = intent;
     }
+    submitLockRef.current = true;
+    submitArmedRef.current = true;
     formRef.current?.requestSubmit();
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     if (state.quoteId || blockSubmitRef.current || step !== 'terms') {
       event.preventDefault();
+      if (!state.quoteId) {
+        submitLockRef.current = false;
+        submitArmedRef.current = false;
+      }
+      return;
+    }
+    if (submitLockRef.current && !submitArmedRef.current) {
+      event.preventDefault();
       return;
     }
     const err = validateBeforeSave();
     if (err) {
       event.preventDefault();
+      submitLockRef.current = false;
+      submitArmedRef.current = false;
       setStepError(err);
+      return;
     }
+    submitArmedRef.current = false;
+    submitLockRef.current = true;
   };
 
   const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {

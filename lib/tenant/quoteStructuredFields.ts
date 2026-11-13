@@ -112,13 +112,16 @@ const QUOTE_SAVE_NOTICES: Record<string, string> = {
   [QUOTE_NOTIFY_NOTICE]: QUOTE_NOTIFY_WARNING,
 };
 
-/** Maps one or more notice codes (comma-separated) to customer-safe copy. Unknown codes are dropped. */
+/** Maps one or more notice codes (comma-separated) to fixed copy. Unknown codes are dropped. */
 export function quoteSaveNotice(code: string | undefined): string | undefined {
   if (!code) return undefined;
   const messages: string[] = [];
   for (const part of code.split(',')) {
-    const text = QUOTE_SAVE_NOTICES[part.trim()];
-    if (text && !messages.includes(text)) messages.push(text);
+    const key = part.trim();
+    if (!Object.hasOwn(QUOTE_SAVE_NOTICES, key)) continue;
+    const text = QUOTE_SAVE_NOTICES[key];
+    if (typeof text !== 'string' || messages.includes(text)) continue;
+    messages.push(text);
   }
   return messages.length > 0 ? messages.join(' ') : undefined;
 }

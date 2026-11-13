@@ -78,6 +78,10 @@ describe('quote access notes', () => {
       `${LOCATION_FACT_SYNC_WARNING} ${ENTRY_CODE_SAVE_WARNING}`,
     );
     expect(quoteSaveNotice('other')).toBeUndefined();
+    expect(quoteSaveNotice('constructor')).toBeUndefined();
+    expect(quoteSaveNotice('toString')).toBeUndefined();
+    expect(quoteSaveNotice('__proto__')).toBeUndefined();
+    expect(quoteSaveNotice('entry-codes,constructor')).toBe(ENTRY_CODE_SAVE_WARNING);
   });
 
   it('uses the workspace default when the quote property type is omitted', () => {

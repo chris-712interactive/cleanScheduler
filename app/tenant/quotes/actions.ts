@@ -536,7 +536,7 @@ function parseInlinePropertyKind(raw: string): CustomerPropertyKind {
   return parseCustomerPropertyKind(raw);
 }
 
-const QUOTE_ID_RE = /^[0-9a-f-]{36}$/i;
+const QUOTE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type QuoteAdmin = ReturnType<typeof createAdminClient>;
 
@@ -546,6 +546,7 @@ type OwnedQuote = {
   customerId: string;
   propertyId: string | null;
   title: string;
+  isLocked: boolean;
 };
 
 function joinQuoteNotices(codes: Array<string | undefined>): string | undefined {
@@ -579,7 +580,7 @@ async function loadOwnedQuote(
 ): Promise<{ state: 'found'; quote: OwnedQuote } | { state: 'missing' } | { state: 'error' }> {
   const { data, error } = await admin
     .from('tenant_quotes')
-    .select('id, status, customer_id, property_id, title')
+    .select('id, status, customer_id, property_id, title, is_locked')
     .eq('id', quoteId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -598,6 +599,7 @@ async function loadOwnedQuote(
       customerId: data.customer_id,
       propertyId: data.property_id,
       title: data.title,
+      isLocked: data.is_locked === true,
     },
   };
 }
@@ -628,9 +630,18 @@ async function deliverSentQuote(
   admin: QuoteAdmin,
   input: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
 ): Promise<boolean> {
+  let delivered = true;
   try {
     await sendQuoteNotificationEmail(admin, 'quote_sent', input);
+  } catch {
+    delivered = false;
+  }
+  try {
     await sendQuoteNotificationSms(admin, 'quote_sent', input);
+  } catch {
+    delivered = false;
+  }
+  try {
     await emitQuoteWebhookEvent(admin, 'quote.sent', {
       tenantId: input.tenantId,
       quoteId: input.quoteId,
@@ -638,11 +649,13 @@ async function deliverSentQuote(
       customerId: input.customerId,
       status: 'sent',
     });
-    return true;
   } catch {
-    console.error('[createTenantQuote] customer notification was not sent');
-    return false;
+    delivered = false;
   }
+  if (!delivered) {
+    console.error('[createTenantQuote] customer notification was not sent');
+  }
+  return delivered;
 }
 
 /**
@@ -768,10 +781,20 @@ async function resumeCreatedQuote(input: {
   tenantId: string;
   quote: OwnedQuote;
   formData: FormData;
-  previousWarning: string | undefined;
-  saveIntent: string;
   title: string;
 }): Promise<QuoteFormState> {
+  // The previous id is client-controlled. Resume only repairs follow-up writes.
+  // It must not change status or notify: that would skip the consultation gate
+  // and the locked/expired checks on moveTenantQuoteStatus, and a forged
+  // warning could send the same quote again.
+  if (
+    input.quote.isLocked ||
+    input.quote.status === 'accepted' ||
+    input.quote.status === 'expired'
+  ) {
+    return { success: true, quoteId: input.quote.id };
+  }
+
   const capabilities = await loadTenantSegmentCapabilities(input.admin, input.tenantId);
   const structured = parseQuoteWizardStructuredFromForm(
     input.formData,
@@ -791,11 +814,6 @@ async function resumeCreatedQuote(input: {
     postedCorrection: String(input.formData.get('correct_location_property_kind') ?? ''),
   });
   const crewSize = parseRequiredCrewSize(input.formData.get('required_crew_size'));
-  const wantsSend = input.saveIntent === 'send';
-  const notifyAgain = (input.previousWarning ?? '')
-    .split(',')
-    .some((part) => part.trim() === QUOTE_NOTIFY_NOTICE);
-  const sendNotification = wantsSend && (input.quote.status !== 'sent' || notifyAgain);
 
   return finishCreatedQuote({
     admin: input.admin,
@@ -808,8 +826,8 @@ async function resumeCreatedQuote(input: {
     propertySnapshot: structured.propertySnapshot,
     locationKindToWrite: locationKindPlan.ok ? locationKindPlan.kindToWrite : false,
     crewSize: crewSize.ok ? crewSize.size : null,
-    statusToApply: wantsSend && input.quote.status !== 'sent' ? 'sent' : null,
-    sendNotification,
+    statusToApply: null,
+    sendNotification: false,
     promotionSave: null,
   });
 }
@@ -864,8 +882,6 @@ export async function createTenantQuote(
           tenantId: membership.tenantId,
           quote: existing.quote,
           formData,
-          previousWarning: _prev.warning,
-          saveIntent,
           title,
         });
       } catch {
@@ -1113,7 +1129,7 @@ export async function createTenantQuote(
   }
 
   const newId = typeof rpc.data === 'string' ? rpc.data.trim() : '';
-  if (!newId || !/^[0-9a-f-]{36}$/i.test(newId)) {
+  if (!newId || !QUOTE_ID_RE.test(newId)) {
     return {
       error:
         'We could not save this quote. If you recently updated the app, apply pending database migrations and try again.',

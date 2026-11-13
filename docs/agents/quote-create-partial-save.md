@@ -15,10 +15,14 @@ Follow-ups that must stay non-fatal:
 
 ## Retry
 
-`useActionState` sends the previous result back as `_prev`. That object is client-controlled. Resume only when `tenant_quotes` contains that id for the authenticated tenant. A lookup error returns the same id and does not call the RPC again. A missing id falls through to a normal create.
+`useActionState` sends the previous result back as `_prev`. That object is client-controlled. Resume only when the id is a UUID and `tenant_quotes` contains it for the authenticated tenant. A lookup error returns that id and does not call the RPC again. A missing id, or an id that is not a UUID, falls through to a normal create.
+
+Resume repairs entry codes and other location follow-ups for a draft, sent, or declined quote. It does not change status and it does not notify. Accepted, expired, and locked quotes are returned as-is. Do not trust `_prev.warning` as a reason to send: the client can set `quote-notify` on any in-tenant id.
 
 Do not read `user_metadata` for this. Do not log or return gate, door, or garage codes, ciphertext, or `PROPERTY_ACCESS_CODE_KEY`.
 
+`quoteSaveNotice` only reads own string values. Query keys such as `constructor` or `toString` are not rendered.
+
 ## Send
 
-Sending still runs on the first request when the office chose send. Entry codes are office/crew data and are not on the customer quote. Skipping the notification would leave a row already stored as `sent` that the customer never received. A later submit does not send again unless the previous warning includes `quote-notify`.
+Sending still runs on the first request when the office chose send. Entry codes are office/crew data and are not on the customer quote. Skipping the notification would leave a row already stored as `sent` that the customer never received. A later submit does not send again. Email, SMS, and the webhook are attempted separately so one thrown channel does not skip the others. The quote page warning is the signal when a channel throws; provider helpers log ordinary delivery failures and do not throw, and there is no second send from this action.
