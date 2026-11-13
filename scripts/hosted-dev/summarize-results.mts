@@ -17,7 +17,11 @@ if (identityRaw) {
   const identity = JSON.parse(identityRaw) as {
     status?: string;
     reason?: string;
-    identity?: { gitSha?: string | null; deploymentId?: string | null };
+    identity?: {
+      gitSha?: string | null;
+      deploymentId?: string | null;
+      outboundSuppressed?: boolean;
+    };
   };
   if (identity.status === 'ok') {
     identityNote = `ok sha=${identity.identity?.gitSha ?? 'unknown'} deployment=${identity.identity?.deploymentId ?? 'unknown'}`;
@@ -33,6 +37,10 @@ const report = buildHostedDevReport({
   playwright,
   env: process.env,
   identityNote,
+  outboundSuppressed: identityRaw
+    ? (JSON.parse(identityRaw) as { identity?: { outboundSuppressed?: boolean } }).identity
+        ?.outboundSuppressed === true
+    : false,
 });
 const secrets = secretsFromEnv(process.env);
 const rendered = redactText(renderHostedDevReport(report), secrets);

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { isOutboundSuppressed, OutboundSuppressedError } from '@/lib/outbound/suppression';
 import { getPlaidClient } from '@/lib/plaid/server';
 import { tryRemovePlaidLinkItem } from '@/lib/plaid/revokePlaidBankLink';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
@@ -26,6 +27,10 @@ export async function exchangeAndSaveBankLink(
   account: PlaidLinkAccountMetadata,
   institution: PlaidLinkInstitutionMetadata | null,
 ): Promise<void> {
+  if (isOutboundSuppressed()) {
+    throw new OutboundSuppressedError();
+  }
+
   const { data: existing } = await admin
     .from('bank_links')
     .select('id, plaid_access_token, plaid_item_id, status')
@@ -42,6 +47,11 @@ export async function exchangeAndSaveBankLink(
   if (!plaidAccount) {
     throw new Error('Selected bank account was not found on the Plaid item.');
   }
+  const institutionId = institution?.institution_id ?? accountsRes.data.item.institution_id ?? null;
+  const accountName = account.name || plaidAccount.name || null;
+  const accountMask = account.mask || plaidAccount.mask || null;
+  const accountType = account.type || plaidAccount.type || null;
+  const accountSubtype = account.subtype || plaidAccount.subtype || null;
 
   // Replace flow: new Plaid Item — revoke the previous Item before overwriting our row.
   if (existing && existing.plaid_item_id !== itemId) {
@@ -53,14 +63,13 @@ export async function exchangeAndSaveBankLink(
     tenant_id: tenantId,
     plaid_item_id: itemId,
     plaid_access_token: accessToken,
-    plaid_institution_id:
-      institution?.institution_id ?? accountsRes.data.item.institution_id ?? null,
+    plaid_institution_id: institutionId,
     institution_name: institution?.name ?? null,
     plaid_account_id: account.id,
-    account_name: account.name || plaidAccount.name || null,
-    account_mask: account.mask || plaidAccount.mask || null,
-    account_type: account.type || plaidAccount.type || null,
-    account_subtype: account.subtype || plaidAccount.subtype || null,
+    account_name: accountName,
+    account_mask: accountMask,
+    account_type: accountType,
+    account_subtype: accountSubtype,
     status: 'active',
     transactions_cursor: null,
     last_synced_at: null,

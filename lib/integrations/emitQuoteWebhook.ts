@@ -15,7 +15,7 @@ export async function emitQuoteWebhookEvent(
     status?: string;
     eventId?: string;
   },
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; suppressed?: true }> {
   return emitTenantWebhook({
     admin,
     tenantId: params.tenantId,

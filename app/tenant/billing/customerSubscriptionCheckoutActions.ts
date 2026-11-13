@@ -6,6 +6,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import {
   parseConnectApplicationFeeBps,
@@ -96,6 +97,10 @@ export async function createCustomerSubscriptionCheckoutSessionAction(
     redirect(
       `/customers/${customerId}?error=${encodeURIComponent('Add an email on the customer before starting checkout.')}`,
     );
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(`/customers/${customerId}?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
   }
 
   const stripe = getStripe();

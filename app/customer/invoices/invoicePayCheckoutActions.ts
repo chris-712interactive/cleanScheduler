@@ -7,6 +7,7 @@ import { getCustomerPortalContext } from '@/lib/customer/customerContext';
 import { requireConnectForOnlinePayments } from '@/lib/billing/requireConnect';
 import { assertConnectPaymentVelocityAllowed } from '@/lib/billing/connectPaymentVelocity';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { getCustomerPortalOriginFromRequest } from '@/lib/portal/customerPortalOrigin';
 import {
   parseConnectApplicationFeeBps,
@@ -72,6 +73,10 @@ export async function createCustomerInvoicePayCheckoutSessionAction(
   const collectible = invoiceCollectibleCents(inv);
   if (collectible <= 0) {
     redirect(`/invoices/${invoiceId}?error=${encodeURIComponent('Invoice is already paid.')}`);
+  }
+
+  if (isOutboundSuppressed()) {
+    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(OUTBOUND_SUPPRESSED_MESSAGE)}`);
   }
 
   const stripe = getStripe();

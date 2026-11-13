@@ -1,6 +1,6 @@
 # Hosted dev tests
 
-Read-only smoke runs against `https://dev.cleanscheduler.com` and its single-label subdomains. Authenticated reads and cross-tenant RLS run only when `HOSTED_DEV_ISOLATED=1`. Writes, booking submission, charges, refunds, bank linking, email, SMS, and cron batches stay blocked: this app has no single dev-only switch that suppresses Resend, sent.dm, Stripe, and Plaid together.
+Read-only smoke runs against `https://dev.cleanscheduler.com` and its single-label subdomains. Authenticated reads and cross-tenant RLS run only when `HOSTED_DEV_ISOLATED=1`. Writes, booking submission, charges, refunds, bank linking, email, SMS, and cron batches stay blocked until the deployment reports `outboundSuppressed: true` from `GET /api/health/deployment`. A copy of `OUTBOUND_SUPPRESSED` on the test runner does not open that gate. See `docs/ops/outbound-suppression.md`.
 
 The existing `CI` workflow and `npm run test:e2e` local smoke are unchanged.
 
@@ -37,7 +37,7 @@ Dedicated QA users only. The suite does not create accounts, send invites, or su
 - Direct `psql` runs only on a machine where you set `QA_DEV_DATABASE_URL` yourself, and only when that URL is the dev project the identity endpoint reported. GitHub does not inject that URL.
 - The Auth token for each RLS fixture user is rejected when it is a platform admin or the service role.
 
-`HOSTED_DEV_MUTATIONS=1` does not enable writes. It fails the run and records the suppression gap.
+`HOSTED_DEV_MUTATIONS=1` runs QA-tenant mutation checks only after the deployment identity says `outboundSuppressed` is true. Otherwise the run records that row as blocked and exits non-zero. A blocked row is not a pass. The checks that run behind the gate are the identity confirmation and one residential QA customer create with no email and no address. Charges, refunds, bank-link completion, sends, and cron batches stay out of that browser check: cron needs `CRON_SECRET`, and a fake Stripe or Plaid id would be written onto the QA tenant. Those provider calls are still short-circuited in the app when the switch is on.
 
 ## GitHub Actions
 
@@ -74,7 +74,7 @@ No Vercel token is required. The existing CI workflow is not modified.
 | Name                                   | Purpose                                                                                                                |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `HOSTED_DEV_ISOLATED`                  | Leave unset. `1` asks the isolated job to run. Secrets stay withheld unless the run ref is allowed by the environment. |
-| `HOSTED_DEV_MUTATIONS`                 | Leave unset. `1` fails on purpose.                                                                                     |
+| `HOSTED_DEV_MUTATIONS`                 | Leave unset. `1` runs QA writes only when the deployment confirms outbound suppression. Otherwise the run fails.       |
 | `HOSTED_DEV_BOOKING_URL`               | Optional allowlisted `/book` URL for the read-only booking check.                                                      |
 | `HOSTED_DEV_DENY_SUPABASE_PROJECT_REF` | Optional production Supabase project ref. A match fails closed.                                                        |
 | `QA_TENANT_RESIDENTIAL_SEGMENT`        | Optional. Defaults to `residential`.                                                                                   |

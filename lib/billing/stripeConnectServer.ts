@@ -1,5 +1,6 @@
 import type Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe/server';
+import { isOutboundSuppressed, OutboundSuppressedError } from '@/lib/outbound/suppression';
 
 const DEFAULT_ACCOUNT_COUNTRY = 'US';
 
@@ -15,6 +16,7 @@ export async function createExpressConnectedAccount(options: {
   tenantId: string;
   email?: string | null;
 }): Promise<Stripe.Account> {
+  if (isOutboundSuppressed()) throw new OutboundSuppressedError();
   const stripe = assertStripeConfigured();
   return stripe.accounts.create({
     type: 'express',
@@ -35,6 +37,7 @@ export async function createAccountOnboardingLink(options: {
   refreshUrl: string;
   returnUrl: string;
 }): Promise<Stripe.AccountLink> {
+  if (isOutboundSuppressed()) throw new OutboundSuppressedError();
   const stripe = assertStripeConfigured();
   return stripe.accountLinks.create({
     account: options.accountId,

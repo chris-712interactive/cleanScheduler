@@ -2,6 +2,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { buildWebhookSignatureHeader } from '@/lib/integrations/integrationSecrets';
 import {
+  isOutboundSuppressed,
+  logOutboundSuppressed,
+  OUTBOUND_SUPPRESSED_MESSAGE,
+  suppressedProviderResult,
+} from '@/lib/outbound/suppression';
+import {
   endpointSubscribesToEvent,
   type TenantWebhookEventType,
 } from '@/lib/integrations/tenantWebhookEvents';
@@ -13,6 +19,30 @@ export function truncateWebhookResponsePreview(value: string): string {
   const trimmed = value.trim();
   if (trimmed.length <= MAX_RESPONSE_PREVIEW) return trimmed;
   return `${trimmed.slice(0, MAX_RESPONSE_PREVIEW)}…`;
+}
+
+/**
+ * POST a tenant webhook. Suppression does not call the URL and is not a 2xx.
+ */
+export async function postTenantWebhook(
+  url: string,
+  body: string,
+  signature: string,
+): Promise<Response> {
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('webhook', 'deliver');
+    return new Response(null, { status: 503 });
+  }
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'cleanScheduler-Webhooks/1.0',
+      'X-CleanScheduler-Signature': signature,
+    },
+    body,
+    signal: AbortSignal.timeout(15_000),
+  });
 }
 
 function retryDelayMs(attemptCount: number): number {
@@ -27,7 +57,8 @@ export async function emitTenantWebhook(params: {
   data: Record<string, unknown>;
   /** Stable id so a repeated claim does not enqueue a second delivery for the same endpoint. */
   eventId?: string;
-}): Promise<{ ok: boolean }> {
+}): Promise<{ ok: boolean; suppressed?: true; error?: string }> {
+  const suppressed = isOutboundSuppressed();
   const eventId = params.eventId?.trim() || crypto.randomUUID();
   const envelope = {
     id: eventId,
@@ -76,11 +107,15 @@ export async function emitTenantWebhook(params: {
       continue;
     }
 
-    if (delivery?.id) {
+    if (delivery?.id && !suppressed) {
       void deliverTenantWebhookById(params.admin, delivery.id).catch((err) => {
         console.error('[webhooks] immediate delivery failed:', err);
       });
     }
+  }
+
+  if (suppressed && matching.length > 0) {
+    return ok ? suppressedProviderResult('webhook', 'deliver') : { ok: false };
   }
 
   return { ok };
@@ -112,6 +147,19 @@ export async function deliverTenantWebhookById(
 
   if (delivery.status === 'delivered') return 'skipped';
 
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('webhook', 'deliver');
+    await admin
+      .from('tenant_webhook_deliveries')
+      .update({
+        status: 'pending',
+        error_message: OUTBOUND_SUPPRESSED_MESSAGE,
+        next_retry_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      })
+      .eq('id', deliveryId);
+    return 'skipped';
+  }
+
   const endpointRaw = delivery.tenant_webhook_endpoints as
     | { url: string; signing_secret: string; enabled: boolean }
     | { url: string; signing_secret: string; enabled: boolean }[]
@@ -134,16 +182,7 @@ export async function deliverTenantWebhookById(
   const signature = buildWebhookSignatureHeader(endpoint.signing_secret, body);
 
   try {
-    const response = await fetch(endpoint.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'cleanScheduler-Webhooks/1.0',
-        'X-CleanScheduler-Signature': signature,
-      },
-      body,
-      signal: AbortSignal.timeout(15_000),
-    });
+    const response = await postTenantWebhook(endpoint.url, body, signature);
 
     const responseText = truncateWebhookResponsePreview(await response.text());
 

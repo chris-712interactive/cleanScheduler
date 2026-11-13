@@ -13,6 +13,7 @@ import {
   type SalesLeadStage,
 } from '@/lib/admin/salesTypes';
 import { createAdminClient } from '@/lib/supabase/server';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 
 function formErrorRedirect(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
@@ -492,6 +493,9 @@ export async function invitePlatformSalesUserAction(formData: FormData) {
 
   if (!email || !email.includes('@')) {
     formErrorRedirect('/settings', 'Enter a valid email for the sales user.');
+  }
+  if (isOutboundSuppressed()) {
+    formErrorRedirect('/settings', OUTBOUND_SUPPRESSED_MESSAGE);
   }
 
   const admin = createAdminClient();
