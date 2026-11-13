@@ -95,16 +95,16 @@ export async function sendQuoteNotificationEmail(
   admin: Admin,
   event: QuoteNotificationEvent,
   params: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   if (!isResendConfigured()) {
     console.warn(
       '[quoteNotifications] Skipping email: Resend not configured (RESEND_API_KEY / RESEND_FROM_EMAIL).',
     );
-    return;
+    return { ok: true };
   }
 
   const flags = await loadOpsFlags(admin, params.tenantId);
-  if (!flags) return;
+  if (!flags) return { ok: true };
 
   const loadedBrand = await loadTenantEmailBrand(admin, params.tenantId);
   const tname = loadedBrand?.name || (await tenantName(admin, params.tenantId));
@@ -160,8 +160,9 @@ export async function sendQuoteNotificationEmail(
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_sent email failed:', sent.error);
+      return { ok: false };
     }
-    return;
+    return { ok: true };
   }
 
   if (event === 'quote_accepted' && flags.email_accepted && staffEmail) {
@@ -186,8 +187,9 @@ export async function sendQuoteNotificationEmail(
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_accepted email failed:', sent.error);
+      return { ok: false };
     }
-    return;
+    return { ok: true };
   }
 
   if (event === 'quote_declined' && flags.email_declined && staffEmail) {
@@ -212,6 +214,9 @@ export async function sendQuoteNotificationEmail(
     });
     if (!sent.ok) {
       console.error('[quoteNotifications] quote_declined email failed:', sent.error);
+      return { ok: false };
     }
   }
+
+  return { ok: true };
 }

@@ -25,7 +25,7 @@ export async function emitTenantWebhook(params: {
   tenantId: string;
   eventType: TenantWebhookEventType;
   data: Record<string, unknown>;
-}): Promise<void> {
+}): Promise<{ ok: boolean }> {
   const eventId = crypto.randomUUID();
   const envelope = {
     id: eventId,
@@ -42,14 +42,16 @@ export async function emitTenantWebhook(params: {
 
   if (error) {
     console.error('[webhooks] load endpoints failed:', error.message);
-    return;
+    return { ok: false };
   }
 
   const matching = (endpoints ?? []).filter((endpoint) =>
     endpointSubscribesToEvent(endpoint.event_types ?? [], params.eventType),
   );
 
-  if (matching.length === 0) return;
+  if (matching.length === 0) return { ok: true };
+
+  let ok = true;
 
   for (const endpoint of matching) {
     const { data: delivery, error: insertErr } = await params.admin
@@ -68,6 +70,7 @@ export async function emitTenantWebhook(params: {
     if (insertErr) {
       if (/duplicate key|unique constraint/i.test(insertErr.message)) continue;
       console.error('[webhooks] enqueue failed:', insertErr.message);
+      ok = false;
       continue;
     }
 
@@ -77,6 +80,8 @@ export async function emitTenantWebhook(params: {
       });
     }
   }
+
+  return { ok };
 }
 
 export async function deliverTenantWebhookById(
