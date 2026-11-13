@@ -89,13 +89,41 @@ const LOCATION_FACTS_AFTER_RPC = [
 ] as const;
 
 export const LOCATION_FACT_NOTICE = 'location-facts';
+export const ENTRY_CODE_NOTICE = 'entry-codes';
+export const QUOTE_FOLLOW_UP_NOTICE = 'quote-follow-up';
+export const QUOTE_NOTIFY_NOTICE = 'quote-notify';
 
 export const LOCATION_FACT_SYNC_WARNING =
   'The quote was saved, but bedrooms, bathrooms, square feet, stories, or site notes could not be copied onto the location.';
 
+export const ENTRY_CODE_SAVE_WARNING =
+  'The quote was saved, but entry codes could not be stored. Open the service location and enter the gate, door, and garage codes again.';
+
+export const QUOTE_FOLLOW_UP_WARNING =
+  'The quote was saved, but some location or crew details could not be stored. Open the quote and save those details again.';
+
+export const QUOTE_NOTIFY_WARNING =
+  'The quote was saved and marked sent, but the customer could not be notified. This page does not send it again.';
+
+const QUOTE_SAVE_NOTICES: Record<string, string> = {
+  [LOCATION_FACT_NOTICE]: LOCATION_FACT_SYNC_WARNING,
+  [ENTRY_CODE_NOTICE]: ENTRY_CODE_SAVE_WARNING,
+  [QUOTE_FOLLOW_UP_NOTICE]: QUOTE_FOLLOW_UP_WARNING,
+  [QUOTE_NOTIFY_NOTICE]: QUOTE_NOTIFY_WARNING,
+};
+
+/** Maps one or more notice codes (comma-separated) to fixed copy. Unknown codes are dropped. */
 export function quoteSaveNotice(code: string | undefined): string | undefined {
-  if (code === LOCATION_FACT_NOTICE) return LOCATION_FACT_SYNC_WARNING;
-  return undefined;
+  if (!code) return undefined;
+  const messages: string[] = [];
+  for (const part of code.split(',')) {
+    const key = part.trim();
+    if (!Object.hasOwn(QUOTE_SAVE_NOTICES, key)) continue;
+    const text = QUOTE_SAVE_NOTICES[key];
+    if (typeof text !== 'string' || messages.includes(text)) continue;
+    messages.push(text);
+  }
+  return messages.length > 0 ? messages.join(' ') : undefined;
 }
 
 export function quoteLocationFactPatch(snapshot: QuotePropertySnapshot): QuoteLocationFactPatch {
