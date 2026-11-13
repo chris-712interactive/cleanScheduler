@@ -26,6 +26,7 @@ import {
   ENTRY_CODE_NOTICE,
   LOCATION_FACT_NOTICE,
   QUOTE_FOLLOW_UP_NOTICE,
+  QUOTE_IN_FLIGHT_NOTICE,
   QUOTE_NOTIFY_NOTICE,
   inlinePropertyDeferringLocationFacts,
   parseCustomerPropertyKind,
@@ -714,7 +715,19 @@ type QuoteCreateClaim =
   | { state: 'new' }
   | { state: 'in_flight' }
   | { state: 'replay'; quoteId: string; followUps: QuoteCreateFollowUps }
-  | { state: 'error' };
+  | { state: 'error'; missingTable: boolean };
+
+function missingQuoteCreateTable(
+  error: { code?: string; message?: string } | null | undefined,
+): boolean {
+  if (!error) return false;
+  if (error.code === '42P01' || error.code === 'PGRST205') return true;
+  const message = (error.message ?? '').toLowerCase();
+  return (
+    message.includes('tenant_quote_create_requests') &&
+    (message.includes('does not exist') || message.includes('schema cache'))
+  );
+}
 
 async function claimQuoteCreate(
   admin: QuoteAdmin,
@@ -734,7 +747,7 @@ async function claimQuoteCreate(
   if (!inserted.error) return { state: 'new' };
   if (inserted.error.code !== '23505') {
     console.error('[createTenantQuote] idempotency claim failed');
-    return { state: 'error' };
+    return { state: 'error', missingTable: missingQuoteCreateTable(inserted.error) };
   }
 
   const existing = await admin
@@ -745,7 +758,7 @@ async function claimQuoteCreate(
     .maybeSingle();
   if (existing.error) {
     console.error('[createTenantQuote] idempotency claim failed');
-    return { state: 'error' };
+    return { state: 'error', missingTable: missingQuoteCreateTable(existing.error) };
   }
   const quoteId = existing.data?.quote_id ?? '';
   if (!QUOTE_ID_RE.test(quoteId)) return { state: 'in_flight' };
@@ -767,6 +780,22 @@ async function releaseQuoteCreateClaim(
 
 const CONFIRM_QUOTE_ERROR =
   'This quote could not be confirmed. Check the quotes list before saving again.';
+
+const MISSING_QUOTE_CREATE_TABLE_ERROR =
+  'Quote saving needs database migration 0127_quote_create_idempotency. Apply that migration, then check the quotes list before saving again.';
+
+function replayIdleResult(quoteId: string, followUps: QuoteCreateFollowUps): QuoteFormState {
+  const form = formStateForQuote(quoteId, followUps);
+  if (!hasPendingFollowUp(followUps)) return form;
+  return {
+    ...form,
+    warning: joinQuoteNotices([form.warning, QUOTE_IN_FLIGHT_NOTICE]),
+  };
+}
+
+function quoteReplayBlocked(quote: OwnedQuote): boolean {
+  return quote.isLocked || quote.status === 'accepted' || quote.status === 'expired';
+}
 
 /**
  * Writes that run after the quote row exists. Only steps in `run` are attempted.
@@ -1002,26 +1031,14 @@ async function replayQuoteCreate(input: {
   quoteId: string;
   followUps: QuoteCreateFollowUps;
   formData: FormData;
-  title: string;
 }): Promise<QuoteFormState> {
   const loaded = await loadOwnedQuote(input.admin, input.tenantId, input.quoteId);
   if (loaded.state !== 'found') return { error: CONFIRM_QUOTE_ERROR };
   const quote = loaded.quote;
 
-  if (hasPendingFollowUp(input.followUps)) {
-    return { success: true, quoteId: quote.id, warning: QUOTE_FOLLOW_UP_NOTICE };
-  }
-
   const failed = failedFollowUpKeys(input.followUps);
-  if (
-    quote.isLocked ||
-    quote.status === 'accepted' ||
-    quote.status === 'expired' ||
-    failed.length === 0
-  ) {
-    return failed.length > 0
-      ? { success: true, quoteId: quote.id, warning: QUOTE_FOLLOW_UP_NOTICE }
-      : { success: true, quoteId: quote.id };
+  if (quoteReplayBlocked(quote) || failed.length === 0) {
+    return replayIdleResult(quote.id, input.followUps);
   }
 
   const failedSet = new Set(failed);
@@ -1051,14 +1068,14 @@ async function replayQuoteCreate(input: {
     : null;
   if (promotionSave) promotionSave.quoteId = quote.id;
 
-  return finishCreatedQuote({
+  const finished = await finishCreatedQuote({
     admin: input.admin,
     tenantId: input.tenantId,
     idempotencyKey: input.idempotencyKey,
     quoteId: quote.id,
     customerId: quote.customerId,
     propertyId: quote.propertyId,
-    title: input.title || quote.title,
+    title: quote.title,
     formData: input.formData,
     propertySnapshot: structured.propertySnapshot,
     locationKindToWrite: locationKindPlan.ok ? locationKindPlan.kindToWrite : false,
@@ -1077,6 +1094,11 @@ async function replayQuoteCreate(input: {
       webhook: mayNotify && failedSet.has('webhook'),
     },
   });
+  if (!hasPendingFollowUp(input.followUps)) return finished;
+  return {
+    ...finished,
+    warning: joinQuoteNotices([finished.warning, QUOTE_IN_FLIGHT_NOTICE]),
+  };
 }
 
 export async function createTenantQuote(
@@ -1320,7 +1342,11 @@ export async function createTenantQuote(
   if (!crewSize.ok) return { error: crewSize.error };
 
   const claim = await claimQuoteCreate(admin, membership.tenantId, idempotencyKey);
-  if (claim.state === 'error') return { error: CONFIRM_QUOTE_ERROR };
+  if (claim.state === 'error') {
+    return {
+      error: claim.missingTable ? MISSING_QUOTE_CREATE_TABLE_ERROR : CONFIRM_QUOTE_ERROR,
+    };
+  }
   if (claim.state === 'in_flight') {
     return {
       error:
@@ -1335,7 +1361,6 @@ export async function createTenantQuote(
       quoteId: claim.quoteId,
       followUps: claim.followUps,
       formData,
-      title,
     });
   }
 

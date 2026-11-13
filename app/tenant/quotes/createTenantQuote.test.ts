@@ -19,6 +19,8 @@ const harness = vi.hoisted(() => {
     smsOk: true,
     webhookOk: true,
     quoteLookupError: false,
+    quoteTitle: 'Weekly clean',
+    claimError: null as { code: string; message: string } | null,
   };
   const requests = new Map<
     string,
@@ -42,9 +44,18 @@ const harness = vi.hoisted(() => {
       return { ok: true as const };
     },
   );
-  const sendEmail = vi.fn(async () => ({ ok: state.emailOk }));
-  const sendSms = vi.fn(async () => ({ ok: state.smsOk }));
-  const emitWebhook = vi.fn(async () => ({ ok: state.webhookOk }));
+  const sendEmail = vi.fn(async (input?: { quoteTitle?: string; customerId?: string }) => {
+    void input;
+    return { ok: state.emailOk };
+  });
+  const sendSms = vi.fn(async (input?: { quoteTitle?: string; customerId?: string }) => {
+    void input;
+    return { ok: state.smsOk };
+  });
+  const emitWebhook = vi.fn(async (input?: { quoteTitle?: string; customerId?: string }) => {
+    void input;
+    return { ok: state.webhookOk };
+  });
 
   function seedRequest(
     key: string,
@@ -94,6 +105,7 @@ const harness = vi.hoisted(() => {
     function run() {
       const id = `${filters.tenant_id ?? payload?.tenant_id ?? 'tenant-1'}:${filters.idempotency_key ?? payload?.idempotency_key ?? ''}`;
       if (op === 'insert') {
+        if (state.claimError) return { data: null, error: state.claimError };
         if (requests.has(id))
           return { data: null, error: { code: '23505', message: 'duplicate key' } };
         const row = {
@@ -198,7 +210,7 @@ const harness = vi.hoisted(() => {
           status: state.quoteStatus,
           customer_id: CUSTOMER_ID,
           property_id: PROPERTY_ID,
-          title: 'Weekly clean',
+          title: state.quoteTitle,
           is_locked: state.isLocked,
         };
         return { data: single ? quote : [quote], error: null, count: 1 };
@@ -257,15 +269,18 @@ vi.mock('@/lib/security/propertyAccessCodeCrypto', () => ({
 }));
 
 vi.mock('@/lib/tenant/quoteNotifications', () => ({
-  sendQuoteNotificationEmail: () => harness.sendEmail(),
+  sendQuoteNotificationEmail: (_admin: unknown, _event: unknown, input: unknown) =>
+    harness.sendEmail(input as { quoteTitle?: string; customerId?: string }),
 }));
 
 vi.mock('@/lib/sms/quoteNotificationSms', () => ({
-  sendQuoteNotificationSms: () => harness.sendSms(),
+  sendQuoteNotificationSms: (_admin: unknown, _event: unknown, input: unknown) =>
+    harness.sendSms(input as { quoteTitle?: string; customerId?: string }),
 }));
 
 vi.mock('@/lib/integrations/emitQuoteWebhook', () => ({
-  emitQuoteWebhookEvent: () => harness.emitWebhook(),
+  emitQuoteWebhookEvent: (_admin: unknown, _event: unknown, input: unknown) =>
+    harness.emitWebhook(input as { quoteTitle?: string; customerId?: string }),
 }));
 
 vi.mock('@/lib/portal/invalidatePortalCache', () => ({
@@ -310,6 +325,8 @@ describe('createTenantQuote follow-up failures', () => {
     harness.state.smsOk = true;
     harness.state.webhookOk = true;
     harness.state.quoteLookupError = false;
+    harness.state.quoteTitle = 'Weekly clean';
+    harness.state.claimError = null;
     harness.requests.clear();
     harness.saveCodes.mockClear();
     harness.sendEmail.mockClear();
@@ -403,6 +420,8 @@ describe('createTenantQuote follow-up failures', () => {
 
     expect(result.success).toBe(true);
     expect(result.quoteId).toBe(QUOTE_ID);
+    expect(result.warning).toBe('entry-codes,quote-notify');
+    expect(quoteSaveNotice(result.warning)).not.toContain('location or crew');
     expect(harness.state.rpcCalls).toBe(0);
     expect(harness.state.quoteStatus).toBe('accepted');
     expect(harness.sendEmail).not.toHaveBeenCalled();
@@ -485,6 +504,199 @@ describe('createTenantQuote follow-up failures', () => {
     expect(retry.quoteId).toBeUndefined();
     expect(retry.error).toMatch(/could not be confirmed/);
     expect(harness.state.rpcCalls).toBe(1);
+  });
+
+  it('retries failed steps when another step is still pending', async () => {
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'failed',
+        locationFacts: 'ok',
+        locationKind: 'ok',
+        crew: 'pending',
+        promotions: 'ok',
+        email: 'pending',
+        sms: 'failed',
+        webhook: 'ok',
+      },
+    });
+    harness.state.quoteStatus = 'sent';
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(result).toEqual({ success: true, quoteId: QUOTE_ID, warning: 'quote-in-flight' });
+    expect(harness.state.rpcCalls).toBe(0);
+    expect(harness.saveCodes).toHaveBeenCalledTimes(1);
+    expect(harness.sendSms).toHaveBeenCalledTimes(1);
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.emitWebhook).not.toHaveBeenCalled();
+    const stored = harness.requests.get(`tenant-1:${KEY}`);
+    expect(stored?.follow_ups.entryCodes).toBe('ok');
+    expect(stored?.follow_ups.sms).toBe('ok');
+    expect(stored?.follow_ups.crew).toBe('pending');
+    expect(stored?.follow_ups.email).toBe('pending');
+    expect(stored?.follow_ups.webhook).toBe('ok');
+  });
+
+  it('reports pending steps and does not run them when nothing has failed', async () => {
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'pending',
+        locationFacts: 'ok',
+        locationKind: 'ok',
+        crew: 'pending',
+        promotions: 'ok',
+        email: 'pending',
+        sms: 'ok',
+        webhook: 'ok',
+      },
+    });
+    harness.state.quoteStatus = 'sent';
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(result).toEqual({ success: true, quoteId: QUOTE_ID, warning: 'quote-in-flight' });
+    expect(quoteSaveNotice(result.warning)).toContain('still being saved');
+    expect(quoteSaveNotice(result.warning)).not.toContain('location or crew');
+    expect(harness.state.rpcCalls).toBe(0);
+    expect(harness.saveCodes).not.toHaveBeenCalled();
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.sendSms).not.toHaveBeenCalled();
+    expect(harness.emitWebhook).not.toHaveBeenCalled();
+  });
+
+  it('keeps a failed entry-code retry when email is still pending', async () => {
+    harness.state.codeFailuresLeft = 1;
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'failed',
+        locationFacts: 'ok',
+        locationKind: 'ok',
+        crew: 'ok',
+        promotions: 'ok',
+        email: 'pending',
+        sms: 'ok',
+        webhook: 'skipped',
+      },
+    });
+    harness.state.quoteStatus = 'sent';
+
+    const result = await createTenantQuote({}, quoteForm('draft'));
+
+    expect(result.success).toBe(true);
+    expect(result.warning).toBe('entry-codes,quote-in-flight');
+    expect(harness.saveCodes).toHaveBeenCalledTimes(1);
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.state.rpcCalls).toBe(0);
+    expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.email).toBe('pending');
+    expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.entryCodes).toBe('failed');
+  });
+
+  it('uses the step warning for an expired quote and does not retry it', async () => {
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'ok',
+        locationFacts: 'failed',
+        locationKind: 'ok',
+        crew: 'ok',
+        promotions: 'ok',
+        email: 'failed',
+        sms: 'ok',
+        webhook: 'ok',
+      },
+    });
+    harness.state.quoteStatus = 'expired';
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(result).toEqual({
+      success: true,
+      quoteId: QUOTE_ID,
+      warning: 'location-facts,quote-notify',
+    });
+    expect(quoteSaveNotice(result.warning)).not.toContain('location or crew');
+    expect(harness.state.rpcCalls).toBe(0);
+    expect(harness.state.quoteStatus).toBe('expired');
+    expect(harness.saveCodes).not.toHaveBeenCalled();
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('uses the crew warning for a failed crew step on a locked quote', async () => {
+    harness.seedRequest(KEY, {
+      quote_id: QUOTE_ID,
+      follow_ups: {
+        entryCodes: 'ok',
+        locationFacts: 'ok',
+        locationKind: 'ok',
+        crew: 'failed',
+        promotions: 'ok',
+        email: 'ok',
+        sms: 'ok',
+        webhook: 'ok',
+      },
+    });
+    harness.state.quoteStatus = 'sent';
+    harness.state.isLocked = true;
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(result).toEqual({ success: true, quoteId: QUOTE_ID, warning: 'quote-follow-up' });
+    expect(quoteSaveNotice(result.warning)).toContain('location or crew');
+    expect(harness.state.rpcCalls).toBe(0);
+    expect(harness.state.isLocked).toBe(true);
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+    expect(harness.sendSms).not.toHaveBeenCalled();
+  });
+
+  it('uses the stored quote title when retrying a failed channel', async () => {
+    harness.state.smsOk = false;
+    const first = await createTenantQuote({}, quoteForm('send'));
+    expect(first.warning).toBe('quote-notify');
+    expect(harness.sendSms.mock.calls[0]?.[0]).toMatchObject({ quoteTitle: 'Weekly clean' });
+
+    harness.state.smsOk = true;
+    harness.state.quoteTitle = 'Stored weekly title';
+    const form = quoteForm('send');
+    form.set('title', 'REWRITTEN TITLE');
+    const retry = await createTenantQuote({}, form);
+
+    expect(retry.quoteId).toBe(QUOTE_ID);
+    expect(retry.warning).toBeUndefined();
+    expect(harness.sendSms).toHaveBeenCalledTimes(2);
+    expect(harness.sendEmail).toHaveBeenCalledTimes(1);
+    expect(harness.sendSms.mock.calls[1]?.[0]).toMatchObject({
+      quoteTitle: 'Stored weekly title',
+      customerId: CUSTOMER_ID,
+    });
+    expect(JSON.stringify(harness.sendSms.mock.calls[1]?.[0])).not.toContain('REWRITTEN TITLE');
+  });
+
+  it('names migration 0127 when the idempotency table is missing', async () => {
+    harness.state.claimError = {
+      code: '42P01',
+      message: 'relation "public.tenant_quote_create_requests" does not exist',
+    };
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(result.success).toBeUndefined();
+    expect(result.quoteId).toBeUndefined();
+    expect(result.error).toContain('0127_quote_create_idempotency');
+    expect(harness.state.rpcCalls).toBe(0);
+    expect(harness.sendEmail).not.toHaveBeenCalled();
+
+    harness.state.claimError = { code: 'PGRST205', message: 'schema cache' };
+    const cached = await createTenantQuote({}, quoteForm('send'));
+    expect(cached.error).toContain('0127_quote_create_idempotency');
+
+    harness.state.claimError = { code: '42501', message: 'permission denied' };
+    const other = await createTenantQuote({}, quoteForm('send'));
+    expect(other.error).toMatch(/could not be confirmed/);
+    expect(other.error).not.toContain('0127');
+    expect(harness.state.rpcCalls).toBe(0);
   });
 
   it('rejects a previous id that is not a UUID', async () => {

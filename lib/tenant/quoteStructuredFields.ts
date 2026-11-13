@@ -92,6 +92,7 @@ export const LOCATION_FACT_NOTICE = 'location-facts';
 export const ENTRY_CODE_NOTICE = 'entry-codes';
 export const QUOTE_FOLLOW_UP_NOTICE = 'quote-follow-up';
 export const QUOTE_NOTIFY_NOTICE = 'quote-notify';
+export const QUOTE_IN_FLIGHT_NOTICE = 'quote-in-flight';
 
 export const LOCATION_FACT_SYNC_WARNING =
   'The quote was saved, but bedrooms, bathrooms, square feet, stories, or site notes could not be copied onto the location.';
@@ -105,11 +106,15 @@ export const QUOTE_FOLLOW_UP_WARNING =
 export const QUOTE_NOTIFY_WARNING =
   'The quote was saved and marked sent, but the customer could not be notified. This page does not send it again.';
 
+export const QUOTE_IN_FLIGHT_WARNING =
+  'Some of this quote is still being saved. Refresh this page in a moment before editing it.';
+
 const QUOTE_SAVE_NOTICES: Record<string, string> = {
   [LOCATION_FACT_NOTICE]: LOCATION_FACT_SYNC_WARNING,
   [ENTRY_CODE_NOTICE]: ENTRY_CODE_SAVE_WARNING,
   [QUOTE_FOLLOW_UP_NOTICE]: QUOTE_FOLLOW_UP_WARNING,
   [QUOTE_NOTIFY_NOTICE]: QUOTE_NOTIFY_WARNING,
+  [QUOTE_IN_FLIGHT_NOTICE]: QUOTE_IN_FLIGHT_WARNING,
 };
 
 /** Maps one or more notice codes (comma-separated) to fixed copy. Unknown codes are dropped. */

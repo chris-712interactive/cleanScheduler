@@ -23,7 +23,12 @@ import { customerLocationEditHref } from '@/lib/tenant/customerLocationHref';
 import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
 import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
-import { claimQuoteSubmit } from '@/lib/tenant/quoteCreateIdempotency';
+import {
+  claimQuoteSubmit,
+  clearQuoteCreateIdempotencyKey,
+  quoteCreateIdempotencyKeyForVisit,
+  readQuoteCreateNavigationType,
+} from '@/lib/tenant/quoteCreateIdempotency';
 import { quoteSaveNotice } from '@/lib/tenant/quoteStructuredFields';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import { loadPropertyAccessCodesAction } from './propertyAccessCodeActions';
@@ -104,7 +109,13 @@ export function QuoteCreateWizard({
   const [idempotencyKey, setIdempotencyKey] = useState('');
 
   useEffect(() => {
-    setIdempotencyKey(crypto.randomUUID());
+    setIdempotencyKey(
+      quoteCreateIdempotencyKeyForVisit({
+        storage: window.sessionStorage,
+        navigationType: readQuoteCreateNavigationType(),
+        createId: () => crypto.randomUUID(),
+      }),
+    );
   }, []);
 
   useEffect(() => {
@@ -114,7 +125,9 @@ export function QuoteCreateWizard({
   }, [state.error, state.quoteId]);
 
   useEffect(() => {
-    if (!state.quoteId || navigatedToQuoteRef.current) return;
+    if (!state.quoteId) return;
+    clearQuoteCreateIdempotencyKey(window.sessionStorage);
+    if (navigatedToQuoteRef.current) return;
     navigatedToQuoteRef.current = true;
     const notice = state.warning ? `?notice=${encodeURIComponent(state.warning)}` : '';
     router.replace(`/quotes/${state.quoteId}${notice}`);

@@ -6,6 +6,7 @@ import {
   inlinePropertyDeferringLocationFacts,
   parseQuoteWizardStructuredFromForm,
   quoteLocationFactPatch,
+  QUOTE_IN_FLIGHT_WARNING,
   quoteSaveNotice,
 } from '@/lib/tenant/quoteStructuredFields';
 
@@ -82,6 +83,8 @@ describe('quote access notes', () => {
     expect(quoteSaveNotice('toString')).toBeUndefined();
     expect(quoteSaveNotice('__proto__')).toBeUndefined();
     expect(quoteSaveNotice('entry-codes,constructor')).toBe(ENTRY_CODE_SAVE_WARNING);
+    expect(quoteSaveNotice('quote-in-flight')).toBe(QUOTE_IN_FLIGHT_WARNING);
+    expect(quoteSaveNotice('quote-in-flight,constructor')).toBe(QUOTE_IN_FLIGHT_WARNING);
   });
 
   it('uses the workspace default when the quote property type is omitted', () => {
