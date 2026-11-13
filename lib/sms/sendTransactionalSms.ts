@@ -25,6 +25,8 @@ export async function sendTransactionalSms(params: {
   toPhone: string;
   payload: SmsTemplatePayload;
   relatedVisitId?: string;
+  /** sent.dm dedupes this key for 24 hours. 1–255 letters, numbers, hyphens, or underscores. */
+  idempotencyKey?: string;
 }): Promise<{ ok: true; segmentCount: number } | { ok: false; error: string }> {
   if (!isSentDmConfigured()) {
     return { ok: false, error: 'sent.dm is not configured on this server.' };
@@ -63,11 +65,13 @@ export async function sendTransactionalSms(params: {
 
   try {
     const client = getSentDmClient();
+    const idempotencyKey = params.idempotencyKey?.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 255);
     const response = await client.messages.send({
       to: [to],
       template,
       channel: channels,
       sandbox,
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     });
 
     if (!response.success) {

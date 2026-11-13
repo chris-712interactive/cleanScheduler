@@ -23,7 +23,15 @@ import { customerLocationEditHref } from '@/lib/tenant/customerLocationHref';
 import { useTenantSegmentCapabilities } from '@/lib/tenant/useTenantSegmentCapabilities';
 import { PropertyKindBadge } from '@/components/tenant/PropertyKindBadge';
 import { quoteLineDraftsForTotalsPreview } from '@/lib/tenant/parseQuoteLineDrafts';
-import { claimQuoteSubmit } from '@/lib/tenant/quoteCreateIdempotency';
+import {
+  claimQuoteSubmit,
+  clearQuoteCreateIdempotencyKey,
+  markQuoteCreateIdempotencySubmitted,
+  quoteCreateWarningKeepsIdempotencyKey,
+  readQuoteCreateHistoryVisitId,
+  resolveQuoteCreateIdempotencyKey,
+  withQuoteCreateHistoryVisit,
+} from '@/lib/tenant/quoteCreateIdempotency';
 import { quoteSaveNotice } from '@/lib/tenant/quoteStructuredFields';
 import { createTenantQuote, type QuoteFormState } from './actions';
 import { loadPropertyAccessCodesAction } from './propertyAccessCodeActions';
@@ -104,7 +112,15 @@ export function QuoteCreateWizard({
   const [idempotencyKey, setIdempotencyKey] = useState('');
 
   useEffect(() => {
-    setIdempotencyKey(crypto.randomUUID());
+    const key = resolveQuoteCreateIdempotencyKey({
+      storage: window.sessionStorage,
+      createId: () => crypto.randomUUID(),
+      historyVisitId: readQuoteCreateHistoryVisitId(window.history.state),
+    });
+    if (readQuoteCreateHistoryVisitId(window.history.state) !== key) {
+      window.history.replaceState(withQuoteCreateHistoryVisit(window.history.state, key), '');
+    }
+    setIdempotencyKey(key);
   }, []);
 
   useEffect(() => {
@@ -114,7 +130,11 @@ export function QuoteCreateWizard({
   }, [state.error, state.quoteId]);
 
   useEffect(() => {
-    if (!state.quoteId || navigatedToQuoteRef.current) return;
+    if (!state.quoteId) return;
+    if (!quoteCreateWarningKeepsIdempotencyKey(state.warning)) {
+      clearQuoteCreateIdempotencyKey(window.sessionStorage);
+    }
+    if (navigatedToQuoteRef.current) return;
     navigatedToQuoteRef.current = true;
     const notice = state.warning ? `?notice=${encodeURIComponent(state.warning)}` : '';
     router.replace(`/quotes/${state.quoteId}${notice}`);
@@ -475,6 +495,7 @@ export function QuoteCreateWizard({
       return;
     }
     if (!claimQuoteSubmit(submitLock.current)) return;
+    markQuoteCreateIdempotencySubmitted(window.sessionStorage, window.location.pathname);
     setStepError(null);
     saveIntentRef.current = intent;
     setPendingIntent(intent);
