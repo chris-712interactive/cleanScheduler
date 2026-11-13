@@ -84,7 +84,11 @@ export async function startInstantBookingCheckout(
   },
 ): Promise<{ url: string } | { error: string }> {
   if (isOutboundSuppressed()) {
-    await admin.from('tenant_instant_bookings').delete().eq('id', input.bookingId);
+    await admin
+      .from('tenant_instant_bookings')
+      .delete()
+      .eq('id', input.bookingId)
+      .eq('tenant_id', input.tenantId);
     return { error: OUTBOUND_SUPPRESSED_MESSAGE };
   }
 

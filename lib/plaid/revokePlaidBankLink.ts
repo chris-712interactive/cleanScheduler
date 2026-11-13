@@ -15,6 +15,10 @@ export interface RevokePlaidBankLinkResult {
   found: boolean;
   revoked: boolean;
   plaidItemRemoved: boolean;
+  /** Plaid was not called. The stored token was left unchanged. */
+  suppressed?: true;
+  /** Plaid item removal failed. The stored token was left unchanged. */
+  plaidRemoveFailed?: true;
 }
 
 function isManualImportLink(link: { plaid_access_token: string; plaid_item_id: string }): boolean {
@@ -87,7 +91,15 @@ export async function revokePlaidBankLink(
   }
 
   const manualImport = isManualImportLink(link);
+  const needsPlaidRemove = shouldRemovePlaidItem(link);
+  if (needsPlaidRemove && isOutboundSuppressed()) {
+    return { found: true, revoked: false, plaidItemRemoved: false, suppressed: true };
+  }
+
   const plaidItemRemoved = await tryRemovePlaidLinkItem(link);
+  if (needsPlaidRemove && !plaidItemRemoved) {
+    return { found: true, revoked: false, plaidItemRemoved: false, plaidRemoveFailed: true };
+  }
 
   if (options?.skipLocalUpdate) {
     return {

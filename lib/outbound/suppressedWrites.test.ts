@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { processOutreachSendBatch } from '@/lib/admin/processOutreachSendBatch';
 import { sendEmailCampaignNow } from '@/lib/campaigns/sendCampaignBatch';
-import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 import { deliverTenantWebhookById } from '@/lib/integrations/emitTenantWebhook';
 import { exchangeAndSaveBankLink } from '@/lib/plaid/exchangePublicToken';
-import { removePlaidItemAtPlaid } from '@/lib/plaid/revokePlaidBankLink';
+import { removePlaidItemAtPlaid, revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 import { isPlaidConfigured } from '@/lib/plaid/server';
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
 import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
@@ -44,8 +43,7 @@ describe('suppressed provider results are not successes', () => {
     const admin = dbThatMustNotBeWritten();
     const email = await sendQuoteNotificationEmail(admin as never, 'quote_sent', quoteParams);
     const sms = await sendQuoteNotificationSms(admin as never, 'quote_sent', quoteParams);
-    const webhook = await emitQuoteWebhookEvent(admin as never, 'quote.sent', quoteParams);
-    for (const result of [email, sms, webhook]) {
+    for (const result of [email, sms]) {
       expect(result).toMatchObject({
         ok: false,
         suppressed: true,
@@ -53,6 +51,69 @@ describe('suppressed provider results are not successes', () => {
       });
       expect(result.ok ? 'ok' : 'failed').toBe('failed');
     }
+  });
+
+  it('queues a webhook delivery as pending and does not deliver it', async () => {
+    enable();
+    const inserts: Record<string, unknown>[] = [];
+    let eqCount = 0;
+    const endpoints = {
+      eq() {
+        eqCount += 1;
+        if (eqCount >= 2) {
+          return Promise.resolve({
+            data: [{ id: 'endpoint-1', event_types: ['invoice.paid'] }],
+            error: null,
+          });
+        }
+        return endpoints;
+      },
+    };
+    const admin = {
+      from(table: string) {
+        if (table === 'tenant_webhook_endpoints') {
+          return { select: () => endpoints };
+        }
+        if (table === 'tenant_webhook_deliveries') {
+          return {
+            insert(row: Record<string, unknown>) {
+              inserts.push(row);
+              return {
+                select: () => ({
+                  maybeSingle: async () => ({ data: { id: 'delivery-1' }, error: null }),
+                }),
+              };
+            },
+            select() {
+              throw new Error('delivery was attempted');
+            },
+            update() {
+              throw new Error('delivery was marked');
+            },
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    };
+    const { emitTenantWebhook } = await import('@/lib/integrations/emitTenantWebhook');
+    const result = await emitTenantWebhook({
+      admin: admin as never,
+      tenantId: 'tenant-1',
+      eventType: 'invoice.paid',
+      eventId: 'event-1',
+      data: { invoice_id: 'invoice-1' },
+    });
+    expect(result).toMatchObject({ ok: false, suppressed: true });
+    expect(inserts).toEqual([
+      expect.objectContaining({
+        tenant_id: 'tenant-1',
+        endpoint_id: 'endpoint-1',
+        event_type: 'invoice.paid',
+        event_id: 'event-1',
+        status: 'pending',
+      }),
+    ]);
+    expect(inserts[0]).not.toHaveProperty('delivered_at');
   });
 
   it('does not insert an SMS row or consume the allowance', async () => {
@@ -130,6 +191,39 @@ describe('suppressed provider results are not successes', () => {
     expect(updates).toEqual([]);
     expect(await removePlaidItemAtPlaid('access-real')).toBe(false);
     expect(isPlaidConfigured()).toBe(false);
+
+    let revokedToken = false;
+    const disconnectAdmin = {
+      from() {
+        return {
+          select() {
+            return {
+              eq() {
+                return {
+                  maybeSingle: async () => ({
+                    data: {
+                      id: 'link-1',
+                      plaid_access_token: 'access-real',
+                      plaid_item_id: 'item-1',
+                      status: 'active',
+                    },
+                  }),
+                };
+              },
+            };
+          },
+          update() {
+            revokedToken = true;
+            return { eq: async () => ({ error: null }) };
+          },
+        };
+      },
+    };
+    const revoked = await revokePlaidBankLink(disconnectAdmin as never, 'tenant-1', {
+      reason: 'tenant_disconnected',
+    });
+    expect(revoked).toMatchObject({ revoked: false, suppressed: true, plaidItemRemoved: false });
+    expect(revokedToken).toBe(false);
   });
 
   it('leaves a webhook delivery pending and does not set delivered_at', async () => {

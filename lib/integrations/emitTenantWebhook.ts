@@ -57,10 +57,8 @@ export async function emitTenantWebhook(params: {
   data: Record<string, unknown>;
   /** Stable id so a repeated claim does not enqueue a second delivery for the same endpoint. */
   eventId?: string;
-}): Promise<{ ok: boolean; suppressed?: true }> {
-  if (isOutboundSuppressed()) {
-    return suppressedProviderResult('webhook', 'deliver');
-  }
+}): Promise<{ ok: boolean; suppressed?: true; error?: string }> {
+  const suppressed = isOutboundSuppressed();
   const eventId = params.eventId?.trim() || crypto.randomUUID();
   const envelope = {
     id: eventId,
@@ -109,11 +107,15 @@ export async function emitTenantWebhook(params: {
       continue;
     }
 
-    if (delivery?.id) {
+    if (delivery?.id && !suppressed) {
       void deliverTenantWebhookById(params.admin, delivery.id).catch((err) => {
         console.error('[webhooks] immediate delivery failed:', err);
       });
     }
+  }
+
+  if (suppressed && matching.length > 0) {
+    return ok ? suppressedProviderResult('webhook', 'deliver') : { ok: false };
   }
 
   return { ok };

@@ -6,7 +6,7 @@
 [outbound] suppressed provider=stripe operation=refunds.create
 ```
 
-That line has no recipient, URL, token, or message body. A suppressed refund, Connect start, bank link, webhook delivery, SMS, campaign, or outreach send does not change balances, account ids, cursors, quotas, or “sent” status. Webhook rows stay pending and retry after the switch is off. Password reset and sales invites do not call Supabase Auth email.
+That line has no recipient, URL, token, or message body. A suppressed refund, Connect start, bank link, webhook delivery, SMS, campaign, or outreach send does not change balances, account ids, cursors, quotas, or “sent” status. A new webhook emit is stored as `pending` with no `delivered_at` and is not posted until the switch is off. Password reset and sales invites do not call Supabase Auth email.
 
 Customers cannot read or toggle the switch. It is not `NEXT_PUBLIC_`, and nothing in the request (cookie, header, query, or `user_metadata`) is consulted. `GET /api/health/deployment` adds a boolean `outboundSuppressed` and no other new value.
 
@@ -64,6 +64,6 @@ With `HOSTED_DEV_MUTATIONS=1` and `outboundSuppressed: true`, the isolated suite
 ## Notes for later sessions
 
 - Construct providers only in `lib/stripe/server.ts`, `lib/email/resendClient.ts`, `lib/plaid/server.ts`, and `lib/sms/sentDmServer.ts`. `lib/outbound/providerClientGuard.test.ts` fails the build when `new Stripe`, `new Resend`, `new PlaidApi`, or `new SentDm` shows up anywhere else.
-- `isResendConfigured`, `isSentDmConfigured`, and `isPlaidConfigured` return true while the switch is on, so send and link flows continue without live keys. They still throw if production is asked to suppress.
+- `isResendConfigured`, `isSentDmConfigured`, and `isPlaidConfigured` stay false unless their own keys are set. The switch does not pretend a provider is configured. Send helpers still return `{ ok: false, suppressed: true }` when the switch is on, including when keys exist.
 - Do not treat a fake subscription retrieve as a billing update. `syncTenantPlatformBillingFromStripe` returns before it writes.
 - Do not set `HOSTED_DEV_ISOLATED`, GitHub environments, or this flag from an agent. The user turns the Vercel variable on.
