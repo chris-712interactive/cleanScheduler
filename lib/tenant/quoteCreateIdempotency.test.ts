@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CHANNEL_SEND_LEASE_MS,
   CHANNEL_SEND_TIMEOUT_MS,
   QUOTE_CREATE_IDEMPOTENCY_STORAGE_KEY,
   STALE_FOLLOW_UP_MS,
@@ -8,12 +9,15 @@ import {
   failedFollowUpKeys,
   followUpWriteAllowed,
   hasPendingFollowUp,
+  hasUnsettledFollowUp,
   initialFollowUps,
   isStalePending,
+  isUnknownExpired,
   markQuoteCreateIdempotencySubmitted,
   quoteCreateIdempotencyKeyForVisit,
   quoteCreateWarningKeepsIdempotencyKey,
   readFollowUpRecord,
+  quoteChannelProviderKey,
   readFollowUps,
   resetQuoteCreateVisitMemory,
   resolveQuoteCreateIdempotencyKey,
@@ -150,6 +154,7 @@ describe('quote create idempotency', () => {
     expect(quoteCreateWarningKeepsIdempotencyKey('entry-codes,quote-in-flight')).toBe(true);
     expect(quoteCreateWarningKeepsIdempotencyKey('quote-notify')).toBe(false);
     expect(CHANNEL_SEND_TIMEOUT_MS).toBeLessThan(STALE_FOLLOW_UP_MS);
+    expect(STALE_FOLLOW_UP_MS).toBeLessThan(CHANNEL_SEND_LEASE_MS);
     clearQuoteCreateIdempotencyKey(storage);
     expect(
       quoteCreateIdempotencyKeyForVisit(
@@ -210,6 +215,26 @@ describe('quote create idempotency', () => {
     expect(followUpWriteAllowed(followUps, 'sms', 'failed', 'owner-b')).toBe(false);
     followUps.sms = 'ok';
     expect(followUpWriteAllowed(followUps, 'sms', 'failed', 'owner-a')).toBe(false);
+  });
+
+  it('does not retry an unknown channel until its cooldown has elapsed', () => {
+    const quiet = readFollowUpRecord({
+      sms: 'unknown',
+      email: 'failed',
+      unknownUntil: { sms: new Date(5_000).toISOString() },
+      claimToken: { sms: 'owner-a' },
+    });
+    expect(isUnknownExpired(quiet, 'sms', 4_999)).toBe(false);
+    expect(retryableFollowUpSteps(quiet, 4_999)).toEqual(['email']);
+    expect(hasUnsettledFollowUp(quiet)).toBe(true);
+    expect(isUnknownExpired(quiet, 'sms', 5_000)).toBe(true);
+    expect(retryableFollowUpSteps(quiet, 5_000)).toEqual(['email', 'sms']);
+
+    const missingClock = readFollowUpRecord({ sms: 'unknown' });
+    expect(isUnknownExpired(missingClock, 'sms', 5_000)).toBe(false);
+    expect(retryableFollowUpSteps(missingClock, 5_000)).toEqual([]);
+    expect(quoteChannelProviderKey('sms', STORED_KEY)).toBe(`quote-sms-${STORED_KEY}`);
+    expect(quoteChannelProviderKey('email', STORED_KEY)).not.toContain('owner');
   });
 
   it('replaces a stored key that is not a uuid', () => {
