@@ -25,8 +25,10 @@ export async function emitTenantWebhook(params: {
   tenantId: string;
   eventType: TenantWebhookEventType;
   data: Record<string, unknown>;
+  /** Stable id so a repeated claim does not enqueue a second delivery for the same endpoint. */
+  eventId?: string;
 }): Promise<{ ok: boolean }> {
-  const eventId = crypto.randomUUID();
+  const eventId = params.eventId?.trim() || crypto.randomUUID();
   const envelope = {
     id: eventId,
     type: params.eventType,

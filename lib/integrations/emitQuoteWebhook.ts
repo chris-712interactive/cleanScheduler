@@ -13,12 +13,14 @@ export async function emitQuoteWebhookEvent(
     quoteTitle: string;
     customerId: string;
     status?: string;
+    eventId?: string;
   },
 ): Promise<{ ok: boolean }> {
   return emitTenantWebhook({
     admin,
     tenantId: params.tenantId,
     eventType: event,
+    eventId: params.eventId,
     data: {
       quote_id: params.quoteId,
       customer_id: params.customerId,
