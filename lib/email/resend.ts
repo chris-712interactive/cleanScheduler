@@ -4,7 +4,8 @@
  * Configure `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. The inbox display name
  * follows the email brand (the cleaning company, or Clean Scheduler).
  */
-import { Resend } from 'resend';
+import { createResendClient } from '@/lib/email/resendClient';
+import { isOutboundSuppressed, suppressedProviderResult } from '@/lib/outbound/suppression';
 import {
   emailFromName,
   emailReplyTo,
@@ -53,19 +54,22 @@ export interface SendTransactionalEmailParams {
 
 export async function sendTransactionalEmail(
   params: SendTransactionalEmailParams,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true } | { ok: false; error: string; suppressed?: true }> {
+  const to = params.to.trim();
+  if (!to) {
+    return { ok: false, error: 'Recipient address is empty.' };
+  }
+  if (isOutboundSuppressed()) {
+    return suppressedProviderResult('resend', 'emails.send');
+  }
+
   const apiKey = resendApiKey();
   const from = resendFrom();
   if (!apiKey || !from) {
     return { ok: false, error: 'Resend is not configured (RESEND_API_KEY / RESEND_FROM_EMAIL).' };
   }
 
-  const to = params.to.trim();
-  if (!to) {
-    return { ok: false, error: 'Recipient address is empty.' };
-  }
-
-  const resend = new Resend(apiKey);
+  const resend = createResendClient(apiKey);
   const fromName = params.fromName?.trim();
   const replyTo = params.replyTo?.trim();
   const idempotencyKey = params.idempotencyKey?.trim();

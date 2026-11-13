@@ -22,6 +22,7 @@ import {
 import { syncBankTransactionsForTenant } from '@/lib/plaid/syncBankTransactions';
 import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 import { PLAID_CONSENT_REQUIRED_ERROR } from '@/lib/plaid/plaidConsentCopy';
+import { isOutboundSuppressed, OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import {
   createPlaidLinkToken,
   createPlaidUpdateLinkToken,
@@ -158,6 +159,9 @@ export async function syncBankTransactionsAction(
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
   const roleErr = await requireBankAdminWithMfa(membership);
   if (roleErr) return { error: roleErr };
+  if (isOutboundSuppressed()) {
+    return { error: OUTBOUND_SUPPRESSED_MESSAGE };
+  }
 
   const admin = createAdminClient();
   const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
@@ -252,6 +256,9 @@ export async function disconnectBankLinkAction(
   const membership = await requireTenantPortalAccess(tenantSlug, '/billing/bank-connection');
   const roleErr = await requireBankAdminWithMfa(membership);
   if (roleErr) return { error: roleErr };
+  if (isOutboundSuppressed()) {
+    return { error: OUTBOUND_SUPPRESSED_MESSAGE };
+  }
 
   const admin = createAdminClient();
   const tierErr = await bankReconciliationGateError(admin, membership.tenantId);
@@ -263,6 +270,14 @@ export async function disconnectBankLinkAction(
     });
     if (!result.found) {
       return { error: 'No bank connection on file.' };
+    }
+    if (result.suppressed) {
+      return { error: OUTBOUND_SUPPRESSED_MESSAGE };
+    }
+    if (result.plaidRemoveFailed) {
+      return {
+        error: 'The bank was not removed. The saved connection was left in place.',
+      };
     }
     if (!result.revoked) {
       return { error: 'Bank connection is already disconnected.' };

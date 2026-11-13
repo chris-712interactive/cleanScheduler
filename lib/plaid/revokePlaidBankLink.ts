@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
 import { getPlaidClient, isPlaidConfigured } from '@/lib/plaid/server';
 
 type Admin = SupabaseClient<Database>;
@@ -14,6 +15,10 @@ export interface RevokePlaidBankLinkResult {
   found: boolean;
   revoked: boolean;
   plaidItemRemoved: boolean;
+  /** Plaid was not called. The stored token was left unchanged. */
+  suppressed?: true;
+  /** Plaid item removal failed. The stored token was left unchanged. */
+  plaidRemoveFailed?: true;
 }
 
 function isManualImportLink(link: { plaid_access_token: string; plaid_item_id: string }): boolean {
@@ -35,6 +40,10 @@ function shouldRemovePlaidItem(link: {
 
 /** Best-effort Plaid `/item/remove` for an active link row. */
 export async function removePlaidItemAtPlaid(accessToken: string): Promise<boolean> {
+  if (isOutboundSuppressed()) {
+    logOutboundSuppressed('plaid', 'itemRemove');
+    return false;
+  }
   if (!isPlaidConfigured()) return false;
   try {
     const client = getPlaidClient();
@@ -82,7 +91,15 @@ export async function revokePlaidBankLink(
   }
 
   const manualImport = isManualImportLink(link);
+  const needsPlaidRemove = shouldRemovePlaidItem(link);
+  if (needsPlaidRemove && isOutboundSuppressed()) {
+    return { found: true, revoked: false, plaidItemRemoved: false, suppressed: true };
+  }
+
   const plaidItemRemoved = await tryRemovePlaidLinkItem(link);
+  if (needsPlaidRemove && !plaidItemRemoved) {
+    return { found: true, revoked: false, plaidItemRemoved: false, plaidRemoveFailed: true };
+  }
 
   if (options?.skipLocalUpdate) {
     return {

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { customerPortalUrlForTenant } from '@/lib/portal/customerPortalOrigin';
+import { isOutboundSuppressed, suppressedProviderResult } from '@/lib/outbound/suppression';
 import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
 import type { QuoteNotificationEvent } from '@/lib/tenant/quoteNotifications';
 
@@ -99,7 +100,10 @@ export async function sendQuoteNotificationSms(
     customerId: string;
     idempotencyKey?: string;
   },
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; suppressed?: true }> {
+  if (isOutboundSuppressed()) {
+    return suppressedProviderResult('sentdm', 'messages.send');
+  }
   const flags = await loadSmsOpsFlags(admin, params.tenantId);
   if (!flags) return { ok: true };
 

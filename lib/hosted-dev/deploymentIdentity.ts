@@ -1,4 +1,5 @@
 import { HOSTED_DEV_APEX } from '@/lib/hosted-dev/hostedDevUrl';
+import { isProductionOutboundHost, readOutboundSuppression } from '@/lib/outbound/suppression';
 
 export type StripePublishableMode = 'live' | 'test' | 'unset' | 'unknown';
 
@@ -14,6 +15,8 @@ export type DeploymentIdentity = {
   supabaseHost: string | null;
   stripePublishableMode: StripePublishableMode;
   plaidEnv: string | null;
+  /** True only when this server process has the dev-only outbound switch on. */
+  outboundSuppressed: boolean;
 };
 
 export type IdentityDecision =
@@ -76,6 +79,7 @@ export function buildDeploymentIdentity(env: EnvSource): DeploymentIdentity {
     supabaseHost: supabaseHostname(env.NEXT_PUBLIC_SUPABASE_URL),
     stripePublishableMode: stripePublishableMode(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY),
     plaidEnv: boundedToken(env.PLAID_ENV, PLAID_ENVS),
+    outboundSuppressed: readOutboundSuppression(env),
   };
 }
 
@@ -116,6 +120,7 @@ export function decideIdentity(input: {
         ? body.stripePublishableMode
         : 'unknown',
     plaidEnv: typeof body.plaidEnv === 'string' ? body.plaidEnv : null,
+    outboundSuppressed: body.outboundSuppressed === true,
   };
 
   if (identity.appEnv !== 'dev') {
@@ -141,6 +146,12 @@ export function decideIdentity(input: {
   }
   if (identity.vercelEnv === 'production') {
     return { status: 'reject', reason: 'Vercel environment is production.' };
+  }
+  if (identity.outboundSuppressed && isProductionOutboundHost(identity.appDomain)) {
+    return {
+      status: 'reject',
+      reason: 'Outbound suppression was reported on a production host.',
+    };
   }
   if (identity.supabaseHost && !SUPABASE_HOST.test(identity.supabaseHost)) {
     return { status: 'reject', reason: 'Supabase host is not a hosted project hostname.' };

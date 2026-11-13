@@ -11,6 +11,7 @@ import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import type { Enums } from '@/lib/supabase/database.types';
 import { canAccessStripeConnect } from '@/lib/billing/tenantSubscriptionAccess';
+import { OUTBOUND_SUPPRESSED_MESSAGE } from '@/lib/outbound/suppression';
 import { refreshStripeConnectAccountAction, startStripeConnectOnboardingAction } from './actions';
 import billingStyles from '../billing.module.scss';
 import styles from './payment-setup.module.scss';
@@ -100,6 +101,7 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
   const connectParam = firstParam(sp.connect);
   const err = firstParam(sp.error);
   const synced = connectParam === 'synced';
+  const suppressed = connectParam === 'suppressed';
   const returnedFromStripe = connectParam === 'return';
 
   const db = createTenantPortalDbClient();
@@ -144,6 +146,7 @@ export default async function TenantPaymentSetupPage({ searchParams }: PageProps
       <FeedbackToasts
         messages={[
           err ? { title: err, variant: 'danger' } : null,
+          suppressed ? { title: OUTBOUND_SUPPRESSED_MESSAGE, variant: 'danger' } : null,
           synced ? { title: 'Status updated from Stripe.', variant: 'success' } : null,
           returnedFromStripe && status !== 'complete'
             ? {
