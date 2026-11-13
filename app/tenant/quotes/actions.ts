@@ -55,14 +55,18 @@ import { isTenantAutoScheduleEnabled } from '@/lib/tenant/operationalSettings';
 import { emitQuoteWebhookEvent } from '@/lib/integrations/emitQuoteWebhook';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import {
+  CHANNEL_SEND_TIMEOUT_MS,
   FOLLOW_UP_KEYS,
   followUpWriteAllowed,
   hasPendingFollowUp,
   initialFollowUps,
   isStalePending,
+  quoteChannelLeaseHeld,
   readFollowUpRecord,
   readFollowUps,
+  releaseQuoteChannelLease,
   retryableFollowUpSteps,
+  tryAcquireQuoteChannelLease,
   type FollowUpState,
   type QuoteCreateFollowUpRecord,
   type QuoteCreateFollowUps,
@@ -640,15 +644,6 @@ async function storeQuoteEntryCodes(
   return ENTRY_CODE_NOTICE;
 }
 
-async function channelResult(run: () => Promise<{ ok: boolean }>): Promise<FollowUpState> {
-  try {
-    const result = await run();
-    return result.ok ? 'ok' : 'failed';
-  } catch {
-    return 'failed';
-  }
-}
-
 function formStateForQuote(quoteId: string, followUps: QuoteCreateFollowUps): QuoteFormState {
   const notices: Array<string | undefined> = [];
   if (followUps.locationFacts === 'failed') notices.push(LOCATION_FACT_NOTICE);
@@ -797,9 +792,11 @@ async function commitOwnedStep(input: {
   nextState: FollowUpState;
   ownerToken: string;
 }): Promise<FollowUpState> {
+  let sawOk = false;
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const loaded = await loadFollowUpRow(input.admin, input.tenantId, input.idempotencyKey);
-    if (!loaded) return input.nextState;
+    if (!loaded) return 'failed';
+    if (loaded.record[input.step] === 'ok') sawOk = true;
     if (!followUpWriteAllowed(loaded.record, input.step, input.nextState, input.ownerToken)) {
       return loaded.record[input.step];
     }
@@ -828,7 +825,17 @@ async function commitOwnedStep(input: {
       return input.nextState;
     }
   }
-  return input.nextState;
+  return sawOk ? 'ok' : 'failed';
+}
+
+const CHANNEL_STEPS = ['email', 'sms', 'webhook'] as const;
+
+function channelIdempotencyKey(
+  step: (typeof CHANNEL_STEPS)[number],
+  quoteId: string,
+  ownerToken: string,
+) {
+  return `quote-${step}-${quoteId}-${ownerToken}`.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 255);
 }
 
 type QuoteCreateClaim =
@@ -1060,24 +1067,60 @@ async function finishCreatedQuote(input: {
     quoteTitle: input.title,
     customerId: input.customerId,
   };
-  if (input.run.email) {
-    followUps.email = await channelResult(() =>
-      sendQuoteNotificationEmail(input.admin, 'quote_sent', notifyInput),
-    );
-    await commit('email', followUps.email);
+  const heldChannels = new Set<(typeof CHANNEL_STEPS)[number]>();
+  for (const step of CHANNEL_STEPS) {
+    if (!input.run[step]) continue;
+    if (tryAcquireQuoteChannelLease(input.idempotencyKey, step)) heldChannels.add(step);
   }
-  if (input.run.sms) {
-    followUps.sms = await channelResult(() =>
-      sendQuoteNotificationSms(input.admin, 'quote_sent', notifyInput),
-    );
-    await commit('sms', followUps.sms);
-  }
-  if (input.run.webhook) {
-    followUps.webhook = await channelResult(() =>
-      emitQuoteWebhookEvent(input.admin, 'quote.sent', { ...notifyInput, status: 'sent' }),
-    );
-    await commit('webhook', followUps.webhook);
-  }
+  const sendChannel = async (
+    step: (typeof CHANNEL_STEPS)[number],
+    run: () => Promise<{ ok: boolean }>,
+  ) => {
+    if (!heldChannels.has(step)) return;
+    const startedAt = Date.now();
+    const signal = AbortSignal.timeout(CHANNEL_SEND_TIMEOUT_MS);
+    const provider = run();
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      releaseQuoteChannelLease(input.idempotencyKey, step);
+    };
+    void provider.finally(release);
+    const timeout = new Promise<'timeout'>((resolve) => {
+      if (signal.aborted) {
+        resolve('timeout');
+        return;
+      }
+      signal.addEventListener('abort', () => resolve('timeout'), { once: true });
+    });
+    const winner = await Promise.race([
+      provider.then(
+        (result) => (result.ok ? ('ok' as const) : ('failed' as const)),
+        () => 'failed' as const,
+      ),
+      timeout,
+    ]);
+    const pastDeadline = winner === 'timeout' || Date.now() - startedAt >= CHANNEL_SEND_TIMEOUT_MS;
+    if (!pastDeadline) release();
+    await commit(step, pastDeadline ? 'failed' : winner);
+  };
+  await sendChannel('email', () =>
+    sendQuoteNotificationEmail(input.admin, 'quote_sent', notifyInput),
+  );
+  await sendChannel('sms', () =>
+    sendQuoteNotificationSms(input.admin, 'quote_sent', {
+      ...notifyInput,
+      idempotencyKey: channelIdempotencyKey('sms', input.quoteId, input.ownerToken),
+    }),
+  );
+  await sendChannel('webhook', () =>
+    emitQuoteWebhookEvent(input.admin, 'quote.sent', {
+      ...notifyInput,
+      status: 'sent',
+      eventId: channelIdempotencyKey('webhook', input.quoteId, input.ownerToken),
+    }),
+  );
   if (
     followUps.email === 'failed' ||
     followUps.sms === 'failed' ||
@@ -1207,6 +1250,12 @@ async function replayQuoteCreate(input: {
   const ownerToken = crypto.randomUUID();
   const won = new Set<keyof QuoteCreateFollowUps>();
   for (const step of retryable) {
+    if (
+      (step === 'email' || step === 'sms' || step === 'webhook') &&
+      quoteChannelLeaseHeld(input.idempotencyKey, step)
+    ) {
+      continue;
+    }
     if (
       await claimFollowUpStep({
         admin: input.admin,

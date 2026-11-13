@@ -84,6 +84,8 @@ describe('quote access notes', () => {
     expect(quoteSaveNotice('__proto__')).toBeUndefined();
     expect(quoteSaveNotice('entry-codes,constructor')).toBe(ENTRY_CODE_SAVE_WARNING);
     expect(quoteSaveNotice('quote-in-flight')).toBe(QUOTE_IN_FLIGHT_WARNING);
+    expect(QUOTE_IN_FLIGHT_WARNING).toContain('quote form');
+    expect(QUOTE_IN_FLIGHT_WARNING).toContain('does not retry');
     expect(quoteSaveNotice('quote-in-flight,constructor')).toBe(QUOTE_IN_FLIGHT_WARNING);
   });
 

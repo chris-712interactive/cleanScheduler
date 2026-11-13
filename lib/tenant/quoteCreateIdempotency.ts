@@ -27,6 +27,12 @@ export const FOLLOW_UP_KEYS = [
 /** A pending step older than this is treated as abandoned and can be claimed again. */
 export const STALE_FOLLOW_UP_MS = 3 * 60 * 1000;
 
+/**
+ * Provider calls stop waiting well before a claim can be stolen. A send that
+ * outlives this deadline is not stored as success.
+ */
+export const CHANNEL_SEND_TIMEOUT_MS = 45_000;
+
 export type QuoteCreateFollowUpRecord = QuoteCreateFollowUps & {
   claimedAt: Partial<Record<keyof QuoteCreateFollowUps, string>>;
   claimToken: Partial<Record<keyof QuoteCreateFollowUps, string>>;
@@ -148,6 +154,26 @@ type StoredQuoteCreateVisit = {
   submitted: boolean;
 };
 
+const HISTORY_VISIT_FIELD = 'csQuoteCreateVisit';
+
+/** History state id for this wizard entry. A new quote visit does not carry it. */
+export function readQuoteCreateHistoryVisitId(state: unknown): string | null {
+  if (!state || typeof state !== 'object') return null;
+  const id = (state as Record<string, unknown>)[HISTORY_VISIT_FIELD];
+  return typeof id === 'string' && IDEMPOTENCY_KEY_RE.test(id) ? id : null;
+}
+
+export function withQuoteCreateHistoryVisit(
+  state: unknown,
+  visitId: string,
+): Record<string, unknown> {
+  const base =
+    state && typeof state === 'object' && !Array.isArray(state)
+      ? { ...(state as Record<string, unknown>) }
+      : {};
+  return { ...base, [HISTORY_VISIT_FIELD]: visitId };
+}
+
 /** True when the saved quote still has a step in flight, so a reload must keep this key. */
 export function quoteCreateWarningKeepsIdempotencyKey(warning: string | undefined): boolean {
   if (!warning) return false;
@@ -188,9 +214,9 @@ function writeStoredVisit(storage: IdempotencyKeyStorage, visit: StoredQuoteCrea
 }
 
 /**
- * Reuse the key only for a reload or Back of this wizard path after a submit.
- * A later client-side visit in the same document mints a new key. `navigationPath`
- * is the document that was loaded, which stays put after that load.
+ * Reuse the key for a reload of this wizard path, or when `historyVisitId` is
+ * the same history entry that stored the key. Any other visit mints a new key.
+ * `navigationPath` is the document that was loaded, which stays put after that load.
  */
 export function quoteCreateIdempotencyKeyForVisit(input: {
   storage: IdempotencyKeyStorage;
@@ -198,7 +224,7 @@ export function quoteCreateIdempotencyKeyForVisit(input: {
   navigationPath: string;
   currentPath: string;
   laterVisitInDocument: boolean;
-  backForward: boolean;
+  historyVisitId: string | null;
   createId: () => string;
 }): string {
   let created = '';
@@ -211,13 +237,10 @@ export function quoteCreateIdempotencyKeyForVisit(input: {
       input.navigationType === 'reload' &&
       input.navigationPath === input.currentPath &&
       sameWizard;
-    const backOfThisWizard =
-      sameWizard &&
-      (input.backForward ||
-        (!input.laterVisitInDocument &&
-          input.navigationType === 'back_forward' &&
-          input.navigationPath === input.currentPath));
-    if (stored && (reloadOfThisWizard || backOfThisWizard)) return stored.key;
+    const sameHistoryEntry = Boolean(
+      sameWizard && input.historyVisitId && stored && input.historyVisitId === stored.key,
+    );
+    if (stored && (reloadOfThisWizard || sameHistoryEntry)) return stored.key;
     created = input.createId();
     writeStoredVisit(input.storage, {
       key: created,
@@ -254,35 +277,38 @@ export function clearQuoteCreateIdempotencyKey(storage: Pick<Storage, 'removeIte
 let quoteCreateNavigationClaimed = false;
 let quoteCreateLastDecisionAt = 0;
 let quoteCreateLastDecisionKey = '';
-let quoteCreateBackForwardAt = 0;
 
 /** Test hook. Production visits do not need to reset this. */
 export function resetQuoteCreateVisitMemory() {
   quoteCreateNavigationClaimed = false;
   quoteCreateLastDecisionAt = 0;
   quoteCreateLastDecisionKey = '';
-  quoteCreateBackForwardAt = 0;
 }
 
-export function noteQuoteCreateBackForward(nowMs = Date.now()) {
-  quoteCreateBackForwardAt = nowMs;
+const liveChannelSends = new Set<string>();
+
+function channelLeaseId(idempotencyKey: string, step: string): string {
+  return `${idempotencyKey}:${step}`;
 }
 
-function consumeRecentBackForward(nowMs: number): boolean {
-  const recent = quoteCreateBackForwardAt > 0 && nowMs - quoteCreateBackForwardAt < 3000;
-  quoteCreateBackForwardAt = 0;
-  return recent;
+/** Same-instance guard while a provider call is still unsettled, including after we stop waiting. */
+export function quoteChannelLeaseHeld(idempotencyKey: string, step: string): boolean {
+  return liveChannelSends.has(channelLeaseId(idempotencyKey, step));
 }
 
-function ensureQuoteCreateNavigationListeners() {
-  if (typeof window === 'undefined') return;
-  const marked = window as Window & { __csQuoteCreateNav?: boolean };
-  if (marked.__csQuoteCreateNav) return;
-  marked.__csQuoteCreateNav = true;
-  window.addEventListener('popstate', () => noteQuoteCreateBackForward());
-  window.addEventListener('pageshow', (event) => {
-    if (event.persisted) noteQuoteCreateBackForward();
-  });
+export function tryAcquireQuoteChannelLease(idempotencyKey: string, step: string): boolean {
+  const id = channelLeaseId(idempotencyKey, step);
+  if (liveChannelSends.has(id)) return false;
+  liveChannelSends.add(id);
+  return true;
+}
+
+export function releaseQuoteChannelLease(idempotencyKey: string, step: string): void {
+  liveChannelSends.delete(channelLeaseId(idempotencyKey, step));
+}
+
+export function resetQuoteChannelSendLeases(): void {
+  liveChannelSends.clear();
 }
 
 export function readQuoteCreateDocumentNavigation(): { type: string; path: string } {
@@ -314,14 +340,18 @@ export function resolveQuoteCreateIdempotencyKey(input: {
   navigationType?: string;
   navigationPath?: string;
   currentPath?: string;
+  historyVisitId?: string | null;
 }): string {
-  ensureQuoteCreateNavigationListeners();
   const nowMs = input.nowMs ?? Date.now();
   const currentPath =
     input.currentPath ?? (typeof window === 'undefined' ? '' : window.location.pathname);
   const navigation = readQuoteCreateDocumentNavigation();
   const navigationType = input.navigationType ?? navigation.type;
   const navigationPath = input.navigationPath ?? navigation.path;
+  const historyVisitId =
+    input.historyVisitId === undefined && typeof window !== 'undefined'
+      ? readQuoteCreateHistoryVisitId(window.history.state)
+      : (input.historyVisitId ?? null);
   let stored: StoredQuoteCreateVisit | null = null;
   try {
     stored = readStoredVisit(input.storage, currentPath);
@@ -336,14 +366,13 @@ export function resolveQuoteCreateIdempotencyKey(input: {
     quoteCreateLastDecisionAt = nowMs;
     return quoteCreateLastDecisionKey;
   }
-  const backForward = consumeRecentBackForward(nowMs);
   const key = quoteCreateIdempotencyKeyForVisit({
     storage: input.storage,
     navigationType,
     navigationPath,
     currentPath,
     laterVisitInDocument: quoteCreateNavigationClaimed,
-    backForward,
+    historyVisitId,
     createId: input.createId,
   });
   quoteCreateNavigationClaimed = true;

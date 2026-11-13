@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CHANNEL_SEND_TIMEOUT_MS,
   QUOTE_CREATE_IDEMPOTENCY_STORAGE_KEY,
   STALE_FOLLOW_UP_MS,
   claimQuoteSubmit,
@@ -50,7 +51,7 @@ function visitInput(
     navigationPath: WIZARD_PATH,
     currentPath: WIZARD_PATH,
     laterVisitInDocument: false,
-    backForward: false,
+    historyVisitId: null,
     createId: () => NEXT_KEY,
     ...overrides,
   };
@@ -118,7 +119,7 @@ describe('quote create idempotency', () => {
     ).toBe('66666666-6666-4666-8666-666666666666');
   });
 
-  it('reuses the submitted key on back and drops it after a finished save', () => {
+  it('reuses the submitted key only for the same wizard history entry', () => {
     const storage = memoryStorage();
     quoteCreateIdempotencyKeyForVisit(visitInput(storage, { createId: () => STORED_KEY }));
     markQuoteCreateIdempotencySubmitted(storage, WIZARD_PATH);
@@ -126,7 +127,10 @@ describe('quote create idempotency', () => {
     expect(
       quoteCreateIdempotencyKeyForVisit(
         visitInput(storage, {
-          navigationType: 'back_forward',
+          navigationType: 'navigate',
+          navigationPath: '/quotes',
+          laterVisitInDocument: true,
+          historyVisitId: STORED_KEY,
           createId: () => NEXT_KEY,
         }),
       ),
@@ -134,23 +138,27 @@ describe('quote create idempotency', () => {
     expect(
       quoteCreateIdempotencyKeyForVisit(
         visitInput(storage, {
-          navigationType: 'navigate',
+          navigationType: 'back_forward',
           navigationPath: '/quotes',
           laterVisitInDocument: true,
-          backForward: true,
+          historyVisitId: null,
           createId: () => NEXT_KEY,
         }),
       ),
-    ).toBe(STORED_KEY);
+    ).toBe(NEXT_KEY);
 
     expect(quoteCreateWarningKeepsIdempotencyKey('entry-codes,quote-in-flight')).toBe(true);
     expect(quoteCreateWarningKeepsIdempotencyKey('quote-notify')).toBe(false);
+    expect(CHANNEL_SEND_TIMEOUT_MS).toBeLessThan(STALE_FOLLOW_UP_MS);
     clearQuoteCreateIdempotencyKey(storage);
     expect(
       quoteCreateIdempotencyKeyForVisit(
-        visitInput(storage, { navigationType: 'back_forward', createId: () => NEXT_KEY }),
+        visitInput(storage, {
+          historyVisitId: STORED_KEY,
+          createId: () => '66666666-6666-4666-8666-666666666666',
+        }),
       ),
-    ).toBe(NEXT_KEY);
+    ).toBe('66666666-6666-4666-8666-666666666666');
   });
 
   it('keeps one key across a strict-mode remount and mints another on the next visit', () => {

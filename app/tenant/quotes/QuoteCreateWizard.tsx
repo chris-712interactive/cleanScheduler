@@ -28,7 +28,9 @@ import {
   clearQuoteCreateIdempotencyKey,
   markQuoteCreateIdempotencySubmitted,
   quoteCreateWarningKeepsIdempotencyKey,
+  readQuoteCreateHistoryVisitId,
   resolveQuoteCreateIdempotencyKey,
+  withQuoteCreateHistoryVisit,
 } from '@/lib/tenant/quoteCreateIdempotency';
 import { quoteSaveNotice } from '@/lib/tenant/quoteStructuredFields';
 import { createTenantQuote, type QuoteFormState } from './actions';
@@ -110,12 +112,15 @@ export function QuoteCreateWizard({
   const [idempotencyKey, setIdempotencyKey] = useState('');
 
   useEffect(() => {
-    setIdempotencyKey(
-      resolveQuoteCreateIdempotencyKey({
-        storage: window.sessionStorage,
-        createId: () => crypto.randomUUID(),
-      }),
-    );
+    const key = resolveQuoteCreateIdempotencyKey({
+      storage: window.sessionStorage,
+      createId: () => crypto.randomUUID(),
+      historyVisitId: readQuoteCreateHistoryVisitId(window.history.state),
+    });
+    if (readQuoteCreateHistoryVisitId(window.history.state) !== key) {
+      window.history.replaceState(withQuoteCreateHistoryVisit(window.history.state, key), '');
+    }
+    setIdempotencyKey(key);
   }, []);
 
   useEffect(() => {

@@ -107,7 +107,7 @@ export const QUOTE_NOTIFY_WARNING =
   'The quote was saved and marked sent, but the customer could not be notified. This page does not send it again.';
 
 export const QUOTE_IN_FLIGHT_WARNING =
-  'Some of this quote is still being saved. Refresh this page in a moment before editing it.';
+  'Some of this quote is still being saved. Go back to the quote form and save again to finish it. Refreshing this page does not retry the save.';
 
 const QUOTE_SAVE_NOTICES: Record<string, string> = {
   [LOCATION_FACT_NOTICE]: LOCATION_FACT_SYNC_WARNING,

@@ -21,6 +21,7 @@ const harness = vi.hoisted(() => {
     quoteLookupError: false,
     quoteTitle: 'Weekly clean',
     claimError: null as { code: string; message: string } | null,
+    failFollowUpCommits: false,
   };
   const requests = new Map<
     string,
@@ -150,6 +151,11 @@ const harness = vi.hoisted(() => {
         if (stepFilter) {
           const step = stepFilter.slice('follow_ups->>'.length);
           if (row.follow_ups[step] !== filters[stepFilter]) return { data: null, error: null };
+        }
+        if (state.failFollowUpCommits && payload?.follow_ups && stepFilter) {
+          const step = stepFilter.slice('follow_ups->>'.length);
+          const next = payload.follow_ups[step];
+          if (next === 'ok' || next === 'failed') return { data: null, error: null };
         }
         if (payload?.quote_id) row.quote_id = payload.quote_id;
         if (payload?.follow_ups) row.follow_ups = payload.follow_ups;
@@ -320,6 +326,7 @@ vi.mock('@/lib/portal/invalidatePortalCache', () => ({
   invalidateCustomerQuoteBadge: () => {},
 }));
 
+import { resetQuoteChannelSendLeases } from '@/lib/tenant/quoteCreateIdempotency';
 import { createTenantQuote, type QuoteFormState } from './actions';
 
 function withPendingClaim(followUps: Record<string, string>, ageMs = 0): Record<string, unknown> {
@@ -372,6 +379,8 @@ describe('createTenantQuote follow-up failures', () => {
     harness.state.quoteLookupError = false;
     harness.state.quoteTitle = 'Weekly clean';
     harness.state.claimError = null;
+    harness.state.failFollowUpCommits = false;
+    resetQuoteChannelSendLeases();
     harness.requests.clear();
     harness.saveCodes.mockClear();
     harness.sendEmail.mockClear();
@@ -694,6 +703,47 @@ describe('createTenantQuote follow-up failures', () => {
     expect(harness.state.isLocked).toBe(true);
     expect(harness.sendEmail).not.toHaveBeenCalled();
     expect(harness.sendSms).not.toHaveBeenCalled();
+  });
+
+  it('does not send again when the stale clock hits during a held SMS', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const start = new Date('2026-01-01T00:00:00.000Z');
+    vi.setSystemTime(start);
+    let releaseSms: (result: { ok: boolean }) => void = () => {};
+    const smsGate = new Promise<{ ok: boolean }>((resolve) => {
+      releaseSms = resolve;
+    });
+    harness.sendSms.mockImplementation(() => smsGate);
+    try {
+      const first = createTenantQuote({}, quoteForm('send'));
+      await vi.waitFor(() => expect(harness.sendSms).toHaveBeenCalledTimes(1));
+
+      vi.setSystemTime(new Date(start.getTime() + 3 * 60 * 1000));
+      const second = await createTenantQuote({}, quoteForm('send'));
+
+      expect(harness.sendSms).toHaveBeenCalledTimes(1);
+      expect(harness.emitWebhook).not.toHaveBeenCalled();
+      expect(second.warning).toContain('quote-in-flight');
+      releaseSms({ ok: true });
+      await first;
+      expect(harness.sendSms).toHaveBeenCalledTimes(1);
+      expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).toBe('failed');
+    } finally {
+      harness.sendSms.mockImplementation(async () => ({ ok: harness.state.smsOk }));
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports a failed notification when the follow-up write never lands', async () => {
+    harness.state.failFollowUpCommits = true;
+
+    const result = await createTenantQuote({}, quoteForm('send'));
+
+    expect(result.success).toBe(true);
+    expect(result.quoteId).toBe(QUOTE_ID);
+    expect(result.warning).toContain('quote-notify');
+    expect(harness.requests.get(`tenant-1:${KEY}`)?.follow_ups.sms).not.toBe('ok');
+    expect(harness.sendSms).toHaveBeenCalled();
   });
 
   it('lets only one overlapping replay send a failed channel', async () => {

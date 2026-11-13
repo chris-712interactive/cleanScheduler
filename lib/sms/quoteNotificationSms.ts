@@ -92,7 +92,13 @@ async function quoteUrlForCustomer(
 export async function sendQuoteNotificationSms(
   admin: Admin,
   event: QuoteNotificationEvent,
-  params: { tenantId: string; quoteId: string; quoteTitle: string; customerId: string },
+  params: {
+    tenantId: string;
+    quoteId: string;
+    quoteTitle: string;
+    customerId: string;
+    idempotencyKey?: string;
+  },
 ): Promise<{ ok: boolean }> {
   const flags = await loadSmsOpsFlags(admin, params.tenantId);
   if (!flags) return { ok: true };
@@ -108,6 +114,7 @@ export async function sendQuoteNotificationSms(
       admin,
       tenantId: params.tenantId,
       toPhone: phone,
+      idempotencyKey: params.idempotencyKey,
       payload: {
         purpose: 'quote_sent',
         tenantName: tname,
