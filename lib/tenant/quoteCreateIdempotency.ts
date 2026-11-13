@@ -1,4 +1,4 @@
-export const FOLLOW_UP_STATES = ['pending', 'ok', 'failed', 'skipped'] as const;
+export const FOLLOW_UP_STATES = ['pending', 'ok', 'failed', 'skipped', 'unknown'] as const;
 
 export type FollowUpState = (typeof FOLLOW_UP_STATES)[number];
 
@@ -28,14 +28,41 @@ export const FOLLOW_UP_KEYS = [
 export const STALE_FOLLOW_UP_MS = 3 * 60 * 1000;
 
 /**
- * Provider calls stop waiting well before a claim can be stolen. A send that
- * outlives this deadline is not stored as success.
+ * The HTTP action stops waiting after this. The provider call may still be
+ * running. That outcome is `unknown`, not a failure that another instance can claim.
  */
 export const CHANNEL_SEND_TIMEOUT_MS = 45_000;
+
+/**
+ * How long a timed-out provider call stays unclaimable. Longer than the 45s wait
+ * and longer than a provider HTTP call can still deliver (webhook attempts use
+ * 15s; hung email or SMS clients are bounded by the platform, well under this).
+ */
+export const CHANNEL_SEND_LEASE_MS = 15 * 60 * 1000;
+
+export type QuoteChannel = 'email' | 'sms' | 'webhook';
+
+/** Same key for every claim of this step so the provider can collapse a retry. */
+export function quoteChannelProviderKey(channel: QuoteChannel, quoteId: string): string {
+  return `quote-${channel}-${quoteId}`.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 255);
+}
+
+let channelSendTimeoutOverrideMs: number | null = null;
+
+export function channelSendTimeoutMs(): number {
+  return channelSendTimeoutOverrideMs ?? CHANNEL_SEND_TIMEOUT_MS;
+}
+
+/** Tests only. Pass null to use {@link CHANNEL_SEND_TIMEOUT_MS}. */
+export function setChannelSendTimeoutMsForTests(ms: number | null): void {
+  channelSendTimeoutOverrideMs = ms;
+}
 
 export type QuoteCreateFollowUpRecord = QuoteCreateFollowUps & {
   claimedAt: Partial<Record<keyof QuoteCreateFollowUps, string>>;
   claimToken: Partial<Record<keyof QuoteCreateFollowUps, string>>;
+  /** When an `unknown` channel may be claimed again. Missing means not yet. */
+  unknownUntil: Partial<Record<keyof QuoteCreateFollowUps, string>>;
 };
 
 export function initialFollowUps(send: boolean): QuoteCreateFollowUps {
@@ -99,6 +126,7 @@ export function readFollowUpRecord(value: unknown): QuoteCreateFollowUpRecord {
     ...readFollowUps(value),
     claimedAt: followUpClock(record.claimedAt),
     claimToken: followUpClock(record.claimToken),
+    unknownUntil: followUpClock(record.unknownUntil),
   };
 }
 
@@ -115,13 +143,37 @@ export function isStalePending(
   return nowMs - claimedMs >= STALE_FOLLOW_UP_MS;
 }
 
-/** Failed steps, and pending steps whose claim is missing or older than the stale window. */
+/**
+ * An unknown channel stays quiet until `unknownUntil`. A missing clock is not
+ * retryable: the provider call may still deliver.
+ */
+export function isUnknownExpired(
+  followUps: QuoteCreateFollowUpRecord,
+  step: keyof QuoteCreateFollowUps,
+  nowMs: number,
+): boolean {
+  if (followUps[step] !== 'unknown') return false;
+  const until = followUps.unknownUntil[step];
+  if (!until) return false;
+  const untilMs = Date.parse(until);
+  if (!Number.isFinite(untilMs)) return false;
+  return nowMs >= untilMs;
+}
+
+export function hasUnsettledFollowUp(followUps: QuoteCreateFollowUps): boolean {
+  return FOLLOW_UP_KEYS.some((key) => followUps[key] === 'pending' || followUps[key] === 'unknown');
+}
+
+/** Failed steps, stale pending steps, and unknown steps whose cooldown has elapsed. */
 export function retryableFollowUpSteps(
   followUps: QuoteCreateFollowUpRecord,
   nowMs: number,
 ): (keyof QuoteCreateFollowUps)[] {
   return FOLLOW_UP_KEYS.filter(
-    (step) => followUps[step] === 'failed' || isStalePending(followUps, step, nowMs),
+    (step) =>
+      followUps[step] === 'failed' ||
+      isUnknownExpired(followUps, step, nowMs) ||
+      isStalePending(followUps, step, nowMs),
   );
 }
 
