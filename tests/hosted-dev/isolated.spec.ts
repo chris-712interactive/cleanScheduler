@@ -366,7 +366,14 @@ if (process.env.HOSTED_DEV_MUTATIONS_CONFIRMED === '1') {
     // name twice: the desktop table row (role="link", aria-label "View {name}")
     // and the phone card, which stays in the DOM with display:none above 480px.
     // getByText matches both spans, so strict mode fails even though the
-    // customer was saved. The View link is the visible directory row.
+    // customer was saved. Below 480px the card is the visible customer and its
+    // accessible name is the card text, not "View {name}". This check is the
+    // desktop row. The isolated project is Desktop Chrome; the size is set
+    // here so a narrower context cannot hide that row.
+    await page.waitForURL(
+      (url) => url.hostname === `${slug}.dev.cleanscheduler.com` && url.pathname === '/customers',
+    );
+    await page.setViewportSize({ width: 1280, height: 720 });
     const landed = assertHttpsDevUrl(page.url());
     if (landed.hostname !== `${slug}.dev.cleanscheduler.com` || landed.pathname !== '/customers') {
       throw new Error(

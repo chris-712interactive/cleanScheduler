@@ -12,6 +12,10 @@ import {
   isAllowedDevHostname,
 } from '../../lib/hosted-dev/hostedDevUrl';
 import {
+  hasBookingCompletionQuery,
+  readOnlyBookingUrlProblem,
+} from '../../lib/hosted-dev/readOnlyBookingUrl';
+import {
   redactJoinedText,
   redactLandingUrl,
   redactPlaintextSecrets,
@@ -56,17 +60,35 @@ export function isDevHostWrite(request: Request): boolean {
   }
 }
 
-/** Open an allowlisted `/book` URL and fail if the page submits a form. */
+/** Open an allowlisted `/book` URL and fail if the page submits a form or finishes checkout. */
 export async function expectReadOnlyPublicBooking(page: Page, bookingUrl: string): Promise<void> {
+  const problem = readOnlyBookingUrlProblem(bookingUrl);
+  if (problem) throw new Error(problem);
   const target = assertHttpsDevUrl(bookingUrl);
   const posts: string[] = [];
+  let completionGet = false;
   page.on('request', (request) => {
-    if (isDevHostWrite(request)) posts.push(new URL(request.url()).pathname);
+    let url: URL;
+    try {
+      url = new URL(request.url());
+    } catch {
+      return;
+    }
+    if (isDevHostWrite(request)) posts.push(url.pathname);
+    if (hasBookingCompletionQuery(url) || /(^|\.)stripe\.com$/i.test(url.hostname)) {
+      completionGet = true;
+    }
   });
   await page.goto(target.toString());
-  assertHttpsDevUrl(page.url());
+  const landed = readOnlyBookingUrlProblem(page.url());
+  if (landed) {
+    throw new Error('FAIL: public booking read left the read-only /book page.');
+  }
   await expect(page.getByRole('heading').first()).toBeVisible();
   expect(posts.filter((path) => !path.startsWith('/_next'))).toEqual([]);
+  if (completionGet) {
+    throw new Error('FAIL: public booking read followed a checkout completion.');
+  }
 }
 
 /**

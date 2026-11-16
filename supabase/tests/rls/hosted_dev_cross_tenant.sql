@@ -25,7 +25,7 @@ SELECT (
 \gset
 \if :policy_ok
 \else
--- \quit ignores a return code and exits 0. A raised error stops psql.
+-- A psql quit command ignores a return code and exits 0. A raised error stops psql.
 SELECT CAST('FAIL: tenant_quotes select policy is missing' AS integer);
 \endif
 
