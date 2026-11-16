@@ -5,6 +5,7 @@ import {
   redactLandingUrl,
   redactPlaintextSecrets,
   redactText,
+  secretsFromEnv,
 } from '@/lib/hosted-dev/redactText';
 
 describe('hosted dev artifact redaction', () => {
@@ -18,6 +19,17 @@ describe('hosted dev artifact redaction', () => {
     expect(redacted).not.toContain('postgresql://');
     expect(redacted).not.toContain('supersecretvalue');
     expect(redacted).toContain('[redacted-email]');
+  });
+
+  it('redacts QA_DEV_DATABASE_URL wherever it is written', () => {
+    const url =
+      'postgresql://postgres.khodybakkdpheqkoycgi:db-password-value@aws-0-us-east-1.pooler.supabase.com:6543/postgres';
+    const report = `direct SQL | ${url} | password db-password-value`;
+    const redacted = redactText(report, secretsFromEnv({ QA_DEV_DATABASE_URL: url }));
+    expect(redacted).not.toContain('db-password-value');
+    expect(redacted).not.toContain('postgresql://');
+    expect(redacted).not.toContain('pooler.supabase.com');
+    expect(redacted).toContain('[redacted]');
   });
 
   it('redacts short configured secrets and unprefixed webhook or Supabase secrets', () => {
@@ -357,7 +369,6 @@ describe('hosted dev workflow contract', () => {
     expect(workflow).toContain('refs/heads/main');
     expect(workflow).toContain('rev-parse origin/dev');
     expect(workflow).not.toContain('merge-base --is-ancestor');
-    expect(workflow).not.toContain('QA_DEV_DATABASE_URL');
     expect(workflow).toContain('3d3c42e5aac5ba805825da76410c181273ba90b1');
     expect(workflow).toContain('49933ea5288caeca8642d1e84afbd3f7d6820020');
     expect(workflow).toContain('ea165f8d65b6e75b540449e92b4886f43607fa02');
@@ -371,8 +382,15 @@ describe('hosted dev workflow contract', () => {
     expect(smoke).not.toContain('secrets.');
     expect(smoke).not.toContain('environment:');
     expect(smoke).not.toContain('hosted-dev-isolated');
+    expect(smoke).not.toContain('QA_DEV_DATABASE_URL');
+    expect(smoke).toContain('vars.HOSTED_DEV_BOOKING_URL');
     expect(isolated).toContain('environment: hosted-dev-isolated');
     expect(isolated).toContain('secrets.QA_TENANT_RESIDENTIAL_PASSWORD');
+    expect(isolated).toContain('secrets.QA_DEV_DATABASE_URL');
+    expect(isolated).toContain('secrets.QA_RLS_USER_A_ID');
+    expect(isolated).toContain('secrets.QA_RLS_USER_B_ID');
+    expect(isolated).toContain('vars.HOSTED_DEV_BOOKING_URL');
+    expect(isolated).not.toMatch(/echo[^"\n]*QA_DEV_DATABASE_URL|QA_DEV_DATABASE_URL[^"\n]*echo/);
     expect(isolated).toContain("vars.HOSTED_DEV_ISOLATED == '1'");
     expect(isolated).toContain("endsWith(github.workflow_ref, '@refs/heads/main')");
     expect(workflow.match(/^ {4}environment: hosted-dev-isolated$/gm)).toEqual([

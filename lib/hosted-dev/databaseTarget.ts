@@ -1,5 +1,8 @@
 const SUPABASE_HOST = /^[a-z0-9]+\.supabase\.co$/;
 
+/** Hosted dev Supabase project. Direct SQL must not connect anywhere else. */
+export const HOSTED_DEV_SUPABASE_PROJECT_REF = 'khodybakkdpheqkoycgi';
+
 export type DatabaseVerdict = { ok: true; projectRef: string } | { ok: false; reason: string };
 
 export function projectRefFromSupabaseHost(host: string | null | undefined): string | null {
@@ -9,8 +12,10 @@ export function projectRefFromSupabaseHost(host: string | null | undefined): str
 }
 
 /**
- * A direct database URL is acceptable only when it is the same hosted dev
- * Supabase project the deployment identity just reported.
+ * A direct database URL is acceptable only when it is the hosted dev Supabase
+ * project (`khodybakkdpheqkoycgi`) and the deployment identity just reported
+ * that same project. Any other host, pooler user, or identity host is refused
+ * before `psql` runs.
  */
 export function assertDevDatabaseUrl(
   databaseUrl: string,
@@ -26,8 +31,11 @@ export function assertDevDatabaseUrl(
     return { ok: false, reason: 'Database URL is not Postgres.' };
   }
   const projectRef = projectRefFromSupabaseHost(supabaseHost);
-  if (!projectRef) {
-    return { ok: false, reason: 'Deployment identity has no Supabase host to compare.' };
+  if (projectRef !== HOSTED_DEV_SUPABASE_PROJECT_REF) {
+    return {
+      ok: false,
+      reason: 'Deployment identity is not the hosted dev Supabase project.',
+    };
   }
   const username = decodeURIComponent(url.username).toLowerCase();
   const host = url.hostname.toLowerCase();
@@ -38,7 +46,7 @@ export function assertDevDatabaseUrl(
   if (!directHost && !poolerHost) {
     return {
       ok: false,
-      reason: 'Database URL is not the dev Supabase project from the deployment.',
+      reason: 'Database URL is not the hosted dev Supabase project.',
     };
   }
   if (url.searchParams.get('sslmode') === 'disable') {

@@ -25,8 +25,8 @@ SELECT (
 \gset
 \if :policy_ok
 \else
-\echo FAIL: tenant_quotes select policy is missing
-\quit 1
+-- A psql quit command ignores a return code and exits 0. A raised error stops psql.
+SELECT CAST('FAIL: tenant_quotes select policy is missing' AS integer);
 \endif
 
 BEGIN;
@@ -50,8 +50,7 @@ WHERE tenant_id = :'tenant_a'::uuid
 \gset
 \if :own_ok
 \else
-\echo BLOCKED: viewer A cannot see its own fixture quote
-\quit 2
+SELECT CAST('BLOCKED: viewer A cannot see its own fixture quote' AS integer);
 \endif
 
 SELECT (count(*) = 0) AS cross_ok
@@ -61,8 +60,7 @@ WHERE tenant_id = :'tenant_b'::uuid
 \gset
 \if :cross_ok
 \else
-\echo FAIL: viewer A can read the other tenant
-\quit 1
+SELECT CAST('FAIL: viewer A can read the other tenant' AS integer);
 \endif
 
 SELECT set_config('request.jwt.claim.sub', :'user_b', true);
@@ -83,8 +81,7 @@ WHERE tenant_id = :'tenant_b'::uuid
 \gset
 \if :own_ok
 \else
-\echo BLOCKED: viewer B cannot see its own fixture quote
-\quit 2
+SELECT CAST('BLOCKED: viewer B cannot see its own fixture quote' AS integer);
 \endif
 
 SELECT (count(*) = 0) AS cross_ok
@@ -94,8 +91,7 @@ WHERE tenant_id = :'tenant_a'::uuid
 \gset
 \if :cross_ok
 \else
-\echo FAIL: viewer B can read the other tenant
-\quit 1
+SELECT CAST('FAIL: viewer B can read the other tenant' AS integer);
 \endif
 
 ROLLBACK;
