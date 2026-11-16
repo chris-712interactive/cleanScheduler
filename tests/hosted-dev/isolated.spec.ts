@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { errors, expect, test, type Page } from '@playwright/test';
 import { assertDevDatabaseUrl } from '../../lib/hosted-dev/databaseTarget';
+import { directSqlRlsOutcome } from '../../lib/hosted-dev/directSqlRlsOutcome';
 import { decideIdentity } from '../../lib/hosted-dev/deploymentIdentity';
 import { assertHttpsDevUrl } from '../../lib/hosted-dev/hostedDevUrl';
 import { mutationGate } from '../../lib/hosted-dev/mutationGate';
@@ -267,39 +268,52 @@ if (databaseUrl) {
     assertTenantId(tenantA);
     assertTenantId(tenantB);
     const target = new URL(databaseUrl);
-    await execFileAsync(
-      'psql',
-      [
-        '-v',
-        'ON_ERROR_STOP=1',
-        '-v',
-        `user_a=${userA}`,
-        '-v',
-        `user_b=${userB}`,
-        '-v',
-        `tenant_a=${tenantA}`,
-        '-v',
-        `tenant_b=${tenantB}`,
-        '-v',
-        `marker_a=${markerA}`,
-        '-v',
-        `marker_b=${markerB}`,
-        '-f',
-        'supabase/tests/rls/hosted_dev_cross_tenant.sql',
-      ],
-      {
+    const psqlArgs = [
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-v',
+      `user_a=${userA}`,
+      '-v',
+      `user_b=${userB}`,
+      '-v',
+      `tenant_a=${tenantA}`,
+      '-v',
+      `tenant_b=${tenantB}`,
+      '-v',
+      `marker_a=${markerA}`,
+      '-v',
+      `marker_b=${markerB}`,
+      '-f',
+      'supabase/tests/rls/hosted_dev_cross_tenant.sql',
+    ];
+    const psqlEnv = {
+      ...process.env,
+      PGHOST: target.hostname,
+      PGPORT: target.port || '5432',
+      PGUSER: decodeURIComponent(target.username),
+      PGPASSWORD: decodeURIComponent(target.password),
+      PGDATABASE: target.pathname.replace(/^\//, '') || 'postgres',
+      PGSSLMODE: target.searchParams.get('sslmode') || 'require',
+    };
+    let exitCode = 0;
+    let stdout = '';
+    let stderr = '';
+    try {
+      const result = await execFileAsync('psql', psqlArgs, {
         timeout: 60_000,
-        env: {
-          ...process.env,
-          PGHOST: target.hostname,
-          PGPORT: target.port || '5432',
-          PGUSER: decodeURIComponent(target.username),
-          PGPASSWORD: decodeURIComponent(target.password),
-          PGDATABASE: target.pathname.replace(/^\//, '') || 'postgres',
-          PGSSLMODE: target.searchParams.get('sslmode') || 'require',
-        },
-      },
-    );
+        encoding: 'utf8',
+        env: psqlEnv,
+      });
+      stdout = result.stdout;
+      stderr = result.stderr;
+    } catch (error) {
+      const failed = error as { code?: unknown; stdout?: unknown; stderr?: unknown };
+      exitCode = typeof failed.code === 'number' ? failed.code : 1;
+      stdout = typeof failed.stdout === 'string' ? failed.stdout : '';
+      stderr = typeof failed.stderr === 'string' ? failed.stderr : '';
+    }
+    const outcome = directSqlRlsOutcome({ exitCode, stdout, stderr });
+    if (!outcome.ok) throw new Error(outcome.message);
   });
 }
 

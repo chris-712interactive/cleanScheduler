@@ -21,4 +21,6 @@ The isolated job checks out `main`, not the deployed `dev` tip. `deployment_stat
 
 The SQL file also needs `QA_RLS_USER_A_ID` and `QA_RLS_USER_B_ID`. Those are environment secrets on the same environment. If either is empty, the test reports `blocked` and the run does not pass.
 
+`psql` ignores a return code on `\quit`, so `\quit 1` exits 0 after printing `FAIL` or `BLOCKED`. The SQL file raises those verdicts as a bad integer cast, and `directSqlRlsOutcome` refuses a zero exit that still contains `FAIL:` or `BLOCKED:`. A connection error does not copy client output into the thrown message.
+
 `assertDevDatabaseUrl` accepts a connection only when the deployment identity host and the URL are both project `khodybakkdpheqkoycgi` (direct host `db.khodybakkdpheqkoycgi.supabase.co`, or pooler user `postgres.khodybakkdpheqkoycgi`). The isolated job still runs only from the trusted `main` workflow, with the `origin/dev` tip check, dev-only target guards, and `platformAdminFixtureBlock` unchanged. Do not widen the cookie domain. Do not trust `user_metadata`.
