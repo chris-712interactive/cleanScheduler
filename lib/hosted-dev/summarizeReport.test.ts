@@ -115,6 +115,107 @@ describe('hosted dev report', () => {
     });
   });
 
+  it('keeps direct SQL and public booking blocked when their inputs are absent', () => {
+    const report = buildHostedDevReport({
+      target: 'https://dev.cleanscheduler.com',
+      env: { HOSTED_DEV_ISOLATED: '1' },
+      identityNote: 'ok sha=abc',
+      playwright: {
+        suites: [
+          {
+            specs: [
+              {
+                title: 'residential workspace reads stay inside that tenant',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'commercial workspace reads stay inside that tenant',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'platform admin can open the tenant list without changing it',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'customer portal reads quotes, visits, and invoices without paying',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'cross-tenant quote reads honor RLS for the two fixture users',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(report.sections.find((section) => section.id === 'direct SQL RLS')).toMatchObject({
+      status: 'blocked',
+    });
+    expect(report.sections.find((section) => section.id === 'public booking read')).toMatchObject({
+      status: 'blocked',
+    });
+    expect(
+      report.sections.some(
+        (section) => section.status === 'pass' && section.id === 'direct SQL RLS',
+      ),
+    ).toBe(false);
+    expect(report.overall).toBe('pass');
+  });
+
+  it('fails when a supplied booking URL or database URL never executed', () => {
+    const report = buildHostedDevReport({
+      target: 'https://dev.cleanscheduler.com',
+      env,
+      identityNote: 'ok sha=abc',
+      playwright: {
+        suites: [
+          {
+            specs: [
+              {
+                title: 'residential workspace reads stay inside that tenant',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'commercial workspace reads stay inside that tenant',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'platform admin can open the tenant list without changing it',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'customer portal reads quotes, visits, and invoices without paying',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+              {
+                title: 'cross-tenant quote reads honor RLS for the two fixture users',
+                ok: true,
+                tests: [{ status: 'expected', results: [{ status: 'passed' }] }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(report.overall).toBe('fail');
+    expect(report.sections.find((section) => section.id === 'public booking read')).toMatchObject({
+      status: 'fail',
+    });
+    expect(report.sections.find((section) => section.id === 'direct SQL RLS')).toMatchObject({
+      status: 'fail',
+    });
+  });
+
   it('keeps authenticated and RLS rows when setup produces no Playwright file', () => {
     const report = buildHostedDevReport({
       target: 'https://dev.cleanscheduler.com',

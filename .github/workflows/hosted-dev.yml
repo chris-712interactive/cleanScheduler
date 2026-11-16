@@ -211,6 +211,15 @@ jobs:
             process.exit(1);
           });
           EOF
+      - name: Install PostgreSQL client
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          # Direct SQL RLS uses psql. The client is not on the GitHub runner.
+          # Bound apt the same way as Playwright's optional packages. Do not
+          # print connection settings.
+          timeout -k 15s 120s sudo apt-get update
+          timeout -k 15s 120s sudo apt-get install -y --no-install-recommends postgresql-client
       # QA_* secrets below must exist only on the hosted-dev-isolated environment.
       # Repository copies are readable from a dev workflow that omits environment.
       - name: Opt-in isolated reads and RLS
@@ -219,6 +228,7 @@ jobs:
           HOSTED_DEV_EXPECT_SHA: ${{ needs.authorize.outputs.sha }}
           HOSTED_DEV_ISOLATED: '1'
           HOSTED_DEV_MUTATIONS: ${{ vars.HOSTED_DEV_MUTATIONS }}
+          HOSTED_DEV_BOOKING_URL: ${{ vars.HOSTED_DEV_BOOKING_URL }}
           HOSTED_DEV_DENY_SUPABASE_PROJECT_REF: ${{ vars.HOSTED_DEV_DENY_SUPABASE_PROJECT_REF }}
           QA_TENANT_RESIDENTIAL_EMAIL: ${{ secrets.QA_TENANT_RESIDENTIAL_EMAIL }}
           QA_TENANT_RESIDENTIAL_PASSWORD: ${{ secrets.QA_TENANT_RESIDENTIAL_PASSWORD }}
@@ -242,6 +252,9 @@ jobs:
           QA_RLS_USER_A_PASSWORD: ${{ secrets.QA_RLS_USER_A_PASSWORD }}
           QA_RLS_USER_B_EMAIL: ${{ secrets.QA_RLS_USER_B_EMAIL }}
           QA_RLS_USER_B_PASSWORD: ${{ secrets.QA_RLS_USER_B_PASSWORD }}
+          QA_RLS_USER_A_ID: ${{ secrets.QA_RLS_USER_A_ID }}
+          QA_RLS_USER_B_ID: ${{ secrets.QA_RLS_USER_B_ID }}
+          QA_DEV_DATABASE_URL: ${{ secrets.QA_DEV_DATABASE_URL }}
         run: npm run test:hosted-dev:isolated
       - if: always()
         run: |

@@ -391,10 +391,22 @@ export function redactLandingUrl(raw: string): string {
   return redactPlaintextSecrets(`${url.origin}${url.pathname}${url.search}${url.hash}`);
 }
 
+function databasePassword(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') return null;
+    const password = decodeURIComponent(url.password);
+    return password.length >= 8 ? password : null;
+  } catch {
+    return null;
+  }
+}
+
 export function secretsFromEnv(env: Record<string, string | undefined>): string[] {
   return Object.entries(env).flatMap(([name, value]) => {
     if (!value) return [];
     if (!/(SECRET|PASSWORD|TOKEN|KEY|DATABASE_URL|ANON)/i.test(name)) return [];
-    return [value];
+    const password = /DATABASE_URL/i.test(name) ? databasePassword(value) : null;
+    return password ? [value, password] : [value];
   });
 }

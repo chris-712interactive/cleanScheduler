@@ -98,8 +98,7 @@ export function catalogBlocked(env: Record<string, string | undefined>): ReportS
     blocked.push({
       id: 'direct SQL RLS',
       status: 'blocked',
-      detail:
-        'QA_DEV_DATABASE_URL is not set. Direct SQL RLS did not run. Automatic GitHub runs do not receive this URL.',
+      detail: 'QA_DEV_DATABASE_URL is not set. Direct SQL RLS did not run and is not a pass.',
     });
   }
   return blocked;
@@ -118,6 +117,18 @@ function missingIsolatedRows(
     },
     { id: 'cross-tenant RLS', present: /cross-tenant quote/i },
   ];
+  if (env.HOSTED_DEV_BOOKING_URL?.trim()) {
+    required.push({
+      id: 'public booking read',
+      present: /configured public booking page is read only/i,
+    });
+  }
+  if (env.QA_DEV_DATABASE_URL?.trim()) {
+    required.push({
+      id: 'direct SQL RLS',
+      present: /direct SQL RLS matches the dev Supabase project/i,
+    });
+  }
   return required
     .filter((row) => !row.present.test(titles))
     .map((row) => ({
