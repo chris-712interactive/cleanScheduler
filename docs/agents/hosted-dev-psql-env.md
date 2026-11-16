@@ -11,3 +11,5 @@ The isolated job in `.github/workflows/hosted-dev.yml` unsets exported `PG*` nam
 Do not spread `process.env` back into the `psql` environment. Do not pass the URL on the command line and leave `PGHOSTADDR` or `PGSERVICE` in the environment. Do not weaken `assertDevDatabaseUrl`, `platformAdminFixtureBlock`, or the redaction of `QA_DEV_DATABASE_URL`.
 
 The isolated job checks out `main` and GitHub executes this workflow from `main`. A copy of this change that exists only on `dev` does not change the live isolated job until it is ported to `main`.
+
+The port onto `main` is a cherry-pick of squash commit `6af875bdd07516a09fd34f9dfcf1cfa9284b6100` (PR #264). The five files that already existed matched that commit's parent, so the cherry-pick had no conflicts and brought no other `dev` product changes. `assertDevDatabaseUrl`, `platformAdminFixtureBlock`, and `redactText` stayed as they are on `main`. `platformAdminFixtureBlock` still runs on the RLS token check. The direct SQL test still calls `assertDevDatabaseUrl` before `psqlChildEnv`.
