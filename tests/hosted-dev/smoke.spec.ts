@@ -1,24 +1,6 @@
-import { expect, test, type Request } from '@playwright/test';
-import { assertHttpsDevUrl, isAllowedDevHostname } from '../../lib/hosted-dev/hostedDevUrl';
-
-const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-
-/**
- * A plain visit must not submit a form. Trial signup and password reset are
- * POST server actions, so those methods still fail the check.
- *
- * OPTIONS is not a submission. Next.js injects the Vercel toolbar on hosted
- * deployments (`https://vercel.live/_next-live/feedback/feedback.js`). That
- * script calls `fetch("/", { method: "OPTIONS" })` and reads `x-robots-tag`
- * before deciding whether to show the toolbar. The request has no body and
- * does not invoke an app server action. The 2026-11-10 smoke trace recorded
- * that OPTIONS while `/forgot-password` was open, with referer
- * `/forgot-password`. `/start-trial` itself did not POST.
- */
-function isAppMutation(request: Request): boolean {
-  if (!WRITE_METHODS.has(request.method())) return false;
-  return isAllowedDevHostname(new URL(request.url()).hostname);
-}
+import { expect, test } from '@playwright/test';
+import { assertHttpsDevUrl } from '../../lib/hosted-dev/hostedDevUrl';
+import { expectReadOnlyPublicBooking, isDevHostWrite } from './support';
 
 test.beforeEach(async ({ page }) => {
   page.on('framenavigated', (frame) => {
@@ -86,7 +68,7 @@ test('marketing home and pricing render', async ({ page }) => {
 test('sign-in page renders and is not submitted', async ({ page }) => {
   const posts: string[] = [];
   page.on('request', (request) => {
-    if (isAppMutation(request)) posts.push(new URL(request.url()).pathname);
+    if (isDevHostWrite(request)) posts.push(new URL(request.url()).pathname);
   });
   await page.goto('/sign-in');
   await expect(page.getByRole('heading', { name: /sign in to clean scheduler/i })).toBeVisible();
@@ -99,7 +81,7 @@ test('sign-in page renders and is not submitted', async ({ page }) => {
 test('password reset and trial pages render without a submission', async ({ page }) => {
   const posts: string[] = [];
   page.on('request', (request) => {
-    if (isAppMutation(request)) posts.push(new URL(request.url()).pathname);
+    if (isDevHostWrite(request)) posts.push(new URL(request.url()).pathname);
   });
   await page.goto('/forgot-password');
   await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible();
@@ -132,13 +114,6 @@ test('www on the dev apex redirects to the apex', async ({ page }) => {
 const bookingUrl = process.env.HOSTED_DEV_BOOKING_URL?.trim();
 if (bookingUrl) {
   test('configured public booking page is read only', async ({ page }) => {
-    const target = assertHttpsDevUrl(bookingUrl);
-    const posts: string[] = [];
-    page.on('request', (request) => {
-      if (isAppMutation(request)) posts.push(new URL(request.url()).pathname);
-    });
-    await page.goto(target.toString());
-    await expect(page.getByRole('heading').first()).toBeVisible();
-    expect(posts.filter((path) => !path.startsWith('/_next'))).toEqual([]);
+    await expectReadOnlyPublicBooking(page, bookingUrl);
   });
 }

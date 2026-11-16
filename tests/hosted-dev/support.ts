@@ -1,5 +1,16 @@
-import { errors, expect, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
-import { assertHttpsDevUrl, devUrlOnSameHost } from '../../lib/hosted-dev/hostedDevUrl';
+import {
+  errors,
+  expect,
+  type BrowserContext,
+  type Page,
+  type Request,
+  type TestInfo,
+} from '@playwright/test';
+import {
+  assertHttpsDevUrl,
+  devUrlOnSameHost,
+  isAllowedDevHostname,
+} from '../../lib/hosted-dev/hostedDevUrl';
 import {
   redactJoinedText,
   redactLandingUrl,
@@ -20,6 +31,42 @@ export function requiredEnv(name: string): string {
 
 export function optionalSegment(name: string, fallback: 'residential' | 'commercial'): string {
   return process.env[name]?.trim() || fallback;
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * A plain visit must not submit a form. Trial signup and password reset are
+ * POST server actions, so those methods still fail the check.
+ *
+ * OPTIONS is not a submission. Next.js injects the Vercel toolbar on hosted
+ * deployments (`https://vercel.live/_next-live/feedback/feedback.js`). That
+ * script calls `fetch("/", { method: "OPTIONS" })` and reads `x-robots-tag`
+ * before deciding whether to show the toolbar. The request has no body and
+ * does not invoke an app server action. The 2026-11-10 smoke trace recorded
+ * that OPTIONS while `/forgot-password` was open, with referer
+ * `/forgot-password`. `/start-trial` itself did not POST.
+ */
+export function isDevHostWrite(request: Request): boolean {
+  if (!WRITE_METHODS.has(request.method())) return false;
+  try {
+    return isAllowedDevHostname(new URL(request.url()).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** Open an allowlisted `/book` URL and fail if the page submits a form. */
+export async function expectReadOnlyPublicBooking(page: Page, bookingUrl: string): Promise<void> {
+  const target = assertHttpsDevUrl(bookingUrl);
+  const posts: string[] = [];
+  page.on('request', (request) => {
+    if (isDevHostWrite(request)) posts.push(new URL(request.url()).pathname);
+  });
+  await page.goto(target.toString());
+  assertHttpsDevUrl(page.url());
+  await expect(page.getByRole('heading').first()).toBeVisible();
+  expect(posts.filter((path) => !path.startsWith('/_next'))).toEqual([]);
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   maskAndCapture,
   optionalSegment,
   portalHeading,
+  expectReadOnlyPublicBooking,
   redactLandingUrl,
   redactedHeadingText,
   requiredEnv,
@@ -152,6 +153,13 @@ test('platform admin can open the tenant list without changing it', async ({ pag
     await expect(page.getByRole('heading', { name: 'Tenants', exact: true })).toBeVisible();
   }
 });
+
+const bookingUrl = process.env.HOSTED_DEV_BOOKING_URL?.trim();
+if (bookingUrl) {
+  test('configured public booking page is read only', async ({ page }) => {
+    await expectReadOnlyPublicBooking(page, bookingUrl);
+  });
+}
 
 test('customer portal reads quotes, visits, and invoices without paying', async ({ page }) => {
   await page.goto('https://my.dev.cleanscheduler.com/sign-in?next=%2F');
@@ -340,7 +348,21 @@ if (process.env.HOSTED_DEV_MUTATIONS_CONFIRMED === '1') {
     const marker = `QaSuppress${Date.now().toString(36)}`;
     await page.getByLabel('First name').fill(marker);
     await page.getByRole('button', { name: 'Add customer' }).click();
-    await expect(page.getByText(marker, { exact: true })).toBeVisible();
+    // createTenantCustomer redirects to /customers. That page renders the new
+    // name twice: the desktop table row (role="link", aria-label "View {name}")
+    // and the phone card, which stays in the DOM with display:none above 480px.
+    // getByText matches both spans, so strict mode fails even though the
+    // customer was saved. The View link is the visible directory row.
+    const landed = assertHttpsDevUrl(page.url());
+    if (landed.hostname !== `${slug}.dev.cleanscheduler.com` || landed.pathname !== '/customers') {
+      throw new Error(
+        `FAIL: new customer was not listed on the residential tenant. Landed on ${redactLandingUrl(page.url())}.`,
+      );
+    }
+    await expect(portalHeading(page, 'Customers')).toBeVisible();
+    const viewLink = page.getByRole('link', { name: `View ${marker}`, exact: true });
+    await expect(viewLink).toHaveCount(1);
+    await expect(viewLink).toBeVisible();
     const leaked = [...contacted].filter((host) =>
       /(^|\.)stripe\.com$|(^|\.)plaid\.com$|(^|\.)resend\.com$|(^|\.)sent\.dm$|(^|\.)sentdm\.com$/.test(
         host,

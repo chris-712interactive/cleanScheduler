@@ -21,7 +21,7 @@ Blocked sections are listed in `hosted-dev-results/report.md`. They are not coun
 - `admin`, `my`, and an unknown tenant host redirect to sign-in on that same host
 - `www.dev.cleanscheduler.com` returns to the apex
 - Cron routes, the Stripe webhook, and the Plaid link-token route reject unauthenticated calls
-- Public booking render, only when `HOSTED_DEV_BOOKING_URL` is an allowlisted URL
+- Public booking render, only when `HOSTED_DEV_BOOKING_URL` is an allowlisted URL. The isolated job receives the same repository variable. See below.
 
 ## What isolated covers
 
@@ -34,7 +34,8 @@ Dedicated QA users only. The suite does not create accounts, send invites, or su
 - Platform admin: founder or sales dashboard on `admin.dev.cleanscheduler.com`, and the tenant list for a founder, with no edits. Platform staff (`super_admin`, `admin`, and `sales`) who sign in on that admin host stay there, including when they also have a workspace membership. The session cookie is not sent to another host, so a redirect onto a workspace host lands on that host’s sign-in page. That host change fails during sign-in. Until the deployed dev app keeps them on the admin host, the QA platform admin needs no active tenant memberships. After that deploy, a workspace membership must not pull this sign-in off the admin host. The cookie domain is not widened to a parent domain. A normal sign-in on the admin host does not follow a workspace redirect. Support entry uses a separate one-time handoff at `/auth/masquerade-handoff` on the tenant host.
 - Customer: home, quotes, visits, and invoices, with no payment. Those paths stay on `my.dev.cleanscheduler.com`. Visits require a level-1 heading with an element whose text is exactly “Upcoming visits”. The empty state “No upcoming visits” does not satisfy that check.
 - Two fixture users, through the dev Supabase Auth password grant and `tenant_quotes` select, must see only their own `qa-hosted-dev-*` quote
-- Direct `psql` runs only on a machine where you set `QA_DEV_DATABASE_URL` yourself, and only when that URL is the dev project the identity endpoint reported. GitHub does not inject that URL.
+- Public booking render, when the repository variable `HOSTED_DEV_BOOKING_URL` is an allowlisted URL. The isolated job reads that same variable. If it is empty, the report row stays `blocked` and is not a pass. The page is only opened. The check still fails on `POST`, `PUT`, `PATCH`, and `DELETE`.
+- Direct `psql` runs when `QA_DEV_DATABASE_URL` is set, including on the isolated job. The URL has to be the hosted dev project `khodybakkdpheqkoycgi` (`db.khodybakkdpheqkoycgi.supabase.co`, or the pooler user `postgres.khodybakkdpheqkoycgi`) and the same host the identity endpoint just reported. Any other host is refused before `psql` starts. If `QA_DEV_DATABASE_URL` is empty, the report row stays `blocked` and is not a pass. The URL is an environment secret, masked in the log, and removed from artifacts by the existing redaction. The job does not print it.
 - The Auth token for each RLS fixture user is rejected when it is a platform admin or the service role.
 
 `HOSTED_DEV_MUTATIONS=1` runs QA-tenant mutation checks only after the deployment identity says `outboundSuppressed` is true. Otherwise the run records that row as blocked and exits non-zero. A blocked row is not a pass. The checks that run behind the gate are the identity confirmation and one residential QA customer create with no email and no address. Charges, refunds, bank-link completion, sends, and cron batches stay out of that browser check: cron needs `CRON_SECRET`, and a fake Stripe or Plaid id would be written onto the QA tenant. Those provider calls are still short-circuited in the app when the switch is on.
@@ -63,7 +64,8 @@ What the workflow still checks, after this file is on the branch GitHub executes
 - Isolated stays opt-in. Leave the repository variable `HOSTED_DEV_ISOLATED` unset. The job's `if` also requires smoke to succeed and `github.workflow_ref` to end with `@refs/heads/main`. Editing the workflow on `dev` can remove that `if`. The environment policy still withholds the secrets.
 - The isolated job checks out `main`, not the deployed commit, and refuses to start if `origin/dev` moved. Checkout, Node setup, and artifact upload in that job are pinned to full commit SHAs. Missing QA configuration fails that job. It does not pass quietly.
 - Automatic `deployment_status` runs from `dev` do not receive isolated secrets, even if `HOSTED_DEV_ISOLATED` is later set to `1`, because `github.ref` is not `main`. To run isolated reads, dispatch the workflow from `main` after the environment, the branch policy, and the environment secrets exist, and only then set the variable to `1`. This change does not set it.
-- Automatic runs do not receive `QA_DEV_DATABASE_URL` or the RLS user ids. Direct SQL stays a manual local run.
+- A dispatch from `main` passes `HOSTED_DEV_BOOKING_URL` into the isolated job from the repository variable, and passes `QA_DEV_DATABASE_URL`, `QA_RLS_USER_A_ID`, and `QA_RLS_USER_B_ID` from the `hosted-dev-isolated` environment. Automatic `deployment_status` runs from `dev` still do not receive those secrets. An empty `QA_DEV_DATABASE_URL` leaves direct SQL `blocked`. It is not a pass. The SQL script also needs the two user ids. If either id is empty, that test reports `blocked` and is not a pass.
+- The workflow file and the isolated suite run from `main`. A copy of this change that exists only on `dev` does not change the isolated job until it is ported to `main`. Smoke checks out the deployed `dev` tip, so smoke-only edits on `dev` do run.
 - Manual dispatch has to be started from `main`, and the SHA has to be the current `origin/dev` tip.
 - Reports upload as artifacts for seven days only after `scripts/hosted-dev/redact-artifacts.mts` finishes and writes `.redaction-complete`. If that script fails, trace zips and images are deleted and nothing is uploaded. Text, HTML, and HAR contents are redacted, including short configured secrets, `sb_secret_…`, `whsec_…`, the whole Authorization or Bearer value, email addresses (including `%40` and bounded `%2540` encodings), and credential query or fragment values (`token`, `code`, `email`, `access_token`, `refresh_token`, `id_token`, `provider_token`, `provider_refresh_token`, `code_verifier`, `client_secret`, `token_hash`, and the camel-case `idToken` / `accessToken` forms). The result summary is redacted before it is printed. Trace-zip entries are scrubbed even when the name has no extension. Images are removed by magic bytes, not by file name. Isolated tests do not record Playwright traces.
 
@@ -75,7 +77,7 @@ No Vercel token is required. The existing CI workflow is not modified.
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `HOSTED_DEV_ISOLATED`                  | Leave unset. `1` asks the isolated job to run. Secrets stay withheld unless the run ref is allowed by the environment. |
 | `HOSTED_DEV_MUTATIONS`                 | Leave unset. `1` runs QA writes only when the deployment confirms outbound suppression. Otherwise the run fails.       |
-| `HOSTED_DEV_BOOKING_URL`               | Optional allowlisted `/book` URL for the read-only booking check.                                                      |
+| `HOSTED_DEV_BOOKING_URL`               | Optional allowlisted `/book` URL. Smoke and the isolated job both receive this repository variable.                    |
 | `HOSTED_DEV_DENY_SUPABASE_PROJECT_REF` | Optional production Supabase project ref. A match fails closed.                                                        |
 | `QA_TENANT_RESIDENTIAL_SEGMENT`        | Optional. Defaults to `residential`.                                                                                   |
 | `QA_TENANT_COMMERCIAL_SEGMENT`         | Optional. Defaults to `commercial`.                                                                                    |
@@ -104,14 +106,13 @@ Create these on the `hosted-dev-isolated` environment. Do not create them as rep
 - `QA_RLS_TENANT_B_ID`
 - `QA_RLS_MARKER_A`
 - `QA_RLS_MARKER_B`
-
-Markers must match `qa-hosted-dev-` plus 1–48 letters, numbers, or hyphens. They are the `tenant_quotes.title` values, one on each fixture tenant. Each RLS user is a member of only their own fixture tenant. The membership role may be owner, admin, employee, or viewer. “Tenant admin” means that membership role on that tenant only. It is not a platform role. `app_metadata.app_role` must not be `admin` or `super_admin`, and the token must not be `service_role`. Those platform roles bypass tenant RLS. The suite blocks when the Auth token says so. It does not count that read as a pass. A block here is fixture data: change that Auth user’s `app_metadata.app_role` so it is not a platform role. Do not change product RLS to make the token pass. HTTP 403 on that quote probe for an employee who already has an active membership is Postgres `42501` from `has_tenant_membership` when that helper runs as the caller and `authenticated` cannot `SELECT` `tenant_memberships`. That is a product bug in the helper, not a fixture problem. Do not grant `authenticated` `SELECT` on `tenant_memberships` (the membership policy calls the helper), and do not change `platformAdminFixtureBlock`. Turn off MFA for these users; a two-factor challenge is blocked rather than bypassed.
-
-Optional direct SQL, local only, still the dev project only. Do not add these to GitHub at all:
-
 - `QA_DEV_DATABASE_URL`
 - `QA_RLS_USER_A_ID`
 - `QA_RLS_USER_B_ID`
+
+`QA_DEV_DATABASE_URL` is the dev database only. Project ref `khodybakkdpheqkoycgi`. Do not paste a production connection string. The isolated job installs `psql` and runs `supabase/tests/rls/hosted_dev_cross_tenant.sql` only after the deployment identity and the URL both name that project. `QA_RLS_USER_A_ID` and `QA_RLS_USER_B_ID` are the Auth user ids the SQL script sets as `request.jwt.claim.sub`. They are not passwords. If the database URL is unset, direct SQL stays blocked. If the URL is set and a user id is unset, the test reports blocked and the run does not pass.
+
+Markers must match `qa-hosted-dev-` plus 1–48 letters, numbers, or hyphens. They are the `tenant_quotes.title` values, one on each fixture tenant. Each RLS user is a member of only their own fixture tenant. The membership role may be owner, admin, employee, or viewer. “Tenant admin” means that membership role on that tenant only. It is not a platform role. `app_metadata.app_role` must not be `admin` or `super_admin`, and the token must not be `service_role`. Those platform roles bypass tenant RLS. The suite blocks when the Auth token says so. It does not count that read as a pass. A block here is fixture data: change that Auth user’s `app_metadata.app_role` so it is not a platform role. Do not change product RLS to make the token pass. HTTP 403 on that quote probe for an employee who already has an active membership is Postgres `42501` from `has_tenant_membership` when that helper runs as the caller and `authenticated` cannot `SELECT` `tenant_memberships`. That is a product bug in the helper, not a fixture problem. Do not grant `authenticated` `SELECT` on `tenant_memberships` (the membership policy calls the helper), and do not change `platformAdminFixtureBlock`. Turn off MFA for these users; a two-factor challenge is blocked rather than bypassed.
 
 ### GitHub settings still required
 
@@ -127,7 +128,7 @@ Apply these steps before adding any QA secret. If a workflow run names `hosted-d
 4. Add one deployment branch rule. Ref type: **Branch**. Name pattern: `main`.
 5. Do not add a rule for `dev`, `*`, tags, or `refs/pull/*/merge`. A branch pattern of `main` matches `refs/heads/main` only.
 6. Leave required reviewers and the wait timer empty. Reviewers are not a substitute for the branch rule.
-7. Under **Environment secrets**, add each name in the list above. Do not add `QA_DEV_DATABASE_URL`, `QA_RLS_USER_A_ID`, or `QA_RLS_USER_B_ID`.
+7. Under **Environment secrets**, add each name in the list above, including `QA_DEV_DATABASE_URL`, `QA_RLS_USER_A_ID`, and `QA_RLS_USER_B_ID`. Do not add those names as repository secrets or repository variables.
 8. Open [Actions secrets and variables](https://github.com/chris-712interactive/cleanScheduler/settings/secrets/actions). Under **Repository secrets**, delete any secret whose name is in the list above. A repository copy stays readable by a workflow on `dev` that does not declare the environment.
 9. Under **Repository variables**, leave `HOSTED_DEV_ISOLATED` unset. Do not set it to `1` as part of this hardening.
 10. On the environment page, confirm the policy is **Selected branches and tags** and the only rule is branch `main` before any isolated dispatch.
