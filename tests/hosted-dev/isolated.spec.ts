@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import { errors, expect, test, type Page } from '@playwright/test';
 import { assertDevDatabaseUrl } from '../../lib/hosted-dev/databaseTarget';
 import { directSqlRlsOutcome } from '../../lib/hosted-dev/directSqlRlsOutcome';
+import { psqlChildEnv } from '../../lib/hosted-dev/psqlChildEnv';
 import { decideIdentity } from '../../lib/hosted-dev/deploymentIdentity';
 import { assertHttpsDevUrl } from '../../lib/hosted-dev/hostedDevUrl';
 import { mutationGate } from '../../lib/hosted-dev/mutationGate';
@@ -267,7 +268,6 @@ if (databaseUrl) {
     assertTenantId(userB);
     assertTenantId(tenantA);
     assertTenantId(tenantB);
-    const target = new URL(databaseUrl);
     const psqlArgs = [
       '-v',
       'ON_ERROR_STOP=1',
@@ -286,15 +286,7 @@ if (databaseUrl) {
       '-f',
       'supabase/tests/rls/hosted_dev_cross_tenant.sql',
     ];
-    const psqlEnv = {
-      ...process.env,
-      PGHOST: target.hostname,
-      PGPORT: target.port || '5432',
-      PGUSER: decodeURIComponent(target.username),
-      PGPASSWORD: decodeURIComponent(target.password),
-      PGDATABASE: target.pathname.replace(/^\//, '') || 'postgres',
-      PGSSLMODE: target.searchParams.get('sslmode') || 'require',
-    };
+    const psqlEnv = psqlChildEnv(process.env, databaseUrl);
     let exitCode = 0;
     let stdout = '';
     let stderr = '';

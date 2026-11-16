@@ -255,7 +255,17 @@ jobs:
           QA_RLS_USER_A_ID: ${{ secrets.QA_RLS_USER_A_ID }}
           QA_RLS_USER_B_ID: ${{ secrets.QA_RLS_USER_B_ID }}
           QA_DEV_DATABASE_URL: ${{ secrets.QA_DEV_DATABASE_URL }}
-        run: npm run test:hosted-dev:isolated
+        run: |
+          set -euo pipefail
+          # Inherited libpq variables can redirect the connection the suite
+          # already checked. Remove every exported PG* name. Do not print
+          # those values or the database URL. The psql child strips them
+          # again and does not set PGCONNECT_TIMEOUT.
+          while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            unset "$name"
+          done < <(compgen -e | grep '^PG' || true)
+          npm run test:hosted-dev:isolated
       - if: always()
         run: |
           if [ -f hosted-dev-results/report.md ]; then

@@ -391,6 +391,12 @@ describe('hosted dev workflow contract', () => {
     expect(isolated).toContain('secrets.QA_RLS_USER_B_ID');
     expect(isolated).toContain('vars.HOSTED_DEV_BOOKING_URL');
     expect(isolated).not.toMatch(/echo[^"\n]*QA_DEV_DATABASE_URL|QA_DEV_DATABASE_URL[^"\n]*echo/);
+    const isolatedRun = isolated.slice(isolated.indexOf('Opt-in isolated reads and RLS'));
+    const unsetAt = isolatedRun.indexOf("grep '^PG'");
+    const npmAt = isolatedRun.indexOf('npm run test:hosted-dev:isolated');
+    expect(unsetAt).toBeGreaterThan(-1);
+    expect(npmAt).toBeGreaterThan(unsetAt);
+    expect(isolatedRun).not.toMatch(/echo[^"\n]*PGHOST|printenv PG|env \| grep/);
     expect(isolated).toContain("vars.HOSTED_DEV_ISOLATED == '1'");
     expect(isolated).toContain("endsWith(github.workflow_ref, '@refs/heads/main')");
     expect(workflow.match(/^ {4}environment: hosted-dev-isolated$/gm)).toEqual([
