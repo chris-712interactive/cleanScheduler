@@ -8,7 +8,11 @@ const HOME = 'tenant-home';
 const OTHER = 'tenant-other';
 
 const membershipRows = vi.hoisted(() => ({
-  rows: [] as Array<{ tenant_id: string; tenants: { slug: string } }>,
+  rows: [] as Array<{
+    tenant_id: string;
+    created_at?: string;
+    tenants: { slug: string };
+  }>,
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -17,17 +21,27 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table !== 'tenant_memberships') {
         throw new Error(`unexpected table ${table}`);
       }
-      return {
+      const builder = {
         select() {
-          return {
-            eq() {
-              return {
-                eq: async () => ({ data: membershipRows.rows, error: null }),
-              };
-            },
-          };
+          return builder;
+        },
+        eq() {
+          return builder;
+        },
+        order() {
+          return builder;
+        },
+        then(
+          onFulfilled: (value: { data: typeof membershipRows.rows; error: null }) => unknown,
+          onRejected?: (reason: unknown) => unknown,
+        ) {
+          return Promise.resolve({ data: membershipRows.rows, error: null }).then(
+            onFulfilled,
+            onRejected,
+          );
         },
       };
+      return builder;
     },
   }),
 }));
@@ -119,6 +133,26 @@ describe('forged user_metadata tenant claims', () => {
     expect(attacked.url).toBe(baseline.url);
     expect(attacked.url).toBe('http://home.lvh.me:3000/');
     expect(attacked.kind).toBe('workspace');
+  });
+
+  it('falls back to the oldest membership, then tenant id, when the claim is missing or stale', async () => {
+    membershipRows.rows = [
+      { tenant_id: OTHER, created_at: '2024-06-01T00:00:00.000Z', tenants: { slug: 'other' } },
+      { tenant_id: 'tenant-aaa', created_at: '2024-01-01T00:00:00.000Z', tenants: { slug: 'aaa' } },
+      { tenant_id: HOME, created_at: '2024-01-01T00:00:00.000Z', tenants: { slug: 'home' } },
+    ];
+    const stale = authUser({
+      app_metadata: { app_role: 'employee', current_tenant_id: 'tenant-removed' },
+      user_metadata: { current_tenant_id: HOME, tenant_role: 'owner' },
+    });
+
+    const destination = await resolvePostLoginDestinationForUser({
+      user: stale,
+      nextPath: '/',
+      currentOrigin: 'http://lvh.me:3000',
+    });
+
+    expect(destination.url).toBe('http://aaa.lvh.me:3000/');
   });
 
   it('does not prefer a second membership named only in user_metadata', async () => {

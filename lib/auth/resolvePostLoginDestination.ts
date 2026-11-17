@@ -271,6 +271,16 @@ export function resolvePostLoginDestination(
   return home;
 }
 
+/** Oldest membership first. Equal timestamps fall back to tenant id. */
+export function comparePostLoginMemberships(
+  a: { createdAt: string; tenantId: string },
+  b: { createdAt: string; tenantId: string },
+): number {
+  const byCreated = a.createdAt.localeCompare(b.createdAt);
+  if (byCreated !== 0) return byCreated;
+  return a.tenantId.localeCompare(b.tenantId);
+}
+
 export async function loadPostLoginMemberships(userId: string): Promise<PostLoginMembership[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -278,23 +288,31 @@ export async function loadPostLoginMemberships(userId: string): Promise<PostLogi
     .select(
       `
       tenant_id,
+      created_at,
       tenants:tenants!inner ( slug )
     `,
     )
     .eq('user_id', userId)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .order('tenant_id', { ascending: true });
 
   if (error || !data) return [];
 
-  const memberships: PostLoginMembership[] = [];
+  const memberships: Array<PostLoginMembership & { createdAt: string }> = [];
   for (const row of data) {
     const tenants = row.tenants as { slug: string } | { slug: string }[] | null;
     const slug = Array.isArray(tenants) ? tenants[0]?.slug : tenants?.slug;
     if (slug) {
-      memberships.push({ tenantId: row.tenant_id, slug });
+      memberships.push({
+        tenantId: row.tenant_id,
+        slug,
+        createdAt: row.created_at ?? '',
+      });
     }
   }
-  return memberships;
+  memberships.sort(comparePostLoginMemberships);
+  return memberships.map(({ tenantId, slug }) => ({ tenantId, slug }));
 }
 
 async function loadCustomerPortalOrigin(userId: string): Promise<string | null> {

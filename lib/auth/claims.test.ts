@@ -74,6 +74,45 @@ describe('extractClaims', () => {
     expect(claims.masqueradeTargetTenantId).toBeNull();
   });
 
+  it('treats blank and whitespace-only app_metadata claims as absent', () => {
+    const claims = extractClaims(
+      user({
+        app_metadata: {
+          app_role: '   ',
+          current_tenant_id: '   ',
+          tenant_role: ' \n ',
+          masquerade_target_tenant_id: '  ',
+        },
+        user_metadata: {
+          current_tenant_id: 'tenant-other',
+          tenant_role: 'owner',
+        },
+      }),
+    );
+
+    expect(claims.currentTenantId).toBeNull();
+    expect(claims.tenantRole).toBeNull();
+    expect(claims.appRole).toBeNull();
+    expect(claims.masqueradeTargetTenantId).toBeNull();
+  });
+
+  it('trims a server-written tenant id and role', () => {
+    const claims = extractClaims(
+      user({
+        app_metadata: {
+          app_role: ' employee ',
+          current_tenant_id: ' tenant-home ',
+          tenant_role: ' viewer ',
+        },
+        user_metadata: {},
+      }),
+    );
+
+    expect(claims.appRole).toBe('employee');
+    expect(claims.currentTenantId).toBe('tenant-home');
+    expect(claims.tenantRole).toBe('viewer');
+  });
+
   it('still reads platform role and masquerade from app_metadata', () => {
     const claims = extractClaims(
       user({
