@@ -51,6 +51,7 @@ import {
   isFieldEmployeeRole,
 } from '@/lib/tenant/fieldEmployeeAccess';
 import { isPlatformApexHost } from '@/lib/portal/customerPortalHostname';
+import { platformHostLabel } from '@/lib/portal/platformHostLabel';
 import { customerPortalJoinRedirectUrl } from '@/lib/portal/customerPortalOrigin';
 import { resolveActiveTenantPublicDomain } from '@/lib/portal/resolveTenantPublicDomain';
 import { applyReferralCookieToResponse } from '@/lib/referrals/referralCookie';
@@ -146,19 +147,8 @@ function getApexHost(): string {
 }
 
 function extractSubdomainLabel(host: string, apex: string): string | null {
-  const apexWithoutPort = apex.split(':')[0]!.toLowerCase();
-  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
-
-  if (hostWithoutPort === apexWithoutPort) return null;
-
-  if (hostWithoutPort.endsWith(`.${apexWithoutPort}`)) {
-    const prefix = hostWithoutPort.slice(0, -apexWithoutPort.length - 1);
-    const firstLabel = prefix.split('.')[0];
-    return firstLabel ?? null;
-  }
-
-  // Unrecognised origin (Vercel preview URL, raw IP) - render marketing.
-  return null;
+  // One label only. `admin.evil.<apex>` is not the admin portal.
+  return platformHostLabel(host, apex);
 }
 
 function classify(subdomain: string | null): { kind: PortalKind; tenantSlug?: string } {

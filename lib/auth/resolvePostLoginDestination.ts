@@ -1,7 +1,9 @@
 import type { User } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sanitizeAuthenticationNext } from '@/lib/auth/allowedRedirectOrigin';
+import { isPlatformStaffRole } from '@/lib/auth/platformRoles';
 import { extractClaims, type AppRole } from '@/lib/auth/types';
+import { platformHostLabel } from '@/lib/portal/platformHostLabel';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import { getCustomerPortalOriginForTenant } from '@/lib/portal/customerPortalOrigin';
 import { publicEnv } from '@/lib/env';
@@ -57,11 +59,7 @@ export function classifyPostLoginHost(originOrHost: string): ClassifiedHost {
     return { kind: 'marketing', tenantSlug: null };
   }
 
-  const apex = apexHostname();
-  if (host === apex) return { kind: 'marketing', tenantSlug: null };
-  if (!host.endsWith(`.${apex}`)) return { kind: 'marketing', tenantSlug: null };
-
-  const label = host.slice(0, -(apex.length + 1)).split('.')[0] ?? '';
+  const label = platformHostLabel(host, apexHostname());
   if (label === 'admin') return { kind: 'admin', tenantSlug: null };
   if (label === 'my' || label === 'www') {
     return { kind: label === 'my' ? 'customer' : 'marketing', tenantSlug: null };
@@ -134,6 +132,21 @@ function preferredTenantSlug(
 }
 
 function homeForRole(input: ResolvePostLoginDestinationInput): PostLoginDestination {
+  // Session cookies are stored for the host that set them. Platform staff who
+  // finish sign-in on the admin host stay there even when they also belong to
+  // a workspace. Sending them to that workspace drops the cookie and shows
+  // sign-in on the other host.
+  if (
+    classifyPostLoginHost(input.currentOrigin).kind === 'admin' &&
+    isPlatformStaffRole(input.appRole)
+  ) {
+    return {
+      url: joinOriginPath(getPublicOrigin('admin'), '/'),
+      kind: 'admin',
+      ctaLabel: 'Open admin',
+    };
+  }
+
   const tenantSlug = preferredTenantSlug(input.memberships, input.currentTenantId);
   if (tenantSlug) {
     return {
@@ -184,6 +197,7 @@ function hostMatchesDestination(
 /**
  * After successful auth, pick the absolute URL for the user’s home portal
  * (or preserve an explicit deep link when already on a matching host).
+ * Platform staff who signed in on the admin host stay on that host.
  */
 export function resolvePostLoginDestination(
   input: ResolvePostLoginDestinationInput,
@@ -194,13 +208,18 @@ export function resolvePostLoginDestination(
   const currentHost = classifyPostLoginHost(input.currentOrigin);
   const nextOrigin = nextTargetOrigin(nextPath, input.currentOrigin);
   const nextHost = nextOrigin ? classifyPostLoginHost(nextOrigin) : currentHost;
+  // Nested hosts such as admin.evil.<apex> are not the admin portal. Staff who
+  // belong on admin go to the canonical admin origin, not the request host.
+  const landingOrigin = home.kind === 'admin' ? getPublicOrigin('admin') : null;
 
   const deepLink =
     path !== '/' &&
     hostMatchesDestination(nextHost, home, input.memberships) &&
-    (nextPath.startsWith('http://') || nextPath.startsWith('https://')
-      ? nextPath
-      : joinOriginPath(nextOrigin ?? input.currentOrigin, path));
+    (landingOrigin
+      ? joinOriginPath(landingOrigin, path)
+      : nextPath.startsWith('http://') || nextPath.startsWith('https://')
+        ? nextPath
+        : joinOriginPath(nextOrigin ?? input.currentOrigin, path));
 
   if (deepLink) {
     return { ...home, url: deepLink };
@@ -208,11 +227,11 @@ export function resolvePostLoginDestination(
 
   const onMatchingHost = hostMatchesDestination(currentHost, home, input.memberships);
   if (onMatchingHost && path !== '/') {
-    return { ...home, url: joinOriginPath(input.currentOrigin, path) };
+    return { ...home, url: joinOriginPath(landingOrigin ?? input.currentOrigin, path) };
   }
 
   if (onMatchingHost && path === '/') {
-    return { ...home, url: joinOriginPath(input.currentOrigin, '/') };
+    return { ...home, url: joinOriginPath(landingOrigin ?? input.currentOrigin, '/') };
   }
 
   // Wrong host: send to the correct portal, preserving a relative deep-link path.

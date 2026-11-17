@@ -36,4 +36,10 @@ describe('sanitizeAuthenticationNext', () => {
       'http://admin.lvh.me:3000/tenants',
     );
   });
+
+  it('rejects off-site and suffix-host next targets', () => {
+    expect(sanitizeAuthenticationNext('https://admin.lvh.me.evil.com/tenants')).toBe('/');
+    expect(sanitizeAuthenticationNext('https://evil.example/tenants')).toBe('/');
+    expect(sanitizeAuthenticationNext('http://admin.lvh.me.evil.com:3000/')).toBe('/');
+  });
 });

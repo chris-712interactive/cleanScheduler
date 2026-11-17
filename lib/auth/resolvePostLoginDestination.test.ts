@@ -31,6 +31,14 @@ describe('classifyPostLoginHost', () => {
       kind: 'tenant',
       tenantSlug: 'acme',
     });
+    expect(classifyPostLoginHost('http://admin.evil.lvh.me:3000')).toEqual({
+      kind: 'marketing',
+      tenantSlug: null,
+    });
+    expect(classifyPostLoginHost('https://admin.lvh.me.evil.com')).toEqual({
+      kind: 'marketing',
+      tenantSlug: null,
+    });
   });
 });
 
@@ -110,6 +118,79 @@ describe('resolvePostLoginDestination', () => {
     expect(result.url).toBe('http://admin.lvh.me:3000/');
   });
 
+  it('keeps platform staff on the admin host when they also belong to a workspace', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'admin',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('admin');
+    expect(result.url).toBe('http://admin.lvh.me:3000/');
+    expect(result.ctaLabel).toBe('Open admin');
+  });
+
+  it('keeps an admin-host deep link for platform staff who have a workspace', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/tenants',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('admin');
+    expect(result.url).toBe('http://admin.lvh.me:3000/tenants');
+  });
+
+  it('does not keep platform staff on a nested host that starts with admin', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'admin',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.evil.lvh.me:3000',
+    });
+    expect(result.kind).toBe('workspace');
+    expect(result.url).toBe('http://acme.lvh.me:3000/');
+  });
+
+  it('keeps sales staff on the admin host when they also belong to a workspace', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'sales',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('admin');
+    expect(result.url).toBe('http://admin.lvh.me:3000/');
+  });
+
+  it('still opens the workspace when platform staff sign in on the marketing host', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'sales',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://lvh.me:3000',
+    });
+    expect(result.kind).toBe('workspace');
+    expect(result.url).toBe('http://acme.lvh.me:3000/');
+  });
+
+  it('sends a workspace member who is not platform staff away from the admin host', () => {
+    const result = resolvePostLoginDestination({
+      appRole: 'employee',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: '/',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(result.kind).toBe('workspace');
+    expect(result.url).toBe('http://acme.lvh.me:3000/');
+  });
+
   it('prefers current_tenant_id when multiple memberships exist', () => {
     const result = resolvePostLoginDestination({
       appRole: 'admin',
@@ -122,6 +203,69 @@ describe('resolvePostLoginDestination', () => {
       currentOrigin: 'http://lvh.me:3000',
     });
     expect(result.url).toBe('http://second.lvh.me:3000/');
+  });
+
+  it('sends platform staff to the canonical admin origin', () => {
+    const nested = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: '/',
+      currentOrigin: 'http://admin.evil.lvh.me:3000',
+    });
+    expect(nested.url).toBe('http://admin.lvh.me:3000/');
+    expect(nested.url).not.toContain('evil');
+
+    const deepLink = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: '/tenants',
+      currentOrigin: 'http://admin.lvh.me:9999',
+    });
+    expect(deepLink.url).toBe('http://admin.lvh.me:3000/tenants');
+  });
+
+  it('rejects off-site and cross-host next targets', () => {
+    const offSite = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: 'https://evil.example/tenants',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(offSite.url).toBe('http://admin.lvh.me:3000/');
+    expect(offSite.url).not.toContain('evil');
+
+    const suffixHost = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: 'https://admin.lvh.me.evil.com/tenants',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(suffixHost.url).toBe('http://admin.lvh.me:3000/');
+    expect(suffixHost.url).not.toContain('evil');
+
+    const nestedAdmin = resolvePostLoginDestination({
+      appRole: 'super_admin',
+      currentTenantId: null,
+      memberships: [],
+      nextPath: 'http://admin.evil.lvh.me:3000/tenants',
+      currentOrigin: 'http://admin.lvh.me:3000',
+    });
+    expect(nestedAdmin.url).toBe('http://admin.lvh.me:3000/tenants');
+    expect(nestedAdmin.url).not.toContain('evil');
+
+    const otherWorkspace = resolvePostLoginDestination({
+      appRole: 'employee',
+      currentTenantId: 't1',
+      memberships,
+      nextPath: 'http://other.lvh.me:3000/schedule',
+      currentOrigin: 'http://acme.lvh.me:3000',
+    });
+    expect(otherWorkspace.url).toBe('http://acme.lvh.me:3000/schedule');
+    expect(otherWorkspace.url).not.toContain('other.lvh.me');
   });
 
   it('uses white-label customer origin when provided', () => {

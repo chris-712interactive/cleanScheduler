@@ -12,6 +12,10 @@
 | Machine (API)  | `tenant_api_keys` (hashed)               | Tenant REST API (Pro plan)                       |
 | Machine (cron) | `CRON_SECRET` env                        | Scheduled maintenance routes                     |
 
+## Host classification
+
+Portal identity is one label directly under the apex (`admin.example.com`), shared by `proxy.ts`, `lib/portal.ts`, SEO host classification, the theme script, and post-login routing (`platformHostLabel`). `admin.evil.example.com` and `admin.example.com.evil.com` are not the admin host. Password sign-in keeps a `next` path only when `sanitizeAuthenticationNext` accepts it, and `resolvePostLoginDestination` does not follow that path onto a different host. The auth cookie domain is not widened. `user_metadata` is not a source for authorization.
+
 ## Authentication flow
 
 1. User signs in via Supabase Auth (password, passkey, or Google OAuth). A passkey is checked by Clean Scheduler, then a Supabase session is issued.
