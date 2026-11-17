@@ -70,7 +70,7 @@ export const ACCESS_CONTROL_POLICY_SECTIONS: PolicySection[] = [
       'Authorization combines Postgres row-level security (workspace isolation), JWT application roles, and server-side role checks.',
     ],
     bullets: [
-      'Tenant roles (owner, admin, employee, viewer) control in-workspace permissions.',
+      'Tenant roles (owner, admin, employee, viewer) control in-workspace permissions. The role is the tenant_memberships row for that workspace. A signed-in user cannot grant a role or workspace by editing their own user_metadata.',
       'Platform roles (super_admin, admin, customer) control portal access.',
       'Feature entitlements (plan tier) gate premium capabilities such as Plaid reconciliation and API access.',
       'Machine access uses hashed API keys (tenant REST API) or Bearer CRON_SECRET (scheduled jobs).',

@@ -131,6 +131,31 @@ function preferredTenantSlug(
   return memberships[0]!.slug;
 }
 
+/**
+ * Tenant id used only to choose among workspaces the user already belongs to.
+ * A membership for the current host wins. Otherwise a server-written
+ * `app_metadata.current_tenant_id` is used when that id is one of the
+ * memberships. A value that is not an active membership is ignored.
+ */
+export function trustedPostLoginTenantId(input: {
+  claimedTenantId: string | null;
+  memberships: PostLoginMembership[];
+  currentOrigin: string;
+}): string | null {
+  const host = classifyPostLoginHost(input.currentOrigin);
+  if (host.kind === 'tenant' && host.tenantSlug) {
+    const onHost = input.memberships.find((membership) => membership.slug === host.tenantSlug);
+    if (onHost) return onHost.tenantId;
+  }
+  if (
+    input.claimedTenantId &&
+    input.memberships.some((membership) => membership.tenantId === input.claimedTenantId)
+  ) {
+    return input.claimedTenantId;
+  }
+  return null;
+}
+
 function homeForRole(input: ResolvePostLoginDestinationInput): PostLoginDestination {
   // Session cookies are stored for the host that set them. Platform staff who
   // finish sign-in on the admin host stay there even when they also belong to
@@ -311,7 +336,11 @@ export async function resolvePostLoginDestinationForUser(params: {
 
   return resolvePostLoginDestination({
     appRole: claims.appRole,
-    currentTenantId: claims.currentTenantId,
+    currentTenantId: trustedPostLoginTenantId({
+      claimedTenantId: claims.currentTenantId,
+      memberships,
+      currentOrigin: params.currentOrigin,
+    }),
     memberships,
     nextPath: params.nextPath,
     currentOrigin: params.currentOrigin,

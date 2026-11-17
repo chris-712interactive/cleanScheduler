@@ -21,8 +21,45 @@ describe('extractClaims', () => {
 
     expect(claims.appRole).toBe('employee');
     expect(claims.masqueradeTargetTenantId).toBeNull();
-    expect(claims.tenantRole).toBe('owner');
+    expect(claims.tenantRole).toBeNull();
     expect(claims.currentTenantId).toBe('tenant-home');
+  });
+
+  it('does not let user_metadata replace the server-written tenant id or role', () => {
+    const claims = extractClaims(
+      user({
+        app_metadata: {
+          app_role: 'employee',
+          current_tenant_id: 'tenant-home',
+          tenant_role: 'viewer',
+        },
+        user_metadata: {
+          current_tenant_id: 'tenant-other',
+          tenant_role: 'owner',
+        },
+      }),
+    );
+
+    expect(claims.currentTenantId).toBe('tenant-home');
+    expect(claims.tenantRole).toBe('viewer');
+    expect(claims.appRole).toBe('employee');
+  });
+
+  it('ignores a forged tenant id and owner role that exist only in user_metadata', () => {
+    const claims = extractClaims(
+      user({
+        app_metadata: { app_role: 'employee' },
+        user_metadata: {
+          current_tenant_id: 'tenant-other',
+          tenant_role: 'owner',
+        },
+      }),
+    );
+
+    expect(claims.currentTenantId).toBeNull();
+    expect(claims.tenantRole).toBeNull();
+    expect(claims.appRole).toBe('employee');
+    expect(claims.masqueradeTargetTenantId).toBeNull();
   });
 
   it('does not promote a user who only sets app_role in user_metadata', () => {
