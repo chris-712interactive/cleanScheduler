@@ -12,6 +12,8 @@
  * when a user with a stored "dark" preference loads a page whose server
  * default is light.
  */
+import { platformHostLabel } from '@/lib/portal/platformHostLabel';
+
 export const THEME_STORAGE_KEY = 'cs_theme';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -72,21 +74,10 @@ export function isMarketingHostname(
   hostname: string,
   apexHost: string = marketingApexHost(),
 ): boolean {
-  const apex = apexHost.split(':')[0]!.toLowerCase();
-  const host = hostname.split(':')[0]!.toLowerCase();
-
-  if (host === apex) return true;
-
-  if (!host.endsWith(`.${apex}`)) {
-    // Preview URLs and unknown hosts use the marketing route tree.
-    return true;
-  }
-
-  const subdomain = host.slice(0, -(apex.length + 1)).split('.')[0] ?? '';
-  if (!subdomain) return true;
-  if (subdomain === 'www') return true;
-  if (subdomain === 'admin' || subdomain === 'my') return false;
-  if (RESERVED_MARKETING_SUBDOMAINS.has(subdomain)) return true;
+  const label = platformHostLabel(hostname, apexHost);
+  if (!label || label === 'www') return true;
+  if (label === 'admin' || label === 'my') return false;
+  if (RESERVED_MARKETING_SUBDOMAINS.has(label)) return true;
   return false;
 }
 
@@ -113,20 +104,23 @@ export const themeScript = /* javascript */ `
     var isMarketing = true;
     var subdomain = '';
 
-    if (host === apex) {
-      isMarketing = true;
-    } else if (!host.endsWith('.' + apex)) {
+    if (host === apex || !host.endsWith('.' + apex)) {
       isMarketing = true;
     } else {
-      subdomain = host.slice(0, -(apex.length + 1)).split('.')[0] || '';
-      if (!subdomain || subdomain === 'www') {
-        isMarketing = true;
-      } else if (subdomain === 'admin' || subdomain === 'my') {
-        isMarketing = false;
-      } else if (reserved.indexOf(subdomain) >= 0) {
+      var prefix = host.slice(0, -(apex.length + 1));
+      if (!prefix || prefix.indexOf('.') !== -1) {
         isMarketing = true;
       } else {
-        isMarketing = false;
+        subdomain = prefix;
+        if (subdomain === 'www') {
+          isMarketing = true;
+        } else if (subdomain === 'admin' || subdomain === 'my') {
+          isMarketing = false;
+        } else if (reserved.indexOf(subdomain) >= 0) {
+          isMarketing = true;
+        } else {
+          isMarketing = false;
+        }
       }
     }
 

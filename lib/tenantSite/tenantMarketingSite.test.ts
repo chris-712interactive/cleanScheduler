@@ -271,6 +271,13 @@ describe('tenant site host classification', () => {
       kind: 'custom-domain',
       hostname: 'www.acme.com',
     });
+    expect(classifySeoHost('admin.evil.cleanscheduler.com', 'cleanscheduler.com')).toEqual({
+      kind: 'platform',
+    });
+    expect(classifySeoHost('admin.cleanscheduler.com.evil.com', 'cleanscheduler.com')).toEqual({
+      kind: 'custom-domain',
+      hostname: 'admin.cleanscheduler.com.evil.com',
+    });
   });
 });
 
