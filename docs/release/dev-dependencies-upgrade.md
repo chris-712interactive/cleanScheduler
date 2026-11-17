@@ -46,7 +46,7 @@ Moderate `baseline-browser-mapping` remains; CI `--audit-level=high` does not fa
 
 Installed **Next.js 16.4.1** was inside every range fixed by the November 2026 security release. `npm audit` and the npm advisory bulk endpoint only listed **GHSA-mfr8-8qww-v76h** (id 1247486, moderate). The [16.4.5 release notes](https://github.com/vercel/next.js/releases/tag/v16.4.5) and the published GitHub advisories also cover six more issues through **16.4.4**. All seven are patched in **16.4.5**. **16.4.6** is a later bugfix backport and is not required for these advisories.
 
-Bumped `next`, `eslint-config-next`, and the matching `@next/*` packages (`@next/env`, `@next/eslint-plugin-next`, `@next/swc-*`) from **16.4.1** to **16.4.5**. No application code changed. `npm run build` still needs the public env vars in `.env.example`; CI does not run the production build.
+Bumped `next`, `eslint-config-next`, and the matching `@next/*` packages (`@next/env`, `@next/eslint-plugin-next`, `@next/swc-*`) from **16.4.1** to **16.4.5**. No application code changed. `npm run build` needs the public placeholders plus `SUPABASE_SERVICE_ROLE_KEY` from `.env.example`. Leave `NEXT_PUBLIC_SENTRY_DSN` and `RESEND_FROM_EMAIL` unset; the blank assignments in `.env.example` fail Zod (`url()` and `min(1)`). CI does not run the production build.
 
 ## Deferred (from #164)
 
