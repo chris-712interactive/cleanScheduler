@@ -62,7 +62,7 @@ proxy.ts                # Subdomain resolver + portal URL rewriter
 ### 1. Install dependencies
 
 ```bash
-pnpm install      # or: npm install
+npm install
 ```
 
 ### 2. Configure env
@@ -71,14 +71,16 @@ pnpm install      # or: npm install
 cp .env.example .env.local
 ```
 
-Fill in the Supabase URL + anon key + service role key from your local
-Supabase project. Set `NEXT_PUBLIC_APP_DOMAIN=lvh.me:3000` so wildcard
-subdomains resolve to `127.0.0.1` automatically.
+That copy is enough for `npm run build`. Blank `NEXT_PUBLIC_SENTRY_DSN` and
+`RESEND_FROM_EMAIL` are treated as unset. Replace the Supabase URL, anon key,
+and service role key with values from your local Supabase project before using
+the app. `NEXT_PUBLIC_APP_DOMAIN=lvh.me:3000` lets wildcard subdomains resolve
+to `127.0.0.1`.
 
 ### 3. Run the dev server
 
 ```bash
-pnpm dev          # or: npm run dev
+npm run dev
 ```
 
 Visit each portal:
@@ -93,12 +95,14 @@ Visit each portal:
 Runtime and dependency lifecycle policy: [`docs/ops/runtime-eol-policy.md`](docs/ops/runtime-eol-policy.md).
 
 ```bash
-pnpm typecheck         # tsc --noEmit
-pnpm lint              # next lint
-pnpm lint:styles       # stylelint **/*.scss
-pnpm format            # prettier --write .
-pnpm build             # next build
+npm run typecheck      # tsc --noEmit
+npm run lint           # eslint . --max-warnings 0
+npm run lint:styles    # stylelint **/*.{css,scss,module.scss}
+npm run format         # prettier --write .
+npm run build          # next build
 ```
+
+QA for a pull request starts at [`docs/QA-BRIEF.md`](docs/QA-BRIEF.md).
 
 ## Color system
 

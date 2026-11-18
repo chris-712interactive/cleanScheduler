@@ -131,6 +131,31 @@ function preferredTenantSlug(
   return memberships[0]!.slug;
 }
 
+/**
+ * Tenant id used only to choose among workspaces the user already belongs to.
+ * A membership for the current host wins. Otherwise a server-written
+ * `app_metadata.current_tenant_id` is used when that id is one of the
+ * memberships. A value that is not an active membership is ignored.
+ */
+export function trustedPostLoginTenantId(input: {
+  claimedTenantId: string | null;
+  memberships: PostLoginMembership[];
+  currentOrigin: string;
+}): string | null {
+  const host = classifyPostLoginHost(input.currentOrigin);
+  if (host.kind === 'tenant' && host.tenantSlug) {
+    const onHost = input.memberships.find((membership) => membership.slug === host.tenantSlug);
+    if (onHost) return onHost.tenantId;
+  }
+  if (
+    input.claimedTenantId &&
+    input.memberships.some((membership) => membership.tenantId === input.claimedTenantId)
+  ) {
+    return input.claimedTenantId;
+  }
+  return null;
+}
+
 function homeForRole(input: ResolvePostLoginDestinationInput): PostLoginDestination {
   // Session cookies are stored for the host that set them. Platform staff who
   // finish sign-in on the admin host stay there even when they also belong to
@@ -246,6 +271,16 @@ export function resolvePostLoginDestination(
   return home;
 }
 
+/** Oldest membership first. Equal timestamps fall back to tenant id. */
+export function comparePostLoginMemberships(
+  a: { createdAt: string; tenantId: string },
+  b: { createdAt: string; tenantId: string },
+): number {
+  const byCreated = a.createdAt.localeCompare(b.createdAt);
+  if (byCreated !== 0) return byCreated;
+  return a.tenantId.localeCompare(b.tenantId);
+}
+
 export async function loadPostLoginMemberships(userId: string): Promise<PostLoginMembership[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -253,23 +288,31 @@ export async function loadPostLoginMemberships(userId: string): Promise<PostLogi
     .select(
       `
       tenant_id,
+      created_at,
       tenants:tenants!inner ( slug )
     `,
     )
     .eq('user_id', userId)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .order('tenant_id', { ascending: true });
 
   if (error || !data) return [];
 
-  const memberships: PostLoginMembership[] = [];
+  const memberships: Array<PostLoginMembership & { createdAt: string }> = [];
   for (const row of data) {
     const tenants = row.tenants as { slug: string } | { slug: string }[] | null;
     const slug = Array.isArray(tenants) ? tenants[0]?.slug : tenants?.slug;
     if (slug) {
-      memberships.push({ tenantId: row.tenant_id, slug });
+      memberships.push({
+        tenantId: row.tenant_id,
+        slug,
+        createdAt: row.created_at ?? '',
+      });
     }
   }
-  return memberships;
+  memberships.sort(comparePostLoginMemberships);
+  return memberships.map(({ tenantId, slug }) => ({ tenantId, slug }));
 }
 
 async function loadCustomerPortalOrigin(userId: string): Promise<string | null> {
@@ -311,7 +354,11 @@ export async function resolvePostLoginDestinationForUser(params: {
 
   return resolvePostLoginDestination({
     appRole: claims.appRole,
-    currentTenantId: claims.currentTenantId,
+    currentTenantId: trustedPostLoginTenantId({
+      claimedTenantId: claims.currentTenantId,
+      memberships,
+      currentOrigin: params.currentOrigin,
+    }),
     memberships,
     nextPath: params.nextPath,
     currentOrigin: params.currentOrigin,

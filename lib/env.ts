@@ -27,6 +27,14 @@
 
 import { z } from 'zod';
 
+/**
+ * `KEY=` in an env file is `""`, which Zod does not treat as missing.
+ * Map that blank assignment to unset, then apply `schema` to any other value.
+ */
+function blankEnvAsUnset<T extends z.ZodType>(schema: T) {
+  return z.preprocess((value) => (value === '' ? undefined : value), schema.optional());
+}
+
 // -----------------------------------------------------------------------------
 // Public (NEXT_PUBLIC_*) - safe to ship to the browser
 // -----------------------------------------------------------------------------
@@ -39,7 +47,7 @@ const publicEnvSchema = z.object({
 
   // Optional now, required as those features come online.
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
-  NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  NEXT_PUBLIC_SENTRY_DSN: blankEnvAsUnset(z.string().url()),
   /** Cloudflare Turnstile site key. Public booking checks it when the secret is also set. */
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
 });
@@ -141,7 +149,7 @@ const serverEnvSchema = z.object({
   /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),
   /** Resend — verified sender. Display name is set per message (tenant or Clean Scheduler). */
-  RESEND_FROM_EMAIL: z.string().min(1).optional(),
+  RESEND_FROM_EMAIL: blankEnvAsUnset(z.string().min(1)),
   /**
    * Unused. Portal invites are branded HTML sent with `RESEND_FROM_EMAIL`.
    * Kept so existing environment files still parse.
