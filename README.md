@@ -102,6 +102,8 @@ npm run format         # prettier --write .
 npm run build          # next build
 ```
 
+QA for a pull request starts at [`docs/QA-BRIEF.md`](docs/QA-BRIEF.md).
+
 ## Color system
 
 - Brand palette is captured in `styles/tokens/_colors.scss` (the only place
