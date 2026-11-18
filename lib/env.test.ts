@@ -88,4 +88,27 @@ describe('blank optional env assignments', () => {
 
     expect(() => serverEnv.RESEND_FROM_EMAIL).toThrow(/name@domain or Display Name <name@domain>/);
   });
+
+  it('treats a whitespace-only from address as unset', async () => {
+    delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+    process.env.RESEND_FROM_EMAIL = '   ';
+
+    const { serverEnv } = await loadEnv();
+
+    expect(serverEnv.RESEND_FROM_EMAIL).toBeUndefined();
+  });
+
+  it.each(['a@b.com,evil', 'a@b.com;x', 'a@b.com x'])(
+    'rejects a from address with trailing junk (%s)',
+    async (fromAddress) => {
+      delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+      process.env.RESEND_FROM_EMAIL = fromAddress;
+
+      const { serverEnv } = await loadEnv();
+
+      expect(() => serverEnv.RESEND_FROM_EMAIL).toThrow(
+        /name@domain or Display Name <name@domain>/,
+      );
+    },
+  );
 });
