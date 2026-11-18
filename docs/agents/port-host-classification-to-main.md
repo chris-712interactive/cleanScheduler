@@ -20,4 +20,4 @@ What `main` was still missing is the exact-host half of #236 (`5b8c1c5`) and the
 
 Left on `dev` on purpose: hosted-dev QA, outbound suppression, quote idempotency, redaction, Dependabot, and SEO work that is not this host fix. #237 already brought the hosted-dev pieces of #236. Do not widen the auth cookie domain, do not weaken `platformAdminFixtureBlock`, and do not read `user_metadata` for authorization.
 
-`npm run build` still needs `.env.example` with `NEXT_PUBLIC_SENTRY_DSN` and `RESEND_FROM_EMAIL` unset. See `docs/agents/next-16-4-5-security.md`.
+A verbatim copy of `.env.example` builds. Blank `NEXT_PUBLIC_SENTRY_DSN` and `RESEND_FROM_EMAIL` count as unset (`lib/env.ts`, `docs/agents/next-16-4-5-security.md`).
