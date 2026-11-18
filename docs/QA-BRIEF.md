@@ -10,7 +10,7 @@ Read this before testing a pull request. Name env vars and where they are config
 
 **RLS.** `npm run check:rls-smoke` ([`scripts/check-rls-smoke.mjs`](../scripts/check-rls-smoke.mjs)) needs `psql` and `DATABASE_URL` for a local database. It runs the SQL paths named in that script, under [`supabase/tests/rls/`](../supabase/tests/rls/). If `DATABASE_URL` is unset it exits 0 and prints that it skipped. That exit is not a pass of the SQL. [`hosted_dev_cross_tenant.sql`](../supabase/tests/rls/hosted_dev_cross_tenant.sql) runs only inside the isolated hosted-dev job.
 
-**Build.** `npm run build` succeeds from a verbatim copy of [`.env.example`](../.env.example), which sets `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_APP_DOMAIN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Blank `NEXT_PUBLIC_SENTRY_DSN` and `RESEND_FROM_EMAIL` count as unset ([`docs/agents/next-16-4-5-security.md`](agents/next-16-4-5-security.md)).
+**Build.** `npm run build` succeeds from a verbatim copy of [`.env.example`](../.env.example), which sets `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_APP_DOMAIN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Blank `NEXT_PUBLIC_SENTRY_DSN` and `RESEND_FROM_EMAIL` count as unset. Whitespace-only `RESEND_FROM_EMAIL` is unset too. Any other value must be exactly `name@domain` or `Display Name <name@domain>` ([`docs/agents/next-16-4-5-security.md`](agents/next-16-4-5-security.md)).
 
 ## Hosted dev and local
 
@@ -48,8 +48,4 @@ Post one pull-request review comment:
 
 ## Known follow-ups
 
-Do not file these as new bugs:
-
-- `setTenantMemberActiveAction` clears both tenant claims even when another membership remains ([`app/tenant/employees/employeeMemberActions.ts`](../app/tenant/employees/employeeMemberActions.ts), [`docs/agents/tenant-claims-user-metadata.md`](agents/tenant-claims-user-metadata.md)).
-- A non-empty `RESEND_FROM_EMAIL` is accepted when the value is not an email address. [`lib/env.ts`](../lib/env.ts) only requires length at least 1 ([`docs/agents/next-16-4-5-security.md`](agents/next-16-4-5-security.md)).
-- The host `admin.lvh.me.` (trailing dot) is not classified as the admin portal and falls through to marketing. That fails safe. `isPlatformApexHost` in [`lib/portal/customerPortalHostname.ts`](../lib/portal/customerPortalHostname.ts) does not strip the trailing dot, so [`proxy.ts`](../proxy.ts) does not read the `admin` label.
+None.

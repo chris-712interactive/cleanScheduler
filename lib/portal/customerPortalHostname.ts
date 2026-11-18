@@ -23,10 +23,22 @@ export function customerPortalVerificationRecordName(hostname: string): string {
   return `_cleanscheduler-verify.${hostname}`;
 }
 
+/**
+ * Lowercase hostname with the port removed and a single trailing dot stripped.
+ * `admin.lvh.me.` and `admin.lvh.me.:3000` become `admin.lvh.me`. A second
+ * trailing dot is left in place so the host no longer matches the apex.
+ */
+export function normalizeExactHost(host: string): string {
+  const withoutPort = host.trim().toLowerCase().split(':')[0] ?? '';
+  return withoutPort.endsWith('.') ? withoutPort.slice(0, -1) : withoutPort;
+}
+
+/** True when `host` is the apex or a name under that exact apex. */
 export function isPlatformApexHost(host: string, apex: string): boolean {
-  const apexWithoutPort = apex.split(':')[0]!.toLowerCase();
-  const hostWithoutPort = host.split(':')[0]!.toLowerCase();
-  return hostWithoutPort === apexWithoutPort || hostWithoutPort.endsWith(`.${apexWithoutPort}`);
+  const apexHost = normalizeExactHost(apex);
+  const hostname = normalizeExactHost(host);
+  if (!apexHost || !hostname) return false;
+  return hostname === apexHost || hostname.endsWith(`.${apexHost}`);
 }
 
 export function customerPortalCnameTarget(apexDomain: string): string {
