@@ -16,7 +16,9 @@ export interface AuthContext {
 }
 
 function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.length > 0 ? value : null;
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function parseAppRole(value: unknown): AppRole | null {
@@ -44,21 +46,21 @@ function parseTenantRole(value: unknown): TenantRole | null {
 }
 
 /**
- * Extract normalized app claims from Supabase user metadata.
+ * Extract normalized app claims from the Supabase user.
  *
- * `app_role` and `masquerade_target_tenant_id` come only from server-written
- * `app_metadata`. `user_metadata` is editable by the signed-in user, so it is
- * not a source for platform role or a support session. Tenant id and tenant
- * role hints may still fall back; workspace authority is the membership row.
+ * `app_role`, `masquerade_target_tenant_id`, `current_tenant_id`, and
+ * `tenant_role` are read only from server-written `app_metadata`.
+ * `user_metadata` is editable by the signed-in user (`auth.updateUser`) and
+ * is not a source for any of these claims. Workspace authority is the
+ * `tenant_memberships` row for the current host, not `tenant_role` on the JWT.
  */
 export function extractClaims(user: User): AppClaims {
   const appMeta = user.app_metadata ?? {};
-  const userMeta = user.user_metadata ?? {};
 
   return {
     appRole: parseAppRole(appMeta.app_role),
-    currentTenantId: asString(appMeta.current_tenant_id ?? userMeta.current_tenant_id),
-    tenantRole: parseTenantRole(appMeta.tenant_role ?? userMeta.tenant_role),
+    currentTenantId: asString(appMeta.current_tenant_id),
+    tenantRole: parseTenantRole(appMeta.tenant_role),
     masqueradeTargetTenantId: asString(appMeta.masquerade_target_tenant_id),
   };
 }

@@ -2,7 +2,7 @@
 
 **Policy owner:** Platform engineering  
 **Review cadence:** Quarterly access review; annual policy review  
-**Last updated:** May 24, 2026  
+**Last updated:** November 17, 2026  
 **Public URL:** `/security/access-control-policy`
 
 Canonical source for attestation. Public web page generated from `lib/legal/accessControlPolicy.ts`.
