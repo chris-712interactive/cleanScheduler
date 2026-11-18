@@ -29,5 +29,28 @@ describe('inferPortalFromHost', () => {
       kind: 'marketing',
       tenantSlug: null,
     });
+    expect(inferPortalFromHost('admin.cleanscheduler.com.evil.com', 'cleanscheduler.com')).toEqual({
+      kind: 'marketing',
+      tenantSlug: null,
+    });
+  });
+
+  it('classifies a single trailing dot the same as the host without it', () => {
+    expect(inferPortalFromHost('admin.lvh.me.', 'lvh.me:3000')).toEqual({
+      kind: 'admin',
+      tenantSlug: null,
+    });
+    expect(inferPortalFromHost('my.lvh.me.', 'lvh.me')).toEqual({
+      kind: 'customer',
+      tenantSlug: null,
+    });
+    expect(inferPortalFromHost('acme.lvh.me.', 'lvh.me')).toEqual({
+      kind: 'tenant',
+      tenantSlug: 'acme',
+    });
+    expect(inferPortalFromHost('admin.evil.lvh.me.', 'lvh.me')).toEqual({
+      kind: 'marketing',
+      tenantSlug: null,
+    });
   });
 });

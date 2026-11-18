@@ -72,7 +72,8 @@ cp .env.example .env.local
 ```
 
 That copy is enough for `npm run build`. Blank `NEXT_PUBLIC_SENTRY_DSN` and
-`RESEND_FROM_EMAIL` are treated as unset. Replace the Supabase URL, anon key,
+`RESEND_FROM_EMAIL` are treated as unset. A from address, when set, must be
+`name@domain` or `Display Name <name@domain>`. Replace the Supabase URL, anon key,
 and service role key with values from your local Supabase project before using
 the app. `NEXT_PUBLIC_APP_DOMAIN=lvh.me:3000` lets wildcard subdomains resolve
 to `127.0.0.1`.

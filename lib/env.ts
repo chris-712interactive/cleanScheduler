@@ -35,6 +35,25 @@ function blankEnvAsUnset<T extends z.ZodType>(schema: T) {
   return z.preprocess((value) => (value === '' ? undefined : value), schema.optional());
 }
 
+/** `name@domain` with a dotted domain. Display names are checked separately. */
+const RESEND_EMAIL_ADDRESS = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+
+/**
+ * Resend's from address is either `name@domain` or `Display Name <name@domain>`.
+ * A blank assignment is handled by `blankEnvAsUnset` and is not validated here.
+ */
+export function isResendFromEmail(value: string): boolean {
+  if (RESEND_EMAIL_ADDRESS.test(value)) return true;
+  const named = /^(.+?) <([^\s<>]+)>$/.exec(value);
+  if (!named) return false;
+  const displayName = named[1] ?? '';
+  if (!displayName.trim() || /[\r\n<>]/.test(displayName)) return false;
+  return RESEND_EMAIL_ADDRESS.test(named[2] ?? '');
+}
+
+const RESEND_FROM_EMAIL_MESSAGE =
+  'RESEND_FROM_EMAIL must be an email address (name@domain or Display Name <name@domain>)';
+
 // -----------------------------------------------------------------------------
 // Public (NEXT_PUBLIC_*) - safe to ship to the browser
 // -----------------------------------------------------------------------------
@@ -149,7 +168,13 @@ const serverEnvSchema = z.object({
   /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),
   /** Resend — verified sender. Display name is set per message (tenant or Clean Scheduler). */
-  RESEND_FROM_EMAIL: blankEnvAsUnset(z.string().min(1)),
+  RESEND_FROM_EMAIL: blankEnvAsUnset(
+    z
+      .string()
+      .trim()
+      .min(1, RESEND_FROM_EMAIL_MESSAGE)
+      .refine(isResendFromEmail, RESEND_FROM_EMAIL_MESSAGE),
+  ),
   /**
    * Unused. Portal invites are branded HTML sent with `RESEND_FROM_EMAIL`.
    * Kept so existing environment files still parse.

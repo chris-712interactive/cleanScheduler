@@ -60,4 +60,32 @@ describe('blank optional env assignments', () => {
 
     expect(() => publicEnv.NEXT_PUBLIC_SENTRY_DSN).toThrow(/NEXT_PUBLIC_SENTRY_DSN/);
   });
+
+  it('accepts a display-name from address', async () => {
+    delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+    process.env.RESEND_FROM_EMAIL = 'Clean Scheduler <quotes@example.com>';
+
+    const { serverEnv } = await loadEnv();
+
+    expect(serverEnv.RESEND_FROM_EMAIL).toBe('Clean Scheduler <quotes@example.com>');
+  });
+
+  it('rejects a non-empty from address that is not an email', async () => {
+    delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+    process.env.RESEND_FROM_EMAIL = 'not-an-email';
+
+    const { serverEnv } = await loadEnv();
+
+    expect(() => serverEnv.RESEND_FROM_EMAIL).toThrow(/RESEND_FROM_EMAIL/);
+    expect(() => serverEnv.RESEND_FROM_EMAIL).toThrow(/email address/);
+  });
+
+  it('rejects a display name whose address is not an email', async () => {
+    delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+    process.env.RESEND_FROM_EMAIL = 'Clean Scheduler <not-an-email>';
+
+    const { serverEnv } = await loadEnv();
+
+    expect(() => serverEnv.RESEND_FROM_EMAIL).toThrow(/name@domain or Display Name <name@domain>/);
+  });
 });
