@@ -24,6 +24,7 @@ import {
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
 import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
+import { syncTenantClaimsAfterDeactivation } from '@/lib/auth/tenantClaimsAfterDeactivation';
 import { assertActiveAdministratorRemains } from '@/lib/tenant/workspaceAdminGuards';
 import {
   AVATAR_ALLOWED_INPUT_MIME,
@@ -355,9 +356,9 @@ export async function setTenantMemberActiveAction(
   if (!isActive) {
     await admin.auth.admin.signOut(targetUserId, 'global');
     try {
-      await syncUserAuthClaims(admin, targetUserId, {
-        tenantRole: null,
-        currentTenantId: null,
+      await syncTenantClaimsAfterDeactivation(admin, {
+        userId: targetUserId,
+        deactivatedTenantId: membership.tenantId,
       });
     } catch {
       // Membership is already inactive; claim cleanup is best-effort.

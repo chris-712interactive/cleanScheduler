@@ -35,6 +35,39 @@ function blankEnvAsUnset<T extends z.ZodType>(schema: T) {
   return z.preprocess((value) => (value === '' ? undefined : value), schema.optional());
 }
 
+/**
+ * Blank and whitespace-only assignments are unset. Any other value is trimmed
+ * once, then checked with `schema`.
+ */
+function whitespaceEnvAsUnset<T extends z.ZodType>(schema: T) {
+  return z.preprocess((value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
+  }, schema.optional());
+}
+
+/** One dotted `name@domain`. Commas, semicolons, and spaces are not part of it. */
+const RESEND_EMAIL_ADDRESS =
+  /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
+
+/**
+ * Resend's from address is exactly `name@domain` or `Display Name <name@domain>`.
+ * A blank or whitespace-only assignment is unset before this runs.
+ */
+export function isResendFromEmail(value: string): boolean {
+  if (/[\u0000-\u001F\u007F\u2028\u2029]/.test(value)) return false;
+  if (RESEND_EMAIL_ADDRESS.test(value)) return true;
+  const named = /^(.*) <([^<>\s]+)>$/.exec(value);
+  if (!named) return false;
+  const displayName = named[1] ?? '';
+  if (!displayName || displayName !== displayName.trim() || /[<>]/.test(displayName)) return false;
+  return RESEND_EMAIL_ADDRESS.test(named[2] ?? '');
+}
+
+const RESEND_FROM_EMAIL_MESSAGE =
+  'RESEND_FROM_EMAIL must be an email address (name@domain or Display Name <name@domain>)';
+
 // -----------------------------------------------------------------------------
 // Public (NEXT_PUBLIC_*) - safe to ship to the browser
 // -----------------------------------------------------------------------------
@@ -149,7 +182,9 @@ const serverEnvSchema = z.object({
   /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),
   /** Resend — verified sender. Display name is set per message (tenant or Clean Scheduler). */
-  RESEND_FROM_EMAIL: blankEnvAsUnset(z.string().min(1)),
+  RESEND_FROM_EMAIL: whitespaceEnvAsUnset(
+    z.string().refine(isResendFromEmail, RESEND_FROM_EMAIL_MESSAGE),
+  ),
   /**
    * Unused. Portal invites are branded HTML sent with `RESEND_FROM_EMAIL`.
    * Kept so existing environment files still parse.
