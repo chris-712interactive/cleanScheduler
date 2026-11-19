@@ -56,19 +56,14 @@ describe('live masquerade session', () => {
     ).toBe(true);
   });
 
-  it('sets masquerade claims to null so a metadata merge drops them', () => {
-    const payload = clearedMasqueradeAppMetadata({
-      app_role: 'admin',
-      masquerade_target_tenant_id: HOST,
-      current_tenant_id: HOST,
-    });
+  it('clears only the masquerade keys so a merge cannot restore a stale tenant role', () => {
+    const payload = clearedMasqueradeAppMetadata();
     expect(payload).toEqual({
-      app_role: 'admin',
       masquerade_target_tenant_id: null,
       current_tenant_id: null,
     });
-    expect(Object.prototype.hasOwnProperty.call(payload, 'masquerade_target_tenant_id')).toBe(true);
-    expect(Object.prototype.hasOwnProperty.call(payload, 'current_tenant_id')).toBe(true);
+    expect(payload).not.toHaveProperty('app_role');
+    expect(payload).not.toHaveProperty('tenant_role');
   });
 
   it('selects every open row past the TTL, not only the newest', () => {

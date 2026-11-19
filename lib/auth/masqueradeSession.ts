@@ -42,13 +42,11 @@ export function masqueradeSessionPastTtl(startedAt: string, nowMs: number): bool
 
 /**
  * GoTrue merges `app_metadata`. Keys left out of the update stay stored.
- * Setting these to null is what removes the masquerade claim.
+ * This patch removes only the masquerade target and the current tenant claim.
+ * It does not copy `tenant_role`, `app_role`, or any other key from a read.
  */
-export function clearedMasqueradeAppMetadata(
-  meta: Record<string, unknown>,
-): Record<string, unknown> {
+export function clearedMasqueradeAppMetadata(): Record<string, null> {
   return {
-    ...meta,
     masquerade_target_tenant_id: null,
     current_tenant_id: null,
   };
