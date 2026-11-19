@@ -13,7 +13,7 @@ import {
   type MessagingChannel,
 } from '@/lib/tenant/operationalSettings';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
-import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
+import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
 import type { OperationalSettingsFormState } from './operationalSettingsFormState';
 import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
 import { parseConsultationDurationMinutes } from '@/lib/tenant/consultationDuration';
@@ -45,8 +45,7 @@ export async function updateTenantOperationalSettings(
       .maybeSingle(),
     resolveTenantPlanTier(admin, membership.tenantId),
   ]);
-  const smsAllowed =
-    isFeatureEnabled(tier, 'smsCommunication') && canUseSmsCommunication(billing?.status);
+  const smsAllowed = isFeatureEnabled(tier, 'smsCommunication') && canUseTexting(billing?.status);
   const invoiceEmailAllowed = isFeatureEnabled(tier, 'invoiceReminderEmail');
   const visitEmailAllowed = isFeatureEnabled(tier, 'emailVisitReminders');
   const onMyWayEmailAllowed = isFeatureEnabled(tier, 'emailOnMyWay');

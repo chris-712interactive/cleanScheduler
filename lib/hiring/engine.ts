@@ -28,6 +28,7 @@ import type { Database, Json } from '@/lib/supabase/database.types';
 import type { EntitlementPlanKey } from '@/lib/billing/entitlements';
 import type { TenantRole } from '@/lib/auth/types';
 import { issueEmployeeInvite } from '@/lib/tenant/issueEmployeeInvite';
+import { maybeSendHiringApplicantSms } from '@/lib/hiring/applicantSms';
 import { normalizePhoneToE164 } from '@/lib/sms/normalizePhoneNumber';
 
 type Admin = SupabaseClient<Database>;
@@ -219,7 +220,7 @@ async function offerToApplication(
 ): Promise<{ offered: boolean }> {
   const { data: application } = await admin
     .from('tenant_hiring_applications')
-    .select('id, tenant_id, opening_id, status, email, full_name')
+    .select('id, tenant_id, opening_id, status, email, full_name, phone_e164')
     .eq('id', params.applicationId)
     .maybeSingle();
   if (!application) return { offered: false };
@@ -329,6 +330,17 @@ async function offerToApplication(
     email: application.email,
     brand: context.brand,
     mail,
+  });
+  await maybeSendHiringApplicantSms(admin, {
+    tenantId: application.tenant_id,
+    toPhone: application.phone_e164,
+    payload: {
+      purpose: 'hiring_slot_offered',
+      tenantName: context.name,
+      openingTitle: opening.title,
+      when,
+      link: respondUrl(context.slug, confirmRaw),
+    },
   });
   await recordEvent(admin, {
     tenantId: application.tenant_id,
@@ -906,7 +918,7 @@ export async function sendDueMorningReminders(
     if (!slot.held_by_application_id) continue;
     const { data: application } = await admin
       .from('tenant_hiring_applications')
-      .select('id, status, email, tenant_id, opening_id')
+      .select('id, status, email, phone_e164, tenant_id, opening_id')
       .eq('id', slot.held_by_application_id)
       .maybeSingle();
     if (!application || application.status !== 'confirmed' || !application.email) continue;
@@ -957,6 +969,16 @@ export async function sendDueMorningReminders(
       mail,
     });
     if (!sent) continue;
+    await maybeSendHiringApplicantSms(admin, {
+      tenantId: application.tenant_id,
+      toPhone: application.phone_e164,
+      payload: {
+        purpose: 'hiring_reminder',
+        tenantName: context.name,
+        openingTitle: opening.title,
+        when: formatWhen(slot.starts_at, context.timeZone),
+      },
+    });
     await recordEvent(admin, {
       tenantId: application.tenant_id,
       openingId: application.opening_id,
@@ -1153,7 +1175,7 @@ export async function cancelHeldSlot(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data: application } = await admin
     .from('tenant_hiring_applications')
-    .select('id, tenant_id, opening_id, status, email')
+    .select('id, tenant_id, opening_id, status, email, phone_e164')
     .eq('id', params.applicationId)
     .eq('tenant_id', params.tenantId)
     .maybeSingle();
@@ -1185,6 +1207,15 @@ export async function cancelHeldSlot(
       email: application.email,
       brand: context.brand,
       mail,
+    });
+    await maybeSendHiringApplicantSms(admin, {
+      tenantId: application.tenant_id,
+      toPhone: application.phone_e164,
+      payload: {
+        purpose: 'hiring_slot_canceled',
+        tenantName: context.name,
+        openingTitle: opening.title,
+      },
     });
   }
   await recordEvent(admin, {

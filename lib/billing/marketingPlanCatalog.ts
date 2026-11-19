@@ -50,6 +50,14 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   }
   if (features.smsCommunication) {
     bullets.push('SMS customer communication (visit reminders, review requests)');
+    bullets.push('Applicant texts use the monthly SMS allowance');
+  } else if (features.applicantSms) {
+    bullets.push(
+      `Text job applicants (${limits.includedApplicantSmsCreditsMonthly.toLocaleString()} SMS segments each month)`,
+    );
+  }
+  if (features.smsCommunication || features.applicantSms) {
+    bullets.push('Text packs after the monthly allowance: 1,000 for $15 or 2,500 for $35');
   }
   if (features.whiteLabelCustomerPortal) {
     bullets.push('White-label customer portal (custom domain)');

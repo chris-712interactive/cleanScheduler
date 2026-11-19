@@ -100,6 +100,27 @@ test('business plan keeps the day map and shows a plan upgrade for Pro SMS', asy
     '/billing',
   );
   await shot(page, 'office-sms-plan-upgrade');
+
+  const applicant = page.locator('#applicant-texting');
+  await expect(applicant).toContainText('0/100 applicant SMS segments this month');
+  await expect(applicant).not.toContainText(/add-on/i);
+  await expect(applicant.getByRole('link', { name: 'Buy a text pack' })).toHaveAttribute(
+    'href',
+    '/billing#text-packs',
+  );
+});
+
+test('active Business owner sees applicant texting and hidden text packs', async ({ page }) => {
+  await signIn(page, residentialOrigin, accounts.residential.owner.email);
+  await page.goto(`${residentialOrigin}/billing`);
+  const packs = page.locator('#text-packs');
+  await expect(packs.getByRole('heading', { name: 'Text packs' })).toBeVisible();
+  await expect(packs).toContainText('0/100 applicant SMS segments this month');
+  await expect(packs).toContainText('Text packs are not available yet');
+  await expect(packs.getByRole('button', { name: /Buy 1,000/ })).toHaveCount(0);
+  await expect(packs).not.toContainText('Texting unlocks once your subscription starts');
+  await expect(packs).not.toContainText(/add-on/i);
+  await shot(page, 'office-text-packs-unavailable');
 });
 
 test('customer portal sign-in can request a property', async ({ page }) => {

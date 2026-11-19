@@ -4,7 +4,7 @@ Session notes for removing add-on purchase language and recording routing on Sta
 
 ## Decisions
 
-- Clean Scheduler does not sell add-ons. A blocked feature says which plan includes it: `This feature is included in the <Plan> plan. Upgrade your plan to use it.` A limit says the current plan cap and to upgrade the plan. `smsGateErrorMessage` still rewrites the SMS limit into “SMS segments this month.”
+- Clean Scheduler does not sell feature add-ons. A blocked feature says which plan includes it: `This feature is included in the <Plan> plan. Upgrade your plan to use it.` A limit says the current plan cap and to upgrade the plan. The only prepaid extra is a text pack (1,000 SMS segments for $15, or 2,500 for $35). UI copy says text pack, never add-on.
 - There is no add-on flag, SKU, or grant in `lib/billing/entitlements.ts`. Nothing new is turned on except the routing flags below, and those flags are not consulted by the day map. `/schedule/map` is not gated.
 - Routing flags (prices unchanged at $39 / $129 / $299):
 
@@ -24,7 +24,7 @@ Session notes for removing add-on purchase language and recording routing on Sta
 
 ## Ambiguous, left unmapped
 
-- Hiring SMS for Business. Applicant texts stay on Pro (`smsCommunication`).
+- Hiring SMS for Business is decided: 100 applicant SMS segments a month, then text packs. Pro applicant texts use the Pro allowance. Texting requires billing status `active`.
 - Background-check vendor ordering. Not on a plan until a vendor agreement exists.
 - The old $9/seat and $5/100-customer overage prices. Not products. Limits stay on the plan.
 - Inbound / two-way SMS. Still a non-goal.

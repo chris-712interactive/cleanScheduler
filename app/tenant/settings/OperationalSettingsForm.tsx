@@ -424,11 +424,11 @@ export function OperationalSettingsForm({
           </p>
         ) : smsTrialLocked ? (
           <div className={styles.planNotice} role="status">
-            <p className={styles.planNoticeTitle}>Text alerts unlock with Pro</p>
+            <p className={styles.planNoticeTitle}>Texting unlocks once your subscription starts</p>
             <p className={styles.planNoticeBody}>
-              Subscribe to enable quote and visit reminder texts.{' '}
+              Applicant texts and customer texts stay off until the subscription is active.{' '}
               <Link href="/billing" className={styles.planNoticeLink}>
-                Add a payment method
+                Billing
               </Link>
             </p>
           </div>
