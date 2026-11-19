@@ -162,6 +162,8 @@ export function optimizeHaversine(request: RouteOptimizeRequest): RouteOptimizeR
     estimatedMilesBefore: pathMiles(beforeIds, points, start),
     estimatedMilesAfter: pathMiles(orderedIds, points, start),
     estimateKind: 'straight-line',
+    driveSecondsBefore: null,
+    driveSecondsAfter: null,
   };
 }
 
@@ -195,10 +197,7 @@ export class HaversineRouteOptimizer implements RouteOptimizer {
   }
 }
 
-/**
- * The engine the app uses today. There is no env var and no paid routing call.
- * When a self-hosted Valhalla/VROOM service is approved, return that engine here.
- */
-export function createRouteOptimizer(): RouteOptimizer {
+/** Straight-line engine. The app factory lives in `createRouteOptimizer.ts`. */
+export function createHaversineRouteOptimizer(): RouteOptimizer {
   return new HaversineRouteOptimizer();
 }

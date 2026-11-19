@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { describeStopOrderPanel } from '@/lib/routing/panelCopy';
+import {
+  describeStopOrderPanel,
+  driveMetricText,
+  formatDriveDuration,
+} from '@/lib/routing/panelCopy';
 
 describe('stop order panel copy', () => {
   it('uses an empty state when the cleaner has no visits that day', () => {
@@ -38,5 +42,16 @@ describe('stop order panel copy', () => {
     expect(state.applyEnabled).toBe(false);
     expect(state.showMiles).toBe(true);
     expect(state.emptyMessage).toBeNull();
+  });
+});
+
+describe('drive time labels', () => {
+  it('formats minutes and hours without a straight-line label', () => {
+    expect(formatDriveDuration(0)).toBe('0 min');
+    expect(formatDriveDuration(59)).toBe('1 min');
+    expect(formatDriveDuration(90)).toBe('2 min');
+    expect(formatDriveDuration(3600)).toBe('1 hr');
+    expect(formatDriveDuration(3720)).toBe('1 hr 2 min');
+    expect(driveMetricText(24 * 60, 9.24)).toBe('24 min drive · 9.2 mi');
   });
 });

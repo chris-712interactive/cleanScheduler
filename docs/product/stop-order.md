@@ -15,7 +15,9 @@ The suggestion lists the stops that have a map point. A stop with a fixed arriva
 
 Visits with no usable point are listed under **Not routed**, with the same reason as the day map (for example **Couldn't locate this address** or **Lookup will retry**).
 
-Miles are labeled **straight-line estimate**. They are not driving miles and they do not use live traffic.
+Until a road engine is connected, miles are labeled **straight-line estimate**. They are not driving miles and they do not use live traffic.
+
+When the self-hosted road engine is connected, the same screen shows **drive time and miles** for the suggested order and for the order the day already had. A stop the road network cannot reach is listed under **Not routed** as **No road route**. If the engine is not set up, is turned off for this environment, or does not answer in time, the screen stays on the straight-line estimate. The office does not have to do anything for that fallback.
 
 The path starts at the business address when that address has a map point. Otherwise it starts at the first stop.
 

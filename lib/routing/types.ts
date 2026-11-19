@@ -28,17 +28,21 @@ export type RouteOptimizeResult = {
   /** Routed stop ids. The start point is not included. */
   orderedIds: string[];
   unrouted: UnroutedStop[];
-  /** Straight-line miles for the input order of routed stops. */
+  /** Miles for the input order of routed stops. Straight-line or driving miles. */
   estimatedMilesBefore: number;
-  /** Straight-line miles for `orderedIds`. */
+  /** Miles for `orderedIds`. Straight-line or driving miles. */
   estimatedMilesAfter: number;
-  estimateKind: 'straight-line';
+  estimateKind: 'straight-line' | 'drive';
+  /** Drive seconds for the input order. Null when `estimateKind` is straight-line. */
+  driveSecondsBefore: number | null;
+  /** Drive seconds for `orderedIds`. Null when `estimateKind` is straight-line. */
+  driveSecondsAfter: number | null;
 };
 
 /**
  * One routing engine. The built-in engine is haversine nearest-neighbor plus 2-opt.
- * A later Valhalla/VROOM engine can implement this same contract. Callers should
- * use `createRouteOptimizer()` and not construct an engine themselves.
+ * `createRouteOptimizer()` returns that engine, or the self-hosted Valhalla/VROOM
+ * engine when the server is configured for it. Callers should use that factory.
  */
 export interface RouteOptimizer {
   readonly engine: 'haversine' | (string & {});
@@ -56,12 +60,16 @@ export type CleanerStopOrderView = {
   cleanerUserId: string;
   cleanerName: string;
   dateKey: string;
-  /** Where the straight-line path starts. */
+  /** Where the path starts. */
   startLabel: 'Office' | 'First stop';
+  estimateKind: 'straight-line' | 'drive';
   estimatedMilesBefore: number;
   estimatedMilesAfter: number;
   beforeLabel: string;
   afterLabel: string;
+  /** `24 min drive · 9.2 mi`. Null for a straight-line estimate. */
+  driveBeforeLabel: string | null;
+  driveAfterLabel: string | null;
   ordered: StopOrderLine[];
   unrouted: Array<StopOrderLine & { reason: string }>;
   /** True when the saved route_sequence already matches this suggestion. */

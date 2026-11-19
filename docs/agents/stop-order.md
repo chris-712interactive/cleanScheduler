@@ -4,7 +4,7 @@ One cleaner's suggested stop order. Product copy is in `docs/product/stop-order.
 
 ## Decisions
 
-- `RouteOptimizer` in `lib/routing/types.ts` is the seam. `createRouteOptimizer()` returns `HaversineRouteOptimizer`. A Valhalla/VROOM engine can implement the same interface later. Do not add an env var or a paid routing call for this ticket.
+- `RouteOptimizer` in `lib/routing/types.ts` is the seam. `createRouteOptimizer()` returns the straight-line engine when `ROUTING_ENGINE_URL` and `ROUTING_ENGINE_TOKEN` are unset. When they are set it returns the Valhalla/VROOM engine, which falls back per request. See `docs/agents/routing-engine.md`.
 - The pure engine is haversine miles, nearest-neighbor with a stable tie break, then best-improvement 2-opt. A 2-opt move is kept only when it is shorter and locked stops stay in time order.
 - A stop is locked when the customer or the property has a specific arrival window, the visit is a consultation, or it is checked in or completed. Morning / afternoon / evening is not a lock.
 - Ungeocoded visits use `dayMapMissingReasonLabel` and are excluded from the path. The day-map row loader (`loadDayMapRows` / `describeDayMapVisit`) is the source of the point, so a visit property is not replaced by another property on the customer.

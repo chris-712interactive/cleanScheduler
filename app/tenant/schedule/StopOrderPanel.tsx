@@ -39,8 +39,17 @@ export function StopOrderPanel({
         Suggest stop order
       </h2>
       <p className={styles.lead}>
-        Straight-line estimate for {proposal.cleanerName}. This is not driving miles. Starts at the{' '}
-        {proposal.startLabel === 'Office' ? 'office' : 'first stop'}.
+        {proposal.estimateKind === 'drive' ? (
+          <>
+            Drive time for {proposal.cleanerName}. Starts at the{' '}
+            {proposal.startLabel === 'Office' ? 'office' : 'first stop'}.
+          </>
+        ) : (
+          <>
+            Straight-line estimate for {proposal.cleanerName}. This is not driving miles. Starts at
+            the {proposal.startLabel === 'Office' ? 'office' : 'first stop'}.
+          </>
+        )}
       </p>
       {proposal.saved ? (
         <>
@@ -73,9 +82,15 @@ export function StopOrderPanel({
           {showSuggestion ? (
             <>
               <p className={styles.meta}>
-                Before: {proposal.beforeLabel} mi straight-line estimate
+                {proposal.estimateKind === 'drive' && proposal.driveBeforeLabel
+                  ? `Before: ${proposal.driveBeforeLabel}`
+                  : `Before: ${proposal.beforeLabel} mi straight-line estimate`}
               </p>
-              <p className={styles.meta}>After: {proposal.afterLabel} mi straight-line estimate</p>
+              <p className={styles.meta}>
+                {proposal.estimateKind === 'drive' && proposal.driveAfterLabel
+                  ? `After: ${proposal.driveAfterLabel}`
+                  : `After: ${proposal.afterLabel} mi straight-line estimate`}
+              </p>
               <ol className={styles.list} aria-label="Suggested stop order">
                 {proposal.ordered.map((stop, index) => (
                   <li key={stop.id}>
