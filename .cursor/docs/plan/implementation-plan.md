@@ -18,7 +18,7 @@ todos:
     content: "PROD Vercel + DNS + Stripe live + Resend + sent.dm shipped for v1.0.0. **Still TODO:** formal multi-env doc/runbook (DEV `*.dev.cleanscheduler.com` parity), Plaid prod keys when bank reconciliation goes live for tenants, Sentry DSN in prod."
     status: in_progress
   - id: cicdPipeline
-    content: "Shipped: `.github/workflows/ci.yml` — typecheck, **`npm test`** (Vitest), Prettier, migration prefix + **drift** check, ESLint, Stylelint, dependency audit/review. Still missing: Playwright in CI, pg_tap RLS in CI (smoke SQL exists — see `npm run check:rls-smoke`), ephemeral Supabase, Vercel branch deploy rules."
+    content: "Shipped: `.github/workflows/ci.yml` quality job (typecheck, Vitest, Prettier, migration checks, ESLint, Stylelint, dependency audit/review) and the `local-stack` job (disposable Supabase from this PR's migrations, QA seed, RLS SQL, authenticated Playwright, stubbed geocode backfill). Still missing: pg_tap, Vercel branch deploy rules. Public smoke Playwright stays out of the quality job."
     status: in_progress
   - id: envGuardrails
     content: "Shipped: `lib/env.ts` Zod-validated env; prod requires live Stripe + `https://` Supabase URL + `CRON_SECRET`; non-prod rejects `sk_live_`; optional `SUPABASE_DISALLOW_PROJECT_REF`. **1.1.0:** `RESEND_WEBHOOK_SECRET` for campaign webhook verification."
@@ -72,7 +72,7 @@ todos:
     content: "Shipped v1 + v1.1 (PR #115): tenant/customer `/messages` two-way threads, staff email on customer message (`0072`). **0104:** customer email on staff reply plus live in-portal alerts (notice, optional browser notification, page refresh). **0073:** platform support tickets (founder `/support`, tenant `/settings/support`) — separate from customer threads. Public help at `/help/customers/message-your-provider`. **Still missing:** SMS two-way inbox; generic `conversations` product; founder email on new platform ticket; push when the portal tab is closed."
     status: in_progress
   - id: rlsTestSuite
-    content: "Partial: `supabase/tests/rls/tenant_isolation.sql` smoke checks + `npm run check:rls-smoke`. **1.1.0** expands policy coverage. Still missing: pg_tap fixtures, CI integration with ephemeral DB, masquerade scoping tests."
+    content: "Shipped: `supabase/tests/rls/` smoke SQL plus `npm run check:rls-smoke`. The `local-stack` CI job sets `RLS_SMOKE_REQUIRED=1` against disposable local Postgres, so a missing database fails that job. Unset `DATABASE_URL` still skips outside that job. Still missing: pg_tap fixtures. Support-session SQL covers masquerade reads."
     status: in_progress
   - id: marketingTrialSignup
     content: Build marketing site, inquiry form, and self-serve 7-day trial signup wired to Stripe Checkout (trial_period_days=7) and tenant + Super Admin creation.

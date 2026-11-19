@@ -1,0 +1,4 @@
+{
+  "install": "npm ci && bash scripts/local-stack/install-cli.sh",
+  "start": "bash scripts/local-stack/cloud-start.sh"
+}

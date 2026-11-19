@@ -50,3 +50,5 @@ Optional flags: `--min-interval-ms 1100`, `--retry-failed`.
 Requires `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the environment. The command prints counts only. It does not print addresses or the key.
 
 `npm run geocode:backfill -- --tenant <workspace-uuid>` is the same script. Pass `--env-file=.env.local` yourself when the variables are not already exported, because the npm script does not load an env file.
+
+Local QA does not call Census or Geocodio. `npm run test:local-stack` points the lookup at a loopback stub (`CENSUS_GEOCODE_URL` on `127.0.0.1` only). An address containing "outage" stays pending ("Lookup will retry"). An address containing "nomatch" is stored as a miss ("Couldn't locate this address"). Any other override host is ignored and Census stays the provider.

@@ -4,11 +4,17 @@ Read this before testing a pull request. Name env vars and where they are config
 
 ## Suites
 
-**Vitest.** `npm run test` ([`vitest.config.ts`](../vitest.config.ts), `**/*.test.ts`). Node is [`.nvmrc`](../.nvmrc). No secrets. [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs this with typecheck, Prettier, migration checks, ESLint, and Stylelint. CI does not run the production build or Playwright.
+**Vitest.** `npm run test` ([`vitest.config.ts`](../vitest.config.ts), `**/*.test.ts`). Node is [`.nvmrc`](../.nvmrc). No secrets. The `quality` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs this with typecheck, Prettier, migration checks, ESLint, and Stylelint. That job does not run the production build or Playwright.
 
-**Playwright smoke.** `npm run test:e2e` ([`playwright.smoke.config.ts`](../playwright.smoke.config.ts), [`tests/smoke`](../tests/smoke)). `PLAYWRIGHT_BASE_URL` defaults to `http://127.0.0.1:3000`. When `CI` is set, that config starts `npm run start`, so build first. Locally, start the app yourself ([`README.md`](../README.md)).
+**Playwright smoke.** `npm run test:e2e` ([`playwright.smoke.config.ts`](../playwright.smoke.config.ts), [`tests/smoke`](../tests/smoke)). `PLAYWRIGHT_BASE_URL` defaults to `http://127.0.0.1:3000`. When `CI` is set, that config starts `npm run start`, so build first. Locally, start the app yourself ([`README.md`](../README.md)). This suite does not sign in.
 
-**RLS.** `npm run check:rls-smoke` ([`scripts/check-rls-smoke.mjs`](../scripts/check-rls-smoke.mjs)) needs `psql` and `DATABASE_URL` for a local database. It runs the SQL paths named in that script, under [`supabase/tests/rls/`](../supabase/tests/rls/). If `DATABASE_URL` is unset it exits 0 and prints that it skipped. That exit is not a pass of the SQL. [`hosted_dev_cross_tenant.sql`](../supabase/tests/rls/hosted_dev_cross_tenant.sql) runs only inside the isolated hosted-dev job.
+**Local stack (authenticated browser, RLS, geocode backfill).** `npm run test:local-stack`. Details: [`docs/ops/local-stack.md`](ops/local-stack.md). The `local-stack` CI job runs this on every pull request against a disposable Supabase started from this branch's `supabase/migrations`. It uses the CLI's local demo keys. It does not use GitHub secrets, the shared dev project, or production.
+
+When that command finishes with `mode=supabase-docker` and `rls=passed`, do not mark RLS, office sign-in, customer-portal sign-in, or `npm run geocode:backfill` as blocked. The job log and `.local-stack/summary.txt` include the RLS file count (`rls_sql_files=3` and `check:rls-smoke — passed 3 SQL files`) and the Playwright counts (`authenticated playwright passed=`).
+
+`npm run check:rls-smoke` ([`scripts/check-rls-smoke.mjs`](../scripts/check-rls-smoke.mjs)) runs the SQL under [`supabase/tests/rls/`](../supabase/tests/rls/) except `hosted_dev_cross_tenant.sql`. If `DATABASE_URL` is unset it exits 0 and prints that it skipped. That exit is not a pass. The local-stack command sets `RLS_SMOKE_REQUIRED=1`, and a missing or non-local database fails the command. [`hosted_dev_cross_tenant.sql`](../supabase/tests/rls/hosted_dev_cross_tenant.sql) still runs only inside the isolated hosted-dev job.
+
+**No Docker.** QA VMs often have no Docker. `npm run test:local-stack` then exits 1 and does not pretend the browser suite ran. Run `npm run test:local-stack -- --postgres-fallback`. That applies the migrations to a loopback Postgres (install `postgresql` and `postgresql-contrib` first) and runs the RLS SQL for real. Report RLS as passed when it prints `check:rls-smoke — passed 3 SQL files`. Authenticated Playwright and the geocode backfill stay blocked in that mode because they need GoTrue and PostgREST. Say that Docker was missing. Do not mark RLS blocked when the fallback passed.
 
 **Build.** `npm run build` succeeds from a verbatim copy of [`.env.example`](../.env.example), which sets `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_APP_DOMAIN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Blank `NEXT_PUBLIC_SENTRY_DSN` and `RESEND_FROM_EMAIL` count as unset. Whitespace-only `RESEND_FROM_EMAIL` is unset too. Any other value must be exactly `name@domain` or `Display Name <name@domain>` ([`docs/agents/next-16-4-5-security.md`](agents/next-16-4-5-security.md)).
 
@@ -48,4 +54,4 @@ Post one pull-request review comment:
 
 ## Known follow-ups
 
-None.
+The local stack does not cover live Census or Geocodio, real email, SMS, card charges, bank linking, passkey or MFA enrollment, or the hosted-dev project. Do not dispatch the hosted-dev workflow and do not set `HOSTED_DEV_ISOLATED` to fill those gaps. Auth cookies stay on the host that set them, so the cross-tenant browser check is the signed-in workspace: the other tenant's customer is absent from the directory and a direct customer URL on that host is a 404.

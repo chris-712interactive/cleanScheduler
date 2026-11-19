@@ -12,6 +12,8 @@ Session notes for the service-location geocode foundation. Product behavior is i
 - `savePropertyGeocode` returns the column patch only when the update reports a row. A write error or zero rows leaves the card on the values already stored.
 - Backfill lives in `lib/geo/backfillPropertyGeocodes.ts` and `scripts/backfill-property-geocodes.mts`. It requires `--tenant`. Default interval is 1100 ms and is clamped to 200–10000.
 - The office badge uses "Couldn't locate this address" for `no_match` only. An outage uses "Lookup will retry".
+- `CENSUS_GEOCODE_URL` is honored only for `http` on `127.0.0.1`, `localhost`, or `::1`. Anything else, including a hosted URL, keeps the Census host. The local-stack job sets it to the stub in `scripts/local-stack/geocode-stub.mjs`. Do not set `GEOCODIO_API_KEY` in that job.
+- The disposable local-stack database applies every file in `supabase/migrations`, including `0129`. That is not a hosted project. Do not apply `0129` to dev or prod from CI or an agent.
 
 ## Tests
 
