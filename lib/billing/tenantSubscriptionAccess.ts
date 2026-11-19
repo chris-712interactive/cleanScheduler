@@ -95,16 +95,20 @@ export function canUsePaidSubscriptionFeatures(
 /**
  * Customer texts, applicant texts, and text pack checkout.
  *
- * Paid means `tenant_billing_accounts.status === 'active'` only.
- * Stripe writes that column through `mapStripeSubscriptionStatus`:
- * `active` stays `active`; `paused` is stored as `active`;
- * `past_due` and `unpaid` are stored as `past_due`;
- * `canceled` and `incomplete_expired` are stored as `canceled`;
- * `trialing`, `incomplete`, and a missing row are stored or treated as `trialing`.
- * Anything other than the stored value `active` cannot text or buy a text pack.
+ * The mapped column `tenant_billing_accounts.status` must be `active`.
+ * When `stripe_subscription_status` is present, `paused` is blocked even
+ * though the shared mapper stores Stripe `paused` as `active`.
+ * A null raw status (older rows, or the column not applied yet) keeps the
+ * mapped-status rule.
  */
-export function canUseTexting(billingStatus: TenantBillingStatus | null | undefined): boolean {
-  return billingStatus === 'active';
+export function canUseTexting(
+  billingStatus: TenantBillingStatus | null | undefined,
+  rawStripeStatus?: string | null,
+): boolean {
+  if (billingStatus !== 'active') return false;
+  const raw = rawStripeStatus?.trim().toLowerCase() ?? '';
+  if (!raw) return true;
+  return raw !== 'paused';
 }
 
 /**
@@ -120,8 +124,9 @@ export function canAccessStripeConnect(
 /** Texting requires an active paid subscription. See {@link canUseTexting}. */
 export function canUseSmsCommunication(
   billingStatus: TenantBillingStatus | null | undefined,
+  rawStripeStatus?: string | null,
 ): boolean {
-  return canUseTexting(billingStatus);
+  return canUseTexting(billingStatus, rawStripeStatus);
 }
 
 /** Browser URL path on a tenant subdomain (e.g. `/billing`, `/quotes`). */

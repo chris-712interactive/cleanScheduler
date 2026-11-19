@@ -13,6 +13,7 @@ import {
   type MessagingChannel,
 } from '@/lib/tenant/operationalSettings';
 import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import { loadTextingBilling } from '@/lib/billing/loadTextingBilling';
 import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
 import type { OperationalSettingsFormState } from './operationalSettingsFormState';
 import type { OperationalSettingsFormSnapshot } from '@/lib/tenant/operationalSettingsFormSnapshot';
@@ -37,15 +38,13 @@ export async function updateTenantOperationalSettings(
 
   const membership = await requireTenantPortalAccess(slug, '/settings');
   const admin = createAdminClient();
-  const [{ data: billing }, tier] = await Promise.all([
-    admin
-      .from('tenant_billing_accounts')
-      .select('status')
-      .eq('tenant_id', membership.tenantId)
-      .maybeSingle(),
+  const [billing, tier] = await Promise.all([
+    loadTextingBilling(admin, membership.tenantId),
     resolveTenantPlanTier(admin, membership.tenantId),
   ]);
-  const smsAllowed = isFeatureEnabled(tier, 'smsCommunication') && canUseTexting(billing?.status);
+  const smsAllowed =
+    isFeatureEnabled(tier, 'smsCommunication') &&
+    canUseTexting(billing.status, billing.rawStripeStatus);
   const invoiceEmailAllowed = isFeatureEnabled(tier, 'invoiceReminderEmail');
   const visitEmailAllowed = isFeatureEnabled(tier, 'emailVisitReminders');
   const onMyWayEmailAllowed = isFeatureEnabled(tier, 'emailOnMyWay');

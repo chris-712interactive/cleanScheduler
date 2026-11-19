@@ -19,6 +19,7 @@ import {
   TEXTING_UNLOCKS_MESSAGE,
   type SmsMeter,
 } from '@/lib/billing/textPacks';
+import { loadTextingBilling } from '@/lib/billing/loadTextingBilling';
 import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import type { Database } from '@/lib/supabase/database.types';
@@ -104,17 +105,13 @@ export async function assertCanSendSmsSegments(params: {
     throw new EntitlementGateError('SMS body is empty.', 'limit_exceeded');
   }
 
-  const [{ data: billing }, plan, subscriptionTier] = await Promise.all([
-    params.admin
-      .from('tenant_billing_accounts')
-      .select('status')
-      .eq('tenant_id', params.tenantId)
-      .maybeSingle(),
+  const [billing, plan, subscriptionTier] = await Promise.all([
+    loadTextingBilling(params.admin, params.tenantId),
     resolveTenantEntitlementPlan(params.admin, params.tenantId),
     resolveTenantSubscriptionTier(params.admin, params.tenantId),
   ]);
 
-  if (!canUseTexting(billing?.status)) {
+  if (!canUseTexting(billing.status, billing.rawStripeStatus)) {
     throw new EntitlementGateError(TEXTING_UNLOCKS_MESSAGE, 'feature_blocked');
   }
 
@@ -144,7 +141,7 @@ export async function assertCanSendSmsSegments(params: {
       segmentCount: params.segmentCount,
       meter,
       plan,
-      billingStatus: billing?.status,
+      billingStatus: billing.status,
       tier: subscriptionTier,
     });
   }
@@ -212,12 +209,12 @@ export async function resolveTenantSmsCommunicationAllowed(
   admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<boolean> {
-  const [{ data: billing }, plan] = await Promise.all([
-    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+  const [billing, plan] = await Promise.all([
+    loadTextingBilling(admin, tenantId),
     resolveTenantEntitlementPlan(admin, tenantId),
   ]);
 
-  if (!canUseTexting(billing?.status)) return false;
+  if (!canUseTexting(billing.status, billing.rawStripeStatus)) return false;
   return smsAllowanceForMeter(plan, 'customer').allowed;
 }
 
@@ -225,12 +222,12 @@ export async function resolveTenantApplicantSmsAllowed(
   admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<boolean> {
-  const [{ data: billing }, plan] = await Promise.all([
-    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+  const [billing, plan] = await Promise.all([
+    loadTextingBilling(admin, tenantId),
     resolveTenantEntitlementPlan(admin, tenantId),
   ]);
 
-  if (!canUseTexting(billing?.status)) return false;
+  if (!canUseTexting(billing.status, billing.rawStripeStatus)) return false;
   return smsAllowanceForMeter(plan, 'applicant').allowed;
 }
 
