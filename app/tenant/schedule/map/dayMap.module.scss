@@ -1,0 +1,184 @@
+@use 'mixins/breakpoints' as mq;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.pickerField {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.pickerLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.pickerInput {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.pickerLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-brand-primary);
+  font-weight: 600;
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-4);
+
+  @include mq.up(lg) {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+  }
+}
+
+.mapColumn {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.mapFrame {
+  position: relative;
+  height: 70vh;
+  min-height: 28rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.mapLoading,
+.mapEmpty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.mapEmpty {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  left: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.notice {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.side {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.sideTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.sideEmpty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.legend,
+.visitList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem,
+.visitItem {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.legendItem {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.legendCount {
+  color: var(--color-text-muted);
+}
+
+.visitItem {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+
+  p {
+    margin: 0;
+  }
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+  }
+}
+
+.reason {
+  font-weight: 600;
+}
+
+.popup {
+  display: grid;
+  gap: var(--space-1);
+
+  p {
+    margin: 0;
+  }
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+  }
+}
+
+.popupCustomer {
+  font-weight: 700;
+}

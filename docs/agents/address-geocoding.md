@@ -21,7 +21,7 @@ Session notes for the service-location geocode foundation. Product behavior is i
 
 ## Not done here
 
-- Map view, stop ordering, multi-cleaner dispatch, and entitlements (T2–T6).
+- Stop ordering, multi-cleaner dispatch, and entitlements (T3–T6). The office day map is Schedule → Day map (`docs/product/day-map.md`).
 - Manual pin placement.
 - Source, accuracy, and timestamp on employee homes and the business address.
 - Hosted-dev browser pass. CI does not run Playwright or a production build.
