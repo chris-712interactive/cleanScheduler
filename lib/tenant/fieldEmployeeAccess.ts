@@ -11,6 +11,7 @@ const FIELD_EMPLOYEE_SCHEDULE_ADMIN_PREFIXES = [
   '/schedule/reschedule-requests',
   '/schedule/time-off-requests',
   '/schedule/hours-requests',
+  '/schedule/map',
 ];
 
 export function isFieldEmployeeRole(role: TenantRole): boolean {

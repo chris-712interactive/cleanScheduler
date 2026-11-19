@@ -225,6 +225,9 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
               <Button as="a" href={`/schedule/fill?date=${dateKey}`} variant="secondary">
                 Fill schedule
               </Button>
+              <Button as="a" href={`/schedule/map?date=${dateKey}`} variant="secondary">
+                Day map
+              </Button>
               <Button as="a" href="/schedule/new?purpose=consultation" variant="secondary">
                 Schedule consultation
               </Button>

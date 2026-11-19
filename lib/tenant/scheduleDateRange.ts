@@ -1,11 +1,28 @@
 export type ScheduleView = 'day' | 'week' | 'month' | 'today';
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * True when `value` is a real YYYY-MM-DD. `Date.UTC` rolls impossible days
+ * (2026-02-31, 2026-13-01) onto another date, so the formatted result must
+ * match the input. Years 0–99 fail this check because `Date.UTC` maps them
+ * to 1900–1999.
+ */
+export function isCalendarDateKey(value: string): boolean {
+  const match = DATE_RE.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  if (Number.isNaN(utc.getTime())) return false;
+  return utc.toISOString().slice(0, 10) === value;
+}
 
 export function normalizeDateKey(raw: string | string[] | undefined): string {
   const t = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? '';
-  if (DATE_RE.test(t)) return t;
+  if (isCalendarDateKey(t)) return t;
   return new Date().toISOString().slice(0, 10);
 }
 
