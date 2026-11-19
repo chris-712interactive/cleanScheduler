@@ -1,7 +1,7 @@
 # Implementation status summary
 
 **Last updated:** 2026-11-19  
-**Branch:** `dev`  
+**Branch:** `dev`
 
 Portal hosts match one label under the apex. `admin.evil.<apex>` and `admin.<apex>.evil.com` are not the admin portal, and post-login `next` values that leave the destination host are dropped. See `docs/security/iam-architecture.md`.
 
