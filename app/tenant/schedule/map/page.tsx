@@ -121,6 +121,7 @@ export default async function DayMapPage({ searchParams }: PageProps) {
         <label className={styles.pickerField}>
           <span className={styles.pickerLabel}>Day</span>
           <input
+            key={dateKey}
             className={styles.pickerInput}
             type="date"
             name="date"
