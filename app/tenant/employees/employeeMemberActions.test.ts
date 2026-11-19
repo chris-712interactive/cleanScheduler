@@ -4,7 +4,7 @@ const harness = vi.hoisted(() => ({
   updateUserById: vi.fn<
     (
       userId: string,
-      body: { app_metadata: Record<string, unknown> },
+      body: { app_metadata?: Record<string, unknown> },
     ) => Promise<{ data: { user: null }; error: null }>
   >(async () => ({ data: { user: null }, error: null })),
   signOut: vi.fn(async () => ({ error: null })),
@@ -128,6 +128,15 @@ describe('setTenantMemberActiveAction claim clearing', () => {
       data: { user: harness.authUser },
       error: null,
     }));
+    harness.updateUserById.mockImplementation(async (_userId, body) => {
+      const next = { ...(harness.authUser.app_metadata ?? {}) };
+      for (const [key, value] of Object.entries(body.app_metadata ?? {})) {
+        if (value == null) delete next[key];
+        else next[key] = value;
+      }
+      harness.authUser = { ...harness.authUser, app_metadata: next };
+      return { data: { user: null }, error: null };
+    });
     harness.activeMemberships = [];
   });
 
@@ -146,10 +155,15 @@ describe('setTenantMemberActiveAction claim clearing', () => {
     expect(userId).toBe('user-2');
     expect(Object.keys(body)).toEqual(['app_metadata']);
     expect(body.app_metadata).toEqual({
+      current_tenant_id: 'tenant-older',
+      tenant_role: 'viewer',
+    });
+    expect(harness.authUser.app_metadata).toMatchObject({
       app_role: 'employee',
       current_tenant_id: 'tenant-older',
       tenant_role: 'viewer',
     });
+    expect(harness.authUser.user_metadata).toMatchObject({ app_role: 'super_admin' });
   });
 
   it('leaves claims alone when the deactivated membership is not current', async () => {
@@ -181,9 +195,15 @@ describe('setTenantMemberActiveAction claim clearing', () => {
     expect(result).toEqual({ success: 'Member deactivated.' });
     const body = harness.updateUserById.mock.calls[0]?.[1];
     expect(Object.keys(body ?? {})).toEqual(['app_metadata']);
-    expect(body?.app_metadata).toEqual({ app_role: 'employee' });
-    expect(body?.app_metadata).not.toHaveProperty('current_tenant_id');
-    expect(body?.app_metadata).not.toHaveProperty('tenant_role');
+    expect(body?.app_metadata).toEqual({
+      current_tenant_id: null,
+      tenant_role: null,
+    });
     expect(body).not.toHaveProperty('user_metadata');
+    expect(harness.authUser.app_metadata).toEqual({ app_role: 'employee' });
+    expect(harness.authUser.user_metadata).toMatchObject({
+      current_tenant_id: 'tenant-forged',
+      tenant_role: 'owner',
+    });
   });
 });

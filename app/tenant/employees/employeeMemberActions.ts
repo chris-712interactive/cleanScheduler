@@ -23,7 +23,7 @@ import {
   permissionDeniedMessage,
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
-import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
+import { syncTenantClaimsFromMemberships } from '@/lib/auth/syncTenantClaimsFromMemberships';
 import { syncTenantClaimsAfterDeactivation } from '@/lib/auth/tenantClaimsAfterDeactivation';
 import { assertActiveAdministratorRemains } from '@/lib/tenant/workspaceAdminGuards';
 import {
@@ -223,12 +223,12 @@ export async function updateTenantMemberRoleAction(
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
 
-  let nextAppRole: Awaited<ReturnType<typeof syncUserAuthClaims>>;
+  let nextAppRole: Awaited<ReturnType<typeof syncTenantClaimsFromMemberships>>;
   try {
-    nextAppRole = await syncUserAuthClaims(admin, targetUserId, {
+    nextAppRole = await syncTenantClaimsFromMemberships(admin, {
+      userId: targetUserId,
+      preferredTenantId: membership.tenantId,
       preservePlatformRoleFromAuth: true,
-      tenantRole: nextRole,
-      currentTenantId: membership.tenantId,
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not update auth claims.' };
@@ -362,6 +362,17 @@ export async function setTenantMemberActiveAction(
       });
     } catch {
       // Membership is already inactive; claim cleanup is best-effort.
+    }
+  } else {
+    try {
+      await syncTenantClaimsFromMemberships(admin, {
+        userId: targetUserId,
+        preferredTenantId: membership.tenantId,
+        preferTenantWhenCurrentInvalid: true,
+        preservePlatformRoleFromAuth: true,
+      });
+    } catch {
+      // Membership is already active; claim sync is best-effort.
     }
   }
 
