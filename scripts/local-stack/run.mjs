@@ -240,7 +240,7 @@ async function runDockerStack() {
     const lines = [
       'mode=supabase-docker',
       'rls=passed',
-      'rls_sql_files=4',
+      'rls_sql_files=5',
       `playwright_passed=${playwrightPassed}`,
       `playwright_total=${playwrightExpected}`,
       'backfill=passed',

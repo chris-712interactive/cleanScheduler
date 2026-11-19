@@ -12,6 +12,8 @@ import {
   resolveDayMapStyleUrl,
 } from '@/lib/schedule/dayMap';
 import { loadDayMap } from '@/lib/schedule/loadDayMap';
+import { canApplyStopOrder } from '@/lib/routing/locks';
+import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
 import { createTenantPortalDbClient } from '@/lib/supabase/server';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import {
@@ -20,6 +22,7 @@ import {
 } from '@/lib/tenant/resolveMembershipPermissions';
 import { normalizeDateKey, shiftDateKey } from '@/lib/tenant/scheduleDateRange';
 import { DayMap } from './DayMap';
+import { StopOrderPanel } from '../StopOrderPanel';
 import styles from './dayMap.module.scss';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +59,43 @@ export default async function DayMapPage({ searchParams }: PageProps) {
     timeZone,
   });
   const styleUrl = resolveDayMapStyleUrl(process.env.NEXT_PUBLIC_MAP_STYLE_URL);
+  const officeCanRoute = canApplyStopOrder(membership.role);
+  const cleanerRaw = typeof sp.cleaner === 'string' ? sp.cleaner.trim() : '';
+  const membersRes = officeCanRoute
+    ? await supabase
+        .from('tenant_memberships')
+        .select('user_id, role')
+        .eq('tenant_id', membership.tenantId)
+        .eq('is_active', true)
+        .order('role', { ascending: true })
+    : { data: [] };
+  const memberIds = [...new Set((membersRes.data ?? []).map((member) => member.user_id))];
+  const { data: memberProfiles } =
+    memberIds.length > 0
+      ? await supabase
+          .from('user_profiles')
+          .select('user_id, display_name')
+          .in('user_id', memberIds)
+      : { data: [] as { user_id: string; display_name: string | null }[] };
+  const nameByUserId = new Map(
+    (memberProfiles ?? []).map((profile) => [profile.user_id, profile.display_name?.trim() || '']),
+  );
+  const cleanerOptions = (membersRes.data ?? []).map((member) => ({
+    id: member.user_id,
+    label: `${nameByUserId.get(member.user_id) || 'Member'} (${member.role})`,
+  }));
+  const selectedCleaner = cleanerOptions.find((option) => option.id === cleanerRaw) ?? null;
+  const stopOrder =
+    officeCanRoute && selectedCleaner
+      ? await loadCleanerStopOrder({
+          supabase,
+          tenantId: membership.tenantId,
+          dateKey,
+          timeZone,
+          cleanerUserId: selectedCleaner.id,
+          cleanerName: selectedCleaner.label.replace(/\s+\([^)]*\)$/, ''),
+        })
+      : null;
   const previousDay = shiftDateKey(dateKey, -1);
   const nextDay = shiftDateKey(dateKey, 1);
   const scheduleHref = `/schedule?date=${dateKey}&view=day`;
@@ -81,6 +121,7 @@ export default async function DayMapPage({ searchParams }: PageProps) {
         <label className={styles.pickerField}>
           <span className={styles.pickerLabel}>Day</span>
           <input
+            key={dateKey}
             className={styles.pickerInput}
             type="date"
             name="date"
@@ -95,6 +136,34 @@ export default async function DayMapPage({ searchParams }: PageProps) {
           Next day
         </Link>
       </form>
+
+      {officeCanRoute ? (
+        <>
+          <form className={styles.picker} action="/schedule/map" method="get">
+            <input type="hidden" name="date" value={dateKey} />
+            <label className={styles.pickerField}>
+              <span className={styles.pickerLabel}>Cleaner</span>
+              <select
+                className={styles.pickerInput}
+                name="cleaner"
+                aria-label="Cleaner for stop order"
+                defaultValue={selectedCleaner?.id ?? ''}
+              >
+                <option value="">Choose a cleaner</option>
+                {cleanerOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="submit" variant="secondary">
+              Show this cleaner
+            </Button>
+          </form>
+          <StopOrderPanel tenantSlug={membership.tenantSlug} proposal={stopOrder} />
+        </>
+      ) : null}
 
       <div className={styles.layout}>
         <div className={styles.mapColumn}>

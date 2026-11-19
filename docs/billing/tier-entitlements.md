@@ -194,7 +194,7 @@ Storage: `visit_proof_photos` bucket + `tenant_visit_proof_photos` table (migrat
 
 On check-in (and when office completes a visit that still needs check-in), workspaces request a **one-shot** browser location and store lat/lng + accuracy on the visit. Office staff see the proof on visit detail (Maps link when captured). Permission denied / unavailable still allows check-in — location is optional proof, not a hard gate.
 
-This is **not** live fleet tracking, continuous GPS, geofencing, or route optimization.
+This check-in proof is **not** live fleet tracking, continuous GPS, or geofencing. Stop ordering and drive-time reports are separate plan features (see Routing).
 
 Enforcement / UI:
 
@@ -247,6 +247,10 @@ Public booking page at `{slug}.{apex}/book` (alias `/request`). Modes: off, quot
 
 Migration: `0084_public_booking_request.sql`. Product notes: `docs/product/public-booking-request.md`.
 
+## Stop order (all plans)
+
+Suggested stop order for one cleaner's day is `singleCleanerStopOrdering`. It is included on Starter, Business, Pro, and the trial, so the schedule and the day map do not hide it behind an upgrade. The office applies it from the schedule day view or the day map. Field employees cannot apply it. The distance is a straight-line estimate. There is no road-routing provider and no new environment variable. Apply migration `0130_visit_route_sequence.sql` by hand. See `docs/product/stop-order.md`.
+
 ## Tenant marketing website (Business CMS / Pro unified domain)
 
 | Tier     | `tenantMarketingSite` | `tenantMarketingSiteCustomDomain` | `maxMarketingSitePages` | `maxMarketingSiteServiceAreaPages` |
@@ -265,6 +269,23 @@ Migration: `0084_public_booking_request.sql`. Product notes: `docs/product/publi
 Settings: **Website** (`/settings/website`) — CMS page editor, publish toggle, leads inbox, domain setup (Pro).
 
 Migration `0076_tenant_marketing_site.sql`.
+
+## Routing
+
+Routing is included in the plan. It is not a separate purchase. `/schedule/map` stays available on every tier, including the free trial. Do not put a tier check on that page.
+
+| Capability                   | Feature key                 | Starter | Business | Pro | Trial |
+| ---------------------------- | --------------------------- | ------- | -------- | --- | ----- |
+| Day map                      | `dayMap`                    | Yes     | Yes      | Yes | Yes   |
+| Single-cleaner stop ordering | `singleCleanerStopOrdering` | Yes     | Yes      | Yes | Yes   |
+| Multi-cleaner dispatch       | `multiCleanerDispatch`      | No      | Yes      | Yes | No    |
+| Re-optimization              | `routeReoptimization`       | No      | No       | Yes | No    |
+| Multiple start locations     | `multipleStartLocations`    | No      | No       | Yes | No    |
+| Drive-time reports           | `driveTimeReports`          | No      | No       | Yes | No    |
+
+Prices stay $39 / $129 / $299. Stop ordering, dispatch, and re-optimization are defined here so later routing work can read the same flags. This change does not gate the day map.
+
+Blocked features use `This feature is included in the <Plan> plan. Upgrade your plan to use it.` Limit errors name the current plan and say to upgrade the plan. There is no add-on SKU, add-on flag, or add-on grant.
 
 ## Required API/server-action checks
 
