@@ -79,7 +79,7 @@ export function propertyGeocodeStore(admin: SupabaseClient): GeocodeBackfillStor
       const { data, error } = (await admin
         .from('tenant_customer_properties')
         .select(
-          'id, tenant_id, address_line1, city, state, postal_code, latitude, longitude, geocode_status, geocoded_at',
+          'id, tenant_id, address_line1, city, state, postal_code, latitude, longitude, geocode_status, geocode_reason, geocoded_at',
         )
         .eq('tenant_id', tenantId)
         .order('id', { ascending: true })

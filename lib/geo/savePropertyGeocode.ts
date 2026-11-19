@@ -42,36 +42,46 @@ export async function savePropertyGeocode(
 ): Promise<PropertyGeocodePatch | null> {
   if (!addressHasText(input.address)) return null;
 
+  const recordedAt = input.now ? input.now() : new Date().toISOString();
   let patch: PropertyGeocodePatch;
   try {
-    const result = await resolveGeocodedPoint(input.address, input.previous ?? null);
-    if (result.reused) return null;
-    patch = propertyGeocodePatchFromResult(
-      result,
-      input.now ? input.now() : new Date().toISOString(),
+    const nowMs = Date.parse(recordedAt);
+    const result = await resolveGeocodedPoint(
+      input.address,
+      input.previous ?? null,
+      undefined,
+      Number.isNaN(nowMs) ? Date.now() : nowMs,
     );
+    if (result.reused) return null;
+    patch = propertyGeocodePatchFromResult(result, recordedAt);
   } catch (error) {
     console.error('[geocode] lookup failed:', error instanceof Error ? error.message : 'unknown');
     return null;
   }
 
   try {
-    const { error } = await addressFilter(
+    const saved = await addressFilter(
       admin
         .from('tenant_customer_properties')
         .update(patch)
         .eq('id', input.propertyId)
-        .eq('tenant_id', input.tenantId),
+        .eq('tenant_id', input.tenantId)
+        .select('id'),
       input.address,
     );
-    if (error) {
-      console.error('[geocode] could not store map point:', error.message);
+    if (saved.error || !saved.data || saved.data.length === 0) {
+      console.error(
+        '[geocode] could not store map point:',
+        saved.error?.message ?? 'the row was not updated',
+      );
+      return null;
     }
   } catch (error) {
     console.error(
       '[geocode] could not store map point:',
       error instanceof Error ? error.message : 'unknown',
     );
+    return null;
   }
   return patch;
 }

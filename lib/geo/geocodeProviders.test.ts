@@ -122,7 +122,7 @@ describe('lookupWithProviders', () => {
       },
       null,
     );
-    expect(thrown).toMatchObject({ point: null, reason: 'lookup_failed', status: 'failed' });
+    expect(thrown).toMatchObject({ point: null, reason: 'lookup_failed', status: 'pending' });
   });
 
   it('does not call Geocodio when no fallback is configured', async () => {
@@ -201,6 +201,45 @@ describe('address change detection', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('retries an outage after the pause and does not call during it', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify(censusMatch), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const previous = {
+      ...address,
+      latitude: null,
+      longitude: null,
+      geocodeStatus: 'failed',
+      geocodedAt: '2026-04-01T00:00:00.000Z',
+      reason: 'lookup_failed',
+    };
+
+    const during = await resolveGeocodedPoint(
+      address,
+      previous,
+      undefined,
+      Date.parse('2026-04-01T00:00:30.000Z'),
+    );
+    expect(during.reused).toBe(true);
+    expect(during.status).toBe('pending');
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const later = await resolveGeocodedPoint(
+      address,
+      previous,
+      undefined,
+      Date.parse('2026-04-01T00:02:00.000Z'),
+    );
+    expect(later.reused).toBeFalsy();
+    expect(later.point).toEqual({ lat: 38.845985, lng: -76.927487 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('looks up a changed address and survives a provider outage', async () => {
     const fetchMock = vi.fn(async (): Promise<Response> => {
       throw new Error('network down');
@@ -211,7 +250,7 @@ describe('address change detection', () => {
     expect(changed).toMatchObject({
       point: null,
       reason: 'lookup_failed',
-      status: 'failed',
+      status: 'pending',
       reused: false,
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);

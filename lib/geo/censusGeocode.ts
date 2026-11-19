@@ -31,7 +31,7 @@ export type StoredGeocode = GeocodeAddress & {
 export type GeocodeResult = {
   point: GeocodedPoint | null;
   reason: GeocodeReason | null;
-  status?: 'ok' | 'failed' | null;
+  status?: 'ok' | 'failed' | 'pending' | null;
   source?: GeocodeSource | null;
   accuracy?: string | null;
   /** True when the stored attempt was kept and no provider was called. */
@@ -78,20 +78,53 @@ export function addressHasText(parts: GeocodeAddress): boolean {
   );
 }
 
+/** Wait this long before another provider call after an outage. */
+export const GEOCODE_OUTAGE_RETRY_MS = 60_000;
+
+const TERMINAL_GEOCODE_REASONS = new Set([
+  'no_match',
+  'incomplete',
+  'outside_us',
+  'google_denied',
+  'google_quota',
+]);
+
+/** A real miss stays put until the address changes. An outage does not. */
+export function geocodeFailureIsTerminal(reason: string | null | undefined): boolean {
+  return reason != null && TERMINAL_GEOCODE_REASONS.has(reason);
+}
+
+/** True when a recent outage should not call the provider again yet. */
+export function geocodeOutageCoolingDown(
+  geocodedAt: string | null | undefined,
+  nowMs: number,
+  retryAfterMs = GEOCODE_OUTAGE_RETRY_MS,
+): boolean {
+  if (!geocodedAt) return false;
+  const then = Date.parse(geocodedAt);
+  if (Number.isNaN(then)) return false;
+  return nowMs - then < retryAfterMs;
+}
+
 /**
- * True when this address text already has a stored attempt.
- * A point, a failed lookup, or a recorded timestamp all count.
- * Pending and legacy rows with no point are looked up again.
+ * True when this address text should not be sent to a provider.
+ * A point or a terminal miss (no match, incomplete, outside the US) stays.
+ * An outage (`lookup_failed`) is tried again after GEOCODE_OUTAGE_RETRY_MS.
  */
-export function addressGeocodeIsCurrent(next: GeocodeAddress, previous: StoredGeocode): boolean {
+export function addressGeocodeIsCurrent(
+  next: GeocodeAddress,
+  previous: StoredGeocode,
+  nowMs = Date.now(),
+): boolean {
   if (!sameGeocodeAddress(next, previous)) return false;
   if (!addressHasText(next)) return true;
-  const hasPoint = previous.latitude != null && previous.longitude != null;
-  const attempted =
-    previous.geocodedAt != null ||
-    previous.geocodeStatus === 'ok' ||
-    previous.geocodeStatus === 'failed';
-  return hasPoint || attempted;
+  if (previous.latitude != null && previous.longitude != null) return true;
+  if (previous.reason === 'lookup_failed') {
+    return geocodeOutageCoolingDown(previous.geocodedAt, nowMs);
+  }
+  if (geocodeFailureIsTerminal(previous.reason)) return true;
+  if (previous.geocodeStatus === 'failed' || previous.geocodeStatus === 'ok') return true;
+  return false;
 }
 
 function failedResult(reason: GeocodeReason): GeocodeResult {
@@ -146,7 +179,14 @@ export async function lookupWithProviders(
   if (censusLookup.status === 'no_match' || fallback?.status === 'no_match') {
     return failedResult('no_match');
   }
-  return failedResult('lookup_failed');
+  return {
+    point: null,
+    reason: 'lookup_failed',
+    status: 'pending',
+    source: null,
+    accuracy: null,
+    reused: false,
+  };
 }
 
 function fallbackProvider(deps: GeocodeDeps | undefined): GeocodeProvider | null {
@@ -186,7 +226,14 @@ export async function lookupUsAddress(
     const census = deps?.census ?? censusGeocodeProvider();
     return await lookupWithProviders(address, census, fallbackProvider(deps));
   } catch {
-    return failedResult('lookup_failed');
+    return {
+      point: null,
+      reason: 'lookup_failed',
+      status: 'pending',
+      source: null,
+      accuracy: null,
+      reused: false,
+    };
   }
 }
 
@@ -203,10 +250,17 @@ export async function resolveGeocodedPoint(
   next: GeocodeAddress,
   previous: StoredGeocode | null,
   deps?: GeocodeDeps,
+  nowMs = Date.now(),
 ): Promise<GeocodeResult> {
-  if (previous && addressGeocodeIsCurrent(next, previous)) {
+  if (previous && addressGeocodeIsCurrent(next, previous, nowMs)) {
     const hasPoint = previous.latitude != null && previous.longitude != null;
-    const status = hasPoint ? 'ok' : previous.geocodeStatus === 'failed' ? 'failed' : 'ok';
+    const status = hasPoint
+      ? 'ok'
+      : previous.reason === 'lookup_failed'
+        ? 'pending'
+        : previous.geocodeStatus === 'failed'
+          ? 'failed'
+          : 'ok';
     return {
       point: hasPoint
         ? { lat: previous.latitude as number, lng: previous.longitude as number }

@@ -8,9 +8,10 @@ Session notes for the service-location geocode foundation. Product behavior is i
 - Do not apply `0129` from an agent or from CI. The owner applies SQL by hand.
 - Provider interface is `GeocodeProvider` in `lib/geo/geocodeProvider.ts`. `lookupUsAddress` calls Census, then Geocodio only when `GEOCODIO_API_KEY` is non-blank and Census did not match. Google's client remains as a response parser in `lib/geo/googleGeocode.ts` and is not called. Do not store Google or Mapbox results.
 - Saves write the address (status `pending` when there is text) before `savePropertyGeocode`. That helper never throws. The address match on the update keeps a slow lookup from writing a point onto an address that has since changed.
-- Unchanged text with a point, or with `geocode_status` of `ok` or `failed`, or with `geocoded_at`, does not call the network. Pending and legacy rows with no point do.
-- Backfill lives in `lib/geo/backfillPropertyGeocodes.ts` and `scripts/backfill-property-geocodes.mts`. It requires `--tenant`. Default interval is 1100 ms and is clamped to 200–10000. Failures are stored and skipped on the next run unless `--retry-failed`.
-- The office badge on the service location uses "Couldn't locate this address" for `no_match` and `lookup_failed` (`couldNotLocateAddress`).
+- Unchanged text with a point, or with a terminal miss (`no_match`, `incomplete`, `outside_us`, and older Google reasons), does not call the network. `lookup_failed` is stored as `geocode_status=pending` and is tried again after `GEOCODE_OUTAGE_RETRY_MS` (60 seconds) on save, Fill schedule (`ensurePropertyGeocoded`), and the default backfill. `--retry-failed` is only for a terminal miss.
+- `savePropertyGeocode` returns the column patch only when the update reports a row. A write error or zero rows leaves the card on the values already stored.
+- Backfill lives in `lib/geo/backfillPropertyGeocodes.ts` and `scripts/backfill-property-geocodes.mts`. It requires `--tenant`. Default interval is 1100 ms and is clamped to 200–10000.
+- The office badge uses "Couldn't locate this address" for `no_match` only. An outage uses "Lookup will retry".
 
 ## Tests
 

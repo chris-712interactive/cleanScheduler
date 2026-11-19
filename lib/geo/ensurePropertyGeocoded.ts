@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { lookupUsAddress, type GeocodeAddress } from './censusGeocode';
+import { addressGeocodeIsCurrent, lookupUsAddress, type GeocodeAddress } from './censusGeocode';
 import { propertyGeocodePatchFromResult, type PropertyGeocodePatch } from './propertyGeocodePatch';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -13,9 +13,8 @@ export async function geocodeColumnsForAddress(
 }
 
 /**
- * Writes a map point onto a service location that has an address but no coordinates
- * and has not already finished a lookup. A location that already has a point, or a
- * stored failure, is left alone.
+ * Writes a map point onto a service location that still needs one.
+ * A point or a terminal miss is left alone. An outage is tried again after the retry pause.
  */
 export async function ensurePropertyGeocoded(
   admin: Admin,
@@ -24,7 +23,9 @@ export async function ensurePropertyGeocoded(
 ): Promise<{ latitude: number | null; longitude: number | null }> {
   const { data, error } = await admin
     .from('tenant_customer_properties')
-    .select('address_line1, city, state, postal_code, latitude, longitude, geocode_status')
+    .select(
+      'address_line1, city, state, postal_code, latitude, longitude, geocode_status, geocode_reason, geocoded_at',
+    )
     .eq('id', propertyId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -32,10 +33,22 @@ export async function ensurePropertyGeocoded(
   if (error || !data) {
     return { latitude: null, longitude: null };
   }
-  if (data.latitude != null && data.longitude != null) {
-    return { latitude: data.latitude, longitude: data.longitude };
-  }
-  if (data.geocode_status === 'failed' || data.geocode_status === 'ok') {
+  const address = {
+    line1: data.address_line1,
+    city: data.city,
+    state: data.state,
+    postalCode: data.postal_code,
+  };
+  if (
+    addressGeocodeIsCurrent(address, {
+      ...address,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      geocodeStatus: data.geocode_status,
+      geocodedAt: data.geocoded_at,
+      reason: data.geocode_reason,
+    })
+  ) {
     return { latitude: data.latitude, longitude: data.longitude };
   }
 

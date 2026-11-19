@@ -2,9 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 
-vi.mock('@/lib/geo/censusGeocode', () => ({
-  lookupUsAddress: vi.fn(),
-}));
+vi.mock('@/lib/geo/censusGeocode', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    lookupUsAddress: vi.fn(),
+  };
+});
 
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { ensurePropertyGeocoded } from '@/lib/geo/ensurePropertyGeocoded';
@@ -19,6 +23,8 @@ type PropertyRow = {
   latitude: number | null;
   longitude: number | null;
   geocode_status?: string | null;
+  geocode_reason?: string | null;
+  geocoded_at?: string | null;
 };
 
 function adminFor(row: PropertyRow | null) {
@@ -122,6 +128,7 @@ describe('ensurePropertyGeocoded', () => {
       latitude: null,
       longitude: null,
       geocode_status: 'failed',
+      geocode_reason: 'no_match',
     });
 
     const point = await ensurePropertyGeocoded(admin, 'tenant', 'property');
@@ -129,5 +136,33 @@ describe('ensurePropertyGeocoded', () => {
     expect(point).toEqual({ latitude: null, longitude: null });
     expect(lookup).not.toHaveBeenCalled();
     expect(updates).toEqual([]);
+  });
+
+  it('looks up again after an outage pause', async () => {
+    lookup.mockResolvedValue({
+      point: { lat: 27.34, lng: -82.53 },
+      reason: null,
+      status: 'ok',
+      source: 'census',
+      accuracy: 'address',
+      reused: false,
+    });
+    const { admin, updates } = adminFor({
+      address_line1: '10 Main St',
+      city: 'Sarasota',
+      state: 'FL',
+      postal_code: '34236',
+      latitude: null,
+      longitude: null,
+      geocode_status: 'pending',
+      geocode_reason: 'lookup_failed',
+      geocoded_at: '2020-01-01T00:00:00.000Z',
+    });
+
+    const point = await ensurePropertyGeocoded(admin, 'tenant', 'property');
+
+    expect(lookup).toHaveBeenCalledTimes(1);
+    expect(point).toEqual({ latitude: 27.34, longitude: -82.53 });
+    expect(updates).toHaveLength(1);
   });
 });

@@ -38,7 +38,16 @@ export function propertyGeocodePatchFromResult(
   result: GeocodeResult,
   recordedAt: string,
 ): PropertyGeocodePatch {
-  const status = result.status ?? (result.point ? 'ok' : result.reason ? 'failed' : null);
+  const status =
+    result.reason === 'lookup_failed' && !result.point
+      ? 'pending'
+      : result.status === 'pending' || result.status === 'ok' || result.status === 'failed'
+        ? result.status
+        : result.point
+          ? 'ok'
+          : result.reason
+            ? 'failed'
+            : null;
   return {
     latitude: result.point?.lat ?? null,
     longitude: result.point?.lng ?? null,

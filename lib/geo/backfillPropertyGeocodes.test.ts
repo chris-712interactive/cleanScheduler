@@ -22,6 +22,7 @@ function row(overrides: Partial<PropertyGeocodeRow> = {}): PropertyGeocodeRow {
     latitude: null,
     longitude: null,
     geocode_status: null,
+    geocode_reason: null,
     geocoded_at: null,
     ...overrides,
   };
@@ -54,6 +55,7 @@ function memoryStore(
       found.latitude = patch.latitude;
       found.longitude = patch.longitude;
       found.geocode_status = patch.geocode_status;
+      found.geocode_reason = patch.geocode_reason;
       found.geocoded_at = patch.geocoded_at;
       return 'saved';
     },
@@ -78,9 +80,38 @@ describe('property geocode backfill', () => {
       propertyNeedsGeocodeBackfill(row({ latitude: 35, longitude: -83, geocode_status: 'ok' })),
     ).toBe(false);
     expect(
-      propertyNeedsGeocodeBackfill(row({ geocode_status: 'failed', geocoded_at: '2026-01-01' })),
+      propertyNeedsGeocodeBackfill(
+        row({
+          geocode_status: 'failed',
+          geocode_reason: 'no_match',
+          geocoded_at: '2020-01-01T00:00:00.000Z',
+        }),
+      ),
     ).toBe(false);
-    expect(propertyNeedsGeocodeBackfill(row({ geocode_status: 'failed' }), true)).toBe(true);
+    expect(
+      propertyNeedsGeocodeBackfill(
+        row({ geocode_status: 'failed', geocode_reason: 'no_match' }),
+        true,
+      ),
+    ).toBe(true);
+    expect(
+      propertyNeedsGeocodeBackfill(
+        row({
+          geocode_status: 'pending',
+          geocode_reason: 'lookup_failed',
+          geocoded_at: '2020-01-01T00:00:00.000Z',
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      propertyNeedsGeocodeBackfill(
+        row({
+          geocode_status: 'failed',
+          geocode_reason: 'lookup_failed',
+          geocoded_at: new Date().toISOString(),
+        }),
+      ),
+    ).toBe(false);
     expect(
       propertyNeedsGeocodeBackfill(
         row({ address_line1: 'short', city: null, state: null, postal_code: null }),
@@ -129,12 +160,13 @@ describe('property geocode backfill', () => {
     expect(lookup).toHaveBeenCalledTimes(1);
   });
 
-  it('stores a thrown lookup as a failure and does not retry it', async () => {
+  it('stores an outage as pending and retries it only after the pause', async () => {
     const store = memoryStore([row({ id: 'a' }), row({ id: 'b', address_line1: '11 Oak St' })]);
     const lookup = vi.fn(async () => {
       throw new Error('census down');
     });
     const sleep = vi.fn(async () => undefined);
+    const during = () => '2026-04-01T00:00:00.000Z';
 
     const first = await runPropertyGeocodeBackfill({
       store,
@@ -142,11 +174,16 @@ describe('property geocode backfill', () => {
       lookup,
       sleep,
       minIntervalMs: 50,
-      now: () => '2026-04-01T00:00:00.000Z',
+      now: during,
     });
 
     expect(first.failed).toBe(2);
     expect(first.saved).toBe(2);
+    expect(store.rows[0]).toMatchObject({
+      geocode_status: 'pending',
+      geocode_reason: 'lookup_failed',
+      latitude: null,
+    });
     expect(sleep).toHaveBeenCalledTimes(1);
     expect(sleep).toHaveBeenCalledWith(200);
 
@@ -155,9 +192,20 @@ describe('property geocode backfill', () => {
       tenantId,
       lookup,
       sleep,
+      now: during,
     });
     expect(second.lookedUp).toBe(0);
     expect(lookup).toHaveBeenCalledTimes(2);
+
+    const later = await runPropertyGeocodeBackfill({
+      store,
+      tenantId,
+      lookup,
+      sleep,
+      now: () => '2026-04-01T00:02:00.000Z',
+    });
+    expect(later.lookedUp).toBe(2);
+    expect(lookup).toHaveBeenCalledTimes(4);
   });
 
   it('does not write a point when the address changed after it was read', async () => {

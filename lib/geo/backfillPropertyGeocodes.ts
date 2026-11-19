@@ -1,4 +1,5 @@
 import {
+  addressGeocodeIsCurrent,
   addressHasText,
   formatGeocodeQuery,
   lookupUsAddress,
@@ -19,6 +20,7 @@ export type PropertyGeocodeRow = {
   latitude: number | null;
   longitude: number | null;
   geocode_status: string | null;
+  geocode_reason: string | null;
   geocoded_at: string | null;
 };
 
@@ -42,13 +44,14 @@ export type BackfillReport = {
 };
 
 /**
- * Rows that already have a point, or a finished failed attempt, are left alone.
- * Pending and never-tried rows with enough address text are looked up.
- * Pass retryFailed to call the provider again for a stored failure.
+ * Rows with a point, or a terminal miss, are left alone.
+ * An outage (`lookup_failed`) is included again after the retry pause.
+ * Pass retryFailed to call the provider again for a terminal miss.
  */
 export function propertyNeedsGeocodeBackfill(
   row: PropertyGeocodeRow,
   retryFailed = false,
+  nowMs = Date.now(),
 ): boolean {
   const address: GeocodeAddress = {
     line1: row.address_line1,
@@ -58,9 +61,20 @@ export function propertyNeedsGeocodeBackfill(
   };
   if (!addressHasText(address) || formatGeocodeQuery(address).length < 8) return false;
   if (row.latitude != null && row.longitude != null) return false;
-  if (row.geocode_status === 'ok') return false;
-  if (row.geocode_status === 'failed' && !retryFailed) return false;
-  return true;
+  const current = addressGeocodeIsCurrent(
+    address,
+    {
+      ...address,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      geocodeStatus: row.geocode_status,
+      geocodedAt: row.geocoded_at,
+      reason: row.geocode_reason,
+    },
+    nowMs,
+  );
+  if (!current) return true;
+  return retryFailed;
 }
 
 export function clampBackfillInterval(ms: number): number {
@@ -99,6 +113,9 @@ export async function runPropertyGeocodeBackfill(options: {
   const interval = clampBackfillInterval(options.minIntervalMs ?? DEFAULT_BACKFILL_INTERVAL_MS);
   const pageSize = options.pageSize ?? 100;
   const retryFailed = options.retryFailed === true;
+  const recordedAt = options.now ? options.now() : new Date().toISOString();
+  const recordedMs = Date.parse(recordedAt);
+  const nowMs = Number.isNaN(recordedMs) ? Date.now() : recordedMs;
   const report: BackfillReport = { examined: 0, lookedUp: 0, saved: 0, skipped: 0, failed: 0 };
 
   let offset = 0;
@@ -110,7 +127,7 @@ export async function runPropertyGeocodeBackfill(options: {
         throw new Error('Backfill page included a row outside the tenant.');
       }
       report.examined += 1;
-      if (!propertyNeedsGeocodeBackfill(row, retryFailed)) {
+      if (!propertyNeedsGeocodeBackfill(row, retryFailed, nowMs)) {
         report.skipped += 1;
         continue;
       }
@@ -123,20 +140,19 @@ export async function runPropertyGeocodeBackfill(options: {
         result = {
           point: null,
           reason: 'lookup_failed',
-          status: 'failed',
+          status: 'pending',
           source: null,
           accuracy: null,
           reused: false,
         };
       }
-      const patch = propertyGeocodePatchFromResult(
-        result,
-        options.now ? options.now() : new Date().toISOString(),
-      );
+      const patch = propertyGeocodePatchFromResult(result, recordedAt);
       const saved = await options.store.save(options.tenantId, row, patch);
       if (saved === 'saved') {
         report.saved += 1;
-        if (patch.geocode_status === 'failed') report.failed += 1;
+        if (patch.geocode_status === 'failed' || patch.geocode_reason === 'lookup_failed') {
+          report.failed += 1;
+        }
       } else {
         report.skipped += 1;
       }

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { geocodeReasonFromLookups, missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
+import {
+  couldNotLocateAddress,
+  geocodeBadgeLabel,
+  geocodeReasonFromLookups,
+  missingGeocodeMessage,
+} from '@/lib/geo/geocodeStatus';
 
 describe('geocodeReasonFromLookups', () => {
   it('keeps an actionable Google failure ahead of a Census miss', () => {
@@ -49,6 +54,23 @@ describe('missingGeocodeMessage', () => {
       }),
     ).toBe(
       "Missing map point. Couldn't locate this address. Check the street, city, state, and postal code.",
+    );
+  });
+
+  it('does not call a miss an outage, and names the retry', () => {
+    expect(couldNotLocateAddress('lookup_failed')).toBe(false);
+    expect(couldNotLocateAddress('no_match')).toBe(true);
+    expect(geocodeBadgeLabel('lookup_failed')).toBe('Lookup will retry');
+    expect(geocodeBadgeLabel('no_match')).toBe("Couldn't locate this address");
+    expect(
+      missingGeocodeMessage({
+        reason: 'lookup_failed',
+        latitude: null,
+        longitude: null,
+        addressParts: ['10 Main St'],
+      }),
+    ).toBe(
+      'Missing map point. Lookup pending. The geocoding service did not respond. It will be tried again.',
     );
   });
 
