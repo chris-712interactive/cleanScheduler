@@ -46,36 +46,36 @@ describe('local stack URL guard', () => {
     ).toThrow(/not local/);
   });
 
-  it('rejects libpq host overrides and percent-encoded hosted names', () => {
+  it('allows only sslmode, connect_timeout, and application_name', () => {
+    const base = 'postgresql://postgres@127.0.0.1:54332/postgres';
     expect(() =>
       assertLocalDatabaseUrl(
-        'postgresql://postgres@127.0.0.1:1/postgres?host=192.0.2.1&connect_timeout=1',
+        `${base}?sslmode=disable&connect_timeout=2&application_name=local-stack`,
       ),
-    ).toThrow(/host "192.0.2.1"/);
-    expect(() =>
-      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:5432/postgres?hostaddr=192.0.2.1'),
-    ).toThrow(/192\.0\.2\.1/);
-    expect(() =>
-      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1/postgres?host=notreal%2einvalid'),
-    ).toThrow(/not local/);
+    ).not.toThrow();
+    expect(() => assertLocalDatabaseUrl(`${base}?SSLMODE=disable&Connect_Timeout=1`)).not.toThrow();
+    for (const key of [
+      'service',
+      'SERVICE',
+      'host',
+      'HOST',
+      'hostaddr',
+      'HostAddr',
+      'passfile',
+      'options',
+      'target_session_attrs',
+      'unknown',
+    ]) {
+      expect(() => assertLocalDatabaseUrl(`${base}?${key}=evil`)).toThrow(
+        new RegExp(`query parameter "${key.toLowerCase()}" is not allowed`),
+      );
+    }
     expect(() =>
       assertLocalDatabaseUrl('postgresql://db%2eexample%2esupabase%2eco/postgres'),
     ).toThrow(/hosted project/);
-    expect(() =>
-      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:54322/postgres?host=127.0.0.1'),
-    ).not.toThrow();
     expect(() => assertLocalDatabaseUrl('postgresql://postgres@/postgres')).toThrow(
       /loopback host/,
     );
-    expect(() => assertLocalDatabaseUrl('postgresql://postgres@/postgres?host=192.0.2.1')).toThrow(
-      /192\.0\.2\.1/,
-    );
-    expect(() =>
-      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:5432/postgres?HOST=192.0.2.1'),
-    ).toThrow(/192\.0\.2\.1/);
-    expect(() =>
-      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:5432/postgres?HostAddr=192.0.2.1'),
-    ).toThrow(/192\.0\.2\.1/);
   });
 });
 
@@ -90,6 +90,8 @@ describe('libpq child environment', () => {
       PGPASSWORD: 'secret',
       PGSERVICE: 'remote',
       PGOPTIONS: '-c search_path=public',
+      PGSERVICEFILE: '/home/user/.pg_service.conf',
+      PGSYSCONFDIR: '/etc/postgresql',
     });
     expect(env.PATH).toBe('/usr/bin');
     expect(env.HOME).toBe('/tmp');
@@ -99,6 +101,8 @@ describe('libpq child environment', () => {
     expect(env.PGPASSWORD).toBeUndefined();
     expect(env.PGSERVICE).toBeUndefined();
     expect(env.PGOPTIONS).toBeUndefined();
+    expect(env.PGSERVICEFILE).toBe('/nonexistent/cleanscheduler-no-pg-service.conf');
+    expect(env.PGSYSCONFDIR).toBe('/nonexistent/cleanscheduler-no-pg-sysconf');
   });
 
   it('does not give psql a parent PGHOSTADDR', () => {
@@ -109,6 +113,7 @@ describe('libpq child environment', () => {
       `#!/usr/bin/env node
 console.log('PGHOSTADDR=' + (process.env.PGHOSTADDR ?? ''));
 console.log('PGHOST=' + (process.env.PGHOST ?? ''));
+console.log('PGSERVICEFILE=' + (process.env.PGSERVICEFILE ?? ''));
 process.exit(0);
 `,
     );
@@ -122,11 +127,14 @@ process.exit(0);
         DATABASE_URL: 'postgresql://postgres@127.0.0.1:1/postgres',
         PGHOSTADDR: '192.0.2.1',
         PGHOST: '192.0.2.1',
+        PGSERVICEFILE: '/home/user/.pg_service.conf',
       },
     });
     expect(result.stdout).toContain('PGHOSTADDR=\n');
     expect(result.stdout).toContain('PGHOST=\n');
+    expect(result.stdout).toContain('PGSERVICEFILE=/nonexistent/cleanscheduler-no-pg-service.conf');
     expect(`${result.stdout}${result.stderr}`).not.toContain('192.0.2.1');
+    expect(`${result.stdout}${result.stderr}`).not.toContain('/home/user/.pg_service.conf');
   });
 });
 

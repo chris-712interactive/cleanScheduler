@@ -57,43 +57,48 @@ function decodeConnectionText(raw) {
   }
 }
 
+/** Query keys a disposable local URL may carry. Everything else is refused. */
+const ALLOWED_DATABASE_QUERY_KEYS = new Set(['sslmode', 'connect_timeout', 'application_name']);
+
+/** Not a real directory or file. libpq must not open ~/.pg_service.conf. */
+const BLOCKED_PG_SERVICE_FILE = '/nonexistent/cleanscheduler-no-pg-service.conf';
+const BLOCKED_PG_SYSCONF_DIR = '/nonexistent/cleanscheduler-no-pg-sysconf';
+
 /**
- * libpq lets `host` and `hostaddr` query parameters replace the URL host.
- * A loopback authority with `?host=192.0.2.1` would otherwise leave this machine.
+ * Allow only the query parameters this stack uses. `service` would load
+ * ~/.pg_service.conf and can replace the URL host. `host` and `hostaddr` do
+ * that directly. Comparison ignores case and percent-encoding.
  */
-function assertNoRemoteLibpqHost(raw, label) {
+function assertAllowedDatabaseQuery(raw, label) {
   const query = raw.split('?')[1]?.split('#')[0] ?? '';
   if (!query) return;
   const params = new URLSearchParams(query);
-  for (const [rawKey, rawValue] of params.entries()) {
+  for (const [rawKey] of params.entries()) {
     let key;
     try {
       key = decodeURIComponent(rawKey).trim().toLowerCase();
     } catch {
       throw new LocalOnlyUrlError('The connection string contains an invalid escape.');
     }
-    if (key !== 'host' && key !== 'hostaddr') continue;
-    const host = rawValue
-      .trim()
-      .toLowerCase()
-      .replace(/^\[|\]$/g, '');
-    if (!host || host.startsWith('/')) {
-      throw new LocalOnlyUrlError(`${label} ${key} must name a loopback host.`);
+    if (!ALLOWED_DATABASE_QUERY_KEYS.has(key)) {
+      throw new LocalOnlyUrlError(`${label} query parameter "${key}" is not allowed.`);
     }
-    assertLoopbackHost(host, `${label} ${key}`);
   }
 }
 
 /**
- * libpq reads PGHOSTADDR even when the URL host is loopback, and PGHOST when
- * the URL host is empty. Children must not inherit those variables.
- * Every PG* variable is removed, including PGPASSWORD. Put the password in the URL.
+ * libpq reads PGHOSTADDR even when the URL host is loopback. Every PG*
+ * variable from the parent is removed, including PGPASSWORD. Put the password
+ * in the URL. PGSERVICEFILE and PGSYSCONFDIR are then set to paths that do
+ * not exist so a service name cannot fall back to the home or system file.
  */
 export function libpqChildEnv(env) {
   const next = { ...env };
   for (const key of Object.keys(next)) {
     if (/^pg/i.test(key)) delete next[key];
   }
+  next.PGSERVICEFILE = BLOCKED_PG_SERVICE_FILE;
+  next.PGSYSCONFDIR = BLOCKED_PG_SYSCONF_DIR;
   return next;
 }
 
@@ -108,7 +113,7 @@ export function assertLocalDatabaseUrl(raw) {
   if (protocol !== 'postgres' && protocol !== 'postgresql') {
     throw new LocalOnlyUrlError('DATABASE_URL must use a postgres scheme.');
   }
-  assertNoRemoteLibpqHost(value, 'DATABASE_URL');
+  assertAllowedDatabaseQuery(value, 'DATABASE_URL');
   let host = '';
   try {
     host = hostnameOf(value);

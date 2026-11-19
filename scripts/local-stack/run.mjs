@@ -176,18 +176,24 @@ async function runDockerStack() {
   const started = Date.now();
   ensureHosts();
   const stub = startGeocodeStub();
+  const cliEnv = libpqChildEnv(process.env);
   let env;
   try {
     await waitForStub();
-    must('supabase', [
-      'start',
-      '--exclude',
-      'studio,edge-runtime,logflare,vector,imgproxy,mailpit,postgres-meta,supavisor',
-      '--yes',
-    ]);
+    must(
+      'supabase',
+      [
+        'start',
+        '--exclude',
+        'studio,edge-runtime,logflare,vector,imgproxy,mailpit,postgres-meta,supavisor',
+        '--yes',
+      ],
+      { env: cliEnv },
+    );
     const status = spawnSync('supabase', ['status', '-o', 'env'], {
       cwd: repoRoot,
       encoding: 'utf8',
+      env: cliEnv,
     });
     if ((status.status ?? 1) !== 0) {
       throw new Error(status.stderr || 'supabase status failed');
@@ -246,7 +252,7 @@ async function runDockerStack() {
   } finally {
     stub.kill('SIGTERM');
     if (!keep) {
-      spawnSync('supabase', ['stop'], { cwd: repoRoot, stdio: 'inherit' });
+      spawnSync('supabase', ['stop'], { cwd: repoRoot, stdio: 'inherit', env: cliEnv });
     }
   }
 }
