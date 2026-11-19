@@ -13,7 +13,7 @@ vi.mock('@/lib/sms/sentTemplateConfig', () => ({
   buildSentTemplateRequest: () => ({ id: 'tpl', parameters: {} }),
 }));
 
-import { sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
+import { packSegmentsToRefund, sendTransactionalSms } from '@/lib/sms/sendTransactionalSms';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
 
@@ -143,5 +143,44 @@ describe('sendTransactionalSms pack release', () => {
     expect(result).toEqual({ ok: true, segmentCount: 1 });
     expect(admin.refunds).toEqual([1]);
     expect(admin.releases).toEqual([{ id: 'res-1', refund: false }]);
+  });
+
+  it('refunds the unlogged channel when the logged body is two segments', async () => {
+    const longBody = 'A'.repeat(161);
+    send.mockResolvedValue({
+      success: true,
+      data: {
+        recipients: [
+          { message_id: 'msg-sms', channel: 'sms', body: longBody },
+          { message_id: '', channel: 'whatsapp', body: longBody },
+        ],
+      },
+    });
+    const admin = adminWithReservation({
+      fromPack: 2,
+      channels: ['sms', 'whatsapp'],
+    });
+    const result = await sendTransactionalSms({
+      admin: admin as never,
+      tenantId: TENANT,
+      toPhone: '4155552671',
+      payload: {
+        purpose: 'visit_reminder',
+        tenantName: 'Acme',
+        visitTitle: 'Weekly',
+        when: 'Tue 9am',
+      },
+    });
+    expect(result).toEqual({ ok: true, segmentCount: 2 });
+    expect(admin.refunds).toEqual([1]);
+    expect(admin.releases).toEqual([{ id: 'res-1', refund: false }]);
+    expect(
+      packSegmentsToRefund({
+        channels: ['sms', 'whatsapp'],
+        segmentPerChannel: 1,
+        reservedPackSegments: 2,
+        loggedChannels: new Set(['sms']),
+      }),
+    ).toBe(1);
   });
 });

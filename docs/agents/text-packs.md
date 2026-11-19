@@ -26,7 +26,7 @@ Existing rows stay null until a later Stripe webhook. A one-time backfill would 
 
 `reserve_sms_segments` counts this month's sent messages and open holds, then writes the hold and any pack debit under one tenant advisory lock. A failed send, including a provider success that logs zero segments, calls `release_sms_reservation` and refunds the pack debit. Text pack purchases require Business or Pro. Starter cannot buy a pack.
 
-A provider success that logs only some recipients refunds pack segments for the unlogged count, up to the reserved pack amount, then releases the allowance hold without refunding the logged portion. The logged rows remain the monthly usage.
+A provider success that logs only some channels refunds the reserved segments of each channel that was not logged, capped at the pack amount reserved. The length of a logged body does not reduce that refund. `customer.subscription.paused` and `customer.subscription.resumed` use the same platform sync as `customer.subscription.updated`.
 
 ## Previous allowance notes
 
