@@ -20,4 +20,5 @@ export type ScheduleVisitVM = {
   assigneeUserIds: string[];
   checkedInAt: string | null;
   propertyKind: CustomerPropertyKind | null;
+  routeSequence: number | null;
 };

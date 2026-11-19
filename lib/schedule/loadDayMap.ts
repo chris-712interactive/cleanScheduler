@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { dbOverlapRangeForQuery } from '@/lib/tenant/scheduleDateRange';
+import { queryWithOptionalColumn } from '@/lib/supabase/optionalColumn';
 import { shapeDayMap, type DayMapModel, type DayMapVisitRow } from '@/lib/schedule/dayMap';
 
 export const DAY_MAP_VISIT_SELECT = `
@@ -12,6 +13,9 @@ export const DAY_MAP_VISIT_SELECT = `
   starts_at,
   ends_at,
   status,
+  visit_purpose,
+  checked_in_at,
+  route_sequence,
   customers (
     customer_identities (
       first_name,
@@ -28,7 +32,8 @@ export const DAY_MAP_VISIT_SELECT = `
       postal_code,
       latitude,
       longitude,
-      geocode_reason
+      geocode_reason,
+      scheduling_override
     )
   ),
   tenant_customer_properties (
@@ -41,7 +46,8 @@ export const DAY_MAP_VISIT_SELECT = `
     postal_code,
     latitude,
     longitude,
-    geocode_reason
+    geocode_reason,
+    scheduling_override
   ),
   tenant_scheduled_visit_assignees (
     user_id,
@@ -51,36 +57,46 @@ export const DAY_MAP_VISIT_SELECT = `
   )
 `;
 
-export async function loadDayMap(params: {
+export async function loadDayMapRows(params: {
   supabase: SupabaseClient<Database>;
   tenantId: string;
   dateKey: string;
-  timeZone: string;
-}): Promise<DayMapModel> {
+}): Promise<{ rows: DayMapVisitRow[]; routeSequenceAvailable: boolean }> {
   const tenantId = params.tenantId.trim();
   if (!tenantId) {
     throw new Error('A workspace is required to load the day map.');
   }
 
   const range = dbOverlapRangeForQuery('day', params.dateKey);
-  const { data, error } = await params.supabase
-    .from('tenant_scheduled_visits')
-    .select(DAY_MAP_VISIT_SELECT)
-    .eq('tenant_id', tenantId)
-    .neq('status', 'cancelled')
-    .lte('starts_at', range.end)
-    .gte('ends_at', range.start)
-    .order('starts_at', { ascending: true })
-    .overrideTypes<DayMapVisitRow[], { merge: false }>();
+  const result = await queryWithOptionalColumn<DayMapVisitRow>({
+    column: 'route_sequence',
+    select: DAY_MAP_VISIT_SELECT,
+    run: (selectSql) =>
+      params.supabase
+        .from('tenant_scheduled_visits')
+        .select(selectSql)
+        .eq('tenant_id', tenantId)
+        .neq('status', 'cancelled')
+        .lte('starts_at', range.end)
+        .gte('ends_at', range.start)
+        .order('starts_at', { ascending: true })
+        .overrideTypes<DayMapVisitRow[], { merge: false }>(),
+  });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  return { rows: result.rows, routeSequenceAvailable: result.columnAvailable };
+}
 
+export async function loadDayMap(params: {
+  supabase: SupabaseClient<Database>;
+  tenantId: string;
+  dateKey: string;
+  timeZone: string;
+}): Promise<DayMapModel> {
+  const { rows } = await loadDayMapRows(params);
   return shapeDayMap({
-    tenantId,
+    tenantId: params.tenantId,
     dateKey: params.dateKey,
     timeZone: params.timeZone,
-    rows: data ?? [],
+    rows,
   });
 }

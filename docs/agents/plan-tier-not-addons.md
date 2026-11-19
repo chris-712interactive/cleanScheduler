@@ -18,7 +18,7 @@ Session notes for removing add-on purchase language and recording routing on Sta
   | `driveTimeReports`          | no      | no       | yes | no    |
 
 - `minimumTierForFeature` is derived from `PLATFORM_TIER_ENTITLEMENTS`, lowest of Starter, Business, Pro. The free trial is not a minimum tier.
-- `lib/routing/`, `app/tenant/schedule/map`, and the schedule day view were left alone so the parallel stop-ordering work and the day map do not collide.
+- Stop order from #282 is straight-line, owner/admin only, and reads `route_sequence` with a fallback when migration `0130` is absent. `singleCleanerStopOrdering` is on for every plan, including the trial, so that screen is not gated.
 - `UpgradeOrAddOnModal` still has that file name. The dialog only links to `/billing` with “Upgrade plan.” Renaming it would touch every caller for no user-facing change.
 - `tenant_addons` and `plan_features` were never migrated. Do not add them. Visit “add-on” amounts (`coverage_addon_invoice_id`, quote home add-ons, consultation add-ons) are cleaning extras on a job, not platform features. Leave those words.
 

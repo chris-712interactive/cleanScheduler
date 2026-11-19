@@ -21,7 +21,7 @@ Office map of one day's visits. Product copy is in `docs/product/day-map.md`.
 
 `lib/schedule/dayMap.test.ts` covers grouping, the missing-point reasons, tenant drops, the query's `tenant_id` filter, the style URL fallback, and the MapLibre import living only in the canvas.
 
-`tests/local-stack/day-map.spec.ts` runs in the `local-stack` CI job. It signs in as the residential owner and field cleaner from `scripts/local-stack/qa-accounts.json`. Tile hosts are aborted. Assertions use the server-rendered lists. `supabase/tests/rls/day_map_visit_read.sql` is the fourth RLS smoke file: a member can read their own visit point and cannot read the other tenant's visit or address. The day map page itself still uses the service-role portal client after `requireTenantPortalAccess`, then filters `tenant_id`.
+`tests/local-stack/day-map.spec.ts` runs in the `local-stack` CI job. It signs in as the residential owner and field cleaner from `scripts/local-stack/qa-accounts.json`. Tile hosts are aborted. Assertions use the server-rendered lists. `supabase/tests/rls/day_map_visit_read.sql` runs with the other RLS smoke files: a member can read their own visit point and cannot read the other tenant's visit or address. `visit_route_sequence.sql` checks the stop-order column the same way. The day map page itself still uses the service-role portal client after `requireTenantPortalAccess`, then filters `tenant_id`.
 
 ## Not verified here
 
