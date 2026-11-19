@@ -33,7 +33,11 @@ function creditInput(overrides: Record<string, unknown> = {}) {
   };
 }
 
-type BillingRow = { status: string | null; platform_plan: string | null } | null;
+type BillingRow = {
+  status: string | null;
+  platform_plan: string | null;
+  stripe_subscription_status?: string | null;
+} | null;
 
 function adminFor(state: {
   billing: BillingRow;
@@ -440,6 +444,22 @@ describe('text pack purchase and webhook', () => {
 });
 
 describe('assertCanSendSmsSegments', () => {
+  it('blocks an active mapped row whose raw Stripe status is paused', async () => {
+    const admin = adminFor({
+      billing: { status: 'active', platform_plan: 'pro', stripe_subscription_status: 'paused' },
+      balance: 1000,
+    });
+    await expect(
+      assertCanSendSmsSegments({
+        admin: admin as never,
+        tenantId: TENANT,
+        segmentCount: 1,
+        meter: 'customer',
+      }),
+    ).rejects.toThrow(TEXTING_UNLOCKS_MESSAGE);
+    expect(admin.reservations).toHaveLength(0);
+  });
+
   it('blocks a trialing Business workspace and a past_due or canceled Pro workspace', async () => {
     for (const billing of [
       { status: 'trialing', platform_plan: 'business' },

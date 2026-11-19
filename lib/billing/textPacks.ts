@@ -193,10 +193,11 @@ export function textPackPurchaseDenial(input: {
   role: TenantRole;
   plan: EntitlementPlanKey;
   billingStatus: TenantBillingStatus | null | undefined;
+  rawStripeStatus?: string | null;
   pricesConfigured: boolean;
   ledgerAvailable: boolean;
 }): string | null {
-  if (!canUseTexting(input.billingStatus)) return TEXTING_UNLOCKS_MESSAGE;
+  if (!canUseTexting(input.billingStatus, input.rawStripeStatus)) return TEXTING_UNLOCKS_MESSAGE;
   if (input.role !== 'owner' && input.role !== 'admin') return TEXT_PACK_BUYERS;
   if (input.plan !== 'business' && input.plan !== 'pro') return TEXT_PACK_PLAN_MESSAGE;
   if (!input.pricesConfigured || !input.ledgerAvailable) return TEXT_PACKS_UNAVAILABLE_MESSAGE;

@@ -20,6 +20,7 @@ import {
   resolveTenantSmsCommunicationAllowed,
 } from '@/lib/billing/smsCredits';
 import { allowanceWarning, applicantUsesSeparateCap } from '@/lib/billing/textPacks';
+import { loadTextingBilling } from '@/lib/billing/loadTextingBilling';
 import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
 import Link from 'next/link';
 import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
@@ -38,17 +39,13 @@ export default async function TenantOperationsSettingsPage() {
   const membership = await requireTenantPortalAccess(tenantSlug, '/settings/operations');
   const canEdit = canManageTeamInvitesAndRoles(membership.role);
   const admin = createAdminClient();
-  const [{ data: billing }, plan, subscriptionTier, smsAllowed] = await Promise.all([
-    admin
-      .from('tenant_billing_accounts')
-      .select('status')
-      .eq('tenant_id', membership.tenantId)
-      .maybeSingle(),
+  const [billing, plan, subscriptionTier, smsAllowed] = await Promise.all([
+    loadTextingBilling(admin, membership.tenantId),
     resolveTenantEntitlementPlan(admin, membership.tenantId),
     resolveTenantSubscriptionTier(admin, membership.tenantId),
     resolveTenantSmsCommunicationAllowed(admin, membership.tenantId),
   ]);
-  const textingPaid = canUseTexting(billing?.status);
+  const textingPaid = canUseTexting(billing.status, billing.rawStripeStatus);
   const smsTierEnabled = textingPaid && isFeatureEnabled(plan, 'smsCommunication');
   const applicantSmsEnabled = textingPaid && isFeatureEnabled(plan, 'applicantSms');
   const smsTrialLocked = !textingPaid;

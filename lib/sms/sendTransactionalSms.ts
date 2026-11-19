@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import SentDm from '@sentdm/sentdm';
+import { refundTextPackSegments } from '@/lib/billing/textPacks';
 import {
   assertCanSendSmsSegments,
   releaseReservedTextPackSegments,
@@ -62,6 +63,7 @@ export async function sendTransactionalSms(params: {
   const totalSegments = segmentPerChannel * channels.length;
 
   let reservationId: string | null = null;
+  let reservedPackSegments = 0;
   try {
     const reserved = await assertCanSendSmsSegments({
       admin: params.admin,
@@ -70,6 +72,7 @@ export async function sendTransactionalSms(params: {
       meter: params.meter ?? 'customer',
     });
     reservationId = reserved.reservationId;
+    reservedPackSegments = reserved.fromPack;
   } catch (error) {
     return { ok: false, error: smsGateErrorMessage(error) ?? 'SMS limit reached.' };
   }
@@ -82,6 +85,23 @@ export async function sendTransactionalSms(params: {
       reservationId: id,
       refundPack,
     });
+  };
+
+  const settleReservation = async (loggedChannels: ReadonlySet<string>) => {
+    if (loggedChannels.size === 0) {
+      await releasePack(true);
+      return;
+    }
+    const packRefund = packSegmentsToRefund({
+      channels,
+      segmentPerChannel,
+      reservedPackSegments,
+      loggedChannels,
+    });
+    if (packRefund > 0) {
+      await refundTextPackSegments(params.admin, params.tenantId, packRefund);
+    }
+    await releasePack(false);
   };
 
   const sandbox = shouldUseSentDmSandbox();
@@ -99,7 +119,7 @@ export async function sendTransactionalSms(params: {
 
     if (!response.success) {
       const errMsg = response.error?.message ?? response.error?.code ?? 'sent.dm send failed.';
-      await releasePack(true);
+      await settleReservation(new Set());
       await logFailedSend(params, {
         to,
         bodyPreview,
@@ -113,7 +133,7 @@ export async function sendTransactionalSms(params: {
     const recipients = response.data?.recipients ?? [];
     if (recipients.length === 0) {
       const errMsg = 'sent.dm returned no recipients.';
-      await releasePack(true);
+      await settleReservation(new Set());
       await logFailedSend(params, {
         to,
         bodyPreview,
@@ -125,6 +145,7 @@ export async function sendTransactionalSms(params: {
     }
 
     let loggedSegments = 0;
+    const loggedChannels = new Set<string>();
     for (const recipient of recipients) {
       const channel = normalizeRecipientChannel(recipient.channel);
       const messageId = recipient.message_id?.trim();
@@ -150,15 +171,16 @@ export async function sendTransactionalSms(params: {
         console.error('[sms] logged send failed:', logErr.message);
       } else {
         loggedSegments += segments;
+        loggedChannels.add(channel);
       }
     }
 
     if (loggedSegments === 0) {
-      await releasePack(true);
+      await settleReservation(new Set());
       return { ok: false, error: 'sent.dm send succeeded but logging failed.' };
     }
 
-    await releasePack(false);
+    await settleReservation(loggedChannels);
     return { ok: true, segmentCount: loggedSegments };
   } catch (error) {
     const msg =
@@ -168,7 +190,7 @@ export async function sendTransactionalSms(params: {
           ? error.message
           : 'sent.dm send failed.';
     console.error('[sms] send failed:', msg);
-    await releasePack(true);
+    await settleReservation(new Set());
 
     await logFailedSend(params, {
       to,
@@ -180,6 +202,21 @@ export async function sendTransactionalSms(params: {
 
     return { ok: false, error: msg };
   }
+}
+
+/** Pack refund for channels that were reserved but not logged. Logged body length does not reduce it. */
+export function packSegmentsToRefund(input: {
+  channels: readonly string[];
+  segmentPerChannel: number;
+  reservedPackSegments: number;
+  loggedChannels: ReadonlySet<string>;
+}): number {
+  let unloggedReserved = 0;
+  for (const channel of input.channels) {
+    if (input.loggedChannels.has(channel)) continue;
+    unloggedReserved += Math.max(0, input.segmentPerChannel);
+  }
+  return Math.min(unloggedReserved, Math.max(0, input.reservedPackSegments));
 }
 
 function normalizeRecipientChannel(raw: string | null | undefined): MessagingChannel {
