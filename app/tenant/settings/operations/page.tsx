@@ -7,16 +7,22 @@ import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/se
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
 import { normalizePaymentMethodsFromDb } from '@/lib/tenant/operationalSettings';
 import {
+  getEntitlementsForPlan,
   isFeatureEnabled,
   resolveTenantEntitlementPlan,
   resolveTenantSubscriptionTier,
 } from '@/lib/billing/entitlements';
 import {
+  countApplicantSmsSegmentsUsedThisMonth,
   countSmsSegmentsUsedThisMonth,
+  formatApplicantSmsUsageSummary,
   formatSmsUsageSummary,
   resolveTenantSmsCommunicationAllowed,
 } from '@/lib/billing/smsCredits';
-import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
+import { allowanceWarning, applicantUsesSeparateCap } from '@/lib/billing/textPacks';
+import { loadTextingBilling } from '@/lib/billing/loadTextingBilling';
+import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
+import Link from 'next/link';
 import { isSentDmConfigured } from '@/lib/sms/sentDmServer';
 import { normalizeMessagingChannelsFromDb } from '@/lib/sms/sentMessagingChannels';
 import { DEFAULT_CONSULTATION_DURATION_MINUTES } from '@/lib/tenant/consultationDuration';
@@ -33,22 +39,37 @@ export default async function TenantOperationsSettingsPage() {
   const membership = await requireTenantPortalAccess(tenantSlug, '/settings/operations');
   const canEdit = canManageTeamInvitesAndRoles(membership.role);
   const admin = createAdminClient();
-  const [{ data: billing }, plan, subscriptionTier, smsAllowed] = await Promise.all([
-    admin
-      .from('tenant_billing_accounts')
-      .select('status')
-      .eq('tenant_id', membership.tenantId)
-      .maybeSingle(),
+  const [billing, plan, subscriptionTier, smsAllowed] = await Promise.all([
+    loadTextingBilling(admin, membership.tenantId),
     resolveTenantEntitlementPlan(admin, membership.tenantId),
     resolveTenantSubscriptionTier(admin, membership.tenantId),
     resolveTenantSmsCommunicationAllowed(admin, membership.tenantId),
   ]);
-  const smsTierEnabled = isFeatureEnabled(plan, 'smsCommunication');
-  const smsTrialLocked = smsTierEnabled && !canUseSmsCommunication(billing?.status);
+  const textingPaid = canUseTexting(billing.status, billing.rawStripeStatus);
+  const smsTierEnabled = textingPaid && isFeatureEnabled(plan, 'smsCommunication');
+  const applicantSmsEnabled = textingPaid && isFeatureEnabled(plan, 'applicantSms');
+  const smsTrialLocked = !textingPaid;
   const sentDmConfigured = isSentDmConfigured();
-  const smsUsed = smsAllowed ? await countSmsSegmentsUsedThisMonth(admin, membership.tenantId) : 0;
+  const smsUsed =
+    smsAllowed || applicantSmsEnabled
+      ? await countSmsSegmentsUsedThisMonth(admin, membership.tenantId)
+      : 0;
+  const applicantSmsUsed = applicantSmsEnabled
+    ? await countApplicantSmsSegmentsUsedThisMonth(admin, membership.tenantId)
+    : 0;
   const smsUsageSummary = smsAllowed
     ? formatSmsUsageSummary(smsUsed, subscriptionTier ?? 'pro')
+    : null;
+  const applicantUsageSummary = applicantSmsEnabled
+    ? formatApplicantSmsUsageSummary(applicantSmsUsed, plan)
+    : null;
+  const applicantSeparateCap = applicantSmsEnabled && applicantUsesSeparateCap(plan);
+  const applicantWarning = applicantSeparateCap
+    ? allowanceWarning(
+        applicantSmsUsed,
+        getEntitlementsForPlan(plan).limits.includedApplicantSmsCreditsMonthly,
+        'Applicant texts',
+      )
     : null;
   const invoiceReminderEmailEditable = isFeatureEnabled(plan, 'invoiceReminderEmail');
   const visitReminderEmailEditable = isFeatureEnabled(plan, 'emailVisitReminders');
@@ -147,11 +168,29 @@ export default async function TenantOperationsSettingsPage() {
           </p>
         ) : null}
 
-        {!smsTierEnabled ? (
+        {!textingPaid ? (
+          <FeatureUpgradePanel
+            title="Texting unlocks once your subscription starts"
+            description="Applicant texts and customer texts stay off until this workspace has an active paid subscription."
+          />
+        ) : !smsTierEnabled ? (
           <FeatureUpgradePanel
             title="Upgrade to unlock text notifications"
             description="Pro includes customer text alerts for quotes, visit reminders, and overdue invoices — 25,000 segments per month."
           />
+        ) : null}
+
+        {applicantUsageSummary ? (
+          <div className={styles.planNotice} id="applicant-texting">
+            <p className={styles.planNoticeTitle}>Text job applicants</p>
+            <p className={styles.planNoticeBody}>
+              {applicantUsageSummary}. General customer texting stays on Pro.
+              {applicantWarning ? ` ${applicantWarning.message}` : ''}{' '}
+              <Link href="/billing#text-packs" className={styles.planNoticeLink}>
+                Buy a text pack
+              </Link>
+            </p>
+          </div>
         ) : null}
 
         <EmployeeHoursPolicyForm

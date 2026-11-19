@@ -65,8 +65,18 @@ export function pickHighestUtilizationAlert(
   })[0]!;
 }
 
+function isTextAllowance(key: UtilizationAlert['key']): boolean {
+  return key === 'includedSmsCreditsMonthly' || key === 'includedApplicantSmsCreditsMonthly';
+}
+
 export function utilizationBannerMessage(alert: UtilizationAlert): string {
   const pct = Math.round(alert.ratio * 100);
+  if (isTextAllowance(alert.key)) {
+    if (alert.level === 'exceeded') {
+      return `${alert.label} limit reached (${alert.used.toLocaleString()}/${alert.limit.toLocaleString()}). Buy a text pack to keep texting.`;
+    }
+    return `${alert.label} at ${pct}% (${alert.used.toLocaleString()}/${alert.limit.toLocaleString()}). Buy a text pack before this allowance runs out.`;
+  }
   if (alert.level === 'exceeded') {
     return `${alert.label} limit reached (${alert.used}/${alert.limit}). Upgrade to continue adding resources.`;
   }

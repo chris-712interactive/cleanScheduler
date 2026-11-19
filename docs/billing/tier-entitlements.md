@@ -86,16 +86,19 @@ Enforcement (active memberships + pending invites):
 
 Inactive members do not consume seats. Pending invites reserve a seat until accepted, expired, or revoked.
 
-## SMS (Pro — planned send pipeline)
+## SMS and text packs
 
-| Tier     | `smsCommunication` | `includedSmsCreditsMonthly` |
-| -------- | ------------------ | --------------------------- |
-| Starter  | No                 | 0                           |
-| Business | No                 | 0                           |
-| Pro      | Yes                | 25,000                      |
+| Tier     | Customer texts (`smsCommunication`) | Applicant texts | Monthly allowance                              |
+| -------- | ----------------------------------- | --------------- | ---------------------------------------------- |
+| Starter  | No                                  | No              | 0                                              |
+| Business | No                                  | Yes             | 100 applicant SMS segments                     |
+| Pro      | Yes                                 | Yes             | 25,000 SMS segments, including applicant texts |
 
-Entitlement flag is defined and enforced at send time. Requires sent.dm env vars on the server.
-**Not available during the free trial** — tenant billing status must be `active` or `past_due` (see `canUseSmsCommunication` in `lib/billing/tenantSubscriptionAccess.ts`).
+Text packs are the only prepaid extra. They are not called add-ons. A pack adds 1,000 segments for $15 or 2,500 segments for $35. Pack segments are used only after that month's allowance is exhausted, do not expire at month end, and belong to the tenant. Owners and admins buy them with a one-time Stripe Checkout payment. The segments are credited from `checkout.session.completed`, matched on the Checkout session id. Price IDs are `STRIPE_PRICE_TEXT_PACK_1000` and `STRIPE_PRICE_TEXT_PACK_2500`. When either is unset, or migration `0131` is not applied, the buy buttons stay hidden and the screen says text packs are not available yet. Plan allowance texting still works.
+
+Texting requires `tenant_billing_accounts.status = 'active'`. Trial, missing, `past_due` (Stripe `past_due` or `unpaid`), and `canceled` (Stripe `canceled` or `incomplete_expired`) cannot text or buy a pack. Stripe `incomplete` is stored as `trialing`. The screen says "Texting unlocks once your subscription starts" and links to `/billing`.
+
+A warning appears at 80% of the monthly allowance and again at 100%, with a link to buy a text pack.
 
 **Implemented (Pro + sent.dm configured):**
 

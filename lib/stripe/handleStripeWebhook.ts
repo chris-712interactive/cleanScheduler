@@ -34,8 +34,9 @@ import {
   constructStripeWebhookEvent,
   listStripeWebhookSecrets,
 } from '@/lib/stripe/constructWebhookEvent';
+import { creditTextPackPurchase, parseTextPackCredit } from '@/lib/billing/textPacks';
 
-async function dispatchStripeWebhookEvent(
+export async function dispatchStripeWebhookEvent(
   admin: ReturnType<typeof createAdminClient>,
   stripe: Stripe,
   event: Stripe.Event,
@@ -45,6 +46,20 @@ async function dispatchStripeWebhookEvent(
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (!connectAccountId && session.metadata?.kind === 'text_pack') {
+        const credit = parseTextPackCredit({
+          sessionId: session.id,
+          mode: session.mode,
+          paymentStatus: session.payment_status,
+          amountTotal: session.amount_total,
+          currency: session.currency,
+          metadata: session.metadata,
+        });
+        if (credit.action === 'credit') {
+          await creditTextPackPurchase(admin, credit);
+        }
+        break;
+      }
       if (
         session.metadata?.kind === 'instant_booking' &&
         session.metadata.booking_id &&
@@ -101,7 +116,9 @@ async function dispatchStripeWebhookEvent(
     }
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
-    case 'customer.subscription.deleted': {
+    case 'customer.subscription.deleted':
+    case 'customer.subscription.paused':
+    case 'customer.subscription.resumed': {
       const subscription = event.data.object as Stripe.Subscription;
       if (connectAccountId) {
         if (subscription.metadata?.kind === 'tenant_customer_subscription') {

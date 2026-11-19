@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
-import { canUsePaidSubscriptionFeatures } from '@/lib/billing/tenantSubscriptionAccess';
+import { loadTextingBilling } from '@/lib/billing/loadTextingBilling';
+import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
 import type { Database } from '@/lib/supabase/database.types';
 import {
   emailDeliveryFields,
@@ -138,12 +139,8 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
   for (const ops of opsRows ?? []) {
     const tenantId = ops.tenant_id;
 
-    const [{ data: billing }, brandLoaded, plan] = await Promise.all([
-      admin
-        .from('tenant_billing_accounts')
-        .select('status, platform_plan')
-        .eq('tenant_id', tenantId)
-        .maybeSingle(),
+    const [billing, brandLoaded, plan] = await Promise.all([
+      loadTextingBilling(admin, tenantId),
       loadTenantEmailBrand(admin, tenantId),
       resolveTenantEntitlementPlan(admin, tenantId),
     ]);
@@ -153,7 +150,7 @@ export async function sendOverdueInvoiceReminders(admin: Admin): Promise<{
     const smsAllowed =
       ops.sms_notify_invoice_overdue &&
       isFeatureEnabled(plan, 'smsCommunication') &&
-      canUsePaidSubscriptionFeatures(billing?.status);
+      canUseTexting(billing.status, billing.rawStripeStatus);
 
     if (!emailAllowed && !smsAllowed) {
       skipped += 1;

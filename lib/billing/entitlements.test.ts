@@ -11,10 +11,18 @@ import {
 } from '@/lib/billing/entitlements';
 
 describe('entitlements', () => {
-  it('enables SMS only on Pro', () => {
+  it('enables SMS only on Pro and applicant texts on Business and Pro', () => {
     expect(isFeatureEnabled('starter', 'smsCommunication')).toBe(false);
     expect(isFeatureEnabled('business', 'smsCommunication')).toBe(false);
     expect(isFeatureEnabled('pro', 'smsCommunication')).toBe(true);
+    expect(isFeatureEnabled('starter', 'applicantSms')).toBe(false);
+    expect(isFeatureEnabled('trial', 'applicantSms')).toBe(false);
+    expect(isFeatureEnabled('business', 'applicantSms')).toBe(true);
+    expect(isFeatureEnabled('pro', 'applicantSms')).toBe(true);
+    expect(PLATFORM_TIER_ENTITLEMENTS.business.limits.includedApplicantSmsCreditsMonthly).toBe(100);
+    expect(PLATFORM_TIER_ENTITLEMENTS.starter.monthlyPriceUsd).toBe(39);
+    expect(PLATFORM_TIER_ENTITLEMENTS.business.monthlyPriceUsd).toBe(129);
+    expect(PLATFORM_TIER_ENTITLEMENTS.pro.monthlyPriceUsd).toBe(299);
   });
 
   it('enables GPS check-in on all plans including Starter', () => {

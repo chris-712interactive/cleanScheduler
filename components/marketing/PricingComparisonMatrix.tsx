@@ -25,7 +25,16 @@ function workflowValue(tier: PlatformPlanTier): string {
 function smsValue(tier: PlatformPlanTier): string {
   const credits = PLATFORM_TIER_ENTITLEMENTS[tier].limits.includedSmsCreditsMonthly;
   if (credits === 0) return '—';
-  return credits.toLocaleString();
+  return `${credits.toLocaleString()}/mo`;
+}
+
+function applicantSmsValue(tier: PlatformPlanTier): string | boolean {
+  const entitlements = PLATFORM_TIER_ENTITLEMENTS[tier];
+  if (!entitlements.features.applicantSms) return false;
+  if (entitlements.features.smsCommunication) return 'Included in SMS allowance';
+  const credits = entitlements.limits.includedApplicantSmsCreditsMonthly;
+  if (credits === 0) return false;
+  return `${credits.toLocaleString()}/mo`;
 }
 
 function campaignSendsValue(tier: PlatformPlanTier): string {
@@ -152,7 +161,23 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: {
       starter: false,
       business: false,
-      pro: smsValue('pro') + '/mo',
+      pro: smsValue('pro'),
+    },
+  },
+  {
+    label: 'Text job applicants',
+    values: {
+      starter: applicantSmsValue('starter'),
+      business: applicantSmsValue('business'),
+      pro: applicantSmsValue('pro'),
+    },
+  },
+  {
+    label: 'Text packs',
+    values: {
+      starter: false,
+      business: '1,000 for $15 or 2,500 for $35',
+      pro: '1,000 for $15 or 2,500 for $35',
     },
   },
   {

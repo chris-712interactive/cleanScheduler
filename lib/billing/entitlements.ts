@@ -19,6 +19,7 @@ export type EntitlementFeature =
   | 'dedicatedOnboarding'
   | 'plaidReconciliation'
   | 'smsCommunication'
+  | 'applicantSms'
   | 'whiteLabelCustomerPortal'
   | 'proofOfServicePhotos'
   | 'gpsVerifiedCheckIn'
@@ -49,6 +50,7 @@ export type EntitlementLimitKey =
   | 'maxActiveCustomers'
   | 'maxAutomationWorkflows'
   | 'includedSmsCreditsMonthly'
+  | 'includedApplicantSmsCreditsMonthly'
   | 'includedEmailCreditsMonthly'
   | 'includedIntegrations'
   | 'maxCampaignSendsMonthly'
@@ -98,6 +100,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       dedicatedOnboarding: false,
       plaidReconciliation: false,
       smsCommunication: false,
+      applicantSms: false,
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: true,
       gpsVerifiedCheckIn: true,
@@ -128,6 +131,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxActiveCustomers: 500,
       maxAutomationWorkflows: 3,
       includedSmsCreditsMonthly: 0,
+      includedApplicantSmsCreditsMonthly: 0,
       includedEmailCreditsMonthly: 2500,
       includedIntegrations: 1,
       maxCampaignSendsMonthly: 0,
@@ -158,6 +162,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       dedicatedOnboarding: false,
       plaidReconciliation: true,
       smsCommunication: false,
+      applicantSms: true,
       whiteLabelCustomerPortal: false,
       proofOfServicePhotos: true,
       gpsVerifiedCheckIn: true,
@@ -188,6 +193,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxActiveCustomers: 5000,
       maxAutomationWorkflows: 20,
       includedSmsCreditsMonthly: 0,
+      includedApplicantSmsCreditsMonthly: 100,
       includedEmailCreditsMonthly: 25000,
       includedIntegrations: 5,
       maxCampaignSendsMonthly: 10000,
@@ -218,6 +224,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       dedicatedOnboarding: true,
       plaidReconciliation: true,
       smsCommunication: true,
+      applicantSms: true,
       whiteLabelCustomerPortal: true,
       proofOfServicePhotos: true,
       gpsVerifiedCheckIn: true,
@@ -248,6 +255,7 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       maxActiveCustomers: 25000,
       maxAutomationWorkflows: 100,
       includedSmsCreditsMonthly: 25000,
+      includedApplicantSmsCreditsMonthly: 0,
       includedEmailCreditsMonthly: 100000,
       includedIntegrations: 20,
       maxCampaignSendsMonthly: 40000,
@@ -284,6 +292,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     dedicatedOnboarding: false,
     plaidReconciliation: false,
     smsCommunication: false,
+    applicantSms: false,
     whiteLabelCustomerPortal: false,
     proofOfServicePhotos: true,
     gpsVerifiedCheckIn: true,
@@ -314,6 +323,7 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     maxActiveCustomers: 2000,
     maxAutomationWorkflows: 10,
     includedSmsCreditsMonthly: 0,
+    includedApplicantSmsCreditsMonthly: 0,
     includedEmailCreditsMonthly: 0,
     includedIntegrations: 2,
     maxCampaignSendsMonthly: 0,
@@ -350,6 +360,7 @@ const LIMIT_DISPLAY_LABEL: Record<NumericEntitlementLimitKey, string> = {
   maxActiveCustomers: 'active customers',
   maxAutomationWorkflows: 'recurring visit rules',
   includedSmsCreditsMonthly: 'SMS segments',
+  includedApplicantSmsCreditsMonthly: 'applicant SMS segments',
   includedEmailCreditsMonthly: 'email sends',
   includedIntegrations: 'integrations',
   maxCampaignSendsMonthly: 'campaign sends',
