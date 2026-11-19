@@ -8,7 +8,7 @@ import {
   applyCustomerPropertiesPatch,
   type CustomerPropertyVM,
 } from '@/lib/tenant/customerPropertyPatch';
-import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
+import { couldNotLocateAddress, missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { buildScheduleConsultationPath } from '@/lib/tenant/customerConsultation';
 import type { PropertyConsultationPrompt } from '@/lib/tenant/propertyConsultationRequest';
 import { customerLocationDomId } from '@/lib/tenant/customerLocationHref';
@@ -219,7 +219,11 @@ export function CustomerPropertySection({
                     {p.label?.trim() || 'Unnamed location'}
                     {p.is_primary ? <span className={styles.primaryBadge}>Primary</span> : null}
                     {geocodeMessage ? (
-                      <span className={styles.geocodeBadge}>Missing map point</span>
+                      <span className={styles.geocodeBadge}>
+                        {couldNotLocateAddress(p.geocode_reason)
+                          ? "Couldn't locate this address"
+                          : 'Missing map point'}
+                      </span>
                     ) : null}
                     {consultation ? (
                       <span className={styles.geocodeBadge}>

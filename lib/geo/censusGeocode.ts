@@ -1,5 +1,9 @@
-import { geocodeReasonFromLookups, type GeocodeReason } from '@/lib/geo/geocodeStatus';
-import { geocodeWithGoogle } from '@/lib/geo/googleGeocode';
+import { censusGeocodeProvider, pointFromCensusResponse } from './censusProvider';
+import { geocodioApiKey, geocodioGeocodeProvider } from './geocodioProvider';
+import type { GeocodeReason } from './geocodeStatus';
+import { type GeocodeProvider, type GeocodeSource, type ProviderLookup } from './geocodeProvider';
+
+export { pointFromCensusResponse };
 
 export type GeocodedPoint = {
   lat: number;
@@ -17,39 +21,28 @@ export type GeocodeAddress = {
 export type StoredGeocode = GeocodeAddress & {
   latitude: number | null;
   longitude: number | null;
+  geocodeStatus?: string | null;
+  geocodeSource?: GeocodeSource | null;
+  geocodeAccuracy?: string | null;
+  geocodedAt?: string | null;
+  reason?: GeocodeReason | string | null;
 };
 
 export type GeocodeResult = {
   point: GeocodedPoint | null;
   reason: GeocodeReason | null;
+  status?: 'ok' | 'failed' | null;
+  source?: GeocodeSource | null;
+  accuracy?: string | null;
+  /** True when the stored attempt was kept and no provider was called. */
+  reused?: boolean;
 };
 
-type CensusMatch = {
-  coordinates?: { x?: number; y?: number };
+export type GeocodeDeps = {
+  census?: GeocodeProvider;
+  geocodio?: GeocodeProvider | null;
+  env?: NodeJS.ProcessEnv;
 };
-
-type CensusResponse = {
-  result?: { addressMatches?: CensusMatch[] };
-};
-
-/** Pulls the first Census match. Longitude is x, latitude is y. */
-export function pointFromCensusResponse(payload: unknown): GeocodedPoint | null {
-  if (typeof payload !== 'object' || payload === null) return null;
-  const matches = (payload as CensusResponse).result?.addressMatches;
-  const coordinates = matches?.[0]?.coordinates;
-  const lng = coordinates?.x;
-  const lat = coordinates?.y;
-  if (typeof lat !== 'number' || typeof lng !== 'number') return null;
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-  return { lat, lng };
-}
-
-export function formatGeocodeQuery(parts: GeocodeAddress): string {
-  return [parts.line1, parts.city, parts.state, parts.postalCode]
-    .map((part) => part?.trim() ?? '')
-    .filter(Boolean)
-    .join(', ');
-}
 
 function addressKey(parts: GeocodeAddress): string {
   const norm = (value?: string | null) => (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -63,54 +56,138 @@ function addressKey(parts: GeocodeAddress): string {
   ].join('|');
 }
 
+export function storedGeocodeSource(value: string | null | undefined): GeocodeSource | null {
+  if (value === 'census' || value === 'geocodio') return value;
+  return null;
+}
+
 export function sameGeocodeAddress(a: GeocodeAddress, b: GeocodeAddress): boolean {
   return addressKey(a) === addressKey(b);
 }
 
-async function censusLookup(
-  address: string,
-): Promise<{ status: 'ok'; point: GeocodedPoint } | { status: 'no_match' | 'failed' }> {
-  const url = new URL('https://geocoding.geo.census.gov/geocoder/locations/onelineaddress');
-  url.searchParams.set('address', address);
-  url.searchParams.set('benchmark', 'Public_AR_Current');
-  url.searchParams.set('format', 'json');
-
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(4000) });
-    if (!response.ok) return { status: 'failed' };
-    const point = pointFromCensusResponse(await response.json());
-    if (!point) return { status: 'no_match' };
-    return { status: 'ok', point };
-  } catch {
-    return { status: 'failed' };
-  }
+export function formatGeocodeQuery(parts: GeocodeAddress): string {
+  return [parts.line1, parts.city, parts.state, parts.postalCode]
+    .map((part) => part?.trim() ?? '')
+    .filter(Boolean)
+    .join(', ');
 }
 
-function addressHasText(parts: GeocodeAddress): boolean {
+export function addressHasText(parts: GeocodeAddress): boolean {
   return [parts.line1, parts.city, parts.state, parts.postalCode].some(
     (part) => (part ?? '').trim().length > 0,
   );
 }
 
 /**
- * Google Geocoding API when `GOOGLE_MAPS_GEOCODING_API_KEY` is set, then the
- * US Census geocoder. `reason` explains a missing point so the office can show it.
+ * True when this address text already has a stored attempt.
+ * A point, a failed lookup, or a recorded timestamp all count.
+ * Pending and legacy rows with no point are looked up again.
  */
-export async function lookupUsAddress(parts: GeocodeAddress): Promise<GeocodeResult> {
-  const country = parts.country?.trim().toUpperCase();
-  if (country && country !== 'US' && country !== 'USA' && country !== 'UNITED STATES') {
-    return { point: null, reason: 'outside_us' };
+export function addressGeocodeIsCurrent(next: GeocodeAddress, previous: StoredGeocode): boolean {
+  if (!sameGeocodeAddress(next, previous)) return false;
+  if (!addressHasText(next)) return true;
+  const hasPoint = previous.latitude != null && previous.longitude != null;
+  const attempted =
+    previous.geocodedAt != null ||
+    previous.geocodeStatus === 'ok' ||
+    previous.geocodeStatus === 'failed';
+  return hasPoint || attempted;
+}
+
+function failedResult(reason: GeocodeReason): GeocodeResult {
+  return {
+    point: null,
+    reason,
+    status: 'failed',
+    source: null,
+    accuracy: null,
+    reused: false,
+  };
+}
+
+function resultFromHit(
+  source: GeocodeSource,
+  hit: { lat: number; lng: number; accuracy: string | null },
+): GeocodeResult {
+  return {
+    point: { lat: hit.lat, lng: hit.lng },
+    reason: null,
+    status: 'ok',
+    source,
+    accuracy: hit.accuracy,
+    reused: false,
+  };
+}
+
+/** Census first. Geocodio runs only when it is configured and Census did not match. */
+export async function lookupWithProviders(
+  address: string,
+  census: GeocodeProvider,
+  geocodio: GeocodeProvider | null,
+): Promise<GeocodeResult> {
+  let censusLookup: ProviderLookup;
+  try {
+    censusLookup = await census.lookup(address);
+  } catch {
+    censusLookup = { status: 'failed' };
   }
-  const address = formatGeocodeQuery(parts);
-  if (address.length < 8) {
-    return { point: null, reason: addressHasText(parts) ? 'incomplete' : null };
+  if (censusLookup.status === 'ok') return resultFromHit(census.source, censusLookup.hit);
+
+  let fallback: ProviderLookup | null = null;
+  if (geocodio) {
+    try {
+      fallback = await geocodio.lookup(address);
+    } catch {
+      fallback = { status: 'failed' };
+    }
+    if (fallback.status === 'ok') return resultFromHit(geocodio.source, fallback.hit);
   }
 
-  const google = await geocodeWithGoogle(address);
-  if (google.status === 'ok') return { point: google.point, reason: null };
-  const census = await censusLookup(address);
-  if (census.status === 'ok') return { point: census.point, reason: null };
-  return { point: null, reason: geocodeReasonFromLookups(google.status, census.status) };
+  if (censusLookup.status === 'no_match' || fallback?.status === 'no_match') {
+    return failedResult('no_match');
+  }
+  return failedResult('lookup_failed');
+}
+
+function fallbackProvider(deps: GeocodeDeps | undefined): GeocodeProvider | null {
+  if (deps && 'geocodio' in deps) return deps.geocodio ?? null;
+  const key = geocodioApiKey(deps?.env);
+  return key ? geocodioGeocodeProvider(key) : null;
+}
+
+/**
+ * US Census geocoder, then Geocodio when `GEOCODIO_API_KEY` is set.
+ * Google and Mapbox are not called: their terms forbid storing the results.
+ * This function does not throw.
+ */
+export async function lookupUsAddress(
+  parts: GeocodeAddress,
+  deps?: GeocodeDeps,
+): Promise<GeocodeResult> {
+  try {
+    const country = parts.country?.trim().toUpperCase();
+    if (country && country !== 'US' && country !== 'USA' && country !== 'UNITED STATES') {
+      return failedResult('outside_us');
+    }
+    const address = formatGeocodeQuery(parts);
+    if (address.length < 8) {
+      if (!addressHasText(parts)) {
+        return {
+          point: null,
+          reason: null,
+          status: null,
+          source: null,
+          accuracy: null,
+          reused: false,
+        };
+      }
+      return failedResult('incomplete');
+    }
+    const census = deps?.census ?? censusGeocodeProvider();
+    return await lookupWithProviders(address, census, fallbackProvider(deps));
+  } catch {
+    return failedResult('lookup_failed');
+  }
 }
 
 /** Point only. Saves that do not show a reason can keep calling this. */
@@ -119,21 +196,27 @@ export async function geocodeUsAddress(parts: GeocodeAddress): Promise<GeocodedP
 }
 
 /**
- * Reuses a stored point when the address text is unchanged.
- * A cleared or changed address is looked up again, and a miss includes a reason.
+ * Reuses a stored attempt when the address text is unchanged.
+ * A changed address is looked up again. A miss includes a reason.
  */
 export async function resolveGeocodedPoint(
   next: GeocodeAddress,
   previous: StoredGeocode | null,
+  deps?: GeocodeDeps,
 ): Promise<GeocodeResult> {
-  if (
-    previous &&
-    sameGeocodeAddress(next, previous) &&
-    previous.latitude != null &&
-    previous.longitude != null &&
-    formatGeocodeQuery(next).length >= 8
-  ) {
-    return { point: { lat: previous.latitude, lng: previous.longitude }, reason: null };
+  if (previous && addressGeocodeIsCurrent(next, previous)) {
+    const hasPoint = previous.latitude != null && previous.longitude != null;
+    const status = hasPoint ? 'ok' : previous.geocodeStatus === 'failed' ? 'failed' : 'ok';
+    return {
+      point: hasPoint
+        ? { lat: previous.latitude as number, lng: previous.longitude as number }
+        : null,
+      reason: hasPoint ? null : ((previous.reason as GeocodeReason | null) ?? null),
+      status: addressHasText(next) ? status : null,
+      source: previous.geocodeSource ?? null,
+      accuracy: previous.geocodeAccuracy ?? null,
+      reused: true,
+    };
   }
-  return lookupUsAddress(next);
+  return lookupUsAddress(next, deps);
 }

@@ -2606,6 +2606,10 @@ export type Database = {
           latitude: number | null;
           longitude: number | null;
           geocode_reason: string | null;
+          geocode_status: string | null;
+          geocode_source: string | null;
+          geocode_accuracy: string | null;
+          geocoded_at: string | null;
           consultation_requested_at: string | null;
           scheduling_override: Json | null;
           required_crew_size: number;
@@ -2636,6 +2640,10 @@ export type Database = {
           latitude?: number | null;
           longitude?: number | null;
           geocode_reason?: string | null;
+          geocode_status?: string | null;
+          geocode_source?: string | null;
+          geocode_accuracy?: string | null;
+          geocoded_at?: string | null;
           consultation_requested_at?: string | null;
           scheduling_override?: Json | null;
           required_crew_size?: number;
@@ -2666,6 +2674,10 @@ export type Database = {
           latitude?: number | null;
           longitude?: number | null;
           geocode_reason?: string | null;
+          geocode_status?: string | null;
+          geocode_source?: string | null;
+          geocode_accuracy?: string | null;
+          geocoded_at?: string | null;
           consultation_requested_at?: string | null;
           scheduling_override?: Json | null;
           required_crew_size?: number;

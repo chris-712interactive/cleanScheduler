@@ -18,6 +18,7 @@ type PropertyRow = {
   postal_code: string | null;
   latitude: number | null;
   longitude: number | null;
+  geocode_status?: string | null;
 };
 
 function adminFor(row: PropertyRow | null) {
@@ -36,13 +37,21 @@ function adminFor(row: PropertyRow | null) {
         },
         update(patch: Record<string, unknown>) {
           updates.push(patch);
-          return {
+          const query = {
             eq() {
-              return {
-                eq: async () => ({ error: null }),
-              };
+              return query;
+            },
+            is() {
+              return query;
+            },
+            then(
+              onFulfilled: (value: { error: null }) => unknown,
+              onRejected?: (reason: unknown) => unknown,
+            ) {
+              return Promise.resolve({ error: null }).then(onFulfilled, onRejected);
             },
           };
+          return query;
         },
       };
     },
@@ -91,7 +100,34 @@ describe('ensurePropertyGeocoded', () => {
       state: 'FL',
       postalCode: '34236',
     });
-    expect(updates).toEqual([{ latitude: 27.34, longitude: -82.53, geocode_reason: null }]);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toMatchObject({
+      latitude: 27.34,
+      longitude: -82.53,
+      geocode_reason: null,
+      geocode_status: 'ok',
+      geocode_source: null,
+      geocode_accuracy: null,
+    });
+    expect(updates[0]?.geocoded_at).toEqual(expect.any(String));
     expect(point).toEqual({ latitude: 27.34, longitude: -82.53 });
+  });
+
+  it('does not call the provider again after a failed attempt', async () => {
+    const { admin, updates } = adminFor({
+      address_line1: '10 Main St',
+      city: 'Sarasota',
+      state: 'FL',
+      postal_code: '34236',
+      latitude: null,
+      longitude: null,
+      geocode_status: 'failed',
+    });
+
+    const point = await ensurePropertyGeocoded(admin, 'tenant', 'property');
+
+    expect(point).toEqual({ latitude: null, longitude: null });
+    expect(lookup).not.toHaveBeenCalled();
+    expect(updates).toEqual([]);
   });
 });

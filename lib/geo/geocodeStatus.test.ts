@@ -47,7 +47,9 @@ describe('missingGeocodeMessage', () => {
         longitude: null,
         addressParts: ['10 Main St', 'Sylva'],
       }),
-    ).toBe('Missing map point. No map match. Check the street, city, state, and postal code.');
+    ).toBe(
+      "Missing map point. Couldn't locate this address. Check the street, city, state, and postal code.",
+    );
   });
 
   it('asks for another save when an older address has no reason yet', () => {
