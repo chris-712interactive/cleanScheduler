@@ -5,8 +5,11 @@ import {
   lookupUsAddress,
   type GeocodeAddress,
   type GeocodeResult,
-} from './censusGeocode';
-import { propertyGeocodePatchFromResult, type PropertyGeocodePatch } from './propertyGeocodePatch';
+} from './censusGeocode.ts';
+import {
+  propertyGeocodePatchFromResult,
+  type PropertyGeocodePatch,
+} from './propertyGeocodePatch.ts';
 
 export const DEFAULT_BACKFILL_INTERVAL_MS = 1100;
 

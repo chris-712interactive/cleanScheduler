@@ -1,0 +1,169 @@
+{
+  "password": "LocalStack-QA-password-1",
+  "timeZone": "America/New_York",
+  "residential": {
+    "slug": "qa-residential",
+    "name": "QA Residential Cleaning",
+    "segment": "residential",
+    "tenantId": "11111111-1111-4111-8111-111111111111",
+    "owner": {
+      "email": "owner.residential@example.test",
+      "role": "owner",
+      "appRole": "employee",
+      "displayName": "Avery Owner"
+    },
+    "admin": {
+      "email": "admin.residential@example.test",
+      "role": "admin",
+      "appRole": "employee",
+      "displayName": "Blake Admin"
+    },
+    "cleaner": {
+      "email": "cleaner.residential@example.test",
+      "role": "employee",
+      "appRole": "employee",
+      "displayName": "Drew Cleaner"
+    },
+    "portalUser": {
+      "email": "customer.residential@example.test",
+      "appRole": "customer",
+      "displayName": "Riley Example"
+    },
+    "customers": {
+      "riley": {
+        "id": "11111111-1111-4111-8111-111111111201",
+        "identityId": "11111111-1111-4111-8111-111111111101",
+        "firstName": "Riley",
+        "lastName": "Example",
+        "email": "customer.residential@example.test",
+        "portal": true
+      },
+      "casey": {
+        "id": "11111111-1111-4111-8111-111111111202",
+        "identityId": "11111111-1111-4111-8111-111111111102",
+        "firstName": "Casey",
+        "lastName": "Example",
+        "email": "casey.residential@example.test",
+        "portal": false
+      }
+    },
+    "properties": {
+      "home": {
+        "id": "11111111-1111-4111-8111-111111111301",
+        "customer": "riley",
+        "label": "Riley home",
+        "kind": "residential",
+        "line1": "1 Home Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": true,
+        "geocode": "ok"
+      },
+      "nomatch": {
+        "id": "11111111-1111-4111-8111-111111111302",
+        "customer": "riley",
+        "label": "Riley cabin",
+        "kind": "residential",
+        "line1": "9 Nomatch Road",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": false,
+        "geocode": "no_match"
+      },
+      "retry": {
+        "id": "11111111-1111-4111-8111-111111111303",
+        "customer": "riley",
+        "label": "Riley lake",
+        "kind": "residential",
+        "line1": "15 Retry Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": false,
+        "geocode": "lookup_failed"
+      },
+      "casey": {
+        "id": "11111111-1111-4111-8111-111111111304",
+        "customer": "casey",
+        "label": "Casey house",
+        "kind": "residential",
+        "line1": "8 Market Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": true,
+        "geocode": "ok"
+      }
+    },
+    "visitId": "11111111-1111-4111-8111-111111111401",
+    "visits": [
+      {
+        "id": "11111111-1111-4111-8111-111111111401",
+        "property": "home",
+        "customer": "riley",
+        "assignee": "cleaner",
+        "hour": 9
+      },
+      {
+        "id": "11111111-1111-4111-8111-111111111402",
+        "property": "casey",
+        "customer": "casey",
+        "assignee": "owner",
+        "hour": 11
+      },
+      {
+        "id": "11111111-1111-4111-8111-111111111403",
+        "property": "nomatch",
+        "customer": "riley",
+        "assignee": null,
+        "hour": 15
+      },
+      {
+        "id": "11111111-1111-4111-8111-111111111404",
+        "property": "retry",
+        "customer": "riley",
+        "assignee": null,
+        "hour": 17
+      }
+    ]
+  },
+  "commercial": {
+    "slug": "qa-commercial",
+    "name": "QA Commercial Cleaning",
+    "segment": "commercial",
+    "tenantId": "22222222-2222-4222-8222-222222222222",
+    "owner": {
+      "email": "owner.commercial@example.test",
+      "role": "owner",
+      "appRole": "employee",
+      "displayName": "Parker Owner"
+    },
+    "customers": {
+      "quinn": {
+        "id": "22222222-2222-4222-8222-222222222201",
+        "identityId": "22222222-2222-4222-8222-222222222101",
+        "firstName": "Quinn",
+        "lastName": "Example",
+        "email": "quinn.commercial@example.test",
+        "portal": false
+      }
+    },
+    "properties": {
+      "hq": {
+        "id": "22222222-2222-4222-8222-222222222301",
+        "customer": "quinn",
+        "label": "Quinn HQ",
+        "kind": "commercial",
+        "line1": "500 Office Park",
+        "city": "Charlotte",
+        "state": "NC",
+        "postal": "28202",
+        "primary": true,
+        "geocode": "ok"
+      }
+    },
+    "visitId": "22222222-2222-4222-8222-222222222401"
+  }
+}

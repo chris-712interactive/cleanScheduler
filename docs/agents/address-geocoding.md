@@ -10,8 +10,10 @@ Session notes for the service-location geocode foundation. Product behavior is i
 - Saves write the address (status `pending` when there is text) before `savePropertyGeocode`. That helper never throws. The address match on the update keeps a slow lookup from writing a point onto an address that has since changed.
 - Unchanged text with a point, or with a terminal miss (`no_match`, `incomplete`, `outside_us`, and older Google reasons), does not call the network. `lookup_failed` is stored as `geocode_status=pending` and is tried again after `GEOCODE_OUTAGE_RETRY_MS` (60 seconds) on save, Fill schedule (`ensurePropertyGeocoded`), and the default backfill. `--retry-failed` is only for a terminal miss.
 - `savePropertyGeocode` returns the column patch only when the update reports a row. A write error or zero rows leaves the card on the values already stored.
-- Backfill lives in `lib/geo/backfillPropertyGeocodes.ts` and `scripts/backfill-property-geocodes.mts`. It requires `--tenant`. Default interval is 1100 ms and is clamped to 200–10000.
+- Backfill lives in `lib/geo/backfillPropertyGeocodes.ts` and `scripts/backfill-property-geocodes.mts`. It requires `--tenant`. Default interval is 1100 ms and is clamped to 200–10000. The script's runtime imports use a `.ts` suffix so Node can load them without a bundler.
 - The office badge uses "Couldn't locate this address" for `no_match` only. An outage uses "Lookup will retry".
+- `CENSUS_GEOCODE_URL` is honored only for `http` on `127.0.0.1`, `localhost`, or `::1`. Anything else, including a hosted URL, keeps the Census host. The local-stack job sets it to the stub in `scripts/local-stack/geocode-stub.mjs`. Do not set `GEOCODIO_API_KEY` in that job.
+- The disposable local-stack database applies every file in `supabase/migrations`, including `0129`. That is not a hosted project. Do not apply `0129` to dev or prod from CI or an agent.
 
 ## Tests
 
@@ -19,7 +21,7 @@ Session notes for the service-location geocode foundation. Product behavior is i
 
 ## Not done here
 
-- Map view, stop ordering, multi-cleaner dispatch, and entitlements (T2–T6).
+- Stop ordering, multi-cleaner dispatch, and entitlements (T3–T6). The office day map is Schedule → Day map (`docs/product/day-map.md`).
 - Manual pin placement.
 - Source, accuracy, and timestamp on employee homes and the business address.
 - Hosted-dev browser pass. CI does not run Playwright or a production build.
