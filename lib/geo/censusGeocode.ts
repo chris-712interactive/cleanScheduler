@@ -1,7 +1,7 @@
-import { censusGeocodeProvider, pointFromCensusResponse } from './censusProvider';
-import { geocodioApiKey, geocodioGeocodeProvider } from './geocodioProvider';
-import type { GeocodeReason } from './geocodeStatus';
-import { type GeocodeProvider, type GeocodeSource, type ProviderLookup } from './geocodeProvider';
+import { censusGeocodeProvider, pointFromCensusResponse } from './censusProvider.ts';
+import { geocodioApiKey, geocodioGeocodeProvider } from './geocodioProvider.ts';
+import type { GeocodeReason } from './geocodeStatus.ts';
+import type { GeocodeProvider, GeocodeSource, ProviderLookup } from './geocodeProvider.ts';
 
 export { pointFromCensusResponse };
 
