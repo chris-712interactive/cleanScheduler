@@ -1,0 +1,21 @@
+cliArgs:
+  geometry: false
+  planmode: false
+  threads: 2
+  explore: 5
+  limit: '1mb'
+  logdir: '/tmp'
+  logsize: '100M'
+  maxlocations: 1000
+  maxvehicles: 200
+  override: []
+  path: ''
+  port: 3000
+  router: 'valhalla'
+  timeout: 5000
+  baseurl: '/'
+routingServers:
+  valhalla:
+    auto:
+      host: valhalla
+      port: '8002'

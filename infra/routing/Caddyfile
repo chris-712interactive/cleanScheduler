@@ -1,0 +1,31 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$ROUTING_DOMAIN} {
+	log {
+		output stdout
+		format filter {
+			request>headers>Authorization delete
+		}
+	}
+
+	@app header Authorization "Bearer {$ROUTING_ENGINE_TOKEN}"
+
+	handle @app {
+		handle /health {
+			reverse_proxy health:8080
+		}
+		handle /valhalla/* {
+			uri strip_prefix /valhalla
+			reverse_proxy valhalla:8002
+		}
+		handle /vroom/* {
+			uri strip_prefix /vroom
+			reverse_proxy vroom:3000
+		}
+		respond "Not found" 404
+	}
+
+	respond "Unauthorized" 401
+}
