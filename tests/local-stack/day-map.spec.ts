@@ -85,7 +85,7 @@ test('office day map shows this tenant only', async ({ page }) => {
   expect(response?.status() ?? 500).toBeLessThan(500);
   await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
 
-  const onTheMap = page.getByRole('region', { name: 'Day map details' });
+  const onTheMap = page.getByRole('complementary', { name: 'Day map details' });
   await expect(onTheMap.getByRole('heading', { name: 'Visits on the map' })).toBeVisible();
   await expect(onTheMap.getByRole('link', { name: 'Riley Example' }).first()).toBeVisible();
   await expect(onTheMap.getByRole('link', { name: 'Casey Example' })).toBeVisible();
