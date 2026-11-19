@@ -33,7 +33,7 @@ test('office sign-in cannot see the other tenant', async ({ page }) => {
   await shot(page, 'office-customer-list');
 
   await page.goto(`${residentialOrigin}/customers?q=Quinn`);
-  await expect(page.getByText('No customers match your search.')).toBeVisible();
+  await expect(page.getByText('No customers match your search.').first()).toBeVisible();
   await expect(page.getByText('Quinn Example')).toHaveCount(0);
   await shot(page, 'office-cross-tenant-search');
 
@@ -47,18 +47,10 @@ test('office create and edit show geocode badge states', async ({ page }) => {
   await signIn(page, residentialOrigin, accounts.residential.owner.email);
   await page.goto(`${residentialOrigin}/customers/${accounts.residential.customers.riley.id}`);
   await expect(page.getByRole('heading', { name: 'Riley Example' })).toBeVisible();
-  await expect(
-    page
-      .locator('details')
-      .filter({ hasText: 'Riley cabin' })
-      .getByText("Couldn't locate this address", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page
-      .locator('details')
-      .filter({ hasText: 'Riley lake' })
-      .getByText('Lookup will retry', { exact: true }),
-  ).toBeVisible();
+  const cabin = page.locator('details').filter({ hasText: 'Riley cabin' }).first();
+  const lake = page.locator('details').filter({ hasText: 'Riley lake' }).first();
+  await expect(cabin.getByText("Couldn't locate this address", { exact: true })).toBeVisible();
+  await expect(lake.getByText('Lookup will retry', { exact: true })).toBeVisible();
   await shot(page, 'office-seeded-geocode-badges');
 
   await page.getByRole('button', { name: 'Add location' }).click();
@@ -74,7 +66,7 @@ test('office create and edit show geocode badge states', async ({ page }) => {
     .getByRole('button', { name: 'Add location' })
     .click();
 
-  const created = page.locator('details').filter({ hasText: 'QA outage cabin' });
+  const created = page.locator('details').filter({ hasText: 'QA outage cabin' }).first();
   await expect(created.getByText('Lookup will retry', { exact: true })).toBeVisible();
   await shot(page, 'office-lookup-will-retry');
 
@@ -104,8 +96,8 @@ test('customer portal sign-in can request a property', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/properties\?requested=1/);
   await expect(
-    page.getByText('Request sent. Your cleaner will schedule a consultation.'),
+    page.getByText('Request sent. Your cleaner will schedule a consultation.', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText('QA portal cottage')).toBeVisible();
+  await expect(page.getByText('QA portal cottage').first()).toBeVisible();
   await shot(page, 'customer-property-request');
 });
