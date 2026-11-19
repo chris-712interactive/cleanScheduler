@@ -32,4 +32,4 @@ Session notes for removing add-on purchase language and recording routing on Sta
 ## Tests
 
 - Vitest: `lib/billing/entitlements.test.ts` covers the routing matrix, the feature sentence, and the limit sentence.
-- Local-stack Playwright: the `@example.test` business owner opens `/schedule/map` (heading “Day map”, no upgrade wall) and `/settings/operations` (Pro SMS panel plus the billing link). The seeded plan is Business, so SMS is the simple gated path.
+- Local-stack Playwright: the `@example.test` business owner opens `/schedule/map` (heading “Day map”, no upgrade heading) and `/settings/operations` (Pro SMS panel plus the billing link). The panel itself must not say “add-on.” The rest of Operations still lists consultation “Add-ons,” which are cleaning extras, not a platform purchase. The seeded plan is Business, so SMS is the simple gated path.

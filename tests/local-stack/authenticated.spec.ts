@@ -86,19 +86,19 @@ test('business plan keeps the day map and shows a plan upgrade for Pro SMS', asy
 
   await page.goto(`${residentialOrigin}/schedule/map`);
   await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
-  await expect(page.getByText(/add-on/i)).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /upgrade/i })).toHaveCount(0);
   await shot(page, 'office-day-map');
 
   await page.goto(`${residentialOrigin}/settings/operations`);
-  await expect(
-    page.getByRole('heading', { name: 'Upgrade to unlock text notifications' }),
-  ).toBeVisible();
-  await expect(
-    page.getByText(/included in the Pro plan|Pro includes customer text alerts/i),
-  ).toBeVisible();
-  const billing = page.getByRole('link', { name: 'View workspace billing' }).first();
-  await expect(billing).toHaveAttribute('href', '/billing');
-  await expect(page.getByText(/add-on/i)).toHaveCount(0);
+  const upgrade = page.getByRole('heading', { name: 'Upgrade to unlock text notifications' });
+  await expect(upgrade).toBeVisible();
+  const panel = upgrade.locator('..');
+  await expect(panel).toContainText(/Pro includes customer text alerts/i);
+  await expect(panel).not.toContainText(/add-on/i);
+  await expect(panel.getByRole('link', { name: 'View workspace billing' })).toHaveAttribute(
+    'href',
+    '/billing',
+  );
   await shot(page, 'office-sms-plan-upgrade');
 });
 
