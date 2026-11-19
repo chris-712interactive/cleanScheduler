@@ -4,6 +4,7 @@ import { utcInstantForZonedCivilTime } from './seed.mjs';
 import {
   assertLocalDatabaseUrl,
   assertLocalStackEnv,
+  localStackPgPort,
   LocalOnlyUrlError,
 } from './local-only-url.mjs';
 
@@ -37,6 +38,40 @@ describe('local stack URL guard', () => {
         NEXT_PUBLIC_SUPABASE_URL: 'http://10.1.2.3:54321',
       }),
     ).toThrow(/not local/);
+  });
+
+  it('rejects libpq host overrides and percent-encoded hosted names', () => {
+    expect(() =>
+      assertLocalDatabaseUrl(
+        'postgresql://postgres@127.0.0.1:1/postgres?host=192.0.2.1&connect_timeout=1',
+      ),
+    ).toThrow(/host "192.0.2.1"/);
+    expect(() =>
+      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:5432/postgres?hostaddr=192.0.2.1'),
+    ).toThrow(/192\.0\.2\.1/);
+    expect(() =>
+      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1/postgres?host=notreal%2einvalid'),
+    ).toThrow(/not local/);
+    expect(() =>
+      assertLocalDatabaseUrl('postgresql://db%2eexample%2esupabase%2eco/postgres'),
+    ).toThrow(/hosted project/);
+    expect(() =>
+      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:54322/postgres?host=127.0.0.1'),
+    ).not.toThrow();
+    expect(() => assertLocalDatabaseUrl('postgresql://postgres@/postgres?host=192.0.2.1')).toThrow(
+      /192\.0\.2\.1/,
+    );
+  });
+});
+
+describe('local stack postgres port', () => {
+  it('accepts a plain port and rejects a URI fragment', () => {
+    expect(localStackPgPort(undefined)).toBe('54332');
+    expect(localStackPgPort('54332')).toBe('54332');
+    expect(() => localStackPgPort('5432/db?host=192.0.2.1&connect_timeout=1')).toThrow(
+      /integer port/,
+    );
+    expect(() => localStackPgPort('0')).toThrow(/integer port/);
   });
 });
 

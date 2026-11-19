@@ -42,7 +42,7 @@ Home addresses and the business address still store a point and a reason. They d
 Existing locations with no point are filled one workspace at a time. The script is rate-limited (at least 200 ms between lookups, 1100 ms by default) and only reads that tenant. A second run skips points and real misses. An outage is tried again after 60 seconds without `--retry-failed`. `--retry-failed` looks up a real miss again.
 
 ```bash
-node --env-file=.env.local --import ./scripts/local-stack/register-ts-extensions.mjs scripts/backfill-property-geocodes.mts --tenant <workspace-uuid>
+node --env-file=.env.local scripts/backfill-property-geocodes.mts --tenant <workspace-uuid>
 ```
 
 Optional flags: `--min-interval-ms 1100`, `--retry-failed`.

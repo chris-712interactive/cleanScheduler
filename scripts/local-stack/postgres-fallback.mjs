@@ -7,13 +7,14 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { localStackPgPort } from './local-only-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
 const dataDir = path.join(repoRoot, '.local-stack/pgdata');
 const logFile = path.join(repoRoot, '.local-stack/postgres.log');
 const stampFile = path.join(repoRoot, '.local-stack/migration-stamp.txt');
-const port = process.env.LOCAL_STACK_PG_PORT ?? '54332';
+const port = localStackPgPort(process.env.LOCAL_STACK_PG_PORT);
 const databaseUrl = `postgresql://postgres@127.0.0.1:${port}/cleanscheduler_qa`;
 
 function findBin(name) {

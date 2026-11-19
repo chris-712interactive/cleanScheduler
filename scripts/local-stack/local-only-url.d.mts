@@ -8,3 +8,5 @@ export function assertLocalStackEnv(env: {
   NEXT_PUBLIC_SUPABASE_URL?: string;
   DATABASE_URL?: string;
 }): void;
+
+export function localStackPgPort(raw?: string): string;

@@ -3,7 +3,7 @@ import {
   pointInRange,
   type GeocodeProvider,
   type ProviderLookup,
-} from './geocodeProvider';
+} from './geocodeProvider.ts';
 
 type CensusMatch = {
   coordinates?: { x?: number; y?: number };

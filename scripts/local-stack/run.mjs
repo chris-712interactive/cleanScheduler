@@ -108,10 +108,9 @@ function localEnvFromStatus(text) {
   const service = map.SERVICE_ROLE_KEY || map.SECRET_KEY || map.SUPABASE_SERVICE_ROLE_KEY;
   const database = map.DB_URL || map.DATABASE_URL;
   if (!apiUrl || !anon || !service || !database) {
-    console.error(
+    throw new Error(
       `supabase status did not include the local API keys (saw ${Object.keys(map).join(', ') || 'no keys'})`,
     );
-    process.exit(1);
   }
   const env = { ...process.env };
   for (const name of STRIPPED_SECRETS) delete env[name];
@@ -187,8 +186,7 @@ async function runDockerStack() {
       encoding: 'utf8',
     });
     if ((status.status ?? 1) !== 0) {
-      console.error(status.stderr || 'supabase status failed');
-      process.exit(status.status ?? 1);
+      throw new Error(status.stderr || 'supabase status failed');
     }
     env = localEnvFromStatus(`${status.stdout ?? ''}\n${status.stderr ?? ''}`);
     must(process.execPath, [path.join(__dirname, 'seed.mjs')], { env });

@@ -38,7 +38,7 @@ function assertLoopbackHost(hostname, label) {
 }
 
 function assertNoHostedMarker(raw, label) {
-  const lower = raw.toLowerCase();
+  const lower = decodeConnectionText(raw).toLowerCase();
   if (
     lower.includes('supabase.co') ||
     lower.includes('supabase.com') ||
@@ -46,6 +46,36 @@ function assertNoHostedMarker(raw, label) {
     lower.includes('pooler.supabase')
   ) {
     throw new LocalOnlyUrlError(`${label} points at a hosted project. Refusing to continue.`);
+  }
+}
+
+/** Decode once so `%2e` cannot hide a hosted name. Invalid escapes are refused. */
+function decodeConnectionText(raw) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    throw new LocalOnlyUrlError('The connection string contains an invalid escape.');
+  }
+}
+
+/**
+ * libpq lets `host` and `hostaddr` query parameters replace the URL host.
+ * A loopback authority with `?host=192.0.2.1` would otherwise leave this machine.
+ */
+function assertNoRemoteLibpqHost(raw, label) {
+  const query = raw.split('?')[1]?.split('#')[0] ?? '';
+  if (!query) return;
+  const params = new URLSearchParams(query);
+  for (const key of ['host', 'hostaddr']) {
+    for (const value of params.getAll(key)) {
+      const host = value
+        .trim()
+        .toLowerCase()
+        .replace(/^\[|\]$/g, '');
+      if (!host) continue;
+      if (key === 'host' && host.startsWith('/')) continue;
+      assertLoopbackHost(host, `${label} ${key}`);
+    }
   }
 }
 
@@ -60,11 +90,25 @@ export function assertLocalDatabaseUrl(raw) {
   if (protocol !== 'postgres' && protocol !== 'postgresql') {
     throw new LocalOnlyUrlError('DATABASE_URL must use a postgres scheme.');
   }
+  assertNoRemoteLibpqHost(value, 'DATABASE_URL');
   // Node's URL parser rejects `postgresql://user@/dbname` (local socket).
-  if (/^postgres(?:ql)?:\/\/(?:[^/?#]*@)?\//i.test(value)) {
+  if (/^postgres(?:ql)?:\/\/(?:[^/?#]*@)?\//i.test(value.split('?')[0] ?? value)) {
     return;
   }
   assertLoopbackHost(hostnameOf(value), 'DATABASE_URL');
+}
+
+/** Plain TCP port. Rejects anything that could rewrite the fallback URI. */
+export function localStackPgPort(raw) {
+  const value = (raw ?? '54332').trim();
+  if (!/^[1-9][0-9]{0,4}$/.test(value)) {
+    throw new LocalOnlyUrlError('LOCAL_STACK_PG_PORT must be an integer port.');
+  }
+  const port = Number(value);
+  if (port > 65535) {
+    throw new LocalOnlyUrlError('LOCAL_STACK_PG_PORT must be an integer port.');
+  }
+  return String(port);
 }
 
 /**
