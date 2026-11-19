@@ -90,7 +90,7 @@ Use this checklist when completing attestations in the Plaid Security Portal.
 | Evidence                | Location                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------------- |
 | IAM architecture        | [`docs/security/iam-architecture.md`](./iam-architecture.md)                                    |
-| Claim sync              | [`lib/auth/syncUserAuthClaims.ts`](../lib/auth/syncUserAuthClaims.ts)                           |
+| Claim sync              | [`lib/auth/syncTenantClaimsFromMemberships.ts`](../lib/auth/syncTenantClaimsFromMemberships.ts) |
 | API key lifecycle audit | [`app/tenant/settings/integrations/actions.ts`](../app/tenant/settings/integrations/actions.ts) |
 | Masquerade TTL (60 min) | [`lib/admin/expireStaleMasquerade.ts`](../lib/admin/expireStaleMasquerade.ts)                   |
 

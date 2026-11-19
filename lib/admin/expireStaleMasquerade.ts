@@ -23,8 +23,9 @@ export async function clearMasqueradeAppMetadata(
 ): Promise<void> {
   const { data: userRes, error } = await admin.auth.admin.getUserById(userId);
   if (error || !userRes.user) return;
-  const meta = clearedMasqueradeAppMetadata({ ...(userRes.user.app_metadata ?? {}) });
-  await admin.auth.admin.updateUserById(userId, { app_metadata: meta });
+  await admin.auth.admin.updateUserById(userId, {
+    app_metadata: clearedMasqueradeAppMetadata(),
+  });
 }
 
 /** Ends masquerade when the open session exceeds the TTL; redirects to admin tenants. */

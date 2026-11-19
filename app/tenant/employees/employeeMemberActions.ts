@@ -23,7 +23,7 @@ import {
   permissionDeniedMessage,
   resolveMembershipPermissions,
 } from '@/lib/tenant/resolveMembershipPermissions';
-import { syncUserAuthClaims } from '@/lib/auth/syncUserAuthClaims';
+import { syncTenantClaimsFromMemberships } from '@/lib/auth/syncTenantClaimsFromMemberships';
 import { syncTenantClaimsAfterDeactivation } from '@/lib/auth/tenantClaimsAfterDeactivation';
 import { assertActiveAdministratorRemains } from '@/lib/tenant/workspaceAdminGuards';
 import {
@@ -223,12 +223,12 @@ export async function updateTenantMemberRoleAction(
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
 
-  let nextAppRole: Awaited<ReturnType<typeof syncUserAuthClaims>>;
+  let nextAppRole: Awaited<ReturnType<typeof syncTenantClaimsFromMemberships>>;
   try {
-    nextAppRole = await syncUserAuthClaims(admin, targetUserId, {
+    nextAppRole = await syncTenantClaimsFromMemberships(admin, {
+      userId: targetUserId,
+      preferredTenantId: membership.tenantId,
       preservePlatformRoleFromAuth: true,
-      tenantRole: nextRole,
-      currentTenantId: membership.tenantId,
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not update auth claims.' };
@@ -353,6 +353,7 @@ export async function setTenantMemberActiveAction(
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
 
+  let claimSyncError: string | null = null;
   if (!isActive) {
     await admin.auth.admin.signOut(targetUserId, 'global');
     try {
@@ -360,8 +361,24 @@ export async function setTenantMemberActiveAction(
         userId: targetUserId,
         deactivatedTenantId: membership.tenantId,
       });
+    } catch (error) {
+      console.error(
+        '[setTenantMemberActiveAction] tenant claims were not updated after deactivation',
+        error instanceof Error ? error.message : 'unknown',
+      );
+      claimSyncError =
+        'Member deactivated and signed out, but workspace claims could not be updated. They may still show the wrong workspace until this is retried.';
+    }
+  } else {
+    try {
+      await syncTenantClaimsFromMemberships(admin, {
+        userId: targetUserId,
+        preferredTenantId: membership.tenantId,
+        preferTenantWhenCurrentInvalid: true,
+        preservePlatformRoleFromAuth: true,
+      });
     } catch {
-      // Membership is already inactive; claim cleanup is best-effort.
+      // Membership is already active; claim sync is best-effort.
     }
   }
 
@@ -376,6 +393,7 @@ export async function setTenantMemberActiveAction(
   });
 
   revalidateMemberPaths(targetUserId);
+  if (claimSyncError) return { error: claimSyncError };
   return { success: isActive ? 'Member reactivated.' : 'Member deactivated.' };
 }
 
