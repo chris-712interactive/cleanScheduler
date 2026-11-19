@@ -61,7 +61,7 @@ export async function sendTransactionalSms(params: {
   const channels = await resolveMessagingChannels(params.admin, params.tenantId);
   const totalSegments = segmentPerChannel * channels.length;
 
-  let reservedPackSegments = 0;
+  let reservationId: string | null = null;
   try {
     const reserved = await assertCanSendSmsSegments({
       admin: params.admin,
@@ -69,19 +69,19 @@ export async function sendTransactionalSms(params: {
       segmentCount: totalSegments,
       meter: params.meter ?? 'customer',
     });
-    reservedPackSegments = reserved.fromPack;
+    reservationId = reserved.reservationId;
   } catch (error) {
     return { ok: false, error: smsGateErrorMessage(error) ?? 'SMS limit reached.' };
   }
 
-  const releasePack = async () => {
-    if (reservedPackSegments < 1) return;
+  const releasePack = async (refundPack: boolean) => {
+    const id = reservationId;
+    reservationId = null;
     await releaseReservedTextPackSegments({
       admin: params.admin,
-      tenantId: params.tenantId,
-      segments: reservedPackSegments,
+      reservationId: id,
+      refundPack,
     });
-    reservedPackSegments = 0;
   };
 
   const sandbox = shouldUseSentDmSandbox();
@@ -99,7 +99,7 @@ export async function sendTransactionalSms(params: {
 
     if (!response.success) {
       const errMsg = response.error?.message ?? response.error?.code ?? 'sent.dm send failed.';
-      await releasePack();
+      await releasePack(true);
       await logFailedSend(params, {
         to,
         bodyPreview,
@@ -113,7 +113,7 @@ export async function sendTransactionalSms(params: {
     const recipients = response.data?.recipients ?? [];
     if (recipients.length === 0) {
       const errMsg = 'sent.dm returned no recipients.';
-      await releasePack();
+      await releasePack(true);
       await logFailedSend(params, {
         to,
         bodyPreview,
@@ -154,9 +154,11 @@ export async function sendTransactionalSms(params: {
     }
 
     if (loggedSegments === 0) {
+      await releasePack(true);
       return { ok: false, error: 'sent.dm send succeeded but logging failed.' };
     }
 
+    await releasePack(false);
     return { ok: true, segmentCount: loggedSegments };
   } catch (error) {
     const msg =
@@ -166,7 +168,7 @@ export async function sendTransactionalSms(params: {
           ? error.message
           : 'sent.dm send failed.';
     console.error('[sms] send failed:', msg);
-    await releasePack();
+    await releasePack(true);
 
     await logFailedSend(params, {
       to,

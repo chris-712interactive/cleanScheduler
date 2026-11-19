@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   EntitlementGateError,
+  featureUpgradeMessage,
   getEntitlementsForPlan,
   resolveTenantEntitlementPlan,
   resolveTenantSubscriptionTier,
@@ -9,11 +10,13 @@ import {
 import {
   allocateSmsSegments,
   applicantUsesSeparateCap,
-  consumeTextPackSegments,
   isApplicantSmsPurpose,
+  isMissingTextPackLedger,
   readTextPackBalance,
-  refundTextPackSegments,
+  releaseSmsReservation,
   smsAllowanceForMeter,
+  TEXT_PACKS_UNAVAILABLE_MESSAGE,
+  TEXTING_UNLOCKS_MESSAGE,
   type SmsMeter,
 } from '@/lib/billing/textPacks';
 import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
@@ -80,65 +83,129 @@ export function assertSmsFeatureEnabled(plan: EntitlementPlanKey): void {
   }
 }
 
+const PACK_TOO_LOW =
+  "This month's allowance is used up and the text pack balance is too low. Buy a text pack to keep texting.";
+
+type ReservePayload = {
+  ok?: boolean;
+  code?: string;
+  from_pack?: number;
+  reservation_id?: string;
+};
+
 export async function assertCanSendSmsSegments(params: {
   admin: SupabaseClient<Database>;
   tenantId: string;
   segmentCount: number;
   meter?: SmsMeter;
-}): Promise<{ fromPack: number; tier: PlatformPlanTier | null }> {
+}): Promise<{ fromPack: number; reservationId: string | null; tier: PlatformPlanTier | null }> {
   const meter = params.meter ?? 'customer';
-  const [{ data: billing }, plan, subscriptionTier, generalUsed, applicantUsed, pack] =
-    await Promise.all([
-      params.admin
-        .from('tenant_billing_accounts')
-        .select('status')
-        .eq('tenant_id', params.tenantId)
-        .maybeSingle(),
-      resolveTenantEntitlementPlan(params.admin, params.tenantId),
-      resolveTenantSubscriptionTier(params.admin, params.tenantId),
-      countSmsSegmentsUsedThisMonth(params.admin, params.tenantId),
-      countApplicantSmsSegmentsUsedThisMonth(params.admin, params.tenantId),
-      readTextPackBalance(params.admin, params.tenantId),
-    ]);
+  if (params.segmentCount < 1) {
+    throw new EntitlementGateError('SMS body is empty.', 'limit_exceeded');
+  }
 
+  const [{ data: billing }, plan, subscriptionTier] = await Promise.all([
+    params.admin
+      .from('tenant_billing_accounts')
+      .select('status')
+      .eq('tenant_id', params.tenantId)
+      .maybeSingle(),
+    resolveTenantEntitlementPlan(params.admin, params.tenantId),
+    resolveTenantSubscriptionTier(params.admin, params.tenantId),
+  ]);
+
+  if (!canUseTexting(billing?.status)) {
+    throw new EntitlementGateError(TEXTING_UNLOCKS_MESSAGE, 'feature_blocked');
+  }
+
+  const allowance = smsAllowanceForMeter(plan, meter);
+  if (!allowance.allowed) {
+    throw new EntitlementGateError(
+      featureUpgradeMessage(meter === 'customer' ? 'smsCommunication' : 'applicantSms'),
+      'feature_blocked',
+    );
+  }
+
+  const reserved = await params.admin.rpc('reserve_sms_segments', {
+    p_tenant: params.tenantId,
+    p_segments: params.segmentCount,
+    p_meter: meter,
+    p_allowance: allowance.allowance,
+    p_separate_applicant: allowance.separateApplicantCap,
+  });
+
+  if (reserved.error) {
+    if (!isMissingTextPackLedger(reserved.error)) {
+      throw new Error(reserved.error.message);
+    }
+    return reserveWithoutLedger({
+      admin: params.admin,
+      tenantId: params.tenantId,
+      segmentCount: params.segmentCount,
+      meter,
+      plan,
+      billingStatus: billing?.status,
+      tier: subscriptionTier,
+    });
+  }
+
+  const payload = reserved.data as ReservePayload | null;
+  if (!payload?.ok) {
+    throw new EntitlementGateError(
+      payload?.code === 'limit_exceeded' ? PACK_TOO_LOW : TEXT_PACKS_UNAVAILABLE_MESSAGE,
+      'limit_exceeded',
+    );
+  }
+
+  return {
+    fromPack: payload.from_pack ?? 0,
+    reservationId: payload.reservation_id ?? null,
+    tier: subscriptionTier,
+  };
+}
+
+async function reserveWithoutLedger(params: {
+  admin: SupabaseClient<Database>;
+  tenantId: string;
+  segmentCount: number;
+  meter: SmsMeter;
+  plan: EntitlementPlanKey;
+  billingStatus: 'trialing' | 'active' | 'past_due' | 'canceled' | null | undefined;
+  tier: PlatformPlanTier | null;
+}): Promise<{ fromPack: number; reservationId: null; tier: PlatformPlanTier | null }> {
+  const [generalUsed, applicantUsed, pack] = await Promise.all([
+    countSmsSegmentsUsedThisMonth(params.admin, params.tenantId),
+    countApplicantSmsSegmentsUsedThisMonth(params.admin, params.tenantId),
+    readTextPackBalance(params.admin, params.tenantId),
+  ]);
   const allocation = allocateSmsSegments({
-    plan,
-    billingStatus: billing?.status,
-    meter,
+    plan: params.plan,
+    billingStatus: params.billingStatus,
+    meter: params.meter,
     segmentCount: params.segmentCount,
     generalUsed,
     applicantUsed,
     packRemaining: pack.remaining,
     packsAvailable: pack.available,
   });
-
   if (!allocation.ok) {
     throw new EntitlementGateError(allocation.message, allocation.code);
   }
-
   if (allocation.fromPack > 0) {
-    const consumed = await consumeTextPackSegments(
-      params.admin,
-      params.tenantId,
-      allocation.fromPack,
-    );
-    if (!consumed) {
-      throw new EntitlementGateError(
-        "This month's allowance is used up and the text pack balance is too low. Buy a text pack to keep texting.",
-        'limit_exceeded',
-      );
-    }
+    throw new EntitlementGateError(TEXT_PACKS_UNAVAILABLE_MESSAGE, 'limit_exceeded');
   }
-
-  return { fromPack: allocation.fromPack, tier: subscriptionTier };
+  return { fromPack: 0, reservationId: null, tier: params.tier };
 }
 
 export async function releaseReservedTextPackSegments(params: {
   admin: SupabaseClient<Database>;
-  tenantId: string;
-  segments: number;
+  reservationId: string | null;
+  refundPack: boolean;
 }): Promise<void> {
-  await refundTextPackSegments(params.admin, params.tenantId, params.segments);
+  await releaseSmsReservation(params.admin, {
+    reservationId: params.reservationId,
+    refundPack: params.refundPack,
+  });
 }
 
 export async function resolveTenantSmsCommunicationAllowed(

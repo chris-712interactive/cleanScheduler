@@ -294,6 +294,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const packsForSale = textingPaid && pricesConfigured && packBalance.available;
   const purchaseDenial = textPackPurchaseDenial({
     role: membership.role as TenantRole,
+    plan: entitlementPlan,
     billingStatus: billing?.status,
     pricesConfigured,
     ledgerAvailable: packBalance.available,
@@ -472,6 +473,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
           textingPaid={textingPaid}
           canBuy={canBuyPack}
           packsForSale={packsForSale}
+          buyBlockedMessage={textingPaid && purchaseDenial ? purchaseDenial : null}
           balance={packBalance.available ? packBalance.remaining : null}
           ledgerAvailable={packBalance.available}
           applicantSummary={applicantSummary}

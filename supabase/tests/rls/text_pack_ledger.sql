@@ -117,6 +117,13 @@ BEGIN
   INSERT INTO public.tenant_memberships (tenant_id, user_id, role, is_active)
   VALUES (tenant_a, member_id, 'owner', true);
 
+  IF (public.reserve_sms_segments(tenant_a, 100, 'applicant', 100, true)->>'ok')::boolean IS NOT TRUE THEN
+    RAISE EXCEPTION 'first allowance reservation should succeed';
+  END IF;
+  IF (public.reserve_sms_segments(tenant_a, 100, 'applicant', 100, true)->>'ok')::boolean IS NOT FALSE THEN
+    RAISE EXCEPTION 'second overlapping allowance reservation should fail';
+  END IF;
+
   INSERT INTO public.tenant_text_pack_ledger (
     tenant_id, segments, kind, stripe_checkout_session_id, pack_key, amount_cents
   )
@@ -126,6 +133,17 @@ BEGIN
     tenant_id, segments, kind, stripe_checkout_session_id, pack_key, amount_cents
   )
   VALUES (tenant_b, 2500, 'purchase', 'cs_rls_b_' || tenant_b::text, 'pack_2500', 3500);
+
+  BEGIN
+    INSERT INTO public.tenant_text_pack_ledger (tenant_id, segments, kind)
+    VALUES (tenant_a, -1001, 'use');
+    RAISE EXCEPTION 'a text pack debit below zero should be rejected';
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLERRM NOT LIKE '%cannot go below zero%' THEN
+        RAISE;
+      END IF;
+  END;
 
   GRANT USAGE ON SCHEMA public TO authenticated;
   GRANT SELECT ON TABLE public.tenant_text_pack_ledger TO authenticated;
@@ -191,6 +209,14 @@ BEGIN
   BEGIN
     PERFORM public.consume_text_pack_segments(tenant_a, 1);
     RAISE EXCEPTION 'authenticated should not execute consume_text_pack_segments';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
+
+  BEGIN
+    PERFORM public.reserve_sms_segments(tenant_a, 1, 'applicant', 100, true);
+    RAISE EXCEPTION 'authenticated should not execute reserve_sms_segments';
   EXCEPTION
     WHEN insufficient_privilege THEN
       NULL;

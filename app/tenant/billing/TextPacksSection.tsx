@@ -1,12 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import type { AllowanceWarning } from '@/lib/billing/textPacks';
-import {
-  TEXT_PACK_BUYERS,
-  TEXT_PACKS,
-  TEXT_PACKS_UNAVAILABLE_MESSAGE,
-  TEXTING_UNLOCKS_MESSAGE,
-} from '@/lib/billing/textPacks';
+import { TEXT_PACKS, TEXTING_UNLOCKS_MESSAGE } from '@/lib/billing/textPacks';
 import { buyTextPack } from './textPackActions';
 import styles from './billing.module.scss';
 
@@ -15,6 +10,7 @@ export function TextPacksSection({
   textingPaid,
   canBuy,
   packsForSale,
+  buyBlockedMessage,
   balance,
   ledgerAvailable,
   applicantSummary,
@@ -26,6 +22,7 @@ export function TextPacksSection({
   textingPaid: boolean;
   canBuy: boolean;
   packsForSale: boolean;
+  buyBlockedMessage: string | null;
   balance: number | null;
   ledgerAvailable: boolean;
   applicantSummary: string | null;
@@ -79,15 +76,9 @@ export function TextPacksSection({
         </p>
       ) : null}
 
-      {textingPaid && !packsForSale ? (
+      {textingPaid && buyBlockedMessage ? (
         <p className={styles.textPacksNotice} role="status">
-          {TEXT_PACKS_UNAVAILABLE_MESSAGE}
-        </p>
-      ) : null}
-
-      {textingPaid && packsForSale && !canBuy ? (
-        <p className={styles.textPacksNotice} role="status">
-          {TEXT_PACK_BUYERS}
+          {buyBlockedMessage}
         </p>
       ) : null}
 

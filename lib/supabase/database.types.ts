@@ -6508,6 +6508,23 @@ export type Database = {
         };
         Returns: undefined;
       };
+      reserve_sms_segments: {
+        Args: {
+          p_tenant: string;
+          p_segments: number;
+          p_meter: string;
+          p_allowance: number;
+          p_separate_applicant: boolean;
+        };
+        Returns: Json;
+      };
+      release_sms_reservation: {
+        Args: {
+          p_reservation: string;
+          p_refund_pack: boolean;
+        };
+        Returns: undefined;
+      };
       hold_instant_booking: {
         Args: {
           p_booking_id: string;

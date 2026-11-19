@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { getAuthContext } from '@/lib/auth/session';
 import type { TenantRole } from '@/lib/auth/types';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import { resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { createTextPackCheckoutUrl } from '@/lib/billing/textPackCheckout';
 import {
   parseTextPackKey,
@@ -50,17 +51,19 @@ export async function buyTextPack(formData: FormData): Promise<void> {
   }
 
   const admin = createAdminClient();
-  const [{ data: billing }, pack] = await Promise.all([
+  const [{ data: billing }, pack, plan] = await Promise.all([
     admin
       .from('tenant_billing_accounts')
       .select('status, stripe_customer_id')
       .eq('tenant_id', membership.tenantId)
       .maybeSingle(),
     readTextPackBalance(admin, membership.tenantId),
+    resolveTenantEntitlementPlan(admin, membership.tenantId),
   ]);
 
   const denial = textPackPurchaseDenial({
     role: membership.role as TenantRole,
+    plan,
     billingStatus: billing?.status,
     pricesConfigured: textPackPricesConfigured(),
     ledgerAvailable: pack.available,

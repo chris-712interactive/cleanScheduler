@@ -46,9 +46,18 @@ function adminFor(state: {
     missing: state.ledgerMissing ?? false,
     sessions: new Set<string>(),
   };
+  const reservations: {
+    id: string;
+    segments: number;
+    meter: string;
+    pack: number;
+    released: boolean;
+  }[] = [];
+  let lock: Promise<void> = Promise.resolve();
 
   const admin = {
     ledger,
+    reservations,
     from(table: string) {
       const chain: Record<string, unknown> = {};
       const self = () => chain;
@@ -105,19 +114,68 @@ function adminFor(state: {
       };
       return chain;
     },
-    rpc: async (name: string, args: { p_segments: number }) => {
-      if (ledger.missing || name !== 'consume_text_pack_segments') {
+    rpc: async (
+      name: string,
+      args: {
+        p_segments?: number;
+        p_meter?: string;
+        p_allowance?: number;
+        p_separate_applicant?: boolean;
+        p_reservation?: string;
+        p_refund_pack?: boolean;
+      },
+    ) => {
+      if (
+        ledger.missing ||
+        (name !== 'reserve_sms_segments' && name !== 'release_sms_reservation')
+      ) {
         return {
           data: null,
           error: {
             code: 'PGRST202',
-            message: 'consume_text_pack_segments does not exist',
+            message: `${name} does not exist`,
           },
         };
       }
-      if (ledger.balance < args.p_segments) return { data: false, error: null };
-      ledger.balance -= args.p_segments;
-      return { data: true, error: null };
+      const run = lock.then(async () => {
+        if (name === 'release_sms_reservation') {
+          const row = reservations.find((item) => item.id === args.p_reservation);
+          if (!row || row.released) return { data: null, error: null };
+          row.released = true;
+          if (args.p_refund_pack) ledger.balance += row.pack;
+          return { data: null, error: null };
+        }
+        const separate = Boolean(args.p_separate_applicant);
+        const sent = (state.messages ?? [])
+          .filter((row) => !separate || row.purpose.startsWith('hiring_'))
+          .reduce((sum, row) => sum + row.segment_count, 0);
+        const held = reservations
+          .filter((row) => !row.released && (!separate || row.meter === 'applicant'))
+          .reduce((sum, row) => sum + row.segments, 0);
+        const left = Math.max(0, (args.p_allowance ?? 0) - sent - held);
+        const fromPack = Math.max(0, (args.p_segments ?? 0) - left);
+        if (fromPack > ledger.balance) {
+          return { data: { ok: false, code: 'limit_exceeded' }, error: null };
+        }
+        ledger.balance -= fromPack;
+        const id = `res-${reservations.length + 1}`;
+        reservations.push({
+          id,
+          segments: args.p_segments ?? 0,
+          meter: args.p_meter ?? 'customer',
+          pack: fromPack,
+          released: false,
+        });
+        return {
+          data: { ok: true, from_pack: fromPack, reservation_id: id },
+          error: null,
+        };
+      });
+      lock = run.then(
+        () => undefined,
+        () => undefined,
+      );
+      return run;
     },
   };
 
@@ -284,6 +342,7 @@ describe('text pack purchase and webhook', () => {
     expect(
       textPackPurchaseDenial({
         role: 'owner',
+        plan: 'business',
         billingStatus: 'active',
         pricesConfigured: textPackPricesConfigured(),
         ledgerAvailable: true,
@@ -292,6 +351,7 @@ describe('text pack purchase and webhook', () => {
     expect(
       textPackPurchaseDenial({
         role: 'admin',
+        plan: 'pro',
         billingStatus: 'active',
         pricesConfigured: true,
         ledgerAvailable: true,
@@ -299,7 +359,17 @@ describe('text pack purchase and webhook', () => {
     ).toBeNull();
     expect(
       textPackPurchaseDenial({
+        role: 'owner',
+        plan: 'starter',
+        billingStatus: 'active',
+        pricesConfigured: true,
+        ledgerAvailable: true,
+      }),
+    ).toBe('Text packs are available on the Business and Pro plans.');
+    expect(
+      textPackPurchaseDenial({
         role: 'employee',
+        plan: 'business',
         billingStatus: 'active',
         pricesConfigured: true,
         ledgerAvailable: true,
@@ -308,6 +378,7 @@ describe('text pack purchase and webhook', () => {
     expect(
       textPackPurchaseDenial({
         role: 'owner',
+        plan: 'pro',
         billingStatus: 'trialing',
         pricesConfigured: true,
         ledgerAvailable: true,
@@ -316,6 +387,7 @@ describe('text pack purchase and webhook', () => {
     expect(
       textPackPurchaseDenial({
         role: 'owner',
+        plan: 'pro',
         billingStatus: 'past_due',
         pricesConfigured: true,
         ledgerAvailable: true,
@@ -324,6 +396,7 @@ describe('text pack purchase and webhook', () => {
     expect(
       textPackPurchaseDenial({
         role: 'owner',
+        plan: 'pro',
         billingStatus: 'canceled',
         pricesConfigured: true,
         ledgerAvailable: true,
@@ -335,6 +408,7 @@ describe('text pack purchase and webhook', () => {
     expect(
       textPackPurchaseDenial({
         role: 'owner',
+        plan: 'business',
         billingStatus: 'active',
         pricesConfigured: textPackPricesConfigured(),
         ledgerAvailable: true,
@@ -408,6 +482,51 @@ describe('assertCanSendSmsSegments', () => {
     });
     expect(result.fromPack).toBe(25);
     expect(admin.ledger.balance).toBe(15);
+  });
+
+  it('lets only one of two overlapping sends take the monthly allowance', async () => {
+    const business = adminFor({
+      billing: { status: 'active', platform_plan: 'business' },
+      balance: 0,
+    });
+    const results = await Promise.allSettled([
+      assertCanSendSmsSegments({
+        admin: business as never,
+        tenantId: TENANT,
+        segmentCount: 100,
+        meter: 'applicant',
+      }),
+      assertCanSendSmsSegments({
+        admin: business as never,
+        tenantId: TENANT,
+        segmentCount: 100,
+        meter: 'applicant',
+      }),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    expect(business.reservations.filter((row) => !row.released)).toHaveLength(1);
+
+    const pro = adminFor({
+      billing: { status: 'active', platform_plan: 'pro' },
+      balance: 0,
+    });
+    const proResults = await Promise.allSettled([
+      assertCanSendSmsSegments({
+        admin: pro as never,
+        tenantId: TENANT,
+        segmentCount: 25000,
+        meter: 'customer',
+      }),
+      assertCanSendSmsSegments({
+        admin: pro as never,
+        tenantId: TENANT,
+        segmentCount: 25000,
+        meter: 'applicant',
+      }),
+    ]);
+    expect(proResults.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(pro.reservations.filter((row) => !row.released)).toHaveLength(1);
   });
 
   it('lets an active Pro customer text from the monthly allowance', async () => {

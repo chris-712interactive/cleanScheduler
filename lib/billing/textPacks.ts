@@ -13,6 +13,7 @@ import type { Database } from '@/lib/supabase/database.types';
 export const TEXTING_UNLOCKS_MESSAGE = 'Texting unlocks once your subscription starts.';
 export const TEXT_PACKS_UNAVAILABLE_MESSAGE = 'Text packs are not available yet.';
 export const TEXT_PACK_BUYERS = 'Only an owner or admin can buy a text pack.';
+export const TEXT_PACK_PLAN_MESSAGE = 'Text packs are available on the Business and Pro plans.';
 
 export const BUSINESS_APPLICANT_SMS_MONTHLY = 100;
 
@@ -190,12 +191,14 @@ export function allowanceWarning(
 
 export function textPackPurchaseDenial(input: {
   role: TenantRole;
+  plan: EntitlementPlanKey;
   billingStatus: TenantBillingStatus | null | undefined;
   pricesConfigured: boolean;
   ledgerAvailable: boolean;
 }): string | null {
   if (!canUseTexting(input.billingStatus)) return TEXTING_UNLOCKS_MESSAGE;
   if (input.role !== 'owner' && input.role !== 'admin') return TEXT_PACK_BUYERS;
+  if (input.plan !== 'business' && input.plan !== 'pro') return TEXT_PACK_PLAN_MESSAGE;
   if (!input.pricesConfigured || !input.ledgerAvailable) return TEXT_PACKS_UNAVAILABLE_MESSAGE;
   return null;
 }
@@ -210,8 +213,11 @@ export function isMissingTextPackLedger(error: QueryError | null | undefined): b
   const message = error.message?.toLowerCase() ?? '';
   const namesLedger =
     message.includes('tenant_text_pack_ledger') ||
+    message.includes('tenant_sms_reservations') ||
     message.includes('consume_text_pack_segments') ||
-    message.includes('refund_text_pack_segments');
+    message.includes('refund_text_pack_segments') ||
+    message.includes('reserve_sms_segments') ||
+    message.includes('release_sms_reservation');
   return (
     namesLedger &&
     (message.includes('does not exist') ||
@@ -255,6 +261,20 @@ export async function consumeTextPackSegments(
     throw new Error(error.message);
   }
   return data === true;
+}
+
+export async function releaseSmsReservation(
+  admin: SupabaseClient<Database>,
+  params: { reservationId: string | null; refundPack: boolean },
+): Promise<void> {
+  if (!params.reservationId) return;
+  const { error } = await admin.rpc('release_sms_reservation', {
+    p_reservation: params.reservationId,
+    p_refund_pack: params.refundPack,
+  });
+  if (error && !isMissingTextPackLedger(error)) {
+    console.error('[text-packs] release failed:', error.message);
+  }
 }
 
 export async function refundTextPackSegments(

@@ -22,6 +22,12 @@ Stripe still maps statuses in `mapStripeSubscriptionStatus` before they are stor
 
 ## Allowance order
 
+`reserve_sms_segments` counts this month's sent messages and open holds, then writes the hold and any pack debit under one tenant advisory lock. A failed send, including a provider success that logs zero segments, calls `release_sms_reservation` and refunds the pack debit. Text pack purchases require Business or Pro. Starter cannot buy a pack.
+
+Stripe `paused` is not stored. `mapStripeSubscriptionStatus` still writes it as `active`, and that shared mapping was left unchanged. Excluding paused texting would need a new column for the raw Stripe status, written beside the mapped status. That is a broader change than the texting gate.
+
+## Previous allowance notes
+
 Customer texts stay on Pro and use `includedSmsCreditsMonthly` (25,000). Applicant texts on Pro use that same counter. Applicant texts on Business use `includedApplicantSmsCreditsMonthly` (100) and do not open customer texting. Starter has neither. The plan allowance is spent first. Pack segments cover only the remainder and do not reset each month.
 
 Migration `0131_text_pack_ledger.sql` holds the ledger. Members can select their tenant. Authenticated cannot insert, update, or call `consume_text_pack_segments`. If the table is missing, monthly allowance texting still works and packs show as unavailable.
