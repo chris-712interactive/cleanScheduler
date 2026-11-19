@@ -1,0 +1,157 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
+import { visitTouchesCalendarDayInTimeZone } from '@/lib/datetime/tenantCalendarDay';
+import { dayMapMissingReasonLabel, describeDayMapVisit } from '@/lib/schedule/dayMap';
+import { loadDayMapRows } from '@/lib/schedule/loadDayMap';
+import { createRouteOptimizer, formatStraightLineMiles } from '@/lib/routing/haversineOptimizer';
+import { hasFixedArrivalWindow, isVisitTimeLocked } from '@/lib/routing/locks';
+import type { CleanerStopOrderView, RouteStopInput } from '@/lib/routing/types';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type PreferenceRow = {
+  customer_id: string;
+  arrival_start: string | null;
+  arrival_end: string | null;
+};
+
+export async function loadCleanerStopOrder(params: {
+  supabase: SupabaseClient<Database>;
+  tenantId: string;
+  dateKey: string;
+  timeZone: string;
+  cleanerUserId: string;
+  cleanerName: string;
+}): Promise<CleanerStopOrderView | null> {
+  const tenantId = params.tenantId.trim();
+  const cleanerUserId = params.cleanerUserId.trim();
+  if (!tenantId || !UUID_RE.test(cleanerUserId)) return null;
+
+  const [rows, tenantResult, preferenceResult] = await Promise.all([
+    loadDayMapRows({
+      supabase: params.supabase,
+      tenantId,
+      dateKey: params.dateKey,
+    }),
+    params.supabase.from('tenants').select('latitude, longitude').eq('id', tenantId).maybeSingle(),
+    params.supabase
+      .from('tenant_customer_scheduling_preferences')
+      .select('customer_id, arrival_start, arrival_end')
+      .eq('tenant_id', tenantId),
+  ]);
+
+  if (tenantResult.error) throw new Error(tenantResult.error.message);
+  if (preferenceResult.error) throw new Error(preferenceResult.error.message);
+
+  const preferences = new Map<string, PreferenceRow>();
+  for (const row of (preferenceResult.data ?? []) as PreferenceRow[]) {
+    preferences.set(row.customer_id, row);
+  }
+
+  const officeLat = tenantResult.data?.latitude;
+  const officeLng = tenantResult.data?.longitude;
+  const office =
+    officeLat != null &&
+    officeLng != null &&
+    Number.isFinite(officeLat) &&
+    Number.isFinite(officeLng)
+      ? { lat: officeLat, lng: officeLng }
+      : null;
+
+  const candidates = rows
+    .filter((row) => row.tenant_id === tenantId)
+    .filter((row) => row.status === 'scheduled' || row.status === 'completed')
+    .filter((row) =>
+      visitTouchesCalendarDayInTimeZone(
+        { starts_at: row.starts_at, ends_at: row.ends_at },
+        params.dateKey,
+        params.timeZone,
+      ),
+    )
+    .filter((row) => describeDayMapVisit(row, tenantId).assigneeUserIds.includes(cleanerUserId))
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at) || a.id.localeCompare(b.id));
+
+  const details = new Map(
+    candidates.map((row) => {
+      const described = describeDayMapVisit(row, tenantId);
+      const preference = preferences.get(row.customer_id);
+      const fixedWindow = hasFixedArrivalWindow({
+        arrivalStart: preference?.arrival_start ?? null,
+        arrivalEnd: preference?.arrival_end ?? null,
+        schedulingOverride: described.schedulingOverride,
+      });
+      const locked = isVisitTimeLocked({
+        status: row.status,
+        checkedInAt: row.checked_in_at ?? null,
+        visitPurpose: row.visit_purpose ?? null,
+        hasFixedArrivalWindow: fixedWindow,
+      });
+      const reason = dayMapMissingReasonLabel({
+        hasProperty: described.hasProperty,
+        geocodeReason: described.geocodeReason,
+      });
+      return [
+        row.id,
+        {
+          id: row.id,
+          title: row.title.trim() || 'Visit',
+          customerName: described.customerName,
+          locked,
+          reason,
+          point: described.point
+            ? { lat: described.point.latitude, lng: described.point.longitude }
+            : null,
+          lockedAt: locked ? Date.parse(row.starts_at) : null,
+          routeSequence: row.route_sequence ?? null,
+        },
+      ] as const;
+    }),
+  );
+
+  const stops: RouteStopInput[] = candidates.map((row) => {
+    const detail = details.get(row.id);
+    return {
+      id: row.id,
+      point: detail?.point ?? null,
+      lockedAt: detail?.lockedAt ?? null,
+      missingReason: detail?.reason ?? 'Missing map point',
+    };
+  });
+
+  const optimized = await createRouteOptimizer().optimize({
+    stops,
+    start: office,
+  });
+  const line = (id: string) => {
+    const detail = details.get(id);
+    return {
+      id,
+      title: detail?.title ?? 'Visit',
+      customerName: detail?.customerName ?? 'Customer',
+      locked: detail?.locked ?? false,
+    };
+  };
+  const ordered = optimized.orderedIds.map(line);
+  const unrouted = optimized.unrouted.map((item) => ({
+    ...line(item.id),
+    reason: item.reason,
+  }));
+  const saved =
+    ordered.length > 0 &&
+    ordered.every((item, index) => details.get(item.id)?.routeSequence === index + 1) &&
+    unrouted.every((item) => details.get(item.id)?.routeSequence == null);
+
+  return {
+    cleanerUserId,
+    cleanerName: params.cleanerName.trim() || 'Cleaner',
+    dateKey: params.dateKey,
+    startLabel: office ? 'Office' : 'First stop',
+    estimatedMilesBefore: optimized.estimatedMilesBefore,
+    estimatedMilesAfter: optimized.estimatedMilesAfter,
+    beforeLabel: formatStraightLineMiles(optimized.estimatedMilesBefore),
+    afterLabel: formatStraightLineMiles(optimized.estimatedMilesAfter),
+    ordered,
+    unrouted,
+    saved,
+  };
+}

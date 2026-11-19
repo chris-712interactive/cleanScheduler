@@ -70,11 +70,12 @@ async function must(promise, label) {
   return result.data;
 }
 
-function geocodeColumns(kind) {
+function geocodeColumns(property) {
   const now = new Date().toISOString();
-  if (kind === 'ok') {
+  if (property.geocode === 'ok') {
     return {
-      ...POINT,
+      latitude: property.latitude ?? POINT.latitude,
+      longitude: property.longitude ?? POINT.longitude,
       geocode_status: 'ok',
       geocode_source: 'census',
       geocode_accuracy: 'address:L',
@@ -82,7 +83,7 @@ function geocodeColumns(kind) {
       geocode_reason: null,
     };
   }
-  if (kind === 'no_match') {
+  if (property.geocode === 'no_match') {
     return {
       latitude: null,
       longitude: null,
@@ -111,6 +112,7 @@ async function ensureUser(admin, spec, tenantId) {
     appMetadata.current_tenant_id = tenantId;
   }
   const created = await admin.auth.admin.createUser({
+    ...(spec.userId ? { id: spec.userId } : {}),
     email: spec.email,
     password: accounts.password,
     email_confirm: true,
@@ -188,6 +190,8 @@ async function seedTenant(admin, workspace, members) {
         name: workspace.name,
         timezone: accounts.timeZone,
         is_active: true,
+        latitude: workspace.latitude ?? null,
+        longitude: workspace.longitude ?? null,
       },
       { onConflict: 'id' },
     ),
@@ -289,7 +293,8 @@ async function seedCustomers(admin, workspace, portalUserId) {
           state: property.state,
           postal_code: property.postal,
           is_primary: property.primary,
-          ...geocodeColumns(property.geocode),
+          scheduling_override: property.schedulingOverride ?? null,
+          ...geocodeColumns(property),
         },
         { onConflict: 'id' },
       ),
@@ -318,7 +323,7 @@ async function seedVisits(admin, workspace, userIds) {
           tenant_id: workspace.tenantId,
           customer_id: workspace.customers[spec.customer].id,
           property_id: workspace.properties[spec.property].id,
-          title: 'QA local stack visit',
+          title: spec.title ?? 'QA local stack visit',
           starts_at: window.startsAt,
           ends_at: window.endsAt,
           status: 'scheduled',

@@ -25,6 +25,7 @@ type VisitListRow = {
   notes: string | null;
   expected_amount_cents: number | null;
   checked_in_at: string | null;
+  route_sequence: number | null;
   customers: {
     customer_identities: {
       first_name: string | null;
@@ -106,6 +107,7 @@ function mapVisitRows(rows: VisitListRow[]): ScheduleVisitVM[] {
       assignees,
       assigneeUserIds: assignees.map((a) => a.userId),
       checkedInAt: v.checked_in_at,
+      routeSequence: v.route_sequence,
       propertyKind:
         v.tenant_customer_properties?.property_kind ?? fallbackProperty?.property_kind ?? null,
     };
@@ -137,6 +139,7 @@ export async function loadScheduleVisits(params: {
       notes,
       expected_amount_cents,
       checked_in_at,
+      route_sequence,
       customers (
         customer_identities (
           first_name,

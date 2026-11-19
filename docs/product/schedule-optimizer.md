@@ -59,4 +59,4 @@ Applying a suggestion writes the visit time and crew through the existing schedu
 
 ## Not in this pass
 
-Paid road routing and live traffic. A factor with an empty field still skips that job.
+Paid road routing and live traffic. A single cleaner's suggested stop order is a straight-line estimate on every plan. See `docs/product/stop-order.md`. A factor with an empty field still skips that job.

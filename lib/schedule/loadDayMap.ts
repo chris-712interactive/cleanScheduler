@@ -12,6 +12,9 @@ export const DAY_MAP_VISIT_SELECT = `
   starts_at,
   ends_at,
   status,
+  visit_purpose,
+  checked_in_at,
+  route_sequence,
   customers (
     customer_identities (
       first_name,
@@ -28,7 +31,8 @@ export const DAY_MAP_VISIT_SELECT = `
       postal_code,
       latitude,
       longitude,
-      geocode_reason
+      geocode_reason,
+      scheduling_override
     )
   ),
   tenant_customer_properties (
@@ -41,7 +45,8 @@ export const DAY_MAP_VISIT_SELECT = `
     postal_code,
     latitude,
     longitude,
-    geocode_reason
+    geocode_reason,
+    scheduling_override
   ),
   tenant_scheduled_visit_assignees (
     user_id,
@@ -51,12 +56,11 @@ export const DAY_MAP_VISIT_SELECT = `
   )
 `;
 
-export async function loadDayMap(params: {
+export async function loadDayMapRows(params: {
   supabase: SupabaseClient<Database>;
   tenantId: string;
   dateKey: string;
-  timeZone: string;
-}): Promise<DayMapModel> {
+}): Promise<DayMapVisitRow[]> {
   const tenantId = params.tenantId.trim();
   if (!tenantId) {
     throw new Error('A workspace is required to load the day map.');
@@ -77,10 +81,20 @@ export async function loadDayMap(params: {
     throw new Error(error.message);
   }
 
+  return data ?? [];
+}
+
+export async function loadDayMap(params: {
+  supabase: SupabaseClient<Database>;
+  tenantId: string;
+  dateKey: string;
+  timeZone: string;
+}): Promise<DayMapModel> {
+  const rows = await loadDayMapRows(params);
   return shapeDayMap({
-    tenantId,
+    tenantId: params.tenantId,
     dateKey: params.dateKey,
     timeZone: params.timeZone,
-    rows: data ?? [],
+    rows,
   });
 }

@@ -247,6 +247,10 @@ Public booking page at `{slug}.{apex}/book` (alias `/request`). Modes: off, quot
 
 Migration: `0084_public_booking_request.sql`. Product notes: `docs/product/public-booking-request.md`.
 
+## Stop order (all plans)
+
+Suggested stop order for one cleaner's day is included on Starter, Business, Pro, and the trial. It is not an entitlement feature and there is no add-on. The office applies it from the schedule day view or the day map. Field employees cannot apply it. The distance is a straight-line estimate. There is no road-routing provider and no new environment variable. Apply migration `0130_visit_route_sequence.sql` by hand. See `docs/product/stop-order.md`.
+
 ## Tenant marketing website (Business CMS / Pro unified domain)
 
 | Tier     | `tenantMarketingSite` | `tenantMarketingSiteCustomDomain` | `maxMarketingSitePages` | `maxMarketingSiteServiceAreaPages` |
