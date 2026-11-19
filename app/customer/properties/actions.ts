@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { requirePortalAccess } from '@/lib/auth/portalAccess';
 import { getCustomerPortalContext } from '@/lib/customer/customerContext';
-import { lookupUsAddress } from '@/lib/geo/censusGeocode';
+import { PENDING_PROPERTY_GEOCODE } from '@/lib/geo/propertyGeocodePatch';
+import { savePropertyGeocode } from '@/lib/geo/savePropertyGeocode';
 import { createAdminClient } from '@/lib/supabase/server';
 import { PROPERTY_KIND_OPTIONS, type CustomerPropertyKind } from '@/lib/tenant/propertyKindLabels';
 import { loadTenantSegmentCapabilities } from '@/lib/tenant/loadTenantServiceSegment';
@@ -67,32 +68,34 @@ export async function requestCustomerPropertyAction(
     .eq('tenant_id', link.tenantId)
     .eq('customer_id', link.customerId);
 
-  const geocoded = await lookupUsAddress({
-    line1,
-    city,
-    state,
-    postalCode: postal,
-  });
+  const address = { line1, city, state, postalCode: postal };
+  const inserted = await admin
+    .from('tenant_customer_properties')
+    .insert({
+      tenant_id: link.tenantId,
+      customer_id: link.customerId,
+      label: label || null,
+      property_kind: kind,
+      address_line1: line1,
+      address_line2: line2 || null,
+      city,
+      state,
+      postal_code: postal || null,
+      site_notes: note || null,
+      ...PENDING_PROPERTY_GEOCODE,
+      consultation_requested_at: new Date().toISOString(),
+      is_primary: (count ?? 0) === 0,
+    })
+    .select('id')
+    .single();
 
-  const { error } = await admin.from('tenant_customer_properties').insert({
-    tenant_id: link.tenantId,
-    customer_id: link.customerId,
-    label: label || null,
-    property_kind: kind,
-    address_line1: line1,
-    address_line2: line2 || null,
-    city,
-    state,
-    postal_code: postal || null,
-    site_notes: note || null,
-    latitude: geocoded.point?.lat ?? null,
-    longitude: geocoded.point?.lng ?? null,
-    geocode_reason: geocoded.reason,
-    consultation_requested_at: new Date().toISOString(),
-    is_primary: (count ?? 0) === 0,
-  });
+  if (inserted.error || !inserted.data) return { error: 'Could not send that location request.' };
 
-  if (error) return { error: 'Could not send that location request.' };
+  await savePropertyGeocode(admin, {
+    tenantId: link.tenantId,
+    propertyId: inserted.data.id,
+    address,
+  });
 
   revalidatePath('/properties', 'page');
   revalidatePath('/customer/properties', 'page');

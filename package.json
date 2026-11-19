@@ -20,6 +20,7 @@
     "test:hosted-dev": "node scripts/hosted-dev/run-smoke.mts",
     "test:hosted-dev:isolated": "node scripts/hosted-dev/run-isolated.mts",
     "check:engines": "node scripts/check-engines.mjs",
+    "geocode:backfill": "node scripts/backfill-property-geocodes.mts",
     "marketing:screenshots": "playwright test -c playwright.config.ts",
     "db:types": "supabase gen types typescript --linked --schema public",
     "db:prod-baseline": "bash supabase/scripts/build-prod-baseline.sh",

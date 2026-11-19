@@ -12,7 +12,13 @@ import {
 import { resolveAssignableServiceZoneId } from '@/lib/tenant/serviceZones';
 import { savePropertyAccessCodes } from '@/lib/security/propertyAccessCodeCrypto';
 import { parsePropertyAccessCodesFromForm } from '@/lib/tenant/propertyAccessCodes';
-import { lookupUsAddress, resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
+import {
+  addressGeocodeIsCurrent,
+  addressHasText,
+  storedGeocodeSource,
+} from '@/lib/geo/censusGeocode';
+import { BLANK_PROPERTY_GEOCODE, PENDING_PROPERTY_GEOCODE } from '@/lib/geo/propertyGeocodePatch';
+import { savePropertyGeocode } from '@/lib/geo/savePropertyGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
 import { parseRequiredCrewSize } from '@/lib/schedule/crewSize';
 import { bindSubscriptionToOriginalProperty } from '@/lib/billing/applySubscriptionCoverage';
@@ -71,12 +77,7 @@ export async function addCustomerProperty(
   const siteNotes = String(formData.get('site_notes') ?? '').trim();
   const communityName = normalizeCommunityName(String(formData.get('community_name') ?? ''));
   const buildingName = String(formData.get('building_name') ?? '').trim() || null;
-  const geocoded = await lookupUsAddress({
-    line1,
-    city,
-    state,
-    postalCode: postal,
-  });
+  const address = { line1, city, state, postalCode: postal };
   const wantPrimary = String(formData.get('set_primary') ?? '') === 'on';
   const rawZoneId = String(formData.get('service_zone_id') ?? '').trim();
   const crewSize = parseRequiredCrewSize(formData.get('required_crew_size'));
@@ -142,9 +143,7 @@ export async function addCustomerProperty(
       site_notes: siteNotes || null,
       community_name: communityName,
       building_name: buildingName,
-      latitude: geocoded.point?.lat ?? null,
-      longitude: geocoded.point?.lng ?? null,
-      geocode_reason: geocoded.reason,
+      ...(addressHasText(address) ? PENDING_PROPERTY_GEOCODE : BLANK_PROPERTY_GEOCODE),
       service_zone_id: zoneResolved.zoneId,
       required_crew_size: crewSize.size,
       is_primary: makePrimary,
@@ -155,6 +154,13 @@ export async function addCustomerProperty(
   if (ins.error || !ins.data) {
     return { error: ins.error?.message ?? 'Could not add location.' };
   }
+
+  const geocoded = await savePropertyGeocode(admin, {
+    tenantId: membership.tenantId,
+    propertyId: ins.data.id,
+    address,
+  });
+  const savedProperty = geocoded ? { ...ins.data, ...geocoded } : ins.data;
 
   const originalPropertyId = propertyIdToBind(
     (existingProperties ?? []).map((row) => row.id),
@@ -183,7 +189,7 @@ export async function addCustomerProperty(
     success: true,
     propertiesPatch: {
       op: 'add',
-      property: ins.data as CustomerPropertyVM,
+      property: savedProperty as CustomerPropertyVM,
     },
   };
 }
@@ -221,7 +227,7 @@ export async function updateCustomerProperty(
   const { data: row, error: fe } = await admin
     .from('tenant_customer_properties')
     .select(
-      'id, property_kind, service_zone_id, address_line1, city, state, postal_code, latitude, longitude',
+      'id, property_kind, service_zone_id, address_line1, city, state, postal_code, latitude, longitude, geocode_status, geocode_source, geocode_accuracy, geocoded_at, geocode_reason',
     )
     .eq('id', propertyId)
     .eq('customer_id', customerId)
@@ -243,17 +249,21 @@ export async function updateCustomerProperty(
   if (!resolvedKind.ok) return { error: resolvedKind.error };
   const kindToSave = resolvedKind.kind;
 
-  const geocoded = await resolveGeocodedPoint(
-    { line1, city, state, postalCode: postal },
-    {
-      line1: row.address_line1,
-      city: row.city,
-      state: row.state,
-      postalCode: row.postal_code,
-      latitude: row.latitude,
-      longitude: row.longitude,
-    },
-  );
+  const address = { line1, city, state, postalCode: postal };
+  const previous = {
+    line1: row.address_line1,
+    city: row.city,
+    state: row.state,
+    postalCode: row.postal_code,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    geocodeStatus: row.geocode_status,
+    geocodeSource: storedGeocodeSource(row.geocode_source),
+    geocodeAccuracy: row.geocode_accuracy,
+    geocodedAt: row.geocoded_at,
+    reason: row.geocode_reason,
+  };
+  const keepGeocode = addressGeocodeIsCurrent(address, previous);
 
   const zoneResolved = await resolveAssignableServiceZoneId(admin, membership.tenantId, rawZoneId, {
     allowInactiveIfCurrent: row.service_zone_id,
@@ -275,9 +285,11 @@ export async function updateCustomerProperty(
       site_notes: siteNotes || null,
       community_name: communityName,
       building_name: buildingName,
-      latitude: geocoded.point?.lat ?? null,
-      longitude: geocoded.point?.lng ?? null,
-      geocode_reason: geocoded.reason,
+      ...(keepGeocode
+        ? {}
+        : addressHasText(address)
+          ? PENDING_PROPERTY_GEOCODE
+          : BLANK_PROPERTY_GEOCODE),
       service_zone_id: zoneResolved.zoneId,
       required_crew_size: crewSize.size,
     })
@@ -289,6 +301,16 @@ export async function updateCustomerProperty(
   if (upd.error || !upd.data) {
     return { error: upd.error?.message ?? 'Could not update location.' };
   }
+
+  const geocoded = keepGeocode
+    ? null
+    : await savePropertyGeocode(admin, {
+        tenantId: membership.tenantId,
+        propertyId,
+        address,
+        previous,
+      });
+  const savedProperty = geocoded ? { ...upd.data, ...geocoded } : upd.data;
 
   if (formData.get('save_access_codes') === '1') {
     const savedCodes = await savePropertyAccessCodes(
@@ -305,7 +327,7 @@ export async function updateCustomerProperty(
     success: true,
     propertiesPatch: {
       op: 'update',
-      property: upd.data as CustomerPropertyVM,
+      property: savedProperty as CustomerPropertyVM,
     },
   };
 }

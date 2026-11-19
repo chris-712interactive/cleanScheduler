@@ -31,16 +31,28 @@ export function geocodeReasonDetail(reason: string | null | undefined): string |
     case 'incomplete':
       return 'Too short to look up. Add a street, city, and state.';
     case 'no_match':
-      return 'No map match. Check the street, city, state, and postal code.';
+      return "Couldn't locate this address. Check the street, city, state, and postal code.";
     case 'google_denied':
       return 'Google rejected the geocoding key.';
     case 'google_quota':
       return 'Google geocoding is over its limit. Save this address again later.';
     case 'lookup_failed':
-      return 'The geocoding service did not respond. Save this address again.';
+      return 'Lookup pending. The geocoding service did not respond. It will be tried again.';
     default:
       return null;
   }
+}
+
+/** The lookup finished and the address itself did not match. An outage is not this. */
+export function couldNotLocateAddress(reason: string | null | undefined): boolean {
+  return reason === 'no_match';
+}
+
+/** Short label on the service location card. */
+export function geocodeBadgeLabel(reason: string | null | undefined): string {
+  if (couldNotLocateAddress(reason)) return "Couldn't locate this address";
+  if (reason === 'lookup_failed') return 'Lookup will retry';
+  return 'Missing map point';
 }
 
 /** Sentence for an address that has text but no saved map point. */

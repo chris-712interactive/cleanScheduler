@@ -1,0 +1,9 @@
+{
+  "result": {
+    "input": {
+      "address": { "address": "1 Nowhere Lane, Sylva, NC 28779" },
+      "benchmark": { "benchmarkName": "Public_AR_Current" }
+    },
+    "addressMatches": []
+  }
+}
