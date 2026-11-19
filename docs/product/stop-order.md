@@ -23,4 +23,4 @@ The path starts at the business address when that address has a map point. Other
 
 **Apply stop order** saves the suggestion. The day view shows **Stop 1**, **Stop 2**, and so on on those visits. The order stays until someone applies a new suggestion. Cancelling a visit does not renumber the others.
 
-Apply migration **`0130`** before deploying this page. The schedule and the day map both read `route_sequence`. Until that column exists, those pages cannot load.
+The schedule and the day map read `route_sequence` when it exists. If migration **`0130`** has not been applied yet, those pages still load and stop numbers stay blank. **Apply stop order** stays off until the column is there. Apply the migration by hand before saving an order.

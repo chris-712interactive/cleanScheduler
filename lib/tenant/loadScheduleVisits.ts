@@ -14,6 +14,61 @@ import {
   utcWeekDayKeys,
 } from '@/lib/tenant/scheduleDateRange';
 import type { ScheduleVisitVM } from '@/lib/tenant/scheduleVisitTypes';
+import { queryWithOptionalColumn } from '@/lib/supabase/optionalColumn';
+
+const SCHEDULE_VISIT_SELECT = `
+      id,
+      title,
+      starts_at,
+      ends_at,
+      status,
+      visit_purpose,
+      notes,
+      expected_amount_cents,
+      checked_in_at,
+      route_sequence,
+      customers (
+        customer_identities (
+          first_name,
+          last_name,
+          full_name,
+          phone
+        ),
+        tenant_customer_profiles (
+          field_notes
+        ),
+        tenant_customer_properties (
+          is_primary,
+          address_line1,
+          address_line2,
+          city,
+          state,
+          postal_code,
+          community_name,
+          property_kind
+        )
+      ),
+      tenant_customer_properties (
+        address_line1,
+        address_line2,
+        city,
+        state,
+        postal_code,
+        community_name,
+        property_kind
+      ),
+      tenant_quotes (
+        title,
+        amount_cents
+      ),
+      tenant_scheduled_visit_assignees (
+        user_id,
+        user_profiles (
+          display_name,
+          avatar_url
+        )
+      )
+    `;
 
 type VisitListRow = {
   id: string;
@@ -107,7 +162,7 @@ function mapVisitRows(rows: VisitListRow[]): ScheduleVisitVM[] {
       assignees,
       assigneeUserIds: assignees.map((a) => a.userId),
       checkedInAt: v.checked_in_at,
-      routeSequence: v.route_sequence,
+      routeSequence: v.route_sequence ?? null,
       propertyKind:
         v.tenant_customer_properties?.property_kind ?? fallbackProperty?.property_kind ?? null,
     };
@@ -126,82 +181,27 @@ export async function loadScheduleVisits(params: {
   const range = dbOverlapRangeForQuery(params.view, params.dateKey);
   const locationFilter = params.locationFilter?.trim() ?? '';
 
-  let visitsQuery = params.supabase
-    .from('tenant_scheduled_visits')
-    .select(
-      `
-      id,
-      title,
-      starts_at,
-      ends_at,
-      status,
-      visit_purpose,
-      notes,
-      expected_amount_cents,
-      checked_in_at,
-      route_sequence,
-      customers (
-        customer_identities (
-          first_name,
-          last_name,
-          full_name,
-          phone
-        ),
-        tenant_customer_profiles (
-          field_notes
-        ),
-        tenant_customer_properties (
-          is_primary,
-          address_line1,
-          address_line2,
-          city,
-          state,
-          postal_code,
-          community_name,
-          property_kind
-        )
-      ),
-      tenant_customer_properties (
-        address_line1,
-        address_line2,
-        city,
-        state,
-        postal_code,
-        community_name,
-        property_kind
-      ),
-      tenant_quotes (
-        title,
-        amount_cents
-      ),
-      tenant_scheduled_visit_assignees (
-        user_id,
-        user_profiles (
-          display_name,
-          avatar_url
-        )
-      )
-    `,
-    )
-    .eq('tenant_id', params.tenantId)
-    .lte('starts_at', range.end)
-    .gte('ends_at', range.start)
-    .order('starts_at', { ascending: true });
+  const loaded = await queryWithOptionalColumn<VisitListRow>({
+    column: 'route_sequence',
+    select: SCHEDULE_VISIT_SELECT,
+    run: (selectSql) => {
+      let visitsQuery = params.supabase
+        .from('tenant_scheduled_visits')
+        .select(selectSql)
+        .eq('tenant_id', params.tenantId)
+        .lte('starts_at', range.end)
+        .gte('ends_at', range.start)
+        .order('starts_at', { ascending: true });
 
-  if (locationFilter && locationFilter !== 'all') {
-    visitsQuery = visitsQuery.eq('location_id', locationFilter);
-  }
+      if (locationFilter && locationFilter !== 'all') {
+        visitsQuery = visitsQuery.eq('location_id', locationFilter);
+      }
 
-  const { data: visitRows, error: visitsErr } = await visitsQuery.overrideTypes<
-    VisitListRow[],
-    { merge: false }
-  >();
+      return visitsQuery.overrideTypes<VisitListRow[], { merge: false }>();
+    },
+  });
 
-  if (visitsErr) {
-    throw new Error(visitsErr.message);
-  }
-
-  let visits = mapVisitRows(visitRows ?? []);
+  let visits = mapVisitRows(loaded.rows);
 
   if (params.fieldEmployeeMode && params.currentUserId) {
     visits = visits.filter(

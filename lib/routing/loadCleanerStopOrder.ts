@@ -27,7 +27,7 @@ export async function loadCleanerStopOrder(params: {
   const cleanerUserId = params.cleanerUserId.trim();
   if (!tenantId || !UUID_RE.test(cleanerUserId)) return null;
 
-  const [rows, tenantResult, preferenceResult] = await Promise.all([
+  const [loaded, tenantResult, preferenceResult] = await Promise.all([
     loadDayMapRows({
       supabase: params.supabase,
       tenantId,
@@ -48,6 +48,7 @@ export async function loadCleanerStopOrder(params: {
     preferences.set(row.customer_id, row);
   }
 
+  const rows = loaded.rows;
   const officeLat = tenantResult.data?.latitude;
   const officeLng = tenantResult.data?.longitude;
   const office =
@@ -102,7 +103,7 @@ export async function loadCleanerStopOrder(params: {
             ? { lat: described.point.latitude, lng: described.point.longitude }
             : null,
           lockedAt: locked ? Date.parse(row.starts_at) : null,
-          routeSequence: row.route_sequence ?? null,
+          routeSequence: loaded.routeSequenceAvailable ? (row.route_sequence ?? null) : null,
         },
       ] as const;
     }),
@@ -137,6 +138,7 @@ export async function loadCleanerStopOrder(params: {
     reason: item.reason,
   }));
   const saved =
+    loaded.routeSequenceAvailable &&
     ordered.length > 0 &&
     ordered.every((item, index) => details.get(item.id)?.routeSequence === index + 1) &&
     unrouted.every((item) => details.get(item.id)?.routeSequence == null);
@@ -153,5 +155,6 @@ export async function loadCleanerStopOrder(params: {
     ordered,
     unrouted,
     saved,
+    sequenceAvailable: loaded.routeSequenceAvailable,
   };
 }

@@ -8,6 +8,8 @@ import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isCalendarDateKey } from '@/lib/tenant/scheduleDateRange';
+import { STOP_ORDER_UNAVAILABLE_MESSAGE } from '@/lib/routing/panelCopy';
+import { isMissingColumnError } from '@/lib/supabase/optionalColumn';
 
 export interface ApplyStopOrderState {
   error?: string;
@@ -71,7 +73,10 @@ export async function applyStopOrderAction(
   } catch {
     return { error: 'Could not build the stop order.' };
   }
-  if (!plan || plan.ordered.length === 0) {
+  if (!plan || !plan.sequenceAvailable) {
+    return { error: STOP_ORDER_UNAVAILABLE_MESSAGE };
+  }
+  if (plan.ordered.length === 0) {
     return { error: 'There are no located stops to reorder.' };
   }
 
@@ -81,7 +86,13 @@ export async function applyStopOrderAction(
       .update({ route_sequence: index + 1 })
       .eq('id', stop.id)
       .eq('tenant_id', membership.tenantId);
-    if (error) return { error: 'Could not save the stop order.' };
+    if (error) {
+      return {
+        error: isMissingColumnError(error, 'route_sequence')
+          ? STOP_ORDER_UNAVAILABLE_MESSAGE
+          : 'Could not save the stop order.',
+      };
+    }
   }
   for (const stop of plan.unrouted) {
     const { error } = await admin
@@ -89,7 +100,13 @@ export async function applyStopOrderAction(
       .update({ route_sequence: null })
       .eq('id', stop.id)
       .eq('tenant_id', membership.tenantId);
-    if (error) return { error: 'Could not save the stop order.' };
+    if (error) {
+      return {
+        error: isMissingColumnError(error, 'route_sequence')
+          ? STOP_ORDER_UNAVAILABLE_MESSAGE
+          : 'Could not save the stop order.',
+      };
+    }
   }
 
   revalidatePath('/schedule', 'page');

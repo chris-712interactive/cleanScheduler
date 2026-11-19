@@ -66,4 +66,6 @@ export type CleanerStopOrderView = {
   unrouted: Array<StopOrderLine & { reason: string }>;
   /** True when the saved route_sequence already matches this suggestion. */
   saved: boolean;
+  /** False when migration 0130 has not added route_sequence yet. */
+  sequenceAvailable: boolean;
 };
