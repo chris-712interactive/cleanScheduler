@@ -118,7 +118,7 @@ See `docs/product/implementation-backlog-snapshot.md` for the living backlog. To
 4. **Tenant customer CSV import** (Jobber-first) — spec only: `docs/product/tenant-customer-import.md`
 5. **Customer email** when provider replies (messaging follow-up)
 6. **Founder email** on new platform support ticket
-7. Platform **`plans` / `plan_features` / `tenant_addons`** DB catalog + add-on checkout
+7. Platform plan catalog stays in code (`lib/billing/entitlements.ts`). Features are Starter, Business, or Pro. Do not add add-on checkout.
 8. **pgsodium / Vault** column encryption
 9. RLS CI (pg_tap, ephemeral DB), Playwright in CI, Sentry sourcemaps
 10. Phase 3: masquerade polish, PWA, campaign scheduled sends

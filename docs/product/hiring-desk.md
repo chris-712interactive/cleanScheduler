@@ -8,7 +8,7 @@ Customer guide: [hiring-desk-guide.pdf](hiring-desk-guide.pdf), regenerated with
 
 ## Packaging
 
-**Include the desk on Business and Pro. Do not sell it as an add-on in v1. Do not put it on Starter. Keep it off the free trial. SMS to applicants stays on Pro, using the SMS credits Pro already includes.**
+**Include the desk on Business and Pro. Do not put it on Starter. Keep it off the free trial. SMS to applicants stays on Pro, using the SMS credits Pro already includes. Clean Scheduler does not sell add-ons.**
 
 |                                | Starter | Business                           | Pro                                | Trial |
 | ------------------------------ | ------- | ---------------------------------- | ---------------------------------- | ----- |
@@ -21,18 +21,18 @@ Customer guide: [hiring-desk-guide.pdf](hiring-desk-guide.pdf), regenerated with
 
 Business is the plan a 2–30 person cleaning company is sold. That is who sits on sixty applications and five arrivals. The desk is an office workflow on top of team invites, the schedule, and payroll export, which are already Business and above. Starter is the small-team fallback (5 field seats, no payroll export). A company that hires often enough to need this desk is already a Business conversation.
 
-An add-on is the wrong v1 package. `plans` / `plan_features` / `tenant_addons` checkout is still unbuilt, so an add-on means a one-off Stripe price and a second thing for sales to explain before any owner has used the desk. The workflow has no per-applicant cost when it runs on email. The costs that vary — text messages, and later a background check — are the add-ons, and they come after the desk is in use.
+The desk is a plan feature, not a separate checkout item. The workflow has no per-applicant cost when it runs on email. Text messages stay on Pro. A background-check vendor flow is not mapped to a tier until there is a vendor agreement.
 
-Pro-only would hide the desk from the companies the sales motion is aimed at. SMS is already Pro because sent.dm has a real marginal cost and the send pipeline is entitled that way (`docs/billing/tier-entitlements.md`). Business runs the same loop by email and a confirm link. A later “Hiring SMS” bundle for Business can wait until add-on checkout exists and Business owners ask for texts.
+Pro-only would hide the desk from the companies the sales motion is aimed at. SMS is already Pro because sent.dm has a real marginal cost and the send pipeline is entitled that way (`docs/billing/tier-entitlements.md`). Business runs the same loop by email and a confirm link. Hiring texts for Business are not a separate product. They stay off Business until Gronk puts them on a plan.
 
 The free trial stays excluded. Trial workspaces are purged when they never activate, and a 7-day trial is too short to run a real hiring cycle. Applicant names, phones, and emails should not land in a workspace that is about to be deleted.
 
 Hire still consumes a field or office seat through the existing invite path (`assertCanAssignTeamSeat`). Applicants and unpaid holds do not consume seats.
 
-**Later add-ons, not part of this package:**
+**Later, not part of this package, and not sold separately:**
 
-- Hiring SMS for Business, once add-on checkout exists.
-- A background-check pass-through (per check, the tenant pays the screening vendor). v1 does not furnish consumer reports.
+- Hiring SMS for Business. Unmapped. Applicant texts stay on Pro until a plan change says otherwise.
+- A background-check pass-through (per check, the tenant pays the screening vendor). v1 does not furnish consumer reports. Unmapped until a vendor agreement exists.
 - Inbound “reply YES” texts, which depend on two-way SMS. That transport is an explicit non-goal of the sent.dm migration (`docs/integrations/sent-dm-sms-migration.md`).
 
 Proposed entitlement key when this is approved: `hiringDesk` on Business and Pro only. New limit key: `maxActiveHiringOpenings` (5 / 25). No new price.
@@ -259,7 +259,7 @@ This section is product constraint, not a legal opinion. Counsel should review t
   - `work_authorized` — default off, because employment-authorization questions are easy to misuse. Office may turn it on.
 - No free-text employer questions in v1. No fields for race, gender, religion, disability, pregnancy, national origin, or age beyond the 18+ gate.
 - One optional applicant note (“Anything we should know?”) is stored and shown to the office. It is not scored.
-- Background-check attestation is a checkbox that a named member clicked. The product must not collect a report, SSN, or date of birth in v1. Ordering checks would make Clean Scheduler a consumer-reporting flow and is an add-on only with a vendor agreement.
+- Background-check attestation is a checkbox that a named member clicked. The product must not collect a report, SSN, or date of birth in v1. Ordering checks would make Clean Scheduler a consumer-reporting flow. That flow is not on a plan until a vendor agreement exists.
 - Customer addresses, alarm codes, and customer names stay off the applicant page unless an office user types them into the meeting-point field. The shadow form warns before save when the text looks like it will be shown to the applicant.
 - A customer-site shadow cannot be saved until “background check started” is attested and an accompanying member is set.
 - Shadow pay is a record. The product does not transfer money to the applicant, does not 1099 them, and does not put the hours on payroll export.
@@ -321,7 +321,7 @@ Acceptance:
 
 ### Not scheduled
 
-Inbound SMS confirm, Indeed inbox parsing, Checkr or equivalent, a Business SMS add-on, applicant mobile app, cross-tenant talent pool, custom question builder, auto no-show, and putting shadows on payroll.
+Inbound SMS confirm, Indeed inbox parsing, Checkr or equivalent, applicant SMS on Business, applicant mobile app, cross-tenant talent pool, custom question builder, auto no-show, and putting shadows on payroll.
 
 ## Decisions to confirm before implementation
 

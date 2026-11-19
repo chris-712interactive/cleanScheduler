@@ -66,6 +66,24 @@ export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
   if (features.gpsVerifiedCheckIn) {
     bullets.push('GPS-verified check-in (arrival location proof)');
   }
+  if (features.dayMap) {
+    bullets.push('Day map of scheduled stops');
+  }
+  if (features.singleCleanerStopOrdering) {
+    bullets.push('Single-cleaner stop ordering');
+  }
+  if (features.multiCleanerDispatch) {
+    bullets.push('Multi-cleaner dispatch');
+  }
+  if (features.routeReoptimization) {
+    bullets.push('Route re-optimization');
+  }
+  if (features.multipleStartLocations) {
+    bullets.push('Multiple start locations');
+  }
+  if (features.driveTimeReports) {
+    bullets.push('Drive-time reports');
+  }
   if (features.invoiceReminderEmail) {
     bullets.push('Email visit & overdue invoice reminders');
   }

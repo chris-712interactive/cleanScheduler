@@ -59,4 +59,4 @@ Applying a suggestion writes the visit time and crew through the existing schedu
 
 ## Not in this pass
 
-Paid road routing and live traffic. A factor with an empty field still skips that job.
+Road routing and live traffic are separate from this straight-line planner. Re-optimization, multiple start locations, and drive-time reports belong on the Pro plan when that routing ships. A factor with an empty field still skips that job.

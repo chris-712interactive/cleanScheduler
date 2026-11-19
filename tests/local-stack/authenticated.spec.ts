@@ -81,6 +81,27 @@ test('office create and edit show geocode badge states', async ({ page }) => {
   await shot(page, 'office-could-not-locate');
 });
 
+test('business plan keeps the day map and shows a plan upgrade for Pro SMS', async ({ page }) => {
+  await signIn(page, residentialOrigin, accounts.residential.owner.email);
+
+  await page.goto(`${residentialOrigin}/schedule/map`);
+  await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
+  await expect(page.getByText(/add-on/i)).toHaveCount(0);
+  await shot(page, 'office-day-map');
+
+  await page.goto(`${residentialOrigin}/settings/operations`);
+  await expect(
+    page.getByRole('heading', { name: 'Upgrade to unlock text notifications' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/included in the Pro plan|Pro includes customer text alerts/i),
+  ).toBeVisible();
+  const billing = page.getByRole('link', { name: 'View workspace billing' }).first();
+  await expect(billing).toHaveAttribute('href', '/billing');
+  await expect(page.getByText(/add-on/i)).toHaveCount(0);
+  await shot(page, 'office-sms-plan-upgrade');
+});
+
 test('customer portal sign-in can request a property', async ({ page }) => {
   await signIn(page, customerOrigin, accounts.residential.portalUser.email);
   await shot(page, 'customer-signed-in');

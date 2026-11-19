@@ -63,7 +63,8 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
         },
         {
           feature: 'GPS / route optimization',
-          cleanScheduler: 'GPS check-in proof (all plans); no live fleet / routes',
+          cleanScheduler:
+            'GPS check-in, day map, and stop ordering on every plan. Multi-cleaner dispatch on Business. Re-optimization and drive-time reports on Pro. No live fleet tracking.',
           competitor: 'GPS tracking on Grow+',
         },
         {
@@ -135,7 +136,7 @@ export const COMPETITOR_COMPARE_PAGES: SeoMarketingPage[] = [
       {
         question: 'Does Clean Scheduler have GPS tracking like Jobber?',
         answer:
-          'Clean Scheduler captures GPS location proof at visit check-in on every plan so the office can verify arrival. We do not offer live fleet tracking or route optimization — Jobber’s Grow tier may still be a better fit if those are must-haves.',
+          'Clean Scheduler records GPS check-in proof on every plan. The day map and single-cleaner stop ordering are included on every plan. Business adds multi-cleaner dispatch. Pro adds re-optimization, multiple start locations, and drive-time reports. Live fleet tracking is not included.',
       },
       {
         question: 'Can Clean Scheduler handle commercial cleaning accounts?',
