@@ -21,7 +21,7 @@ First runs download the Supabase images and then build Next.js. The GitHub job a
 
 Results:
 
-- Console line `check:rls-smoke — passed 4 SQL files`
+- Console line `check:rls-smoke — passed 5 SQL files`
 - Console line `authenticated playwright passed=`
 - Console line `geocode backfill smoke passed`
 - `.local-stack/summary.txt` (gitignored)

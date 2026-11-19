@@ -482,6 +482,53 @@ describe('loadDayMap', () => {
     expect(DAY_MAP_VISIT_SELECT).not.toContain('user_metadata');
   });
 
+  it('loads the day map when route_sequence is not in the database yet', async () => {
+    const selects: string[] = [];
+    const chain = {
+      select(value: string) {
+        selects.push(value);
+        return chain;
+      },
+      eq() {
+        return chain;
+      },
+      neq() {
+        return chain;
+      },
+      lte() {
+        return chain;
+      },
+      gte() {
+        return chain;
+      },
+      order() {
+        return chain;
+      },
+      overrideTypes() {
+        const sql = selects[selects.length - 1] ?? '';
+        if (/\broute_sequence\b/.test(sql)) {
+          return Promise.resolve({
+            data: null,
+            error: {
+              code: '42703',
+              message: 'column tenant_scheduled_visits.route_sequence does not exist',
+            },
+          });
+        }
+        return Promise.resolve({ data: [row()], error: null });
+      },
+    };
+    const model = await loadDayMap({
+      supabase: { from: () => chain } as never,
+      tenantId: TENANT,
+      dateKey: '2026-06-01',
+      timeZone: 'America/New_York',
+    });
+    expect(selects).toHaveLength(2);
+    expect(selects[1]).not.toMatch(/\broute_sequence\b/);
+    expect(model.pins.map((pin) => pin.visitId)).toEqual([VISIT_A]);
+  });
+
   it('throws the query error and refuses a blank workspace', async () => {
     const supabase = {
       from() {

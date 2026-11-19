@@ -4195,6 +4195,7 @@ export type Database = {
             Database['public']['Enums']['visit_check_in_location_status'] | null;
           completed_at: string | null;
           completed_by_user_id: string | null;
+          route_sequence: number | null;
           completion_payment_collected: boolean | null;
           completion_collected_method: Database['public']['Enums']['tenant_payment_method'] | null;
           completion_check_number: string | null;
@@ -4236,6 +4237,7 @@ export type Database = {
             Database['public']['Enums']['visit_check_in_location_status'] | null;
           completed_at?: string | null;
           completed_by_user_id?: string | null;
+          route_sequence?: number | null;
           completion_payment_collected?: boolean | null;
           completion_collected_method?: Database['public']['Enums']['tenant_payment_method'] | null;
           completion_check_number?: string | null;
@@ -4277,6 +4279,7 @@ export type Database = {
             Database['public']['Enums']['visit_check_in_location_status'] | null;
           completed_at?: string | null;
           completed_by_user_id?: string | null;
+          route_sequence?: number | null;
           completion_payment_collected?: boolean | null;
           completion_collected_method?: Database['public']['Enums']['tenant_payment_method'] | null;
           completion_check_number?: string | null;
