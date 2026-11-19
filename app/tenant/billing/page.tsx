@@ -285,7 +285,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
     countSmsSegmentsUsedThisMonth(admin, membership.tenantId),
     countApplicantSmsSegmentsUsedThisMonth(admin, membership.tenantId),
   ]);
-  const textingPaid = canUseTexting(billing?.status);
+  const textingPaid = canUseTexting(billing?.status, billing?.stripe_subscription_status);
   const entitlements = getEntitlementsForPlan(entitlementPlan);
   const customerTexting = textingPaid && entitlements.features.smsCommunication;
   const applicantTexting = textingPaid && entitlements.features.applicantSms;
@@ -296,6 +296,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
     role: membership.role as TenantRole,
     plan: entitlementPlan,
     billingStatus: billing?.status,
+    rawStripeStatus: billing?.stripe_subscription_status,
     pricesConfigured,
     ledgerAvailable: packBalance.available,
   });

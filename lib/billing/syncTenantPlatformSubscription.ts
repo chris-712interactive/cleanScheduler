@@ -11,6 +11,7 @@ import {
 import type { Database } from '@/lib/supabase/database.types';
 import { markSalesLeadWonForTenant } from '@/lib/admin/salesTrialExpiryTasks';
 import { shouldPreserveAdminSubscriptionGrant } from '@/lib/billing/grantTenantSubscription';
+import { writeTenantBillingAccount } from '@/lib/billing/writeTenantBillingAccount';
 import { revokePlaidBankLink } from '@/lib/plaid/revokePlaidBankLink';
 
 type Admin = SupabaseClient<Database>;
@@ -169,6 +170,7 @@ export async function syncTenantFromStripeSubscription(
     stripe_subscription_id: isCanceled ? null : subscription.id,
     stripe_customer_id: customerId ?? null,
     status: mappedStatus,
+    stripe_subscription_status: subscription.status,
     trial_started_at: trialStart,
     trial_ends_at: trialEnd,
     // Preserve original cancel timestamp so the 30-day retention clock does not reset
@@ -192,14 +194,7 @@ export async function syncTenantFromStripeSubscription(
     updatePayload.activated_at = nowIso;
   }
 
-  const { error: billingError } = await admin
-    .from('tenant_billing_accounts')
-    .update(updatePayload)
-    .eq('tenant_id', tenantId);
-
-  if (billingError) {
-    throw new Error(`tenant_billing_accounts update failed: ${billingError.message}`);
-  }
+  await writeTenantBillingAccount(admin, tenantId, updatePayload);
 
   if (mappedStatus === 'active' && !isCanceled) {
     await markSalesLeadWonForTenant(admin, tenantId);

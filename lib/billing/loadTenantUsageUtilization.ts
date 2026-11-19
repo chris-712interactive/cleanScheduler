@@ -3,6 +3,7 @@ import { loadMeteredLimitSnapshots, type MeteredLimitKey } from '@/lib/billing/c
 import { pickHighestUtilizationAlert, type UtilizationAlert } from '@/lib/billing/usageUtilization';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { applicantUsesSeparateCap } from '@/lib/billing/textPacks';
+import { loadTextingBilling } from '@/lib/billing/loadTextingBilling';
 import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -19,12 +20,12 @@ export async function loadTenantUsageUtilizationAlert(
   admin: Admin,
   tenantId: string,
 ): Promise<UtilizationAlert | null> {
-  const [{ data: billing }, plan] = await Promise.all([
-    admin.from('tenant_billing_accounts').select('status').eq('tenant_id', tenantId).maybeSingle(),
+  const [billing, plan] = await Promise.all([
+    loadTextingBilling(admin, tenantId),
     resolveTenantEntitlementPlan(admin, tenantId),
   ]);
   const keys = [...DEFAULT_METER_KEYS];
-  const textingPaid = canUseTexting(billing?.status);
+  const textingPaid = canUseTexting(billing.status, billing.rawStripeStatus);
 
   if (textingPaid && isFeatureEnabled(plan, 'smsCommunication')) {
     keys.push('includedSmsCreditsMonthly');

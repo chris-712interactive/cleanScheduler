@@ -10,21 +10,23 @@ Paid means the stored value `active` only. `canUseTexting` in `lib/billing/tenan
 
 Stripe still maps statuses in `mapStripeSubscriptionStatus` before they are stored:
 
-| Stripe status                         | Stored `tenant_billing_accounts.status` | Can text |
-| ------------------------------------- | --------------------------------------- | -------- |
-| `active`                              | `active`                                | yes      |
-| `paused`                              | `active`                                | yes      |
-| `past_due`, `unpaid`                  | `past_due`                              | no       |
-| `canceled`, `incomplete_expired`      | `canceled`                              | no       |
-| `trialing`, `incomplete`, missing row | `trialing`                              | no       |
+| Stripe status                         | Stored `tenant_billing_accounts.status` | Can text                          |
+| ------------------------------------- | --------------------------------------- | --------------------------------- |
+| `active`                              | `active`                                | yes                               |
+| `paused`                              | `active`, raw `paused`                  | no, once the raw column is filled |
+| `past_due`, `unpaid`                  | `past_due`                              | no                                |
+| `canceled`, `incomplete_expired`      | `canceled`                              | no                                |
+| `trialing`, `incomplete`, missing row | `trialing`                              | no                                |
 
-`paused` has no column of its own. It is stored as `active`, so it is treated as paid. That mapping was already in the subscription sync and was not changed.
+`mapStripeSubscriptionStatus` still stores Stripe `paused` as mapped `active`, so portal access is unchanged. Migration `0132_stripe_subscription_status.sql` adds nullable `tenant_billing_accounts.stripe_subscription_status`. Sync writes the raw Stripe status there. Texting and pack purchases require mapped `active` and a raw status other than `paused`. A null raw status, including rows written before the column existed, keeps the mapped-status rule. If the column is missing, selects fall back and writes drop that field.
+
+Existing rows stay null until a later Stripe webhook. A one-time backfill would read each `stripe_subscription_id` from Stripe and set `stripe_subscription_status` to `subscription.status` without changing `status`. Do not run that against a live Stripe account from this change.
 
 ## Allowance order
 
 `reserve_sms_segments` counts this month's sent messages and open holds, then writes the hold and any pack debit under one tenant advisory lock. A failed send, including a provider success that logs zero segments, calls `release_sms_reservation` and refunds the pack debit. Text pack purchases require Business or Pro. Starter cannot buy a pack.
 
-Stripe `paused` is not stored. `mapStripeSubscriptionStatus` still writes it as `active`, and that shared mapping was left unchanged. Excluding paused texting would need a new column for the raw Stripe status, written beside the mapped status. That is a broader change than the texting gate.
+A provider success that logs only some channels refunds the reserved segments of each channel that was not logged, capped at the pack amount reserved. The length of a logged body does not reduce that refund. `customer.subscription.paused` and `customer.subscription.resumed` use the same platform sync as `customer.subscription.updated`.
 
 ## Previous allowance notes
 

@@ -1785,6 +1785,7 @@ export type Database = {
           canceled_at: string | null;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
+          stripe_subscription_status: string | null;
           platform_plan: 'starter' | 'pro' | 'business' | null;
           billing_interval: 'month' | 'year' | null;
           trial_ending_reminder_sent_at: string | null;
@@ -1802,6 +1803,7 @@ export type Database = {
           canceled_at?: string | null;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
+          stripe_subscription_status?: string | null;
           platform_plan?: 'starter' | 'pro' | 'business' | null;
           billing_interval?: 'month' | 'year' | null;
           trial_ending_reminder_sent_at?: string | null;
@@ -1819,6 +1821,7 @@ export type Database = {
           canceled_at?: string | null;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
+          stripe_subscription_status?: string | null;
           platform_plan?: 'starter' | 'pro' | 'business' | null;
           billing_interval?: 'month' | 'year' | null;
           trial_ending_reminder_sent_at?: string | null;
