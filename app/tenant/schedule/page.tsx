@@ -24,6 +24,9 @@ import { TenantScheduleClient } from './TenantScheduleClient';
 import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { DaySchedulingSuggestions } from './DaySchedulingSuggestions';
+import { StopOrderPanel } from './StopOrderPanel';
+import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
+import { canApplyStopOrder } from '@/lib/routing/locks';
 import { loadDaySchedulingSuggestions } from '@/lib/schedule/optimizer/loadDay';
 import { ScheduleIssuesList } from './ScheduleIssuesList';
 import styles from './schedule.module.scss';
@@ -194,6 +197,28 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         }).catch(() => ({ suggestions: [], gaps: [] }))
       : null;
 
+  const officeCanRoute = canApplyStopOrder(membership.role);
+  const selectedCleanerId =
+    officeCanRoute && tab === 'schedule' && view === 'day'
+      ? employeeFilter === 'me'
+        ? currentUserId
+        : employeeFilter !== 'all'
+          ? employeeFilter
+          : null
+      : null;
+  const selectedCleaner = employeeOptions.find((option) => option.id === selectedCleanerId);
+  const stopOrder =
+    selectedCleanerId && selectedCleaner
+      ? await loadCleanerStopOrder({
+          supabase,
+          tenantId: membership.tenantId,
+          dateKey,
+          timeZone: tenantTimezone,
+          cleanerUserId: selectedCleanerId,
+          cleanerName: selectedCleaner.label.replace(/\s+\([^)]*\)$/, ''),
+        })
+      : null;
+
   return (
     <div className={styles.schedulePage}>
       <PageHeader
@@ -285,6 +310,10 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           suggestions={dayPlan.suggestions}
           gaps={dayPlan.gaps}
         />
+      ) : null}
+
+      {officeCanRoute && tab === 'schedule' && view === 'day' ? (
+        <StopOrderPanel tenantSlug={membership.tenantSlug} proposal={stopOrder} />
       ) : null}
 
       {showMileagePrompt ? (

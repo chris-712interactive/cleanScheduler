@@ -48,6 +48,7 @@ export type DayMapPropertyRow = {
   latitude: number | string | null;
   longitude: number | string | null;
   geocode_reason: string | null;
+  scheduling_override?: unknown;
 };
 
 export type DayMapAssigneeRow = {
@@ -64,6 +65,9 @@ export type DayMapVisitRow = {
   starts_at: string;
   ends_at: string;
   status: 'scheduled' | 'completed' | 'cancelled' | string;
+  visit_purpose?: string | null;
+  checked_in_at?: string | null;
+  route_sequence?: number | null;
   customers: {
     customer_identities: {
       first_name: string | null;
@@ -391,4 +395,30 @@ function visitHref(id: string): string {
 
 function customerHref(id: string): string | null {
   return UUID_RE.test(id) ? `/customers/${id}` : null;
+}
+
+/** Location and crew for one day-map row. Stop order uses the same point rules. */
+export function describeDayMapVisit(
+  row: DayMapVisitRow,
+  tenantId: string,
+): {
+  customerName: string;
+  siteLine: string;
+  hasProperty: boolean;
+  point: { latitude: number; longitude: number } | null;
+  geocodeReason: string | null;
+  schedulingOverride: unknown;
+  assigneeUserIds: string[];
+} {
+  const location = chooseLocation(row, tenantId);
+  const people = orderedAssignees(row.tenant_scheduled_visit_assignees);
+  return {
+    customerName: customerNameFromRow(row),
+    siteLine: formatPropertyAddressLine(location.property),
+    hasProperty: location.hasProperty,
+    point: readPoint(location.property),
+    geocodeReason: location.property?.geocode_reason ?? null,
+    schedulingOverride: location.property?.scheduling_override ?? null,
+    assigneeUserIds: people.map((person) => person.userId),
+  };
 }

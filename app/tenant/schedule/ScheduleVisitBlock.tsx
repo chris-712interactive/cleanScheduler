@@ -62,6 +62,9 @@ export function ScheduleVisitBlock({
             {addressLabel || 'No address on file'}
           </span>
           <span className={styles.visitTime}>{timeLabel}</span>
+          {visit.routeSequence != null ? (
+            <span className={styles.visitTime}>Stop {visit.routeSequence}</span>
+          ) : null}
           {distinguishSegments && visit.propertyKind ? (
             <PropertyKindBadge kind={visit.propertyKind} compact />
           ) : null}
