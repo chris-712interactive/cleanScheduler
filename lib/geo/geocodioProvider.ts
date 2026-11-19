@@ -3,7 +3,7 @@ import {
   pointInRange,
   type GeocodeProvider,
   type ProviderLookup,
-} from './geocodeProvider';
+} from './geocodeProvider.ts';
 
 type GeocodioResult = {
   location?: { lat?: number; lng?: number };

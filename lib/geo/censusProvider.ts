@@ -3,7 +3,7 @@ import {
   pointInRange,
   type GeocodeProvider,
   type ProviderLookup,
-} from './geocodeProvider';
+} from './geocodeProvider.ts';
 
 type CensusMatch = {
   coordinates?: { x?: number; y?: number };
@@ -48,11 +48,29 @@ export function pointFromCensusResponse(payload: unknown): { lat: number; lng: n
 
 const CENSUS_URL = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress';
 
+/**
+ * Census stays the default. A loopback http URL is the local QA stub.
+ * Any other value is ignored so a hosted environment cannot retarget the lookup.
+ */
+export function censusGeocodeEndpoint(env: NodeJS.ProcessEnv = process.env): string {
+  const override = env.CENSUS_GEOCODE_URL?.trim();
+  if (!override) return CENSUS_URL;
+  try {
+    const url = new URL(override);
+    const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    const loopback = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    if (url.protocol === 'http:' && loopback) return url.toString();
+  } catch {
+    return CENSUS_URL;
+  }
+  return CENSUS_URL;
+}
+
 export function censusGeocodeProvider(fetchImpl: typeof fetch = fetch): GeocodeProvider {
   return {
     source: 'census',
     async lookup(address: string): Promise<ProviderLookup> {
-      const url = new URL(CENSUS_URL);
+      const url = new URL(censusGeocodeEndpoint());
       url.searchParams.set('address', address);
       url.searchParams.set('benchmark', 'Public_AR_Current');
       url.searchParams.set('format', 'json');
