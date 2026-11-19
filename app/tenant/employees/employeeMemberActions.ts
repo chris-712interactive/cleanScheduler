@@ -353,6 +353,7 @@ export async function setTenantMemberActiveAction(
     .eq('user_id', targetUserId);
   if (upErr) return { error: upErr.message };
 
+  let claimSyncError: string | null = null;
   if (!isActive) {
     await admin.auth.admin.signOut(targetUserId, 'global');
     try {
@@ -360,8 +361,13 @@ export async function setTenantMemberActiveAction(
         userId: targetUserId,
         deactivatedTenantId: membership.tenantId,
       });
-    } catch {
-      // Membership is already inactive; claim cleanup is best-effort.
+    } catch (error) {
+      console.error(
+        '[setTenantMemberActiveAction] tenant claims were not updated after deactivation',
+        error instanceof Error ? error.message : 'unknown',
+      );
+      claimSyncError =
+        'Member deactivated and signed out, but workspace claims could not be updated. They may still show the wrong workspace until this is retried.';
     }
   } else {
     try {
@@ -387,6 +393,7 @@ export async function setTenantMemberActiveAction(
   });
 
   revalidateMemberPaths(targetUserId);
+  if (claimSyncError) return { error: claimSyncError };
   return { success: isActive ? 'Member reactivated.' : 'Member deactivated.' };
 }
 

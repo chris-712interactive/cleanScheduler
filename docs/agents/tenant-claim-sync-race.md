@@ -16,7 +16,11 @@ Rules once the membership rows are visible:
 - Reactivation: that tenant is used only when the current claim is missing or not an active membership.
 - Deactivation: keep the current tenant when it is still active. Otherwise use the oldest active membership (`created_at`, then `tenant_id`), or clear both claims when none remain.
 
-Platform role still comes from Auth `app_metadata` only. `preservePlatformRoleFromAuth` on the role-edit call site means the returned `app_role` is that Auth value, and this sync does not write `app_role`.
+Platform role still comes from Auth `app_metadata` only. `preservePlatformRoleFromAuth` keeps platform staff and stores `employee` when that claim is missing or is not platform staff (`customer` included). `user_metadata` is not read, and this sync does not write `app_role`. A role edit copies that returned value onto `user_profiles.app_role`.
+
+If deactivation's claim sync still disagrees after its retries, the action signs the member out, keeps the membership inactive, logs the failure, and returns an error instead of "Member deactivated."
+
+Masquerade start, end, and TTL expiry patch only `masquerade_target_tenant_id` and `current_tenant_id`. They do not write the rest of a stale `app_metadata` snapshot.
 
 `syncUserAuthClaims` now sends the same kind of patch for callers that already know the next values. It no longer writes the rest of the snapshot back.
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { comparePostLoginMemberships } from '@/lib/auth/resolvePostLoginDestination';
+import { appRoleCopiedOnTenantRoleEdit } from '@/lib/auth/tenantMemberAppRole';
 import { extractClaims, type AppRole, type TenantRole } from '@/lib/auth/types';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -107,8 +108,9 @@ function claimsMatch(
  * {@link CLAIM_SYNC_ATTEMPTS} times.
  *
  * `preservePlatformRoleFromAuth` is the call-site contract for workspace role
- * edits: the platform role returned here is Auth `app_metadata.app_role`.
- * This function never writes `app_role`.
+ * edits. The returned platform role is Auth `app_metadata.app_role`, with a
+ * missing or non-staff value stored as `employee`. Platform staff is kept.
+ * `user_metadata` is not read. This function never writes `app_role`.
  */
 export async function syncTenantClaimsFromMemberships(
   admin: AdminClient,
@@ -119,36 +121,40 @@ export async function syncTenantClaimsFromMemberships(
     preservePlatformRoleFromAuth?: boolean;
   },
 ): Promise<AppRole | null> {
-  // The flag is the role-edit contract. Platform role is never taken from the caller.
-  void input.preservePlatformRoleFromAuth;
-
-  let appRole: AppRole | null = null;
-  for (let attempt = 0; attempt < CLAIM_SYNC_ATTEMPTS; attempt++) {
+  const readSnapshot = async () => {
     const memberships = await loadActiveMemberships(admin, input.userId);
     const { data: userRes, error: userErr } = await admin.auth.admin.getUserById(input.userId);
     if (userErr || !userRes.user) {
       throw new Error(userErr?.message ?? 'User not found for claim sync.');
     }
-
     const claims = extractClaims(userRes.user);
-    appRole = claims.appRole;
+    const appRole = input.preservePlatformRoleFromAuth
+      ? appRoleCopiedOnTenantRoleEdit({ authAppRole: claims.appRole })
+      : claims.appRole;
     const desired = desiredTenantClaims({
       activeMemberships: memberships,
       currentTenantId: claims.currentTenantId,
       preferredTenantId: input.preferredTenantId,
       preferTenantWhenCurrentInvalid: input.preferTenantWhenCurrentInvalid,
     });
-    if (claimsMatch(claims, desired)) return appRole;
+    return { claims, appRole, desired };
+  };
+
+  for (let attempt = 0; attempt < CLAIM_SYNC_ATTEMPTS; attempt++) {
+    const snapshot = await readSnapshot();
+    if (claimsMatch(snapshot.claims, snapshot.desired)) return snapshot.appRole;
 
     // Null deletes the key under GoTrue's merge. Omitting it would leave the old value.
     const { error } = await admin.auth.admin.updateUserById(input.userId, {
       app_metadata: {
-        current_tenant_id: desired.currentTenantId,
-        tenant_role: desired.tenantRole,
+        current_tenant_id: snapshot.desired.currentTenantId,
+        tenant_role: snapshot.desired.tenantRole,
       },
     });
     if (error) throw new Error(error.message);
   }
 
+  const snapshot = await readSnapshot();
+  if (claimsMatch(snapshot.claims, snapshot.desired)) return snapshot.appRole;
   throw new Error('Could not sync tenant claims after concurrent updates.');
 }

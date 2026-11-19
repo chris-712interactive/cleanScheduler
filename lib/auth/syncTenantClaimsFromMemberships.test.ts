@@ -184,6 +184,109 @@ describe('desiredTenantClaims', () => {
   });
 });
 
+describe('syncTenantClaimsFromMemberships platform role', () => {
+  function quietAdmin(appMetadata: Record<string, unknown>, userMetadata: Record<string, unknown>) {
+    const patches: Array<Record<string, unknown>> = [];
+    const admin = {
+      from() {
+        const builder = {
+          select() {
+            return builder;
+          },
+          eq() {
+            return builder;
+          },
+          order() {
+            return builder;
+          },
+          then(resolve: (value: unknown) => void, reject?: (reason: unknown) => void) {
+            return Promise.resolve({
+              data: [
+                {
+                  tenant_id: 'tenant-b',
+                  role: 'admin',
+                  created_at: '2021-01-01T00:00:00.000Z',
+                },
+              ],
+              error: null,
+            }).then(resolve, reject);
+          },
+        };
+        return builder;
+      },
+      auth: {
+        admin: {
+          getUserById: async () => ({
+            data: {
+              user: {
+                id: 'user-1',
+                app_metadata: { ...appMetadata },
+                user_metadata: { ...userMetadata },
+              },
+            },
+            error: null,
+          }),
+          updateUserById: async (
+            _userId: string,
+            body: { app_metadata?: Record<string, unknown> },
+          ) => {
+            const patch = { ...(body.app_metadata ?? {}) };
+            patches.push(patch);
+            for (const [key, value] of Object.entries(patch)) {
+              if (value == null) delete appMetadata[key];
+              else appMetadata[key] = value;
+            }
+            return { data: { user: null }, error: null };
+          },
+        },
+      },
+    };
+    return { admin, patches, appMetadata };
+  }
+
+  it('stores employee when Auth has no platform role and ignores user_metadata', async () => {
+    const { admin, patches, appMetadata } = quietAdmin(
+      { current_tenant_id: 'tenant-b', tenant_role: 'admin' },
+      { app_role: 'super_admin' },
+    );
+    const role = await syncTenantClaimsFromMemberships(admin as never, {
+      userId: 'user-1',
+      preferredTenantId: 'tenant-b',
+      preservePlatformRoleFromAuth: true,
+    });
+    expect(role).toBe('employee');
+    expect(patches).toEqual([]);
+    expect(appMetadata).not.toHaveProperty('app_role');
+  });
+
+  it('stores employee when Auth app_role is customer', async () => {
+    const { admin, patches } = quietAdmin(
+      { app_role: 'customer', current_tenant_id: 'tenant-b', tenant_role: 'admin' },
+      { app_role: 'super_admin' },
+    );
+    const role = await syncTenantClaimsFromMemberships(admin as never, {
+      userId: 'user-1',
+      preservePlatformRoleFromAuth: true,
+    });
+    expect(role).toBe('employee');
+    expect(patches.every((patch) => !Object.prototype.hasOwnProperty.call(patch, 'app_role'))).toBe(
+      true,
+    );
+  });
+
+  it('keeps platform staff already stored in Auth app_metadata', async () => {
+    const { admin } = quietAdmin(
+      { app_role: 'super_admin', current_tenant_id: 'tenant-b', tenant_role: 'admin' },
+      {},
+    );
+    const role = await syncTenantClaimsFromMemberships(admin as never, {
+      userId: 'user-1',
+      preservePlatformRoleFromAuth: true,
+    });
+    expect(role).toBe('super_admin');
+  });
+});
+
 describe('syncTenantClaimsFromMemberships concurrency', () => {
   it('keeps the added tenant when a deactivate clear lands after the add', async () => {
     const race = racingAuth(
