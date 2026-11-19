@@ -89,8 +89,8 @@ test('office day map shows this tenant only', async ({ page }) => {
   await expect(onTheMap.getByRole('heading', { name: 'Visits on the map' })).toBeVisible();
   await expect(onTheMap.getByRole('link', { name: 'Riley Example' }).first()).toBeVisible();
   await expect(onTheMap.getByRole('link', { name: 'Casey Example' })).toBeVisible();
-  await expect(onTheMap.getByText('Drew Cleaner', { exact: true })).toBeVisible();
-  await expect(onTheMap.getByText('Avery Owner', { exact: true })).toBeVisible();
+  await expect(onTheMap.getByText('Drew Cleaner', { exact: true })).toHaveCount(2);
+  await expect(onTheMap.getByText('Avery Owner', { exact: true })).toHaveCount(2);
 
   const cleaners = onTheMap
     .locator('section')
