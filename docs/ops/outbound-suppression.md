@@ -46,7 +46,7 @@ Inbound Stripe webhook verification fails closed while the switch is on, so a ca
 
 These still make network calls when their own keys are set:
 
-- Google Geocoding and the US Census geocoder
+- The US Census geocoder, and Geocodio when `GEOCODIO_API_KEY` is set
 - Mapricot driving miles
 - Vercel domain API
 - Supabase (database, Auth, and the Management API)

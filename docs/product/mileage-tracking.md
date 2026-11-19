@@ -33,7 +33,7 @@ The odometer difference is the vehicle total. It is compared with every trip on 
 2. A Mapricot driving route when `MAPRICOT_API_KEY` is set. The leg is labeled Suggested. The review page credits OpenStreetMap when a suggestion is showing.
 3. A number the person types. **Open in Maps** opens the drive and does not send a distance back.
 
-Coordinates already come from Google geocoding when a key is set, and from the US Census geocoder otherwise. A straight-line distance is never stored as the drive.
+Coordinates come from the US Census geocoder. Geocodio is used only when `GEOCODIO_API_KEY` is set and Census does not return a point. A straight-line distance is never stored as the drive.
 
 A check-in far from the property (about 500 meters) is a flag on that stop. The stop stays at the job address.
 

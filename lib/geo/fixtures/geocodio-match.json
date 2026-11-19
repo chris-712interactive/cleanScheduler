@@ -1,0 +1,14 @@
+{
+  "input": {
+    "formatted_address": "1109 N Highland St, Arlington, VA"
+  },
+  "results": [
+    {
+      "formatted_address": "1109 N Highland St, Arlington, VA 22201",
+      "location": { "lat": 38.886672, "lng": -77.094735 },
+      "accuracy": 1,
+      "accuracy_type": "rooftop",
+      "source": "Virginia Geographic Information Network (VGIN)"
+    }
+  ]
+}
