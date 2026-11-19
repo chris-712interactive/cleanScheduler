@@ -61,6 +61,24 @@ function writeSummary(lines) {
   writeFileSync(summaryPath, `${lines.join('\n')}\n`);
 }
 
+function startSupabase(cliEnv) {
+  const args = [
+    'start',
+    '--exclude',
+    'studio,edge-runtime,logflare,vector,imgproxy,mailpit,postgres-meta,supavisor',
+    '--yes',
+  ];
+  let status = 1;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    status = run('supabase', args, { env: cliEnv });
+    if (status === 0) return;
+    console.error(`supabase start exited ${status} on attempt ${attempt}.`);
+    run('supabase', ['stop'], { env: cliEnv });
+    spawnSync('sleep', ['4']);
+  }
+  throw new Error(`supabase exited ${status}`);
+}
+
 function dockerOk() {
   const result = spawnSync('docker', ['info'], { stdio: 'ignore' });
   return result.status === 0;
@@ -180,16 +198,7 @@ async function runDockerStack() {
   let env;
   try {
     await waitForStub();
-    must(
-      'supabase',
-      [
-        'start',
-        '--exclude',
-        'studio,edge-runtime,logflare,vector,imgproxy,mailpit,postgres-meta,supavisor',
-        '--yes',
-      ],
-      { env: cliEnv },
-    );
+    startSupabase(cliEnv);
     const status = spawnSync('supabase', ['status', '-o', 'env'], {
       cwd: repoRoot,
       encoding: 'utf8',
