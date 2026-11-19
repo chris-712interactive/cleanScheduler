@@ -27,9 +27,9 @@ test('office sign-in cannot see the other tenant', async ({ page }) => {
 
   await page.goto(`${residentialOrigin}/customers`);
   await expect(page.getByRole('heading', { name: 'Customers' })).toBeVisible();
-  await expect(page.getByText('Riley Example')).toBeVisible();
-  await expect(page.getByText('Casey Example')).toBeVisible();
-  await expect(page.getByText('Quinn Example')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'View Riley Example' }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View Casey Example' }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View Quinn Example' })).toHaveCount(0);
   await shot(page, 'office-customer-list');
 
   await page.goto(`${residentialOrigin}/customers?q=Quinn`);
@@ -47,8 +47,18 @@ test('office create and edit show geocode badge states', async ({ page }) => {
   await signIn(page, residentialOrigin, accounts.residential.owner.email);
   await page.goto(`${residentialOrigin}/customers/${accounts.residential.customers.riley.id}`);
   await expect(page.getByRole('heading', { name: 'Riley Example' })).toBeVisible();
-  await expect(page.getByText("Couldn't locate this address").first()).toBeVisible();
-  await expect(page.getByText('Lookup will retry').first()).toBeVisible();
+  await expect(
+    page
+      .locator('details')
+      .filter({ hasText: 'Riley cabin' })
+      .getByText("Couldn't locate this address", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator('details')
+      .filter({ hasText: 'Riley lake' })
+      .getByText('Lookup will retry', { exact: true }),
+  ).toBeVisible();
   await shot(page, 'office-seeded-geocode-badges');
 
   await page.getByRole('button', { name: 'Add location' }).click();
@@ -65,7 +75,7 @@ test('office create and edit show geocode badge states', async ({ page }) => {
     .click();
 
   const created = page.locator('details').filter({ hasText: 'QA outage cabin' });
-  await expect(created.getByText('Lookup will retry')).toBeVisible();
+  await expect(created.getByText('Lookup will retry', { exact: true })).toBeVisible();
   await shot(page, 'office-lookup-will-retry');
 
   await created.locator('summary').click();
@@ -74,8 +84,8 @@ test('office create and edit show geocode badge states', async ({ page }) => {
   await created.locator('input[name="state"]').fill('TX');
   await created.locator('input[name="postal_code"]').fill('78701');
   await created.getByRole('button', { name: 'Save location' }).click();
-  await expect(created.getByText("Couldn't locate this address")).toBeVisible();
-  await expect(created.getByText('Lookup will retry')).toHaveCount(0);
+  await expect(created.getByText("Couldn't locate this address", { exact: true })).toBeVisible();
+  await expect(created.getByText('Lookup will retry', { exact: true })).toHaveCount(0);
   await shot(page, 'office-could-not-locate');
 });
 
