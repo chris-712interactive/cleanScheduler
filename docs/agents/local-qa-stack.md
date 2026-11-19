@@ -4,7 +4,7 @@ QA agents were marking office sign-in, the customer portal, RLS SQL, and `npm ru
 
 `npm run test:local-stack` is the command. The `local-stack` job in `.github/workflows/ci.yml` runs it on the GitHub runner with Supabase CLI 3.2.0. `RLS_SMOKE_REQUIRED=1` is set only there. The quality job still skips `check:rls-smoke` when `DATABASE_URL` is unset, and that skip is still not a pass.
 
-Without Docker, `--postgres-fallback` is the RLS path. Playwright and the backfill need the Supabase API. Say so. A green fallback is a pass of the three SQL files only.
+Without Docker, `--postgres-fallback` is the RLS path. Playwright and the backfill need the Supabase API. Say so. A green fallback is a pass of the four SQL files only. The fourth file is `day_map_visit_read.sql`: a member can read their own visit point and cannot read the other tenant's visit or address.
 
 `CENSUS_GEOCODE_URL` is ignored unless it is loopback `http`. The stub treats "outage" as HTTP 503 and "nomatch" as an empty Census match list.
 

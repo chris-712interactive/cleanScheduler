@@ -298,25 +298,52 @@ async function seedCustomers(admin, workspace, portalUserId) {
   }
 }
 
-async function seedVisit(admin, workspace, propertyKey, customerKey, startHour) {
-  const window = todayVisitWindow(accounts.timeZone, startHour, startHour + 2);
-  await must(
-    admin.from('tenant_scheduled_visits').upsert(
-      {
-        id: workspace.visitId,
-        tenant_id: workspace.tenantId,
-        customer_id: workspace.customers[customerKey].id,
-        property_id: workspace.properties[propertyKey].id,
-        title: 'QA local stack visit',
-        starts_at: window.startsAt,
-        ends_at: window.endsAt,
-        status: 'scheduled',
-        visit_purpose: 'service',
-      },
-      { onConflict: 'id' },
-    ),
-    `visit ${workspace.slug}`,
-  );
+async function seedVisits(admin, workspace, userIds) {
+  const specs = workspace.visits ?? [
+    {
+      id: workspace.visitId,
+      property: Object.keys(workspace.properties)[0],
+      customer: Object.keys(workspace.customers)[0],
+      assignee: null,
+      hour: 13,
+    },
+  ];
+  const ids = [];
+  for (const spec of specs) {
+    const window = todayVisitWindow(accounts.timeZone, spec.hour, spec.hour + 1);
+    await must(
+      admin.from('tenant_scheduled_visits').upsert(
+        {
+          id: spec.id,
+          tenant_id: workspace.tenantId,
+          customer_id: workspace.customers[spec.customer].id,
+          property_id: workspace.properties[spec.property].id,
+          title: 'QA local stack visit',
+          starts_at: window.startsAt,
+          ends_at: window.endsAt,
+          status: 'scheduled',
+          visit_purpose: 'service',
+        },
+        { onConflict: 'id' },
+      ),
+      `visit ${spec.id}`,
+    );
+    if (spec.assignee) {
+      const member = workspace[spec.assignee];
+      const userId = userIds[member?.email];
+      if (!userId) {
+        throw new Error(`No seeded member for assignee ${spec.assignee} on ${workspace.slug}.`);
+      }
+      await must(
+        admin
+          .from('tenant_scheduled_visit_assignees')
+          .upsert({ visit_id: spec.id, user_id: userId }, { onConflict: 'visit_id,user_id' }),
+        `assignee ${spec.id}`,
+      );
+    }
+    ids.push(spec.id);
+  }
+  return ids;
 }
 
 export async function seedLocalStack(env = process.env) {
@@ -342,22 +369,20 @@ export async function seedLocalStack(env = process.env) {
     accounts.residential,
     residentialUsers[accounts.residential.portalUser.email],
   );
-  await seedVisit(admin, accounts.residential, 'home', 'riley', 10);
+  const residentialVisitIds = await seedVisits(admin, accounts.residential, residentialUsers);
 
-  await seedTenant(admin, accounts.commercial, [accounts.commercial.owner]);
+  const commercialUsers = await seedTenant(admin, accounts.commercial, [accounts.commercial.owner]);
   await seedCustomers(admin, accounts.commercial, null);
-  await seedVisit(admin, accounts.commercial, 'hq', 'quinn', 13);
+  const commercialVisitIds = await seedVisits(admin, accounts.commercial, commercialUsers);
 
   const today = new Date().toISOString().slice(0, 10);
+  const expectedIds = [...residentialVisitIds, ...commercialVisitIds];
   const visits = await must(
-    admin
-      .from('tenant_scheduled_visits')
-      .select('id, starts_at, tenant_id')
-      .in('id', [accounts.residential.visitId, accounts.commercial.visitId]),
+    admin.from('tenant_scheduled_visits').select('id, starts_at, tenant_id').in('id', expectedIds),
     'read visits',
   );
-  if (visits.length !== 2) {
-    throw new Error(`Expected 2 QA visits, found ${visits.length}.`);
+  if (visits.length !== expectedIds.length) {
+    throw new Error(`Expected ${expectedIds.length} QA visits, found ${visits.length}.`);
   }
   console.log(
     `local-stack seed ok tenants=2 visits=${visits.length} day=${today} emails=@example.test`,
