@@ -92,6 +92,30 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     values: { starter: true, business: true, pro: true },
   },
   {
+    label: 'Day map',
+    values: { starter: true, business: true, pro: true },
+  },
+  {
+    label: 'Single-cleaner stop ordering',
+    values: { starter: true, business: true, pro: true },
+  },
+  {
+    label: 'Multi-cleaner dispatch',
+    values: { starter: false, business: true, pro: true },
+  },
+  {
+    label: 'Route re-optimization',
+    values: { starter: false, business: false, pro: true },
+  },
+  {
+    label: 'Multiple start locations',
+    values: { starter: false, business: false, pro: true },
+  },
+  {
+    label: 'Drive-time reports',
+    values: { starter: false, business: false, pro: true },
+  },
+  {
     label: 'Email visit & invoice reminders',
     values: { starter: true, business: true, pro: true },
   },

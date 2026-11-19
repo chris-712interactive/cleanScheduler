@@ -36,13 +36,13 @@ todos:
     content: "Shipped: tenant quotes + scheduled visits through **0021** (Kanban, line items, tax/discount, e-sign, notifications, expiry cron). **1.1.0:** wire `tenant_operational_settings` into acceptance (payment methods, prepay invoice, prompt-staff queue). **Auto-schedule on accept** shipped when ops mode is `auto_schedule` + line-item flags (`quoteAutoSchedule`, job catalog **0071**)."
     status: in_progress
   - id: billingPlans
-    content: "Shipped **0023–0025** + **0053** (Stripe invoice mirror). Connect, service plans, recurring rules, signed payments, mirrors. **Still missing:** DB catalog `plans`/`plan_features`/`tenant_addons`; `tenant_addons` checkout; Setup Intent UX."
+    content: "Shipped **0023–0025** + **0053** (Stripe invoice mirror). Connect, service plans, recurring rules, signed payments, mirrors. Plan features live in `lib/billing/entitlements.ts` (Starter, Business, Pro). Do not build add-on checkout or a `tenant_addons` catalog. **Still missing:** Setup Intent UX."
     status: in_progress
   - id: paymentFlowsImpl
     content: "Shipped: invoice/subscription Checkout, Billing Portal, refunds, dispute/payout mirrors, Resend invoice email, **Connect `invoice.*` sync** (`0053`). **Still missing:** Setup Intent / saved PM UX beyond Stripe portal; richer receipt templates."
     status: in_progress
   - id: featureGatingMetering
-    content: "Shipped: `lib/billing/entitlements.ts`, `requireFeature`, `checkLimit`, `UpgradeOrAddOnModal`, usage rollup cron (`/api/cron/usage-rollup`), `UsageUtilizationBanner` in tenant shell. **Still missing:** `tenant_addons` purchase flow."
+    content: "Shipped: `lib/billing/entitlements.ts`, `requireFeature`, `checkLimit`, `UpgradeOrAddOnModal` (plan upgrade only), usage rollup cron (`/api/cron/usage-rollup`), `UsageUtilizationBanner` in tenant shell. Add-on purchase is out of product. Limits move only by changing plans."
     status: in_progress
   - id: stripeConnectOnboarding
     content: "MVP shipped (2026-05-12): Express **account.create** + **account_links** onboarding from **`/billing/payment-setup`** (`startStripeConnectOnboardingAction` / `refreshStripeConnectAccountAction`); metadata `tenant_id` on Stripe Account; return/refresh URLs. **Still missing vs plan:** dedicated long-form education + explicit trial skip flow copy in-page; webhook subscription UX checklist in product admin."
@@ -452,7 +452,7 @@ Note: Concerns raised by the prospective tenant (section 14) have been folded in
 - Customer portal: Dashboard, Schedule (read + reschedule-request), Billing (view + pay outstanding), Messages (two-way support threads), Settings.
 - Founder admin: Dashboard (key metrics), Inquiries (list + filters + manual status), Customers/Tenants (list + detail + manual onboard), Settings (skeleton), basic masquerade with audit log.
 - Foundation: subdomain routing, Supabase Auth, RLS everywhere, pgsodium for encrypted columns, Stripe + Stripe Connect + webhooks, **Resend** transactional email.
-- **Pricing & gating infrastructure (section 15)**: `plans` + `plan_features` + `tenant_addons` + `tenant_usage_snapshots` schema seeded with the three strawman plans (Starter / Pro / Business) at placeholder prices; server-side `requireFeature` + `checkLimit` utilities; soft-stop `UpgradeOrAddOnModal` UI with the 80%/95%/100% utilization warnings; nightly usage-rollup cron. Final tier prices remain TBD until the pre-launch pricing review — flipping prices is a one-line data change.
+- **Pricing & gating infrastructure (section 15)**: plan features live in `lib/billing/entitlements.ts` for Starter, Business, and Pro. Do not add `tenant_addons` or a separate feature purchase. Server-side `requireFeature` + `checkLimit` utilities; soft-stop upgrade modal with the 80%/95%/100% utilization warnings; nightly usage-rollup cron. Prices are $39 / $129 / $299.
 
 **Phase 2 — Comms, Reconciliation & Ops**
 
@@ -482,14 +482,14 @@ This section reconciles the YAML todos at the top of this file with the current 
 
 ### What moved from “pending” to “in progress” (or completed) in this sync
 
-| Original YAML idea                            | Repo reality                                                                                                                                                                                                                                                                                          |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). **0075** adds `tenant_roles` + `tenant_role_permissions` + app resolver; RLS still uses `base_role` enum.                                                               |
-| `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                                                                                                                                         |
-| `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                                                                                                                               |
-| `billingPlans` as monolithic 0004             | **Partial:** tenant↔customer money path is **`0023`–`0025`** (Connect + `service_plans` / `customer_subscriptions` + recurring rules + signed payments + mirrors). Still missing **platform** catalog `plans` / `plan_features` / `tenant_addons` (§15) and Stripe **hosted** `invoice.*` sync (§17). |
-| `messagingAuditInquiries` as 0005             | **0013** + PR #115: inquiries, audit, two-way customer threads; v1.1 staff email (**0072**); **0073** platform support tickets (founder + tenant). Not full “conversations” product or SMS two-way inbox.                                                                                             |
-| `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                                                                                                                               |
+| Original YAML idea                            | Repo reality                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `authProfilesTenants` as empty migration 0001 | **0001** ships multitenant auth tables + RLS; JWT fields are **`app_metadata` updated in app code** (onboarding, masquerade). **0075** adds `tenant_roles` + `tenant_role_permissions` + app resolver; RLS still uses `base_role` enum.                                                                |
+| `customerModel` as 0002-only                  | Customers + identities + links are in **0001** and later CRM migrations; **pgsodium** not enabled in SQL yet.                                                                                                                                                                                          |
+| `schedulingQuotes` as old table names         | **Tenant quotes** + **scheduled visits** + assignees + quote cron are shipped under **0009–0021** (not `quote_stages`).                                                                                                                                                                                |
+| `billingPlans` as monolithic 0004             | **Partial:** tenant↔customer money path is **`0023`–`0025`** (Connect + `service_plans` / `customer_subscriptions` + recurring rules + signed payments + mirrors). Platform features stay in code (§15). Do not add `tenant_addons`. Stripe **hosted** `invoice.*` sync (§17) may still be incomplete. |
+| `messagingAuditInquiries` as 0005             | **0013** + PR #115: inquiries, audit, two-way customer threads; v1.1 staff email (**0072**); **0073** platform support tickets (founder + tenant). Not full “conversations” product or SMS two-way inbox.                                                                                              |
+| `stripeWebhooks` “no idempotency”             | **0008** + `processStripeWebhookEventOnce` + route handler are shipped.                                                                                                                                                                                                                                |
 
 ### Prioritized next slices (execute in roughly this order for trial-to-revenue)
 
@@ -562,7 +562,7 @@ _(None open from the last round — add new rows here when tradeoffs reappear.)_
 - `[supabase/migrations/0001_init.sql](supabase/migrations/0001_init.sql)` — extensions (`pgsodium`, `pgcrypto`), profiles, tenants, tenant_members, roles, permissions, role_permissions.
 - `[supabase/migrations/0002_customers.sql](supabase/migrations/0002_customers.sql)` — customer_identities, customers, customer_tenant_links + RLS.
 - `[supabase/migrations/0003_scheduling.sql](supabase/migrations/0003_scheduling.sql)` — appointments, quote_stages, quotes.
-- `[supabase/migrations/0004_billing.sql](supabase/migrations/0004_billing.sql)` — plans (NULLABLE prices), plan_features, tenant_addons, tenant_usage_snapshots, **tenant_subscriptions** (cleanScheduler's own subscription, renamed from `subscriptions`), invoices (with `source` enum + `stripe_invoice_id` + `stripe_subscription_id` per section 17), payments (with method enum incl. `card`/`cash`/`check`/`zelle`/`ach`, structured check fields per Concern #2, **and the Stripe accounting columns from section 17**: `gross_amount_cents`, `stripe_fee_cents`, `application_fee_cents`, `net_amount_cents`, `stripe_charge_id`, `stripe_balance_txn_id`, `stripe_payout_id`), **stripe_payouts**, **refunds**, **disputes**, tenant_settings (incl. `check_reminder_hold_days`), stripe_connect_accounts.
+- `[supabase/migrations/0004_billing.sql](supabase/migrations/0004_billing.sql)` — plans (NULLABLE prices), tenant_usage_snapshots (no `plan_features` or `tenant_addons` tables), **tenant_subscriptions** (cleanScheduler's own subscription, renamed from `subscriptions`), invoices (with `source` enum + `stripe_invoice_id` + `stripe_subscription_id` per section 17), payments (with method enum incl. `card`/`cash`/`check`/`zelle`/`ach`, structured check fields per Concern #2, **and the Stripe accounting columns from section 17**: `gross_amount_cents`, `stripe_fee_cents`, `application_fee_cents`, `net_amount_cents`, `stripe_charge_id`, `stripe_balance_txn_id`, `stripe_payout_id`), **stripe_payouts**, **refunds**, **disputes**, tenant_settings (incl. `check_reminder_hold_days`), stripe_connect_accounts.
 - `[supabase/migrations/0005_messaging_audit.sql](supabase/migrations/0005_messaging_audit.sql)` — conversations, messages, audit_log, masquerade_sessions, inquiries, support_tickets (Phase 2).
 - `[supabase/migrations/0006_recurring_billing.sql](supabase/migrations/0006_recurring_billing.sql)` — service_plans, **customer_subscriptions**, recurring_appointment_rules (RRULE-driven appointment generator) per Concern #3.
 - `[supabase/migrations/0007_bank_reconciliation.sql](supabase/migrations/0007_bank_reconciliation.sql)` — Phase 2: bank_links (Plaid items, encrypted access tokens), bank_transactions, payment_match_suggestions per Concern #1.
@@ -775,7 +775,7 @@ These four concerns drive the following changes you'll see reflected throughout 
 - **Stripe Connect** added (was previously just Stripe for cleanScheduler's own subscription).
 - **Plaid** added as a Phase 2 integration.
 - **Naming**: `subscriptions` -> `tenant_subscriptions`; new `customer_subscriptions`.
-- **New tables**: `service_plans`, `customer_subscriptions`, `recurring_appointment_rules`, `tenant_settings`, `bank_links`, `bank_transactions`, `payment_match_suggestions`, `report_runs`, `compensation_rules` (Phase 2), `stripe_connect_accounts`, plus the pricing/gating set per section 15: `plan_features`, `tenant_addons`, `tenant_usage_snapshots`.
+- **New tables**: `service_plans`, `customer_subscriptions`, `recurring_appointment_rules`, `tenant_settings`, `bank_links`, `bank_transactions`, `payment_match_suggestions`, `report_runs`, `compensation_rules` (Phase 2), `stripe_connect_accounts`, plus `tenant_usage_snapshots` for metering. Do not add `plan_features` or `tenant_addons` tables; entitlements stay in code.
 - **Expanded `payments` schema**: method enum, status enum, structured check fields, bank-transaction match link.
 - **New Reports module** under Tenant Billing.
 - **Mobile-first Accept Payment** flow on Schedule appointment detail.
@@ -843,12 +843,12 @@ When a tenant hits a seat or customer ceiling, we **don't break their day**. Ins
 
 - The triggering action (e.g., "Invite Employee", "Add Customer") opens a non-blocking modal:
   - **Primary CTA**: "Upgrade to [next tier]" — opens a comparison + upgrade flow that resumes the original action on success.
-  - **Secondary CTA**: "Add 1 seat for $9/mo" (or "Add 100 customers for $5/mo", parameterized per resource) — provisions a Stripe subscription item add-on against the tenant's current subscription and increments the effective limit.
+  - **Only CTA**: "Upgrade plan" — opens billing so the workspace moves to the next tier. Do not offer a per-seat or per-customer Stripe item. Extra capacity comes from Starter, Business, or Pro limits only.
 - Inline warning banners at 80% / 95% / 100% utilization keep tenants informed before they hit the wall.
 - A daily `tenant_usage_snapshots` rollup feeds:
   - the founder admin's "expansion candidates" dashboard,
   - the tenant's "You're at 145 of 150 customers" warnings,
-  - end-of-period usage reconciliation against `tenant_addons`.
+  - end-of-period usage against the workspace plan limits. There is no add-on quantity to reconcile.
 
 ### Gating + metering infrastructure (built in Phase 1, prices TBD)
 
@@ -857,8 +857,8 @@ Even with TBD prices, we build all of this now so launch-day pricing is a config
 **Schema (lands in `[supabase/migrations/0004_billing.sql](supabase/migrations/0004_billing.sql)`)**
 
 - `plans (id, slug, name, monthly_cents NULLABLE, annual_cents NULLABLE, included_users, included_customers, included_sms_segments, ...)`. Nullable numeric limits = unlimited. `monthly_cents`/`annual_cents` nullable so we can ship the schema before final prices are decided.
-- `plan_features (plan_id, feature_key)` — many-to-many linking plans to a feature-key enum.
-- `tenant_addons (id, tenant_id, addon_type, quantity, unit_price_cents, stripe_subscription_item_id, status)` — one row per active add-on.
+- `plan_features (plan_id, feature_key)` — draft only. The live map is `PLATFORM_TIER_ENTITLEMENTS` in `lib/billing/entitlements.ts`. Do not add this table unless the catalog moves out of code.
+- Do **not** add `tenant_addons`. Features and higher limits are plan tiers. No add-on SKU, flag, or Stripe subscription item grants a feature.
 - `tenant_usage_snapshots (tenant_id, snapshot_date, active_users, active_customers, sms_segments_used, ...)` — daily rollup.
 
 **Code**
@@ -877,7 +877,7 @@ Even with TBD prices, we build all of this now so launch-day pricing is a config
 - Final price points per tier (Starter / Pro / Business).
 - Annual discount percentage (default 17%).
 - Whether to introduce a forever-free Solo tier (1 user / 25 customers / manual-only) after we see early adoption metrics.
-- Per-resource add-on pricing ($9/seat strawman, $5/100-customer strawman).
+- Decided: no per-resource add-on pricing. Seat and customer ceilings stay on the plan. The old $9/seat and $5/100-customer figures are not products.
 - Volume discounts for multi-location / franchise tenants.
 - Founder-level launch promo codes (e.g., "FOUNDING50" — 50% off year one for first 100 tenants).
 - Marketing-page tier comparison copy & "most popular" badge placement.

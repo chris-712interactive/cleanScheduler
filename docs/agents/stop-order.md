@@ -12,7 +12,7 @@ One cleaner's suggested stop order. Product copy is in `docs/product/stop-order.
 - `auto_schedule_sequence` is the nth visit created from a quote line (unique per line, max 52). It is not a route order. `route_sequence` is a new nullable integer on `tenant_scheduled_visits` (migration `0130`). Existing member policies cover the column. Do not apply `0130` from an agent or from CI. Schedule and day-map reads retry without the column when Postgres returns `42703` (or PostgREST `PGRST204`) for `route_sequence`, and treat the sequence as null. Apply stays disabled until the column exists.
 - Apply recomputes the order on the server. It checks `tenant_memberships.role` for the signed-in user and requires owner or admin. It does not read `user_metadata`. Every update filters `tenant_id`.
 - The schedule day view and `/schedule/map` both render `StopOrderPanel`. Field employees are not given the panel. The day map still redirects them.
-- Starter includes this. Do not add an entitlement flag.
+- Starter, Business, Pro, and the trial include this (`singleCleanerStopOrdering` in `lib/billing/entitlements.ts`). Do not add a tier check on the panel. The flag is already on for every plan.
 
 ## Tests
 

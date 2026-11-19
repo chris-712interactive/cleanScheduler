@@ -1,6 +1,6 @@
 # Day map
 
-Office staff who can open the schedule can see one day of visits on a map at **Schedule → Day map** (`/schedule/map`). It is included for every plan. There is no paid map add-on. Field employees stay on their own schedule and cannot open this page.
+Office staff who can open the schedule can see one day of visits on a map at **Schedule → Day map** (`/schedule/map`). The day map is included in Starter, Business, and Pro, and during the free trial. The page is not locked behind a higher tier. Field employees stay on their own schedule and cannot open this page.
 
 ## What you see
 

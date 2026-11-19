@@ -5,51 +5,19 @@ import {
   EntitlementGateError,
   getEntitlementsForTier,
   isFeatureEnabled,
+  minimumPaidTierForFeature,
   resolveTenantEntitlementPlan,
   type EntitlementFeature,
 } from '@/lib/billing/entitlements';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import type { Database } from '@/lib/supabase/database.types';
 
-const FEATURE_MINIMUM_TIER: Record<EntitlementFeature, PlatformPlanTier> = {
-  rolePermissions: 'business',
-  jobCosting: 'business',
-  customerPortal: 'business',
-  campaigns: 'business',
-  advancedAnalytics: 'pro',
-  salesTaxSummary: 'business',
-  payrollExports: 'business',
-  forecasting: 'pro',
-  fullApiWebhooks: 'pro',
-  multiLocationControls: 'pro',
-  dedicatedOnboarding: 'pro',
-  plaidReconciliation: 'business',
-  smsCommunication: 'pro',
-  whiteLabelCustomerPortal: 'pro',
-  proofOfServicePhotos: 'starter',
-  gpsVerifiedCheckIn: 'starter',
-  invoiceReminderEmail: 'starter',
-  emailVisitReminders: 'starter',
-  emailOnMyWay: 'starter',
-  emailReviewRequest: 'starter',
-  publicBookingRequest: 'starter',
-  hiringDesk: 'business',
-  visitChecklists: 'starter',
-  proofOfServicePortalShare: 'pro',
-  customServiceTypes: 'pro',
-  customerPromotions: 'business',
-  customerReferralProgram: 'business',
-  kanbanCustomization: 'pro',
-  tenantMarketingSite: 'business',
-  tenantMarketingSiteCustomDomain: 'pro',
-};
-
 export function minimumTierForFeature(feature: EntitlementFeature): PlatformPlanTier {
-  return FEATURE_MINIMUM_TIER[feature];
+  return minimumPaidTierForFeature(feature);
 }
 
 export function minimumTierLabelForFeature(feature: EntitlementFeature): string {
-  return getEntitlementsForTier(FEATURE_MINIMUM_TIER[feature]).displayName;
+  return getEntitlementsForTier(minimumPaidTierForFeature(feature)).displayName;
 }
 
 export async function resolveTenantFeatureEnabled(

@@ -1,6 +1,6 @@
 # Address geocoding
 
-Every service location (`tenant_customer_properties`) stores a map point when a US address can be resolved. Routing reads that point later. This is included for every plan. There is no paid geocoding add-on.
+Every service location (`tenant_customer_properties`) stores a map point when a US address can be resolved. Routing reads that point later. Geocoding is included on every plan.
 
 Apply migration **`0129_property_geocode_metadata.sql` by hand** before deploying the app that writes these columns. Agents and CI do not apply it.
 

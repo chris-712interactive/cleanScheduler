@@ -35,7 +35,13 @@ export type EntitlementFeature =
   | 'customerReferralProgram'
   | 'kanbanCustomization'
   | 'tenantMarketingSite'
-  | 'tenantMarketingSiteCustomDomain';
+  | 'tenantMarketingSiteCustomDomain'
+  | 'dayMap'
+  | 'singleCleanerStopOrdering'
+  | 'multiCleanerDispatch'
+  | 'routeReoptimization'
+  | 'multipleStartLocations'
+  | 'driveTimeReports';
 
 export type EntitlementLimitKey =
   | 'includedOfficeSeats'
@@ -109,6 +115,12 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       kanbanCustomization: false,
       tenantMarketingSite: false,
       tenantMarketingSiteCustomDomain: false,
+      dayMap: true,
+      singleCleanerStopOrdering: true,
+      multiCleanerDispatch: false,
+      routeReoptimization: false,
+      multipleStartLocations: false,
+      driveTimeReports: false,
     },
     limits: {
       includedOfficeSeats: 2,
@@ -163,6 +175,12 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       kanbanCustomization: false,
       tenantMarketingSite: true,
       tenantMarketingSiteCustomDomain: false,
+      dayMap: true,
+      singleCleanerStopOrdering: true,
+      multiCleanerDispatch: true,
+      routeReoptimization: false,
+      multipleStartLocations: false,
+      driveTimeReports: false,
     },
     limits: {
       includedOfficeSeats: 2,
@@ -217,6 +235,12 @@ export const PLATFORM_TIER_ENTITLEMENTS: Record<PlatformPlanTier, PlanEntitlemen
       kanbanCustomization: true,
       tenantMarketingSite: true,
       tenantMarketingSiteCustomDomain: true,
+      dayMap: true,
+      singleCleanerStopOrdering: true,
+      multiCleanerDispatch: true,
+      routeReoptimization: true,
+      multipleStartLocations: true,
+      driveTimeReports: true,
     },
     limits: {
       includedOfficeSeats: 10,
@@ -277,6 +301,12 @@ export const TRIAL_ENTITLEMENTS: PlanEntitlements = {
     kanbanCustomization: true,
     tenantMarketingSite: true,
     tenantMarketingSiteCustomDomain: false,
+    dayMap: true,
+    singleCleanerStopOrdering: true,
+    multiCleanerDispatch: false,
+    routeReoptimization: false,
+    multipleStartLocations: false,
+    driveTimeReports: false,
   },
   limits: {
     includedOfficeSeats: 2,
@@ -305,6 +335,46 @@ export function getEntitlementsForTier(tier: PlatformPlanTier): PlanEntitlements
   return PLATFORM_TIER_ENTITLEMENTS[tier];
 }
 
+const PAID_TIER_ORDER: PlatformPlanTier[] = ['starter', 'business', 'pro'];
+
+/** Lowest paid tier that includes the feature. Pro when no paid tier does. */
+export function minimumPaidTierForFeature(feature: EntitlementFeature): PlatformPlanTier {
+  for (const tier of PAID_TIER_ORDER) {
+    if (PLATFORM_TIER_ENTITLEMENTS[tier].features[feature]) return tier;
+  }
+  return 'pro';
+}
+
+const LIMIT_DISPLAY_LABEL: Record<NumericEntitlementLimitKey, string> = {
+  includedOfficeSeats: 'office seats',
+  maxActiveCustomers: 'active customers',
+  maxAutomationWorkflows: 'recurring visit rules',
+  includedSmsCreditsMonthly: 'SMS segments',
+  includedEmailCreditsMonthly: 'email sends',
+  includedIntegrations: 'integrations',
+  maxCampaignSendsMonthly: 'campaign sends',
+  maxConcurrentActiveCampaigns: 'active campaigns',
+  maxCampaignAudienceSize: 'campaign recipients',
+  maxCampaignDrafts: 'campaign drafts',
+  maxMarketingSitePages: 'marketing pages',
+  maxMarketingSiteServiceAreaPages: 'service area pages',
+  maxActiveHiringOpenings: 'open hiring roles',
+};
+
+export function featureUpgradeMessage(feature: EntitlementFeature): string {
+  const planName = getEntitlementsForTier(minimumPaidTierForFeature(feature)).displayName;
+  return `This feature is included in the ${planName} plan. Upgrade your plan to use it.`;
+}
+
+export function limitUpgradeMessage(
+  plan: EntitlementPlanKey,
+  limit: NumericEntitlementLimitKey,
+  allowed: number,
+): string {
+  const planName = getEntitlementsForPlan(plan).displayName;
+  return `${planName} allows up to ${allowed} for ${LIMIT_DISPLAY_LABEL[limit]}. Upgrade your plan to continue.`;
+}
+
 export function isFeatureEnabled(plan: EntitlementPlanKey, feature: EntitlementFeature): boolean {
   return getEntitlementsForPlan(plan).features[feature];
 }
@@ -330,11 +400,7 @@ export class EntitlementGateError extends Error {
 
 export function assertFeatureEnabled(plan: EntitlementPlanKey, feature: EntitlementFeature): void {
   if (isFeatureEnabled(plan, feature)) return;
-  const planName = getEntitlementsForPlan(plan).displayName;
-  throw new EntitlementGateError(
-    `${planName} does not include this capability. Upgrade your subscription to continue.`,
-    'feature_blocked',
-  );
+  throw new EntitlementGateError(featureUpgradeMessage(feature), 'feature_blocked');
 }
 
 export function assertLimitNotExceeded(
@@ -345,11 +411,7 @@ export function assertLimitNotExceeded(
   const allowed = getPlanLimit(plan, limit);
   if (currentValue < allowed) return;
 
-  const planName = getEntitlementsForPlan(plan).displayName;
-  throw new EntitlementGateError(
-    `${planName} allows up to ${allowed} for ${limit}. Upgrade or purchase an add-on to continue.`,
-    'limit_exceeded',
-  );
+  throw new EntitlementGateError(limitUpgradeMessage(plan, limit, allowed), 'limit_exceeded');
 }
 
 /**
