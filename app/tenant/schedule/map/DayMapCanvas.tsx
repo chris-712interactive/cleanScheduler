@@ -8,7 +8,7 @@ import {
   Popup,
   type MapLayerMouseEvent,
 } from 'maplibre-gl';
-import type { DayMapPin } from '@/lib/schedule/dayMap';
+import { dayMapStyleFailureNote, type DayMapPin } from '@/lib/schedule/dayMap';
 import styles from './dayMap.module.scss';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -65,11 +65,19 @@ export default function DayMapCanvas({ styleUrl, pins }: { styleUrl: string; pin
         transformRequest: (url) => ({ url }),
       });
     } catch {
-      setTilesNote('The map could not start. The lists beside it still show this day.');
+      setTilesNote(dayMapStyleFailureNote(false));
       return;
     }
 
+    let styleLoaded = false;
+    const onStyleError = () => {
+      const note = dayMapStyleFailureNote(styleLoaded);
+      if (note) setTilesNote(note);
+    };
+
     const onLoad = () => {
+      styleLoaded = true;
+      setTilesNote(null);
       map.addSource('visits', {
         type: 'geojson',
         data: {
@@ -134,6 +142,7 @@ export default function DayMapCanvas({ styleUrl, pins }: { styleUrl: string; pin
     };
 
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+    map.on('error', onStyleError);
     map.on('load', onLoad);
 
     const observer = new ResizeObserver(() => {

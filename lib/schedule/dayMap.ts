@@ -1,5 +1,6 @@
 import { formatVisitTime } from '@/lib/datetime/formatInTimeZone';
 import { visitTouchesCalendarDayInTimeZone } from '@/lib/datetime/tenantCalendarDay';
+import { isCalendarDateKey } from '@/lib/tenant/scheduleDateRange';
 import {
   customerHasAnyNameParts,
   formatCustomerDisplayName,
@@ -139,7 +140,16 @@ export function dayMapStyleNotice(styleUrl: string): string {
   return 'Map tiles follow NEXT_PUBLIC_MAP_STYLE_URL.';
 }
 
+export const DAY_MAP_STYLE_FAILURE =
+  'The map could not start. The lists beside it still show this day.';
+
+/** Shown when the style has not loaded. Tile errors after a loaded style stay quiet. */
+export function dayMapStyleFailureNote(styleLoaded: boolean): string | null {
+  return styleLoaded ? null : DAY_MAP_STYLE_FAILURE;
+}
+
 export function formatDayMapDateLabel(dateKey: string): string {
+  if (!isCalendarDateKey(dateKey)) return dateKey;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
   if (!match) return dateKey;
   const year = Number(match[1]);

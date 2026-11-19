@@ -4,14 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { fieldEmployeeCanAccessBrowserPath } from '@/lib/tenant/fieldEmployeeAccess';
 import {
   DAY_MAP_DEFAULT_STYLE_URL,
+  DAY_MAP_STYLE_FAILURE,
   DAY_MAP_UNASSIGNED_COLOR,
   dayMapMissingReasonLabel,
+  dayMapStyleFailureNote,
   dayMapStyleNotice,
   formatDayMapDateLabel,
   resolveDayMapStyleUrl,
   shapeDayMap,
   type DayMapVisitRow,
 } from '@/lib/schedule/dayMap';
+import { isCalendarDateKey, normalizeDateKey } from '@/lib/tenant/scheduleDateRange';
 import { DAY_MAP_VISIT_SELECT, loadDayMap } from '@/lib/schedule/loadDayMap';
 import { dbOverlapRangeForQuery } from '@/lib/tenant/scheduleDateRange';
 
@@ -366,6 +369,7 @@ describe('day map style url', () => {
 describe('day map copy', () => {
   it('formats the office date and the short geocode reasons', () => {
     expect(formatDayMapDateLabel('2026-06-01')).toBe('Monday, June 1, 2026');
+    expect(formatDayMapDateLabel('2026-02-31')).toBe('2026-02-31');
     expect(dayMapMissingReasonLabel({ hasProperty: true, geocodeReason: 'no_match' })).toBe(
       "Couldn't locate this address",
     );
@@ -375,6 +379,39 @@ describe('day map copy', () => {
     expect(dayMapMissingReasonLabel({ hasProperty: false, geocodeReason: null })).toBe(
       'No service location',
     );
+  });
+});
+
+describe('calendar date keys', () => {
+  it('keeps a real day and falls back when the calendar day is impossible', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    expect(isCalendarDateKey('2026-06-01')).toBe(true);
+    expect(isCalendarDateKey('2024-02-29')).toBe(true);
+    expect(normalizeDateKey('2026-06-01')).toBe('2026-06-01');
+    expect(isCalendarDateKey('2026-02-29')).toBe(false);
+
+    for (const raw of [
+      'not-a-date',
+      '2026-13-01',
+      '2026-00-01',
+      '0000-00-00',
+      '9999-99-99',
+      '2026-02-31',
+    ]) {
+      expect(normalizeDateKey(raw)).toBe(today);
+    }
+
+    const key = normalizeDateKey('2026-02-31');
+    expect(formatDayMapDateLabel(key)).toBe(formatDayMapDateLabel(today));
+    expect(formatDayMapDateLabel(key)).not.toContain('March');
+    expect(() => dbOverlapRangeForQuery('day', key)).not.toThrow();
+  });
+});
+
+describe('day map style errors', () => {
+  it('names a style that has not loaded and stays quiet after it has', () => {
+    expect(dayMapStyleFailureNote(false)).toBe(DAY_MAP_STYLE_FAILURE);
+    expect(dayMapStyleFailureNote(true)).toBeNull();
   });
 });
 
