@@ -159,6 +159,10 @@ const serverEnvSchema = z.object({
   STRIPE_PLATFORM_PRICE_STARTER_SUBSCRIBE: z.string().optional(),
   STRIPE_PLATFORM_PRICE_PRO_SUBSCRIBE: z.string().optional(),
   STRIPE_PLATFORM_PRICE_BUSINESS_SUBSCRIBE: z.string().optional(),
+  /** One-time Stripe Price for a 1,000-segment text pack ($15). Unset hides the buy button. */
+  STRIPE_PRICE_TEXT_PACK_1000: z.string().optional(),
+  /** One-time Stripe Price for a 2,500-segment text pack ($35). Unset hides the buy button. */
+  STRIPE_PRICE_TEXT_PACK_2500: z.string().optional(),
   STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
   /** Optional platform fee on tenant invoice Checkout (basis points, e.g. 100 = 1%). Max 10000. */
   STRIPE_CONNECT_APPLICATION_FEE_BPS: z.string().optional(),
@@ -178,6 +182,9 @@ const serverEnvSchema = z.object({
   SENT_DM_TEMPLATE_QUOTE_DECLINED: z.string().optional(),
   SENT_DM_TEMPLATE_VISIT_REMINDER: z.string().optional(),
   SENT_DM_TEMPLATE_INVOICE_OVERDUE: z.string().optional(),
+  SENT_DM_TEMPLATE_HIRING_SLOT_OFFERED: z.string().optional(),
+  SENT_DM_TEMPLATE_HIRING_REMINDER: z.string().optional(),
+  SENT_DM_TEMPLATE_HIRING_SLOT_CANCELED: z.string().optional(),
 
   /** Resend — API key from https://resend.com/api-keys */
   RESEND_API_KEY: z.string().optional(),

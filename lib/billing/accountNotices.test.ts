@@ -65,6 +65,24 @@ describe('buildUsageAccountNotice', () => {
     });
   });
 
+  it('links a text allowance to text packs', () => {
+    expect(
+      buildUsageAccountNotice(
+        usageAlert({
+          key: 'includedApplicantSmsCreditsMonthly',
+          label: 'Applicant texts',
+          used: 80,
+          limit: 100,
+          ratio: 0.8,
+          level: 'warn',
+        }),
+      ),
+    ).toMatchObject({
+      href: '/billing#text-packs',
+      actionLabel: 'Buy a text pack',
+    });
+  });
+
   it('shows a percent before the limit is reached', () => {
     expect(
       buildUsageAccountNotice(usageAlert({ used: 8, limit: 10, ratio: 0.8, level: 'warn' })),

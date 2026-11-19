@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import SentDm from '@sentdm/sentdm';
-import { assertCanSendSmsSegments, smsGateErrorMessage } from '@/lib/billing/smsCredits';
+import {
+  assertCanSendSmsSegments,
+  releaseReservedTextPackSegments,
+  smsGateErrorMessage,
+} from '@/lib/billing/smsCredits';
+import type { SmsMeter } from '@/lib/billing/textPacks';
 import type { Database } from '@/lib/supabase/database.types';
 import { estimateSmsSegmentCount, truncateSmsBodyPreview } from '@/lib/sms/estimateSmsSegments';
 import { normalizePhoneToE164 } from '@/lib/sms/normalizePhoneNumber';
@@ -26,6 +31,8 @@ export async function sendTransactionalSms(params: {
   toPhone: string;
   payload: SmsTemplatePayload;
   relatedVisitId?: string;
+  /** Customer texts use the Pro allowance. Applicant texts on Business use the separate cap. */
+  meter?: SmsMeter;
   /** sent.dm dedupes this key for 24 hours. 1–255 letters, numbers, hyphens, or underscores. */
   idempotencyKey?: string;
 }): Promise<{ ok: true; segmentCount: number } | { ok: false; error: string; suppressed?: true }> {
@@ -54,15 +61,28 @@ export async function sendTransactionalSms(params: {
   const channels = await resolveMessagingChannels(params.admin, params.tenantId);
   const totalSegments = segmentPerChannel * channels.length;
 
+  let reservationId: string | null = null;
   try {
-    await assertCanSendSmsSegments({
+    const reserved = await assertCanSendSmsSegments({
       admin: params.admin,
       tenantId: params.tenantId,
       segmentCount: totalSegments,
+      meter: params.meter ?? 'customer',
     });
+    reservationId = reserved.reservationId;
   } catch (error) {
     return { ok: false, error: smsGateErrorMessage(error) ?? 'SMS limit reached.' };
   }
+
+  const releasePack = async (refundPack: boolean) => {
+    const id = reservationId;
+    reservationId = null;
+    await releaseReservedTextPackSegments({
+      admin: params.admin,
+      reservationId: id,
+      refundPack,
+    });
+  };
 
   const sandbox = shouldUseSentDmSandbox();
 
@@ -79,6 +99,7 @@ export async function sendTransactionalSms(params: {
 
     if (!response.success) {
       const errMsg = response.error?.message ?? response.error?.code ?? 'sent.dm send failed.';
+      await releasePack(true);
       await logFailedSend(params, {
         to,
         bodyPreview,
@@ -92,6 +113,7 @@ export async function sendTransactionalSms(params: {
     const recipients = response.data?.recipients ?? [];
     if (recipients.length === 0) {
       const errMsg = 'sent.dm returned no recipients.';
+      await releasePack(true);
       await logFailedSend(params, {
         to,
         bodyPreview,
@@ -132,9 +154,11 @@ export async function sendTransactionalSms(params: {
     }
 
     if (loggedSegments === 0) {
+      await releasePack(true);
       return { ok: false, error: 'sent.dm send succeeded but logging failed.' };
     }
 
+    await releasePack(false);
     return { ok: true, segmentCount: loggedSegments };
   } catch (error) {
     const msg =
@@ -144,6 +168,7 @@ export async function sendTransactionalSms(params: {
           ? error.message
           : 'sent.dm send failed.';
     console.error('[sms] send failed:', msg);
+    await releasePack(true);
 
     await logFailedSend(params, {
       to,

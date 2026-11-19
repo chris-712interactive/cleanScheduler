@@ -9,7 +9,10 @@ import {
   type NumericEntitlementLimitKey,
 } from '@/lib/billing/entitlements';
 import { countActiveAutomationWorkflows } from '@/lib/billing/automationWorkflows';
-import { countSmsSegmentsUsedThisMonth } from '@/lib/billing/smsCredits';
+import {
+  countApplicantSmsSegmentsUsedThisMonth,
+  countSmsSegmentsUsedThisMonth,
+} from '@/lib/billing/smsCredits';
 import { countTeamSeatUsage } from '@/lib/billing/teamSeats';
 import { countMarketingSendsThisMonth } from '@/lib/campaigns/campaignLimits';
 import type { Database } from '@/lib/supabase/database.types';
@@ -22,6 +25,7 @@ export type MeteredLimitKey =
   | 'includedFieldSeats'
   | 'maxActiveCustomers'
   | 'includedSmsCreditsMonthly'
+  | 'includedApplicantSmsCreditsMonthly'
   | 'includedEmailCreditsMonthly'
   | 'maxAutomationWorkflows';
 
@@ -43,6 +47,7 @@ const METER_LABELS: Record<MeteredLimitKey, string> = {
   includedFieldSeats: 'Field seats',
   maxActiveCustomers: 'Active customers',
   includedSmsCreditsMonthly: 'SMS segments',
+  includedApplicantSmsCreditsMonthly: 'Applicant texts',
   includedEmailCreditsMonthly: 'Email sends',
   maxAutomationWorkflows: 'Recurring rules',
 };
@@ -98,6 +103,15 @@ export async function measureLimitUsage(
         label: METER_LABELS[key],
         used,
         limit: limits.includedSmsCreditsMonthly,
+      };
+    }
+    case 'includedApplicantSmsCreditsMonthly': {
+      const used = await countApplicantSmsSegmentsUsedThisMonth(admin, tenantId);
+      return {
+        key,
+        label: METER_LABELS[key],
+        used,
+        limit: limits.includedApplicantSmsCreditsMonthly,
       };
     }
     case 'includedEmailCreditsMonthly': {
@@ -175,6 +189,7 @@ export function limitKeyForEntitlement(limit: EntitlementLimitKey): MeteredLimit
     includedFieldSeats: 'includedFieldSeats',
     maxActiveCustomers: 'maxActiveCustomers',
     includedSmsCreditsMonthly: 'includedSmsCreditsMonthly',
+    includedApplicantSmsCreditsMonthly: 'includedApplicantSmsCreditsMonthly',
     includedEmailCreditsMonthly: 'includedEmailCreditsMonthly',
     maxAutomationWorkflows: 'maxAutomationWorkflows',
   };

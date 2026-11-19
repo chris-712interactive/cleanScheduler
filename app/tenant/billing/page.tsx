@@ -16,7 +16,7 @@ import { Stack } from '@/components/layout/Stack';
 import { Button } from '@/components/ui/Button';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { StatusTone } from '@/components/ui/StatusPill';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { canManageTeamInvitesAndRoles } from '@/lib/tenant/employeePermissions';
@@ -46,6 +46,22 @@ import {
 import type { Tables } from '@/lib/supabase/database.types';
 import { openPlatformBillingPortal } from './actions';
 import { SubscribePlanPicker } from '@/components/billing/SubscribePlanPicker';
+import { TextPacksSection } from './TextPacksSection';
+import {
+  countApplicantSmsSegmentsUsedThisMonth,
+  countSmsSegmentsUsedThisMonth,
+  formatApplicantSmsUsageSummary,
+  formatSmsUsageSummary,
+} from '@/lib/billing/smsCredits';
+import { getEntitlementsForPlan, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
+import {
+  allowanceWarning,
+  applicantUsesSeparateCap,
+  readTextPackBalance,
+  textPackPricesConfigured,
+  textPackPurchaseDenial,
+} from '@/lib/billing/textPacks';
 import styles from './billing.module.scss';
 
 type TenantBillingRow = Tables<'tenant_billing_accounts'>;
@@ -198,6 +214,7 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
   const resumeMessage = firstParam(params.message);
   const resumeFlag = firstParam(params.resume);
   const checkoutSuccess = firstParam(params.checkout) === 'success';
+  const checkoutTextPack = firstParam(params.checkout) === 'text_pack';
   const subscribeRequired = firstParam(params.subscribe) === 'required';
 
   const subscriptionAccess = resolveTenantSubscriptionAccess({
@@ -261,6 +278,45 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
     nextDate: nextPaymentDate,
   });
 
+  const admin = createAdminClient();
+  const [entitlementPlan, packBalance, generalUsed, applicantUsed] = await Promise.all([
+    resolveTenantEntitlementPlan(admin, membership.tenantId),
+    readTextPackBalance(admin, membership.tenantId),
+    countSmsSegmentsUsedThisMonth(admin, membership.tenantId),
+    countApplicantSmsSegmentsUsedThisMonth(admin, membership.tenantId),
+  ]);
+  const textingPaid = canUseTexting(billing?.status);
+  const entitlements = getEntitlementsForPlan(entitlementPlan);
+  const customerTexting = textingPaid && entitlements.features.smsCommunication;
+  const applicantTexting = textingPaid && entitlements.features.applicantSms;
+  const separateApplicantCap = applicantTexting && applicantUsesSeparateCap(entitlementPlan);
+  const pricesConfigured = textPackPricesConfigured();
+  const packsForSale = textingPaid && pricesConfigured && packBalance.available;
+  const purchaseDenial = textPackPurchaseDenial({
+    role: membership.role as TenantRole,
+    plan: entitlementPlan,
+    billingStatus: billing?.status,
+    pricesConfigured,
+    ledgerAvailable: packBalance.available,
+  });
+  const canBuyPack = purchaseDenial == null;
+  const applicantSummary = applicantTexting
+    ? formatApplicantSmsUsageSummary(applicantUsed, entitlementPlan)
+    : null;
+  const customerSummary = customerTexting
+    ? formatSmsUsageSummary(generalUsed, planKey ?? 'pro')
+    : null;
+  const applicantPackWarning = separateApplicantCap
+    ? allowanceWarning(
+        applicantUsed,
+        entitlements.limits.includedApplicantSmsCreditsMonthly,
+        'Applicant texts',
+      )
+    : null;
+  const customerPackWarning = customerTexting
+    ? allowanceWarning(generalUsed, entitlements.limits.includedSmsCreditsMonthly, 'SMS segments')
+    : null;
+
   const connectLabel = !stripeConnectAllowed
     ? 'Locked on free trial'
     : connectStatus === 'complete'
@@ -305,6 +361,13 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
             checkoutSuccess
               ? {
                   title: 'Checkout completed. Your plan status has been refreshed from Stripe.',
+                  variant: 'success',
+                }
+              : null,
+            checkoutTextPack
+              ? {
+                  title:
+                    'Payment received. The text pack is added when Stripe confirms it. This page does not add the segments.',
                   variant: 'success',
                 }
               : null,
@@ -404,6 +467,20 @@ export default async function TenantBillingPage({ searchParams }: PageProps) {
             </div>
           ) : null}
         </section>
+
+        <TextPacksSection
+          tenantSlug={membership.tenantSlug}
+          textingPaid={textingPaid}
+          canBuy={canBuyPack}
+          packsForSale={packsForSale}
+          buyBlockedMessage={textingPaid && purchaseDenial ? purchaseDenial : null}
+          balance={packBalance.available ? packBalance.remaining : null}
+          ledgerAvailable={packBalance.available}
+          applicantSummary={applicantSummary}
+          customerSummary={customerSummary}
+          applicantWarning={applicantPackWarning}
+          customerWarning={customerPackWarning}
+        />
 
         {customerBillingUnlocked ? (
           <section className={styles.customerSection} aria-labelledby="customer-billing-heading">

@@ -8,7 +8,7 @@ Customer guide: [hiring-desk-guide.pdf](hiring-desk-guide.pdf), regenerated with
 
 ## Packaging
 
-**Include the desk on Business and Pro. Do not put it on Starter. Keep it off the free trial. SMS to applicants stays on Pro, using the SMS credits Pro already includes. Clean Scheduler does not sell add-ons.**
+**Include the desk on Business and Pro. Do not put it on Starter. Keep it off the free trial. Business can text applicants up to 100 SMS segments a month. Pro applicant texts use the Pro SMS allowance. General customer texting stays on Pro. Text packs are the only prepaid extra and are never labeled add-ons.**
 
 |                                | Starter | Business                           | Pro                                | Trial |
 | ------------------------------ | ------- | ---------------------------------- | ---------------------------------- | ----- |
@@ -227,9 +227,9 @@ Applicant mail uses the cleaning company’s brand, reply-to, and transactional 
 - Slot canceled by the office
 - Office notified when someone is `ready` and no slot exists (this one is Clean Scheduler product mail to the office, same pattern as other staff alerts)
 
-Pro SMS uses `sendTransactionalSms`, new `SmsPurpose` values, and approved sent.dm templates. Each send counts segments against `includedSmsCreditsMonthly`. No SMS until the template ids exist in the environment. Business with `hiringDesk` and without `smsCommunication` skips SMS silently and still sends email. Suggested purposes: `hiring_slot_offered`, `hiring_reminder`, `hiring_slot_canceled`. Screened-out stays email-only so a rejection is not a text.
+Applicant SMS uses `sendTransactionalSms` with meter `applicant`, purposes `hiring_slot_offered`, `hiring_reminder`, and `hiring_slot_canceled`, and the matching sent.dm template env vars. No text is sent until that template id is set. Screened-out stays email-only. Business counts those segments against 100 per month, then a text pack. Pro counts them against `includedSmsCreditsMonthly`, then a text pack. Email still sends when the text is skipped.
 
-SMS consent is the checkbox on the form, stored with a version string. No checkbox, no phone persist, no send. Hiring SMS is off during trial because the desk is off, and off unless billing status is `active` or `past_due`, matching `canUseSmsCommunication`.
+SMS consent is the checkbox on the form, stored with a version string. No checkbox, no phone persist, no send. Hiring SMS is off unless `tenant_billing_accounts.status` is `active`. Trial, past due, and canceled workspaces do not text.
 
 Inbound SMS is not part of this plan. A YES reply would not be read.
 
@@ -315,13 +315,14 @@ Three templates, credit metering, consent already collected in phase 1. Email re
 
 Acceptance:
 
-- Business sends no hiring SMS.
-- Pro over the monthly segment cap fails the SMS send and still sends email.
+- Business can send hiring SMS until 100 segments in the month, then a text pack if one was bought.
+- Pro applicant texts draw from the Pro SMS allowance.
+- A send past the allowance and the text pack balance fails the SMS and still sends email.
 - Templates are the only body. No freeform hiring text.
 
 ### Not scheduled
 
-Inbound SMS confirm, Indeed inbox parsing, Checkr or equivalent, applicant SMS on Business, applicant mobile app, cross-tenant talent pool, custom question builder, auto no-show, and putting shadows on payroll.
+Inbound SMS confirm, Indeed inbox parsing, Checkr or equivalent, applicant mobile app, cross-tenant talent pool, custom question builder, auto no-show, and putting shadows on payroll. Applicant SMS on Business is included, capped at 100 segments a month.
 
 ## Decisions to confirm before implementation
 

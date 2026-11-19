@@ -81,14 +81,30 @@ export function canAccessCustomerBillingTools(access: TenantSubscriptionAccess):
 }
 
 /**
- * Paid platform features (SMS, API, white-label, Stripe Connect) — not available
+ * Paid platform features (API, white-label, Stripe Connect) — not available
  * during the free trial. Requires an active or past_due platform subscription.
+ * Texting is stricter: see {@link canUseTexting}.
  */
 export function canUsePaidSubscriptionFeatures(
   billingStatus: TenantBillingStatus | null | undefined,
 ): boolean {
   const status = billingStatus ?? 'trialing';
   return status === 'active' || status === 'past_due';
+}
+
+/**
+ * Customer texts, applicant texts, and text pack checkout.
+ *
+ * Paid means `tenant_billing_accounts.status === 'active'` only.
+ * Stripe writes that column through `mapStripeSubscriptionStatus`:
+ * `active` stays `active`; `paused` is stored as `active`;
+ * `past_due` and `unpaid` are stored as `past_due`;
+ * `canceled` and `incomplete_expired` are stored as `canceled`;
+ * `trialing`, `incomplete`, and a missing row are stored or treated as `trialing`.
+ * Anything other than the stored value `active` cannot text or buy a text pack.
+ */
+export function canUseTexting(billingStatus: TenantBillingStatus | null | undefined): boolean {
+  return billingStatus === 'active';
 }
 
 /**
@@ -101,11 +117,11 @@ export function canAccessStripeConnect(
   return canUsePaidSubscriptionFeatures(billingStatus);
 }
 
-/** @deprecated Use {@link canUsePaidSubscriptionFeatures} */
+/** Texting requires an active paid subscription. See {@link canUseTexting}. */
 export function canUseSmsCommunication(
   billingStatus: TenantBillingStatus | null | undefined,
 ): boolean {
-  return canUsePaidSubscriptionFeatures(billingStatus);
+  return canUseTexting(billingStatus);
 }
 
 /** Browser URL path on a tenant subdomain (e.g. `/billing`, `/quotes`). */

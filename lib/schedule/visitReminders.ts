@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
-import { canUseSmsCommunication } from '@/lib/billing/tenantSubscriptionAccess';
+import { canUseTexting } from '@/lib/billing/tenantSubscriptionAccess';
 import { customerContactForVisit } from '@/lib/customers/customerContact';
 import type { Database } from '@/lib/supabase/database.types';
 import {
@@ -103,7 +103,7 @@ export async function sendVisitRemindersForAllTenants(): Promise<{
     const smsAllowed =
       row.sms_notify_visit_reminder &&
       isFeatureEnabled(plan, 'smsCommunication') &&
-      canUseSmsCommunication(billing?.status) &&
+      canUseTexting(billing?.status) &&
       isSentDmConfigured();
 
     if (!emailAllowed && !smsAllowed) {
