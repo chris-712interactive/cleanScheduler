@@ -43,7 +43,6 @@ describe('syncUserAuthClaims platform role', () => {
     expect(next).toBe('employee');
     expect(updateUserById).toHaveBeenCalledWith('user-1', {
       app_metadata: {
-        app_role: 'employee',
         current_tenant_id: 'tenant-home',
         tenant_role: 'admin',
       },
@@ -63,11 +62,35 @@ describe('syncUserAuthClaims platform role', () => {
     });
 
     expect(next).toBe('super_admin');
-    expect(updateUserById.mock.calls[0]?.[1]).toMatchObject({
+    expect(updateUserById.mock.calls[0]?.[1]).toEqual({
       app_metadata: {
-        app_role: 'super_admin',
         tenant_role: 'employee',
         current_tenant_id: 'tenant-home',
+      },
+    });
+  });
+
+  it('sends null to clear tenant claims and does not rewrite other app_metadata keys', async () => {
+    const { admin, updateUserById } = authAdmin({
+      app_metadata: {
+        app_role: 'employee',
+        current_tenant_id: 'tenant-home',
+        tenant_role: 'employee',
+        masquerade_target_tenant_id: 'masq-1',
+      },
+      user_metadata: { tenant_role: 'owner', app_role: 'super_admin' },
+    });
+
+    await syncUserAuthClaims(admin as never, 'user-1', {
+      preservePlatformRoleFromAuth: true,
+      tenantRole: null,
+      currentTenantId: null,
+    });
+
+    expect(updateUserById).toHaveBeenCalledWith('user-1', {
+      app_metadata: {
+        current_tenant_id: null,
+        tenant_role: null,
       },
     });
   });

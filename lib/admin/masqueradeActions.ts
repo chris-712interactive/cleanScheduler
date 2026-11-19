@@ -64,12 +64,11 @@ export async function startMasqueradeAction(formData: FormData): Promise<void> {
     redirect(`/tenants/${tenantSlug}?error=masquerade_user`);
   }
 
-  const meta = { ...(userRes.user.app_metadata ?? {}) };
-  meta.masquerade_target_tenant_id = tenantId;
-  meta.current_tenant_id = tenantId;
-
   const { error: upErr } = await admin.auth.admin.updateUserById(auth.user.id, {
-    app_metadata: meta,
+    app_metadata: {
+      masquerade_target_tenant_id: tenantId,
+      current_tenant_id: tenantId,
+    },
   });
 
   if (upErr) {
@@ -139,10 +138,8 @@ export async function endMasqueradeAction(
     redirect(`${getPublicOrigin('admin')}/tenants`);
   }
 
-  const meta = clearedMasqueradeAppMetadata({ ...(userRes.user.app_metadata ?? {}) });
-
   const { error: metaErr } = await admin.auth.admin.updateUserById(auth.user.id, {
-    app_metadata: meta,
+    app_metadata: clearedMasqueradeAppMetadata(),
   });
   if (metaErr) {
     console.error('[endMasqueradeAction] staff metadata was not cleared');

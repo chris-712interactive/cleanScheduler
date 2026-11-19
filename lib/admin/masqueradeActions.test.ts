@@ -93,7 +93,12 @@ describe('endMasqueradeAction', () => {
     expect(auditResult).toEqual({
       error: 'Support mode was closed, but the end record or staff metadata could not be updated.',
     });
-    expect(updateUserById).toHaveBeenCalled();
+    expect(updateUserById).toHaveBeenCalledWith('staff-1', {
+      app_metadata: {
+        masquerade_target_tenant_id: null,
+        current_tenant_id: null,
+      },
+    });
     expect(redirect).not.toHaveBeenCalled();
     expect(errorLog).toHaveBeenCalled();
 

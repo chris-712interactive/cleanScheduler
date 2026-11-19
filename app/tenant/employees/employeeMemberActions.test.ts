@@ -4,12 +4,13 @@ const harness = vi.hoisted(() => ({
   updateUserById: vi.fn<
     (
       userId: string,
-      body: { app_metadata: Record<string, unknown> },
+      body: { app_metadata?: Record<string, unknown> },
     ) => Promise<{ data: { user: null }; error: null }>
   >(async () => ({ data: { user: null }, error: null })),
   signOut: vi.fn(async () => ({ error: null })),
   getUserById: vi.fn(),
   activeMemberships: [] as Array<{ tenant_id: string; role: string; created_at: string }>,
+  profileUpdates: [] as Array<Record<string, unknown>>,
   authUser: {
     id: 'user-2',
     app_metadata: {} as Record<string, unknown>,
@@ -53,6 +54,20 @@ vi.mock('@/lib/audit/recordPlatformAuditEvent', () => ({
   recordPlatformAuditEvent: async () => {},
 }));
 
+vi.mock('@/lib/billing/entitlements', () => ({
+  resolveTenantPlanTier: async () => 'pro',
+}));
+
+vi.mock('@/lib/billing/teamSeats', () => ({
+  countTeamSeatUsage: async () => ({ office: 1, field: 1 }),
+  assertCanAssignTeamSeat: () => {},
+  teamSeatGateErrorMessage: () => null,
+}));
+
+vi.mock('@/lib/billing/tenantFeatureGate', () => ({
+  assertFeatureEnabledForTier: () => {},
+}));
+
 vi.mock('@/lib/supabase/server', () => ({
   createAdminClient: () => ({
     from(table: string) {
@@ -62,8 +77,9 @@ vi.mock('@/lib/supabase/server', () => ({
           state.op = 'select';
           return builder;
         },
-        update() {
+        update(payload?: Record<string, unknown>) {
           state.op = 'update';
+          if (table === 'user_profiles' && payload) harness.profileUpdates.push(payload);
           return builder;
         },
         eq() {
@@ -96,7 +112,10 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-import { setTenantMemberActiveAction } from '@/app/tenant/employees/employeeMemberActions';
+import {
+  setTenantMemberActiveAction,
+  updateTenantMemberRoleAction,
+} from '@/app/tenant/employees/employeeMemberActions';
 
 function deactivateForm() {
   const form = new FormData();
@@ -108,6 +127,7 @@ function deactivateForm() {
 
 describe('setTenantMemberActiveAction claim clearing', () => {
   beforeEach(() => {
+    harness.profileUpdates.length = 0;
     harness.updateUserById.mockClear();
     harness.signOut.mockClear();
     harness.getUserById.mockReset();
@@ -128,6 +148,15 @@ describe('setTenantMemberActiveAction claim clearing', () => {
       data: { user: harness.authUser },
       error: null,
     }));
+    harness.updateUserById.mockImplementation(async (_userId, body) => {
+      const next = { ...(harness.authUser.app_metadata ?? {}) };
+      for (const [key, value] of Object.entries(body.app_metadata ?? {})) {
+        if (value == null) delete next[key];
+        else next[key] = value;
+      }
+      harness.authUser = { ...harness.authUser, app_metadata: next };
+      return { data: { user: null }, error: null };
+    });
     harness.activeMemberships = [];
   });
 
@@ -146,10 +175,15 @@ describe('setTenantMemberActiveAction claim clearing', () => {
     expect(userId).toBe('user-2');
     expect(Object.keys(body)).toEqual(['app_metadata']);
     expect(body.app_metadata).toEqual({
+      current_tenant_id: 'tenant-older',
+      tenant_role: 'viewer',
+    });
+    expect(harness.authUser.app_metadata).toMatchObject({
       app_role: 'employee',
       current_tenant_id: 'tenant-older',
       tenant_role: 'viewer',
     });
+    expect(harness.authUser.user_metadata).toMatchObject({ app_role: 'super_admin' });
   });
 
   it('leaves claims alone when the deactivated membership is not current', async () => {
@@ -181,9 +215,93 @@ describe('setTenantMemberActiveAction claim clearing', () => {
     expect(result).toEqual({ success: 'Member deactivated.' });
     const body = harness.updateUserById.mock.calls[0]?.[1];
     expect(Object.keys(body ?? {})).toEqual(['app_metadata']);
-    expect(body?.app_metadata).toEqual({ app_role: 'employee' });
-    expect(body?.app_metadata).not.toHaveProperty('current_tenant_id');
-    expect(body?.app_metadata).not.toHaveProperty('tenant_role');
+    expect(body?.app_metadata).toEqual({
+      current_tenant_id: null,
+      tenant_role: null,
+    });
     expect(body).not.toHaveProperty('user_metadata');
+    expect(harness.authUser.app_metadata).toEqual({ app_role: 'employee' });
+    expect(harness.authUser.user_metadata).toMatchObject({
+      current_tenant_id: 'tenant-forged',
+      tenant_role: 'owner',
+    });
+  });
+
+  it('reports a claim sync failure after the member is signed out', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    harness.activeMemberships = [];
+    harness.getUserById.mockImplementation(async () => ({
+      data: {
+        user: {
+          ...harness.authUser,
+          app_metadata: {
+            app_role: 'employee',
+            current_tenant_id: 'tenant-stale',
+            tenant_role: 'owner',
+          },
+        },
+      },
+      error: null,
+    }));
+
+    const result = await setTenantMemberActiveAction({}, deactivateForm());
+
+    expect(result.success).toBeUndefined();
+    expect(result.error).toMatch(/deactivated and signed out/i);
+    expect(result.error).toMatch(/claims could not be updated/i);
+    expect(harness.signOut).toHaveBeenCalledWith('user-2', 'global');
+    expect(errorLog).toHaveBeenCalledWith(
+      '[setTenantMemberActiveAction] tenant claims were not updated after deactivation',
+      expect.stringMatching(/concurrent updates/),
+    );
+    errorLog.mockRestore();
+  });
+});
+
+describe('updateTenantMemberRoleAction platform role', () => {
+  beforeEach(() => {
+    harness.updateUserById.mockClear();
+    harness.getUserById.mockReset();
+    harness.authUser = {
+      id: 'user-2',
+      app_metadata: {},
+      user_metadata: { app_role: 'super_admin', tenant_role: 'owner' },
+    };
+    harness.getUserById.mockImplementation(async () => ({
+      data: { user: harness.authUser },
+      error: null,
+    }));
+    harness.updateUserById.mockImplementation(async (_userId, body) => {
+      const next = { ...(harness.authUser.app_metadata ?? {}) };
+      for (const [key, value] of Object.entries(body.app_metadata ?? {})) {
+        if (value == null) delete next[key];
+        else next[key] = value;
+      }
+      harness.authUser = { ...harness.authUser, app_metadata: next };
+      return { data: { user: null }, error: null };
+    });
+    harness.activeMemberships = [
+      { tenant_id: 'tenant-current', role: 'viewer', created_at: '2020-01-01T00:00:00.000Z' },
+    ];
+  });
+
+  it('succeeds when Auth has no app_role and copies employee onto the profile', async () => {
+    const form = new FormData();
+    form.set('tenant_slug', 'acme');
+    form.set('target_user_id', 'user-2');
+    form.set('next_role', 'viewer');
+
+    const result = await updateTenantMemberRoleAction({}, form);
+
+    expect(result).toEqual({ success: 'Role updated.' });
+    expect(harness.authUser.app_metadata).toEqual({
+      current_tenant_id: 'tenant-current',
+      tenant_role: 'viewer',
+    });
+    expect(harness.authUser.user_metadata).toEqual({
+      app_role: 'super_admin',
+      tenant_role: 'owner',
+    });
+    expect(harness.profileUpdates).toEqual([expect.objectContaining({ app_role: 'employee' })]);
   });
 });
