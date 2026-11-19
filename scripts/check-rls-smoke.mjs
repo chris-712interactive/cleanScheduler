@@ -10,8 +10,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  assertLocalDatabaseUrl,
   libpqChildEnv,
+  localPgTarget,
+  localPsqlArgs,
   LocalOnlyUrlError,
 } from './local-stack/local-only-url.mjs';
 
@@ -35,13 +36,16 @@ if (!databaseUrl) {
   process.exit(0);
 }
 
+let target;
 try {
-  assertLocalDatabaseUrl(databaseUrl);
+  target = localPgTarget(databaseUrl);
 } catch (error) {
   const message = error instanceof LocalOnlyUrlError ? error.message : 'DATABASE_URL was refused.';
   console.error(`check:rls-smoke — refused: ${message}`);
   process.exit(1);
 }
+
+const psqlEnv = libpqChildEnv(process.env, { password: target.password });
 
 for (const sqlPath of sqlPaths) {
   if (!existsSync(sqlPath)) {
@@ -49,10 +53,14 @@ for (const sqlPath of sqlPaths) {
     process.exit(1);
   }
 
-  const result = spawnSync('psql', [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-f', sqlPath], {
-    stdio: 'inherit',
-    env: libpqChildEnv(process.env),
-  });
+  const result = spawnSync(
+    'psql',
+    localPsqlArgs(target, ['-v', 'ON_ERROR_STOP=1', '-f', sqlPath]),
+    {
+      stdio: 'inherit',
+      env: psqlEnv,
+    },
+  );
 
   if (result.error) {
     console.error('check:rls-smoke — psql not available:', result.error.message);

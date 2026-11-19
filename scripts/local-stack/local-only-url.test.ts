@@ -83,8 +83,14 @@ describe('local stack URL guard', () => {
       `${base}?application_name=qa#&%68ostaddr=192.0.2.1`,
     ];
     for (const url of hashBypass) {
-      expect(() => assertLocalDatabaseUrl(url)).toThrow(/query parameter "host/);
+      expect(() => assertLocalDatabaseUrl(url)).toThrow(/hash mark/);
     }
+    expect(() =>
+      assertLocalDatabaseUrl(`${base}?connect_timeout=1&application_name=qa#&hostaddr=192.0.2.1`),
+    ).toThrow(/hash mark/);
+    expect(() => assertLocalDatabaseUrl(`${base}?application_name=qa%23`)).toThrow(/hash mark/);
+    expect(() => assertLocalDatabaseUrl(`${base}?application_name=qa%2523`)).toThrow(/hash mark/);
+    expect(() => assertLocalDatabaseUrl(`${base}#&hostaddr=192.0.2.1`)).toThrow(/hash mark/);
   });
 });
 
@@ -120,6 +126,7 @@ describe('libpq child environment', () => {
     writeFileSync(
       stub,
       `#!/usr/bin/env node
+console.log('ARGV=' + JSON.stringify(process.argv.slice(2)));
 console.log('PGHOSTADDR=' + (process.env.PGHOSTADDR ?? ''));
 console.log('PGHOST=' + (process.env.PGHOST ?? ''));
 console.log('PGSERVICEFILE=' + (process.env.PGSERVICEFILE ?? ''));
@@ -142,6 +149,19 @@ process.exit(0);
     expect(result.stdout).toContain('PGHOSTADDR=\n');
     expect(result.stdout).toContain('PGHOST=\n');
     expect(result.stdout).toContain('PGSERVICEFILE=/nonexistent/cleanscheduler-no-pg-service.conf');
+    const argvLine = result.stdout.split('\n').find((line) => line.startsWith('ARGV='));
+    const argv = JSON.parse(argvLine?.slice('ARGV='.length) ?? '[]') as string[];
+    expect(argv.slice(0, 8)).toEqual([
+      '-h',
+      '127.0.0.1',
+      '-p',
+      '1',
+      '-U',
+      'postgres',
+      '-d',
+      'postgres',
+    ]);
+    expect(argv.some((arg) => arg.includes('://') || /hostaddr|service=/i.test(arg))).toBe(false);
     expect(`${result.stdout}${result.stderr}`).not.toContain('192.0.2.1');
     expect(`${result.stdout}${result.stderr}`).not.toContain('/home/user/.pg_service.conf');
   });

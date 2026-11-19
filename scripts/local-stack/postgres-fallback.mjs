@@ -7,7 +7,12 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { libpqChildEnv, localStackPgPort } from './local-only-url.mjs';
+import {
+  libpqChildEnv,
+  localPgTarget,
+  localPsqlArgs,
+  localStackPgPort,
+} from './local-only-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
@@ -15,6 +20,8 @@ const dataDir = path.join(repoRoot, '.local-stack/pgdata');
 const logFile = path.join(repoRoot, '.local-stack/postgres.log');
 const stampFile = path.join(repoRoot, '.local-stack/migration-stamp.txt');
 const port = localStackPgPort(process.env.LOCAL_STACK_PG_PORT);
+const maintenance = localPgTarget(`postgresql://postgres@127.0.0.1:${port}/postgres`);
+const qaTarget = { ...maintenance, database: 'cleanscheduler_qa' };
 const databaseUrl = `postgresql://postgres@127.0.0.1:${port}/cleanscheduler_qa`;
 
 function findBin(name) {
@@ -34,7 +41,7 @@ function run(bin, args, options = {}) {
   const result = spawnSync(bin, args, {
     stdio: 'inherit',
     ...options,
-    env: libpqChildEnv(options.env ?? process.env),
+    env: options.env ?? libpqChildEnv(process.env),
   });
   if (result.error) {
     console.error(result.error.message);
@@ -43,26 +50,31 @@ function run(bin, args, options = {}) {
   if ((result.status ?? 1) !== 0) process.exit(result.status ?? 1);
 }
 
-function psql(args, options = {}) {
+function psql(target, extra, options = {}) {
   const bin = findBin('psql');
   if (!bin) {
     console.error('psql is not installed. Install the PostgreSQL client and server packages.');
     process.exit(1);
   }
-  run(bin, [databaseUrl, '-v', 'ON_ERROR_STOP=1', ...args], options);
+  run(bin, localPsqlArgs(target, extra), {
+    ...options,
+    env: libpqChildEnv(options.env ?? process.env, { password: target.password }),
+  });
 }
 
 function pgCronAvailable() {
   const bin = findBin('psql');
   const result = spawnSync(
     bin,
-    [
-      databaseUrl,
+    localPsqlArgs(qaTarget, [
       '-tA',
       '-c',
       "select count(*) from pg_available_extensions where name = 'pg_cron'",
-    ],
-    { encoding: 'utf8', env: libpqChildEnv(process.env) },
+    ]),
+    {
+      encoding: 'utf8',
+      env: libpqChildEnv(process.env, { password: qaTarget.password }),
+    },
   );
   return (result.stdout ?? '').trim() === '1';
 }
@@ -109,28 +121,35 @@ export function startPlainPostgres() {
 
   const exists = spawnSync(
     findBin('psql'),
-    [
-      'postgresql://postgres@127.0.0.1:' + port + '/postgres',
+    localPsqlArgs(maintenance, [
       '-tA',
       '-c',
       "select 1 from pg_database where datname = 'cleanscheduler_qa'",
-    ],
-    { encoding: 'utf8', env: libpqChildEnv(process.env) },
+    ]),
+    { encoding: 'utf8', env: libpqChildEnv(process.env, { password: maintenance.password }) },
   );
   if (!exists.stdout?.includes('1')) {
-    run(findBin('psql'), [
-      `postgresql://postgres@127.0.0.1:${port}/postgres`,
-      '-v',
-      'ON_ERROR_STOP=1',
-      '-c',
-      'create database cleanscheduler_qa',
-    ]);
+    run(
+      findBin('psql'),
+      localPsqlArgs(maintenance, [
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-c',
+        'create database cleanscheduler_qa',
+      ]),
+      { env: libpqChildEnv(process.env, { password: maintenance.password }) },
+    );
   }
 
   if (existsSync(stampFile) && readFileSync(stampFile, 'utf8') === stamp) {
     console.log('plain postgres migrations already applied');
   } else {
-    psql(['-f', path.join(__dirname, 'bootstrap-plain-postgres.sql')]);
+    psql(qaTarget, [
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-f',
+      path.join(__dirname, 'bootstrap-plain-postgres.sql'),
+    ]);
     const cron = pgCronAvailable();
     if (!cron) {
       console.log('pg_cron extension is not installed; migration 0021 uses the local shim');
@@ -138,10 +157,10 @@ export function startPlainPostgres() {
     for (const file of migrationFiles()) {
       const full = path.join(repoRoot, 'supabase/migrations', file);
       if (file.startsWith('0021_') && !cron) {
-        psql(['-f', path.join(__dirname, 'pg-cron-shim.sql')]);
+        psql(qaTarget, ['-v', 'ON_ERROR_STOP=1', '-f', path.join(__dirname, 'pg-cron-shim.sql')]);
         continue;
       }
-      psql(['-f', full]);
+      psql(qaTarget, ['-v', 'ON_ERROR_STOP=1', '-f', full]);
     }
     writeFileSync(stampFile, stamp);
     console.log(`plain postgres applied ${migrationFiles().length} migrations`);

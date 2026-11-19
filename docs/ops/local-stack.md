@@ -1,6 +1,6 @@
 # Local QA stack
 
-Disposable Supabase for pull-request CI and for a QA agent on a laptop or a Cursor cloud VM. Nothing here talks to the shared dev project or to production. A database URL must name a loopback host. Its query string may only contain `sslmode`, `connect_timeout`, and `application_name` (any letter case). `service`, `host`, `hostaddr`, `passfile`, `options`, and every other parameter are refused. `psql`, `pg_isready`, `initdb`, `pg_ctl`, and the Supabase CLI are started with every parent `PG*` variable removed, and with `PGSERVICEFILE` and `PGSYSCONFDIR` pointed at paths that do not exist, so `~/.pg_service.conf` is not read.
+Disposable Supabase for pull-request CI and for a QA agent on a laptop or a Cursor cloud VM. Nothing here talks to the shared dev project or to production. A database URL must name a loopback host and must not contain `#` or `%23`. Its query string may only contain `sslmode`, `connect_timeout`, and `application_name`. `psql` is started with `-h`, `-p`, `-U`, and `-d` as separate arguments, never with the URL. Parent `PG*` variables are removed. `PGPASSWORD` comes only from the parsed URL. `PGSERVICEFILE` and `PGSYSCONFDIR` point at paths that do not exist.
 
 ## One command
 

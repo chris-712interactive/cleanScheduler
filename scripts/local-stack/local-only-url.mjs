@@ -66,10 +66,27 @@ const BLOCKED_PG_SYSCONF_DIR = '/nonexistent/cleanscheduler-no-pg-sysconf';
 
 /**
  * Allow only the query parameters this stack uses. libpq does not treat `#`
- * as a fragment, so the text after it is still parameters. `service` would
- * load a service file and can replace the URL host. `host` and `hostaddr`
- * do that directly. Comparison ignores case and percent-encoding.
+ * as a fragment, so a hash is refused before any parameter is read. `service`
+ * would load a service file. `host` and `hostaddr` replace the URL host.
+ * Comparison ignores case and percent-encoding.
  */
+function assertNoHash(raw, label) {
+  let current = raw;
+  for (let i = 0; i < 3; i += 1) {
+    if (current.includes('#') || /%23/i.test(current)) {
+      throw new LocalOnlyUrlError(`${label} must not contain a hash mark.`);
+    }
+    let next;
+    try {
+      next = decodeURIComponent(current);
+    } catch {
+      throw new LocalOnlyUrlError('The connection string contains an invalid escape.');
+    }
+    if (next === current) return;
+    current = next;
+  }
+}
+
 function assertAllowedDatabaseQuery(raw, label) {
   const queryStart = raw.indexOf('?');
   if (queryStart === -1) return;
@@ -88,19 +105,82 @@ function assertAllowedDatabaseQuery(raw, label) {
 }
 
 /**
- * libpq reads PGHOSTADDR even when the URL host is loopback. Every PG*
- * variable from the parent is removed, including PGPASSWORD. Put the password
- * in the URL. PGSERVICEFILE and PGSYSCONFDIR are then set to paths that do
- * not exist so a service name cannot fall back to the home or system file.
+ * libpq reads PGHOSTADDR even when -h is loopback. Every PG* variable from
+ * the parent is removed. PGPASSWORD is set only from the parsed URL.
+ * PGSERVICEFILE and PGSYSCONFDIR point at paths that do not exist.
  */
-export function libpqChildEnv(env) {
+export function libpqChildEnv(env, options = {}) {
   const next = { ...env };
   for (const key of Object.keys(next)) {
     if (/^pg/i.test(key)) delete next[key];
   }
   next.PGSERVICEFILE = BLOCKED_PG_SERVICE_FILE;
   next.PGSYSCONFDIR = BLOCKED_PG_SYSCONF_DIR;
+  if (options.password) next.PGPASSWORD = options.password;
   return next;
+}
+
+const PLAIN_PG_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+function decodeUserInfo(value) {
+  if (!value) return '';
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    throw new LocalOnlyUrlError('The connection string contains an invalid escape.');
+  }
+}
+
+/** Parsed local target. `host` is only 127.0.0.1 or ::1. */
+export function localPgTarget(raw) {
+  assertLocalDatabaseUrl(raw);
+  const url = new URL(raw.trim());
+  const named = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  const host = named === '::1' ? '::1' : '127.0.0.1';
+  const port = localStackPgPort(url.port);
+  const user = decodeUserInfo(url.username) || 'postgres';
+  const database = decodeURIComponent(url.pathname.replace(/^\//, ''));
+  if (!PLAIN_PG_NAME.test(user) || !PLAIN_PG_NAME.test(database)) {
+    throw new LocalOnlyUrlError('DATABASE_URL user and database must be plain names.');
+  }
+  return {
+    host,
+    port,
+    user,
+    database,
+    password: decodeUserInfo(url.password),
+  };
+}
+
+/** argv for psql/pg_isready. Never a URL or conninfo string. */
+export function localPsqlArgs(target, extra = []) {
+  const args = [
+    '-h',
+    target.host,
+    '-p',
+    target.port,
+    '-U',
+    target.user,
+    '-d',
+    target.database,
+    ...extra,
+  ];
+  assertPgArgv(args);
+  return args;
+}
+
+export function assertPgArgv(args) {
+  for (const arg of args) {
+    if (typeof arg !== 'string') continue;
+    if (
+      arg.includes('://') ||
+      arg.includes('#') ||
+      /%23/i.test(arg) ||
+      /(^|[?&\s])(host|hostaddr|service)\s*=/i.test(arg)
+    ) {
+      throw new LocalOnlyUrlError('Postgres arguments must not contain a connection string.');
+    }
+  }
 }
 
 /** Postgres URL, including a local unix-socket URL with an empty host. */
@@ -109,6 +189,7 @@ export function assertLocalDatabaseUrl(raw) {
   if (!value) {
     throw new LocalOnlyUrlError('DATABASE_URL is empty.');
   }
+  assertNoHash(value, 'DATABASE_URL');
   assertNoHostedMarker(value, 'DATABASE_URL');
   const protocol = value.split(':', 1)[0]?.toLowerCase();
   if (protocol !== 'postgres' && protocol !== 'postgresql') {
