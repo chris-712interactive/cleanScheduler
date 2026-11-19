@@ -1,5 +1,5 @@
-import type { GeocodeResult } from './censusGeocode';
-import type { GeocodeSource } from './geocodeProvider';
+import type { GeocodeResult } from './censusGeocode.ts';
+import type { GeocodeSource } from './geocodeProvider.ts';
 
 export type PropertyGeocodeStatus = 'pending' | 'ok' | 'failed';
 

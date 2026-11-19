@@ -50,3 +50,42 @@ jobs:
       - name: Dependency review
         if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@v5
+
+  # Disposable Supabase on the runner. No repository secrets.
+  # RLS_SMOKE_REQUIRED is set inside scripts/local-stack/run.mjs so a missing
+  # database fails this job. The quality job does not run that required mode.
+  local-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.2.0
+      - name: Install
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          grep -q 'qa-residential.lvh.me' /etc/hosts || printf '\n127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me\n' | sudo tee -a /etc/hosts
+          npm run check:engines
+          npm ci
+      - name: Local Supabase, RLS, Playwright, geocode backfill
+        run: npm run test:local-stack
+      - name: Upload local-stack results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-stack-results
+          if-no-files-found: ignore
+          path: |
+            test-results
+            playwright-report
+            .local-stack/summary.txt
+            .local-stack/playwright.json

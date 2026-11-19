@@ -46,5 +46,8 @@ blob-report/
 supabase/.branches
 supabase/.temp
 
+# Disposable local QA stack (keys, Postgres data, Playwright JSON)
+.local-stack/
+
 # Generated PROD baseline SQL (see supabase/scripts/build-prod-baseline.sh)
 supabase/scripts/generated/
