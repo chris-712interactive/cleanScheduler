@@ -123,7 +123,7 @@ export async function runBackfillCli(
   if (!parsed.ok) {
     console.error(parsed.error);
     console.error(
-      'Usage: node --env-file=.env.local scripts/backfill-property-geocodes.mts --tenant <workspace-id> [--min-interval-ms 1100] [--retry-failed]',
+      'Usage: npm run geocode:backfill -- --tenant <workspace-id> [--min-interval-ms 1100] [--retry-failed]',
     );
     return 1;
   }

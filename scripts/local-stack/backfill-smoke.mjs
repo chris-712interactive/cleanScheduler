@@ -32,6 +32,8 @@ delete env.GEOCODIO_API_KEY;
 const child = spawnSync(
   process.execPath,
   [
+    '--import',
+    path.join(__dirname, 'register-ts-extensions.mjs'),
     path.join(repoRoot, 'scripts/backfill-property-geocodes.mts'),
     '--tenant',
     accounts.residential.tenantId,
