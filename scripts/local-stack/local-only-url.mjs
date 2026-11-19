@@ -30,10 +30,9 @@ function hostnameOf(raw) {
 }
 
 function assertLoopbackHost(hostname, label) {
-  if (!hostname) return;
-  if (LOOPBACK_HOSTS.has(hostname)) return;
+  if (hostname && LOOPBACK_HOSTS.has(hostname)) return;
   throw new LocalOnlyUrlError(
-    `${label} host "${hostname}" is not local. This stack only talks to loopback.`,
+    `${label} host "${hostname || '(none)'}" is not local. This stack only talks to loopback.`,
   );
 }
 
@@ -66,17 +65,36 @@ function assertNoRemoteLibpqHost(raw, label) {
   const query = raw.split('?')[1]?.split('#')[0] ?? '';
   if (!query) return;
   const params = new URLSearchParams(query);
-  for (const key of ['host', 'hostaddr']) {
-    for (const value of params.getAll(key)) {
-      const host = value
-        .trim()
-        .toLowerCase()
-        .replace(/^\[|\]$/g, '');
-      if (!host) continue;
-      if (key === 'host' && host.startsWith('/')) continue;
-      assertLoopbackHost(host, `${label} ${key}`);
+  for (const [rawKey, rawValue] of params.entries()) {
+    let key;
+    try {
+      key = decodeURIComponent(rawKey).trim().toLowerCase();
+    } catch {
+      throw new LocalOnlyUrlError('The connection string contains an invalid escape.');
     }
+    if (key !== 'host' && key !== 'hostaddr') continue;
+    const host = rawValue
+      .trim()
+      .toLowerCase()
+      .replace(/^\[|\]$/g, '');
+    if (!host || host.startsWith('/')) {
+      throw new LocalOnlyUrlError(`${label} ${key} must name a loopback host.`);
+    }
+    assertLoopbackHost(host, `${label} ${key}`);
   }
+}
+
+/**
+ * libpq reads PGHOSTADDR even when the URL host is loopback, and PGHOST when
+ * the URL host is empty. Children must not inherit those variables.
+ * Every PG* variable is removed, including PGPASSWORD. Put the password in the URL.
+ */
+export function libpqChildEnv(env) {
+  const next = { ...env };
+  for (const key of Object.keys(next)) {
+    if (/^pg/i.test(key)) delete next[key];
+  }
+  return next;
 }
 
 /** Postgres URL, including a local unix-socket URL with an empty host. */
@@ -91,11 +109,16 @@ export function assertLocalDatabaseUrl(raw) {
     throw new LocalOnlyUrlError('DATABASE_URL must use a postgres scheme.');
   }
   assertNoRemoteLibpqHost(value, 'DATABASE_URL');
-  // Node's URL parser rejects `postgresql://user@/dbname` (local socket).
-  if (/^postgres(?:ql)?:\/\/(?:[^/?#]*@)?\//i.test(value.split('?')[0] ?? value)) {
-    return;
+  let host = '';
+  try {
+    host = hostnameOf(value);
+  } catch {
+    host = '';
   }
-  assertLoopbackHost(hostnameOf(value), 'DATABASE_URL');
+  if (!host) {
+    throw new LocalOnlyUrlError('DATABASE_URL must name a loopback host.');
+  }
+  assertLoopbackHost(host, 'DATABASE_URL');
 }
 
 /** Plain TCP port. Rejects anything that could rewrite the fallback URI. */

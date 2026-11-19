@@ -10,3 +10,7 @@ export function assertLocalStackEnv(env: {
 }): void;
 
 export function localStackPgPort(raw?: string): string;
+
+export function libpqChildEnv(
+  env: Record<string, string | undefined>,
+): Record<string, string | undefined>;

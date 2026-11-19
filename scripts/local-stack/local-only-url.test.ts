@@ -1,9 +1,13 @@
 import { spawnSync } from 'node:child_process';
+import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { utcInstantForZonedCivilTime } from './seed.mjs';
 import {
   assertLocalDatabaseUrl,
   assertLocalStackEnv,
+  libpqChildEnv,
   localStackPgPort,
   LocalOnlyUrlError,
 } from './local-only-url.mjs';
@@ -16,7 +20,9 @@ describe('local stack URL guard', () => {
         DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres',
       }),
     ).not.toThrow();
-    expect(() => assertLocalDatabaseUrl('postgresql://postgres@/cleanscheduler_qa')).not.toThrow();
+    expect(() => assertLocalDatabaseUrl('postgresql://postgres@/cleanscheduler_qa')).toThrow(
+      /loopback host/,
+    );
   });
 
   it('refuses hosted projects and does not echo the password', () => {
@@ -58,9 +64,69 @@ describe('local stack URL guard', () => {
     expect(() =>
       assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:54322/postgres?host=127.0.0.1'),
     ).not.toThrow();
+    expect(() => assertLocalDatabaseUrl('postgresql://postgres@/postgres')).toThrow(
+      /loopback host/,
+    );
     expect(() => assertLocalDatabaseUrl('postgresql://postgres@/postgres?host=192.0.2.1')).toThrow(
       /192\.0\.2\.1/,
     );
+    expect(() =>
+      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:5432/postgres?HOST=192.0.2.1'),
+    ).toThrow(/192\.0\.2\.1/);
+    expect(() =>
+      assertLocalDatabaseUrl('postgresql://postgres@127.0.0.1:5432/postgres?HostAddr=192.0.2.1'),
+    ).toThrow(/192\.0\.2\.1/);
+  });
+});
+
+describe('libpq child environment', () => {
+  it('drops every PG* variable and keeps the rest', () => {
+    const env = libpqChildEnv({
+      PATH: '/usr/bin',
+      HOME: '/tmp',
+      PGHOSTADDR: '192.0.2.1',
+      PGHOST: '192.0.2.1',
+      pgport: '1',
+      PGPASSWORD: 'secret',
+      PGSERVICE: 'remote',
+      PGOPTIONS: '-c search_path=public',
+    });
+    expect(env.PATH).toBe('/usr/bin');
+    expect(env.HOME).toBe('/tmp');
+    expect(env.PGHOSTADDR).toBeUndefined();
+    expect(env.PGHOST).toBeUndefined();
+    expect(env.pgport).toBeUndefined();
+    expect(env.PGPASSWORD).toBeUndefined();
+    expect(env.PGSERVICE).toBeUndefined();
+    expect(env.PGOPTIONS).toBeUndefined();
+  });
+
+  it('does not give psql a parent PGHOSTADDR', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'cs-psql-'));
+    const stub = path.join(dir, 'psql');
+    writeFileSync(
+      stub,
+      `#!/usr/bin/env node
+console.log('PGHOSTADDR=' + (process.env.PGHOSTADDR ?? ''));
+console.log('PGHOST=' + (process.env.PGHOST ?? ''));
+process.exit(0);
+`,
+    );
+    chmodSync(stub, 0o755);
+    const result = spawnSync(process.execPath, ['scripts/check-rls-smoke.mjs'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${dir}:${process.env.PATH ?? ''}`,
+        RLS_SMOKE_REQUIRED: '1',
+        DATABASE_URL: 'postgresql://postgres@127.0.0.1:1/postgres',
+        PGHOSTADDR: '192.0.2.1',
+        PGHOST: '192.0.2.1',
+      },
+    });
+    expect(result.stdout).toContain('PGHOSTADDR=\n');
+    expect(result.stdout).toContain('PGHOST=\n');
+    expect(`${result.stdout}${result.stderr}`).not.toContain('192.0.2.1');
   });
 });
 

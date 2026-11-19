@@ -7,7 +7,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertLocalStackEnv } from './local-only-url.mjs';
+import { assertLocalStackEnv, libpqChildEnv } from './local-only-url.mjs';
 import { startPlainPostgres } from './postgres-fallback.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -112,7 +112,7 @@ function localEnvFromStatus(text) {
       `supabase status did not include the local API keys (saw ${Object.keys(map).join(', ') || 'no keys'})`,
     );
   }
-  const env = { ...process.env };
+  const env = libpqChildEnv(process.env);
   for (const name of STRIPPED_SECRETS) delete env[name];
   env.NEXT_PUBLIC_APP_ENV = 'local';
   env.NEXT_PUBLIC_APP_DOMAIN = 'lvh.me:3000';
@@ -152,7 +152,11 @@ async function waitForStub() {
 function runPostgresFallback() {
   const databaseUrl = startPlainPostgres();
   const status = run(process.execPath, [path.join(repoRoot, 'scripts/check-rls-smoke.mjs')], {
-    env: { ...process.env, DATABASE_URL: databaseUrl, RLS_SMOKE_REQUIRED: '1' },
+    env: libpqChildEnv({
+      ...process.env,
+      DATABASE_URL: databaseUrl,
+      RLS_SMOKE_REQUIRED: '1',
+    }),
   });
   const lines = [
     'mode=postgres-fallback',

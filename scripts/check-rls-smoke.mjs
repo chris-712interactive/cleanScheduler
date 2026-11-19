@@ -9,7 +9,11 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertLocalDatabaseUrl, LocalOnlyUrlError } from './local-stack/local-only-url.mjs';
+import {
+  assertLocalDatabaseUrl,
+  libpqChildEnv,
+  LocalOnlyUrlError,
+} from './local-stack/local-only-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -47,7 +51,7 @@ for (const sqlPath of sqlPaths) {
 
   const result = spawnSync('psql', [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-f', sqlPath], {
     stdio: 'inherit',
-    env: process.env,
+    env: libpqChildEnv(process.env),
   });
 
   if (result.error) {

@@ -1,6 +1,6 @@
 # Local QA stack
 
-Disposable Supabase for pull-request CI and for a QA agent on a laptop or a Cursor cloud VM. Nothing here talks to the shared dev project or to production. The command refuses any API or database host that is not loopback.
+Disposable Supabase for pull-request CI and for a QA agent on a laptop or a Cursor cloud VM. Nothing here talks to the shared dev project or to production. The command refuses any API or database host that is not an explicit loopback name. `psql`, `pg_isready`, `initdb`, and `pg_ctl` are started without `PG*` variables, so `PGHOSTADDR` cannot move a loopback URL onto another host. A query key such as `HOST` or `HostAddr` is treated the same as `host`.
 
 ## One command
 

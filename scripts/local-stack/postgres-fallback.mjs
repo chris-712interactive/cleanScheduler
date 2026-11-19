@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { localStackPgPort } from './local-only-url.mjs';
+import { libpqChildEnv, localStackPgPort } from './local-only-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
@@ -31,7 +31,11 @@ function findBin(name) {
 }
 
 function run(bin, args, options = {}) {
-  const result = spawnSync(bin, args, { stdio: 'inherit', ...options });
+  const result = spawnSync(bin, args, {
+    stdio: 'inherit',
+    ...options,
+    env: libpqChildEnv(options.env ?? process.env),
+  });
   if (result.error) {
     console.error(result.error.message);
     process.exit(1);
@@ -58,7 +62,7 @@ function pgCronAvailable() {
       '-c',
       "select count(*) from pg_available_extensions where name = 'pg_cron'",
     ],
-    { encoding: 'utf8' },
+    { encoding: 'utf8', env: libpqChildEnv(process.env) },
   );
   return (result.stdout ?? '').trim() === '1';
 }
@@ -83,7 +87,10 @@ export function startPlainPostgres() {
   const stamp = migrationFiles().join('\n');
   const previous = existsSync(stampFile) ? readFileSync(stampFile, 'utf8') : '';
   if (existsSync(dataDir) && previous !== stamp) {
-    spawnSync(pgCtl, ['-D', dataDir, 'stop', '-m', 'fast'], { stdio: 'ignore' });
+    spawnSync(pgCtl, ['-D', dataDir, 'stop', '-m', 'fast'], {
+      stdio: 'ignore',
+      env: libpqChildEnv(process.env),
+    });
     spawnSync('rm', ['-rf', dataDir], { stdio: 'inherit' });
   }
 
@@ -91,14 +98,11 @@ export function startPlainPostgres() {
     run(initdb, ['-D', dataDir, '--username=postgres', '--auth=trust', '--no-instructions']);
   }
 
-  const ready = spawnSync(findBin('pg_isready') ?? 'pg_isready', [
-    '-h',
-    '127.0.0.1',
-    '-p',
-    port,
-    '-d',
-    'postgres',
-  ]);
+  const ready = spawnSync(
+    findBin('pg_isready') ?? 'pg_isready',
+    ['-h', '127.0.0.1', '-p', port, '-d', 'postgres'],
+    { env: libpqChildEnv(process.env) },
+  );
   if ((ready.status ?? 1) !== 0) {
     run(pgCtl, ['-D', dataDir, '-l', logFile, '-o', `-p ${port} -k ${dataDir}`, 'start']);
   }
@@ -111,7 +115,7 @@ export function startPlainPostgres() {
       '-c',
       "select 1 from pg_database where datname = 'cleanscheduler_qa'",
     ],
-    { encoding: 'utf8' },
+    { encoding: 'utf8', env: libpqChildEnv(process.env) },
   );
   if (!exists.stdout?.includes('1')) {
     run(findBin('psql'), [
@@ -152,7 +156,7 @@ if (entry.endsWith(`${path.sep}postgres-fallback.mjs`)) {
   const child = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/check-rls-smoke.mjs')], {
     cwd: repoRoot,
     stdio: 'inherit',
-    env: { ...process.env, DATABASE_URL: database, RLS_SMOKE_REQUIRED: '1' },
+    env: libpqChildEnv({ ...process.env, DATABASE_URL: database, RLS_SMOKE_REQUIRED: '1' }),
   });
   process.exit(child.status ?? 1);
 }

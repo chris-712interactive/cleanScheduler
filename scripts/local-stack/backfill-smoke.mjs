@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertLocalStackEnv } from './local-only-url.mjs';
+import { assertLocalStackEnv, libpqChildEnv } from './local-only-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
@@ -26,7 +26,7 @@ if (!process.env.CENSUS_GEOCODE_URL?.trim()) {
   fail('CENSUS_GEOCODE_URL must point at the local geocode stub.');
 }
 
-const env = { ...process.env };
+const env = libpqChildEnv(process.env);
 delete env.GEOCODIO_API_KEY;
 
 const child = spawnSync(
