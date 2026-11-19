@@ -1,7 +1,14 @@
 import { serverEnv } from '@/lib/env';
 
 export type SmsPurpose =
-  'quote_sent' | 'quote_accepted' | 'quote_declined' | 'visit_reminder' | 'invoice_overdue';
+  | 'quote_sent'
+  | 'quote_accepted'
+  | 'quote_declined'
+  | 'visit_reminder'
+  | 'invoice_overdue'
+  | 'hiring_slot_offered'
+  | 'hiring_reminder'
+  | 'hiring_slot_canceled';
 
 export type SmsTemplatePayload =
   | { purpose: 'quote_sent'; tenantName: string; quoteTitle: string; link: string }
@@ -14,7 +21,16 @@ export type SmsTemplatePayload =
       invoiceTitle: string;
       balance: string;
       portalUrl: string;
-    };
+    }
+  | {
+      purpose: 'hiring_slot_offered';
+      tenantName: string;
+      openingTitle: string;
+      when: string;
+      link: string;
+    }
+  | { purpose: 'hiring_reminder'; tenantName: string; openingTitle: string; when: string }
+  | { purpose: 'hiring_slot_canceled'; tenantName: string; openingTitle: string };
 
 export function templateIdForPurpose(purpose: SmsPurpose): string {
   const id = (() => {
@@ -29,6 +45,12 @@ export function templateIdForPurpose(purpose: SmsPurpose): string {
         return serverEnv.SENT_DM_TEMPLATE_VISIT_REMINDER;
       case 'invoice_overdue':
         return serverEnv.SENT_DM_TEMPLATE_INVOICE_OVERDUE;
+      case 'hiring_slot_offered':
+        return serverEnv.SENT_DM_TEMPLATE_HIRING_SLOT_OFFERED;
+      case 'hiring_reminder':
+        return serverEnv.SENT_DM_TEMPLATE_HIRING_REMINDER;
+      case 'hiring_slot_canceled':
+        return serverEnv.SENT_DM_TEMPLATE_HIRING_SLOT_CANCELED;
       default: {
         const _exhaustive: never = purpose;
         return _exhaustive;
@@ -69,6 +91,24 @@ export function templateParametersForPayload(payload: SmsTemplatePayload): Recor
         balance: payload.balance,
         portal_url: payload.portalUrl,
       };
+    case 'hiring_slot_offered':
+      return {
+        tenant_name: payload.tenantName,
+        opening_title: payload.openingTitle,
+        when: payload.when,
+        link: payload.link,
+      };
+    case 'hiring_reminder':
+      return {
+        tenant_name: payload.tenantName,
+        opening_title: payload.openingTitle,
+        when: payload.when,
+      };
+    case 'hiring_slot_canceled':
+      return {
+        tenant_name: payload.tenantName,
+        opening_title: payload.openingTitle,
+      };
     default: {
       const _exhaustive: never = payload;
       return _exhaustive;
@@ -89,6 +129,12 @@ export function renderSmsBodyFromPayload(payload: SmsTemplatePayload): string {
       return `${payload.tenantName}: Reminder — "${payload.visitTitle}" is scheduled for ${payload.when}.`;
     case 'invoice_overdue':
       return `${payload.tenantName}: Invoice "${payload.invoiceTitle}" (${payload.balance}) is overdue. Pay: ${payload.portalUrl}`;
+    case 'hiring_slot_offered':
+      return `${payload.tenantName}: Interview for "${payload.openingTitle}" is ${payload.when}. Confirm: ${payload.link}`;
+    case 'hiring_reminder':
+      return `${payload.tenantName}: Reminder — "${payload.openingTitle}" is today at ${payload.when}.`;
+    case 'hiring_slot_canceled':
+      return `${payload.tenantName}: The interview for "${payload.openingTitle}" was canceled.`;
     default: {
       const _exhaustive: never = payload;
       return _exhaustive;

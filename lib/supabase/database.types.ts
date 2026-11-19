@@ -1836,6 +1836,47 @@ export type Database = {
           },
         ];
       };
+      tenant_text_pack_ledger: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          segments: number;
+          kind: string;
+          stripe_checkout_session_id: string | null;
+          pack_key: string | null;
+          amount_cents: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          segments: number;
+          kind: string;
+          stripe_checkout_session_id?: string | null;
+          pack_key?: string | null;
+          amount_cents?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          segments?: number;
+          kind?: string;
+          stripe_checkout_session_id?: string | null;
+          pack_key?: string | null;
+          amount_cents?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_text_pack_ledger_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_memberships: {
         Row: {
           id: string;
@@ -6453,6 +6494,37 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      consume_text_pack_segments: {
+        Args: {
+          p_tenant: string;
+          p_segments: number;
+        };
+        Returns: boolean;
+      };
+      refund_text_pack_segments: {
+        Args: {
+          p_tenant: string;
+          p_segments: number;
+        };
+        Returns: undefined;
+      };
+      reserve_sms_segments: {
+        Args: {
+          p_tenant: string;
+          p_segments: number;
+          p_meter: string;
+          p_allowance: number;
+          p_separate_applicant: boolean;
+        };
+        Returns: Json;
+      };
+      release_sms_reservation: {
+        Args: {
+          p_reservation: string;
+          p_refund_pack: boolean;
+        };
+        Returns: undefined;
+      };
       hold_instant_booking: {
         Args: {
           p_booking_id: string;

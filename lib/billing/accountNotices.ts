@@ -79,6 +79,8 @@ export function buildTrialAccountNotice(
 export function buildUsageAccountNotice(alert: UtilizationAlert): AccountNotice {
   const urgent = alert.level === 'critical' || alert.level === 'exceeded';
   const pct = Math.round(alert.ratio * 100);
+  const textAllowance =
+    alert.key === 'includedSmsCreditsMonthly' || alert.key === 'includedApplicantSmsCreditsMonthly';
 
   return {
     id: 'usage',
@@ -86,8 +88,8 @@ export function buildUsageAccountNotice(alert: UtilizationAlert): AccountNotice 
     priority: alert.level === 'exceeded' ? 70 : alert.level === 'critical' ? 60 : 40,
     label: alert.level === 'exceeded' ? `${alert.label} full` : `${alert.label} ${pct}%`,
     detail: utilizationBannerMessage(alert),
-    href: '/billing',
-    actionLabel: 'View billing',
+    href: textAllowance ? '/billing#text-packs' : '/billing',
+    actionLabel: textAllowance ? 'Buy a text pack' : 'View billing',
   };
 }
 
