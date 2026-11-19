@@ -65,14 +65,15 @@ const BLOCKED_PG_SERVICE_FILE = '/nonexistent/cleanscheduler-no-pg-service.conf'
 const BLOCKED_PG_SYSCONF_DIR = '/nonexistent/cleanscheduler-no-pg-sysconf';
 
 /**
- * Allow only the query parameters this stack uses. `service` would load
- * ~/.pg_service.conf and can replace the URL host. `host` and `hostaddr` do
- * that directly. Comparison ignores case and percent-encoding.
+ * Allow only the query parameters this stack uses. libpq does not treat `#`
+ * as a fragment, so the text after it is still parameters. `service` would
+ * load a service file and can replace the URL host. `host` and `hostaddr`
+ * do that directly. Comparison ignores case and percent-encoding.
  */
 function assertAllowedDatabaseQuery(raw, label) {
-  const query = raw.split('?')[1]?.split('#')[0] ?? '';
-  if (!query) return;
-  const params = new URLSearchParams(query);
+  const queryStart = raw.indexOf('?');
+  if (queryStart === -1) return;
+  const params = new URLSearchParams(raw.slice(queryStart + 1));
   for (const [rawKey] of params.entries()) {
     let key;
     try {

@@ -76,6 +76,15 @@ describe('local stack URL guard', () => {
     expect(() => assertLocalDatabaseUrl('postgresql://postgres@/postgres')).toThrow(
       /loopback host/,
     );
+    const hashBypass = [
+      `${base}?connect_timeout=1&application_name=qa#&hostaddr=192.0.2.1`,
+      `${base}?application_name=qa#&host=192.0.2.1`,
+      `${base}?connect_timeout=1#&hostaddr=192.0.2.1`,
+      `${base}?application_name=qa#&%68ostaddr=192.0.2.1`,
+    ];
+    for (const url of hashBypass) {
+      expect(() => assertLocalDatabaseUrl(url)).toThrow(/query parameter "host/);
+    }
   });
 });
 
