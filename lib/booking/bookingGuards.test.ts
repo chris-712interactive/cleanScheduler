@@ -78,7 +78,7 @@ describe('booking QA guards', () => {
 
   it('refunds and flags a paid booking that cannot create the customer', () => {
     const limitMessage =
-      'Starter allows up to 500 for Active customers. Upgrade or purchase an add-on to continue.';
+      'Starter allows up to 500 for active customers. Upgrade your plan to continue.';
     expect(customerCreateFailureCode(limitMessage)).toBe('capacity');
     expect(paidCustomerCreateDisposition(limitMessage)).toEqual({
       code: 'capacity',

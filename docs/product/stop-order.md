@@ -1,6 +1,6 @@
 # Suggest stop order
 
-Owners and admins can suggest a stop order for one cleaner's day. It is included on every plan, including Starter and the trial. There is no add-on and no extra charge.
+Owners and admins can suggest a stop order for one cleaner's day. It is included on Starter, Business, Pro, and the free trial. The screen is not locked behind a higher tier.
 
 ## Where
 

@@ -103,8 +103,8 @@ export function smsGateErrorMessage(error: unknown): string | null {
       return error.message;
     }
     return error.message.replace(
-      ' for includedSmsCreditsMonthly. Upgrade or purchase an add-on to continue.',
-      ' SMS segments this month. Upgrade your subscription to send more.',
+      ' for SMS segments. Upgrade your plan to continue.',
+      ' SMS segments this month. Upgrade your plan to send more.',
     );
   }
   return null;
