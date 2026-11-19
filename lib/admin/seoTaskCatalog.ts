@@ -109,7 +109,7 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
     category: 'near-win-pages',
     title: 'Verify online payments feature page',
     detail:
-      'Confirm credit-card processing section, invoice-software FAQ, and Stripe cross-links. Target query: “online payments for cleaning companies”.',
+      'Confirm check-deposit matching section, invoice-software FAQ, and Stripe cross-links. Target queries: “online payments for cleaning companies”, “automate check payments to bank account for cleaning business clients”.',
     href: '/features/invoicing-and-payments',
     cadence: 'once',
     sortOrder: 15,
@@ -127,9 +127,9 @@ export const SEO_TASK_CATALOG: SeoTaskDefinition[] = [
   {
     id: 'near-win-mobile',
     category: 'near-win-pages',
-    title: 'Verify mobile app for cleaning employees page',
+    title: 'Verify cleaning crew mobile software page',
     detail:
-      'Confirm mobile-employee phrasing in title, lead, and FAQ. Target queries: “mobile app for cleaning employees”, “cleaning crew mobile software”.',
+      'Confirm “cleaning crew mobile software” appears in title, headline, lead, and FAQ. Target queries: “cleaning crew mobile software”, “mobile app for cleaning employees”.',
     href: '/features/mobile-scheduling-for-cleaners',
     cadence: 'once',
     sortOrder: 17,

@@ -20,8 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const page = getSeoMarketingPageBySlug('compare', slug);
   if (!page) return { title: PRODUCT_NAME };
-  const meta = buildPageMetadata(page);
-  return { ...meta, title: `${meta.title} | ${PRODUCT_NAME}` };
+  return buildPageMetadata(page);
 }
 
 export default async function CompareSegmentPage({ params }: PageProps) {
