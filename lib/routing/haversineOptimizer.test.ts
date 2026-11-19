@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRouteOptimizer } from '@/lib/routing/createRouteOptimizer';
 import {
-  createRouteOptimizer,
   formatStraightLineMiles,
   haversineNearestNeighborOrder,
   optimizeHaversine,
@@ -19,6 +19,16 @@ function stop(
 }
 
 describe('haversine route optimizer', () => {
+  beforeEach(() => {
+    vi.stubEnv('ROUTING_ENGINE_URL', '');
+    vi.stubEnv('ROUTING_ENGINE_TOKEN', '');
+    vi.stubEnv('OUTBOUND_SUPPRESSED', '');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('returns the same order every time', async () => {
     const request: RouteOptimizeRequest = {
       start: { lat: 35.55, lng: -82.55 },

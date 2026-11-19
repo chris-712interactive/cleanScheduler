@@ -1,0 +1,60 @@
+# Self-hosted road routing for one cleaner's stop order.
+# Copy .env.example to .env before `docker compose up`. See README.md.
+
+services:
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:3.5.1
+    restart: unless-stopped
+    environment:
+      tile_urls: ${TILE_URLS:-https://download.geofabrik.de/north-america/us/north-carolina-latest.osm.pbf}
+      serve_tiles: 'True'
+      use_tiles_ignore_pbf: 'True'
+      force_rebuild: ${FORCE_REBUILD:-False}
+      build_elevation: 'False'
+      build_admins: 'False'
+      build_time_zones: 'False'
+      build_tar: 'True'
+      server_threads: '2'
+    volumes:
+      - ./custom_files:/custom_files
+    # Not published. Only the proxy can reach it.
+
+  vroom:
+    image: ghcr.io/vroom-project/vroom-docker:v1.15.0
+    restart: unless-stopped
+    environment:
+      VROOM_ROUTER: valhalla
+    volumes:
+      - ./vroom/config.yml:/conf/config.yml:ro
+    depends_on:
+      - valhalla
+
+  health:
+    build: ./health
+    restart: unless-stopped
+    depends_on:
+      - valhalla
+      - vroom
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      ROUTING_DOMAIN: ${ROUTING_DOMAIN:?Set ROUTING_DOMAIN in .env}
+      ROUTING_ENGINE_TOKEN: ${ROUTING_ENGINE_TOKEN:?Set ROUTING_ENGINE_TOKEN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - health
+      - valhalla
+      - vroom
+
+volumes:
+  caddy_data:
+  caddy_config:

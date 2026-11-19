@@ -1,12 +1,12 @@
 # Outbound suppression
 
-`OUTBOUND_SUPPRESSED=1` is a server-only switch for hosted dev. While it is on, Clean Scheduler does not call Resend, sent.dm, Stripe, Plaid, or customer webhook URLs. Calls that would move money, open a Stripe account, link a bank, or record a message as sent stop before that write and tell the office nothing was sent. Other reads return a local id that starts with `suppressed_` and do not open a socket. The server logs one line:
+`OUTBOUND_SUPPRESSED=1` is a server-only switch for hosted dev. While it is on, Clean Scheduler does not call Resend, sent.dm, Stripe, Plaid, customer webhook URLs, or the self-hosted routing engine. Calls that would move money, open a Stripe account, link a bank, or record a message as sent stop before that write and tell the office nothing was sent. Other reads return a local id that starts with `suppressed_` and do not open a socket. The server logs one line:
 
 ```text
 [outbound] suppressed provider=stripe operation=refunds.create
 ```
 
-That line has no recipient, URL, token, or message body. A suppressed refund, Connect start, bank link, webhook delivery, SMS, campaign, or outreach send does not change balances, account ids, cursors, quotas, or “sent” status. A new webhook emit is stored as `pending` with no `delivered_at` and is not posted until the switch is off. Password reset and sales invites do not call Supabase Auth email.
+That line has no recipient, URL, token, or message body. A suppressed routing call does not open a socket. Stop order falls back to the straight-line estimate and logs `reason=suppressed` with no engine URL. A suppressed refund, Connect start, bank link, webhook delivery, SMS, campaign, or outreach send does not change balances, account ids, cursors, quotas, or “sent” status. A new webhook emit is stored as `pending` with no `delivered_at` and is not posted until the switch is off. Password reset and sales invites do not call Supabase Auth email.
 
 Customers cannot read or toggle the switch. It is not `NEXT_PUBLIC_`, and nothing in the request (cookie, header, query, or `user_metadata`) is consulted. `GET /api/health/deployment` adds a boolean `outboundSuppressed` and no other new value.
 

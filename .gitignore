@@ -49,5 +49,9 @@ supabase/.temp
 # Disposable local QA stack (keys, Postgres data, Playwright JSON)
 .local-stack/
 
+# Routing VPS secrets and built map tiles (see infra/routing/README.md)
+infra/routing/.env
+infra/routing/custom_files/
+
 # Generated PROD baseline SQL (see supabase/scripts/build-prod-baseline.sh)
 supabase/scripts/generated/

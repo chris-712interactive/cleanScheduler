@@ -3,7 +3,9 @@ import type { Database } from '@/lib/supabase/database.types';
 import { visitTouchesCalendarDayInTimeZone } from '@/lib/datetime/tenantCalendarDay';
 import { dayMapMissingReasonLabel, describeDayMapVisit } from '@/lib/schedule/dayMap';
 import { loadDayMapRows } from '@/lib/schedule/loadDayMap';
-import { createRouteOptimizer, formatStraightLineMiles } from '@/lib/routing/haversineOptimizer';
+import { createRouteOptimizer } from '@/lib/routing/createRouteOptimizer';
+import { formatStraightLineMiles } from '@/lib/routing/haversineOptimizer';
+import { driveMetricText } from '@/lib/routing/panelCopy';
 import { hasFixedArrivalWindow, isVisitTimeLocked } from '@/lib/routing/locks';
 import type { CleanerStopOrderView, RouteStopInput } from '@/lib/routing/types';
 
@@ -148,10 +150,19 @@ export async function loadCleanerStopOrder(params: {
     cleanerName: params.cleanerName.trim() || 'Cleaner',
     dateKey: params.dateKey,
     startLabel: office ? 'Office' : 'First stop',
+    estimateKind: optimized.estimateKind,
     estimatedMilesBefore: optimized.estimatedMilesBefore,
     estimatedMilesAfter: optimized.estimatedMilesAfter,
     beforeLabel: formatStraightLineMiles(optimized.estimatedMilesBefore),
     afterLabel: formatStraightLineMiles(optimized.estimatedMilesAfter),
+    driveBeforeLabel:
+      optimized.estimateKind === 'drive' && optimized.driveSecondsBefore != null
+        ? driveMetricText(optimized.driveSecondsBefore, optimized.estimatedMilesBefore)
+        : null,
+    driveAfterLabel:
+      optimized.estimateKind === 'drive' && optimized.driveSecondsAfter != null
+        ? driveMetricText(optimized.driveSecondsAfter, optimized.estimatedMilesAfter)
+        : null,
     ordered,
     unrouted,
     saved,
