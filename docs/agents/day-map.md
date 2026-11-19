@@ -11,7 +11,7 @@ Office map of one day's visits. Product copy is in `docs/product/day-map.md`.
 - Pin color is the alphabetically first assignee. The popup and the side list name every assignee. Unassigned is its own gray group, last in the legend.
 - Two visits at the same coordinate are nudged by about 0.00012 degrees so both can be clicked. The stored point on the pin record stays the real coordinate.
 - Cancelled visits are excluded. Scheduled and completed visits are included.
-- MapLibre is imported only from `app/tenant/schedule/map/DayMapCanvas.tsx`. `DayMap.tsx` loads that file with `next/dynamic` and `ssr: false`. The schedule page does not import it. Tile requests use `credentials: 'omit'`.
+- MapLibre is imported only from `app/tenant/schedule/map/DayMapCanvas.tsx`. `DayMap.tsx` loads that file with `next/dynamic` and `ssr: false`. The schedule page does not import it. Tile requests do not attach credentials. The package is `maplibre-gl` 6.19.0. CI runs `npm audit --omit=dev --audit-level=high`, and 5.x through 6.4.0 fail that audit (GHSA-jrc7-96c5-q579, XSS in `DOM.sanitize`). Do not downgrade. The day map builds popups with `textContent`, not `setHTML`.
 - `NEXT_PUBLIC_MAP_STYLE_URL` is optional. Blank, non-https, and Mapbox or Google hosts fall back to OpenFreeMap Liberty (`https://tiles.openfreemap.org/styles/liberty`). It is not in the Zod env schema, so a bad value does not take down the rest of the app. Do not put a key in the URL.
 - OpenFreeMap's public terms allow this use with no key and no stated view cap, including commercial use, and they do not offer an SLA. Production should point the env var at a self-hosted Protomaps style. This ticket does not host PMTiles and does not change billing, entitlements, cookie domain, or workflows.
 
