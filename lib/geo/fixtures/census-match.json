@@ -1,0 +1,27 @@
+{
+  "result": {
+    "input": {
+      "address": { "address": "4600 Silver Hill Rd, Washington, DC 20233" },
+      "benchmark": {
+        "benchmarkName": "Public_AR_Current",
+        "isDefault": true
+      }
+    },
+    "addressMatches": [
+      {
+        "matchedAddress": "4600 SILVER HILL RD, WASHINGTON, DC, 20233",
+        "coordinates": { "x": -76.927487, "y": 38.845985 },
+        "tigerLine": { "tigerLineId": "76355984", "side": "L" },
+        "addressComponents": {
+          "fromAddress": "4600",
+          "toAddress": "4700",
+          "streetName": "SILVER HILL",
+          "suffixType": "RD",
+          "city": "WASHINGTON",
+          "state": "DC",
+          "zip": "20233"
+        }
+      }
+    ]
+  }
+}

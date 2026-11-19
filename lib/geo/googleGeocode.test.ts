@@ -41,13 +41,24 @@ describe('resolveGeocodedPoint', () => {
         longitude: -83.22,
       },
     );
-    expect(point).toEqual({ point: { lat: 35.37, lng: -83.22 }, reason: null });
+    expect(point).toEqual({
+      point: { lat: 35.37, lng: -83.22 },
+      reason: null,
+      status: 'ok',
+      source: null,
+      accuracy: null,
+      reused: true,
+    });
   });
 
   it('names a short address and an address outside the United States', async () => {
     await expect(lookupUsAddress({ line1: '1', city: '', state: 'NC' })).resolves.toEqual({
       point: null,
       reason: 'incomplete',
+      status: 'failed',
+      source: null,
+      accuracy: null,
+      reused: false,
     });
     await expect(
       lookupUsAddress({
@@ -57,7 +68,14 @@ describe('resolveGeocodedPoint', () => {
         postalCode: 'M5V 2T6',
         country: 'CA',
       }),
-    ).resolves.toEqual({ point: null, reason: 'outside_us' });
+    ).resolves.toEqual({
+      point: null,
+      reason: 'outside_us',
+      status: 'failed',
+      source: null,
+      accuracy: null,
+      reused: false,
+    });
   });
 
   it('treats spacing and case as the same address', () => {

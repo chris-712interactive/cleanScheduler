@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import { lookupUsAddress } from '@/lib/geo/censusGeocode';
+import { addressHasText } from '@/lib/geo/censusGeocode';
+import { BLANK_PROPERTY_GEOCODE, PENDING_PROPERTY_GEOCODE } from '@/lib/geo/propertyGeocodePatch';
+import { savePropertyGeocode } from '@/lib/geo/savePropertyGeocode';
 import { normalizeCommunityName } from '@/lib/tenant/communityName';
 import { sanitizeConsultationNotes } from '@/lib/visits/consultationNotes';
 import { getAuthContext } from '@/lib/auth/session';
@@ -164,39 +166,46 @@ export async function createTenantCustomer(
     return { error: profileInsert.error.message };
   }
 
-  const geocoded = await lookupUsAddress({
+  const serviceAddress = {
     line1: serviceAddressLine1,
     city: serviceCity,
     state: serviceState,
     postalCode: servicePostalCode,
-  });
-
+  };
   const propertyKind = await defaultPropertyKindForTenant(admin, membership.tenantId);
-  const propertyInsert = await admin.from('tenant_customer_properties').insert({
-    tenant_id: membership.tenantId,
-    customer_id: customerId,
-    label: 'Primary service location',
-    property_kind: propertyKind,
-    address_line1: serviceAddressLine1 || null,
-    address_line2: serviceAddressLine2 || null,
-    city: serviceCity || null,
-    state: serviceState || null,
-    postal_code: servicePostalCode || null,
-    community_name: communityName,
-    latitude: geocoded.point?.lat ?? null,
-    longitude: geocoded.point?.lng ?? null,
-    geocode_reason: geocoded.reason,
-    service_zone_id: zoneResolved.zoneId,
-    is_primary: true,
-  });
+  const propertyInsert = await admin
+    .from('tenant_customer_properties')
+    .insert({
+      tenant_id: membership.tenantId,
+      customer_id: customerId,
+      label: 'Primary service location',
+      property_kind: propertyKind,
+      address_line1: serviceAddressLine1 || null,
+      address_line2: serviceAddressLine2 || null,
+      city: serviceCity || null,
+      state: serviceState || null,
+      postal_code: servicePostalCode || null,
+      community_name: communityName,
+      ...(addressHasText(serviceAddress) ? PENDING_PROPERTY_GEOCODE : BLANK_PROPERTY_GEOCODE),
+      service_zone_id: zoneResolved.zoneId,
+      is_primary: true,
+    })
+    .select('id')
+    .single();
 
-  if (propertyInsert.error) {
+  if (propertyInsert.error || !propertyInsert.data) {
     await admin.from('tenant_customer_profiles').delete().eq('customer_id', customerId);
     await admin.from('customer_tenant_links').delete().eq('customer_id', customerId);
     await admin.from('customers').delete().eq('id', customerId);
     await admin.from('customer_identities').delete().eq('id', identityId);
-    return { error: propertyInsert.error.message };
+    return { error: propertyInsert.error?.message ?? 'Could not save the service address.' };
   }
+
+  await savePropertyGeocode(admin, {
+    tenantId: membership.tenantId,
+    propertyId: propertyInsert.data.id,
+    address: serviceAddress,
+  });
 
   if (email) {
     const auth = await getAuthContext();

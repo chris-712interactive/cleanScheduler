@@ -2,9 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 
-vi.mock('@/lib/geo/censusGeocode', () => ({
-  lookupUsAddress: vi.fn(),
-}));
+vi.mock('@/lib/geo/censusGeocode', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    lookupUsAddress: vi.fn(),
+  };
+});
 
 import { lookupUsAddress } from '@/lib/geo/censusGeocode';
 import { ensurePropertyGeocoded } from '@/lib/geo/ensurePropertyGeocoded';
@@ -18,6 +22,9 @@ type PropertyRow = {
   postal_code: string | null;
   latitude: number | null;
   longitude: number | null;
+  geocode_status?: string | null;
+  geocode_reason?: string | null;
+  geocoded_at?: string | null;
 };
 
 function adminFor(row: PropertyRow | null) {
@@ -36,13 +43,21 @@ function adminFor(row: PropertyRow | null) {
         },
         update(patch: Record<string, unknown>) {
           updates.push(patch);
-          return {
+          const query = {
             eq() {
-              return {
-                eq: async () => ({ error: null }),
-              };
+              return query;
+            },
+            is() {
+              return query;
+            },
+            then(
+              onFulfilled: (value: { error: null }) => unknown,
+              onRejected?: (reason: unknown) => unknown,
+            ) {
+              return Promise.resolve({ error: null }).then(onFulfilled, onRejected);
             },
           };
+          return query;
         },
       };
     },
@@ -91,7 +106,63 @@ describe('ensurePropertyGeocoded', () => {
       state: 'FL',
       postalCode: '34236',
     });
-    expect(updates).toEqual([{ latitude: 27.34, longitude: -82.53, geocode_reason: null }]);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toMatchObject({
+      latitude: 27.34,
+      longitude: -82.53,
+      geocode_reason: null,
+      geocode_status: 'ok',
+      geocode_source: null,
+      geocode_accuracy: null,
+    });
+    expect(updates[0]?.geocoded_at).toEqual(expect.any(String));
     expect(point).toEqual({ latitude: 27.34, longitude: -82.53 });
+  });
+
+  it('does not call the provider again after a failed attempt', async () => {
+    const { admin, updates } = adminFor({
+      address_line1: '10 Main St',
+      city: 'Sarasota',
+      state: 'FL',
+      postal_code: '34236',
+      latitude: null,
+      longitude: null,
+      geocode_status: 'failed',
+      geocode_reason: 'no_match',
+    });
+
+    const point = await ensurePropertyGeocoded(admin, 'tenant', 'property');
+
+    expect(point).toEqual({ latitude: null, longitude: null });
+    expect(lookup).not.toHaveBeenCalled();
+    expect(updates).toEqual([]);
+  });
+
+  it('looks up again after an outage pause', async () => {
+    lookup.mockResolvedValue({
+      point: { lat: 27.34, lng: -82.53 },
+      reason: null,
+      status: 'ok',
+      source: 'census',
+      accuracy: 'address',
+      reused: false,
+    });
+    const { admin, updates } = adminFor({
+      address_line1: '10 Main St',
+      city: 'Sarasota',
+      state: 'FL',
+      postal_code: '34236',
+      latitude: null,
+      longitude: null,
+      geocode_status: 'pending',
+      geocode_reason: 'lookup_failed',
+      geocoded_at: '2020-01-01T00:00:00.000Z',
+    });
+
+    const point = await ensurePropertyGeocoded(admin, 'tenant', 'property');
+
+    expect(lookup).toHaveBeenCalledTimes(1);
+    expect(point).toEqual({ latitude: 27.34, longitude: -82.53 });
+    expect(updates).toHaveLength(1);
   });
 });

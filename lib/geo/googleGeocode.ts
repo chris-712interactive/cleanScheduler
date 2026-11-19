@@ -1,3 +1,8 @@
+/**
+ * Response parser kept for older Google payloads.
+ * Do not store Google or Mapbox geocodes. Their terms forbid keeping the results.
+ * Service locations use the Census geocoder, then Geocodio when GEOCODIO_API_KEY is set.
+ */
 import type { GoogleLookupFailure } from '@/lib/geo/geocodeStatus';
 
 type GeocodedPoint = {
@@ -40,28 +45,4 @@ export function googleLookupFromPayload(payload: unknown): GoogleLookup {
 export function pointFromGoogleGeocodeResponse(payload: unknown): GeocodedPoint | null {
   const lookup = googleLookupFromPayload(payload);
   return lookup.status === 'ok' ? lookup.point : null;
-}
-
-export function googleGeocodingApiKey(): string | null {
-  const key = process.env.GOOGLE_MAPS_GEOCODING_API_KEY?.trim();
-  return key || null;
-}
-
-/** Server-side Geocoding API. `skipped` when the key is missing. */
-export async function geocodeWithGoogle(address: string): Promise<GoogleLookup> {
-  const key = googleGeocodingApiKey();
-  if (!key || address.length < 8) return { status: 'skipped' };
-
-  const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
-  url.searchParams.set('address', address);
-  url.searchParams.set('region', 'us');
-  url.searchParams.set('key', key);
-
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!response.ok) return { status: 'failed' };
-    return googleLookupFromPayload(await response.json());
-  } catch {
-    return { status: 'failed' };
-  }
 }
