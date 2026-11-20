@@ -69,7 +69,7 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await shot(page, 'pro-reoptimize');
 
   await page.goto(`${proOrigin}/schedule/starts`);
-  await expect(page.getByRole('heading', { name: 'Start locations', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /Start locations/ })).toBeVisible();
   await expect(page.getByText('Home: 9 Hidden Lane', { exact: true })).toBeVisible();
   await expect(page.getByText('Home: 1 Office Home', { exact: true })).toBeVisible();
   await page.getByLabel('Location name').fill('South shed');
@@ -90,7 +90,7 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await shot(page, 'pro-start-locations');
 
   await page.goto(`${proOrigin}/schedule/drive-time`);
-  await expect(page.getByRole('heading', { name: 'Drive time', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /Drive time/ })).toBeVisible();
   const row = page.getByRole('row', { name: /Sam Route/ });
   await expect(row).toContainText('straight-line estimate');
   await expect(row).not.toContainText('Engine drive time');
