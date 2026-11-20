@@ -113,7 +113,9 @@ test('business plan keeps the day map and shows a plan upgrade for Pro SMS', asy
 test('active Business owner sees applicant texting and hidden text packs', async ({ page }) => {
   await signIn(page, residentialOrigin, accounts.residential.owner.email);
   await page.goto(`${residentialOrigin}/billing`);
-  const packs = page.locator('#text-packs');
+  // The billing page renders one #text-packs. A route swap can leave a second
+  // copy in the document, and the id locator then fails strict mode.
+  const packs = page.locator('#main').getByRole('region', { name: 'Text packs' }).first();
   await expect(packs.getByRole('heading', { name: 'Text packs' })).toBeVisible();
   await expect(packs).toContainText('0/100 applicant SMS segments this month');
   await expect(packs).toContainText('Text packs are not available yet');
@@ -128,13 +130,22 @@ test('customer portal sign-in can request a property', async ({ page }) => {
   await shot(page, 'customer-signed-in');
 
   await page.goto(`${customerOrigin}/properties/new`);
-  await expect(page.getByRole('heading', { name: 'Request a location' })).toBeVisible();
-  await page.getByLabel('Location name').fill('QA portal cottage');
-  await page.getByLabel('Street').fill('400 Portal Lane');
-  await page.getByLabel('City').fill('Asheville');
-  await page.getByLabel('State').fill('NC');
-  await page.getByLabel('Postal code').fill('28801');
-  await page.getByRole('button', { name: 'Request this location' }).click();
+  // The page renders one request form. A route swap can leave a second copy,
+  // and the label locator then fails strict mode.
+  const request = page
+    .locator('#main')
+    .locator('form')
+    .filter({ hasText: 'Location name' })
+    .first();
+  await expect(
+    page.locator('#main').getByRole('heading', { name: 'Request a location' }).first(),
+  ).toBeVisible();
+  await request.getByLabel('Location name').fill('QA portal cottage');
+  await request.getByLabel('Street').fill('400 Portal Lane');
+  await request.getByLabel('City').fill('Asheville');
+  await request.getByLabel('State').fill('NC');
+  await request.getByLabel('Postal code').fill('28801');
+  await request.getByRole('button', { name: 'Request this location' }).click();
 
   await expect(page).toHaveURL(/\/properties\?requested=1/);
   await expect(

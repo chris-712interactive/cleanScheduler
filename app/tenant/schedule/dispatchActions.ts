@@ -6,6 +6,8 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
 import { featureUpgradeMessage } from '@/lib/billing/entitlements';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
+import { scheduleVisitsFromDispatch } from '@/lib/email/cleanerScheduleChange';
+import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
 import { validateDispatchApply } from '@/lib/routing/dispatchPlan';
 import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
 import { canApplyStopOrder } from '@/lib/routing/locks';
@@ -20,8 +22,8 @@ export interface ApplyDispatchState {
 }
 
 /**
- * Saves the suggested crew and stop order. Does not send email or SMS.
- * Notifying the field team is a follow-up.
+ * Saves the suggested crew and stop order, then emails each cleaner whose
+ * day changed. The save does not wait on Resend and does not fail if mail fails.
  */
 export async function applyDispatchAction(
   _prev: ApplyDispatchState,
@@ -122,6 +124,34 @@ export async function applyDispatchAction(
       return { error: DISPATCH_UNAVAILABLE_MESSAGE };
     }
     return { error: 'Could not save the dispatch.' };
+  }
+
+  const labels = new Map<string, { title: string; customerName: string }>();
+  for (const cleaner of proposal.cleaners) {
+    for (const stop of cleaner.stops) {
+      labels.set(stop.id, { title: stop.title, customerName: stop.customerName });
+    }
+  }
+  for (const stop of proposal.unassigned) {
+    labels.set(stop.id, { title: stop.title, customerName: stop.customerName });
+  }
+  const rows = scheduleVisitsFromDispatch({
+    snapshot: proposal.snapshot,
+    plan: proposal.plan.visits,
+    labels,
+  });
+  try {
+    queueCleanerScheduleNotice(admin, {
+      tenantId: membership.tenantId,
+      actorUserId: auth.user.id,
+      before: rows.before,
+      after: rows.after,
+    });
+  } catch (noticeError) {
+    console.error(
+      '[cleanerSchedule] queue failed:',
+      noticeError instanceof Error ? noticeError.message : 'unknown',
+    );
   }
 
   revalidatePath('/schedule', 'page');
