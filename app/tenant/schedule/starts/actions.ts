@@ -213,10 +213,6 @@ export async function updateRouteLocationAction(
     geocode_reason: string | null;
   } | null = null;
   if (addressChanged) {
-    let latitude: number | null = null;
-    let longitude: number | null = null;
-    let geocodeStatus: string | null = 'pending';
-    let geocodeReason: string | null = null;
     try {
       const patch = await geocodeColumnsForAddress({
         line1,
@@ -224,22 +220,19 @@ export async function updateRouteLocationAction(
         state: nextState,
         postalCode: nextPostal,
       });
-      latitude = patch.latitude;
-      longitude = patch.longitude;
-      geocodeStatus = patch.geocode_status;
-      geocodeReason = patch.geocode_reason;
+      geocodePatch = {
+        latitude: patch.latitude,
+        longitude: patch.longitude,
+        geocode_status: patch.geocode_status,
+        geocode_reason: patch.geocode_reason,
+      };
     } catch (error) {
       console.error(
         '[routing] start location update geocode failed:',
         error instanceof Error ? error.message : 'unknown',
       );
+      return { error: "Couldn't find that address. The place was not changed." };
     }
-    geocodePatch = {
-      latitude,
-      longitude,
-      geocode_status: geocodeStatus,
-      geocode_reason: geocodeReason,
-    };
   }
 
   const { data: saved, error } = await gate.admin

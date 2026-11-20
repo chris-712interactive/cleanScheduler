@@ -22,7 +22,7 @@ Until the road engine is connected, miles are a **straight-line estimate**. They
 
 Ordering and dispatch use that start and end. Home streets are shown on this page to the office only.
 
-A new place, and an edit that changes the street, city, state, or postal code, is looked up with the same US address geocoder as service locations. Saving the same address again does not look it up. A failed lookup still saves the place, and the route falls back until a map point exists. Two places in one workspace cannot share a name. Deleting a place sends every cleaner who started or ended there back to the office, with no return stop.
+A new place, and an edit that changes the street, city, state, or postal code, is looked up with the same US address geocoder as service locations. Saving the same address again does not look it up. A failed lookup of a new place still saves it, and the route falls back until a map point exists. If an edit cannot look up the new address, the place is left as it was, including its map point. Two places in one workspace cannot share a name. Deleting a place sends every cleaner who started or ended there back to the office, with no return stop.
 
 ## Drive time
 

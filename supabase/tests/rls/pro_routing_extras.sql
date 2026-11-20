@@ -85,6 +85,7 @@ DECLARE
   coworker_id uuid := gen_random_uuid();
   other_id uuid := gen_random_uuid();
   former_id uuid := gen_random_uuid();
+  stranger_id uuid := gen_random_uuid();
   tenant_a uuid;
   tenant_b uuid;
   place_a uuid;
@@ -116,6 +117,32 @@ BEGIN
       AND qual ILIKE '%can_manage_route_office%'
   ) THEN
     RAISE EXCEPTION 'office route base writes must require an active member';
+  END IF;
+
+  IF position(
+    'can_manage_route_office' in pg_get_functiondef(
+      'public.route_base_subject_is_active_member(uuid, uuid)'::regprocedure
+    )
+  ) = 0 THEN
+    RAISE EXCEPTION 'membership helper must require the caller to manage that tenant';
+  END IF;
+
+  IF has_function_privilege(
+       'anon',
+       'public.route_base_subject_is_active_member(uuid, uuid)',
+       'execute'
+     )
+     OR has_function_privilege(
+       'public',
+       'public.route_base_subject_is_active_member(uuid, uuid)',
+       'execute'
+     )
+     OR NOT has_function_privilege(
+       'authenticated',
+       'public.route_base_subject_is_active_member(uuid, uuid)',
+       'execute'
+     ) THEN
+    RAISE EXCEPTION 'membership helper execute grants are wrong';
   END IF;
 
   IF NOT EXISTS (
@@ -150,6 +177,7 @@ BEGIN
   PERFORM pg_temp.insert_auth_user(coworker_id, 'rls-route-coworker-' || coworker_id || '@example.test');
   PERFORM pg_temp.insert_auth_user(other_id, 'rls-route-other-' || other_id || '@example.test');
   PERFORM pg_temp.insert_auth_user(former_id, 'rls-route-former-' || former_id || '@example.test');
+  PERFORM pg_temp.insert_auth_user(stranger_id, 'rls-route-stranger-' || stranger_id || '@example.test');
 
   INSERT INTO public.tenants (slug, name)
   VALUES ('rlspro' || substr(replace(owner_id::text, '-', ''), 1, 12), 'RLS pro A')
@@ -216,6 +244,14 @@ BEGIN
     json_build_object('sub', other_id::text, 'role', 'authenticated')::text,
     true
   );
+
+  IF NOT public.route_base_subject_is_active_member(tenant_b, other_id) THEN
+    RAISE EXCEPTION 'office should confirm its own active member';
+  END IF;
+  IF public.route_base_subject_is_active_member(tenant_a, owner_id)
+     OR public.route_base_subject_is_active_member(tenant_a, employee_id) THEN
+    RAISE EXCEPTION 'office of B learned a membership in A';
+  END IF;
 
   BEGIN
     INSERT INTO public.tenant_cleaner_route_bases (
@@ -349,6 +385,31 @@ BEGIN
      OR saved_end_place IS NOT NULL THEN
     RAISE EXCEPTION 'deleting a place should return the base to the office, saw % / %',
       saved_start, saved_end;
+  END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', employee_id::text, true);
+  PERFORM set_config(
+    'request.jwt.claims',
+    json_build_object('sub', employee_id::text, 'role', 'authenticated')::text,
+    true
+  );
+
+  IF public.route_base_subject_is_active_member(tenant_b, other_id)
+     OR public.route_base_subject_is_active_member(tenant_a, employee_id) THEN
+    RAISE EXCEPTION 'field employee learned a membership';
+  END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', stranger_id::text, true);
+  PERFORM set_config(
+    'request.jwt.claims',
+    json_build_object('sub', stranger_id::text, 'role', 'authenticated')::text,
+    true
+  );
+
+  IF public.route_base_subject_is_active_member(tenant_b, other_id)
+     OR public.route_base_subject_is_active_member(tenant_a, employee_id)
+     OR public.route_base_subject_is_active_member(tenant_a, former_id) THEN
+    RAISE EXCEPTION 'user with no membership learned an active member';
   END IF;
 
   PERFORM set_config('request.jwt.claim.sub', employee_id::text, true);

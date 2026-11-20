@@ -14,17 +14,18 @@ stable
 security definer
 set search_path = public
 as $$
-  select exists (
-    select 1
-    from public.tenant_memberships tm
-    where tm.tenant_id = target_tenant_id
-      and tm.user_id = target_user_id
-      and tm.is_active = true
-  );
+  select public.can_manage_route_office(target_tenant_id)
+    and exists (
+      select 1
+      from public.tenant_memberships tm
+      where tm.tenant_id = target_tenant_id
+        and tm.user_id = target_user_id
+        and tm.is_active = true
+    );
 $$;
 
 comment on function public.route_base_subject_is_active_member(uuid, uuid) is
-  'True when target_user_id is an active member of target_tenant_id. Security definer so route-base RLS can read memberships without a table grant.';
+  'True when the caller is an active owner or admin of target_tenant_id and target_user_id is an active member of that tenant. Security definer so route-base RLS can read memberships without a table grant. Callers who do not manage the tenant always get false.';
 
 revoke all on function public.route_base_subject_is_active_member(uuid, uuid) from public;
 revoke all on function public.route_base_subject_is_active_member(uuid, uuid) from anon;

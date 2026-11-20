@@ -253,19 +253,15 @@ describe('updateRouteLocationAction', () => {
     expect(harness.updates[0]).not.toHaveProperty('latitude');
   });
 
-  it('still saves when the new address cannot be looked up', async () => {
+  it('leaves the place unchanged when the new address cannot be looked up', async () => {
     harness.geocode.mockRejectedValueOnce(new Error('census down'));
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(
       updateRouteLocationAction({}, placeForm({ city: 'Weaverville' })),
-    ).resolves.toEqual({ success: 'Start location updated.' });
-    expect(harness.updates[0]).toMatchObject({
-      city: 'Weaverville',
-      latitude: null,
-      longitude: null,
-      geocode_status: 'pending',
-      geocode_reason: null,
+    ).resolves.toEqual({
+      error: "Couldn't find that address. The place was not changed.",
     });
+    expect(harness.updates).toEqual([]);
     errors.mockRestore();
   });
 });
