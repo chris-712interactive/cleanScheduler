@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { calendarDateKeyInTimeZone } from '@/lib/datetime/tenantCalendarDay';
-import { formatVisitTime, formatVisitWhenRange } from '@/lib/datetime/formatInTimeZone';
+import { formatDateTimeInTimeZone, formatVisitTime } from '@/lib/datetime/formatInTimeZone';
 import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
 import { isCalendarDateKey } from '@/lib/tenant/scheduleDateRange';
@@ -356,8 +356,43 @@ function stopLabel(sequence: number | null): string {
   return sequence == null ? 'unnumbered' : `stop ${sequence}`;
 }
 
+function localDateKey(iso: string, timeZone: string): string {
+  const at = new Date(iso);
+  if (!Number.isFinite(at.getTime())) return '';
+  return calendarDateKeyInTimeZone(timeZone, at);
+}
+
+/** Same-day windows keep one date. A window that passes local midnight names the end date. */
+function whenRange(startsAt: string, endsAt: string, timeZone: string): string {
+  const startDate = formatDateTimeInTimeZone(startsAt, timeZone, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const startTime = formatVisitTime(startsAt, timeZone);
+  const endTime = formatVisitTime(endsAt, timeZone);
+  if (localDateKey(startsAt, timeZone) === localDateKey(endsAt, timeZone)) {
+    return `${startDate} · ${startTime} – ${endTime}`;
+  }
+  const endDate = formatDateTimeInTimeZone(endsAt, timeZone, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return `${startDate} · ${startTime} – ${endDate} · ${endTime}`;
+}
+
 function clockRange(startsAt: string, endsAt: string, timeZone: string): string {
-  return `${formatVisitTime(startsAt, timeZone)} – ${formatVisitTime(endsAt, timeZone)}`;
+  const startTime = formatVisitTime(startsAt, timeZone);
+  const endTime = formatVisitTime(endsAt, timeZone);
+  if (localDateKey(startsAt, timeZone) === localDateKey(endsAt, timeZone)) {
+    return `${startTime} – ${endTime}`;
+  }
+  const startDay = formatDateTimeInTimeZone(startsAt, timeZone, { weekday: 'short' });
+  const endDay = formatDateTimeInTimeZone(endsAt, timeZone, { weekday: 'short' });
+  return `${startTime} ${startDay} – ${endTime} ${endDay}`;
 }
 
 export function describeCleanerScheduleChange(
@@ -366,20 +401,20 @@ export function describeCleanerScheduleChange(
 ): string {
   const who = `${change.customerName} — ${change.title}`;
   if (change.kind === 'added') {
-    return `Added: ${who} — ${formatVisitWhenRange(change.startsAt, change.endsAt, timeZone)}`;
+    return `Added: ${who} — ${whenRange(change.startsAt, change.endsAt, timeZone)}`;
   }
   if (change.kind === 'removed') {
-    return `Removed: ${who} — ${formatVisitWhenRange(change.startsAt, change.endsAt, timeZone)}`;
+    return `Removed: ${who} — ${whenRange(change.startsAt, change.endsAt, timeZone)}`;
   }
   if (change.kind === 'cancelled') {
-    return `Cancelled: ${who} — ${formatVisitWhenRange(change.startsAt, change.endsAt, timeZone)}`;
+    return `Cancelled: ${who} — ${whenRange(change.startsAt, change.endsAt, timeZone)}`;
   }
   if (change.kind === 'time_changed') {
     const previous =
       change.previousStartsAt && change.previousEndsAt
-        ? formatVisitWhenRange(change.previousStartsAt, change.previousEndsAt, timeZone)
+        ? whenRange(change.previousStartsAt, change.previousEndsAt, timeZone)
         : 'the previous time';
-    const next = formatVisitWhenRange(change.startsAt, change.endsAt, timeZone);
+    const next = whenRange(change.startsAt, change.endsAt, timeZone);
     return `Time changed: ${who} — was ${previous} — now ${next}`;
   }
   return `Stop order changed: ${who} — was ${stopLabel(change.previousRouteSequence)} — now ${stopLabel(change.routeSequence)}`;

@@ -210,6 +210,34 @@ describe('buildCleanerScheduleChangeEmail', () => {
     expect(email.html).not.toContain('Sam <Lee>');
   });
 
+  it('names the end date when a visit passes local midnight', () => {
+    const overnight = visit({
+      id: 'visit-a',
+      assigneeIds: [],
+      startsAt: '2026-05-13T03:30:00.000Z',
+      endsAt: '2026-05-13T05:00:00.000Z',
+    });
+    const [notice] = diffCleanerScheduleChanges([], [{ ...overnight, assigneeIds: ['alex'] }], TZ);
+    expect(notice?.dateKeys).toEqual(['2026-05-12', '2026-05-13']);
+    const email = buildCleanerScheduleChangeEmail({
+      workspaceName: 'Acme Cleaning',
+      timeZone: TZ,
+      scheduleUrl: 'https://acme.example.com/schedule?date=2026-05-12&view=day&employee=me',
+      changes: notice?.changes ?? [],
+      days: scheduleDaysForCleaner({
+        userId: 'alex',
+        dateKeys: notice?.dateKeys ?? [],
+        visits: [{ ...overnight, assigneeIds: ['alex'] }],
+        timeZone: TZ,
+      }),
+    });
+    expect(email.text).toContain(
+      'Added: Jane Smith — Deep clean — Tuesday, May 12, 2026 · 11:30 PM – Wednesday, May 13, 2026 · 1:00 AM',
+    );
+    expect(email.text).toContain('11:30 PM Tue – 1:00 AM Wed');
+    expect(email.text).not.toContain('Tuesday, May 12, 2026 · 11:30 PM – 1:00 AM');
+  });
+
   it('says nothing is scheduled when the affected day is empty', () => {
     const email = buildCleanerScheduleChangeEmail({
       workspaceName: 'Acme Cleaning',

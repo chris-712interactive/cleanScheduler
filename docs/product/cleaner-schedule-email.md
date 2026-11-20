@@ -6,7 +6,7 @@ A cleaner gets one email when their assignments change. The message is from Clea
 
 The subject is `{workspace}: your schedule changed`.
 
-The body lists each change in the workspace timezone:
+The body lists each change in the workspace timezone. A visit that runs past local midnight names the end date. A visit that stays on one day names that day once:
 
 - Added
 - Removed
