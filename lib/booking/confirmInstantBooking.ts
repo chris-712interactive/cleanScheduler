@@ -1,3 +1,5 @@
+import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
+import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import {
@@ -563,6 +565,25 @@ export async function finalizeInstantBookingRecord(
   if (!payload.visit_id) {
     return { error: 'Could not confirm the visit. Please try again.', code: 'other' };
   }
+  if (payload.finalized === true) {
+    const loaded = await loadCleanerScheduleVisitSnapshots(admin, tenantId, [payload.visit_id]);
+    if (loaded.ok && loaded.visits.length > 0) {
+      try {
+        queueCleanerScheduleNotice(admin, {
+          tenantId,
+          actorUserId: null,
+          before: loaded.visits.map((row) => ({ ...row, assigneeIds: [] })),
+          after: loaded.visits,
+        });
+      } catch (noticeError) {
+        console.error(
+          '[cleanerSchedule] queue failed:',
+          noticeError instanceof Error ? noticeError.message : 'unknown',
+        );
+      }
+    }
+  }
+
   return {
     finalized: payload.finalized === true,
     visitId: payload.visit_id,

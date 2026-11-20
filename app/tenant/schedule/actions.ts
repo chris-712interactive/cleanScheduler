@@ -36,6 +36,9 @@ import {
 } from '@/lib/tenant/consultationDuration';
 import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
+import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
+import type { CleanerScheduleVisit } from '@/lib/email/cleanerScheduleChange';
+import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { sanitizeConsultationNotes } from '@/lib/visits/consultationNotes';
 
@@ -111,6 +114,25 @@ async function assertActiveTenantMember(
     .eq('is_active', true)
     .maybeSingle();
   return !!data;
+}
+
+function publishCleanerScheduleNotice(
+  admin: ReturnType<typeof createAdminClient>,
+  input: {
+    tenantId: string;
+    actorUserId: string | null;
+    before: CleanerScheduleVisit[];
+    after: CleanerScheduleVisit[];
+  },
+): void {
+  try {
+    queueCleanerScheduleNotice(admin, input);
+  } catch (error) {
+    console.error(
+      '[cleanerSchedule] queue failed:',
+      error instanceof Error ? error.message : 'unknown',
+    );
+  }
 }
 
 async function loadTenantTimezone(
@@ -330,6 +352,32 @@ export async function createScheduledVisit(
       .eq('tenant_id', membership.tenantId);
   }
 
+  if (status === 'scheduled' && uniqueAssignees.length > 0) {
+    const loaded = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, [visitId]);
+    const after =
+      loaded.ok && loaded.visits.length > 0
+        ? loaded.visits
+        : [
+            {
+              id: visitId,
+              title,
+              customerName: 'Customer',
+              startsAt,
+              endsAt,
+              status,
+              routeSequence: null,
+              assigneeIds: uniqueAssignees,
+            },
+          ];
+    const auth = await getAuthContext();
+    publishCleanerScheduleNotice(admin, {
+      tenantId: membership.tenantId,
+      actorUserId: auth?.user.id ?? null,
+      before: after.map((row) => ({ ...row, assigneeIds: [] })),
+      after,
+    });
+  }
+
   if (status === 'scheduled') {
     await emitVisitWebhookEvent(admin, 'visit.scheduled', {
       tenantId: membership.tenantId,
@@ -401,6 +449,10 @@ export async function deleteScheduledVisit(
     });
   }
 
+  const beforeDelete = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, [
+    visitId,
+  ]);
+
   const del = await admin
     .from('tenant_scheduled_visits')
     .delete()
@@ -409,6 +461,16 @@ export async function deleteScheduledVisit(
 
   if (del.error) {
     return { error: del.error.message };
+  }
+
+  if (beforeDelete.ok && beforeDelete.visits.length > 0) {
+    const auth = await getAuthContext();
+    publishCleanerScheduleNotice(admin, {
+      tenantId: membership.tenantId,
+      actorUserId: auth?.user.id ?? null,
+      before: beforeDelete.visits,
+      after: beforeDelete.visits.map((row) => ({ ...row, status: 'deleted', assigneeIds: [] })),
+    });
   }
 
   revalidatePath('/schedule');
@@ -480,6 +542,9 @@ export async function updateScheduledVisitTimes(
 
   const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
   const confirmUnavailable = String(formData.get('confirm_unavailable') ?? '') === 'true';
+  const beforeTimes = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, [
+    visitId,
+  ]);
 
   const applied = await applyVisitScheduleTime(admin, {
     tenantId: membership.tenantId,
@@ -497,6 +562,16 @@ export async function updateScheduledVisitTimes(
       conflicts: applied.conflicts,
       needsOverlapConfirm: applied.needsOverlapConfirm,
     };
+  }
+
+  if (beforeTimes.ok) {
+    const auth = await getAuthContext();
+    publishCleanerScheduleNotice(admin, {
+      tenantId: membership.tenantId,
+      actorUserId: auth?.user.id ?? null,
+      before: beforeTimes.visits,
+      after: beforeTimes.visits.map((row) => ({ ...row, startsAt, endsAt })),
+    });
   }
 
   revalidatePath('/schedule');
@@ -591,6 +666,9 @@ export async function resolveVisitRescheduleRequest(
       .maybeSingle();
     const tenantTimezone = tenantRow?.timezone ?? 'America/New_York';
 
+    const beforeTimes = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, [
+      request.visit_id,
+    ]);
     const applied = await applyVisitScheduleTime(admin, {
       tenantId: membership.tenantId,
       visitId: request.visit_id,
@@ -600,6 +678,19 @@ export async function resolveVisitRescheduleRequest(
       confirmUnavailable: false,
       tenantTimezone,
     });
+
+    if (applied.ok && beforeTimes.ok) {
+      publishCleanerScheduleNotice(admin, {
+        tenantId: membership.tenantId,
+        actorUserId: actorId,
+        before: beforeTimes.visits,
+        after: beforeTimes.visits.map((row) => ({
+          ...row,
+          startsAt: window.startsAt,
+          endsAt: window.endsAt,
+        })),
+      });
+    }
 
     if (!applied.ok) {
       return {
@@ -818,6 +909,7 @@ export async function updateScheduledVisitAssignees(
   const endsRaw = String(formData.get('ends_at') ?? '').trim();
 
   const tenantTimezone = await loadTenantTimezone(admin, membership.tenantId);
+  const beforeCrew = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, [visitId]);
 
   let startsAtOverride: string | undefined;
   let endsAtOverride: string | undefined;
@@ -847,6 +939,21 @@ export async function updateScheduledVisitAssignees(
       conflicts: applied.conflicts,
       needsOverlapConfirm: applied.needsOverlapConfirm,
     };
+  }
+
+  if (beforeCrew.ok) {
+    const auth = await getAuthContext();
+    publishCleanerScheduleNotice(admin, {
+      tenantId: membership.tenantId,
+      actorUserId: auth?.user.id ?? null,
+      before: beforeCrew.visits,
+      after: beforeCrew.visits.map((row) => ({
+        ...row,
+        assigneeIds: applied.assigneeUserIds,
+        startsAt: startsAtOverride ?? row.startsAt,
+        endsAt: endsAtOverride ?? row.endsAt,
+      })),
+    });
   }
 
   revalidatePath('/schedule');
