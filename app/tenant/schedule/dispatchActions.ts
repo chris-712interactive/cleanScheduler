@@ -8,9 +8,11 @@ import { featureUpgradeMessage } from '@/lib/billing/entitlements';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { scheduleVisitsFromDispatch } from '@/lib/email/cleanerScheduleChange';
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
+import { recordAppliedRouteDay } from '@/lib/routing/appliedRoutes';
 import { validateDispatchApply } from '@/lib/routing/dispatchPlan';
 import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
 import { canApplyStopOrder } from '@/lib/routing/locks';
+import { heldDispatchPlan } from '@/lib/routing/reoptimize';
 import { DISPATCH_UNAVAILABLE_MESSAGE } from '@/lib/routing/panelCopy';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isMissingColumnError } from '@/lib/supabase/optionalColumn';
@@ -56,7 +58,11 @@ export async function applyDispatchAction(
     return { error: 'Only the office can apply a dispatch.' };
   }
 
+  const reoptimize = String(formData.get('mode') ?? '') === 'reoptimize';
   const planKey = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  if (reoptimize && !isFeatureEnabled(planKey, 'routeReoptimization')) {
+    return { error: featureUpgradeMessage('routeReoptimization') };
+  }
   if (!isFeatureEnabled(planKey, 'multiCleanerDispatch')) {
     return { error: featureUpgradeMessage('multiCleanerDispatch') };
   }
@@ -82,6 +88,10 @@ export async function applyDispatchAction(
   if (!proposal.sequenceAvailable) return { error: DISPATCH_UNAVAILABLE_MESSAGE };
   if (proposal.plan.visits.length === 0) return { error: 'There are no visits to dispatch.' };
 
+  const held = reoptimize
+    ? heldDispatchPlan(proposal.plan, proposal.snapshot, proposal.fixedVisitIds)
+    : { plan: proposal.plan, planKey: proposal.planKey };
+
   const { data: members, error: memberError } = await admin
     .from('tenant_memberships')
     .select('user_id')
@@ -96,22 +106,32 @@ export async function applyDispatchAction(
     snapshotIds: proposal.snapshot.map((row) => row.id),
     actualFingerprint: proposal.fingerprint,
     submittedFingerprint,
-    actualPlanKey: proposal.planKey,
+    actualPlanKey: held.planKey,
     submittedPlanKey,
-    plan: proposal.plan,
+    plan: held.plan,
   });
-  if (decision === 'stale') return { error: 'This day changed. Suggest dispatch again.' };
+  if (decision === 'stale') {
+    return {
+      error: reoptimize
+        ? 'This day changed. Re-optimize again.'
+        : 'This day changed. Suggest dispatch again.',
+    };
+  }
   if (decision === 'tenant') return { error: 'That plan does not belong to this workspace.' };
 
   const { error } = await admin.rpc('apply_cleaner_dispatch', {
     p_tenant_id: membership.tenantId,
     p_snapshot: proposal.snapshot,
-    p_plan: proposal.plan.visits,
+    p_plan: held.plan.visits,
   });
   if (error) {
     const text = `${error.message} ${error.details ?? ''} ${error.hint ?? ''}`;
     if (text.includes('stale_dispatch')) {
-      return { error: 'This day changed. Suggest dispatch again.' };
+      return {
+        error: reoptimize
+          ? 'This day changed. Re-optimize again.'
+          : 'This day changed. Suggest dispatch again.',
+      };
     }
     if (text.includes('cleaner_not_in_tenant') || text.includes('tenant_mismatch')) {
       return { error: 'That plan does not belong to this workspace.' };
@@ -137,7 +157,7 @@ export async function applyDispatchAction(
   }
   const rows = scheduleVisitsFromDispatch({
     snapshot: proposal.snapshot,
-    plan: proposal.plan.visits,
+    plan: held.plan.visits,
     labels,
   });
   try {
@@ -151,6 +171,29 @@ export async function applyDispatchAction(
     console.error(
       '[cleanerSchedule] queue failed:',
       noticeError instanceof Error ? noticeError.message : 'unknown',
+    );
+  }
+
+  try {
+    await recordAppliedRouteDay(admin, {
+      tenantId: membership.tenantId,
+      serviceDate: dateKey,
+      timeZone: tenantRow?.timezone?.trim() || DEFAULT_TENANT_TIMEZONE,
+      replace: true,
+      stats: held.plan.assignments
+        .filter((row) => row.orderedIds.length > 0)
+        .map((row) => ({
+          userId: row.cleanerId,
+          estimateKind: held.plan.estimateKind,
+          miles: row.estimatedMiles,
+          driveSeconds: row.driveSeconds,
+          stopCount: row.orderedIds.length,
+        })),
+    });
+  } catch (saveError) {
+    console.error(
+      '[routing] drive time was not saved:',
+      saveError instanceof Error ? saveError.message : 'unknown',
     );
   }
 

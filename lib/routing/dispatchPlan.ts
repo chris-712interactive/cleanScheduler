@@ -22,6 +22,10 @@ export type DispatchCleanerInput = {
   shiftStartSec: number | null;
   shiftEndSec: number | null;
   timeOff: DispatchTimeOff[];
+  /** This cleaner's start. Null uses the office, then the first stop. */
+  start?: LatLng | null;
+  /** Return point. Null ends the path at the last stop. */
+  end?: LatLng | null;
 };
 
 export type DispatchVisitInput = {
@@ -187,11 +191,13 @@ function overlapsPlaced(
 }
 
 function anchorFor(
-  cleanerId: string,
+  cleaner: DispatchCleanerInput,
   points: Map<string, LatLng[]>,
   office: LatLng | null,
 ): LatLng | null {
-  const owned = points.get(cleanerId) ?? [];
+  const explicit = usablePoint(cleaner.start);
+  if (explicit) return explicit;
+  const owned = points.get(cleaner.id) ?? [];
   if (owned.length > 0) {
     const lat = owned.reduce((sum, point) => sum + point.lat, 0) / owned.length;
     const lng = owned.reduce((sum, point) => sum + point.lng, 0) / owned.length;
@@ -235,7 +241,7 @@ function chooseCleaner(
     if (!shiftCovers(cleaner, visit) || offDuring(cleaner, visit)) continue;
     if (visit.blockedCleanerIds.includes(cleaner.id)) continue;
     if (overlapsPlaced(placed, cleaner.id, visit)) continue;
-    const anchor = anchorFor(cleaner.id, points, office);
+    const anchor = anchorFor(cleaner, points, office);
     const miles =
       anchor && visit.point ? haversineMiles(anchor, visit.point) : Number.POSITIVE_INFINITY;
     const count = placed.get(cleaner.id)?.length ?? 0;
@@ -276,20 +282,21 @@ function place(
   }
 }
 
-function orderCleaner(stops: Placed[], office: LatLng | null): string[] {
+function orderCleaner(stops: Placed[], start: LatLng | null, end: LatLng | null): string[] {
   const inputs: RouteStopInput[] = stops.map((stop) => ({
     id: stop.visit.id,
     point: stop.visit.point,
     lockedAt: stop.visit.lockedAt,
     missingReason: stop.visit.missingReason,
   }));
-  return optimizeHaversine({ stops: inputs, start: office }).orderedIds;
+  return optimizeHaversine({ stops: inputs, start, end }).orderedIds;
 }
 
 function milesFor(
   ids: string[],
   visits: Map<string, DispatchVisitInput>,
-  office: LatLng | null,
+  start: LatLng | null,
+  end: LatLng | null,
 ): number {
   const stops: RouteStopInput[] = ids.map((id) => {
     const visit = visits.get(id);
@@ -300,7 +307,7 @@ function milesFor(
       missingReason: visit?.missingReason ?? 'Missing map point',
     };
   });
-  return straightLineMiles({ stops, start: office }, ids);
+  return straightLineMiles({ stops, start, end }, ids);
 }
 
 /**
@@ -397,12 +404,14 @@ export function planDispatchHaversine(request: DispatchPlanRequest): DispatchPla
   const byId = new Map(visits.map((visit) => [visit.id, visit]));
   const assignments: DispatchAssignment[] = cleaners.map((cleaner) => {
     const stops = bags.get(cleaner.id) ?? [];
+    const start = usablePoint(cleaner.start) ?? office;
+    const end = usablePoint(cleaner.end);
     const orderedIds =
-      stops.length > 1 ? orderCleaner(stops, office) : stops.map((stop) => stop.visit.id);
+      stops.length > 1 ? orderCleaner(stops, start, end) : stops.map((stop) => stop.visit.id);
     return {
       cleanerId: cleaner.id,
       orderedIds,
-      estimatedMiles: milesFor(orderedIds, byId, office),
+      estimatedMiles: milesFor(orderedIds, byId, start, end),
       driveSeconds: null,
     };
   });

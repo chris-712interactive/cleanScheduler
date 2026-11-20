@@ -4993,6 +4993,126 @@ export type Database = {
           },
         ];
       };
+      tenant_applied_route_days: {
+        Row: {
+          tenant_id: string;
+          service_date: string;
+          user_id: string;
+          estimate_kind: string;
+          miles: number;
+          drive_seconds: number | null;
+          stop_count: number;
+          day_fingerprint: string;
+          applied_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          service_date: string;
+          user_id: string;
+          estimate_kind: string;
+          miles: number;
+          drive_seconds?: number | null;
+          stop_count: number;
+          day_fingerprint: string;
+          applied_at?: string;
+        };
+        Update: {
+          tenant_id?: string;
+          service_date?: string;
+          user_id?: string;
+          estimate_kind?: string;
+          miles?: number;
+          drive_seconds?: number | null;
+          stop_count?: number;
+          day_fingerprint?: string;
+          applied_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_cleaner_route_bases: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          service_date: string | null;
+          start_kind: string;
+          start_location_id: string | null;
+          end_kind: string;
+          end_location_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          service_date?: string | null;
+          start_kind?: string;
+          start_location_id?: string | null;
+          end_kind?: string;
+          end_location_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          user_id?: string;
+          service_date?: string | null;
+          start_kind?: string;
+          start_location_id?: string | null;
+          end_kind?: string;
+          end_location_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_route_locations: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          label: string;
+          address_line1: string;
+          city: string | null;
+          state: string | null;
+          postal_code: string | null;
+          latitude: number | null;
+          longitude: number | null;
+          geocode_status: string | null;
+          geocode_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          label: string;
+          address_line1: string;
+          city?: string | null;
+          state?: string | null;
+          postal_code?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          geocode_status?: string | null;
+          geocode_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          label?: string;
+          address_line1?: string;
+          city?: string | null;
+          state?: string | null;
+          postal_code?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          geocode_status?: string | null;
+          geocode_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       tenant_mileage_places: {
         Row: {
           id: string;

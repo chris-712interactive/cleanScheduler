@@ -419,6 +419,9 @@ describe('day map access', () => {
   it('keeps the day map off the field employee schedule', () => {
     expect(fieldEmployeeCanAccessBrowserPath('/schedule/map')).toBe(false);
     expect(fieldEmployeeCanAccessBrowserPath('/schedule/map?date=2026-06-01')).toBe(false);
+    expect(fieldEmployeeCanAccessBrowserPath('/schedule/starts')).toBe(false);
+    expect(fieldEmployeeCanAccessBrowserPath('/schedule/drive-time')).toBe(false);
+    expect(fieldEmployeeCanAccessBrowserPath('/schedule/drive-time/export')).toBe(false);
     expect(fieldEmployeeCanAccessBrowserPath('/schedule')).toBe(true);
   });
 });

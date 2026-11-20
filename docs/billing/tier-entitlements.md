@@ -288,7 +288,7 @@ Routing is included in the plan. It is not a separate purchase. `/schedule/map` 
 | Multiple start locations     | `multipleStartLocations`    | No      | No       | Yes | No    |
 | Drive-time reports           | `driveTimeReports`          | No      | No       | Yes | No    |
 
-Prices stay $39 / $129 / $299. Stop ordering, dispatch, and re-optimization are defined here so later routing work can read the same flags. This change does not gate the day map.
+Prices stay $39 / $129 / $299. Stop ordering, dispatch, and the Pro extras read these flags. The day map stays open on every plan. Re-optimize, start locations, and the drive-time report are on the schedule for Pro. Starter, Business, and the trial see the upgrade sentence. Checkout screens and any other billing copy beyond that sentence stay with the entitlement pass. See `docs/product/pro-routing.md`.
 
 Blocked features use `This feature is included in the <Plan> plan. Upgrade your plan to use it.` Limit errors name the current plan and say to upgrade the plan. There is no add-on SKU, add-on flag, or add-on grant.
 

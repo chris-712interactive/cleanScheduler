@@ -29,6 +29,9 @@ import {
 import { formatStraightLineMiles } from '@/lib/routing/haversineOptimizer';
 import { hasFixedArrivalWindow, isVisitTimeLocked } from '@/lib/routing/locks';
 import { driveMetricText } from '@/lib/routing/panelCopy';
+import { loadRouteBaseRows, resolveCleanerBase } from '@/lib/routing/routeBases';
+import { optimizeDayFingerprint } from '@/lib/routing/reoptimize';
+import { usablePoint } from '@/lib/routing/engineOptimizer';
 import type { WorkWeekDayKey } from '@/lib/tenant/tenantBusinessSettings';
 
 const EMPTY_FACTS: SchedulingFactsRow = {
@@ -85,6 +88,10 @@ export type DispatchDayView = {
   /** Rows the apply function locks and compares. */
   snapshot: DispatchSnapshotVisit[];
   plan: DispatchPlanResult;
+  /** Finished, in-progress, and locked visits. Re-optimize does not move these. */
+  fixedVisitIds: string[];
+  /** Day hash that ignores updated_at, so an apply does not look like a new change. */
+  changeFingerprint: string;
 };
 
 function weekdayKey(dateKey: string): WorkWeekDayKey {
@@ -183,6 +190,36 @@ export async function loadDispatchPlan(params: {
     (profiles ?? []).map((profile) => [profile.user_id, profile.display_name?.trim() || 'Cleaner']),
   );
 
+  const [routeBases, homeResult] = await Promise.all([
+    loadRouteBaseRows(params.supabase, tenantId),
+    crewIds.length > 0
+      ? params.supabase
+          .from('tenant_member_scheduling_profiles')
+          .select('user_id, home_latitude, home_longitude')
+          .eq('tenant_id', tenantId)
+          .in('user_id', crewIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (homeResult.error) throw new Error(homeResult.error.message);
+  const homeById = new Map(
+    (homeResult.data ?? []).map((row) => [
+      row.user_id,
+      row.home_latitude != null && row.home_longitude != null
+        ? usablePoint({ lat: row.home_latitude, lng: row.home_longitude })
+        : null,
+    ]),
+  );
+
+  const officeLat = tenantResult.data?.latitude;
+  const officeLng = tenantResult.data?.longitude;
+  const officePoint =
+    officeLat != null &&
+    officeLng != null &&
+    Number.isFinite(officeLat) &&
+    Number.isFinite(officeLng)
+      ? { lat: officeLat, lng: officeLng }
+      : null;
+
   const day = weekdayKey(params.dateKey);
   const cleaners: DispatchCleanerInput[] = crewIds.map((id) => {
     const window = schedules.get(id)?.dayWindows[day];
@@ -192,24 +229,26 @@ export async function loadDispatchPlan(params: {
       .filter((row) => row.user_id === id)
       .map((row) => clipTimeOff(row.starts_at, row.ends_at, params.dateKey, params.timeZone))
       .filter((span): span is { startSec: number; endSec: number } => span != null);
+    const base = resolveCleanerBase({
+      userId: id,
+      serviceDate: params.dateKey,
+      bases: routeBases?.bases ?? [],
+      office: officePoint,
+      home: homeById.get(id) ?? null,
+      locations: routeBases?.locations ?? [],
+    });
     return {
       id,
       shiftStartSec: start,
       shiftEndSec: end != null && start != null && end > start ? end : null,
       timeOff,
+      start: base.start,
+      end: base.end,
     };
   });
 
   const preferences = new Map((preferenceResult.data ?? []).map((row) => [row.customer_id, row]));
-  const officeLat = tenantResult.data?.latitude;
-  const officeLng = tenantResult.data?.longitude;
-  const office =
-    officeLat != null &&
-    officeLng != null &&
-    Number.isFinite(officeLat) &&
-    Number.isFinite(officeLng)
-      ? { lat: officeLat, lng: officeLng }
-      : null;
+  const office = officePoint;
 
   const rows = loaded.rows
     .filter((row) => row.tenant_id === tenantId)
@@ -378,6 +417,27 @@ export async function loadDispatchPlan(params: {
       return next === have;
     });
 
+  const fixedVisitIds = visitInputs
+    .filter((visit) => detail.get(visit.id)?.locked)
+    .map((visit) => visit.id);
+  const timeOffLines = (timeOffResult.data ?? [])
+    .filter(
+      (row) => clipTimeOff(row.starts_at, row.ends_at, params.dateKey, params.timeZone) != null,
+    )
+    .map((row) => ({ userId: row.user_id, startsAt: row.starts_at, endsAt: row.ends_at }));
+  const changeFingerprint = optimizeDayFingerprint({
+    visits: snapshot.map((row) => ({
+      id: row.id,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      status: row.status,
+      checkedInAt: row.checkedInAt,
+      routeSequence: row.routeSequence,
+      assigneeIds: row.assigneeIds,
+    })),
+    timeOff: timeOffLines,
+  });
+
   return {
     dateKey: params.dateKey,
     estimateKind: plan.estimateKind,
@@ -392,5 +452,7 @@ export async function loadDispatchPlan(params: {
     saved,
     snapshot,
     plan,
+    fixedVisitIds,
+    changeFingerprint,
   };
 }
