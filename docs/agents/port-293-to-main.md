@@ -8,6 +8,8 @@ No migration. The save still does not wait on Resend, and `OUTBOUND_SUPPRESSED=1
 
 The squash also points the local-stack text-pack check at the visible billing region. That hunk is part of `10243632`, not a separate `dev` commit.
 
+CI on the port failed `local-stack` in `customer portal sign-in can request a property`. `getByLabel('Location name')` matched two copies of the request form after a route swap, the same strict-mode failure the squash already fixed for `#text-packs`. The port scopes that form to the first `#main` form. The email code did not render that page.
+
 `npm run typecheck`, `npm run lint`, `npm run lint:styles`, and `npm test` passed on this tree (183 files, 998 tests).
 
 Do not merge this port without the owner's yes.
