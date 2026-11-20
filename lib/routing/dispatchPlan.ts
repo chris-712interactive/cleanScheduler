@@ -139,6 +139,42 @@ function offDuring(cleaner: DispatchCleanerInput, visit: DispatchVisitInput): bo
   );
 }
 
+/**
+ * Why a flexible visit cannot be given to this cleaner.
+ * Null means the shift, time off, and block list allow it. Pinned visits are not checked.
+ */
+export function flexibleAssignmentBlock(
+  cleaner: DispatchCleanerInput,
+  visit: DispatchVisitInput,
+): string | null {
+  if (visit.pinned || visit.assigneeIds.length > 1) return null;
+  if (visit.requiredCleanerIds.length === 1 && !visit.requiredCleanerIds.includes(cleaner.id)) {
+    return DISPATCH_NO_CLEANER;
+  }
+  if (!shiftCovers(cleaner, visit)) return DISPATCH_OUTSIDE_HOURS;
+  if (offDuring(cleaner, visit)) return DISPATCH_CLEANER_OFF;
+  if (visit.blockedCleanerIds.includes(cleaner.id)) return DISPATCH_NO_CLEANER;
+  return null;
+}
+
+/** Reason when no cleaner can take a flexible visit. Ignores visits already on the day. */
+export function whyFlexibleVisitIsUnassigned(
+  visit: DispatchVisitInput,
+  cleaners: DispatchCleanerInput[],
+): string {
+  if (cleaners.length === 0) return DISPATCH_NO_CLEANER;
+  const required = visit.requiredCleanerIds.length === 1 ? new Set(visit.requiredCleanerIds) : null;
+  const pool = cleaners.filter((cleaner) => (required ? required.has(cleaner.id) : true));
+  if (pool.length === 0) return DISPATCH_NO_CLEANER;
+  const covered = pool.filter((cleaner) => shiftCovers(cleaner, visit));
+  if (covered.length === 0) return DISPATCH_OUTSIDE_HOURS;
+  const working = covered.filter((cleaner) => !offDuring(cleaner, visit));
+  if (working.length === 0) return DISPATCH_CLEANER_OFF;
+  const allowed = working.filter((cleaner) => !visit.blockedCleanerIds.includes(cleaner.id));
+  if (allowed.length === 0) return DISPATCH_NO_CLEANER;
+  return DISPATCH_UNPLACED;
+}
+
 function overlapsPlaced(
   placed: Map<string, DispatchVisitInput[]>,
   cleanerId: string,

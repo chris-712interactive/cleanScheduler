@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { planDispatchHaversine } from '@/lib/routing/dispatchPlan';
+import {
+  DISPATCH_CLEANER_OFF,
+  DISPATCH_NO_CLEANER,
+  DISPATCH_OUTSIDE_HOURS,
+  planDispatchHaversine,
+} from '@/lib/routing/dispatchPlan';
 import { NO_ROAD_ROUTE_REASON } from '@/lib/routing/engineOptimizer';
 import { createFleetOptimizer, FleetRouteOptimizer } from '@/lib/routing/fleetOptimizer';
 import type { DispatchPlanRequest } from '@/lib/routing/dispatchPlan';
@@ -223,5 +228,169 @@ describe('fleet routing engine', () => {
     const fallback = await new FleetRouteOptimizer({ fetchImpl }).optimize(request);
     expect(fallback).toEqual(planDispatchHaversine(request));
     expect(logs.join('\n')).toContain('reason=unassigned');
+  });
+
+  it('does not keep a visit that the engine put on a blocked cleaner', async () => {
+    enableEngine();
+    const blocked: DispatchPlanRequest = {
+      office: { lat: 0, lng: 0 },
+      cleaners: [
+        { id: 'ada', shiftStartSec: 8 * 3600, shiftEndSec: 17 * 3600, timeOff: [] },
+        { id: 'bea', shiftStartSec: 8 * 3600, shiftEndSec: 17 * 3600, timeOff: [] },
+      ],
+      visits: [
+        {
+          id: 'west',
+          point: { lat: 1, lng: 1 },
+          missingReason: 'Missing map point',
+          pinned: false,
+          lockedAt: null,
+          startSec: 10 * 3600,
+          endSec: 11 * 3600,
+          assigneeIds: [],
+          requiredCleanerIds: [],
+          blockedCleanerIds: ['ada'],
+        },
+      ],
+    };
+    const captured: { skills: number[] | null } = { skills: null };
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).endsWith('/valhalla/sources_to_targets')) {
+        return jsonResponse(squareMatrix(2));
+      }
+      const body = JSON.parse(String(init?.body)) as {
+        jobs: Array<{ skills?: number[] }>;
+      };
+      captured.skills = body.jobs[0]?.skills ?? null;
+      return jsonResponse({
+        code: 0,
+        unassigned: [],
+        routes: [
+          { vehicle: 1, steps: [{ type: 'start' }, { type: 'job', id: 1 }] },
+          { vehicle: 2, steps: [{ type: 'start' }] },
+        ],
+      });
+    });
+
+    const result = await new FleetRouteOptimizer({ fetchImpl }).optimize(blocked);
+    expect(captured.skills).toEqual([2]);
+    expect(result.assignments.find((row) => row.cleanerId === 'ada')?.orderedIds).toEqual([]);
+    expect(result.assignments.find((row) => row.cleanerId === 'bea')?.orderedIds).toEqual([]);
+    expect(result.unassigned).toEqual([{ id: 'west', reason: DISPATCH_NO_CLEANER }]);
+    expect(result.visits.find((row) => row.id === 'west')).toMatchObject({
+      changeAssignees: true,
+      assigneeIds: [],
+    });
+  });
+
+  it('keeps the rest of a time-off block when a pinned visit covers only the start', async () => {
+    enableEngine();
+    const day: DispatchPlanRequest = {
+      office: { lat: 0, lng: 0 },
+      cleaners: [
+        {
+          id: 'ada',
+          shiftStartSec: 8 * 3600,
+          shiftEndSec: 17 * 3600,
+          timeOff: [{ startSec: 9 * 3600, endSec: 12 * 3600 }],
+        },
+      ],
+      visits: [
+        {
+          id: 'pinned',
+          point: { lat: 1, lng: 1 },
+          missingReason: 'Missing map point',
+          pinned: true,
+          lockedAt: 1,
+          startSec: 9 * 3600,
+          endSec: 10 * 3600,
+          assigneeIds: ['ada'],
+          requiredCleanerIds: [],
+          blockedCleanerIds: [],
+        },
+        {
+          id: 'later',
+          point: { lat: 1.1, lng: 1.1 },
+          missingReason: 'Missing map point',
+          pinned: false,
+          lockedAt: null,
+          startSec: 10 * 3600 + 30 * 60,
+          endSec: 11 * 3600 + 30 * 60,
+          assigneeIds: [],
+          requiredCleanerIds: [],
+          blockedCleanerIds: [],
+        },
+      ],
+    };
+    const captured: {
+      breaks: Array<{ service: number; time_windows: Array<[number, number]> }> | null;
+    } = { breaks: null };
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).endsWith('/valhalla/sources_to_targets')) {
+        return jsonResponse(squareMatrix(3));
+      }
+      const body = JSON.parse(String(init?.body)) as {
+        vehicles: Array<{
+          breaks?: Array<{ service: number; time_windows: Array<[number, number]> }>;
+        }>;
+      };
+      captured.breaks = body.vehicles[0]?.breaks ?? null;
+      return jsonResponse({
+        code: 0,
+        unassigned: [],
+        routes: [
+          {
+            vehicle: 1,
+            steps: [{ type: 'start' }, { type: 'job', id: 1 }, { type: 'job', id: 2 }],
+          },
+        ],
+      });
+    });
+
+    const result = await new FleetRouteOptimizer({ fetchImpl }).optimize(day);
+    expect(captured.breaks).toEqual([
+      { id: 1, service: 2 * 3600, time_windows: [[10 * 3600, 10 * 3600]] },
+    ]);
+    expect(result.assignments[0]?.orderedIds).toEqual(['pinned']);
+    expect(result.unassigned).toEqual([{ id: 'later', reason: DISPATCH_CLEANER_OFF }]);
+    expect(result.visits.find((row) => row.id === 'later')).toMatchObject({
+      changeAssignees: true,
+      assigneeIds: [],
+    });
+  });
+
+  it('drops a flexible visit the engine scheduled outside the shift', async () => {
+    enableEngine();
+    const day: DispatchPlanRequest = {
+      office: { lat: 0, lng: 0 },
+      cleaners: [{ id: 'ada', shiftStartSec: 8 * 3600, shiftEndSec: 12 * 3600, timeOff: [] }],
+      visits: [
+        {
+          id: 'late',
+          point: { lat: 1, lng: 1 },
+          missingReason: 'Missing map point',
+          pinned: false,
+          lockedAt: null,
+          startSec: 15 * 3600,
+          endSec: 16 * 3600,
+          assigneeIds: [],
+          requiredCleanerIds: [],
+          blockedCleanerIds: [],
+        },
+      ],
+    };
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL) => {
+      if (String(url).endsWith('/valhalla/sources_to_targets')) {
+        return jsonResponse(squareMatrix(2));
+      }
+      return jsonResponse({
+        code: 0,
+        unassigned: [],
+        routes: [{ vehicle: 1, steps: [{ type: 'start' }, { type: 'job', id: 1 }] }],
+      });
+    });
+    const result = await new FleetRouteOptimizer({ fetchImpl }).optimize(day);
+    expect(result.assignments[0]?.orderedIds).toEqual([]);
+    expect(result.unassigned).toEqual([{ id: 'late', reason: DISPATCH_OUTSIDE_HOURS }]);
   });
 });

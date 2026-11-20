@@ -1,7 +1,10 @@
 import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
-  DISPATCH_NO_CLEANER,
+  DISPATCH_OVERLAP,
+  DISPATCH_UNPLACED,
+  flexibleAssignmentBlock,
   planDispatchHaversine,
+  whyFlexibleVisitIsUnassigned,
   type DispatchAssignment,
   type DispatchCleanerInput,
   type DispatchPlanRequest,
@@ -95,6 +98,37 @@ function finiteMatrix(rows: number[][]): boolean {
   return rows.every((row) => row.every((value) => Number.isFinite(value)));
 }
 
+/** Time off that is still closed after pinned visits take their own slice of it. */
+function unavailablePieces(
+  span: { startSec: number; endSec: number },
+  pinned: GeocodedVisit[],
+  window: [number, number],
+): Array<{ startSec: number; endSec: number }> {
+  let pieces = [
+    {
+      startSec: Math.max(span.startSec, window[0]),
+      endSec: Math.min(span.endSec, window[1]),
+    },
+  ].filter((piece) => piece.endSec > piece.startSec);
+  for (const visit of pinned) {
+    const next: Array<{ startSec: number; endSec: number }> = [];
+    for (const piece of pieces) {
+      if (visit.endSec <= piece.startSec || visit.startSec >= piece.endSec) {
+        next.push(piece);
+        continue;
+      }
+      if (visit.startSec > piece.startSec) {
+        next.push({ startSec: piece.startSec, endSec: Math.min(visit.startSec, piece.endSec) });
+      }
+      if (visit.endSec < piece.endSec) {
+        next.push({ startSec: Math.max(visit.endSec, piece.startSec), endSec: piece.endSec });
+      }
+    }
+    pieces = next.filter((piece) => piece.endSec > piece.startSec);
+  }
+  return pieces;
+}
+
 async function solveWithEngine(
   request: DispatchPlanRequest,
   config: RoutingEngineConfig,
@@ -158,20 +192,20 @@ async function solveWithEngine(
     if (!window) return;
     const id = vehicles.length + 1;
     vehicleByCleaner.set(cleaner.id, id);
-    const breaks = cleaner.timeOff
-      .map((span, index) => {
-        const start = Math.max(span.startSec, window[0]);
-        const end = Math.min(span.endSec, window[1]);
-        if (end <= start) return null;
-        const coversPinned = pinned.some((visit) => visit.startSec < end && start < visit.endSec);
-        if (coversPinned) return null;
-        return {
-          id: index + 1,
-          service: Math.round(end - start),
-          time_windows: [[Math.round(start), Math.round(start)]],
+    let breakId = 1;
+    const breaks = cleaner.timeOff.flatMap((span) =>
+      unavailablePieces(span, pinned, window).map((piece) => {
+        const row = {
+          id: breakId,
+          service: Math.round(piece.endSec - piece.startSec),
+          time_windows: [[Math.round(piece.startSec), Math.round(piece.startSec)]] as Array<
+            [number, number]
+          >,
         };
-      })
-      .filter((item) => item != null);
+        breakId += 1;
+        return row;
+      }),
+    );
     const vehicle: Record<string, unknown> = {
       id,
       profile: 'auto',
@@ -184,6 +218,8 @@ async function solveWithEngine(
   });
   if (vehicles.length === 0) throw new EngineFailure('bad-response');
 
+  const vehicleIds = [...vehicleByCleaner.values()];
+  let groupSkill = 1000;
   const jobs = keptVisits.map((visit, index) => {
     const duration = Math.max(1, Math.round(visit.endSec - visit.startSec));
     const job: Record<string, unknown> = {
@@ -193,14 +229,31 @@ async function solveWithEngine(
       time_windows: [[Math.round(visit.startSec), Math.round(visit.startSec)]],
     };
     const pinned = visit.pinned || visit.assigneeIds.length > 1;
-    if (pinned) {
-      const primary = primaryCleaner(visit, cleanerIds);
-      const skill = primary ? vehicleByCleaner.get(primary) : undefined;
-      if (!skill) throw new EngineFailure('lock-order');
+    const allowed = vehicleIds.filter((vehicleId) => {
+      const cleanerId = [...vehicleByCleaner.entries()].find(([, id]) => id === vehicleId)?.[0];
+      const cleaner = cleaners.find((row) => row.id === cleanerId);
+      if (!cleaner) return false;
+      if (pinned) return primaryCleaner(visit, cleanerIds) === cleaner.id;
+      return flexibleAssignmentBlock(cleaner, visit) == null;
+    });
+    if (pinned && allowed.length === 0) throw new EngineFailure('lock-order');
+    if (!pinned && visit.requiredCleanerIds.length === 1 && allowed.length === 0) {
+      throw new EngineFailure('unassigned');
+    }
+    if (!pinned && allowed.length === 0) {
+      const skill = groupSkill;
+      groupSkill += 1;
       job.skills = [skill];
-    } else if (visit.requiredCleanerIds.length === 1) {
-      const skill = vehicleByCleaner.get(visit.requiredCleanerIds[0] ?? '');
-      if (!skill) throw new EngineFailure('unassigned');
+    } else if (allowed.length === 1) {
+      job.skills = allowed;
+    } else if (allowed.length > 1 && allowed.length < vehicleIds.length) {
+      const skill = groupSkill;
+      groupSkill += 1;
+      for (const vehicle of vehicles) {
+        if (typeof vehicle.id !== 'number' || !allowed.includes(vehicle.id)) continue;
+        const skills = vehicle.skills;
+        if (Array.isArray(skills)) skills.push(skill);
+      }
       job.skills = [skill];
     }
     return job;
@@ -285,6 +338,39 @@ async function solveWithEngine(
     if (!placed && !unassignedIds.has(visit.id)) throw new EngineFailure('bad-response');
   }
 
+  const rejectedReason = new Map<string, string>();
+  for (const cleaner of cleaners) {
+    const ids = orderedByCleaner.get(cleaner.id) ?? [];
+    const keptIds: string[] = [];
+    for (const id of ids) {
+      const visit = keptVisits.find((row) => row.id === id);
+      if (!visit) continue;
+      const pinned = visit.pinned || visit.assigneeIds.length > 1;
+      if (pinned) {
+        if (primaryCleaner(visit, cleanerIds) !== cleaner.id) throw new EngineFailure('lock-order');
+        keptIds.push(id);
+        continue;
+      }
+      const blocked = flexibleAssignmentBlock(cleaner, visit);
+      if (blocked) {
+        rejectedReason.set(id, blocked);
+        unassignedIds.add(id);
+        continue;
+      }
+      const overlapsKept = keptIds.some((otherId) => {
+        const other = keptVisits.find((row) => row.id === otherId);
+        return other != null && overlaps(visit, other);
+      });
+      if (overlapsKept) {
+        rejectedReason.set(id, DISPATCH_OVERLAP);
+        unassignedIds.add(id);
+        continue;
+      }
+      keptIds.push(id);
+    }
+    orderedByCleaner.set(cleaner.id, keptIds);
+  }
+
   const fullIndex = new Map(keptVisits.map((visit, index) => [visit.id, kept[index] ?? -1]));
   const assignments: DispatchAssignment[] = cleaners.map((cleaner) => {
     const orderedIds = orderedByCleaner.get(cleaner.id) ?? [];
@@ -346,9 +432,14 @@ async function solveWithEngine(
     unassigned.push({ id: visit.id, reason: NO_ROAD_ROUTE_REASON });
   }
   for (const id of unassignedIds) {
-    if (!unassigned.some((row) => row.id === id)) {
-      unassigned.push({ id, reason: DISPATCH_NO_CLEANER });
-    }
+    if (unassigned.some((row) => row.id === id)) continue;
+    const visit = keptVisits.find((row) => row.id === id);
+    unassigned.push({
+      id,
+      reason:
+        rejectedReason.get(id) ??
+        (visit ? whyFlexibleVisitIsUnassigned(visit, cleaners) : DISPATCH_UNPLACED),
+    });
   }
   unassigned.sort((a, b) => a.id.localeCompare(b.id));
 
