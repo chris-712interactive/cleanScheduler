@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { planDispatchHaversine } from '@/lib/routing/dispatchPlan';
 import { optimizeHaversine } from '@/lib/routing/haversineOptimizer';
-import { resolveCleanerBase } from '@/lib/routing/routeBases';
+import { resolveCleanerBase, routeChoiceLabel, routeChoiceValue } from '@/lib/routing/routeBases';
 import type { DispatchPlanRequest } from '@/lib/routing/dispatchPlan';
 
 describe('cleaner start and end', () => {
+  it('shows a saved place as the select value and label', () => {
+    const places = [{ id: 'barn', label: 'South shed' }];
+    expect(routeChoiceValue('location', 'barn')).toBe('location:barn');
+    expect(routeChoiceValue('office', null)).toBe('office');
+    expect(routeChoiceValue('none', null)).toBe('none');
+    expect(routeChoiceLabel('location', 'barn', places)).toBe('South shed');
+    expect(routeChoiceLabel('none', null, places)).toBe('No return');
+    expect(routeChoiceLabel('location', 'missing', places)).toBe('Office');
+  });
+
   it('uses a home start and a saved end, and falls back to the office', () => {
     const home = resolveCleanerBase({
       userId: 'ada',

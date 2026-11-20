@@ -84,6 +84,19 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await page.getByLabel('Start for Sam Route').selectOption({ label: 'South shed' });
   await page.getByRole('button', { name: 'Save start for Sam Route', exact: true }).click();
   await expect(page.getByText('Saved the default start.')).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Start for Sam Route').locator('option:checked')).toHaveText(
+    'South shed',
+  );
+  await expect(page.getByLabel('End for Sam Route').locator('option:checked')).toHaveText(
+    'No return',
+  );
+  await expect(
+    page.getByText('Saved default start for Sam Route: South shed', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Saved default end for Sam Route: No return', { exact: true }),
+  ).toBeVisible();
   for (const text of otherTenant) {
     await expect(page.getByText(text)).toHaveCount(0);
   }

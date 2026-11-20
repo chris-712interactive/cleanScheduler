@@ -54,6 +54,9 @@ create table public.tenant_route_locations (
 create unique index tenant_route_locations_label_idx
   on public.tenant_route_locations (tenant_id, lower(label));
 
+alter table public.tenant_route_locations
+  add constraint tenant_route_locations_tenant_id_key unique (tenant_id, id);
+
 create index tenant_route_locations_tenant_idx
   on public.tenant_route_locations (tenant_id, label);
 
@@ -66,9 +69,9 @@ create table public.tenant_cleaner_route_bases (
   user_id uuid not null references auth.users (id) on delete cascade,
   service_date date,
   start_kind text not null default 'office',
-  start_location_id uuid references public.tenant_route_locations (id),
+  start_location_id uuid,
   end_kind text not null default 'none',
-  end_location_id uuid references public.tenant_route_locations (id),
+  end_location_id uuid,
   updated_at timestamptz not null default now(),
   constraint tenant_cleaner_route_bases_start_kind check (start_kind in ('office', 'home', 'location')),
   constraint tenant_cleaner_route_bases_end_kind check (
@@ -81,7 +84,13 @@ create table public.tenant_cleaner_route_bases (
   constraint tenant_cleaner_route_bases_end_location check (
     (end_kind = 'location' and end_location_id is not null)
     or (end_kind <> 'location' and end_location_id is null)
-  )
+  ),
+  constraint tenant_cleaner_route_bases_start_place_fkey
+    foreign key (tenant_id, start_location_id)
+    references public.tenant_route_locations (tenant_id, id),
+  constraint tenant_cleaner_route_bases_end_place_fkey
+    foreign key (tenant_id, end_location_id)
+    references public.tenant_route_locations (tenant_id, id)
 );
 
 create unique index tenant_cleaner_route_bases_default_idx

@@ -16,6 +16,11 @@ export type RouteStartCleaner = {
   id: string;
   name: string;
   homeLine: string | null;
+  defaultStart: string;
+  defaultEnd: string;
+  savedStartLabel: string;
+  savedEndLabel: string;
+  dayOverrides: Array<{ date: string; startLabel: string; endLabel: string }>;
 };
 
 export type RouteStartPlace = {
@@ -122,12 +127,24 @@ export function RouteStartsEditor({
               Day
               <input type="date" name="service_date" aria-label={`Day for ${cleaner.name}`} />
             </label>
+            <p className={styles.meta}>
+              Saved default start for {cleaner.name}: {cleaner.savedStartLabel}
+            </p>
+            <p className={styles.meta}>
+              Saved default end for {cleaner.name}: {cleaner.savedEndLabel}
+            </p>
+            {cleaner.dayOverrides.map((day) => (
+              <p key={day.date} className={styles.meta}>
+                Day {day.date} for {cleaner.name}: start {day.startLabel}, end {day.endLabel}
+              </p>
+            ))}
             <label className={styles.meta}>
               Start
               <select
+                key={`${cleaner.id}-start-${cleaner.defaultStart}`}
                 name="start_choice"
                 aria-label={`Start for ${cleaner.name}`}
-                defaultValue="office"
+                defaultValue={cleaner.defaultStart}
               >
                 <option value="office">Office</option>
                 <option value="home" disabled={cleaner.homeLine == null}>
@@ -142,7 +159,12 @@ export function RouteStartsEditor({
             </label>
             <label className={styles.meta}>
               End
-              <select name="end_choice" aria-label={`End for ${cleaner.name}`} defaultValue="none">
+              <select
+                key={`${cleaner.id}-end-${cleaner.defaultEnd}`}
+                name="end_choice"
+                aria-label={`End for ${cleaner.name}`}
+                defaultValue={cleaner.defaultEnd}
+              >
                 <option value="none">No return</option>
                 <option value="same">Same as start</option>
                 <option value="office">Office</option>

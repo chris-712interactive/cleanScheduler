@@ -245,6 +245,7 @@ export async function saveCleanerBaseAction(
   const { error } = await write;
   if (error) {
     if (isMissingRelationError(error)) return { error: 'Start locations are not available yet.' };
+    if (error.code === '23503') return { error: 'That place is not on this workspace.' };
     return { error: 'Could not save the start.' };
   }
 

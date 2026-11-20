@@ -6,7 +6,11 @@ import {
   resolveTenantEntitlementPlan,
 } from '@/lib/billing/entitlements';
 import { canApplyStopOrder } from '@/lib/routing/locks';
-import { isMissingRelationError } from '@/lib/routing/routeBases';
+import {
+  isMissingRelationError,
+  routeChoiceLabel,
+  routeChoiceValue,
+} from '@/lib/routing/routeBases';
 import { getPortalContext } from '@/lib/portal';
 import { createAdminClient } from '@/lib/supabase/server';
 import { schedulesVisitKind } from '@/lib/schedule/scheduleEligibility';
@@ -45,7 +49,7 @@ export default async function RouteStartsPage() {
     );
   }
 
-  const [members, placesResult, homesResult] = await Promise.all([
+  const [members, placesResult, homesResult, basesResult] = await Promise.all([
     admin
       .from('tenant_memberships')
       .select('user_id, role, exclude_from_job_schedule, exclude_from_consultation_schedule')
@@ -60,10 +64,17 @@ export default async function RouteStartsPage() {
       .from('tenant_member_scheduling_profiles')
       .select('user_id, home_address_line1, home_city, home_state')
       .eq('tenant_id', membership.tenantId),
+    admin
+      .from('tenant_cleaner_route_bases')
+      .select('user_id, service_date, start_kind, start_location_id, end_kind, end_location_id')
+      .eq('tenant_id', membership.tenantId),
   ]);
   if (members.error) throw new Error(members.error.message);
   if (placesResult.error && !isMissingRelationError(placesResult.error)) {
     throw new Error(placesResult.error.message);
+  }
+  if (basesResult.error && !isMissingRelationError(basesResult.error)) {
+    throw new Error(basesResult.error.message);
   }
   if (homesResult.error) throw new Error(homesResult.error.message);
 
@@ -95,6 +106,16 @@ export default async function RouteStartsPage() {
       return [row.user_id, line || null] as const;
     }),
   );
+  const placeLabels = (placesResult.data ?? []).map((place) => ({
+    id: place.id,
+    label: place.label,
+  }));
+  const basesByUser = new Map<string, NonNullable<typeof basesResult.data>>();
+  for (const row of basesResult.data ?? []) {
+    const list = basesByUser.get(row.user_id) ?? [];
+    list.push(row);
+    basesByUser.set(row.user_id, list);
+  }
 
   return (
     <>
@@ -111,11 +132,38 @@ export default async function RouteStartsPage() {
           label: place.label,
           located: place.latitude != null && place.longitude != null,
         }))}
-        cleaners={crew.map((member) => ({
-          id: member.user_id,
-          name: nameById.get(member.user_id) || 'Cleaner',
-          homeLine: homeById.get(member.user_id) ?? null,
-        }))}
+        cleaners={crew.map((member) => {
+          const rows = basesByUser.get(member.user_id) ?? [];
+          const saved = rows.find((row) => row.service_date == null);
+          const name = nameById.get(member.user_id) || 'Cleaner';
+          return {
+            id: member.user_id,
+            name,
+            homeLine: homeById.get(member.user_id) ?? null,
+            defaultStart: routeChoiceValue(
+              saved?.start_kind ?? 'office',
+              saved?.start_location_id ?? null,
+            ),
+            defaultEnd: routeChoiceValue(saved?.end_kind ?? 'none', saved?.end_location_id ?? null),
+            savedStartLabel: routeChoiceLabel(
+              saved?.start_kind ?? 'office',
+              saved?.start_location_id ?? null,
+              placeLabels,
+            ),
+            savedEndLabel: routeChoiceLabel(
+              saved?.end_kind ?? 'none',
+              saved?.end_location_id ?? null,
+              placeLabels,
+            ),
+            dayOverrides: rows
+              .filter((row) => row.service_date != null)
+              .map((row) => ({
+                date: row.service_date as string,
+                startLabel: routeChoiceLabel(row.start_kind, row.start_location_id, placeLabels),
+                endLabel: routeChoiceLabel(row.end_kind, row.end_location_id, placeLabels),
+              })),
+          };
+        })}
       />
     </>
   );

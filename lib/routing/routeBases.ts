@@ -39,6 +39,28 @@ export function parseRouteEndKind(value: string): RouteEndKind | null {
   return ENDS.has(value as RouteEndKind) ? (value as RouteEndKind) : null;
 }
 
+/** Select value for a stored start or end. A place is `location:<id>`. */
+export function routeChoiceValue(kind: string, locationId: string | null): string {
+  if (kind === 'location' && locationId) return `location:${locationId}`;
+  if (kind === 'home' || kind === 'same' || kind === 'none' || kind === 'office') return kind;
+  return 'office';
+}
+
+/** Office-facing label for a stored start or end. */
+export function routeChoiceLabel(
+  kind: string,
+  locationId: string | null,
+  locations: readonly { id: string; label: string }[],
+): string {
+  if (kind === 'location') {
+    return locations.find((place) => place.id === locationId)?.label ?? 'Office';
+  }
+  if (kind === 'home') return 'Home';
+  if (kind === 'same') return 'Same as start';
+  if (kind === 'none') return 'No return';
+  return 'Office';
+}
+
 function locationPoint(
   id: string | null,
   locations: readonly RouteLocationPoint[],

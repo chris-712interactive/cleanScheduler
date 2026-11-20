@@ -192,6 +192,50 @@ BEGIN
     RAISE EXCEPTION 'owner should see both drive rows, saw %', own_count;
   END IF;
 
+  PERFORM set_config('request.jwt.claim.sub', other_id::text, true);
+  PERFORM set_config(
+    'request.jwt.claims',
+    json_build_object('sub', other_id::text, 'role', 'authenticated')::text,
+    true
+  );
+
+  BEGIN
+    INSERT INTO public.tenant_cleaner_route_bases (
+      tenant_id, user_id, start_kind, start_location_id, end_kind
+    ) VALUES (tenant_b, other_id, 'location', place_a, 'none');
+    RAISE EXCEPTION 'cross-tenant start place was accepted';
+  EXCEPTION
+    WHEN foreign_key_violation THEN
+      NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.tenant_cleaner_route_bases (
+      tenant_id, user_id, start_kind, end_kind, end_location_id
+    ) VALUES (tenant_b, other_id, 'office', 'location', place_a);
+    RAISE EXCEPTION 'cross-tenant end place was accepted';
+  EXCEPTION
+    WHEN foreign_key_violation THEN
+      NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.tenant_cleaner_route_bases (
+      tenant_id, user_id, service_date, start_kind, start_location_id, end_kind
+    ) VALUES (tenant_b, other_id, current_date, 'location', place_a, 'none');
+    RAISE EXCEPTION 'cross-tenant day override was accepted';
+  EXCEPTION
+    WHEN foreign_key_violation THEN
+      NULL;
+  END;
+
+  PERFORM set_config('request.jwt.claim.sub', owner_id::text, true);
+  PERFORM set_config(
+    'request.jwt.claims',
+    json_build_object('sub', owner_id::text, 'role', 'authenticated')::text,
+    true
+  );
+
   UPDATE public.tenant_cleaner_route_bases
   SET
     start_kind = 'location',

@@ -18,7 +18,7 @@ Until the road engine is connected, miles are a **straight-line estimate**. They
 
 ## Start locations
 
-**Schedule → Start locations** lets the office add places besides the business address, such as a second office. Each cleaner can start at the office, at home, or at one of those places, and can end at a return point. Leave the day blank for the default. Fill in a day to override that date only.
+**Schedule → Start locations** lets the office add places besides the business address, such as a second office. Each cleaner can start at the office, at home, or at one of those places, and can end at a return point. Leave the day blank for the default. Fill in a day to override that date only. The form shows the saved default, and any day that already has its own start or end.
 
 Ordering and dispatch use that start and end. Home streets are shown on this page to the office only.
 
