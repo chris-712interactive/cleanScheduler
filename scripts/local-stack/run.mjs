@@ -91,9 +91,9 @@ function ensureHosts() {
   } catch {
     return;
   }
-  if (hosts.includes('qa-residential.lvh.me')) return;
+  if (hosts.includes('qa-pro.lvh.me')) return;
   const line =
-    '127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me\n';
+    '127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me qa-pro.lvh.me\n';
   const result = spawnSync('sudo', ['tee', '-a', '/etc/hosts'], { input: line, stdio: 'pipe' });
   if ((result.status ?? 1) !== 0) {
     console.warn('Could not add lvh.me hosts. Wildcard DNS for lvh.me must resolve to 127.0.0.1.');
@@ -249,7 +249,7 @@ async function runDockerStack() {
     const lines = [
       'mode=supabase-docker',
       'rls=passed',
-      'rls_sql_files=7',
+      'rls_sql_files=8',
       `playwright_passed=${playwrightPassed}`,
       `playwright_total=${playwrightExpected}`,
       'backfill=passed',

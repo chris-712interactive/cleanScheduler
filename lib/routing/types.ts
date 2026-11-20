@@ -15,8 +15,10 @@ export type RouteStopInput = {
 export type RouteOptimizeRequest = {
   /** Current schedule order. Straight-line miles "before" follow this order. */
   stops: RouteStopInput[];
-  /** Office or other depot. When null, the first routed stop is the start. */
+  /** Office, home, or other depot. When null, the first routed stop is the start. */
   start: LatLng | null;
+  /** Return point. When null, the path ends at the last stop. */
+  end?: LatLng | null;
 };
 
 export type UnroutedStop = {
@@ -60,8 +62,8 @@ export type CleanerStopOrderView = {
   cleanerUserId: string;
   cleanerName: string;
   dateKey: string;
-  /** Where the path starts. */
-  startLabel: 'Office' | 'First stop';
+  /** Where the path starts. Office, Home, a saved place, or First stop. */
+  startLabel: string;
   estimateKind: 'straight-line' | 'drive';
   estimatedMilesBefore: number;
   estimatedMilesAfter: number;
@@ -70,6 +72,7 @@ export type CleanerStopOrderView = {
   /** `24 min drive · 9.2 mi`. Null for a straight-line estimate. */
   driveBeforeLabel: string | null;
   driveAfterLabel: string | null;
+  driveSecondsAfter: number | null;
   ordered: StopOrderLine[];
   unrouted: Array<StopOrderLine & { reason: string }>;
   /** True when the saved route_sequence already matches this suggestion. */

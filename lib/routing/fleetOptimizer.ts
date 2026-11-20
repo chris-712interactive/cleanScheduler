@@ -25,10 +25,12 @@ import {
   integerMatrix,
   METERS_PER_MILE,
   NO_ROAD_ROUTE_REASON,
-  pathCost,
+  pathFrom,
+  pointsMatch,
   postJson,
   readMatrix,
   routableIndexes,
+  routableStopIndexes,
   submatrix,
   usablePoint,
 } from '@/lib/routing/engineOptimizer';
@@ -155,8 +157,23 @@ async function solveWithEngine(
 
   const firstStop = geocoded[0];
   if (!firstStop) return baseline;
-  const start = office ?? firstStop.point;
-  const locations = [start, ...geocoded.map((visit) => visit.point)];
+  const shared = office ?? firstStop.point;
+  const depots: LatLng[] = [];
+  const addDepot = (point: LatLng): number => {
+    const found = depots.findIndex((item) => pointsMatch(item, point));
+    if (found >= 0) return found;
+    depots.push(point);
+    return depots.length - 1;
+  };
+  addDepot(shared);
+  const vehicleStart = new Map<string, number>();
+  const vehicleEnd = new Map<string, number | null>();
+  for (const cleaner of cleaners) {
+    vehicleStart.set(cleaner.id, addDepot(usablePoint(cleaner.start) ?? shared));
+    const endPoint = usablePoint(cleaner.end);
+    vehicleEnd.set(cleaner.id, endPoint ? addDepot(endPoint) : null);
+  }
+  const locations = [...depots, ...geocoded.map((visit) => visit.point)];
   const signal = AbortSignal.timeout(call.timeoutMs);
   const matrixPayload = await postJson(
     `${config.baseUrl}/valhalla/sources_to_targets`,
@@ -172,11 +189,16 @@ async function solveWithEngine(
   );
   const matrix = readMatrix(matrixPayload, locations.length);
   if (!matrix) throw new EngineFailure('bad-response');
-  const kept = routableIndexes(matrix.seconds, geocoded.length);
+  const kept =
+    depots.length === 1
+      ? routableIndexes(matrix.seconds, geocoded.length)
+      : routableStopIndexes(matrix.seconds, depots.length, geocoded.length);
   if (kept.length === 0) throw new EngineFailure('bad-response');
-  const keptVisits = kept.map((index) => geocoded[index - 1]).filter((visit) => visit != null);
+  const keptVisits = kept
+    .map((index) => geocoded[index - depots.length])
+    .filter((visit) => visit != null);
   const dropped = geocoded.filter((visit) => !keptVisits.includes(visit));
-  const locationIndexes = [0, ...kept];
+  const locationIndexes = [...depots.map((_, index) => index), ...kept];
   const seconds = submatrix(matrix.seconds, locationIndexes);
   const miles = submatrix(matrix.miles, locationIndexes);
   if (!finiteMatrix(seconds) || !finiteMatrix(miles)) throw new EngineFailure('bad-response');
@@ -209,10 +231,12 @@ async function solveWithEngine(
     const vehicle: Record<string, unknown> = {
       id,
       profile: 'auto',
-      start_index: 0,
+      start_index: vehicleStart.get(cleaner.id) ?? 0,
       time_window: window,
       skills: [id],
     };
+    const endIndex = vehicleEnd.get(cleaner.id);
+    if (endIndex != null) vehicle.end_index = endIndex;
     if (breaks.length > 0) vehicle.breaks = breaks;
     vehicles.push(vehicle);
   });
@@ -224,7 +248,7 @@ async function solveWithEngine(
     const duration = Math.max(1, Math.round(visit.endSec - visit.startSec));
     const job: Record<string, unknown> = {
       id: index + 1,
-      location_index: index + 1,
+      location_index: depots.length + index,
       service: duration,
       time_windows: [[Math.round(visit.startSec), Math.round(visit.startSec)]],
     };
@@ -375,8 +399,24 @@ async function solveWithEngine(
   const assignments: DispatchAssignment[] = cleaners.map((cleaner) => {
     const orderedIds = orderedByCleaner.get(cleaner.id) ?? [];
     const indexes = orderedIds.map((id) => fullIndex.get(id) ?? -1);
-    const driveSeconds = orderedIds.length === 0 ? 0 : pathCost(indexes, matrix.seconds);
-    const driveMiles = orderedIds.length === 0 ? 0 : pathCost(indexes, matrix.miles);
+    const driveSeconds =
+      orderedIds.length === 0
+        ? 0
+        : pathFrom(
+            vehicleStart.get(cleaner.id) ?? 0,
+            indexes,
+            vehicleEnd.get(cleaner.id) ?? null,
+            matrix.seconds,
+          );
+    const driveMiles =
+      orderedIds.length === 0
+        ? 0
+        : pathFrom(
+            vehicleStart.get(cleaner.id) ?? 0,
+            indexes,
+            vehicleEnd.get(cleaner.id) ?? null,
+            matrix.miles,
+          );
     if (!Number.isFinite(driveSeconds) || !Number.isFinite(driveMiles)) {
       throw new EngineFailure('bad-response');
     }
