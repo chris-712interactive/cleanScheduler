@@ -1,7 +1,8 @@
 -- Pro routing tables are tenant scoped.
 -- An owner reads and writes their places and cannot see another tenant.
 -- A field employee reads only their own base and drive row, not a coworker's home base.
--- Authenticated cannot write drive rows. Anon has no access.
+-- An office insert or update whose user_id is not an active member of that tenant is rejected.
+-- A member's base can still be saved. Authenticated cannot write drive rows. Anon has no access.
 -- The script rolls back.
 --
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls/pro_routing_extras.sql
@@ -83,6 +84,7 @@ DECLARE
   employee_id uuid := gen_random_uuid();
   coworker_id uuid := gen_random_uuid();
   other_id uuid := gen_random_uuid();
+  former_id uuid := gen_random_uuid();
   tenant_a uuid;
   tenant_b uuid;
   place_a uuid;
@@ -98,8 +100,22 @@ BEGIN
      OR to_regclass('public.tenant_cleaner_route_bases') IS NULL
      OR to_regclass('public.tenant_applied_route_days') IS NULL
      OR to_regprocedure('public.can_manage_route_office(uuid)') IS NULL
-     OR to_regprocedure('public.release_route_location_bases()') IS NULL THEN
+     OR to_regprocedure('public.release_route_location_bases()') IS NULL
+     OR to_regprocedure('public.route_base_subject_is_active_member(uuid, uuid)') IS NULL THEN
     RAISE EXCEPTION 'pro routing tables are missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'tenant_cleaner_route_bases'
+      AND policyname = 'tenant_cleaner_route_bases_office'
+      AND with_check ILIKE '%route_base_subject_is_active_member%'
+      AND coalesce(qual, '') NOT ILIKE '%route_base_subject_is_active_member%'
+      AND qual ILIKE '%can_manage_route_office%'
+  ) THEN
+    RAISE EXCEPTION 'office route base writes must require an active member';
   END IF;
 
   IF NOT EXISTS (
@@ -133,6 +149,7 @@ BEGIN
   PERFORM pg_temp.insert_auth_user(employee_id, 'rls-route-employee-' || employee_id || '@example.test');
   PERFORM pg_temp.insert_auth_user(coworker_id, 'rls-route-coworker-' || coworker_id || '@example.test');
   PERFORM pg_temp.insert_auth_user(other_id, 'rls-route-other-' || other_id || '@example.test');
+  PERFORM pg_temp.insert_auth_user(former_id, 'rls-route-former-' || former_id || '@example.test');
 
   INSERT INTO public.tenants (slug, name)
   VALUES ('rlspro' || substr(replace(owner_id::text, '-', ''), 1, 12), 'RLS pro A')
@@ -147,6 +164,7 @@ BEGIN
     (tenant_a, owner_id, 'owner', true),
     (tenant_a, employee_id, 'employee', true),
     (tenant_a, coworker_id, 'employee', true),
+    (tenant_a, former_id, 'employee', false),
     (tenant_b, other_id, 'owner', true);
 
   INSERT INTO public.tenant_route_locations (tenant_id, label, address_line1, latitude, longitude)
@@ -235,6 +253,78 @@ BEGIN
     json_build_object('sub', owner_id::text, 'role', 'authenticated')::text,
     true
   );
+
+  INSERT INTO public.tenant_cleaner_route_bases (
+    tenant_id, user_id, service_date, start_kind, end_kind
+  ) VALUES (tenant_a, employee_id, current_date, 'office', 'none');
+
+  SELECT count(*) INTO own_count
+  FROM public.tenant_cleaner_route_bases
+  WHERE tenant_id = tenant_a
+    AND user_id = employee_id
+    AND service_date = current_date;
+  IF own_count IS DISTINCT FROM 1 THEN
+    RAISE EXCEPTION 'owner should save a day start for an active member, saw %', own_count;
+  END IF;
+
+  BEGIN
+    UPDATE public.tenant_cleaner_route_bases
+    SET user_id = other_id
+    WHERE tenant_id = tenant_a
+      AND user_id = employee_id
+      AND service_date IS NULL;
+    RAISE EXCEPTION 'update to a non-member user_id was accepted';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
+
+  BEGIN
+    UPDATE public.tenant_cleaner_route_bases
+    SET user_id = former_id
+    WHERE tenant_id = tenant_a
+      AND user_id = employee_id
+      AND service_date IS NULL;
+    RAISE EXCEPTION 'update to an inactive member was accepted';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.tenant_cleaner_route_bases (tenant_id, user_id, start_kind, end_kind)
+    VALUES (tenant_a, other_id, 'office', 'none');
+    RAISE EXCEPTION 'non-member user_id was accepted';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.tenant_cleaner_route_bases (tenant_id, user_id, start_kind, end_kind)
+    VALUES (tenant_a, former_id, 'office', 'none');
+    RAISE EXCEPTION 'inactive member user_id was accepted';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
+
+  SELECT count(*) INTO cross_count
+  FROM public.tenant_cleaner_route_bases
+  WHERE tenant_id = tenant_a
+    AND user_id IN (other_id, former_id);
+  IF cross_count IS DISTINCT FROM 0 THEN
+    RAISE EXCEPTION 'non-member route base was stored, saw %', cross_count;
+  END IF;
+
+  DELETE FROM public.tenant_cleaner_route_bases
+  WHERE tenant_id = tenant_a
+    AND user_id = employee_id
+    AND service_date = current_date;
+  GET DIAGNOSTICS inserted = ROW_COUNT;
+  IF inserted IS DISTINCT FROM 1 THEN
+    RAISE EXCEPTION 'owner should remove the day override, deleted %', inserted;
+  END IF;
 
   UPDATE public.tenant_cleaner_route_bases
   SET

@@ -8,6 +8,7 @@ import {
   isFeatureEnabled,
   resolveTenantEntitlementPlan,
 } from '@/lib/billing/entitlements';
+import { sameGeocodeAddress } from '@/lib/geo/censusGeocode';
 import { geocodeColumnsForAddress } from '@/lib/geo/ensurePropertyGeocoded';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import {
@@ -156,6 +157,115 @@ export async function deleteRouteLocationAction(
   revalidatePath('/schedule/starts', 'page');
   revalidatePath('/schedule/map', 'page');
   return { success: 'Place deleted. Cleaners who used it start at the office.' };
+}
+
+export async function updateRouteLocationAction(
+  _prev: RouteStartState,
+  formData: FormData,
+): Promise<RouteStartState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const locationId = String(formData.get('location_id') ?? '').trim();
+  const label = String(formData.get('label') ?? '').trim();
+  const line1 = String(formData.get('address_line1') ?? '').trim();
+  const city = String(formData.get('city') ?? '').trim();
+  const state = String(formData.get('state') ?? '').trim();
+  const postalCode = String(formData.get('postal_code') ?? '').trim();
+  if (!locationId) return { error: 'Choose a place to edit.' };
+  if (!slug || !label || !line1) return { error: 'Enter a name and a street address.' };
+  if (label.length > 80) return { error: 'Use a shorter name.' };
+  if (line1.length > 200) return { error: 'Use a shorter street address.' };
+
+  const gate = await officeGate(slug);
+  if ('error' in gate) return { error: gate.error };
+
+  const nextCity = city || null;
+  const nextState = state || null;
+  const nextPostal = postalCode || null;
+  const { data: current, error: loadError } = await gate.admin
+    .from('tenant_route_locations')
+    .select('id, address_line1, city, state, postal_code')
+    .eq('tenant_id', gate.tenantId)
+    .eq('id', locationId)
+    .maybeSingle();
+  if (loadError) {
+    if (isMissingRelationError(loadError))
+      return { error: 'Start locations are not available yet.' };
+    return { error: 'Could not update the place.' };
+  }
+  if (!current) return { error: 'That place is not on this workspace.' };
+
+  const addressChanged = !sameGeocodeAddress(
+    {
+      line1: current.address_line1,
+      city: current.city,
+      state: current.state,
+      postalCode: current.postal_code,
+    },
+    { line1, city: nextCity, state: nextState, postalCode: nextPostal },
+  );
+
+  let geocodePatch: {
+    latitude: number | null;
+    longitude: number | null;
+    geocode_status: string | null;
+    geocode_reason: string | null;
+  } | null = null;
+  if (addressChanged) {
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+    let geocodeStatus: string | null = 'pending';
+    let geocodeReason: string | null = null;
+    try {
+      const patch = await geocodeColumnsForAddress({
+        line1,
+        city: nextCity,
+        state: nextState,
+        postalCode: nextPostal,
+      });
+      latitude = patch.latitude;
+      longitude = patch.longitude;
+      geocodeStatus = patch.geocode_status;
+      geocodeReason = patch.geocode_reason;
+    } catch (error) {
+      console.error(
+        '[routing] start location update geocode failed:',
+        error instanceof Error ? error.message : 'unknown',
+      );
+    }
+    geocodePatch = {
+      latitude,
+      longitude,
+      geocode_status: geocodeStatus,
+      geocode_reason: geocodeReason,
+    };
+  }
+
+  const { data: saved, error } = await gate.admin
+    .from('tenant_route_locations')
+    .update({
+      label,
+      address_line1: line1,
+      city: nextCity,
+      state: nextState,
+      postal_code: nextPostal,
+      ...(geocodePatch ?? {}),
+    })
+    .eq('tenant_id', gate.tenantId)
+    .eq('id', locationId)
+    .select('id');
+  if (error) {
+    if (isMissingRelationError(error)) return { error: 'Start locations are not available yet.' };
+    if (error.code === '23505') return { error: 'That name is already used.' };
+    return { error: 'Could not update the place.' };
+  }
+  if (!saved || saved.length === 0) return { error: 'That place is not on this workspace.' };
+
+  revalidatePath('/schedule', 'page');
+  revalidatePath('/schedule/starts', 'page');
+  revalidatePath('/schedule/map', 'page');
+  return { success: 'Start location updated.' };
 }
 
 export async function saveCleanerBaseAction(

@@ -1,11 +1,12 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
   deleteRouteLocationAction,
   saveCleanerBaseAction,
   saveRouteLocationAction,
+  updateRouteLocationAction,
   type RouteStartState,
 } from './actions';
 import styles from '../stop-order.module.scss';
@@ -27,6 +28,11 @@ export type RouteStartPlace = {
   id: string;
   label: string;
   located: boolean;
+  addressLine: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  postalCode: string;
 };
 
 export function RouteStartsEditor({
@@ -47,6 +53,11 @@ export function RouteStartsEditor({
     deleteRouteLocationAction,
     initial,
   );
+  const [updateState, updatePlace, updatePending] = useActionState(
+    updateRouteLocationAction,
+    initial,
+  );
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
     <>
@@ -60,8 +71,76 @@ export function RouteStartsEditor({
           <ul className={styles.list} aria-label="Start locations">
             {places.map((place) => (
               <li key={place.id}>
-                {place.label}
-                {place.located ? '' : ' · No map point yet'}
+                <p className={styles.meta}>{place.label}</p>
+                <p className={styles.meta}>{place.addressLine}</p>
+                {place.located ? null : <p className={styles.meta}>No map point yet</p>}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    setEditingId((current) => (current === place.id ? null : place.id))
+                  }
+                >
+                  {editingId === place.id ? `Close ${place.label}` : `Edit ${place.label}`}
+                </Button>
+                {editingId === place.id ? (
+                  <form action={updatePlace}>
+                    <input type="hidden" name="tenant_slug" value={tenantSlug} />
+                    <input type="hidden" name="location_id" value={place.id} />
+                    <label className={styles.meta}>
+                      Location name
+                      <input
+                        name="label"
+                        required
+                        maxLength={80}
+                        aria-label={`Name for ${place.label}`}
+                        defaultValue={place.label}
+                      />
+                    </label>
+                    <label className={styles.meta}>
+                      Street
+                      <input
+                        name="address_line1"
+                        required
+                        maxLength={200}
+                        aria-label={`Street for ${place.label}`}
+                        defaultValue={place.addressLine1}
+                      />
+                    </label>
+                    <label className={styles.meta}>
+                      City
+                      <input
+                        name="city"
+                        aria-label={`City for ${place.label}`}
+                        defaultValue={place.city}
+                      />
+                    </label>
+                    <label className={styles.meta}>
+                      State
+                      <input
+                        name="state"
+                        aria-label={`State for ${place.label}`}
+                        maxLength={2}
+                        defaultValue={place.state}
+                      />
+                    </label>
+                    <label className={styles.meta}>
+                      Postal code
+                      <input
+                        name="postal_code"
+                        aria-label={`Postal code for ${place.label}`}
+                        defaultValue={place.postalCode}
+                      />
+                    </label>
+                    {updateState.error ? <p className={styles.error}>{updateState.error}</p> : null}
+                    {updateState.success ? (
+                      <p className={styles.lead}>{updateState.success}</p>
+                    ) : null}
+                    <Button type="submit" variant="primary" disabled={updatePending}>
+                      {updatePending ? 'Saving…' : `Save ${place.label}`}
+                    </Button>
+                  </form>
+                ) : null}
                 <form action={deletePlace}>
                   <input type="hidden" name="tenant_slug" value={tenantSlug} />
                   <input type="hidden" name="location_id" value={place.id} />
