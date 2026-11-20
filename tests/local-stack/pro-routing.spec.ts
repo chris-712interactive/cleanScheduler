@@ -42,8 +42,14 @@ async function signIn(page: Page, origin: string, email: string) {
   await expect(page).not.toHaveURL(/\/sign-in/, { timeout: 30_000 });
 }
 
+function mainRegion(page: Page, name: string) {
+  // A route swap can leave a second copy of the page in the document.
+  // Scope to #main and take one region so the label stays a single match.
+  return page.locator('#main').getByRole('region', { name, exact: true }).first();
+}
+
 async function expectUpgrade(page: Page, heading: string) {
-  const region = page.getByRole('region', { name: heading, exact: true });
+  const region = mainRegion(page, heading);
   await expect(region).toBeVisible();
   await expect(region).toContainText('included in the Pro plan');
   await expect(region).not.toContainText(/add-on/i);
@@ -55,47 +61,63 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await signIn(page, proOrigin, accounts.pro.owner.email);
   const response = await page.goto(`${proOrigin}/schedule?view=day&date=${day}`);
   expect(response?.status() ?? 500).toBeLessThan(500);
-  await expect(page.getByRole('heading', { name: 'Re-optimize', exact: true })).toBeVisible();
+  const reoptimize = mainRegion(page, 'Re-optimize');
+  await expect(reoptimize.getByRole('heading', { name: 'Re-optimize', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Apply re-optimize', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Re-optimize', exact: true }).click();
-  await expect(page.getByRole('list', { name: 'Re-optimize changes' })).toContainText(
+  await reoptimize.getByRole('button', { name: 'Re-optimize', exact: true }).click();
+  await expect(reoptimize.getByRole('list', { name: 'Re-optimize changes' })).toContainText(
     'Pro locked stays fixed',
   );
-  await page.getByRole('button', { name: 'Apply re-optimize', exact: true }).click();
-  await expect(page.getByText('Re-optimize saved.')).toBeVisible();
+  await reoptimize.getByRole('button', { name: 'Apply re-optimize', exact: true }).click();
+  await expect(reoptimize.getByText('Re-optimize saved.', { exact: true })).toBeVisible();
   for (const text of otherTenant) {
     await expect(page.getByText(text)).toHaveCount(0);
   }
   await shot(page, 'pro-reoptimize');
 
   await page.goto(`${proOrigin}/schedule/starts`);
-  await expect(page.getByRole('heading', { level: 1, name: /Start locations/ })).toBeVisible();
-  await expect(page.getByText('Home: 9 Hidden Lane, Asheville, NC', { exact: true })).toBeVisible();
-  await expect(page.getByText('Home: 1 Office Home, Asheville, NC', { exact: true })).toBeVisible();
-  await page.getByLabel('Location name').fill('South shed');
-  await page.getByLabel('Street').fill('12 Shed Road');
-  await page.getByLabel('City').fill('Asheville');
-  await page.getByLabel('State').fill('NC');
-  await page.getByLabel('Postal code').fill('28801');
-  await page.getByRole('button', { name: 'Save start location', exact: true }).click();
-  await expect(page.getByText('Start location saved.')).toBeVisible();
+  const starts = page.locator('#main');
+  await expect(
+    starts.getByRole('heading', { level: 1, name: /Start locations/ }).first(),
+  ).toBeVisible();
+  await expect(
+    starts.getByText('Home: 9 Hidden Lane, Asheville, NC', { exact: true }).first(),
+  ).toBeVisible();
+  await expect(
+    starts.getByText('Home: 1 Office Home, Asheville, NC', { exact: true }).first(),
+  ).toBeVisible();
+  const placeForm = starts.locator('form').filter({ hasText: 'Location name' }).first();
+  await placeForm.getByLabel('Location name').fill('South shed');
+  await placeForm.getByLabel('Street').fill('12 Shed Road');
+  await placeForm.getByLabel('City').fill('Asheville');
+  await placeForm.getByLabel('State').fill('NC');
+  await placeForm.getByLabel('Postal code').fill('28801');
+  await placeForm.getByRole('button', { name: 'Save start location', exact: true }).click();
+  await expect(placeForm.getByText('Start location saved.', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('list', { name: 'Start locations' })).toContainText('South shed');
-  await page.getByLabel('Start for Sam Route').selectOption({ label: 'South shed' });
-  await page.getByRole('button', { name: 'Save start for Sam Route', exact: true }).click();
-  await expect(page.getByText('Saved the default start.')).toBeVisible();
+  const savedStarts = page.locator('#main');
+  await expect(
+    savedStarts.getByRole('list', { name: 'Start locations', exact: true }).first(),
+  ).toContainText('South shed');
+  const samForm = savedStarts.locator('form').filter({ hasText: 'Sam Route' }).first();
+  await samForm.getByLabel('Start for Sam Route').selectOption({ label: 'South shed' });
+  await samForm.getByRole('button', { name: 'Save start for Sam Route', exact: true }).click();
+  await expect(
+    savedStarts.getByText('Saved the default start.', { exact: true }).first(),
+  ).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel('Start for Sam Route').locator('option:checked')).toHaveText(
+  const savedSam = page.locator('#main').locator('form').filter({ hasText: 'Sam Route' }).first();
+  await expect(savedSam.getByLabel('Start for Sam Route').locator('option:checked')).toHaveText(
     'South shed',
   );
-  await expect(page.getByLabel('End for Sam Route').locator('option:checked')).toHaveText(
+  await expect(savedSam.getByLabel('End for Sam Route').locator('option:checked')).toHaveText(
     'No return',
   );
   await expect(
-    page.getByText('Saved default start for Sam Route: South shed', { exact: true }),
+    savedSam.getByText('Saved default start for Sam Route: South shed', { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText('Saved default end for Sam Route: No return', { exact: true }),
+    savedSam.getByText('Saved default end for Sam Route: No return', { exact: true }),
   ).toBeVisible();
   for (const text of otherTenant) {
     await expect(page.getByText(text)).toHaveCount(0);
@@ -103,14 +125,14 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await shot(page, 'pro-start-locations');
 
   await page.goto(`${proOrigin}/schedule/drive-time`);
-  await expect(page.getByRole('heading', { level: 1, name: /Drive time/ })).toBeVisible();
-  const row = page.getByRole('row', { name: /Sam Route/ });
+  const drive = page.locator('#main');
+  await expect(drive.getByRole('heading', { level: 1, name: /Drive time/ }).first()).toBeVisible();
+  const driveRows = mainRegion(page, 'By cleaner and day');
+  const row = driveRows.getByRole('row', { name: /Sam Route/ });
   await expect(row).toContainText('straight-line estimate');
   await expect(row).not.toContainText('Engine drive time');
   await expect(page.getByText('Parker Owner')).toHaveCount(0);
-  await expect(page.getByRole('region', { name: 'By cleaner and day' })).toContainText(
-    'This is not driving miles.',
-  );
+  await expect(driveRows).toContainText('This is not driving miles.');
   await shot(page, 'pro-drive-time');
   const csv = await page.request.get(
     `${proOrigin}/schedule/drive-time/export?from=2020-01-01&to=2035-01-01`,
