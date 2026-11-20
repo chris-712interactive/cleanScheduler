@@ -39,7 +39,12 @@ function splitStops(stops: RouteStopInput[]): {
   return { routed, unrouted };
 }
 
-function pathMiles(ids: string[], points: Map<string, LatLng>, start: LatLng | null): number {
+function pathMiles(
+  ids: string[],
+  points: Map<string, LatLng>,
+  start: LatLng | null,
+  end: LatLng | null,
+): number {
   if (ids.length === 0) return 0;
   let total = 0;
   let cursor = start;
@@ -49,6 +54,7 @@ function pathMiles(ids: string[], points: Map<string, LatLng>, start: LatLng | n
     if (cursor) total += haversineMiles(cursor, next);
     cursor = next;
   }
+  if (end && cursor) total += haversineMiles(cursor, end);
   return total;
 }
 
@@ -117,12 +123,13 @@ function twoOpt(
   points: Map<string, LatLng>,
   lockedAt: Map<string, number | null>,
   start: LatLng,
+  end: LatLng | null,
 ): string[] {
   let current = order.slice();
   const limit = Math.max(1, current.length * current.length);
   for (let pass = 0; pass < limit; pass += 1) {
     let best = current;
-    let bestMiles = pathMiles(current, points, start);
+    let bestMiles = pathMiles(current, points, start, end);
     let improved = false;
     for (let i = 0; i < current.length - 1; i += 1) {
       for (let j = i + 1; j < current.length; j += 1) {
@@ -130,7 +137,7 @@ function twoOpt(
         const slice = next.slice(i, j + 1).reverse();
         next.splice(i, j - i + 1, ...slice);
         if (!lockedSequenceOk(next, lockedAt)) continue;
-        const miles = pathMiles(next, points, start);
+        const miles = pathMiles(next, points, start, end);
         if (miles < bestMiles - TIE_MILES) {
           best = next;
           bestMiles = miles;
@@ -150,17 +157,18 @@ export function optimizeHaversine(request: RouteOptimizeRequest): RouteOptimizeR
   const points = new Map(routed.map((stop) => [stop.id, stop.point]));
   const lockedAt = new Map(routed.map((stop) => [stop.id, stop.lockedAt]));
   const start = usablePoint(request.start) ?? routed[0]?.point ?? null;
+  const end = usablePoint(request.end);
   const beforeIds = routed.map((stop) => stop.id);
   let orderedIds = beforeIds;
   if (start && routed.length > 1) {
     const seeded = nearestNeighbor(routed, start);
-    orderedIds = twoOpt(seeded, points, lockedAt, start);
+    orderedIds = twoOpt(seeded, points, lockedAt, start, end);
   }
   return {
     orderedIds,
     unrouted,
-    estimatedMilesBefore: pathMiles(beforeIds, points, start),
-    estimatedMilesAfter: pathMiles(orderedIds, points, start),
+    estimatedMilesBefore: pathMiles(beforeIds, points, start, end),
+    estimatedMilesAfter: pathMiles(orderedIds, points, start, end),
     estimateKind: 'straight-line',
     driveSecondsBefore: null,
     driveSecondsAfter: null,
@@ -181,7 +189,8 @@ export function straightLineMiles(request: RouteOptimizeRequest, ids: string[]):
   const { routed } = splitStops(request.stops);
   const points = new Map(routed.map((stop) => [stop.id, stop.point]));
   const start = usablePoint(request.start) ?? routed[0]?.point ?? null;
-  return pathMiles(ids, points, start);
+  const end = usablePoint(request.end);
+  return pathMiles(ids, points, start, end);
 }
 
 export function formatStraightLineMiles(miles: number): string {

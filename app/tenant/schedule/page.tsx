@@ -28,7 +28,10 @@ import { TenantScheduleClient } from './TenantScheduleClient';
 import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { DaySchedulingSuggestions } from './DaySchedulingSuggestions';
+import { loadSavedRouteFingerprint } from '@/lib/routing/appliedRoutes';
+import { buildReoptimizeOffer } from '@/lib/routing/reoptimize';
 import { DispatchPanel } from './DispatchPanel';
+import { ReoptimizePanel } from './ReoptimizePanel';
 import { StopOrderPanel } from './StopOrderPanel';
 import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
 import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
@@ -205,6 +208,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
 
   const officeCanRoute = canApplyStopOrder(membership.role);
   const dispatchEnabled = isFeatureEnabled(tier, 'multiCleanerDispatch');
+  const reoptimizeEnabled = isFeatureEnabled(tier, 'routeReoptimization');
   const dispatchPlan =
     officeCanRoute && dispatchEnabled && tab === 'schedule' && view === 'day'
       ? await loadDispatchPlan({
@@ -221,6 +225,29 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
         : employeeFilter !== 'all'
           ? employeeFilter
           : null
+      : null;
+  const savedRouteFingerprint =
+    officeCanRoute && reoptimizeEnabled && tab === 'schedule' && view === 'day'
+      ? await loadSavedRouteFingerprint(admin, membership.tenantId, dateKey)
+      : null;
+  const reoptimizeOffer =
+    reoptimizeEnabled && dispatchPlan
+      ? buildReoptimizeOffer({
+          dateKey,
+          fingerprint: dispatchPlan.fingerprint,
+          changeFingerprint: dispatchPlan.changeFingerprint,
+          savedFingerprint: savedRouteFingerprint,
+          hasRouteSequence: dispatchPlan.snapshot.some((row) => row.routeSequence != null),
+          plan: dispatchPlan.plan,
+          snapshot: dispatchPlan.snapshot,
+          fixedVisitIds: dispatchPlan.fixedVisitIds,
+          titles: new Map(
+            [
+              ...dispatchPlan.cleaners.flatMap((cleaner) => cleaner.stops),
+              ...dispatchPlan.unassigned,
+            ].map((stop) => [stop.id, stop.title]),
+          ),
+        })
       : null;
   const selectedCleaner = employeeOptions.find((option) => option.id === selectedCleanerId);
   const stopOrder =
@@ -268,6 +295,12 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
               </Button>
               <Button as="a" href={`/schedule/map?date=${dateKey}`} variant="secondary">
                 Day map
+              </Button>
+              <Button as="a" href="/schedule/starts" variant="secondary">
+                Start locations
+              </Button>
+              <Button as="a" href="/schedule/drive-time" variant="secondary">
+                Drive time
               </Button>
               <Button as="a" href="/schedule/new?purpose=consultation" variant="secondary">
                 Schedule consultation
@@ -333,6 +366,14 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           tenantSlug={membership.tenantSlug}
           proposal={dispatchEnabled ? dispatchPlan : null}
           upgradeMessage={dispatchEnabled ? null : featureUpgradeMessage('multiCleanerDispatch')}
+        />
+      ) : null}
+
+      {officeCanRoute && tab === 'schedule' && view === 'day' ? (
+        <ReoptimizePanel
+          tenantSlug={membership.tenantSlug}
+          offer={reoptimizeOffer}
+          upgradeMessage={reoptimizeEnabled ? null : featureUpgradeMessage('routeReoptimization')}
         />
       ) : null}
 

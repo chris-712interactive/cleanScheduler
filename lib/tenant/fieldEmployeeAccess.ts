@@ -12,6 +12,8 @@ const FIELD_EMPLOYEE_SCHEDULE_ADMIN_PREFIXES = [
   '/schedule/time-off-requests',
   '/schedule/hours-requests',
   '/schedule/map',
+  '/schedule/starts',
+  '/schedule/drive-time',
 ];
 
 export function isFieldEmployeeRole(role: TenantRole): boolean {

@@ -208,7 +208,7 @@ async function seedTenant(admin, workspace, members) {
       {
         tenant_id: workspace.tenantId,
         status: 'active',
-        platform_plan: 'business',
+        platform_plan: workspace.platformPlan ?? 'business',
         billing_interval: 'month',
       },
       { onConflict: 'tenant_id' },
@@ -386,6 +386,61 @@ async function seedVisits(admin, workspace, userIds) {
   return ids;
 }
 
+function todayKey(timeZone) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+async function seedRoutingExtras(admin, workspace, userIds) {
+  const extras = workspace.routing;
+  if (!extras) return;
+  const day = todayKey(accounts.timeZone);
+  for (const home of extras.homes ?? []) {
+    const userId = userIds[workspace[home.member]?.email];
+    if (!userId) throw new Error(`No member for home ${home.member} on ${workspace.slug}.`);
+    await must(
+      admin.from('tenant_member_scheduling_profiles').upsert(
+        {
+          tenant_id: workspace.tenantId,
+          user_id: userId,
+          home_address_line1: home.line1,
+          home_city: home.city,
+          home_state: home.state,
+          home_postal_code: home.postal,
+          home_latitude: home.latitude,
+          home_longitude: home.longitude,
+        },
+        { onConflict: 'tenant_id,user_id' },
+      ),
+      `home ${home.line1}`,
+    );
+  }
+  for (const row of extras.applied ?? []) {
+    const userId = userIds[workspace[row.member]?.email];
+    if (!userId) throw new Error(`No member for applied route ${row.member} on ${workspace.slug}.`);
+    await must(
+      admin.from('tenant_applied_route_days').upsert(
+        {
+          tenant_id: workspace.tenantId,
+          service_date: day,
+          user_id: userId,
+          estimate_kind: row.kind,
+          miles: row.miles,
+          drive_seconds: row.kind === 'drive' ? row.driveSeconds : null,
+          stop_count: row.stops,
+          day_fingerprint: row.fingerprint,
+        },
+        { onConflict: 'tenant_id,service_date,user_id' },
+      ),
+      `applied route ${workspace.slug}`,
+    );
+  }
+}
+
 export async function seedLocalStack(env = process.env) {
   assertLocalStackEnv(env);
   const url = env.NEXT_PUBLIC_SUPABASE_URL.trim();
@@ -419,9 +474,22 @@ export async function seedLocalStack(env = process.env) {
   const commercialUsers = await seedTenant(admin, accounts.commercial, [accounts.commercial.owner]);
   await seedCustomers(admin, accounts.commercial, null);
   const commercialVisitIds = await seedVisits(admin, accounts.commercial, commercialUsers);
+  await seedRoutingExtras(admin, accounts.commercial, commercialUsers);
+
+  const proUsers = await seedTenant(admin, accounts.pro, [
+    accounts.pro.owner,
+    accounts.pro.cleaner,
+  ]);
+  await seedCustomers(admin, accounts.pro, null);
+  const proVisitIds = await seedVisits(admin, accounts.pro, proUsers);
+  await seedDispatchHours(admin, accounts.pro, proUsers, [
+    accounts.pro.owner,
+    accounts.pro.cleaner,
+  ]);
+  await seedRoutingExtras(admin, accounts.pro, proUsers);
 
   const today = new Date().toISOString().slice(0, 10);
-  const expectedIds = [...residentialVisitIds, ...commercialVisitIds];
+  const expectedIds = [...residentialVisitIds, ...commercialVisitIds, ...proVisitIds];
   const visits = await must(
     admin.from('tenant_scheduled_visits').select('id, starts_at, tenant_id').in('id', expectedIds),
     'read visits',
@@ -430,7 +498,7 @@ export async function seedLocalStack(env = process.env) {
     throw new Error(`Expected ${expectedIds.length} QA visits, found ${visits.length}.`);
   }
   console.log(
-    `local-stack seed ok tenants=2 visits=${visits.length} day=${today} emails=@example.test`,
+    `local-stack seed ok tenants=3 visits=${visits.length} day=${today} emails=@example.test`,
   );
 }
 

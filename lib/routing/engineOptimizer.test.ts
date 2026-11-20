@@ -284,4 +284,39 @@ describe('valhalla and vroom route optimizer', () => {
     expect(logs.some((entry) => entry.includes('reason=invalid-config'))).toBe(true);
     expect(logs.join('\n')).not.toContain(TOKEN);
   });
+
+  it('sends a return point as the vehicle end', async () => {
+    enableEngine();
+    const request: RouteOptimizeRequest = {
+      start: { lat: 0, lng: 0 },
+      end: { lat: 3, lng: 0 },
+      stops: [stop('only', 1, 0)],
+    };
+    let sources: Array<{ lat: number; lon: number }> = [];
+    let vehicle: { start_index: number; end_index?: number } | null = null;
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).endsWith('/valhalla/sources_to_targets')) {
+        const body = JSON.parse(String(init?.body)) as {
+          sources: Array<{ lat: number; lon: number }>;
+        };
+        sources = body.sources;
+        const miles = body.sources.map(() => body.sources.map(() => 1));
+        return jsonResponse(squareMatrix(miles));
+      }
+      const body = JSON.parse(String(init?.body)) as {
+        vehicles: Array<{ start_index: number; end_index?: number }>;
+      };
+      vehicle = body.vehicles[0] ?? null;
+      return jsonResponse({
+        code: 0,
+        unassigned: [],
+        routes: [{ steps: [{ type: 'start' }, { type: 'job', id: 1 }, { type: 'end' }] }],
+      });
+    });
+    const result = await new EngineRouteOptimizer({ fetchImpl }).optimize(request);
+    expect(sources.map((point) => point.lat)).toEqual([0, 1, 3]);
+    expect(vehicle).toEqual({ id: 1, profile: 'auto', start_index: 0, end_index: 2 });
+    expect(result.estimateKind).toBe('drive');
+    expect(result.orderedIds).toEqual(['only']);
+  });
 });

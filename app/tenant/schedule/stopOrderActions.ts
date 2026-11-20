@@ -7,6 +7,7 @@ import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { scheduleVisitsAfterStopOrder } from '@/lib/email/cleanerScheduleChange';
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
 import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
+import { recordAppliedRouteDay } from '@/lib/routing/appliedRoutes';
 import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -133,6 +134,30 @@ export async function applyStopOrderAction(
         noticeError instanceof Error ? noticeError.message : 'unknown',
       );
     }
+  }
+
+  const timeZone = tenantRow?.timezone?.trim() || DEFAULT_TENANT_TIMEZONE;
+  try {
+    await recordAppliedRouteDay(admin, {
+      tenantId: membership.tenantId,
+      serviceDate: dateKey,
+      timeZone,
+      replace: false,
+      stats: [
+        {
+          userId: cleanerUserId,
+          estimateKind: plan.estimateKind,
+          miles: plan.estimatedMilesAfter,
+          driveSeconds: plan.driveSecondsAfter,
+          stopCount: plan.ordered.length,
+        },
+      ],
+    });
+  } catch (saveError) {
+    console.error(
+      '[routing] drive time was not saved:',
+      saveError instanceof Error ? saveError.message : 'unknown',
+    );
   }
 
   revalidatePath('/schedule', 'page');

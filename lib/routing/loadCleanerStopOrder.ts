@@ -4,7 +4,9 @@ import { visitTouchesCalendarDayInTimeZone } from '@/lib/datetime/tenantCalendar
 import { dayMapMissingReasonLabel, describeDayMapVisit } from '@/lib/schedule/dayMap';
 import { loadDayMapRows } from '@/lib/schedule/loadDayMap';
 import { createRouteOptimizer } from '@/lib/routing/createRouteOptimizer';
+import { usablePoint } from '@/lib/routing/engineOptimizer';
 import { formatStraightLineMiles } from '@/lib/routing/haversineOptimizer';
+import { loadRouteBaseRows, resolveCleanerBase } from '@/lib/routing/routeBases';
 import { driveMetricText } from '@/lib/routing/panelCopy';
 import { hasFixedArrivalWindow, isVisitTimeLocked } from '@/lib/routing/locks';
 import type { CleanerStopOrderView, RouteStopInput } from '@/lib/routing/types';
@@ -29,7 +31,7 @@ export async function loadCleanerStopOrder(params: {
   const cleanerUserId = params.cleanerUserId.trim();
   if (!tenantId || !UUID_RE.test(cleanerUserId)) return null;
 
-  const [loaded, tenantResult, preferenceResult] = await Promise.all([
+  const [loaded, tenantResult, preferenceResult, routeBases, homeResult] = await Promise.all([
     loadDayMapRows({
       supabase: params.supabase,
       tenantId,
@@ -40,10 +42,18 @@ export async function loadCleanerStopOrder(params: {
       .from('tenant_customer_scheduling_preferences')
       .select('customer_id, arrival_start, arrival_end')
       .eq('tenant_id', tenantId),
+    loadRouteBaseRows(params.supabase, tenantId),
+    params.supabase
+      .from('tenant_member_scheduling_profiles')
+      .select('user_id, home_latitude, home_longitude')
+      .eq('tenant_id', tenantId)
+      .eq('user_id', cleanerUserId)
+      .maybeSingle(),
   ]);
 
   if (tenantResult.error) throw new Error(tenantResult.error.message);
   if (preferenceResult.error) throw new Error(preferenceResult.error.message);
+  if (homeResult.error) throw new Error(homeResult.error.message);
 
   const preferences = new Map<string, PreferenceRow>();
   for (const row of (preferenceResult.data ?? []) as PreferenceRow[]) {
@@ -60,6 +70,19 @@ export async function loadCleanerStopOrder(params: {
     Number.isFinite(officeLng)
       ? { lat: officeLat, lng: officeLng }
       : null;
+  const home =
+    homeResult.data?.home_latitude != null && homeResult.data.home_longitude != null
+      ? usablePoint({ lat: homeResult.data.home_latitude, lng: homeResult.data.home_longitude })
+      : null;
+  const base = resolveCleanerBase({
+    userId: cleanerUserId,
+    serviceDate: params.dateKey,
+    bases: routeBases?.bases ?? [],
+    office,
+    home,
+    locations: routeBases?.locations ?? [],
+  });
+  const start = base.start ?? office;
 
   const candidates = rows
     .filter((row) => row.tenant_id === tenantId)
@@ -123,7 +146,8 @@ export async function loadCleanerStopOrder(params: {
 
   const optimized = await createRouteOptimizer().optimize({
     stops,
-    start: office,
+    start,
+    end: base.end,
   });
   const line = (id: string) => {
     const detail = details.get(id);
@@ -149,7 +173,7 @@ export async function loadCleanerStopOrder(params: {
     cleanerUserId,
     cleanerName: params.cleanerName.trim() || 'Cleaner',
     dateKey: params.dateKey,
-    startLabel: office ? 'Office' : 'First stop',
+    startLabel: start ? base.startLabel : 'First stop',
     estimateKind: optimized.estimateKind,
     estimatedMilesBefore: optimized.estimatedMilesBefore,
     estimatedMilesAfter: optimized.estimatedMilesAfter,
@@ -163,6 +187,7 @@ export async function loadCleanerStopOrder(params: {
       optimized.estimateKind === 'drive' && optimized.driveSecondsAfter != null
         ? driveMetricText(optimized.driveSecondsAfter, optimized.estimatedMilesAfter)
         : null,
+    driveSecondsAfter: optimized.estimateKind === 'drive' ? optimized.driveSecondsAfter : null,
     ordered,
     unrouted,
     saved,

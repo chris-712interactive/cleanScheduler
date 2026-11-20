@@ -223,6 +223,135 @@
         "geocode": "ok"
       }
     },
-    "visitId": "22222222-2222-4222-8222-222222222401"
+    "visitId": "22222222-2222-4222-8222-222222222401",
+    "platformPlan": "starter",
+    "routing": {
+      "applied": [
+        {
+          "member": "owner",
+          "kind": "straight-line",
+          "miles": 9,
+          "stops": 1,
+          "fingerprint": "commercial-stale"
+        }
+      ]
+    }
+  },
+  "pro": {
+    "slug": "qa-pro",
+    "name": "QA Pro Cleaning",
+    "segment": "residential",
+    "platformPlan": "pro",
+    "tenantId": "33333333-3333-4333-8333-333333333333",
+    "latitude": 35.55,
+    "longitude": -82.55,
+    "owner": {
+      "userId": "33333333-3333-4333-8333-333333333510",
+      "email": "owner.pro@example.test",
+      "role": "owner",
+      "appRole": "employee",
+      "displayName": "Nora Pro"
+    },
+    "cleaner": {
+      "userId": "33333333-3333-4333-8333-333333333501",
+      "email": "cleaner.pro@example.test",
+      "role": "employee",
+      "appRole": "employee",
+      "displayName": "Sam Route"
+    },
+    "customers": {
+      "lane": {
+        "id": "33333333-3333-4333-8333-333333333201",
+        "identityId": "33333333-3333-4333-8333-333333333101",
+        "firstName": "Lane",
+        "lastName": "Sample",
+        "email": "lane.pro@example.test",
+        "portal": false
+      }
+    },
+    "properties": {
+      "locked": {
+        "id": "33333333-3333-4333-8333-333333333301",
+        "customer": "lane",
+        "label": "Lane locked",
+        "kind": "residential",
+        "line1": "2 Locked Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": true,
+        "geocode": "ok",
+        "latitude": 35.6,
+        "longitude": -82.4,
+        "schedulingOverride": {
+          "arrivalStart": "09:00",
+          "arrivalEnd": "10:00"
+        }
+      },
+      "open": {
+        "id": "33333333-3333-4333-8333-333333333302",
+        "customer": "lane",
+        "label": "Lane open",
+        "kind": "residential",
+        "line1": "4 Open Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": false,
+        "geocode": "ok",
+        "latitude": 35.5,
+        "longitude": -82.8
+      }
+    },
+    "visitId": "33333333-3333-4333-8333-333333333401",
+    "visits": [
+      {
+        "id": "33333333-3333-4333-8333-333333333401",
+        "property": "locked",
+        "customer": "lane",
+        "assignee": "cleaner",
+        "hour": 9,
+        "title": "Pro locked"
+      },
+      {
+        "id": "33333333-3333-4333-8333-333333333402",
+        "property": "open",
+        "customer": "lane",
+        "assignee": "cleaner",
+        "hour": 13,
+        "title": "Pro west"
+      }
+    ],
+    "routing": {
+      "homes": [
+        {
+          "member": "owner",
+          "line1": "1 Office Home",
+          "city": "Asheville",
+          "state": "NC",
+          "postal": "28801",
+          "latitude": 35.56,
+          "longitude": -82.54
+        },
+        {
+          "member": "cleaner",
+          "line1": "9 Hidden Lane",
+          "city": "Asheville",
+          "state": "NC",
+          "postal": "28801",
+          "latitude": 35.48,
+          "longitude": -82.62
+        }
+      ],
+      "applied": [
+        {
+          "member": "cleaner",
+          "kind": "straight-line",
+          "miles": 4.2,
+          "stops": 2,
+          "fingerprint": "seed-stale"
+        }
+      ]
+    }
   }
 }

@@ -10,7 +10,7 @@ Owner-approved assignment of one day's visits across cleaners. Product copy is `
 - `0133` is not applied to shared dev or production by this change. Local-stack CI applies it only on the disposable database.
 - Apply emails affected cleaners from the server action after the RPC succeeds. The SQL function still does not send mail. Do not call the visit webhook from this action. SMS stays off. See `docs/agents/cleaner-schedule-email.md`.
 - Gate is `isFeatureEnabled(plan, 'multiCleanerDispatch')`: Business and Pro on, Starter and trial off. The office sees the upgrade sentence. Field employees see nothing. Full billing UX beyond this flag is still T6.
-- Re-optimize, extra start locations, and drive-time reports stay off. Every vehicle starts at the business coordinates when those exist.
+- Re-optimize, extra start locations, and drive-time reports are Pro. See `docs/agents/pro-routing.md`. A cleaner with no saved start still begins at the business coordinates.
 
 ## Constraints already used
 
