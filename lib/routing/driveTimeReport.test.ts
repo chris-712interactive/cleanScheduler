@@ -42,6 +42,12 @@ describe('drive time report', () => {
     expect(report.driveMiles).toBe(9.2);
     expect(report.driveSeconds).toBe(2100);
     expect(report.stopCount).toBe(6);
+    expect(report.driveStopCount).toBe(4);
+    expect(report.straightLineStopCount).toBe(2);
+    expect(report.byCleaner.find((row) => row.cleanerId === 'sam')).toMatchObject({
+      driveStopCount: 1,
+      straightLineStopCount: 2,
+    });
     expect(report.byCleaner.find((row) => row.cleanerId === 'sam')).toMatchObject({
       straightLineMiles: 4.2,
       driveMiles: 1.2,
@@ -64,5 +70,84 @@ describe('drive time report', () => {
       .find((line) => line.includes('Sam Route') && line.includes('4.2'));
     expect(estimateLine).toContain('Straight-line estimate');
     expect(estimateLine).not.toContain('Engine drive time');
+    expect(csv).toContain('Total,Engine drive time,4,');
+    expect(csv).toContain('Total,Straight-line estimate,2,');
+  });
+
+  it('turns formula cells into text and does not invent zero totals for an empty range', () => {
+    const hostile = aggregateDriveTimeReport([
+      {
+        serviceDate: '2026-11-20',
+        cleanerId: 'sam',
+        cleanerName: '=HYPERLINK("http://evil.example","click")',
+        estimateKind: 'straight-line',
+        miles: 1,
+        driveSeconds: null,
+        stopCount: 1,
+      },
+      {
+        serviceDate: '2026-11-20',
+        cleanerId: 'plus',
+        cleanerName: '+1+1',
+        estimateKind: 'drive',
+        miles: 2,
+        driveSeconds: 60,
+        stopCount: 1,
+      },
+      {
+        serviceDate: '2026-11-20',
+        cleanerId: 'minus',
+        cleanerName: '-1',
+        estimateKind: 'drive',
+        miles: 1,
+        driveSeconds: 60,
+        stopCount: 1,
+      },
+      {
+        serviceDate: '2026-11-20',
+        cleanerId: 'at',
+        cleanerName: '@cmd',
+        estimateKind: 'drive',
+        miles: 1,
+        driveSeconds: 60,
+        stopCount: 1,
+      },
+      {
+        serviceDate: '2026-11-20',
+        cleanerId: 'tab',
+        cleanerName: '\tname',
+        estimateKind: 'drive',
+        miles: 1,
+        driveSeconds: 60,
+        stopCount: 1,
+      },
+      {
+        serviceDate: '2026-11-20',
+        cleanerId: 'cr',
+        cleanerName: '\rname',
+        estimateKind: 'drive',
+        miles: 1,
+        driveSeconds: 60,
+        stopCount: 1,
+      },
+    ]);
+    const csv = driveTimeReportCsv(hostile);
+    expect(csv).toContain(`"'=HYPERLINK(""http://evil.example"",""click"")"`);
+    expect(csv).toContain(`"'+1+1"`);
+    expect(csv).toContain(`"'-1"`);
+    expect(csv).toContain(`"'@cmd"`);
+    expect(csv).toContain(`"'\tname"`);
+    expect(csv).toContain(`"'\rname"`);
+    expect(csv.split('\n').some((line) => line.startsWith('=') || line.startsWith('+'))).toBe(
+      false,
+    );
+
+    const empty = driveTimeReportCsv(aggregateDriveTimeReport([]));
+    expect(empty).toBe(
+      'Date,Cleaner,Stops,Drive minutes,Miles,Distance source\nNo applied routes in this range\n',
+    );
+    expect(empty).not.toContain('0.0');
+    expect(aggregateDriveTimeReport([]).driveStopCount).toBe(0);
+    expect(aggregateDriveTimeReport([]).straightLineStopCount).toBe(0);
   });
 });

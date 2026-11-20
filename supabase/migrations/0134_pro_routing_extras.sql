@@ -66,9 +66,9 @@ create table public.tenant_cleaner_route_bases (
   user_id uuid not null references auth.users (id) on delete cascade,
   service_date date,
   start_kind text not null default 'office',
-  start_location_id uuid references public.tenant_route_locations (id) on delete set null,
+  start_location_id uuid references public.tenant_route_locations (id),
   end_kind text not null default 'none',
-  end_location_id uuid references public.tenant_route_locations (id) on delete set null,
+  end_location_id uuid references public.tenant_route_locations (id),
   updated_at timestamptz not null default now(),
   constraint tenant_cleaner_route_bases_start_kind check (start_kind in ('office', 'home', 'location')),
   constraint tenant_cleaner_route_bases_end_kind check (
@@ -97,6 +97,46 @@ create index tenant_cleaner_route_bases_tenant_idx
 
 comment on table public.tenant_cleaner_route_bases is
   'Default or one-day start and end for a cleaner. service_date null is the default. Home addresses are not copied here.';
+
+-- Deleting a place cannot leave start_kind or end_kind as location with a null id.
+-- The row falls back to the office start and no return before the place is removed.
+create or replace function public.release_route_location_bases()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.tenant_cleaner_route_bases
+  set
+    start_kind = 'office',
+    start_location_id = null
+  where tenant_id = old.tenant_id
+    and start_location_id = old.id;
+
+  update public.tenant_cleaner_route_bases
+  set
+    end_kind = 'none',
+    end_location_id = null
+  where tenant_id = old.tenant_id
+    and end_location_id = old.id;
+
+  return old;
+end;
+$$;
+
+comment on function public.release_route_location_bases() is
+  'Before a start place is deleted, bases that used it return to the office start and drop the return point.';
+
+revoke all on function public.release_route_location_bases() from public;
+revoke all on function public.release_route_location_bases() from anon;
+grant execute on function public.release_route_location_bases() to authenticated;
+grant execute on function public.release_route_location_bases() to service_role;
+
+drop trigger if exists tenant_route_locations_release_bases on public.tenant_route_locations;
+create trigger tenant_route_locations_release_bases
+before delete on public.tenant_route_locations
+for each row execute procedure public.release_route_location_bases();
 
 create table public.tenant_applied_route_days (
   tenant_id uuid not null references public.tenants (id) on delete cascade,

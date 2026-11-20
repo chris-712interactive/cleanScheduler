@@ -122,6 +122,42 @@ export async function saveRouteLocationAction(
   return { success: 'Start location saved.' };
 }
 
+export async function deleteRouteLocationAction(
+  _prev: RouteStartState,
+  formData: FormData,
+): Promise<RouteStartState> {
+  const slug = String(formData.get('tenant_slug') ?? '')
+    .trim()
+    .toLowerCase();
+  const locationId = String(formData.get('location_id') ?? '').trim();
+  if (!slug || !locationId) return { error: 'Choose a place to delete.' };
+
+  const gate = await officeGate(slug);
+  if ('error' in gate) return { error: gate.error };
+
+  const { data: removed, error } = await gate.admin
+    .from('tenant_route_locations')
+    .delete()
+    .eq('tenant_id', gate.tenantId)
+    .eq('id', locationId)
+    .select('id');
+  if (error) {
+    if (isMissingRelationError(error)) return { error: 'Start locations are not available yet.' };
+    if (error.code === '23514') {
+      return {
+        error: 'That place is still a start or end. Switch those cleaners to the office first.',
+      };
+    }
+    return { error: 'Could not delete the place.' };
+  }
+  if (!removed || removed.length === 0) return { error: 'That place is not on this workspace.' };
+
+  revalidatePath('/schedule', 'page');
+  revalidatePath('/schedule/starts', 'page');
+  revalidatePath('/schedule/map', 'page');
+  return { success: 'Place deleted. Cleaners who used it start at the office.' };
+}
+
 export async function saveCleanerBaseAction(
   _prev: RouteStartState,
   formData: FormData,

@@ -112,43 +112,46 @@ export default async function DriveTimeReportPage({
         {report.rows.length === 0 ? (
           <p className={styles.lead}>No applied routes in this range.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Cleaner</th>
-                <th>Stops</th>
-                <th>Drive minutes</th>
-                <th>Miles</th>
-                <th>Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.rows.map((row) => (
-                <tr key={`${row.serviceDate}-${row.cleanerId}`}>
-                  <td>{row.serviceDate}</td>
-                  <td>{row.cleanerName}</td>
-                  <td>{row.stopCount}</td>
-                  <td>
-                    {row.estimateKind === 'drive' && row.driveSeconds != null
-                      ? minutesLabel(row.driveSeconds)
-                      : '—'}
-                  </td>
-                  <td>{driveTimeMilesLabel(row)}</td>
-                  <td>{driveTimeSourceLabel(row.estimateKind)}</td>
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Cleaner</th>
+                  <th>Stops</th>
+                  <th>Drive minutes</th>
+                  <th>Miles</th>
+                  <th>Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {report.rows.map((row) => (
+                  <tr key={`${row.serviceDate}-${row.cleanerId}`}>
+                    <td>{row.serviceDate}</td>
+                    <td>{row.cleanerName}</td>
+                    <td>{row.stopCount}</td>
+                    <td>
+                      {row.estimateKind === 'drive' && row.driveSeconds != null
+                        ? minutesLabel(row.driveSeconds)
+                        : '—'}
+                    </td>
+                    <td>{driveTimeMilesLabel(row)}</td>
+                    <td>{driveTimeSourceLabel(row.estimateKind)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className={styles.meta}>
+              Engine drive time: {minutesLabel(report.driveSeconds)}, {report.driveMiles.toFixed(1)}{' '}
+              drive mi, {report.driveStopCount} stops.
+            </p>
+            <p className={styles.meta}>
+              Straight-line estimate: {report.straightLineStopCount} stops,{' '}
+              {report.straightLineMiles.toFixed(1)} mi straight-line estimate. This is not driving
+              miles.
+            </p>
+          </>
         )}
-        <p className={styles.meta}>
-          Engine drive time: {minutesLabel(report.driveSeconds)}, {report.driveMiles.toFixed(1)}{' '}
-          drive mi, {report.stopCount} stops in the rows above.
-        </p>
-        <p className={styles.meta}>
-          Straight-line estimate: {report.straightLineMiles.toFixed(1)} mi straight-line estimate.
-          This is not driving miles.
-        </p>
       </section>
     </>
   );

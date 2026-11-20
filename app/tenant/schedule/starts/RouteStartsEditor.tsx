@@ -2,7 +2,12 @@
 
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { saveCleanerBaseAction, saveRouteLocationAction, type RouteStartState } from './actions';
+import {
+  deleteRouteLocationAction,
+  saveCleanerBaseAction,
+  saveRouteLocationAction,
+  type RouteStartState,
+} from './actions';
 import styles from '../stop-order.module.scss';
 
 const initial: RouteStartState = {};
@@ -33,6 +38,10 @@ export function RouteStartsEditor({
     initial,
   );
   const [baseState, saveCleaner, basePending] = useActionState(saveCleanerBaseAction, initial);
+  const [deleteState, deletePlace, deletePending] = useActionState(
+    deleteRouteLocationAction,
+    initial,
+  );
 
   return (
     <>
@@ -48,6 +57,13 @@ export function RouteStartsEditor({
               <li key={place.id}>
                 {place.label}
                 {place.located ? '' : ' · No map point yet'}
+                <form action={deletePlace}>
+                  <input type="hidden" name="tenant_slug" value={tenantSlug} />
+                  <input type="hidden" name="location_id" value={place.id} />
+                  <Button type="submit" variant="secondary" disabled={deletePending}>
+                    {deletePending ? 'Deleting…' : `Delete ${place.label}`}
+                  </Button>
+                </form>
               </li>
             ))}
           </ul>
@@ -76,6 +92,8 @@ export function RouteStartsEditor({
           </label>
           {locationState.error ? <p className={styles.error}>{locationState.error}</p> : null}
           {locationState.success ? <p className={styles.lead}>{locationState.success}</p> : null}
+          {deleteState.error ? <p className={styles.error}>{deleteState.error}</p> : null}
+          {deleteState.success ? <p className={styles.lead}>{deleteState.success}</p> : null}
           <Button type="submit" variant="primary" disabled={locationPending}>
             {locationPending ? 'Saving…' : 'Save start location'}
           </Button>

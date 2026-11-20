@@ -22,7 +22,7 @@ Until the road engine is connected, miles are a **straight-line estimate**. They
 
 Ordering and dispatch use that start and end. Home streets are shown on this page to the office only.
 
-A new place is looked up with the same US address geocoder as service locations. A failed lookup still saves the place, and the route falls back until a map point exists.
+A new place is looked up with the same US address geocoder as service locations. A failed lookup still saves the place, and the route falls back until a map point exists. Deleting a place sends every cleaner who started or ended there back to the office, with no return stop.
 
 ## Drive time
 

@@ -12,6 +12,8 @@ export type DriveTimeCleanerTotal = {
   cleanerId: string;
   cleanerName: string;
   stopCount: number;
+  driveStopCount: number;
+  straightLineStopCount: number;
   driveSeconds: number;
   driveMiles: number;
   straightLineMiles: number;
@@ -20,6 +22,8 @@ export type DriveTimeCleanerTotal = {
 export type DriveTimeDayTotal = {
   serviceDate: string;
   stopCount: number;
+  driveStopCount: number;
+  straightLineStopCount: number;
   driveSeconds: number;
   driveMiles: number;
   straightLineMiles: number;
@@ -32,7 +36,12 @@ export type DriveTimeReport = {
   driveSeconds: number;
   driveMiles: number;
   straightLineMiles: number;
+  /** Every stop, engine and straight-line together. */
   stopCount: number;
+  /** Stops whose miles came from the road engine. */
+  driveStopCount: number;
+  /** Stops whose miles are a straight-line estimate. */
+  straightLineStopCount: number;
 };
 
 function roundMiles(miles: number): number {
@@ -45,6 +54,8 @@ function blankTotal(id: string, name: string): DriveTimeCleanerTotal {
     cleanerId: id,
     cleanerName: name,
     stopCount: 0,
+    driveStopCount: 0,
+    straightLineStopCount: 0,
     driveSeconds: 0,
     driveMiles: 0,
     straightLineMiles: 0,
@@ -65,6 +76,8 @@ export function aggregateDriveTimeReport(rows: readonly DriveTimeStat[]): DriveT
   let driveMiles = 0;
   let straightLineMiles = 0;
   let stopCount = 0;
+  let driveStopCount = 0;
+  let straightLineStopCount = 0;
 
   for (const row of sorted) {
     const miles = roundMiles(row.miles);
@@ -75,6 +88,8 @@ export function aggregateDriveTimeReport(rows: readonly DriveTimeStat[]): DriveT
     const day = days.get(row.serviceDate) ?? {
       serviceDate: row.serviceDate,
       stopCount: 0,
+      driveStopCount: 0,
+      straightLineStopCount: 0,
       driveSeconds: 0,
       driveMiles: 0,
       straightLineMiles: 0,
@@ -84,14 +99,20 @@ export function aggregateDriveTimeReport(rows: readonly DriveTimeStat[]): DriveT
       const seconds = Math.max(0, Math.round(row.driveSeconds));
       driveSeconds += seconds;
       driveMiles = roundMiles(driveMiles + miles);
+      driveStopCount += stops;
       cleaner.driveSeconds += seconds;
       cleaner.driveMiles = roundMiles(cleaner.driveMiles + miles);
+      cleaner.driveStopCount += stops;
       day.driveSeconds += seconds;
       day.driveMiles = roundMiles(day.driveMiles + miles);
+      day.driveStopCount += stops;
     } else {
       straightLineMiles = roundMiles(straightLineMiles + miles);
+      straightLineStopCount += stops;
       cleaner.straightLineMiles = roundMiles(cleaner.straightLineMiles + miles);
+      cleaner.straightLineStopCount += stops;
       day.straightLineMiles = roundMiles(day.straightLineMiles + miles);
+      day.straightLineStopCount += stops;
     }
     cleaners.set(row.cleanerId, cleaner);
     days.set(row.serviceDate, day);
@@ -113,6 +134,8 @@ export function aggregateDriveTimeReport(rows: readonly DriveTimeStat[]): DriveT
     driveMiles,
     straightLineMiles,
     stopCount,
+    driveStopCount,
+    straightLineStopCount,
   };
 }
 
@@ -129,15 +152,23 @@ export function driveTimeMilesLabel(row: {
   return `${miles} mi straight-line estimate`;
 }
 
-function csvCell(value: string): string {
-  if (/[",\n]/.test(value)) return `"${value.replaceAll('"', '""')}"`;
-  return value;
+const CSV_HEADER = 'Date,Cleaner,Stops,Drive minutes,Miles,Distance source';
+
+/** A leading formula character becomes text, then the field is quoted when it needs it. */
+export function csvCell(value: string): string {
+  let text = value;
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  if (/[",\n\r]/.test(text) || text.startsWith("'")) {
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+  return text;
 }
 
 export function driveTimeReportCsv(report: DriveTimeReport): string {
-  const lines = [
-    ['Date', 'Cleaner', 'Stops', 'Drive minutes', 'Miles', 'Distance source'].join(','),
-  ];
+  if (report.rows.length === 0) {
+    return `${CSV_HEADER}\nNo applied routes in this range\n`;
+  }
+  const lines = [CSV_HEADER];
   for (const row of report.rows) {
     const minutes =
       row.estimateKind === 'drive' && row.driveSeconds != null
@@ -158,7 +189,7 @@ export function driveTimeReportCsv(report: DriveTimeReport): string {
     [
       'Total',
       'Engine drive time',
-      '',
+      String(report.driveStopCount),
       String(Math.round(report.driveSeconds / 60)),
       report.driveMiles.toFixed(1),
       'Engine drive time',
@@ -168,7 +199,7 @@ export function driveTimeReportCsv(report: DriveTimeReport): string {
     [
       'Total',
       'Straight-line estimate',
-      '',
+      String(report.straightLineStopCount),
       '',
       report.straightLineMiles.toFixed(1),
       'Straight-line estimate',

@@ -89,11 +89,16 @@ DECLARE
   own_count integer;
   cross_count integer;
   inserted integer;
+  saved_start text;
+  saved_end text;
+  saved_start_place uuid;
+  saved_end_place uuid;
 BEGIN
   IF to_regclass('public.tenant_route_locations') IS NULL
      OR to_regclass('public.tenant_cleaner_route_bases') IS NULL
      OR to_regclass('public.tenant_applied_route_days') IS NULL
-     OR to_regprocedure('public.can_manage_route_office(uuid)') IS NULL THEN
+     OR to_regprocedure('public.can_manage_route_office(uuid)') IS NULL
+     OR to_regprocedure('public.release_route_location_bases()') IS NULL THEN
     RAISE EXCEPTION 'pro routing tables are missing';
   END IF;
 
@@ -185,6 +190,31 @@ BEGIN
   SELECT count(*) INTO own_count FROM public.tenant_applied_route_days WHERE tenant_id = tenant_a;
   IF own_count IS DISTINCT FROM 2 THEN
     RAISE EXCEPTION 'owner should see both drive rows, saw %', own_count;
+  END IF;
+
+  UPDATE public.tenant_cleaner_route_bases
+  SET
+    start_kind = 'location',
+    start_location_id = place_a,
+    end_kind = 'location',
+    end_location_id = place_a
+  WHERE tenant_id = tenant_a
+    AND user_id = employee_id;
+
+  DELETE FROM public.tenant_route_locations WHERE id = place_a;
+
+  SELECT start_kind, end_kind, start_location_id, end_location_id
+    INTO saved_start, saved_end, saved_start_place, saved_end_place
+  FROM public.tenant_cleaner_route_bases
+  WHERE tenant_id = tenant_a
+    AND user_id = employee_id;
+
+  IF saved_start IS DISTINCT FROM 'office'
+     OR saved_end IS DISTINCT FROM 'none'
+     OR saved_start_place IS NOT NULL
+     OR saved_end_place IS NOT NULL THEN
+    RAISE EXCEPTION 'deleting a place should return the base to the office, saw % / %',
+      saved_start, saved_end;
   END IF;
 
   PERFORM set_config('request.jwt.claim.sub', employee_id::text, true);
