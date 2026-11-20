@@ -30,6 +30,11 @@ const CLEANER_COLORS = [
 ] as const;
 
 export const DAY_MAP_UNASSIGNED_COLOR = '#64748b';
+
+/** Same palette as the day-map pins, in first-seen order. */
+export function dayMapCleanerColor(index: number): string {
+  return CLEANER_COLORS[index % CLEANER_COLORS.length] ?? CLEANER_COLORS[0];
+}
 const UNASSIGNED_GROUP_ID = 'unassigned';
 
 /** Degrees (~13 m) so two visits at the same door can both be clicked. */

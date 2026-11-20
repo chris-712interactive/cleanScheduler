@@ -17,7 +17,7 @@ import type {
 export const NO_ROAD_ROUTE_REASON = 'No road route';
 
 const MAX_LEG_SECONDS = 7 * 24 * 60 * 60;
-const METERS_PER_MILE = 1609.344;
+export const METERS_PER_MILE = 1609.344;
 
 type EngineCall = {
   fetchImpl: typeof fetch;
@@ -30,7 +30,7 @@ type RoutedStop = {
   lockedAt: number | null;
 };
 
-class EngineFailure extends Error {
+export class EngineFailure extends Error {
   readonly reason: string;
 
   constructor(reason: string) {
@@ -40,7 +40,7 @@ class EngineFailure extends Error {
   }
 }
 
-function usablePoint(point: LatLng | null | undefined): LatLng | null {
+export function usablePoint(point: LatLng | null | undefined): LatLng | null {
   if (!point) return null;
   if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return null;
   if (point.lat < -90 || point.lat > 90 || point.lng < -180 || point.lng > 180) return null;
@@ -54,7 +54,7 @@ function finitePair(matrix: number[][], from: number, to: number): boolean {
 }
 
 /** Stops that connect to the start and to every other stop that stays on the route. */
-function routableIndexes(seconds: number[][], stopCount: number): number[] {
+export function routableIndexes(seconds: number[][], stopCount: number): number[] {
   let kept: number[] = [];
   for (let index = 1; index <= stopCount; index += 1) {
     if (finitePair(seconds, 0, index)) kept.push(index);
@@ -84,7 +84,7 @@ function cellNumber(value: unknown): number {
   return value;
 }
 
-function readMatrix(
+export function readMatrix(
   payload: unknown,
   size: number,
 ): { seconds: number[][]; miles: number[][] } | null {
@@ -117,15 +117,15 @@ function readMatrix(
   return { seconds, miles };
 }
 
-function submatrix(full: number[][], indexes: number[]): number[][] {
+export function submatrix(full: number[][], indexes: number[]): number[][] {
   return indexes.map((from) => indexes.map((to) => full[from]?.[to] ?? Number.NaN));
 }
 
-function integerMatrix(values: number[][], scale: number): number[][] {
+export function integerMatrix(values: number[][], scale: number): number[][] {
   return values.map((row) => row.map((value) => Math.max(0, Math.round(value * scale))));
 }
 
-function pathCost(order: number[], matrix: number[][]): number {
+export function pathCost(order: number[], matrix: number[][]): number {
   let total = 0;
   let cursor = 0;
   for (const index of order) {
@@ -181,7 +181,7 @@ function lockWindows(
   return windows;
 }
 
-async function postJson(
+export async function postJson(
   url: string,
   token: string,
   body: unknown,
@@ -204,7 +204,7 @@ async function postJson(
   return response.json();
 }
 
-function failureReason(error: unknown): string {
+export function failureReason(error: unknown): string {
   if (error instanceof EngineFailure) return error.reason;
   if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
     return 'timeout';
