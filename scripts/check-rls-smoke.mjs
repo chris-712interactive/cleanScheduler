@@ -25,6 +25,7 @@ const sqlPaths = [
   path.join(repoRoot, 'supabase/tests/rls/day_map_visit_read.sql'),
   path.join(repoRoot, 'supabase/tests/rls/visit_route_sequence.sql'),
   path.join(repoRoot, 'supabase/tests/rls/text_pack_ledger.sql'),
+  path.join(repoRoot, 'supabase/tests/rls/apply_cleaner_dispatch.sql'),
 ];
 
 const databaseUrl = process.env.DATABASE_URL?.trim();

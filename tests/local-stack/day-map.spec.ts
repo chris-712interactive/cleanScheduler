@@ -126,11 +126,12 @@ test('office day map day picker and impossible date', async ({ page }) => {
   await signIn(page, accounts.residential.owner.email);
   await page.goto(`${residentialOrigin}/schedule/map?date=${day}`);
   await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
-  await expect(page.locator('input[type="date"]')).toHaveValue(day);
+  const dayInput = page.getByRole('textbox', { name: 'Day' });
+  await expect(dayInput).toHaveValue(day);
 
   await page.getByRole('link', { name: 'Next day' }).click();
   await expect(page).toHaveURL(new RegExp(`date=${nextDay}`));
-  await expect(page.locator('input[type="date"]')).toHaveValue(nextDay);
+  await expect(dayInput).toHaveValue(nextDay);
   await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Riley Example' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Casey Example' })).toHaveCount(0);
@@ -145,7 +146,7 @@ test('office day map day picker and impossible date', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
   await expect(page.getByText('RangeError')).toHaveCount(0);
   await expect(page.getByText('Invalid time value')).toHaveCount(0);
-  const fallback = await page.locator('input[type="date"]').inputValue();
+  const fallback = await page.getByRole('textbox', { name: 'Day' }).inputValue();
   expect(fallback).not.toBe('2026-13-01');
   expect(fallback).toMatch(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/);
   await expectNoOtherTenant(page);

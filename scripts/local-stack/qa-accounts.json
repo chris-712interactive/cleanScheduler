@@ -9,12 +9,14 @@
     "latitude": 35.55,
     "longitude": -82.55,
     "owner": {
+      "userId": "11111111-1111-4111-8111-111111111510",
       "email": "owner.residential@example.test",
       "role": "owner",
       "appRole": "employee",
       "displayName": "Avery Owner"
     },
     "admin": {
+      "userId": "11111111-1111-4111-8111-111111111511",
       "email": "admin.residential@example.test",
       "role": "admin",
       "appRole": "employee",

@@ -303,6 +303,41 @@ async function seedCustomers(admin, workspace, portalUserId) {
   }
 }
 
+const DISPATCH_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+async function seedDispatchHours(admin, workspace, userIds, members) {
+  for (const member of members) {
+    const userId = userIds[member.email];
+    if (!userId) throw new Error(`No seeded member for dispatch hours ${member.email}.`);
+    await must(
+      admin.from('tenant_member_schedule_profiles').upsert(
+        {
+          tenant_id: workspace.tenantId,
+          user_id: userId,
+          use_tenant_default: false,
+        },
+        { onConflict: 'tenant_id,user_id' },
+      ),
+      `dispatch hours ${member.email}`,
+    );
+    for (const weekday of DISPATCH_WEEKDAYS) {
+      await must(
+        admin.from('tenant_member_availability_days').upsert(
+          {
+            tenant_id: workspace.tenantId,
+            user_id: userId,
+            weekday,
+            starts_at: '06:00',
+            ends_at: '21:00',
+          },
+          { onConflict: 'tenant_id,user_id,weekday' },
+        ),
+        `dispatch day ${member.email} ${weekday}`,
+      );
+    }
+  }
+}
+
 async function seedVisits(admin, workspace, userIds) {
   const specs = workspace.visits ?? [
     {
@@ -375,6 +410,11 @@ export async function seedLocalStack(env = process.env) {
     residentialUsers[accounts.residential.portalUser.email],
   );
   const residentialVisitIds = await seedVisits(admin, accounts.residential, residentialUsers);
+  await seedDispatchHours(admin, accounts.residential, residentialUsers, [
+    accounts.residential.owner,
+    accounts.residential.admin,
+    accounts.residential.cleaner,
+  ]);
 
   const commercialUsers = await seedTenant(admin, accounts.commercial, [accounts.commercial.owner]);
   await seedCustomers(admin, accounts.commercial, null);
