@@ -102,7 +102,9 @@ test('office can suggest and apply one cleaner stop order', async ({ page }) => 
   const before = milesFrom(await page.getByText(/Before: .* straight-line estimate/).innerText());
   const after = milesFrom(await page.getByText(/After: .* straight-line estimate/).innerText());
   expect(after).toBeLessThanOrEqual(before);
-  await expect(page.getByText('This is not driving miles.')).toBeVisible();
+  await expect(
+    page.getByText('Straight-line estimate for Drew Cleaner. This is not driving miles.'),
+  ).toBeVisible();
 
   const notRouted = page.getByRole('list', { name: 'Not routed' });
   await expect(notRouted.getByText('Route cabin')).toBeVisible();

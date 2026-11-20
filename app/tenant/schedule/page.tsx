@@ -5,7 +5,11 @@ import { Plus } from 'lucide-react';
 import { getPortalContext } from '@/lib/portal';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { getAuthContext } from '@/lib/auth/session';
-import { isFeatureEnabled, resolveTenantPlanTier } from '@/lib/billing/entitlements';
+import {
+  featureUpgradeMessage,
+  isFeatureEnabled,
+  resolveTenantPlanTier,
+} from '@/lib/billing/entitlements';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import {
   isLocalCalendarToday,
@@ -24,8 +28,10 @@ import { TenantScheduleClient } from './TenantScheduleClient';
 import { loadTenantServiceSegment } from '@/lib/tenant/loadTenantServiceSegment';
 import { capabilitiesForSegment } from '@/lib/tenant/serviceSegment';
 import { DaySchedulingSuggestions } from './DaySchedulingSuggestions';
+import { DispatchPanel } from './DispatchPanel';
 import { StopOrderPanel } from './StopOrderPanel';
 import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
+import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import { loadDaySchedulingSuggestions } from '@/lib/schedule/optimizer/loadDay';
 import { ScheduleIssuesList } from './ScheduleIssuesList';
@@ -198,6 +204,16 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       : null;
 
   const officeCanRoute = canApplyStopOrder(membership.role);
+  const dispatchEnabled = isFeatureEnabled(tier, 'multiCleanerDispatch');
+  const dispatchPlan =
+    officeCanRoute && dispatchEnabled && tab === 'schedule' && view === 'day'
+      ? await loadDispatchPlan({
+          supabase,
+          tenantId: membership.tenantId,
+          dateKey,
+          timeZone: tenantTimezone,
+        })
+      : null;
   const selectedCleanerId =
     officeCanRoute && tab === 'schedule' && view === 'day'
       ? employeeFilter === 'me'
@@ -309,6 +325,14 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           timeZone={tenantTimezone}
           suggestions={dayPlan.suggestions}
           gaps={dayPlan.gaps}
+        />
+      ) : null}
+
+      {officeCanRoute && tab === 'schedule' && view === 'day' ? (
+        <DispatchPanel
+          tenantSlug={membership.tenantSlug}
+          proposal={dispatchEnabled ? dispatchPlan : null}
+          upgradeMessage={dispatchEnabled ? null : featureUpgradeMessage('multiCleanerDispatch')}
         />
       ) : null}
 

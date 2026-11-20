@@ -12,9 +12,15 @@ import {
   resolveDayMapStyleUrl,
 } from '@/lib/schedule/dayMap';
 import { loadDayMap } from '@/lib/schedule/loadDayMap';
+import {
+  featureUpgradeMessage,
+  isFeatureEnabled,
+  resolveTenantEntitlementPlan,
+} from '@/lib/billing/entitlements';
+import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
-import { createTenantPortalDbClient } from '@/lib/supabase/server';
+import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import { isFieldEmployeeRole } from '@/lib/tenant/fieldEmployeeAccess';
 import {
   hasPermission,
@@ -22,6 +28,7 @@ import {
 } from '@/lib/tenant/resolveMembershipPermissions';
 import { normalizeDateKey, shiftDateKey } from '@/lib/tenant/scheduleDateRange';
 import { DayMap } from './DayMap';
+import { DispatchPanel } from '../DispatchPanel';
 import { StopOrderPanel } from '../StopOrderPanel';
 import styles from './dayMap.module.scss';
 
@@ -60,6 +67,20 @@ export default async function DayMapPage({ searchParams }: PageProps) {
   });
   const styleUrl = resolveDayMapStyleUrl(process.env.NEXT_PUBLIC_MAP_STYLE_URL);
   const officeCanRoute = canApplyStopOrder(membership.role);
+  const entitlementPlan = officeCanRoute
+    ? await resolveTenantEntitlementPlan(createAdminClient(), membership.tenantId)
+    : null;
+  const dispatchEnabled =
+    entitlementPlan != null && isFeatureEnabled(entitlementPlan, 'multiCleanerDispatch');
+  const dispatchPlan =
+    officeCanRoute && dispatchEnabled
+      ? await loadDispatchPlan({
+          supabase,
+          tenantId: membership.tenantId,
+          dateKey,
+          timeZone,
+        })
+      : null;
   const cleanerRaw = typeof sp.cleaner === 'string' ? sp.cleaner.trim() : '';
   const membersRes = officeCanRoute
     ? await supabase
@@ -161,6 +182,11 @@ export default async function DayMapPage({ searchParams }: PageProps) {
               Show this cleaner
             </Button>
           </form>
+          <DispatchPanel
+            tenantSlug={membership.tenantSlug}
+            proposal={dispatchPlan}
+            upgradeMessage={dispatchEnabled ? null : featureUpgradeMessage('multiCleanerDispatch')}
+          />
           <StopOrderPanel tenantSlug={membership.tenantSlug} proposal={stopOrder} />
         </>
       ) : null}
