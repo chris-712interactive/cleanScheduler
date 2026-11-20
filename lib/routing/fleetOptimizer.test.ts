@@ -393,4 +393,62 @@ describe('fleet routing engine', () => {
     expect(result.assignments[0]?.orderedIds).toEqual([]);
     expect(result.unassigned).toEqual([{ id: 'late', reason: DISPATCH_OUTSIDE_HOURS }]);
   });
+
+  it('sends each cleaner start and end index', async () => {
+    enableEngine();
+    const day: DispatchPlanRequest = {
+      ...request,
+      cleaners: [
+        {
+          id: 'ada',
+          shiftStartSec: 8 * 3600,
+          shiftEndSec: 17 * 3600,
+          timeOff: [],
+          start: { lat: 36, lng: -83 },
+          end: { lat: 36.2, lng: -83 },
+        },
+        {
+          id: 'bea',
+          shiftStartSec: 8 * 3600,
+          shiftEndSec: 17 * 3600,
+          timeOff: [],
+        },
+      ],
+    };
+    let sources: Array<{ lat: number; lon: number }> = [];
+    let vehicles: Array<{ id: number; start_index: number; end_index?: number }> = [];
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).endsWith('/valhalla/sources_to_targets')) {
+        const body = JSON.parse(String(init?.body)) as {
+          sources: Array<{ lat: number; lon: number }>;
+        };
+        sources = body.sources;
+        return jsonResponse(squareMatrix(body.sources.length));
+      }
+      const body = JSON.parse(String(init?.body)) as {
+        vehicles: Array<{ id: number; start_index: number; end_index?: number }>;
+        jobs: Array<{ location_index: number }>;
+      };
+      vehicles = body.vehicles;
+      return jsonResponse({
+        code: 0,
+        unassigned: [],
+        routes: [
+          { vehicle: 1, steps: [{ type: 'start' }, { type: 'job', id: 1 }] },
+          {
+            vehicle: 2,
+            steps: [{ type: 'start' }, { type: 'job', id: 2 }, { type: 'job', id: 3 }],
+          },
+        ],
+      });
+    });
+    const result = await new FleetRouteOptimizer({ fetchImpl }).optimize(day);
+    expect(sources[0]).toEqual({ lat: 35.55, lon: -82.55 });
+    expect(sources).toContainEqual({ lat: 36, lon: -83 });
+    expect(sources).toContainEqual({ lat: 36.2, lon: -83 });
+    const ada = vehicles.find((vehicle) => vehicle.start_index !== 0);
+    expect(ada?.end_index).toBeTypeOf('number');
+    expect(ada?.end_index).not.toBe(ada?.start_index);
+    expect(result.estimateKind).toBe('drive');
+  });
 });

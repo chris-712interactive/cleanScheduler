@@ -17,7 +17,9 @@ import {
   isFeatureEnabled,
   resolveTenantEntitlementPlan,
 } from '@/lib/billing/entitlements';
+import { loadSavedRouteFingerprint } from '@/lib/routing/appliedRoutes';
 import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
+import { buildReoptimizeOffer } from '@/lib/routing/reoptimize';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
@@ -29,6 +31,7 @@ import {
 import { normalizeDateKey, shiftDateKey } from '@/lib/tenant/scheduleDateRange';
 import { DayMap } from './DayMap';
 import { DispatchPanel } from '../DispatchPanel';
+import { ReoptimizePanel } from '../ReoptimizePanel';
 import { StopOrderPanel } from '../StopOrderPanel';
 import styles from './dayMap.module.scss';
 
@@ -72,6 +75,8 @@ export default async function DayMapPage({ searchParams }: PageProps) {
     : null;
   const dispatchEnabled =
     entitlementPlan != null && isFeatureEnabled(entitlementPlan, 'multiCleanerDispatch');
+  const reoptimizeEnabled =
+    entitlementPlan != null && isFeatureEnabled(entitlementPlan, 'routeReoptimization');
   const dispatchPlan =
     officeCanRoute && dispatchEnabled
       ? await loadDispatchPlan({
@@ -79,6 +84,29 @@ export default async function DayMapPage({ searchParams }: PageProps) {
           tenantId: membership.tenantId,
           dateKey,
           timeZone,
+        })
+      : null;
+  const savedRouteFingerprint =
+    officeCanRoute && reoptimizeEnabled
+      ? await loadSavedRouteFingerprint(createAdminClient(), membership.tenantId, dateKey)
+      : null;
+  const reoptimizeOffer =
+    reoptimizeEnabled && dispatchPlan
+      ? buildReoptimizeOffer({
+          dateKey,
+          fingerprint: dispatchPlan.fingerprint,
+          changeFingerprint: dispatchPlan.changeFingerprint,
+          savedFingerprint: savedRouteFingerprint,
+          hasRouteSequence: dispatchPlan.snapshot.some((row) => row.routeSequence != null),
+          plan: dispatchPlan.plan,
+          snapshot: dispatchPlan.snapshot,
+          fixedVisitIds: dispatchPlan.fixedVisitIds,
+          titles: new Map(
+            [
+              ...dispatchPlan.cleaners.flatMap((cleaner) => cleaner.stops),
+              ...dispatchPlan.unassigned,
+            ].map((stop) => [stop.id, stop.title]),
+          ),
         })
       : null;
   const cleanerRaw = typeof sp.cleaner === 'string' ? sp.cleaner.trim() : '';
@@ -186,6 +214,11 @@ export default async function DayMapPage({ searchParams }: PageProps) {
             tenantSlug={membership.tenantSlug}
             proposal={dispatchPlan}
             upgradeMessage={dispatchEnabled ? null : featureUpgradeMessage('multiCleanerDispatch')}
+          />
+          <ReoptimizePanel
+            tenantSlug={membership.tenantSlug}
+            offer={reoptimizeOffer}
+            upgradeMessage={reoptimizeEnabled ? null : featureUpgradeMessage('routeReoptimization')}
           />
           <StopOrderPanel tenantSlug={membership.tenantSlug} proposal={stopOrder} />
         </>

@@ -47,6 +47,10 @@ export function usablePoint(point: LatLng | null | undefined): LatLng | null {
   return { lat: point.lat, lng: point.lng };
 }
 
+export function pointsMatch(left: LatLng, right: LatLng): boolean {
+  return Math.abs(left.lat - right.lat) < 1e-7 && Math.abs(left.lng - right.lng) < 1e-7;
+}
+
 function finitePair(matrix: number[][], from: number, to: number): boolean {
   const forward = matrix[from]?.[to];
   const back = matrix[to]?.[from];
@@ -126,15 +130,70 @@ export function integerMatrix(values: number[][], scale: number): number[][] {
 }
 
 export function pathCost(order: number[], matrix: number[][]): number {
+  return pathFrom(0, order, null, matrix);
+}
+
+/** Drive cost from a start index, through visit indexes, and back to an end index. */
+export function pathFrom(
+  startIndex: number,
+  order: number[],
+  endIndex: number | null,
+  matrix: number[][],
+): number {
   let total = 0;
-  let cursor = 0;
+  let cursor = startIndex;
   for (const index of order) {
     const leg = matrix[cursor]?.[index];
     if (typeof leg !== 'number' || !Number.isFinite(leg)) return Number.NaN;
     total += leg;
     cursor = index;
   }
+  if (endIndex != null) {
+    const leg = matrix[cursor]?.[endIndex];
+    if (typeof leg !== 'number' || !Number.isFinite(leg)) return Number.NaN;
+    total += leg;
+  }
   return total;
+}
+
+/**
+ * Visit indexes that connect to at least one depot and to each other.
+ * Depot indexes are `0 .. depotCount - 1`. Visit indexes follow them.
+ */
+export function routableStopIndexes(
+  seconds: number[][],
+  depotCount: number,
+  stopCount: number,
+): number[] {
+  let kept: number[] = [];
+  for (let visit = 0; visit < stopCount; visit += 1) {
+    const index = depotCount + visit;
+    let connected = false;
+    for (let depot = 0; depot < depotCount; depot += 1) {
+      if (finitePair(seconds, depot, index)) {
+        connected = true;
+        break;
+      }
+    }
+    if (connected) kept.push(index);
+  }
+  while (kept.length > 1) {
+    let worstCount = 0;
+    let worstIndex = -1;
+    for (const index of kept) {
+      let missing = 0;
+      for (const other of kept) {
+        if (other !== index && !finitePair(seconds, index, other)) missing += 1;
+      }
+      if (missing > worstCount) {
+        worstCount = missing;
+        worstIndex = index;
+      }
+    }
+    if (worstCount === 0 || worstIndex < 0) break;
+    kept = kept.filter((index) => index !== worstIndex);
+  }
+  return kept;
 }
 
 function lockedOrderOk(ids: string[], lockedAt: Map<string, number | null>): boolean {
@@ -232,7 +291,14 @@ async function solveWithEngine(
 
   const start = usablePoint(request.start) ?? stops[0]?.point ?? null;
   if (!start) return baseline;
-  const locations = [start, ...stops.map((stop) => stop.point)];
+  const endPoint = usablePoint(request.end);
+  const endSameAsStart = endPoint != null && pointsMatch(endPoint, start);
+  const locations = [
+    start,
+    ...stops.map((stop) => stop.point),
+    ...(endPoint && !endSameAsStart ? [endPoint] : []),
+  ];
+  const endFullIndex = endPoint == null ? null : endSameAsStart ? 0 : locations.length - 1;
   const signal = AbortSignal.timeout(call.timeoutMs);
   const matrixPayload = await postJson(
     `${config.baseUrl}/valhalla/sources_to_targets`,
@@ -252,7 +318,11 @@ async function solveWithEngine(
   const kept = routableIndexes(matrix.seconds, stops.length);
   if (kept.length === 0) throw new EngineFailure('bad-response');
   const keptStops = kept.map((index) => stops[index - 1]).filter((stop) => stop != null);
-  const locationIndexes = [0, ...kept];
+  const locationIndexes = [
+    0,
+    ...kept,
+    ...(endFullIndex != null && endFullIndex !== 0 ? [endFullIndex] : []),
+  ];
   const seconds = submatrix(matrix.seconds, locationIndexes);
   const miles = submatrix(matrix.miles, locationIndexes);
   const matrixReady = (rows: number[][]) =>
@@ -276,11 +346,19 @@ async function solveWithEngine(
     return job;
   });
 
+  const vehicle: { id: number; profile: 'auto'; start_index: number; end_index?: number } = {
+    id: 1,
+    profile: 'auto',
+    start_index: 0,
+  };
+  if (endFullIndex != null) {
+    vehicle.end_index = endFullIndex === 0 ? 0 : kept.length + 1;
+  }
   const solved = await postJson(
     `${config.baseUrl}/vroom/`,
     config.token,
     {
-      vehicles: [{ id: 1, profile: 'auto', start_index: 0 }],
+      vehicles: [vehicle],
       jobs,
       matrices: {
         auto: {
@@ -322,10 +400,10 @@ async function solveWithEngine(
   const fullIndex = new Map(keptStops.map((stop, index) => [stop.id, kept[index] ?? -1]));
   const orderIndexes = (ids: string[]) => ids.map((id) => fullIndex.get(id) ?? -1);
   const inputIds = stops.map((stop) => stop.id).filter((id) => fullIndex.has(id));
-  const secondsBefore = pathCost(orderIndexes(inputIds), matrix.seconds);
-  const secondsAfter = pathCost(orderIndexes(orderedIds), matrix.seconds);
-  const milesBefore = pathCost(orderIndexes(inputIds), matrix.miles);
-  const milesAfter = pathCost(orderIndexes(orderedIds), matrix.miles);
+  const secondsBefore = pathFrom(0, orderIndexes(inputIds), endFullIndex, matrix.seconds);
+  const secondsAfter = pathFrom(0, orderIndexes(orderedIds), endFullIndex, matrix.seconds);
+  const milesBefore = pathFrom(0, orderIndexes(inputIds), endFullIndex, matrix.miles);
+  const milesAfter = pathFrom(0, orderIndexes(orderedIds), endFullIndex, matrix.miles);
   if (
     !Number.isFinite(secondsBefore) ||
     !Number.isFinite(secondsAfter) ||
