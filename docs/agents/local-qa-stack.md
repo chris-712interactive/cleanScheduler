@@ -13,3 +13,5 @@ Seed emails are `@example.test`. The seed throws before it constructs a client i
 Migration `0129` is applied to the disposable database because it is a file in `supabase/migrations`. That does not authorize applying it to a hosted project.
 
 Auth cookies stay host-only. The browser isolation check is on `qa-residential`: Quinn Example is absent from the directory, search, and the direct customer URL.
+
+`tests/local-stack/authenticated.spec.ts` reads the text pack block with `page.locator('#main').getByRole('region', { name: 'Text packs' }).first()`. The page source has one `#text-packs`. A route swap can leave a second copy in the document, and `locator('#text-packs')` then fails Playwright strict mode. The visible region in `#main` is the one the test checks.

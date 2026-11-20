@@ -10,7 +10,7 @@ Covered mail: portal invites, quotes, invoices and receipts, invoice and visit r
 
 **Clean Scheduler** — product mail to owners, office staff, and platform operations. Header uses the product mark and teal `#006D77`, with the Casper business address in the footer. The inbox display name is Clean Scheduler.
 
-Covered mail: trial welcome and trial-ending reminders, time off and hour-change notices, reschedule requests to the office, quote accepted or declined, customer Messages alerts to staff, website leads, referral alerts to the owner, hiring “people are waiting” alerts, Stripe dispute and velocity alerts, and founder outreach.
+Covered mail: trial welcome and trial-ending reminders, time off and hour-change notices, cleaner schedule changes, reschedule requests to the office, quote accepted or declined, customer Messages alerts to staff, website leads, referral alerts to the owner, hiring “people are waiting” alerts, Stripe dispute and velocity alerts, and founder outreach.
 
 Pro workspaces with white-label customer portal omit the “Sent with Clean Scheduler” footer line on company mail. Everyone else keeps that one line so the customer can see which product delivered it.
 
