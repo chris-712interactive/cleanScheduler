@@ -21,7 +21,7 @@ First runs download the Supabase images and then build Next.js. The GitHub job a
 
 Results:
 
-- Console line `check:rls-smoke — passed 6 SQL files`
+- Console line `check:rls-smoke — passed 7 SQL files`
 - Console line `authenticated playwright passed=`
 - Console line `geocode backfill smoke passed`
 - `.local-stack/summary.txt` (gitignored)
@@ -35,7 +35,7 @@ The CI job uploads those paths as the `local-stack-results` artifact. The summar
 
 Workspaces:
 
-- `qa-residential.lvh.me:3000` — owner, admin, field cleaner, customer-portal user, two customers. Locations include a stored point, a `no_match`, and a `lookup_failed` that is old enough for backfill to retry.
+- `qa-residential.lvh.me:3000` — owner, admin, field cleaner, customer-portal user, two customers. Locations include a stored point, a `no_match`, and a `lookup_failed` that is old enough for backfill to retry. Those three crew members are available every day from 06:00 to 21:00 so Suggest dispatch does not depend on the weekday.
 - `qa-commercial.lvh.me:3000` — owner and one customer the residential owner must not see.
 
 Visits are scheduled for today in `America/New_York`. The residential workspace has two geocoded visits (Riley's home assigned to Drew Cleaner, Casey's house assigned to Avery Owner) and two visits with no point (the cabin is `no_match`, the lake is `lookup_failed`). The commercial visit stays on Quinn's office. The day map Playwright spec opens `/schedule/map` for that local day, checks the legend colors and the missing-point list, and blocks any request that is not loopback or `*.lvh.me`.

@@ -2,6 +2,7 @@ import { formatStraightLineMiles } from '@/lib/routing/haversineOptimizer';
 
 export const NO_CLEANER_VISITS_MESSAGE = 'No visits for this cleaner on this day.';
 export const STOP_ORDER_UNAVAILABLE_MESSAGE = 'Stop order is not available yet.';
+export const DISPATCH_UNAVAILABLE_MESSAGE = 'Dispatch is not available yet.';
 export const ALL_STOPS_MAPPED_MESSAGE = "Every stop on this cleaner's day has a map point.";
 
 export function describeStopOrderPanel(

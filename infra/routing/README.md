@@ -129,6 +129,6 @@ Bump the pins on purpose. Read the Valhalla and VROOM release notes before you d
 - `POST /valhalla/sources_to_targets` with `costing: auto` and `units: miles`
 - `POST /vroom/` with a custom `auto` duration and distance matrix
 
-VROOM does not have to call Valhalla for this stop order, because the matrix is already in the request. Valhalla is still configured as VROOM's router for a later multi-vehicle pass.
+VROOM does not have to call Valhalla itself, because the matrix is already in the request. Suggest dispatch sends one solve with a vehicle per cleaner. The profile stays `auto`. A pair the extract cannot route is left unassigned.
 
 There is no database migration for this engine.

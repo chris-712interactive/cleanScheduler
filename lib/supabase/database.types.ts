@@ -6497,6 +6497,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      apply_cleaner_dispatch: {
+        Args: {
+          p_tenant_id: string;
+          p_snapshot: Json;
+          p_plan: Json;
+        };
+        Returns: undefined;
+      };
       consume_text_pack_segments: {
         Args: {
           p_tenant: string;

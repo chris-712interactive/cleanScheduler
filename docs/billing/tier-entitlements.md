@@ -254,6 +254,8 @@ Migration: `0084_public_booking_request.sql`. Product notes: `docs/product/publi
 
 Suggested stop order for one cleaner's day is `singleCleanerStopOrdering`. It is included on Starter, Business, Pro, and the trial, so the schedule and the day map do not hide it behind an upgrade. The office applies it from the schedule day view or the day map. Field employees cannot apply it. With `ROUTING_ENGINE_URL` and `ROUTING_ENGINE_TOKEN` the distance is drive time from the self-hosted engine. Without them, or when that call cannot be used, it stays a straight-line estimate. Apply migration `0130_visit_route_sequence.sql` by hand. See `docs/product/stop-order.md` and `infra/routing/README.md`.
 
+Suggest dispatch for the whole day is `multiCleanerDispatch`. Business and Pro include it. Starter and the trial see the upgrade sentence and cannot apply it. Field employees do not see it. Apply migration `0133_apply_cleaner_dispatch.sql` by hand before Apply dispatch. It is not applied to shared dev or production from the branch that adds it. See `docs/product/dispatch.md`.
+
 ## Tenant marketing website (Business CMS / Pro unified domain)
 
 | Tier     | `tenantMarketingSite` | `tenantMarketingSiteCustomDomain` | `maxMarketingSitePages` | `maxMarketingSiteServiceAreaPages` |
