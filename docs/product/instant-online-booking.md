@@ -40,7 +40,7 @@ Booking eligibility uses the offer’s price and linked job type, not a stamped 
 3. See a price and open times. Each day is a heading, and the open times for that day sit in a row of buttons. Times come from business hours, each crew member’s hours, approved time off, scheduled visits, and unexpired holds. The buffer and an estimated drive (straight-line minutes, or same-city / same-state fallback from `lib/schedule/optimizer/geo.ts`) must fit between jobs.
 4. Choose one-time or a repeat frequency and confirm.
 5. If a deposit is configured, Stripe Checkout charges it on the tenant’s Connect account. If the deposit is $0, Checkout saves a card instead. A customer who already has a card on file skips a new card setup. The visit is created only after that step (return URL and the Connect webhook both finalize, and the database function is safe to call twice). With neither a deposit nor a saved card required, the public page takes a quote request and does not place a visit.
-6. The customer gets a confirmation email. SMS reuses the existing visit-reminder template when visit-reminder SMS is on and a phone was entered. The office email (site contact email, otherwise the business email) is notified. The visit shows on the schedule.
+6. The customer gets a confirmation email. SMS reuses the existing visit-reminder template when visit-reminder SMS is on and a phone was entered. The office email (site contact email, otherwise the business email) is notified. The assigned cleaner gets one schedule-change email when the visit is first confirmed. A retry that finds the visit already confirmed does not send that email again. The visit shows on the schedule.
 
 ## Concurrency and security
 

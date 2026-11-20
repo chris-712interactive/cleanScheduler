@@ -23,6 +23,6 @@ When the self-hosted road engine is connected, the same screen shows **drive tim
 
 Nothing is saved when the suggestion opens. **Apply dispatch** reassigns the flexible visits and saves **Stop 1**, **Stop 2**, and so on for each cleaner. If the day changed after the suggestion was built, apply stops and asks you to suggest again.
 
-Apply does not email or text anyone. The field team is not notified by this screen.
+Apply emails each cleaner whose crew or stop order actually changed. One message covers the whole day: what changed, the updated stops in the workspace timezone, and a link to that day on their schedule. It does not text anyone. The person who clicked Apply is left off that email when the change does not affect anyone else. Inactive members and members with no login email are skipped. The schedule still saves if email cannot be sent.
 
 The schedule reads `route_sequence` when it exists. If migration **`0130`** has not been applied yet, apply stays off. Migration **`0133`** is the save step. Apply both by hand before using Apply dispatch. This change does not apply them for you.

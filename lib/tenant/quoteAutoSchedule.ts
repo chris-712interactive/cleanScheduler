@@ -1,3 +1,5 @@
+import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
+import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import { positiveAmountCents } from '@/lib/billing/resolveVisitExpectedAmount';
 import { findStaffedVisitWindow } from '@/lib/schedule/findStaffedVisitWindow';
 import { computeNextWorkDayVisitWindow } from '@/lib/schedule/nextWorkDayVisitWindow';
@@ -268,6 +270,25 @@ export async function ensureAutoScheduledVisitForAcceptedQuote(
 
   if (visitIds.length === 0) {
     return { skippedReason: 'visit_create_failed' };
+  }
+
+  if (createdCount > 0) {
+    const loaded = await loadCleanerScheduleVisitSnapshots(admin, input.tenantId, visitIds);
+    if (loaded.ok && loaded.visits.length > 0) {
+      try {
+        queueCleanerScheduleNotice(admin, {
+          tenantId: input.tenantId,
+          actorUserId: null,
+          before: loaded.visits.map((row) => ({ ...row, assigneeIds: [] })),
+          after: loaded.visits,
+        });
+      } catch (noticeError) {
+        console.error(
+          '[cleanerSchedule] queue failed:',
+          noticeError instanceof Error ? noticeError.message : 'unknown',
+        );
+      }
+    }
   }
 
   return {

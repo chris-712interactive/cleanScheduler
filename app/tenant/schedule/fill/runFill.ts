@@ -14,7 +14,10 @@ import {
   loadDaySchedulingSuggestions,
   suggestionWindowIso,
 } from '@/lib/schedule/optimizer/loadDay';
+import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
+import { getAuthContext } from '@/lib/auth/session';
 import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
+import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import { applyVisitScheduleTime } from '@/lib/schedule/applyVisitScheduleTime';
 import { localWallClockInTimeZoneToUtcIso } from '@/lib/schedule/nextWorkDayVisitWindow';
 import {
@@ -903,6 +906,28 @@ export async function runFillSchedule(
     });
   }
 
+  if (staffedIds.size > 0) {
+    const loaded = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, [
+      ...staffedIds,
+    ]);
+    if (loaded.ok && loaded.visits.length > 0) {
+      const auth = await getAuthContext();
+      try {
+        queueCleanerScheduleNotice(admin, {
+          tenantId: membership.tenantId,
+          actorUserId: auth?.user.id ?? null,
+          before: loaded.visits.map((row) => ({ ...row, assigneeIds: [] })),
+          after: loaded.visits,
+        });
+      } catch (noticeError) {
+        console.error(
+          '[cleanerSchedule] queue failed:',
+          noticeError instanceof Error ? noticeError.message : 'unknown',
+        );
+      }
+    }
+  }
+
   const services = created.filter((row) => row.kind === 'service').length;
   const consultations = created.filter((row) => row.kind === 'consultation').length;
   const summary = {
@@ -1040,6 +1065,15 @@ export async function undoFillRun(tenantSlug: string, runId: string): Promise<Fi
     }
   }
 
+  const beforeUndo =
+    removable.length > 0
+      ? await loadCleanerScheduleVisitSnapshots(
+          admin,
+          membership.tenantId,
+          removable.map((visit) => visit.id),
+        )
+      : { ok: true as const, visits: [] };
+
   if (removable.length > 0) {
     const deleted = await admin
       .from('tenant_scheduled_visits')
@@ -1075,6 +1109,23 @@ export async function undoFillRun(tenantSlug: string, runId: string): Promise<Fi
       .eq('tenant_id', membership.tenantId)
       .eq('customer_id', customerId)
       .eq('status', 'contacted');
+  }
+
+  if (beforeUndo.ok && beforeUndo.visits.length > 0) {
+    const auth = await getAuthContext();
+    try {
+      queueCleanerScheduleNotice(admin, {
+        tenantId: membership.tenantId,
+        actorUserId: auth?.user.id ?? null,
+        before: beforeUndo.visits,
+        after: beforeUndo.visits.map((row) => ({ ...row, status: 'deleted', assigneeIds: [] })),
+      });
+    } catch (noticeError) {
+      console.error(
+        '[cleanerSchedule] queue failed:',
+        noticeError instanceof Error ? noticeError.message : 'unknown',
+      );
+    }
   }
 
   revalidatePath('/tenant/schedule');

@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
+import { scheduleVisitsAfterStopOrder } from '@/lib/email/cleanerScheduleChange';
+import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
+import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import { loadCleanerStopOrder } from '@/lib/routing/loadCleanerStopOrder';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -80,6 +83,9 @@ export async function applyStopOrderAction(
     return { error: 'There are no located stops to reorder.' };
   }
 
+  const visitIds = [...plan.ordered, ...plan.unrouted].map((stop) => stop.id);
+  const beforeOrder = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, visitIds);
+
   for (const [index, stop] of plan.ordered.entries()) {
     const { error } = await admin
       .from('tenant_scheduled_visits')
@@ -106,6 +112,26 @@ export async function applyStopOrderAction(
           ? STOP_ORDER_UNAVAILABLE_MESSAGE
           : 'Could not save the stop order.',
       };
+    }
+  }
+
+  if (beforeOrder.ok) {
+    try {
+      queueCleanerScheduleNotice(admin, {
+        tenantId: membership.tenantId,
+        actorUserId: auth.user.id,
+        before: beforeOrder.visits,
+        after: scheduleVisitsAfterStopOrder(
+          beforeOrder.visits,
+          plan.ordered.map((stop) => stop.id),
+          plan.unrouted.map((stop) => stop.id),
+        ),
+      });
+    } catch (noticeError) {
+      console.error(
+        '[cleanerSchedule] queue failed:',
+        noticeError instanceof Error ? noticeError.message : 'unknown',
+      );
     }
   }
 
