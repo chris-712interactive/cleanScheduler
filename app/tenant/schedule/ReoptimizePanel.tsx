@@ -32,7 +32,17 @@ export function ReoptimizePanel({
     );
   }
 
-  if (!offer) return null;
+  if (!offer) {
+    if (!state.success) return null;
+    return (
+      <section className={styles.panel} aria-labelledby="reoptimize-heading">
+        <h2 id="reoptimize-heading" className={styles.title}>
+          Re-optimize
+        </h2>
+        <p className={styles.lead}>Re-optimize saved.</p>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.panel} aria-labelledby="reoptimize-heading">

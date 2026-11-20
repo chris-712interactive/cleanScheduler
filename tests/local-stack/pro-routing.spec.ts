@@ -143,19 +143,24 @@ test('field employee cannot use pro routing extras', async ({ page }) => {
   await page.goto(`${residentialOrigin}/schedule?view=day&date=${day}`);
   await expect(page.getByRole('heading', { name: 'Re-optimize', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Re-optimize', exact: true })).toHaveCount(0);
-  await page.goto(`${residentialOrigin}/schedule/starts`);
-  await expect(page.getByText('Only the office can set start locations.')).toBeVisible();
+  const starts = await page.goto(`${residentialOrigin}/schedule/starts`);
+  expect(starts?.status() ?? 500).toBeLessThan(500);
+  await expect(page).not.toHaveURL(/\/schedule\/starts/);
+  await expect(page.getByRole('heading', { name: 'Start locations', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Save start location', exact: true })).toHaveCount(
     0,
   );
 
   await signIn(page, proOrigin, accounts.pro.cleaner.email);
-  await page.goto(`${proOrigin}/schedule/starts`);
-  await expect(page.getByText('Only the office can set start locations.')).toBeVisible();
+  const proStarts = await page.goto(`${proOrigin}/schedule/starts`);
+  expect(proStarts?.status() ?? 500).toBeLessThan(500);
+  await expect(page).not.toHaveURL(/\/schedule\/starts/);
   await expect(page.getByText('1 Office Home')).toHaveCount(0);
   await expect(page.getByText('9 Hidden Lane')).toHaveCount(0);
-  await page.goto(`${proOrigin}/schedule/drive-time`);
-  await expect(page.getByText('Only the office can view drive time.')).toBeVisible();
-  await expect(page.getByText('Sam Route')).toHaveCount(0);
+  const drive = await page.goto(`${proOrigin}/schedule/drive-time`);
+  expect(drive?.status() ?? 500).toBeLessThan(500);
+  await expect(page).not.toHaveURL(/\/schedule\/drive-time/);
+  await expect(page.getByRole('heading', { name: 'Drive time', exact: true })).toHaveCount(0);
+  await expect(page.getByText('straight-line estimate')).toHaveCount(0);
   await shot(page, 'field-pro-routing');
 });

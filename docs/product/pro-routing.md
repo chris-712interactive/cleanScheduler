@@ -4,7 +4,7 @@ Routing stays part of the plan. It is not a separate purchase. Starter includes 
 
 Starter, Business, and the free trial see: "This feature is included in the Pro plan. Upgrade your plan to use it." They do not see a way to buy an add-on.
 
-Field employees do not see these tools. A field employee still edits their own home from Account. They do not see another person's home.
+Field employees do not see these tools. Opening Start locations or Drive time sends them back to their jobs. A field employee still edits their own home from Account. They do not see another person's home.
 
 ## Re-optimize
 
