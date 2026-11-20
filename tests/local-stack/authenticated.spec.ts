@@ -113,7 +113,9 @@ test('business plan keeps the day map and shows a plan upgrade for Pro SMS', asy
 test('active Business owner sees applicant texting and hidden text packs', async ({ page }) => {
   await signIn(page, residentialOrigin, accounts.residential.owner.email);
   await page.goto(`${residentialOrigin}/billing`);
-  const packs = page.locator('#text-packs');
+  // The billing page renders one #text-packs. A route swap can leave a second
+  // copy in the document, and the id locator then fails strict mode.
+  const packs = page.locator('#main').getByRole('region', { name: 'Text packs' }).first();
   await expect(packs.getByRole('heading', { name: 'Text packs' })).toBeVisible();
   await expect(packs).toContainText('0/100 applicant SMS segments this month');
   await expect(packs).toContainText('Text packs are not available yet');
