@@ -13,6 +13,66 @@ import styles from '../stop-order.module.scss';
 
 const initial: RouteStartState = {};
 
+function RoutePlaceEditForm({ tenantSlug, place }: { tenantSlug: string; place: RouteStartPlace }) {
+  const [updateState, updatePlace, updatePending] = useActionState(
+    updateRouteLocationAction,
+    initial,
+  );
+
+  return (
+    <form action={updatePlace}>
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
+      <input type="hidden" name="location_id" value={place.id} />
+      <label className={styles.meta}>
+        Location name
+        <input
+          name="label"
+          required
+          maxLength={80}
+          aria-label={`Name for ${place.label}`}
+          defaultValue={place.label}
+        />
+      </label>
+      <label className={styles.meta}>
+        Street
+        <input
+          name="address_line1"
+          required
+          maxLength={200}
+          aria-label={`Street for ${place.label}`}
+          defaultValue={place.addressLine1}
+        />
+      </label>
+      <label className={styles.meta}>
+        City
+        <input name="city" aria-label={`City for ${place.label}`} defaultValue={place.city} />
+      </label>
+      <label className={styles.meta}>
+        State
+        <input
+          name="state"
+          aria-label={`State for ${place.label}`}
+          maxLength={2}
+          defaultValue={place.state}
+        />
+      </label>
+      <label className={styles.meta}>
+        Postal code
+        <input
+          name="postal_code"
+          aria-label={`Postal code for ${place.label}`}
+          defaultValue={place.postalCode}
+        />
+      </label>
+      {updateState.error ? <p className={styles.error}>{updateState.error}</p> : null}
+      {updateState.success ? <p className={styles.lead}>{updateState.success}</p> : null}
+      <Button type="submit" variant="primary" disabled={updatePending}>
+        {updatePending ? 'Saving…' : `Save ${place.label}`}
+      </Button>
+    </form>
+  );
+}
+
 export type RouteStartCleaner = {
   id: string;
   name: string;
@@ -53,10 +113,6 @@ export function RouteStartsEditor({
     deleteRouteLocationAction,
     initial,
   );
-  const [updateState, updatePlace, updatePending] = useActionState(
-    updateRouteLocationAction,
-    initial,
-  );
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
@@ -84,62 +140,7 @@ export function RouteStartsEditor({
                   {editingId === place.id ? `Close ${place.label}` : `Edit ${place.label}`}
                 </Button>
                 {editingId === place.id ? (
-                  <form action={updatePlace}>
-                    <input type="hidden" name="tenant_slug" value={tenantSlug} />
-                    <input type="hidden" name="location_id" value={place.id} />
-                    <label className={styles.meta}>
-                      Location name
-                      <input
-                        name="label"
-                        required
-                        maxLength={80}
-                        aria-label={`Name for ${place.label}`}
-                        defaultValue={place.label}
-                      />
-                    </label>
-                    <label className={styles.meta}>
-                      Street
-                      <input
-                        name="address_line1"
-                        required
-                        maxLength={200}
-                        aria-label={`Street for ${place.label}`}
-                        defaultValue={place.addressLine1}
-                      />
-                    </label>
-                    <label className={styles.meta}>
-                      City
-                      <input
-                        name="city"
-                        aria-label={`City for ${place.label}`}
-                        defaultValue={place.city}
-                      />
-                    </label>
-                    <label className={styles.meta}>
-                      State
-                      <input
-                        name="state"
-                        aria-label={`State for ${place.label}`}
-                        maxLength={2}
-                        defaultValue={place.state}
-                      />
-                    </label>
-                    <label className={styles.meta}>
-                      Postal code
-                      <input
-                        name="postal_code"
-                        aria-label={`Postal code for ${place.label}`}
-                        defaultValue={place.postalCode}
-                      />
-                    </label>
-                    {updateState.error ? <p className={styles.error}>{updateState.error}</p> : null}
-                    {updateState.success ? (
-                      <p className={styles.lead}>{updateState.success}</p>
-                    ) : null}
-                    <Button type="submit" variant="primary" disabled={updatePending}>
-                      {updatePending ? 'Saving…' : `Save ${place.label}`}
-                    </Button>
-                  </form>
+                  <RoutePlaceEditForm key={place.id} tenantSlug={tenantSlug} place={place} />
                 ) : null}
                 <form action={deletePlace}>
                   <input type="hidden" name="tenant_slug" value={tenantSlug} />
