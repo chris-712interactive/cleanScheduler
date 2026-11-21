@@ -46,6 +46,7 @@ vi.mock('@/lib/billing/entitlements', async () => {
   return {
     ...(actual as object),
     resolveTenantEntitlementPlan: async () => harness.plan,
+    resolveTenantRoutingPlan: async () => harness.plan,
     isFeatureEnabled: (plan: EntitlementPlanKey, feature: EntitlementFeature) => {
       if (harness.off.includes(feature)) return false;
       return real.isFeatureEnabled(plan, feature);

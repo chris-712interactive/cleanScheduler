@@ -9,6 +9,7 @@ import {
   featureUpgradeMessage,
   isFeatureEnabled,
   resolveTenantPlanTier,
+  resolveTenantRoutingPlan,
 } from '@/lib/billing/entitlements';
 import { createAdminClient, createTenantPortalDbClient } from '@/lib/supabase/server';
 import {
@@ -81,7 +82,10 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
   const locationFilter = typeof sp.location === 'string' ? sp.location.trim() : '';
 
   const admin = createAdminClient();
-  const tier = await resolveTenantPlanTier(admin, membership.tenantId);
+  const [tier, routingPlan] = await Promise.all([
+    resolveTenantPlanTier(admin, membership.tenantId),
+    resolveTenantRoutingPlan(admin, membership.tenantId),
+  ]);
   const locationsEnabled = isFeatureEnabled(tier, 'multiLocationControls');
   const { data: locationRows } = locationsEnabled
     ? await admin
@@ -207,10 +211,10 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       : null;
 
   const officeCanRoute = canApplyStopOrder(membership.role);
-  const dayMapEnabled = isFeatureEnabled(tier, 'dayMap');
-  const stopOrderEnabled = isFeatureEnabled(tier, 'singleCleanerStopOrdering');
-  const dispatchEnabled = isFeatureEnabled(tier, 'multiCleanerDispatch');
-  const reoptimizeEnabled = isFeatureEnabled(tier, 'routeReoptimization');
+  const dayMapEnabled = isFeatureEnabled(routingPlan, 'dayMap');
+  const stopOrderEnabled = isFeatureEnabled(routingPlan, 'singleCleanerStopOrdering');
+  const dispatchEnabled = isFeatureEnabled(routingPlan, 'multiCleanerDispatch');
+  const reoptimizeEnabled = isFeatureEnabled(routingPlan, 'routeReoptimization');
   const dispatchPlan =
     officeCanRoute && dispatchEnabled && tab === 'schedule' && view === 'day'
       ? await loadDispatchPlan({
@@ -218,7 +222,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           tenantId: membership.tenantId,
           dateKey,
           timeZone: tenantTimezone,
-          plan: tier,
+          plan: routingPlan,
         })
       : null;
   const selectedCleanerId =
@@ -262,7 +266,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           timeZone: tenantTimezone,
           cleanerUserId: selectedCleanerId,
           cleanerName: selectedCleaner.label.replace(/\s+\([^)]*\)$/, ''),
-          plan: tier,
+          plan: routingPlan,
         })
       : null;
 

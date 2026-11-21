@@ -6,7 +6,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
   featureUpgradeMessage,
   isFeatureEnabled,
-  resolveTenantEntitlementPlan,
+  resolveTenantRoutingPlan,
 } from '@/lib/billing/entitlements';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { scheduleVisitsAfterStopOrder } from '@/lib/email/cleanerScheduleChange';
@@ -55,7 +55,7 @@ export async function applyStopOrderAction(
     return { error: 'Only the office can apply a stop order.' };
   }
 
-  const planKey = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  const planKey = await resolveTenantRoutingPlan(admin, membership.tenantId);
   if (!isFeatureEnabled(planKey, 'singleCleanerStopOrdering')) {
     return { error: featureUpgradeMessage('singleCleanerStopOrdering') };
   }
