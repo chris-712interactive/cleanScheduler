@@ -207,6 +207,8 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       : null;
 
   const officeCanRoute = canApplyStopOrder(membership.role);
+  const dayMapEnabled = isFeatureEnabled(tier, 'dayMap');
+  const stopOrderEnabled = isFeatureEnabled(tier, 'singleCleanerStopOrdering');
   const dispatchEnabled = isFeatureEnabled(tier, 'multiCleanerDispatch');
   const reoptimizeEnabled = isFeatureEnabled(tier, 'routeReoptimization');
   const dispatchPlan =
@@ -216,6 +218,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           tenantId: membership.tenantId,
           dateKey,
           timeZone: tenantTimezone,
+          plan: tier,
         })
       : null;
   const selectedCleanerId =
@@ -251,7 +254,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       : null;
   const selectedCleaner = employeeOptions.find((option) => option.id === selectedCleanerId);
   const stopOrder =
-    selectedCleanerId && selectedCleaner
+    stopOrderEnabled && selectedCleanerId && selectedCleaner
       ? await loadCleanerStopOrder({
           supabase,
           tenantId: membership.tenantId,
@@ -259,6 +262,7 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
           timeZone: tenantTimezone,
           cleanerUserId: selectedCleanerId,
           cleanerName: selectedCleaner.label.replace(/\s+\([^)]*\)$/, ''),
+          plan: tier,
         })
       : null;
 
@@ -293,9 +297,11 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
               <Button as="a" href={`/schedule/fill?date=${dateKey}`} variant="secondary">
                 Fill schedule
               </Button>
-              <Button as="a" href={`/schedule/map?date=${dateKey}`} variant="secondary">
-                Day map
-              </Button>
+              {dayMapEnabled ? (
+                <Button as="a" href={`/schedule/map?date=${dateKey}`} variant="secondary">
+                  Day map
+                </Button>
+              ) : null}
               <Button as="a" href="/schedule/starts" variant="secondary">
                 Start locations
               </Button>
@@ -378,7 +384,13 @@ export default async function TenantSchedulePage({ searchParams }: PageProps) {
       ) : null}
 
       {officeCanRoute && tab === 'schedule' && view === 'day' ? (
-        <StopOrderPanel tenantSlug={membership.tenantSlug} proposal={stopOrder} />
+        <StopOrderPanel
+          tenantSlug={membership.tenantSlug}
+          proposal={stopOrder}
+          upgradeMessage={
+            stopOrderEnabled ? null : featureUpgradeMessage('singleCleanerStopOrdering')
+          }
+        />
       ) : null}
 
       {showMileagePrompt ? (

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { routingFeaturesForPlan, type EntitlementPlanKey } from '@/lib/billing/entitlements';
 import type { Database } from '@/lib/supabase/database.types';
 import { visitTouchesCalendarDayInTimeZone } from '@/lib/datetime/tenantCalendarDay';
 import { dayMapMissingReasonLabel, describeDayMapVisit } from '@/lib/schedule/dayMap';
@@ -26,10 +27,13 @@ export async function loadCleanerStopOrder(params: {
   timeZone: string;
   cleanerUserId: string;
   cleanerName: string;
+  plan: EntitlementPlanKey;
 }): Promise<CleanerStopOrderView | null> {
   const tenantId = params.tenantId.trim();
   const cleanerUserId = params.cleanerUserId.trim();
   if (!tenantId || !UUID_RE.test(cleanerUserId)) return null;
+  const access = routingFeaturesForPlan(params.plan);
+  if (!access.singleCleanerStopOrdering) return null;
 
   const [loaded, tenantResult, preferenceResult, routeBases, homeResult] = await Promise.all([
     loadDayMapRows({
@@ -42,13 +46,17 @@ export async function loadCleanerStopOrder(params: {
       .from('tenant_customer_scheduling_preferences')
       .select('customer_id, arrival_start, arrival_end')
       .eq('tenant_id', tenantId),
-    loadRouteBaseRows(params.supabase, tenantId),
-    params.supabase
-      .from('tenant_member_scheduling_profiles')
-      .select('user_id, home_latitude, home_longitude')
-      .eq('tenant_id', tenantId)
-      .eq('user_id', cleanerUserId)
-      .maybeSingle(),
+    access.multipleStartLocations
+      ? loadRouteBaseRows(params.supabase, tenantId)
+      : Promise.resolve(null),
+    access.multipleStartLocations
+      ? params.supabase
+          .from('tenant_member_scheduling_profiles')
+          .select('user_id, home_latitude, home_longitude')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', cleanerUserId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   if (tenantResult.error) throw new Error(tenantResult.error.message);

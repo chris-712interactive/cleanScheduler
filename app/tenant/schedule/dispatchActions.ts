@@ -80,6 +80,7 @@ export async function applyDispatchAction(
       tenantId: membership.tenantId,
       dateKey,
       timeZone: tenantRow?.timezone?.trim() || DEFAULT_TENANT_TIMEZONE,
+      plan: planKey,
     });
   } catch {
     return { error: 'Could not build the dispatch.' };

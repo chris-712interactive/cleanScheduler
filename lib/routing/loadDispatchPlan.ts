@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { routingFeaturesForPlan, type EntitlementPlanKey } from '@/lib/billing/entitlements';
 import { visitTouchesCalendarDayInTimeZone } from '@/lib/datetime/tenantCalendarDay';
 import {
   effectiveSchedulingFacts,
@@ -138,9 +139,12 @@ export async function loadDispatchPlan(params: {
   tenantId: string;
   dateKey: string;
   timeZone: string;
+  plan: EntitlementPlanKey;
 }): Promise<DispatchDayView | null> {
   const tenantId = params.tenantId.trim();
   if (!tenantId) return null;
+  const access = routingFeaturesForPlan(params.plan);
+  if (!access.multiCleanerDispatch && !access.routeReoptimization) return null;
 
   const [loaded, tenantResult, preferenceResult, memberResult, timeOffResult] = await Promise.all([
     loadDayMapRows({ supabase: params.supabase, tenantId, dateKey: params.dateKey }),
@@ -191,8 +195,10 @@ export async function loadDispatchPlan(params: {
   );
 
   const [routeBases, homeResult] = await Promise.all([
-    loadRouteBaseRows(params.supabase, tenantId),
-    crewIds.length > 0
+    access.multipleStartLocations
+      ? loadRouteBaseRows(params.supabase, tenantId)
+      : Promise.resolve(null),
+    access.multipleStartLocations && crewIds.length > 0
       ? params.supabase
           .from('tenant_member_scheduling_profiles')
           .select('user_id, home_latitude, home_longitude')

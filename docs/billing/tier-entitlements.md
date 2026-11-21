@@ -252,7 +252,7 @@ Migration: `0084_public_booking_request.sql`. Product notes: `docs/product/publi
 
 ## Stop order (all plans)
 
-Suggested stop order for one cleaner's day is `singleCleanerStopOrdering`. It is included on Starter, Business, Pro, and the trial, so the schedule and the day map do not hide it behind an upgrade. The office applies it from the schedule day view or the day map. Field employees cannot apply it. With `ROUTING_ENGINE_URL` and `ROUTING_ENGINE_TOKEN` the distance is drive time from the self-hosted engine. Without them, or when that call cannot be used, it stays a straight-line estimate. Apply migration `0130_visit_route_sequence.sql` by hand. See `docs/product/stop-order.md` and `infra/routing/README.md`.
+Suggested stop order for one cleaner's day is `singleCleanerStopOrdering`. It is included on Starter, Business, Pro, and the trial, so those workspaces do not see an upgrade sentence. The office applies it from the schedule day view or the day map. The apply action and the solver both check the flag before the engine runs. Field employees cannot apply it. With `ROUTING_ENGINE_URL` and `ROUTING_ENGINE_TOKEN` the distance is drive time from the self-hosted engine. Without them, or when that call cannot be used, it stays a straight-line estimate. Apply migration `0130_visit_route_sequence.sql` by hand. See `docs/product/stop-order.md` and `infra/routing/README.md`.
 
 Suggest dispatch for the whole day is `multiCleanerDispatch`. Business and Pro include it. Starter and the trial see the upgrade sentence and cannot apply it. Field employees do not see it. Apply migration `0133_apply_cleaner_dispatch.sql` by hand before Apply dispatch. It is not applied to shared dev or production from the branch that adds it. See `docs/product/dispatch.md`.
 
@@ -277,7 +277,7 @@ Migration `0076_tenant_marketing_site.sql`.
 
 ## Routing
 
-Routing is included in the plan. It is not a separate purchase. `/schedule/map` stays available on every tier, including the free trial. Do not put a tier check on that page.
+Routing is included in the plan. It is not a separate purchase. Every capability below has a named flag in `lib/billing/entitlements.ts`. Server actions, the drive-time export, and the solvers check that flag before they run. The schedule and day map show `featureUpgradeMessage` when the flag is off. `/schedule/map` checks `dayMap` before it loads pins. Starter, Business, Pro, and the trial all include the day map, so that page does not show an upgrade sentence today.
 
 | Capability                   | Feature key                 | Starter | Business | Pro | Trial |
 | ---------------------------- | --------------------------- | ------- | -------- | --- | ----- |
@@ -288,7 +288,7 @@ Routing is included in the plan. It is not a separate purchase. `/schedule/map` 
 | Multiple start locations     | `multipleStartLocations`    | No      | No       | Yes | No    |
 | Drive-time reports           | `driveTimeReports`          | No      | No       | Yes | No    |
 
-Prices stay $39 / $129 / $299. Stop ordering, dispatch, and the Pro extras read these flags. The day map stays open on every plan. Re-optimize, start locations, and the drive-time report are on the schedule for Pro. Starter, Business, and the trial see the upgrade sentence. Checkout screens and any other billing copy beyond that sentence stay with the entitlement pass. See `docs/product/pro-routing.md`.
+Prices stay $39 / $129 / $299. A trial (`status = trialing`) uses `TRIAL_ENTITLEMENTS` even when a legacy `platform_plan` is set, so trial routing matches Starter. `past_due` keeps the paid tier. A canceled or inactive workspace is locked by portal access before these actions run. Stripe `paused` is stored as `active`, so routing stays on the paid tier. Saved home and named start locations are read by the solver only when `multipleStartLocations` is on. Otherwise the day starts at the office, then the first stop, with no return. See `docs/agents/routing-entitlements.md` and `docs/product/pro-routing.md`.
 
 Blocked features use `This feature is included in the <Plan> plan. Upgrade your plan to use it.` Limit errors name the current plan and say to upgrade the plan. There is no add-on SKU, add-on flag, or add-on grant.
 

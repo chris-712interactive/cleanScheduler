@@ -33,4 +33,4 @@ Product copy is `docs/product/pro-routing.md`. Dispatch and the single-cleaner e
 - When a fixed stop is pulled back onto its cleaner, the saved miles can still be the optimizer's miles for the list before that lock. The label stays straight-line or engine, matching the solve.
 - A team visit that has not started is still pinned by dispatch. Re-optimize freezes stop numbers only for finished, checked-in, and time-locked visits.
 - The Florida extract still cannot route outside Florida. A miss falls back to straight-line and is labeled as an estimate.
-- Full billing UX for these flags is T6.
+- Pricing, the comparison matrix, and the server gates for these flags are in `docs/agents/routing-entitlements.md`.

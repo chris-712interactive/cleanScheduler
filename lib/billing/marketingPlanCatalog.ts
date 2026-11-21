@@ -1,6 +1,19 @@
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
-import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
+import { PLATFORM_TIER_ENTITLEMENTS, type EntitlementFeature } from '@/lib/billing/entitlements';
 import { formatOfficeFieldSeatLine } from '@/lib/billing/teamSeats';
+
+/** Pricing comparison rows for routing. Values come from the entitlement flags. */
+export const ROUTING_COMPARISON_ROWS: ReadonlyArray<{
+  label: string;
+  feature: EntitlementFeature;
+}> = [
+  { label: 'Day map', feature: 'dayMap' },
+  { label: 'Single-cleaner stop ordering', feature: 'singleCleanerStopOrdering' },
+  { label: 'Multi-cleaner dispatch', feature: 'multiCleanerDispatch' },
+  { label: 'Route re-optimization', feature: 'routeReoptimization' },
+  { label: 'Multiple start locations', feature: 'multipleStartLocations' },
+  { label: 'Drive-time reports', feature: 'driveTimeReports' },
+];
 
 /** Curated feature bullets for marketing surfaces (pricing page, trial signup, homepage). */
 export function getMarketingFeatureBullets(tier: PlatformPlanTier): string[] {
