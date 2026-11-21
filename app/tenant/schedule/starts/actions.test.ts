@@ -22,15 +22,25 @@ const harness = vi.hoisted(() => ({
   writeError: null as { message: string; code?: string } | null,
   updates: [] as Array<Record<string, unknown>>,
   tables: [] as string[],
-  geocode: vi.fn(async () => ({
-    latitude: 35.6,
-    longitude: -82.55,
-    geocode_status: 'ok' as const,
-    geocode_reason: null,
-    geocode_source: 'census' as const,
-    geocode_accuracy: 'address:L',
-    geocoded_at: '2026-11-20T00:00:00.000Z',
-  })),
+  geocode: vi.fn(
+    async (): Promise<{
+      latitude: number | null;
+      longitude: number | null;
+      geocode_status: 'ok' | 'pending' | 'failed' | null;
+      geocode_reason: string | null;
+      geocode_source: 'census' | 'geocodio' | null;
+      geocode_accuracy: string | null;
+      geocoded_at: string | null;
+    }> => ({
+      latitude: 35.6,
+      longitude: -82.55,
+      geocode_status: 'ok',
+      geocode_reason: null,
+      geocode_source: 'census',
+      geocode_accuracy: 'address:L',
+      geocoded_at: '2026-11-20T00:00:00.000Z',
+    }),
+  ),
 }));
 
 vi.mock('next/cache', () => ({
@@ -253,7 +263,52 @@ describe('updateRouteLocationAction', () => {
     expect(harness.updates[0]).not.toHaveProperty('latitude');
   });
 
-  it('leaves the place unchanged when the new address cannot be looked up', async () => {
+  it.each([
+    {
+      name: 'an outage',
+      patch: {
+        latitude: null,
+        longitude: null,
+        geocode_status: 'pending' as const,
+        geocode_reason: 'lookup_failed',
+      },
+    },
+    {
+      name: 'no match',
+      patch: {
+        latitude: null,
+        longitude: null,
+        geocode_status: 'failed' as const,
+        geocode_reason: 'no_match',
+      },
+    },
+    {
+      name: 'a failed status that still has a point',
+      patch: {
+        latitude: 35.6,
+        longitude: -82.55,
+        geocode_status: 'failed' as const,
+        geocode_reason: 'no_match',
+      },
+    },
+  ])('leaves the place unchanged on $name', async ({ patch }) => {
+    harness.geocode.mockResolvedValueOnce({
+      ...patch,
+      geocode_source: null,
+      geocode_accuracy: null,
+      geocoded_at: '2026-11-20T00:00:00.000Z',
+    });
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(
+      updateRouteLocationAction({}, placeForm({ city: 'Weaverville' })),
+    ).resolves.toEqual({
+      error: "Couldn't find that address. The place was not changed.",
+    });
+    expect(harness.updates).toEqual([]);
+    errors.mockRestore();
+  });
+
+  it('leaves the place unchanged when the lookup throws', async () => {
     harness.geocode.mockRejectedValueOnce(new Error('census down'));
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(

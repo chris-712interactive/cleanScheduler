@@ -19,6 +19,24 @@ import {
   type RouteStartKind,
 } from '@/lib/routing/routeBases';
 
+const PLACE_NOT_FOUND = "Couldn't find that address. The place was not changed.";
+
+function routePlacePointIsUsable(patch: {
+  latitude: number | null;
+  longitude: number | null;
+  geocode_status: string | null;
+}): boolean {
+  if (patch.geocode_status !== 'ok') return false;
+  if (patch.latitude == null || patch.longitude == null) return false;
+  if (!Number.isFinite(patch.latitude) || !Number.isFinite(patch.longitude)) return false;
+  return (
+    patch.latitude >= -90 &&
+    patch.latitude <= 90 &&
+    patch.longitude >= -180 &&
+    patch.longitude <= 180
+  );
+}
+
 function splitRouteChoice(value: string): {
   kind: RouteStartKind | RouteEndKind | null;
   locationId: string;
@@ -220,6 +238,14 @@ export async function updateRouteLocationAction(
         state: nextState,
         postalCode: nextPostal,
       });
+      if (!routePlacePointIsUsable(patch)) {
+        console.error(
+          '[routing] start location update geocode missed:',
+          patch.geocode_status ?? 'none',
+          patch.geocode_reason ?? 'no reason',
+        );
+        return { error: PLACE_NOT_FOUND };
+      }
       geocodePatch = {
         latitude: patch.latitude,
         longitude: patch.longitude,
@@ -231,7 +257,7 @@ export async function updateRouteLocationAction(
         '[routing] start location update geocode failed:',
         error instanceof Error ? error.message : 'unknown',
       );
-      return { error: "Couldn't find that address. The place was not changed." };
+      return { error: PLACE_NOT_FOUND };
     }
   }
 
