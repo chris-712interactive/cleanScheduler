@@ -119,6 +119,18 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await expect(
     savedSam.getByText('Saved default end for Sam Route: No return', { exact: true }),
   ).toBeVisible();
+  const main = page.locator('#main');
+  await main.getByRole('button', { name: 'Edit South shed', exact: true }).click();
+  await main.getByLabel('Street for South shed', { exact: true }).fill('44 New Shed Road');
+  await main.getByRole('button', { name: 'Save South shed', exact: true }).click();
+  await expect(main.getByText('Start location updated.', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(
+    main.getByText('44 New Shed Road, Asheville, NC, 28801', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    main.getByLabel('Start for Sam Route', { exact: true }).locator('option:checked'),
+  ).toHaveText('South shed');
   for (const text of otherTenant) {
     await expect(page.getByText(text)).toHaveCount(0);
   }
