@@ -82,6 +82,7 @@
     "@types/zxcvbn": "^4.4.5",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.4.5",
+    "happy-dom": "^21.0.4",
     "modern-normalize": "^3.0.1",
     "prettier": "^3.9.5",
     "sass": "^1.101.0",
