@@ -1,12 +1,22 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm';
 import { createRecurringVisitRuleAction } from './actions';
 import { TimezoneOffsetField } from './TimezoneOffsetField';
 import { OFFICE_SET_PRICE_HINT } from '@/lib/billing/resolveVisitExpectedAmount';
 import styles from '../schedule.module.scss';
+
+function SaveRuleButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="primary" disabled={pending} loading={pending}>
+      {pending ? 'Saving…' : 'Save rule'}
+    </Button>
+  );
+}
 
 export function RecurringRuleForm({
   tenantSlug,
@@ -131,9 +141,7 @@ export function RecurringRuleForm({
           defaultValue={60}
         />
       </label>
-      <Button type="submit" variant="primary">
-        Save rule
-      </Button>
+      <SaveRuleButton />
     </form>
   );
 }
