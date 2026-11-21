@@ -14,6 +14,8 @@ function dtstartIcalLine(d: Date): string {
 /**
  * Materializes `tenant_scheduled_visits` for every active recurring rule into
  * the next `horizon_days` window. Idempotent per (recurring_rule_id, starts_at).
+ * Does not email. A series create, change, or cancel sends one customer summary
+ * from the office action. Each generated occurrence stays silent.
  */
 export async function materializeRecurringVisitsForAllTenants(): Promise<{
   rules: number;

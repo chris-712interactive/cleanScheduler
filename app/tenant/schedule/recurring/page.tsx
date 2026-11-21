@@ -18,7 +18,13 @@ import type { CustomerPropertyGroup } from '@/app/tenant/quotes/QuoteCreateForm'
 import type { Tables } from '@/lib/supabase/database.types';
 import { formatCentsAsDollars } from '@/lib/billing/parseMoney';
 import { RecurringConceptCallout } from '@/components/billing/RecurringConceptCallout';
-import { deactivateRecurringVisitRuleAction } from './actions';
+import { isoToLocalDatetimeLocalValue } from '@/lib/datetime/isoToLocalDatetimeLocalValue';
+import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
+import {
+  RECURRING_SERIES_PRESETS,
+  recurringPresetIdForRrule,
+} from '@/lib/schedule/recurringPresets';
+import { deactivateRecurringVisitRuleAction, updateRecurringVisitRuleAction } from './actions';
 import { RecurringRuleForm } from './RecurringRuleForm';
 import styles from '../schedule.module.scss';
 
@@ -82,41 +88,70 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
 
   const err = firstParam(sp.error);
   const created = firstParam(sp.created) === '1';
+  const updated = firstParam(sp.updated) === '1';
+  const crewLater = firstParam(sp.crew) === 'later';
 
-  const [{ data: customers }, { data: properties }, { data: quotes }, { data: rules }] =
-    await Promise.all([
-      db
-        .from('customers')
-        .select(
-          `
+  const [
+    { data: customers },
+    { data: properties },
+    { data: quotes },
+    { data: rules },
+    { data: tenantRow },
+    { data: members },
+  ] = await Promise.all([
+    db
+      .from('customers')
+      .select(
+        `
       id,
       customer_identities ( first_name, last_name, full_name )
     `,
-        )
-        .eq('tenant_id', membership.tenantId)
-        .order('created_at', { ascending: false })
-        .limit(200),
-      db
-        .from('tenant_customer_properties')
-        .select(
-          'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
-        )
-        .eq('tenant_id', membership.tenantId)
-        .order('is_primary', { ascending: false }),
-      db
-        .from('tenant_quotes')
-        .select('id, title, amount_cents')
-        .eq('tenant_id', membership.tenantId)
-        .order('created_at', { ascending: false })
-        .limit(40),
-      db
-        .from('recurring_appointment_rules')
-        .select(
-          'id, title, rrule_definition, anchor_starts_at, is_active, horizon_days, customer_id, expected_amount_cents',
-        )
-        .eq('tenant_id', membership.tenantId)
-        .order('created_at', { ascending: false }),
-    ]);
+      )
+      .eq('tenant_id', membership.tenantId)
+      .order('created_at', { ascending: false })
+      .limit(200),
+    db
+      .from('tenant_customer_properties')
+      .select(
+        'id, customer_id, label, address_line1, address_line2, city, state, postal_code, is_primary',
+      )
+      .eq('tenant_id', membership.tenantId)
+      .order('is_primary', { ascending: false }),
+    db
+      .from('tenant_quotes')
+      .select('id, title, amount_cents')
+      .eq('tenant_id', membership.tenantId)
+      .order('created_at', { ascending: false })
+      .limit(40),
+    db
+      .from('recurring_appointment_rules')
+      .select(
+        'id, title, rrule_definition, anchor_starts_at, is_active, horizon_days, customer_id, expected_amount_cents',
+      )
+      .eq('tenant_id', membership.tenantId)
+      .order('created_at', { ascending: false }),
+    admin.from('tenants').select('timezone').eq('id', membership.tenantId).maybeSingle(),
+    db
+      .from('tenant_memberships')
+      .select('user_id, role')
+      .eq('tenant_id', membership.tenantId)
+      .eq('is_active', true)
+      .order('role', { ascending: true }),
+  ]);
+
+  const tenantTimezone = tenantRow?.timezone ?? DEFAULT_TENANT_TIMEZONE;
+  const memberIds = [...new Set((members ?? []).map((member) => member.user_id))];
+  const { data: memberProfiles } =
+    memberIds.length > 0
+      ? await db.from('user_profiles').select('user_id, display_name').in('user_id', memberIds)
+      : { data: [] as { user_id: string; display_name: string | null }[] };
+  const displayByUserId = new Map(
+    (memberProfiles ?? []).map((profile) => [profile.user_id, profile.display_name?.trim() || '']),
+  );
+  const cleanerOptions = (members ?? []).map((member) => ({
+    id: member.user_id,
+    label: `${displayByUserId.get(member.user_id) || 'Team member'} (${member.role})`,
+  }));
 
   const custList = (customers ?? []) as CustomerPickRow[];
   const customerOptions = custList.map((customer) => ({
@@ -154,7 +189,15 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
           created
             ? {
                 title:
-                  'Rule created. Visits appear after the next cron run (see Vercel Cron or hit the cron route in dev).',
+                  'Series saved. The customer gets one email for the series. Visits appear after the next cron run, and those visits are not emailed one by one.',
+                variant: 'success',
+              }
+            : null,
+          updated
+            ? {
+                title: crewLater
+                  ? 'Series updated. No upcoming visits are on the calendar yet, so the cleaner was not changed.'
+                  : 'Series updated. The customer gets one email when the frequency, time, or cleaner changed.',
                 variant: 'success',
               }
             : null,
@@ -209,16 +252,68 @@ export default async function RecurringScheduleRulesPage({ searchParams }: PageP
                     </pre>
                   </div>
                   {r.is_active ? (
-                    <form
-                      action={deactivateRecurringVisitRuleAction}
-                      style={{ marginTop: 'var(--space-2)' }}
-                    >
-                      <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
-                      <input type="hidden" name="rule_id" value={r.id} />
-                      <Button type="submit" variant="secondary">
-                        Deactivate
-                      </Button>
-                    </form>
+                    <>
+                      <form action={updateRecurringVisitRuleAction} className={styles.form}>
+                        <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                        <input type="hidden" name="rule_id" value={r.id} />
+                        <label className={styles.label}>
+                          Pattern
+                          <select
+                            name="preset"
+                            className={styles.select}
+                            defaultValue={
+                              recurringPresetIdForRrule(r.rrule_definition) ?? '__keep__'
+                            }
+                          >
+                            {recurringPresetIdForRrule(r.rrule_definition) ? null : (
+                              <option value="__keep__">Keep current pattern</option>
+                            )}
+                            {RECURRING_SERIES_PRESETS.map((preset) => (
+                              <option key={preset.id} value={preset.id}>
+                                {preset.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className={styles.label}>
+                          Series time ({tenantTimezone})
+                          <input
+                            name="starts_at"
+                            className={styles.input}
+                            type="datetime-local"
+                            required
+                            defaultValue={isoToLocalDatetimeLocalValue(
+                              String(r.anchor_starts_at),
+                              tenantTimezone,
+                            )}
+                          />
+                        </label>
+                        <label className={styles.label}>
+                          Cleaner for upcoming visits
+                          <select name="cleaner_user_id" className={styles.select} defaultValue="">
+                            <option value="">Leave the current crew</option>
+                            {cleanerOptions.map((cleaner) => (
+                              <option key={cleaner.id} value={cleaner.id}>
+                                {cleaner.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <Button type="submit" variant="secondary">
+                          Save series
+                        </Button>
+                      </form>
+                      <form
+                        action={deactivateRecurringVisitRuleAction}
+                        style={{ marginTop: 'var(--space-2)' }}
+                      >
+                        <input type="hidden" name="tenant_slug" value={membership.tenantSlug} />
+                        <input type="hidden" name="rule_id" value={r.id} />
+                        <Button type="submit" variant="secondary">
+                          Cancel series
+                        </Button>
+                      </form>
+                    </>
                   ) : null}
                 </li>
               ))}
