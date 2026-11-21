@@ -1,6 +1,6 @@
 import { Check, Minus } from 'lucide-react';
 import { PLATFORM_TIER_ENTITLEMENTS } from '@/lib/billing/entitlements';
-import { MARKETING_PLAN_ORDER } from '@/lib/billing/marketingPlanCatalog';
+import { MARKETING_PLAN_ORDER, ROUTING_COMPARISON_ROWS } from '@/lib/billing/marketingPlanCatalog';
 import type { PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import { formatFieldSeatLimit } from '@/lib/billing/teamSeats';
 import styles from './PricingComparisonMatrix.module.scss';
@@ -100,30 +100,14 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     label: 'GPS-verified check-in',
     values: { starter: true, business: true, pro: true },
   },
-  {
-    label: 'Day map',
-    values: { starter: true, business: true, pro: true },
-  },
-  {
-    label: 'Single-cleaner stop ordering',
-    values: { starter: true, business: true, pro: true },
-  },
-  {
-    label: 'Multi-cleaner dispatch',
-    values: { starter: false, business: true, pro: true },
-  },
-  {
-    label: 'Route re-optimization',
-    values: { starter: false, business: false, pro: true },
-  },
-  {
-    label: 'Multiple start locations',
-    values: { starter: false, business: false, pro: true },
-  },
-  {
-    label: 'Drive-time reports',
-    values: { starter: false, business: false, pro: true },
-  },
+  ...ROUTING_COMPARISON_ROWS.map((row) => ({
+    label: row.label,
+    values: {
+      starter: PLATFORM_TIER_ENTITLEMENTS.starter.features[row.feature],
+      business: PLATFORM_TIER_ENTITLEMENTS.business.features[row.feature],
+      pro: PLATFORM_TIER_ENTITLEMENTS.pro.features[row.feature],
+    },
+  })),
   {
     label: 'Email visit & invoice reminders',
     values: { starter: true, business: true, pro: true },

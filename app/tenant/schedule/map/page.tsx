@@ -55,6 +55,19 @@ export default async function DayMapPage({ searchParams }: PageProps) {
     redirect('/');
   }
 
+  const entitlementPlan = await resolveTenantEntitlementPlan(
+    createAdminClient(),
+    membership.tenantId,
+  );
+  if (!isFeatureEnabled(entitlementPlan, 'dayMap')) {
+    return (
+      <div className={styles.page}>
+        <PageHeader title="Day map" backHref="/schedule" backLabel="Schedule" />
+        <p className={styles.notice}>{featureUpgradeMessage('dayMap')}</p>
+      </div>
+    );
+  }
+
   const { data: tenantRow } = await supabase
     .from('tenants')
     .select('timezone')
@@ -70,13 +83,9 @@ export default async function DayMapPage({ searchParams }: PageProps) {
   });
   const styleUrl = resolveDayMapStyleUrl(process.env.NEXT_PUBLIC_MAP_STYLE_URL);
   const officeCanRoute = canApplyStopOrder(membership.role);
-  const entitlementPlan = officeCanRoute
-    ? await resolveTenantEntitlementPlan(createAdminClient(), membership.tenantId)
-    : null;
-  const dispatchEnabled =
-    entitlementPlan != null && isFeatureEnabled(entitlementPlan, 'multiCleanerDispatch');
-  const reoptimizeEnabled =
-    entitlementPlan != null && isFeatureEnabled(entitlementPlan, 'routeReoptimization');
+  const stopOrderEnabled = isFeatureEnabled(entitlementPlan, 'singleCleanerStopOrdering');
+  const dispatchEnabled = isFeatureEnabled(entitlementPlan, 'multiCleanerDispatch');
+  const reoptimizeEnabled = isFeatureEnabled(entitlementPlan, 'routeReoptimization');
   const dispatchPlan =
     officeCanRoute && dispatchEnabled
       ? await loadDispatchPlan({
@@ -84,6 +93,7 @@ export default async function DayMapPage({ searchParams }: PageProps) {
           tenantId: membership.tenantId,
           dateKey,
           timeZone,
+          plan: entitlementPlan,
         })
       : null;
   const savedRouteFingerprint =
@@ -135,7 +145,7 @@ export default async function DayMapPage({ searchParams }: PageProps) {
   }));
   const selectedCleaner = cleanerOptions.find((option) => option.id === cleanerRaw) ?? null;
   const stopOrder =
-    officeCanRoute && selectedCleaner
+    officeCanRoute && stopOrderEnabled && selectedCleaner
       ? await loadCleanerStopOrder({
           supabase,
           tenantId: membership.tenantId,
@@ -143,6 +153,7 @@ export default async function DayMapPage({ searchParams }: PageProps) {
           timeZone,
           cleanerUserId: selectedCleaner.id,
           cleanerName: selectedCleaner.label.replace(/\s+\([^)]*\)$/, ''),
+          plan: entitlementPlan,
         })
       : null;
   const previousDay = shiftDateKey(dateKey, -1);
@@ -220,7 +231,13 @@ export default async function DayMapPage({ searchParams }: PageProps) {
             offer={reoptimizeOffer}
             upgradeMessage={reoptimizeEnabled ? null : featureUpgradeMessage('routeReoptimization')}
           />
-          <StopOrderPanel tenantSlug={membership.tenantSlug} proposal={stopOrder} />
+          <StopOrderPanel
+            tenantSlug={membership.tenantSlug}
+            proposal={stopOrder}
+            upgradeMessage={
+              stopOrderEnabled ? null : featureUpgradeMessage('singleCleanerStopOrdering')
+            }
+          />
         </>
       ) : null}
 

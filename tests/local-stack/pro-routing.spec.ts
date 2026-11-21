@@ -197,6 +197,11 @@ test('business and starter offices see a plan upgrade', async ({ page }) => {
   await page.goto(`${residentialOrigin}/schedule?view=day&date=${day}`);
   await expectUpgrade(page, 'Re-optimize');
   await expect(page.getByRole('button', { name: 'Re-optimize', exact: true })).toHaveCount(0);
+  const businessDispatch = mainRegion(page, 'Suggest dispatch');
+  await expect(
+    businessDispatch.getByRole('button', { name: 'Suggest dispatch', exact: true }),
+  ).toBeVisible();
+  await expect(businessDispatch).not.toContainText('Upgrade your plan');
   await page.goto(`${residentialOrigin}/schedule/starts`);
   await expectUpgrade(page, 'Start locations');
   await expect(page.getByRole('button', { name: 'Save start location', exact: true })).toHaveCount(
@@ -209,6 +214,18 @@ test('business and starter offices see a plan upgrade', async ({ page }) => {
   await signIn(page, commercialOrigin, accounts.commercial.owner.email);
   await page.goto(`${commercialOrigin}/schedule?view=day&date=${day}`);
   await expectUpgrade(page, 'Re-optimize');
+  const starterDispatch = mainRegion(page, 'Suggest dispatch');
+  await expect(starterDispatch).toBeVisible();
+  await expect(starterDispatch).toContainText('included in the Business plan');
+  await expect(starterDispatch).not.toContainText(/add-on/i);
+  await expect(page.getByRole('button', { name: 'Suggest dispatch', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Apply dispatch', exact: true })).toHaveCount(0);
+  await page.goto(`${commercialOrigin}/schedule/map?date=${day}`);
+  await expect(
+    page.locator('#main').getByRole('heading', { name: 'Day map' }).first(),
+  ).toBeVisible();
+  await expect(mainRegion(page, 'Suggest dispatch')).toContainText('included in the Business plan');
+  await expect(page.getByRole('region', { name: 'Start locations', exact: true })).toHaveCount(0);
   await page.goto(`${commercialOrigin}/schedule/starts`);
   await expectUpgrade(page, 'Start locations');
   await page.goto(`${commercialOrigin}/schedule/drive-time`);

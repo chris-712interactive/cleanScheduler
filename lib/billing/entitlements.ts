@@ -390,6 +390,32 @@ export function isFeatureEnabled(plan: EntitlementPlanKey, feature: EntitlementF
   return getEntitlementsForPlan(plan).features[feature];
 }
 
+/** Routing tools. Prices stay on the plan; these flags are the only gate. */
+export const ROUTING_ENTITLEMENT_FEATURES = [
+  'dayMap',
+  'singleCleanerStopOrdering',
+  'multiCleanerDispatch',
+  'routeReoptimization',
+  'multipleStartLocations',
+  'driveTimeReports',
+] as const satisfies readonly EntitlementFeature[];
+
+export type RoutingEntitlementFeature = (typeof ROUTING_ENTITLEMENT_FEATURES)[number];
+
+export function routingFeaturesForPlan(
+  plan: EntitlementPlanKey,
+): Record<RoutingEntitlementFeature, boolean> {
+  const features = getEntitlementsForPlan(plan).features;
+  return {
+    dayMap: features.dayMap,
+    singleCleanerStopOrdering: features.singleCleanerStopOrdering,
+    multiCleanerDispatch: features.multiCleanerDispatch,
+    routeReoptimization: features.routeReoptimization,
+    multipleStartLocations: features.multipleStartLocations,
+    driveTimeReports: features.driveTimeReports,
+  };
+}
+
 export function getPlanLimit(plan: EntitlementPlanKey, limit: NumericEntitlementLimitKey): number {
   return getEntitlementsForPlan(plan).limits[limit];
 }

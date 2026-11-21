@@ -12,15 +12,28 @@ const initial: ApplyStopOrderState = {};
 export function StopOrderPanel({
   tenantSlug,
   proposal,
+  upgradeMessage,
 }: {
   tenantSlug: string;
   proposal: CleanerStopOrderView | null;
+  upgradeMessage?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(applyStopOrderAction, initial);
   const copy = describeStopOrderPanel(proposal);
   const showSuggestion = open || state.success === true;
   const applyDisabled = pending || !copy.applyEnabled;
+
+  if (upgradeMessage) {
+    return (
+      <section className={styles.panel} aria-labelledby="stop-order-heading">
+        <h2 id="stop-order-heading" className={styles.title}>
+          Suggest stop order
+        </h2>
+        <p className={styles.lead}>{upgradeMessage}</p>
+      </section>
+    );
+  }
 
   if (!proposal || copy.kind === 'choose-cleaner') {
     return (
