@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
-import { isFeatureEnabled, resolveTenantEntitlementPlan } from '@/lib/billing/entitlements';
+import { isFeatureEnabled, resolveTenantRoutingPlan } from '@/lib/billing/entitlements';
 import { featureUpgradeMessage } from '@/lib/billing/entitlements';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { scheduleVisitsFromDispatch } from '@/lib/email/cleanerScheduleChange';
@@ -59,7 +59,7 @@ export async function applyDispatchAction(
   }
 
   const reoptimize = String(formData.get('mode') ?? '') === 'reoptimize';
-  const planKey = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  const planKey = await resolveTenantRoutingPlan(admin, membership.tenantId);
   if (reoptimize && !isFeatureEnabled(planKey, 'routeReoptimization')) {
     return { error: featureUpgradeMessage('routeReoptimization') };
   }

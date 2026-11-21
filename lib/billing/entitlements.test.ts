@@ -14,8 +14,10 @@ import {
   limitUpgradeMessage,
   PLATFORM_TIER_ENTITLEMENTS,
   resolveTenantEntitlementPlan,
+  resolveTenantRoutingPlan,
   ROUTING_ENTITLEMENT_FEATURES,
   routingFeaturesForPlan,
+  routingPlanFromBillingRow,
   TRIAL_ENTITLEMENTS,
   type EntitlementPlanKey,
 } from '@/lib/billing/entitlements';
@@ -59,7 +61,13 @@ const ROUTING_MATRIX: Record<
   },
 };
 
-function billingAdmin(row: { status: string; platform_plan: string | null } | null) {
+function billingAdmin(
+  row: {
+    status: string;
+    platform_plan: string | null;
+    stripe_subscription_status?: string | null;
+  } | null,
+) {
   return {
     from() {
       return {
@@ -187,8 +195,15 @@ describe('entitlements', () => {
     ).toBe('pro');
   });
 
-  it('does not add a paused or inactive routing profile', () => {
+  it('keeps a paused Stripe subscription on the mapped active status and an open portal', () => {
     expect(mapStripeSubscriptionStatus('paused')).toBe('active');
+    expect(
+      routingPlanFromBillingRow({
+        status: 'active',
+        platform_plan: 'pro',
+        stripe_subscription_status: 'paused',
+      }),
+    ).toBe('trial');
     expect(
       isTenantPortalSuspended(
         resolveTenantSubscriptionAccess({
@@ -229,6 +244,91 @@ describe('entitlements', () => {
         }),
       ),
     ).toBe(false);
+    expect(
+      isTenantPortalSuspended(
+        resolveTenantSubscriptionAccess({
+          billingStatus: 'active',
+          trialEndsAt: null,
+          tenantIsActive: true,
+          stripeSubscriptionId: 'sub_paused',
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it('gives a paused subscription trial routing and keeps past_due on the paid tier', async () => {
+    const tenantId = 'tenant-1';
+    const paused = {
+      status: 'active',
+      platform_plan: 'pro',
+      stripe_subscription_status: ' paused ',
+    };
+    expect(routingFeaturesForPlan(routingPlanFromBillingRow(paused))).toEqual(
+      routingFeaturesForPlan('trial'),
+    );
+    expect(routingFeaturesForPlan('trial')).toEqual({
+      dayMap: true,
+      singleCleanerStopOrdering: true,
+      multiCleanerDispatch: false,
+      routeReoptimization: false,
+      multipleStartLocations: false,
+      driveTimeReports: false,
+    });
+    expect(await resolveTenantRoutingPlan(billingAdmin(paused), tenantId)).toBe('trial');
+    expect(await resolveTenantEntitlementPlan(billingAdmin(paused), tenantId)).toBe('pro');
+    expect(
+      await resolveTenantRoutingPlan(
+        billingAdmin({
+          status: 'past_due',
+          platform_plan: 'pro',
+          stripe_subscription_status: 'past_due',
+        }),
+        tenantId,
+      ),
+    ).toBe('pro');
+    expect(
+      await resolveTenantRoutingPlan(
+        billingAdmin({
+          status: 'active',
+          platform_plan: 'business',
+          stripe_subscription_status: null,
+        }),
+        tenantId,
+      ),
+    ).toBe('business');
+
+    const selects: string[] = [];
+    const missingColumn = {
+      from() {
+        let sql = '';
+        const chain = {
+          select(value: string) {
+            sql = value;
+            return chain;
+          },
+          eq() {
+            return chain;
+          },
+          maybeSingle: async () => {
+            selects.push(sql);
+            if (sql.includes('stripe_subscription_status')) {
+              return {
+                data: null,
+                error: {
+                  code: '42703',
+                  message:
+                    'column tenant_billing_accounts.stripe_subscription_status does not exist',
+                },
+              };
+            }
+            return { data: { status: 'active', platform_plan: 'pro' }, error: null };
+          },
+        };
+        return chain;
+      },
+    } as unknown as SupabaseClient<Database>;
+    expect(await resolveTenantRoutingPlan(missingColumn, tenantId)).toBe('pro');
+    expect(selects.some((sql) => !sql.includes('stripe_subscription_status'))).toBe(true);
   });
 
   it('tells a blocked workspace which plan includes the feature', () => {

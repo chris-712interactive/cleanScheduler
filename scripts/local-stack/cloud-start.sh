@@ -4,7 +4,7 @@
 set -u
 if command -v sudo >/dev/null 2>&1 && [[ -w /etc/hosts || -n "${SUDO:-}" || $(id -u) -eq 0 ]]; then
   if ! grep -q 'qa-residential.lvh.me' /etc/hosts 2>/dev/null; then
-    printf '\n127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me\n' |
+    printf '\n127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me qa-pro.lvh.me qa-trial.lvh.me qa-past-due.lvh.me\n' |
       sudo tee -a /etc/hosts >/dev/null || true
   fi
 fi

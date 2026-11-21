@@ -18,7 +18,7 @@ Stripe still maps statuses in `mapStripeSubscriptionStatus` before they are stor
 | `canceled`, `incomplete_expired`      | `canceled`                              | no                                |
 | `trialing`, `incomplete`, missing row | `trialing`                              | no                                |
 
-`mapStripeSubscriptionStatus` still stores Stripe `paused` as mapped `active`, so portal access is unchanged. Migration `0132_stripe_subscription_status.sql` adds nullable `tenant_billing_accounts.stripe_subscription_status`. Sync writes the raw Stripe status there. Texting and pack purchases require mapped `active` and a raw status other than `paused`. A null raw status, including rows written before the column existed, keeps the mapped-status rule. If the column is missing, selects fall back and writes drop that field.
+`mapStripeSubscriptionStatus` still stores Stripe `paused` as mapped `active`, so portal access is unchanged. Routing uses the same raw column and the trial routing flags. See `docs/agents/routing-entitlements.md`. Migration `0132_stripe_subscription_status.sql` adds nullable `tenant_billing_accounts.stripe_subscription_status`. Sync writes the raw Stripe status there. Texting and pack purchases require mapped `active` and a raw status other than `paused`. A null raw status, including rows written before the column existed, keeps the mapped-status rule. If the column is missing, selects fall back and writes drop that field.
 
 Existing rows stay null until a later Stripe webhook. A one-time backfill would read each `stripe_subscription_id` from Stripe and set `stripe_subscription_status` to `subscription.status` without changing `status`. Do not run that against a live Stripe account from this change.
 

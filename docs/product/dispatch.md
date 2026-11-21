@@ -1,6 +1,6 @@
 # Suggest dispatch
 
-Owners and admins on Business and Pro can suggest a crew and a stop order for one day. Starter and the free trial do not include it. The screen says which plan does.
+Owners and admins on Business and Pro can suggest a crew and a stop order for one day. Starter, the free trial, and a paused Stripe subscription do not include it. The screen says which plan does. A past-due subscription keeps it.
 
 ## Where
 
