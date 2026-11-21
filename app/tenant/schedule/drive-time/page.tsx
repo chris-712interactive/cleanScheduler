@@ -5,7 +5,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
   featureUpgradeMessage,
   isFeatureEnabled,
-  resolveTenantEntitlementPlan,
+  resolveTenantRoutingPlan,
 } from '@/lib/billing/entitlements';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { todayKey } from '@/lib/mileage/store';
@@ -53,7 +53,7 @@ export default async function DriveTimeReportPage({
     );
   }
 
-  const plan = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  const plan = await resolveTenantRoutingPlan(admin, membership.tenantId);
   if (!isFeatureEnabled(plan, 'driveTimeReports')) {
     return (
       <>

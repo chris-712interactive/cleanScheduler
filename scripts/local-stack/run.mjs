@@ -91,9 +91,19 @@ function ensureHosts() {
   } catch {
     return;
   }
-  if (hosts.includes('qa-pro.lvh.me')) return;
-  const line =
-    '127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me qa-pro.lvh.me\n';
+  const required = [
+    'lvh.me',
+    'my.lvh.me',
+    'admin.lvh.me',
+    'qa-residential.lvh.me',
+    'qa-commercial.lvh.me',
+    'qa-pro.lvh.me',
+    'qa-trial.lvh.me',
+    'qa-past-due.lvh.me',
+  ];
+  const missing = required.filter((host) => !hosts.includes(host));
+  if (missing.length === 0) return;
+  const line = `127.0.0.1 ${missing.join(' ')}\n`;
   const result = spawnSync('sudo', ['tee', '-a', '/etc/hosts'], { input: line, stdio: 'pipe' });
   if ((result.status ?? 1) !== 0) {
     console.warn('Could not add lvh.me hosts. Wildcard DNS for lvh.me must resolve to 127.0.0.1.');

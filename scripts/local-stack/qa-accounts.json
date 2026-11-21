@@ -353,5 +353,187 @@
         }
       ]
     }
+  },
+  "trial": {
+    "slug": "qa-trial",
+    "name": "QA Trial Cleaning",
+    "segment": "residential",
+    "billingStatus": "trialing",
+    "platformPlan": null,
+    "billingInterval": null,
+    "tenantId": "44444444-4444-4444-8444-444444444444",
+    "latitude": 35.55,
+    "longitude": -82.55,
+    "owner": {
+      "userId": "44444444-4444-4444-8444-444444444510",
+      "email": "owner.trial@example.test",
+      "role": "owner",
+      "appRole": "employee",
+      "displayName": "Taylor Trial"
+    },
+    "cleaner": {
+      "userId": "44444444-4444-4444-8444-444444444501",
+      "email": "cleaner.trial@example.test",
+      "role": "employee",
+      "appRole": "employee",
+      "displayName": "Morgan Trial"
+    },
+    "customers": {
+      "noah": {
+        "id": "44444444-4444-4444-8444-444444444201",
+        "identityId": "44444444-4444-4444-8444-444444444101",
+        "firstName": "Noah",
+        "lastName": "Sample",
+        "email": "noah.trial@example.test",
+        "portal": false
+      }
+    },
+    "properties": {
+      "east": {
+        "id": "44444444-4444-4444-8444-444444444301",
+        "customer": "noah",
+        "label": "Noah east",
+        "kind": "residential",
+        "line1": "7 Trial Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": true,
+        "geocode": "ok",
+        "latitude": 35.6,
+        "longitude": -82.4
+      },
+      "west": {
+        "id": "44444444-4444-4444-8444-444444444302",
+        "customer": "noah",
+        "label": "Noah west",
+        "kind": "residential",
+        "line1": "11 Trial West",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": false,
+        "geocode": "ok",
+        "latitude": 35.5,
+        "longitude": -82.8
+      }
+    },
+    "visitId": "44444444-4444-4444-8444-444444444401",
+    "visits": [
+      {
+        "id": "44444444-4444-4444-8444-444444444401",
+        "property": "east",
+        "customer": "noah",
+        "assignee": "cleaner",
+        "hour": 9,
+        "title": "Trial east"
+      },
+      {
+        "id": "44444444-4444-4444-8444-444444444402",
+        "property": "west",
+        "customer": "noah",
+        "assignee": "cleaner",
+        "hour": 13,
+        "title": "Trial west"
+      }
+    ]
+  },
+  "pastDue": {
+    "slug": "qa-past-due",
+    "name": "QA Past Due Cleaning",
+    "segment": "residential",
+    "billingStatus": "past_due",
+    "platformPlan": "pro",
+    "tenantId": "55555555-5555-4555-8555-555555555555",
+    "latitude": 35.55,
+    "longitude": -82.55,
+    "owner": {
+      "userId": "55555555-5555-4555-8555-555555555510",
+      "email": "owner.pastdue@example.test",
+      "role": "owner",
+      "appRole": "employee",
+      "displayName": "Alex Past Due"
+    },
+    "cleaner": {
+      "userId": "55555555-5555-4555-8555-555555555501",
+      "email": "cleaner.pastdue@example.test",
+      "role": "employee",
+      "appRole": "employee",
+      "displayName": "Jordan Past"
+    },
+    "customers": {
+      "eden": {
+        "id": "55555555-5555-4555-8555-555555555201",
+        "identityId": "55555555-5555-4555-8555-555555555101",
+        "firstName": "Eden",
+        "lastName": "Sample",
+        "email": "eden.pastdue@example.test",
+        "portal": false
+      }
+    },
+    "properties": {
+      "north": {
+        "id": "55555555-5555-4555-8555-555555555301",
+        "customer": "eden",
+        "label": "Eden north",
+        "kind": "residential",
+        "line1": "3 Past Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": true,
+        "geocode": "ok",
+        "latitude": 35.61,
+        "longitude": -82.54,
+        "schedulingOverride": {
+          "arrivalStart": "09:00",
+          "arrivalEnd": "10:00"
+        }
+      },
+      "south": {
+        "id": "55555555-5555-4555-8555-555555555302",
+        "customer": "eden",
+        "label": "Eden south",
+        "kind": "residential",
+        "line1": "6 Past West",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": false,
+        "geocode": "ok",
+        "latitude": 35.49,
+        "longitude": -82.61
+      }
+    },
+    "visitId": "55555555-5555-4555-8555-555555555401",
+    "visits": [
+      {
+        "id": "55555555-5555-4555-8555-555555555401",
+        "property": "north",
+        "customer": "eden",
+        "assignee": "cleaner",
+        "hour": 9,
+        "title": "Past locked"
+      },
+      {
+        "id": "55555555-5555-4555-8555-555555555402",
+        "property": "south",
+        "customer": "eden",
+        "assignee": "cleaner",
+        "hour": 13,
+        "title": "Past west"
+      }
+    ],
+    "routing": {
+      "applied": [
+        {
+          "member": "cleaner",
+          "kind": "straight-line",
+          "miles": 3.1,
+          "stops": 2,
+          "fingerprint": "past-due-stale"
+        }
+      ]
+    }
   }
 }

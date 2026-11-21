@@ -6,7 +6,7 @@ Routing stays inside Starter, Business, and Pro. Prices stay $39 / $129 / $299. 
 
 `resolveTenantEntitlementPlan` sends every `status = trialing` row to `TRIAL_ENTITLEMENTS`, including a legacy `platform_plan`. A missing billing row is treated as trialing. Trial routing matches Starter: day map and single-cleaner stop ordering on; multi-cleaner dispatch and the three Pro tools off.
 
-`past_due` keeps the stored paid tier, same as other paid features that are not texting. Stripe `paused` is stored as `active` (`mapStripeSubscriptionStatus`), so routing stays on that paid tier. Texting's extra raw-status check is not used here.
+`past_due` keeps the stored paid tier, same as other paid features that are not texting. Stripe `paused` is still stored as mapped `active` (`mapStripeSubscriptionStatus`), so the portal stays open and other feature gates keep the paid plan. Routing does not. `resolveTenantRoutingPlan` reads `tenant_billing_accounts.stripe_subscription_status`. When that raw value is `paused`, routing uses `TRIAL_ENTITLEMENTS`: day map and single-cleaner stop ordering stay on; multi-cleaner dispatch, re-optimize, multiple start locations, and drive-time reports stay off. A null raw status, including a database that does not have migration `0132` yet, keeps the mapped plan. No new status value and no new migration.
 
 A canceled billing row or `tenants.is_active = false` does not get a separate routing profile. `requireTenantPortalAccess` locks the workspace (`suspended`) before schedule actions run. A canceled row still resolves to its stored `platform_plan` if something calls the resolver directly.
 
@@ -30,3 +30,11 @@ A canceled billing row or `tenants.is_active = false` does not get a separate ro
 - The pricing lead, plan-card bullets, and comparison matrix list the six tools from these flags. The matrix rows read `PLATFORM_TIER_ENTITLEMENTS` through `ROUTING_COMPARISON_ROWS`.
 
 No migration. No Stripe or price change.
+
+## Paused routing
+
+`resolveTenantEntitlementPlan` still ignores raw Stripe status. Returning `trial` from that function would turn on trial-only features for a paused Starter workspace (marketing site, job costing, promotions, and others). Routing screens and actions call `resolveTenantRoutingPlan` instead. Schedule still uses the paid plan for `multiLocationControls`.
+
+Portal suspension stays on mapped `status` and `tenants.is_active`. A paused row is mapped `active`, so it does not show the paused-workspace lock. Texting already blocks raw `paused` on its own.
+
+Local stack: `qa-trial` is `trialing` with a null platform plan. `qa-past-due` is Pro with `past_due`. Both are synthetic `@example.test` offices. The browser checks live in `tests/local-stack/pro-routing.spec.ts`.

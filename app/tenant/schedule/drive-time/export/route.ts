@@ -3,7 +3,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
   featureUpgradeMessage,
   isFeatureEnabled,
-  resolveTenantEntitlementPlan,
+  resolveTenantRoutingPlan,
 } from '@/lib/billing/entitlements';
 import { getPortalContext } from '@/lib/portal';
 import { driveTimeReportCsv } from '@/lib/routing/driveTimeReport';
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Only the office can view drive time.' }, { status: 403 });
   }
   const admin = createAdminClient();
-  const plan = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  const plan = await resolveTenantRoutingPlan(admin, membership.tenantId);
   if (!isFeatureEnabled(plan, 'driveTimeReports')) {
     return NextResponse.json({ error: featureUpgradeMessage('driveTimeReports') }, { status: 403 });
   }
