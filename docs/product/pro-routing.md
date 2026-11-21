@@ -2,7 +2,7 @@
 
 Routing stays part of the plan. It is not a separate purchase. Starter includes the day map and a stop order for one cleaner. Business adds dispatch for the whole crew. Pro adds the three tools on this page.
 
-Starter, Business, and the free trial see: "This feature is included in the Pro plan. Upgrade your plan to use it." They do not see a way to buy an add-on.
+Starter, Business, and the free trial see: "This feature is included in the Pro plan. Upgrade your plan to use it." They do not see a way to buy an add-on. A paused Stripe subscription stays signed in and keeps the day map and one-cleaner stop order. Dispatch, re-optimize, extra start locations, and drive time show the same upgrade sentence until the subscription is active again. A past-due subscription keeps the tools on its plan.
 
 Field employees do not see these tools. Opening Start locations or Drive time sends them back to their jobs. A field employee still edits their own home from Account. They do not see another person's home.
 

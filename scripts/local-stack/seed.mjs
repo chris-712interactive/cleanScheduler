@@ -207,9 +207,13 @@ async function seedTenant(admin, workspace, members) {
     admin.from('tenant_billing_accounts').upsert(
       {
         tenant_id: workspace.tenantId,
-        status: 'active',
-        platform_plan: workspace.platformPlan ?? 'business',
-        billing_interval: 'month',
+        status: workspace.billingStatus ?? 'active',
+        platform_plan: Object.prototype.hasOwnProperty.call(workspace, 'platformPlan')
+          ? workspace.platformPlan
+          : 'business',
+        billing_interval: Object.prototype.hasOwnProperty.call(workspace, 'billingInterval')
+          ? workspace.billingInterval
+          : 'month',
       },
       { onConflict: 'tenant_id' },
     ),
@@ -488,8 +492,37 @@ export async function seedLocalStack(env = process.env) {
   ]);
   await seedRoutingExtras(admin, accounts.pro, proUsers);
 
+  const trialUsers = await seedTenant(admin, accounts.trial, [
+    accounts.trial.owner,
+    accounts.trial.cleaner,
+  ]);
+  await seedCustomers(admin, accounts.trial, null);
+  const trialVisitIds = await seedVisits(admin, accounts.trial, trialUsers);
+  await seedDispatchHours(admin, accounts.trial, trialUsers, [
+    accounts.trial.owner,
+    accounts.trial.cleaner,
+  ]);
+
+  const pastDueUsers = await seedTenant(admin, accounts.pastDue, [
+    accounts.pastDue.owner,
+    accounts.pastDue.cleaner,
+  ]);
+  await seedCustomers(admin, accounts.pastDue, null);
+  const pastDueVisitIds = await seedVisits(admin, accounts.pastDue, pastDueUsers);
+  await seedDispatchHours(admin, accounts.pastDue, pastDueUsers, [
+    accounts.pastDue.owner,
+    accounts.pastDue.cleaner,
+  ]);
+  await seedRoutingExtras(admin, accounts.pastDue, pastDueUsers);
+
   const today = new Date().toISOString().slice(0, 10);
-  const expectedIds = [...residentialVisitIds, ...commercialVisitIds, ...proVisitIds];
+  const expectedIds = [
+    ...residentialVisitIds,
+    ...commercialVisitIds,
+    ...proVisitIds,
+    ...trialVisitIds,
+    ...pastDueVisitIds,
+  ];
   const visits = await must(
     admin.from('tenant_scheduled_visits').select('id, starts_at, tenant_id').in('id', expectedIds),
     'read visits',
@@ -498,7 +531,7 @@ export async function seedLocalStack(env = process.env) {
     throw new Error(`Expected ${expectedIds.length} QA visits, found ${visits.length}.`);
   }
   console.log(
-    `local-stack seed ok tenants=3 visits=${visits.length} day=${today} emails=@example.test`,
+    `local-stack seed ok tenants=5 visits=${visits.length} day=${today} emails=@example.test`,
   );
 }
 

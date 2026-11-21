@@ -6,7 +6,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
   featureUpgradeMessage,
   isFeatureEnabled,
-  resolveTenantEntitlementPlan,
+  resolveTenantRoutingPlan,
 } from '@/lib/billing/entitlements';
 import { sameGeocodeAddress } from '@/lib/geo/censusGeocode';
 import { geocodeColumnsForAddress } from '@/lib/geo/ensurePropertyGeocoded';
@@ -72,7 +72,7 @@ async function officeGate(
     .maybeSingle();
   if (actorError) return { error: 'Could not confirm your role.' };
   if (!canApplyStopOrder(actor?.role)) return { error: 'Only the office can set start locations.' };
-  const plan = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  const plan = await resolveTenantRoutingPlan(admin, membership.tenantId);
   if (!isFeatureEnabled(plan, 'multipleStartLocations')) {
     return { error: featureUpgradeMessage('multipleStartLocations') };
   }

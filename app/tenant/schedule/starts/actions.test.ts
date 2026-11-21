@@ -66,6 +66,7 @@ vi.mock('@/lib/billing/entitlements', () => ({
     'This feature is included in the Pro plan. Upgrade your plan to use it.',
   isFeatureEnabled: () => harness.plan === 'pro',
   resolveTenantEntitlementPlan: async () => harness.plan,
+  resolveTenantRoutingPlan: async () => harness.plan,
 }));
 
 vi.mock('@/lib/geo/ensurePropertyGeocoded', () => ({

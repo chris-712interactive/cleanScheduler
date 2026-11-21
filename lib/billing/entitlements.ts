@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { STRIPE_SUBSCRIPTION_STATUS_COLUMN } from '@/lib/billing/loadTextingBilling';
 import { parsePlatformPlanTier, type PlatformPlanTier } from '@/lib/billing/platformPlanTier';
 import type { Database } from '@/lib/supabase/database.types';
+import { isMissingColumnError } from '@/lib/supabase/optionalColumn';
 
 /** Paid tier or the fixed DB-only free-trial profile. */
 export type EntitlementPlanKey = PlatformPlanTier | 'trial';
@@ -451,26 +453,76 @@ export function assertLimitNotExceeded(
   throw new EntitlementGateError(limitUpgradeMessage(plan, limit, allowed), 'limit_exceeded');
 }
 
+type BillingEntitlementRow = {
+  status?: string | null;
+  platform_plan?: string | null;
+  stripe_subscription_status?: string | null;
+} | null;
+
+/**
+ * Plan key from the mapped billing row.
+ * All `status=trialing` workspaces use the trial profile regardless of legacy `platform_plan`.
+ * A missing row is treated as trialing. Raw Stripe `paused` is ignored here.
+ */
+export function entitlementPlanFromBillingRow(row: BillingEntitlementRow): EntitlementPlanKey {
+  const status = row?.status ?? 'trialing';
+  if (status === 'trialing') return 'trial';
+  return parsePlatformPlanTier(String(row?.platform_plan ?? '')) ?? 'starter';
+}
+
+/**
+ * Routing plan. Stripe `paused` is stored as mapped `active` and does not suspend the portal.
+ * The raw status already on the billing row drops routing to {@link TRIAL_ENTITLEMENTS}.
+ * A null raw status keeps the mapped plan, including when migration 0132 is not applied yet.
+ */
+export function routingPlanFromBillingRow(row: BillingEntitlementRow): EntitlementPlanKey {
+  const raw = row?.stripe_subscription_status?.trim().toLowerCase() ?? '';
+  if (raw === 'paused') return 'trial';
+  return entitlementPlanFromBillingRow(row);
+}
+
+async function loadMappedBillingRow(
+  admin: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<BillingEntitlementRow> {
+  const { data, error } = await admin
+    .from('tenant_billing_accounts')
+    .select('platform_plan, status')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (error) return null;
+  return data;
+}
+
 /**
  * Entitlement profile for feature gates and soft limits.
- * All `status=trialing` workspaces use the trial profile regardless of legacy `platform_plan`.
+ * Does not treat Stripe `paused` as a downgrade. Routing uses {@link resolveTenantRoutingPlan}.
  */
 export async function resolveTenantEntitlementPlan(
   admin: SupabaseClient<Database>,
   tenantId: string,
 ): Promise<EntitlementPlanKey> {
-  const { data } = await admin
+  return entitlementPlanFromBillingRow(await loadMappedBillingRow(admin, tenantId));
+}
+
+/** Routing flags. Paused Stripe subscriptions use the trial routing profile. */
+export async function resolveTenantRoutingPlan(
+  admin: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<EntitlementPlanKey> {
+  const first = await admin
     .from('tenant_billing_accounts')
-    .select('platform_plan, status')
+    .select('platform_plan, status, stripe_subscription_status')
     .eq('tenant_id', tenantId)
     .maybeSingle();
 
-  const status = data?.status ?? 'trialing';
-  if (status === 'trialing') {
-    return 'trial';
+  if (!first.error) return routingPlanFromBillingRow(first.data);
+
+  if (!isMissingColumnError(first.error, STRIPE_SUBSCRIPTION_STATUS_COLUMN)) {
+    return routingPlanFromBillingRow(null);
   }
 
-  return parsePlatformPlanTier(String(data?.platform_plan ?? '')) ?? 'starter';
+  return routingPlanFromBillingRow(await loadMappedBillingRow(admin, tenantId));
 }
 
 /** Paid subscription tier from billing row (`null` during DB-only trial). */

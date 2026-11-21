@@ -3,7 +3,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import {
   featureUpgradeMessage,
   isFeatureEnabled,
-  resolveTenantEntitlementPlan,
+  resolveTenantRoutingPlan,
 } from '@/lib/billing/entitlements';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import {
@@ -37,7 +37,7 @@ export default async function RouteStartsPage() {
     );
   }
 
-  const plan = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  const plan = await resolveTenantRoutingPlan(admin, membership.tenantId);
   if (!isFeatureEnabled(plan, 'multipleStartLocations')) {
     return (
       <>

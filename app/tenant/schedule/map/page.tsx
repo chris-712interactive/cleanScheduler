@@ -15,7 +15,7 @@ import { loadDayMap } from '@/lib/schedule/loadDayMap';
 import {
   featureUpgradeMessage,
   isFeatureEnabled,
-  resolveTenantEntitlementPlan,
+  resolveTenantRoutingPlan,
 } from '@/lib/billing/entitlements';
 import { loadSavedRouteFingerprint } from '@/lib/routing/appliedRoutes';
 import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
@@ -55,10 +55,7 @@ export default async function DayMapPage({ searchParams }: PageProps) {
     redirect('/');
   }
 
-  const entitlementPlan = await resolveTenantEntitlementPlan(
-    createAdminClient(),
-    membership.tenantId,
-  );
+  const entitlementPlan = await resolveTenantRoutingPlan(createAdminClient(), membership.tenantId);
   if (!isFeatureEnabled(entitlementPlan, 'dayMap')) {
     return (
       <div className={styles.page}>

@@ -7,6 +7,8 @@ const password = accounts.password;
 const residentialOrigin = `http://${accounts.residential.slug}.lvh.me:3000`;
 const commercialOrigin = `http://${accounts.commercial.slug}.lvh.me:3000`;
 const proOrigin = `http://${accounts.pro.slug}.lvh.me:3000`;
+const trialOrigin = `http://${accounts.trial.slug}.lvh.me:3000`;
+const pastDueOrigin = `http://${accounts.pastDue.slug}.lvh.me:3000`;
 const otherTenant = ['Quinn Example', '500 Office Park', 'Parker Owner', 'qa-commercial'];
 
 function workspaceDayKey(timeZone: string): string {
@@ -42,10 +44,10 @@ async function signIn(page: Page, origin: string, email: string) {
   await expect(page).not.toHaveURL(/\/sign-in/, { timeout: 30_000 });
 }
 
-async function expectUpgrade(page: Page, heading: string) {
+async function expectUpgrade(page: Page, heading: string, planName = 'Pro') {
   const region = page.getByRole('region', { name: heading, exact: true });
   await expect(region).toBeVisible();
-  await expect(region).toContainText('included in the Pro plan');
+  await expect(region).toContainText(`included in the ${planName} plan`);
   await expect(region).not.toContainText(/add-on/i);
 }
 
@@ -237,4 +239,76 @@ test('field employee cannot use pro routing extras', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Drive time', exact: true })).toHaveCount(0);
   await expect(page.getByText('straight-line estimate')).toHaveCount(0);
   await shot(page, 'field-pro-routing');
+});
+
+test('trial office keeps the day map and stop order and sees upgrade sentences', async ({
+  page,
+}) => {
+  await keepTrafficLocal(page);
+  const day = workspaceDayKey(accounts.timeZone);
+  const cleanerId = accounts.trial.cleaner.userId;
+  await signIn(page, trialOrigin, accounts.trial.owner.email);
+  await page.goto(`${trialOrigin}/schedule?view=day&date=${day}&employee=${cleanerId}`);
+  await expectUpgrade(page, 'Suggest dispatch', 'Business');
+  await expect(page.getByRole('button', { name: 'Suggest dispatch', exact: true })).toHaveCount(0);
+  await expectUpgrade(page, 'Re-optimize');
+  await expect(page.getByRole('button', { name: 'Re-optimize', exact: true })).toHaveCount(0);
+  const stopOrder = page.getByRole('region', { name: 'Suggest stop order', exact: true });
+  await expect(stopOrder).toBeVisible();
+  await expect(stopOrder).not.toContainText('Upgrade your plan');
+  await page.getByRole('button', { name: 'Suggest stop order', exact: true }).click();
+  await expect(page.getByRole('list', { name: 'Suggested stop order' })).toContainText(
+    'Trial east',
+  );
+  await page.goto(`${trialOrigin}/schedule/map?date=${day}`);
+  await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Suggest dispatch', exact: true })).toContainText(
+    'included in the Business plan',
+  );
+  await expect(page.getByRole('region', { name: 'Re-optimize', exact: true })).toContainText(
+    'included in the Pro plan',
+  );
+  await expect(
+    page.getByRole('region', { name: 'Suggest stop order', exact: true }),
+  ).not.toContainText('Upgrade your plan');
+  await page.goto(`${trialOrigin}/schedule/drive-time`);
+  await expectUpgrade(page, 'Drive time');
+  await page.goto(`${trialOrigin}/schedule/starts`);
+  await expectUpgrade(page, 'Start locations');
+  await shot(page, 'trial-routing');
+});
+
+test('past_due pro office keeps paid routing tools', async ({ page }) => {
+  await keepTrafficLocal(page);
+  const day = workspaceDayKey(accounts.timeZone);
+  await signIn(page, pastDueOrigin, accounts.pastDue.owner.email);
+  const response = await page.goto(`${pastDueOrigin}/schedule?view=day&date=${day}`);
+  expect(response?.status() ?? 500).toBeLessThan(500);
+  await expect(page.getByRole('button', { name: 'Suggest dispatch', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('region', { name: 'Suggest dispatch', exact: true }),
+  ).not.toContainText('Upgrade your plan');
+  await expect(page.getByRole('heading', { name: 'Re-optimize', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Re-optimize', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Re-optimize', exact: true })).not.toContainText(
+    'Upgrade your plan',
+  );
+  await page.getByRole('button', { name: 'Re-optimize', exact: true }).click();
+  await expect(page.getByRole('list', { name: 'Re-optimize changes' })).toBeVisible();
+
+  await page.goto(`${pastDueOrigin}/schedule/drive-time`);
+  await expect(page.getByRole('heading', { level: 1, name: /Drive time/ })).toBeVisible();
+  await expect(page.getByText('included in the Pro plan')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Download CSV' })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Jordan Past/ })).toContainText(
+    'straight-line estimate',
+  );
+
+  await page.goto(`${pastDueOrigin}/schedule/starts`);
+  await expect(page.getByRole('heading', { level: 1, name: /Start locations/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Save start location', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Upgrade your plan')).toHaveCount(0);
+  await shot(page, 'past-due-routing');
 });
