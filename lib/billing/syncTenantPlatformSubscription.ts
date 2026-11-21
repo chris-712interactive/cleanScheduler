@@ -24,7 +24,7 @@ export function resolveStripeResourceId(
   return value.id ?? null;
 }
 
-function mapStripeSubscriptionStatus(
+export function mapStripeSubscriptionStatus(
   status: Stripe.Subscription.Status,
 ): Database['public']['Enums']['tenant_billing_status'] {
   switch (status) {

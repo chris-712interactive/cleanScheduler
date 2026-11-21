@@ -9,8 +9,8 @@ Owner-approved assignment of one day's visits across cleaners. Product copy is `
 - Apply is `apply_cleaner_dispatch` (migration `0133`). It locks the snapshot rows, compares times, status, check-in, route sequence, updated time, and assignees, then writes assignees and `route_sequence` in that transaction. Service role only. The action still checks owner or admin from `tenant_memberships.role`, the `multiCleanerDispatch` flag, and that every visit and new cleaner belongs to the tenant. The hidden form fields are a fingerprint and a plan key. The server rebuilds the plan and rejects a mismatch. It does not read `user_metadata`.
 - `0133` is not applied to shared dev or production by this change. Local-stack CI applies it only on the disposable database.
 - Apply emails affected cleaners from the server action after the RPC succeeds. The SQL function still does not send mail. Do not call the visit webhook from this action. SMS stays off. See `docs/agents/cleaner-schedule-email.md`.
-- Gate is `isFeatureEnabled(plan, 'multiCleanerDispatch')`: Business and Pro on, Starter and trial off. The office sees the upgrade sentence. Field employees see nothing. Full billing UX beyond this flag is still T6.
-- Re-optimize, extra start locations, and drive-time reports are Pro. See `docs/agents/pro-routing.md`. A cleaner with no saved start still begins at the business coordinates.
+- Gate is `isFeatureEnabled(plan, 'multiCleanerDispatch')`: Business and Pro on, Starter and trial off. The office sees the upgrade sentence. Field employees see nothing. `loadDispatchPlan` returns before the engine when the flag is off. See `docs/agents/routing-entitlements.md`.
+- Re-optimize, extra start locations, and drive-time reports are Pro. See `docs/agents/pro-routing.md`. A cleaner with no saved start still begins at the business coordinates. Starter, Business, and the trial do not read saved homes or named places. Only `multipleStartLocations` feeds those points into the solver.
 
 ## Constraints already used
 

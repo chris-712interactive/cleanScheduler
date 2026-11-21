@@ -50,8 +50,11 @@ export default async function PricingPage() {
               <span className={styles.eyebrow}>Transparent pricing</span>
               <h1 className={styles.title}>Plans that grow with your cleaning business</h1>
               <p className={styles.lead}>
-                Every plan includes quotes, scheduling, invoicing, and core reports. Upgrade when
-                you need customer portals, campaigns, payroll exports, or advanced analytics.
+                Every plan includes quotes, scheduling, invoicing, and core reports. Starter
+                includes a day map and single-cleaner stop ordering. Business adds multi-cleaner
+                dispatch. Pro adds re-optimization, multiple start locations, and drive-time
+                reports. Upgrade your plan for customer portals, campaigns, payroll exports, or
+                advanced analytics. Text packs are the only prepaid extra.
               </p>
             </Stack>
           </Container>
