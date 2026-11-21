@@ -3,6 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
+import {
+  featureUpgradeMessage,
+  isFeatureEnabled,
+  resolveTenantEntitlementPlan,
+} from '@/lib/billing/entitlements';
 import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { scheduleVisitsAfterStopOrder } from '@/lib/email/cleanerScheduleChange';
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
@@ -50,6 +55,11 @@ export async function applyStopOrderAction(
     return { error: 'Only the office can apply a stop order.' };
   }
 
+  const planKey = await resolveTenantEntitlementPlan(admin, membership.tenantId);
+  if (!isFeatureEnabled(planKey, 'singleCleanerStopOrdering')) {
+    return { error: featureUpgradeMessage('singleCleanerStopOrdering') };
+  }
+
   const { data: cleaner, error: cleanerError } = await admin
     .from('tenant_memberships')
     .select('user_id')
@@ -73,6 +83,7 @@ export async function applyStopOrderAction(
       timeZone: tenantRow?.timezone?.trim() || DEFAULT_TENANT_TIMEZONE,
       cleanerUserId,
       cleanerName: profile?.display_name?.trim() || 'Cleaner',
+      plan: planKey,
     });
   } catch {
     return { error: 'Could not build the stop order.' };

@@ -5,7 +5,7 @@ Session notes for removing add-on purchase language and recording routing on Sta
 ## Decisions
 
 - Clean Scheduler does not sell feature add-ons. A blocked feature says which plan includes it: `This feature is included in the <Plan> plan. Upgrade your plan to use it.` A limit says the current plan cap and to upgrade the plan. The only prepaid extra is a text pack (1,000 SMS segments for $15, or 2,500 for $35). UI copy says text pack, never add-on.
-- There is no add-on flag, SKU, or grant in `lib/billing/entitlements.ts`. Nothing new is turned on except the routing flags below, and those flags are not consulted by the day map. `/schedule/map` is not gated.
+- There is no add-on flag, SKU, or grant in `lib/billing/entitlements.ts`. Nothing new is turned on except the routing flags below. T6 checks `dayMap` on `/schedule/map` before pins load. Every current plan, including the trial, includes that flag, so the page does not show an upgrade sentence.
 - Routing flags (prices unchanged at $39 / $129 / $299):
 
   | Flag                        | Starter | Business | Pro | Trial |
@@ -18,7 +18,7 @@ Session notes for removing add-on purchase language and recording routing on Sta
   | `driveTimeReports`          | no      | no       | yes | no    |
 
 - `minimumTierForFeature` is derived from `PLATFORM_TIER_ENTITLEMENTS`, lowest of Starter, Business, Pro. The free trial is not a minimum tier.
-- Stop order from #282 is owner/admin only and reads `route_sequence` with a fallback when migration `0130` is absent. `singleCleanerStopOrdering` is on for every plan, including the trial, so that screen is not gated. Drive time appears only when the self-hosted engine answers. Otherwise the screen stays straight-line. Suggest dispatch is the Business flag `multiCleanerDispatch`. Starter and the trial see the upgrade sentence. See `docs/agents/dispatch.md`. Pro re-optimize, start locations, and the drive-time report use the three Pro flags. See `docs/agents/pro-routing.md`. Billing screens beyond that upgrade sentence are still open.
+- Stop order from #282 is owner/admin only and reads `route_sequence` with a fallback when migration `0130` is absent. `singleCleanerStopOrdering` is on for every plan, including the trial. The apply action and the solver still check the flag before the engine. Drive time appears only when the self-hosted engine answers. Otherwise the screen stays straight-line. Suggest dispatch is the Business flag `multiCleanerDispatch`. Starter and the trial see the upgrade sentence. See `docs/agents/dispatch.md`. Pro re-optimize, start locations, and the drive-time report use the three Pro flags. See `docs/agents/pro-routing.md`. The pricing page and comparison matrix list the same flags. See `docs/agents/routing-entitlements.md`.
 - `UpgradeOrAddOnModal` still has that file name. The dialog only links to `/billing` with “Upgrade plan.” Renaming it would touch every caller for no user-facing change.
 - `tenant_addons` and `plan_features` were never migrated. Do not add them. Visit “add-on” amounts (`coverage_addon_invoice_id`, quote home add-ons, consultation add-ons) are cleaning extras on a job, not platform features. Leave those words.
 
