@@ -2,7 +2,7 @@
 
 Owners and admins (the office roles that can approve time off) are emailed when a team member submits a request. The message is from Clean Scheduler and links to `/schedule/time-off-requests`. See `docs/product/email-branding.md`.
 
-The person who submitted the request is not emailed about their own request. If no other owner or admin has a login email, the workspace owner or company email is used instead, unless that address is the requester.
+The person who submitted the request is not emailed about their own request. If no other owner or admin has a login email, the workspace owner or company email is used instead, unless that address is the requester. An address on that workspace's email suppression list is skipped for the office request, the same as for the decision email.
 
 Approving a request looks up scheduled jobs assigned to that person whose times overlap the approved window. When any exist:
 

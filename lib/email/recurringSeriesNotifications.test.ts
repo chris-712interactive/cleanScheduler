@@ -40,7 +40,7 @@ function queryResult(data: unknown) {
   return proxy;
 }
 
-function adminStub(options?: { suppressed?: boolean; marketingOptIn?: boolean }) {
+function adminStub(options?: { suppressed?: boolean; marketingOptIn?: boolean; name?: string }) {
   return {
     from(table: string) {
       if (table === 'customers') {
@@ -56,7 +56,7 @@ function adminStub(options?: { suppressed?: boolean; marketingOptIn?: boolean })
       }
       if (table === 'tenants') {
         return queryResult({
-          name: 'Acme Cleaning',
+          name: options?.name ?? 'Acme Cleaning',
           slug: 'acme',
           timezone: 'America/New_York',
           brand_color: '#006D77',
@@ -228,6 +228,23 @@ describe('recurring series email', () => {
     });
     expect(send).not.toHaveBeenCalled();
     expect(result.emailed).toBe(0);
+  });
+
+  it('escapes the workspace name in the body and keeps the subject on one line', async () => {
+    const name = 'Acme</p><img src=x onerror=alert(1)>\r\nBcc: evil@example.com';
+    await notifyCustomerRecurringSeries(adminStub({ name }) as never, {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      action: 'created',
+      snapshot: weekly,
+    });
+
+    const payload = send.mock.calls[0]?.[0] as { html: string; subject: string };
+    expect(payload.html).toContain('Acme&lt;/p&gt;&lt;img src=x onerror=alert(1)&gt;');
+    expect(payload.html).not.toContain('<img src=x');
+    expect(payload.subject).not.toMatch(/[\r\n]/);
+    expect(payload.subject).toContain('Bcc: evil@example.com');
   });
 
   it('does not email generated occurrences from the materializer', () => {

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatDateTimeInTimeZone } from '@/lib/datetime/formatInTimeZone';
 import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
+import { emailSubjectLine } from '@/lib/email/emailSubject';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
@@ -147,6 +148,7 @@ async function sendToEach(
       const sent = await sendTransactionalEmail({
         to,
         ...message,
+        subject: emailSubjectLine(message.subject),
         ...emailDeliveryFields(platformEmailBrand()),
         ...(idempotencyParts
           ? { idempotencyKey: timeOffIdempotencyKey(idempotencyParts(to)) }
@@ -201,11 +203,16 @@ export async function notifyOfficeOfTimeOffRequest(
   ]);
   if (!workspace) return { emailed: 0 };
 
-  const recipients = selectTimeOffNotifyEmails({
+  const selected = selectTimeOffNotifyEmails({
     reviewers,
     excludeUserId: params.requesterUserId,
     fallbackEmails,
   });
+  const recipients: string[] = [];
+  for (const email of selected) {
+    if (await addressSuppressed(admin, params.tenantId, email)) continue;
+    recipients.push(email);
+  }
   if (recipients.length === 0) return { emailed: 0 };
 
   const windowLabel = formatWindow(params.startsAt, params.endsAt, timeZone);

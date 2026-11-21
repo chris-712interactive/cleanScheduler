@@ -6,6 +6,8 @@ import {
   loadTenantEmailBrand,
   tenantEmailBrand,
 } from '@/lib/email/emailBrand';
+import { emailSubjectLine } from '@/lib/email/emailSubject';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import {
   emailButtonHtml,
@@ -248,16 +250,16 @@ export async function notifyCustomerRecurringSeries(
     brand,
     preheader: intro,
     bodyHtml: `
-      <p>${intro}</p>
+      <p>${escapeHtmlLite(intro)}</p>
       ${emailFactsHtml(facts)}
-      <p>${seriesNote}</p>
+      <p>${escapeHtmlLite(seriesNote)}</p>
       ${visitsUrl ? emailButtonHtml({ href: visitsUrl, label: 'View your visits', color: brand.brandColor }) : ''}
     `.trim(),
   });
 
   const sent = await sendTransactionalEmail({
     to: email,
-    subject,
+    subject: emailSubjectLine(subject),
     text,
     html,
     idempotencyKey: recurringSeriesIdempotencyKey({

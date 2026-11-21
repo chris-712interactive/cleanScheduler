@@ -49,7 +49,7 @@ function queryResult(data: unknown, single: unknown = data) {
   return proxy;
 }
 
-function adminStub(options?: { inactive?: boolean; suppressed?: boolean }) {
+function adminStub(options?: { inactive?: boolean; suppressed?: boolean; displayName?: string }) {
   return {
     from(table: string) {
       if (table === 'tenant_memberships') {
@@ -64,7 +64,9 @@ function adminStub(options?: { inactive?: boolean; suppressed?: boolean }) {
           { is_active: active },
         );
       }
-      if (table === 'user_profiles') return queryResult({ display_name: 'Casey Cleaner' });
+      if (table === 'user_profiles') {
+        return queryResult({ display_name: options?.displayName ?? 'Casey Cleaner' });
+      }
       if (table === 'tenants') return queryResult(tenantRow);
       if (table === 'tenant_onboarding_profiles') {
         return queryResult({ owner_email: 'owner@example.com', company_email: null });
@@ -118,6 +120,37 @@ describe('time off email delivery', () => {
     expect(send).toHaveBeenCalledTimes(1);
     expect(send.mock.calls[0]?.[0].to).toBe('owner@example.com');
     expect(send.mock.calls[0]?.[1].idempotencyKey).toMatch(/^time-off-/);
+  });
+
+  it('collapses a line break in the requester name so the subject stays one line', async () => {
+    await notifyOfficeOfTimeOffRequest(
+      adminStub({ displayName: 'Casey\r\nBcc: evil@example.com' }) as never,
+      {
+        tenantId: 'tenant-1',
+        requestId: 'req-1',
+        requesterUserId: 'cleaner-1',
+        startsAt: '2026-06-01T13:00:00.000Z',
+        endsAt: '2026-06-01T21:00:00.000Z',
+        requestNote: 'Doctor',
+      },
+    );
+
+    const subject = (send.mock.calls[0]?.[0] as { subject: string }).subject;
+    expect(subject).not.toMatch(/[\r\n\u0000]/);
+    expect(subject).toContain('Casey Bcc: evil@example.com');
+  });
+
+  it('does not email an owner whose address is on the suppression list', async () => {
+    const result = await notifyOfficeOfTimeOffRequest(adminStub({ suppressed: true }) as never, {
+      tenantId: 'tenant-1',
+      requestId: 'req-1',
+      requesterUserId: 'cleaner-1',
+      startsAt: '2026-06-01T13:00:00.000Z',
+      endsAt: '2026-06-01T21:00:00.000Z',
+      requestNote: '',
+    });
+    expect(result.emailed).toBe(0);
+    expect(send).not.toHaveBeenCalled();
   });
 
   it('emails the cleaner once when time off is approved', async () => {

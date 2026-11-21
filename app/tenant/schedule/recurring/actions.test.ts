@@ -15,6 +15,13 @@ const harness = vi.hoisted(() => ({
     rrule_definition: 'FREQ=WEEKLY;BYDAY=MO;INTERVAL=1',
     anchor_starts_at: '2026-06-01T13:00:00.000Z',
   } as null | Record<string, unknown>,
+  recentSeries: [] as Array<{
+    id: string;
+    created_at: string;
+    rrule_definition: string;
+    anchor_starts_at: string;
+  }>,
+  inserts: 0,
 }));
 
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
@@ -79,21 +86,23 @@ vi.mock('@/lib/supabase/server', () => ({
           if (prop === 'insert' || prop === 'update') {
             return () => {
               op = String(prop);
+              if (prop === 'insert' && table === 'recurring_appointment_rules')
+                harness.inserts += 1;
               return proxy;
             };
           }
           if (prop === 'maybeSingle' || prop === 'single') {
-            return async () => result();
+            return async () => result(false);
           }
           if (prop === 'then') {
             return (resolve: (value: unknown) => unknown) =>
-              Promise.resolve(result()).then(resolve);
+              Promise.resolve(result(true)).then(resolve);
           }
           return () => proxy;
         },
       });
 
-      function result() {
+      function result(list: boolean) {
         if (table === 'customers') return { data: { id: 'cust-1' }, error: null };
         if (table === 'tenants') return { data: { timezone: 'America/New_York' }, error: null };
         if (table === 'recurring_appointment_rules' && op === 'insert') {
@@ -108,6 +117,9 @@ vi.mock('@/lib/supabase/server', () => ({
                 },
                 error: null,
               };
+        }
+        if (table === 'recurring_appointment_rules' && op === 'select' && list) {
+          return { data: harness.recentSeries, error: null };
         }
         if (table === 'recurring_appointment_rules' && op === 'update') {
           return harness.updateError
@@ -163,6 +175,8 @@ describe('recurring series actions do not email a failed write', () => {
     harness.notify.mockClear();
     harness.insertError = null;
     harness.updateError = null;
+    harness.recentSeries = [];
+    harness.inserts = 0;
     harness.updateRow = {
       id: 'rule-1',
       customer_id: 'cust-1',
@@ -202,11 +216,37 @@ describe('recurring series actions do not email a failed write', () => {
       ),
     );
     expect(harness.notify).toHaveBeenCalledTimes(1);
+    expect(harness.inserts).toBe(1);
     expect(harness.notify.mock.calls[0]?.[1]).toMatchObject({
       tenantId: 'tenant-1',
       customerId: 'cust-1',
       action: 'created',
     });
+  });
+
+  it('does not insert or email when the same series was just saved', async () => {
+    harness.recentSeries = [
+      {
+        id: 'rule-existing',
+        created_at: new Date().toISOString(),
+        rrule_definition: 'FREQ=WEEKLY;BYDAY=MO;INTERVAL=1',
+        anchor_starts_at: '2026-06-01T09:00:00.000Z',
+      },
+    ];
+    const url = await capture(() =>
+      createRecurringVisitRuleAction(
+        form({
+          tenant_slug: 'acme',
+          customer_id: 'cust-1',
+          preset: 'weekly_mon',
+          starts_at: '2026-06-01T09:00',
+          client_timezone_offset: '0',
+        }),
+      ),
+    );
+    expect(url).toContain('created=1');
+    expect(harness.inserts).toBe(0);
+    expect(harness.notify).not.toHaveBeenCalled();
   });
 
   it('does not email when a series change fails to save', async () => {

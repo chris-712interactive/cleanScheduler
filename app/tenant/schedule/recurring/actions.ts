@@ -18,6 +18,10 @@ import type { RecurringSeriesSnapshot } from '@/lib/email/recurringSeriesNotific
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
 import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import { rruleForRecurringPreset } from '@/lib/schedule/recurringPresets';
+import {
+  RECENT_SERIES_WINDOW_MS,
+  recentDuplicateSeriesId,
+} from '@/lib/schedule/recentRecurringSeries';
 import { replaceFutureRecurringSeriesCrew } from '@/lib/schedule/replaceRecurringSeriesCrew';
 
 const KEEP_PATTERN = '__keep__';
@@ -160,6 +164,24 @@ export async function createRecurringVisitRuleAction(formData: FormData): Promis
   });
   if ('error' in pricing) {
     redirect(seriesPath(`error=${encodeURIComponent(pricing.error)}`));
+  }
+
+  const now = new Date();
+  const { data: recentRows } = await admin
+    .from('recurring_appointment_rules')
+    .select('id, created_at, rrule_definition, anchor_starts_at')
+    .eq('tenant_id', membership.tenantId)
+    .eq('customer_id', customerId)
+    .eq('is_active', true)
+    .gte('created_at', new Date(now.getTime() - RECENT_SERIES_WINDOW_MS).toISOString());
+  const duplicateId = recentDuplicateSeriesId(recentRows ?? [], {
+    rruleDefinition,
+    anchorStartsAt: anchorIso,
+    now,
+  });
+  if (duplicateId) {
+    revalidatePath('/schedule/recurring');
+    redirect(seriesPath('created=1'));
   }
 
   const { data: created, error } = await admin
