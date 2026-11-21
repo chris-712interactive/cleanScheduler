@@ -131,6 +131,40 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await expect(
     main.getByLabel('Start for Sam Route', { exact: true }).locator('option:checked'),
   ).toHaveText('South shed');
+  const northForm = main.locator('form').filter({ hasText: 'Location name' }).first();
+  await northForm.getByLabel('Location name').fill('North shed');
+  await northForm.getByLabel('Street').fill('18 North Road');
+  await northForm.getByLabel('City').fill('Asheville');
+  await northForm.getByLabel('State').fill('NC');
+  await northForm.getByLabel('Postal code').fill('28801');
+  await northForm.getByRole('button', { name: 'Save start location', exact: true }).click();
+  await expect(northForm.getByText('Start location saved.', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(
+    main.getByText('18 North Road, Asheville, NC, 28801', { exact: true }),
+  ).toBeVisible();
+  await main.getByRole('button', { name: 'Edit South shed', exact: true }).click();
+  await main.getByLabel('Street for South shed', { exact: true }).fill('99 nomatch Road');
+  await main.getByRole('button', { name: 'Save South shed', exact: true }).click();
+  await expect(
+    main.getByText("Couldn't find that address. The place was not changed.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    main.getByText('44 New Shed Road, Asheville, NC, 28801', { exact: true }),
+  ).toBeVisible();
+  await main.getByRole('button', { name: 'Edit North shed', exact: true }).click();
+  await expect(main.getByLabel('Street for North shed', { exact: true })).toBeVisible();
+  await expect(
+    main.getByText("Couldn't find that address. The place was not changed."),
+  ).toHaveCount(0);
+  await page.reload();
+  await expect(
+    main.getByText('44 New Shed Road, Asheville, NC, 28801', { exact: true }),
+  ).toBeVisible();
+  await expect(main.getByText(/nomatch/i)).toHaveCount(0);
+  await expect(
+    main.getByLabel('Start for Sam Route', { exact: true }).locator('option:checked'),
+  ).toHaveText('South shed');
   for (const text of otherTenant) {
     await expect(page.getByText(text)).toHaveCount(0);
   }
