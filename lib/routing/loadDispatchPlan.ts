@@ -19,6 +19,7 @@ import type { TenantRole } from '@/lib/auth/types';
 import { createFleetOptimizer } from '@/lib/routing/fleetOptimizer';
 import {
   clockToSeconds,
+  dispatchCapNote,
   dispatchFingerprint,
   dispatchPlanKey,
   localDayInterval,
@@ -73,6 +74,8 @@ export type DispatchCleanerView = {
   milesLabel: string;
   driveLabel: string | null;
   stops: DispatchStopView[];
+  /** Set when team visits put this cleaner at the daily cap, or one job away. */
+  capNote: string | null;
 };
 
 export type DispatchDayView = {
@@ -194,7 +197,7 @@ export async function loadDispatchPlan(params: {
     (profiles ?? []).map((profile) => [profile.user_id, profile.display_name?.trim() || 'Cleaner']),
   );
 
-  const [routeBases, homeResult] = await Promise.all([
+  const [routeBases, homeResult, capResult] = await Promise.all([
     access.multipleStartLocations
       ? loadRouteBaseRows(params.supabase, tenantId)
       : Promise.resolve(null),
@@ -205,8 +208,17 @@ export async function loadDispatchPlan(params: {
           .eq('tenant_id', tenantId)
           .in('user_id', crewIds)
       : Promise.resolve({ data: [], error: null }),
+    crewIds.length > 0
+      ? params.supabase
+          .from('tenant_member_scheduling_profiles')
+          .select('user_id, max_jobs_per_day')
+          .eq('tenant_id', tenantId)
+          .in('user_id', crewIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
   if (homeResult.error) throw new Error(homeResult.error.message);
+  if (capResult.error) throw new Error(capResult.error.message);
+  const capById = new Map((capResult.data ?? []).map((row) => [row.user_id, row.max_jobs_per_day]));
   const homeById = new Map(
     (homeResult.data ?? []).map((row) => [
       row.user_id,
@@ -250,6 +262,7 @@ export async function loadDispatchPlan(params: {
       timeOff,
       start: base.start,
       end: base.end,
+      maxJobsPerDay: capById.get(id) ?? null,
     };
   });
 
@@ -396,17 +409,34 @@ export async function loadDispatchPlan(params: {
     colorIndex += 1;
   }
 
-  const cleanersView: DispatchCleanerView[] = plan.assignments.map((assignment) => ({
-    id: assignment.cleanerId,
-    name: nameById.get(assignment.cleanerId) || 'Cleaner',
-    color: colorByCleaner.get(assignment.cleanerId) ?? dayMapCleanerColor(0),
-    milesLabel: formatStraightLineMiles(assignment.estimatedMiles),
-    driveLabel:
-      plan.estimateKind === 'drive' && assignment.driveSeconds != null
-        ? driveMetricText(assignment.driveSeconds, assignment.estimatedMiles)
-        : null,
-    stops: assignment.orderedIds.map(stopOf),
-  }));
+  const cleanerInputById = new Map(cleaners.map((cleaner) => [cleaner.id, cleaner]));
+  const cleanersView: DispatchCleanerView[] = plan.assignments.map((assignment) => {
+    const seen = new Set<string>();
+    let assigned = 0;
+    let teamVisits = 0;
+    for (const visit of plan.visits) {
+      if (seen.has(visit.id) || !visit.assigneeIds.includes(assignment.cleanerId)) continue;
+      seen.add(visit.id);
+      assigned += 1;
+      if (visit.assigneeIds.length > 1) teamVisits += 1;
+    }
+    return {
+      id: assignment.cleanerId,
+      name: nameById.get(assignment.cleanerId) || 'Cleaner',
+      color: colorByCleaner.get(assignment.cleanerId) ?? dayMapCleanerColor(0),
+      milesLabel: formatStraightLineMiles(assignment.estimatedMiles),
+      driveLabel:
+        plan.estimateKind === 'drive' && assignment.driveSeconds != null
+          ? driveMetricText(assignment.driveSeconds, assignment.estimatedMiles)
+          : null,
+      stops: assignment.orderedIds.map(stopOf),
+      capNote: dispatchCapNote({
+        maxJobsPerDay: cleanerInputById.get(assignment.cleanerId)?.maxJobsPerDay,
+        assigned,
+        teamVisits,
+      }),
+    };
+  });
 
   const totalMiles = plan.assignments.reduce((sum, row) => sum + row.estimatedMiles, 0);
   const totalSeconds = plan.assignments.reduce((sum, row) => sum + (row.driveSeconds ?? 0), 0);

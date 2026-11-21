@@ -90,6 +90,11 @@ test('office can suggest and apply dispatch across two cleaners', async ({ page 
   const unassigned = page.getByRole('list', { name: 'Unassigned visits' });
   await expect(unassigned.getByText('Route cabin')).toBeVisible();
   await expect(unassigned.getByText("Couldn't locate this address", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(
+      "2 visits couldn't be placed. Couldn't locate this address (1). Lookup will retry (1).",
+    ),
+  ).toBeVisible();
   await expect(unassigned.getByText('Casey Example')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Apply dispatch' }).click();

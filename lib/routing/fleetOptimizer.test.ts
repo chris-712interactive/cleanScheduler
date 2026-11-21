@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DISPATCH_CLEANER_OFF,
+  DISPATCH_JOB_CAP,
   DISPATCH_NO_CLEANER,
   DISPATCH_OUTSIDE_HOURS,
   planDispatchHaversine,
@@ -357,6 +358,72 @@ describe('fleet routing engine', () => {
       changeAssignees: true,
       assigneeIds: [],
     });
+  });
+
+  it('drops flexible visits the engine assigned past the daily job cap', async () => {
+    enableEngine();
+    const day: DispatchPlanRequest = {
+      office: { lat: 0, lng: 0 },
+      cleaners: [
+        {
+          id: 'ada',
+          shiftStartSec: 8 * 3600,
+          shiftEndSec: 17 * 3600,
+          timeOff: [],
+          maxJobsPerDay: 1,
+        },
+      ],
+      visits: [
+        {
+          id: 'pinned',
+          point: { lat: 1, lng: 1 },
+          missingReason: 'Missing map point',
+          pinned: true,
+          lockedAt: 1,
+          startSec: 9 * 3600,
+          endSec: 10 * 3600,
+          assigneeIds: ['ada'],
+          requiredCleanerIds: [],
+          blockedCleanerIds: [],
+        },
+        {
+          id: 'extra',
+          point: { lat: 1.1, lng: 1.1 },
+          missingReason: 'Missing map point',
+          pinned: false,
+          lockedAt: null,
+          startSec: 12 * 3600,
+          endSec: 13 * 3600,
+          assigneeIds: ['ada'],
+          requiredCleanerIds: [],
+          blockedCleanerIds: [],
+        },
+      ],
+    };
+    const captured: { maxTasks: number | null } = { maxTasks: null };
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).endsWith('/valhalla/sources_to_targets')) {
+        return jsonResponse(squareMatrix(3));
+      }
+      const body = JSON.parse(String(init?.body)) as {
+        vehicles: Array<{ max_tasks?: number }>;
+      };
+      captured.maxTasks = body.vehicles[0]?.max_tasks ?? null;
+      return jsonResponse({
+        code: 0,
+        unassigned: [],
+        routes: [
+          {
+            vehicle: 1,
+            steps: [{ type: 'start' }, { type: 'job', id: 1 }, { type: 'job', id: 2 }],
+          },
+        ],
+      });
+    });
+    const result = await new FleetRouteOptimizer({ fetchImpl }).optimize(day);
+    expect(captured.maxTasks).toBe(1);
+    expect(result.assignments[0]?.orderedIds).toEqual(['pinned']);
+    expect(result.unassigned).toEqual([{ id: 'extra', reason: DISPATCH_JOB_CAP }]);
   });
 
   it('drops a flexible visit the engine scheduled outside the shift', async () => {

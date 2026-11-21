@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { missingGeocodeMessage } from '@/lib/geo/geocodeStatus';
 import { crewPropertyKindHelp } from '@/lib/tenant/serviceSegment';
+import { DAILY_JOB_CAP_ERROR } from '@/lib/schedule/dailyJobCap';
 import { formatTagList } from '@/lib/schedule/optimizer/preferences';
 import type { CrewSchedulingProfile } from '@/lib/schedule/optimizer/crewProfile';
 import {
@@ -281,8 +282,12 @@ export function EmployeeSchedulingProfileForm({
                       name="max_jobs_per_day"
                       min={1}
                       max={20}
+                      step={1}
+                      inputMode="numeric"
                       value={maxJobs}
                       placeholder="No cap"
+                      aria-invalid={state.error === DAILY_JOB_CAP_ERROR || undefined}
+                      aria-describedby="max-jobs-per-day-help"
                       onChange={(event) => setMaxJobs(event.target.value)}
                     />
                   </label>
@@ -311,6 +316,15 @@ export function EmployeeSchedulingProfileForm({
                     />
                   </label>
                 </div>
+                <p id="max-jobs-per-day-help" className={styles.note}>
+                  Leave max jobs blank for no cap. That is the only way to set no limit. Use a whole
+                  number from 1 to 20.
+                </p>
+                {state.error === DAILY_JOB_CAP_ERROR ? (
+                  <p className={styles.fieldError} role="alert">
+                    {state.error}
+                  </p>
+                ) : null}
                 <p className={styles.note}>
                   Drive time is in minutes. Leave a box blank for no cap.
                 </p>
