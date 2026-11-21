@@ -85,6 +85,7 @@ export function DispatchPanel({
                     ? 'No stops'
                     : `${cleaner.milesLabel} mi straight-line estimate`}
               </p>
+              {cleaner.capNote ? <p className={styles.meta}>{cleaner.capNote}</p> : null}
               {cleaner.stops.length > 0 ? (
                 <ol className={styles.list} aria-label={`Dispatch for ${cleaner.name}`}>
                   {cleaner.stops.map((stop, index) => (

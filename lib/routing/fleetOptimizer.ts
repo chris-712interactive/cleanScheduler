@@ -1,10 +1,13 @@
 import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
+  DISPATCH_JOB_CAP,
   DISPATCH_OVERLAP,
   DISPATCH_UNPLACED,
   dailyJobCap,
   flexibleAssignmentBlock,
   heldJobCount,
+  heldTeamJobCount,
+  jobCapReason,
   planDispatchHaversine,
   visitIsReassignedByDispatch,
   whyFlexibleVisitIsUnassigned,
@@ -389,7 +392,12 @@ async function solveWithEngine(
       }
       const blocked = flexibleAssignmentBlock(cleaner, visit, held + added);
       if (blocked) {
-        rejectedReason.set(id, blocked);
+        rejectedReason.set(
+          id,
+          blocked === DISPATCH_JOB_CAP
+            ? jobCapReason(heldTeamJobCount(cleaner.id, request.visits))
+            : blocked,
+        );
         unassignedIds.add(id);
         continue;
       }
@@ -485,12 +493,14 @@ async function solveWithEngine(
     unassigned.push({ id: visit.id, reason: NO_ROAD_ROUTE_REASON });
   }
   const assignedCounts = new Map<string, number>();
+  const teamCounts = new Map<string, number>();
   for (const cleaner of cleaners) {
     const flexible = (orderedByCleaner.get(cleaner.id) ?? []).filter((id) => {
       const visit = keptVisits.find((row) => row.id === id);
       return visit != null && visitIsReassignedByDispatch(visit);
     }).length;
     assignedCounts.set(cleaner.id, heldJobCount(cleaner.id, request.visits) + flexible);
+    teamCounts.set(cleaner.id, heldTeamJobCount(cleaner.id, request.visits));
   }
   for (const id of unassignedIds) {
     if (unassigned.some((row) => row.id === id)) continue;
@@ -499,7 +509,9 @@ async function solveWithEngine(
       id,
       reason:
         rejectedReason.get(id) ??
-        (visit ? whyFlexibleVisitIsUnassigned(visit, cleaners, assignedCounts) : DISPATCH_UNPLACED),
+        (visit
+          ? whyFlexibleVisitIsUnassigned(visit, cleaners, assignedCounts, teamCounts)
+          : DISPATCH_UNPLACED),
     });
   }
   unassigned.sort((a, b) => a.id.localeCompare(b.id));

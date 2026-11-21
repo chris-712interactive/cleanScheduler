@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { getAuthContext } from '@/lib/auth/session';
 import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { resolveGeocodedPoint } from '@/lib/geo/censusGeocode';
+import { parseDailyJobCap } from '@/lib/schedule/dailyJobCap';
 import { parseTagList } from '@/lib/schedule/optimizer/preferences';
 import type { Database } from '@/lib/supabase/database.types';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -132,8 +133,10 @@ export async function updateCrewSchedulingProfileAction(
     : savedExperience === 'new' || savedExperience === 'lead'
       ? savedExperience
       : 'standard';
-  const maxJobsPerDay = mayEditOffice
-    ? optionalCap(formData.get('max_jobs_per_day'), 1, 20)
+  const parsedJobs = mayEditOffice ? parseDailyJobCap(formData.get('max_jobs_per_day')) : null;
+  if (parsedJobs && !parsedJobs.ok) return { error: parsedJobs.error };
+  const maxJobsPerDay = parsedJobs?.ok
+    ? parsedJobs.value
     : (existingHome?.max_jobs_per_day ?? null);
   const maxMinutesPerDay = mayEditOffice
     ? optionalCap(formData.get('max_minutes_per_day'), 30, 960)

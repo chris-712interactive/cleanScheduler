@@ -15,7 +15,7 @@ Each cleaner gets a colored list. The colors use the same palette as the day map
 
 A visit that is checked in, finished, a consultation, or has a fixed arrival window stays with its current crew. A visit that already has two or more people stays with that team. This screen does not build a new team.
 
-Each cleaner’s **Max jobs per day** is a hard cap. Jobs that stay with that cleaner — locked visits, team visits, and visits with no map point — count toward it. Jobs this suggestion is allowed to move do not count until they are placed. A blank cap, or a zero, means no limit. When a visit does not fit on anyone, it stays unassigned. The screen states how many visits could not be placed and the reason for each group, then lists the visits. Apply checks the cap again. A plan that would put someone over their max is not saved.
+Each cleaner’s **Max jobs per day** is a hard cap. Jobs that stay with that cleaner — locked visits, team visits, and visits with no map point — count toward it. A team visit counts for every person on it, even when the stop is listed on only one cleaner. When those team visits fill the cap, or leave one job of room, that cleaner’s list says so. Jobs this suggestion is allowed to move do not count until they are placed. Leave the cap blank for no limit. That blank is the only no-limit value. A saved cap is a whole number from 1 to 20. When a visit does not fit on anyone, it stays unassigned. The screen states how many visits could not be placed and the reason for each group, then lists the visits. Apply checks the cap again. A plan that would put someone over their max is not saved.
 
 Until a road engine is connected, miles are labeled **straight-line estimate**. They are not driving miles.
 

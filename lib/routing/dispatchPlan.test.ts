@@ -6,6 +6,7 @@ import {
   DISPATCH_NO_CLEANER,
   DISPATCH_OUTSIDE_HOURS,
   DISPATCH_OVERLAP,
+  dispatchCapNote,
   dispatchFingerprint,
   dispatchJobCapBreach,
   dispatchPlanKey,
@@ -352,9 +353,51 @@ describe('multi-cleaner dispatch plan', () => {
     );
     expect(plan.assignments.find((row) => row.cleanerId === 'bea')?.orderedIds).toEqual([]);
     expect(plan.unassigned.map((row) => row.id).sort()).toEqual(['movable', 'other']);
-    expect(plan.unassigned.every((row) => row.reason === DISPATCH_JOB_CAP)).toBe(true);
-    expect(dispatchUnassignedNotice(plan.unassigned)).toBe(
-      "2 visits couldn't be placed. At the daily job cap (2).",
+    expect(plan.unassigned.every((row) => row.reason === DISPATCH_JOB_CAP)).toBe(false);
+    expect(
+      plan.unassigned.every((row) => row.reason === 'At the daily job cap (includes 1 team visit)'),
+    ).toBe(true);
+  });
+
+  it('names team visits that fill a cleaner whose route does not list them', () => {
+    const plan = planDispatchHaversine({
+      office: { lat: 0, lng: 0 },
+      cleaners: [cleaner('ada', 8, 17, [], 2), cleaner('bea', 8, 17, [], 2)],
+      visits: [
+        visit({
+          id: 'team-a',
+          pinned: true,
+          assigneeIds: ['ada', 'bea'],
+          startSec: 8 * 3600,
+          endSec: 9 * 3600,
+        }),
+        visit({
+          id: 'team-b',
+          pinned: true,
+          assigneeIds: ['ada', 'bea'],
+          startSec: 9 * 3600,
+          endSec: 10 * 3600,
+        }),
+        visit({
+          id: 'extra',
+          point: { lat: 0.4, lng: 0.4 },
+          startSec: 12 * 3600,
+          endSec: 13 * 3600,
+        }),
+      ],
+    });
+    expect(plan.assignments.find((row) => row.cleanerId === 'ada')?.orderedIds).toEqual(
+      expect.arrayContaining(['team-a', 'team-b']),
+    );
+    expect(plan.assignments.find((row) => row.cleanerId === 'bea')?.orderedIds).toEqual([]);
+    expect(plan.unassigned).toEqual([
+      { id: 'extra', reason: 'At the daily job cap (includes 2 team visits)' },
+    ]);
+    expect(dispatchCapNote({ maxJobsPerDay: 2, assigned: 2, teamVisits: 2 })).toBe(
+      'At the daily job cap (includes 2 team visits)',
+    );
+    expect(dispatchCapNote({ maxJobsPerDay: 3, assigned: 2, teamVisits: 2 })).toBe(
+      'Near the daily job cap (includes 2 team visits)',
     );
   });
 
