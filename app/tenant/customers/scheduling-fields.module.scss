@@ -282,6 +282,13 @@
   color: var(--color-text-muted);
 }
 
+.fieldError {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-danger);
+}
+
 .geocodeBadge {
   font-size: var(--font-size-xs);
   font-weight: 700;
