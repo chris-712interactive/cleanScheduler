@@ -7,6 +7,7 @@ import { requireTenantPortalAccess } from '@/lib/auth/tenantAccess';
 import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatetimeLocal';
 import type { TenantRole } from '@/lib/auth/types';
 import {
+  notifyCleanerOfTimeOffDecision,
   notifyOfficeOfTimeOffConflicts,
   notifyOfficeOfTimeOffRequest,
 } from '@/lib/email/timeOffNotifications';
@@ -51,19 +52,24 @@ export async function submitTimeOffRequestAction(
   }
 
   const admin = createAdminClient();
-  const { error } = await admin.from('tenant_member_time_off').insert({
-    tenant_id: membership.tenantId,
-    user_id: auth.user.id,
-    starts_at: startsAt,
-    ends_at: endsAt,
-    request_note: requestNote,
-    status: 'pending',
-  });
+  const { data: created, error } = await admin
+    .from('tenant_member_time_off')
+    .insert({
+      tenant_id: membership.tenantId,
+      user_id: auth.user.id,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      request_note: requestNote,
+      status: 'pending',
+    })
+    .select('id')
+    .single();
 
-  if (error) return { error: error.message };
+  if (error || !created) return { error: error?.message ?? 'Could not save the request.' };
 
   const notified = await notifyOfficeOfTimeOffRequest(admin, {
     tenantId: membership.tenantId,
+    requestId: created.id,
     requesterUserId: auth.user.id,
     startsAt,
     endsAt,
@@ -124,6 +130,16 @@ export async function reviewTimeOffRequestAction(
 
   if (error) return { error: error.message };
   if (!updated) return { error: 'That request is no longer pending.' };
+
+  await notifyCleanerOfTimeOffDecision(admin, {
+    tenantId: membership.tenantId,
+    requestId,
+    cleanerUserId: updated.user_id,
+    decision,
+    startsAt: updated.starts_at,
+    endsAt: updated.ends_at,
+    reviewNote,
+  });
 
   let conflictCount = 0;
   if (decision === 'approved') {

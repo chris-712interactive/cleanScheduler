@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatDateTimeInTimeZone } from '@/lib/datetime/formatInTimeZone';
 import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
+import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
   emailButtonHtml,
   escapeEmailAttr,
@@ -129,22 +131,52 @@ async function loadWorkspace(
   return { slug: data.slug, name: data.name?.trim() || data.slug };
 }
 
+function timeOffIdempotencyKey(parts: string[]): string {
+  const digest = createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 24);
+  return `time-off-${digest}`;
+}
+
 async function sendToEach(
   emails: string[],
   message: { subject: string; text: string; html: string },
-) {
-  await Promise.all(
+  idempotencyParts?: (email: string) => string[],
+): Promise<number> {
+  if (!isResendConfigured() && !isOutboundSuppressed()) return 0;
+  const results = await Promise.all(
     emails.map(async (to) => {
       const sent = await sendTransactionalEmail({
         to,
         ...message,
         ...emailDeliveryFields(platformEmailBrand()),
+        ...(idempotencyParts
+          ? { idempotencyKey: timeOffIdempotencyKey(idempotencyParts(to)) }
+          : {}),
       });
-      if (!sent.ok) {
+      if (sent.ok) return 1;
+      if (!('suppressed' in sent && sent.suppressed)) {
         console.error('[timeOffNotifications] email failed:', sent.error);
       }
+      return 0;
     }),
   );
+  return results.reduce<number>((sum, count) => sum + count, 0);
+}
+
+async function loginEmail(admin: Admin, userId: string): Promise<string | null> {
+  const { data, error } = await admin.auth.admin.getUserById(userId);
+  if (error) return null;
+  const email = data.user?.email?.trim().toLowerCase() ?? '';
+  return email || null;
+}
+
+async function addressSuppressed(admin: Admin, tenantId: string, email: string): Promise<boolean> {
+  const { data } = await admin
+    .from('tenant_email_suppressions')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('email_normalized', email)
+    .maybeSingle();
+  return Boolean(data);
 }
 
 export async function notifyOfficeOfTimeOffRequest(
@@ -155,9 +187,10 @@ export async function notifyOfficeOfTimeOffRequest(
     startsAt: string;
     endsAt: string;
     requestNote: string;
+    requestId?: string;
   },
 ): Promise<{ emailed: number }> {
-  if (!isResendConfigured()) return { emailed: 0 };
+  if (!isResendConfigured() && !isOutboundSuppressed()) return { emailed: 0 };
 
   const [workspace, reviewers, fallbackEmails, memberName, timeZone] = await Promise.all([
     loadWorkspace(admin, params.tenantId),
@@ -201,19 +234,25 @@ export async function notifyOfficeOfTimeOffRequest(
     `.trim(),
   });
 
-  await sendToEach(recipients, {
-    subject: `${workspace.name}: time off request from ${memberName}`,
-    text,
-    html,
-  });
-  return { emailed: recipients.length };
+  const emailed = await sendToEach(
+    recipients,
+    {
+      subject: `${workspace.name}: time off request from ${memberName}`,
+      text,
+      html,
+    },
+    params.requestId
+      ? (email) => ['request', params.tenantId, params.requestId ?? '', email]
+      : undefined,
+  );
+  return { emailed };
 }
 
 export async function notifyOfficeOfHoursChangeRequest(
   admin: Admin,
   params: { tenantId: string; requesterUserId: string },
 ): Promise<{ emailed: number }> {
-  if (!isResendConfigured()) return { emailed: 0 };
+  if (!isResendConfigured() && !isOutboundSuppressed()) return { emailed: 0 };
 
   const [workspace, reviewers, fallbackEmails, memberName] = await Promise.all([
     loadWorkspace(admin, params.tenantId),
@@ -248,12 +287,12 @@ export async function notifyOfficeOfHoursChangeRequest(
     `.trim(),
   });
 
-  await sendToEach(recipients, {
+  const emailed = await sendToEach(recipients, {
     subject: `${workspace.name}: hour change from ${memberName}`,
     text,
     html,
   });
-  return { emailed: recipients.length };
+  return { emailed };
 }
 
 export async function notifyOfficeOfTimeOffConflicts(
@@ -266,7 +305,8 @@ export async function notifyOfficeOfTimeOffConflicts(
     conflicts: TimeOffVisitConflict[];
   },
 ): Promise<{ emailed: number }> {
-  if (!isResendConfigured() || params.conflicts.length === 0) return { emailed: 0 };
+  if (params.conflicts.length === 0) return { emailed: 0 };
+  if (!isResendConfigured() && !isOutboundSuppressed()) return { emailed: 0 };
 
   const [workspace, reviewers, fallbackEmails, memberName, timeZone] = await Promise.all([
     loadWorkspace(admin, params.tenantId),
@@ -320,10 +360,84 @@ export async function notifyOfficeOfTimeOffConflicts(
   });
 
   const jobLabel = params.conflicts.length === 1 ? 'job' : 'jobs';
-  await sendToEach(recipients, {
+  const emailed = await sendToEach(recipients, {
     subject: `${workspace.name}: ${params.conflicts.length} ${jobLabel} to reschedule during ${memberName}'s time off`,
     text,
     html,
   });
-  return { emailed: recipients.length };
+  return { emailed };
+}
+
+/**
+ * Tells the person who requested time off that it was approved or denied.
+ * The address is the Auth login email. `user_metadata` is not read.
+ * An inactive membership or a tenant email suppression skips the send.
+ */
+export async function notifyCleanerOfTimeOffDecision(
+  admin: Admin,
+  params: {
+    tenantId: string;
+    requestId: string;
+    cleanerUserId: string;
+    decision: 'approved' | 'denied';
+    startsAt: string;
+    endsAt: string;
+    reviewNote: string;
+  },
+): Promise<{ emailed: number }> {
+  if (!isResendConfigured() && !isOutboundSuppressed()) return { emailed: 0 };
+
+  const { data: member } = await admin
+    .from('tenant_memberships')
+    .select('is_active')
+    .eq('tenant_id', params.tenantId)
+    .eq('user_id', params.cleanerUserId)
+    .maybeSingle();
+  if (!member?.is_active) return { emailed: 0 };
+
+  const [workspace, email, timeZone] = await Promise.all([
+    loadWorkspace(admin, params.tenantId),
+    loginEmail(admin, params.cleanerUserId),
+    loadTenantTimezone(admin, params.tenantId),
+  ]);
+  if (!workspace || !email) return { emailed: 0 };
+  if (await addressSuppressed(admin, params.tenantId, email)) return { emailed: 0 };
+
+  const approved = params.decision === 'approved';
+  const windowLabel = formatWindow(params.startsAt, params.endsAt, timeZone);
+  const note = params.reviewNote.trim();
+  const listUrl = tenantWorkspaceUrl(workspace.slug, '/schedule/time-off');
+  const decisionLabel = approved ? 'approved' : 'denied';
+  const text = [
+    `${workspace.name} ${decisionLabel} your time off.`,
+    '',
+    `When: ${windowLabel}`,
+    note ? `Note: ${note}` : null,
+    '',
+    `View your requests: ${listUrl}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const html = wrapTransactionalEmailHtml({
+    preheader: `Time off ${decisionLabel}`,
+    bodyHtml: `
+      <p><strong>${escapeHtml(workspace.name)}</strong> ${decisionLabel} your time off.</p>
+      <ul style="padding-left:20px;margin:16px 0;">
+        <li>When: ${escapeHtml(windowLabel)}</li>
+        ${note ? `<li>Note: ${escapeHtml(note)}</li>` : ''}
+      </ul>
+      ${emailButtonHtml({ href: listUrl, label: 'View time off' })}
+    `.trim(),
+  });
+
+  const emailed = await sendToEach(
+    [email],
+    {
+      subject: `${workspace.name}: time off ${decisionLabel}`,
+      text,
+      html,
+    },
+    () => ['decision', params.tenantId, params.requestId, params.decision, email],
+  );
+  return { emailed };
 }
