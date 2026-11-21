@@ -131,13 +131,14 @@ test('pro office can re-optimize, set a start, and read drive time', async ({ pa
   await expect(
     main.getByLabel('Start for Sam Route', { exact: true }).locator('option:checked'),
   ).toHaveText('South shed');
-  await page.getByLabel('Location name').fill('North shed');
-  await page.getByLabel('Street').fill('18 North Road');
-  await page.getByLabel('City').fill('Asheville');
-  await page.getByLabel('State').fill('NC');
-  await page.getByLabel('Postal code').fill('28801');
-  await page.getByRole('button', { name: 'Save start location', exact: true }).click();
-  await expect(page.getByText('Start location saved.')).toBeVisible();
+  const northForm = main.locator('form').filter({ hasText: 'Location name' }).first();
+  await northForm.getByLabel('Location name').fill('North shed');
+  await northForm.getByLabel('Street').fill('18 North Road');
+  await northForm.getByLabel('City').fill('Asheville');
+  await northForm.getByLabel('State').fill('NC');
+  await northForm.getByLabel('Postal code').fill('28801');
+  await northForm.getByRole('button', { name: 'Save start location', exact: true }).click();
+  await expect(northForm.getByText('Start location saved.', { exact: true })).toBeVisible();
   await page.reload();
   await expect(
     main.getByText('18 North Road, Asheville, NC, 28801', { exact: true }),
