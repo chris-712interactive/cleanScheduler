@@ -19,6 +19,7 @@ Owner-approved assignment of one day's visits across cleaners. Product copy is `
 - Approved time off and the member's work window for that weekday block new work. A locked visit still stays if that person is off.
 - Overlapping appointment times are not given to the same cleaner. Appointment clocks are not moved.
 - Blocked cleaners on the customer or property scheduling facts are skipped for flexible visits.
+- `tenant_member_scheduling_profiles.max_jobs_per_day` caps flexible assignments. Null and 0 are unlimited, matching the employee form (blank saves null; the column check is null or 1–20) and the schedule optimizer’s null cap. `0` is not stored and is not treated as a block. Jobs that stay put count first: pinned, team, missing-point, and an uncovered required crew. Each person on a team visit counts that job. Flexible visits count only after they are placed, including one that was already on that cleaner. A cleaner already over the cap from jobs that stay keeps those jobs and receives nothing new. Overflow stays unassigned with **At the daily job cap**. `dispatchUnassignedNotice` is the office line with a count per reason. `loadDispatchPlan` reads `max_jobs_per_day` for the dispatch crew after the Business gate. Home coordinates are still read only when `multipleStartLocations` is on. `applyDispatchAction` calls `dispatchJobCapBreach` after rebuilding the plan and before `apply_cleaner_dispatch`, using a fresh profile read. A stale plan that would add jobs past the cap is rejected. No new migration.
 
 ## Gaps
 

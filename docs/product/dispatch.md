@@ -15,6 +15,8 @@ Each cleaner gets a colored list. The colors use the same palette as the day map
 
 A visit that is checked in, finished, a consultation, or has a fixed arrival window stays with its current crew. A visit that already has two or more people stays with that team. This screen does not build a new team.
 
+Each cleaner’s **Max jobs per day** is a hard cap. Jobs that stay with that cleaner — locked visits, team visits, and visits with no map point — count toward it. Jobs this suggestion is allowed to move do not count until they are placed. A blank cap, or a zero, means no limit. When a visit does not fit on anyone, it stays unassigned. The screen states how many visits could not be placed and the reason for each group, then lists the visits. Apply checks the cap again. A plan that would put someone over their max is not saved.
+
 Until a road engine is connected, miles are labeled **straight-line estimate**. They are not driving miles.
 
 When the self-hosted road engine is connected, the same screen shows **drive time and miles**. One solve covers every cleaner. A stop the road network cannot reach is unassigned as **No road route**. If the engine is not set up, is turned off for this environment, or does not answer in time, the screen stays on the straight-line estimate.

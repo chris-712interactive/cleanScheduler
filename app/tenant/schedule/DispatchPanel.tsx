@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { dispatchUnassignedNotice } from '@/lib/routing/dispatchPlan';
 import type { DispatchDayView } from '@/lib/routing/loadDispatchPlan';
 import { DISPATCH_UNAVAILABLE_MESSAGE } from '@/lib/routing/panelCopy';
 import { applyDispatchAction, type ApplyDispatchState } from './dispatchActions';
@@ -101,13 +102,16 @@ export function DispatchPanel({
           {proposal.unassigned.length === 0 ? (
             <p className={styles.lead}>Every visit is on a cleaner.</p>
           ) : (
-            <ul className={styles.unrouted} aria-label="Unassigned visits">
-              {proposal.unassigned.map((stop) => (
-                <li key={stop.id}>
-                  {stop.title}. <span className={styles.reason}>{stop.reason}</span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className={styles.lead}>{dispatchUnassignedNotice(proposal.unassigned)}</p>
+              <ul className={styles.unrouted} aria-label="Unassigned visits">
+                {proposal.unassigned.map((stop) => (
+                  <li key={stop.id}>
+                    {stop.title}. <span className={styles.reason}>{stop.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           {state.error ? <p className={styles.error}>{state.error}</p> : null}
           {state.success ? <p className={styles.lead}>Dispatch saved.</p> : null}

@@ -9,7 +9,7 @@ import { DEFAULT_TENANT_TIMEZONE } from '@/lib/datetime/formatInTimeZone';
 import { scheduleVisitsFromDispatch } from '@/lib/email/cleanerScheduleChange';
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
 import { recordAppliedRouteDay } from '@/lib/routing/appliedRoutes';
-import { validateDispatchApply } from '@/lib/routing/dispatchPlan';
+import { dispatchJobCapBreach, validateDispatchApply } from '@/lib/routing/dispatchPlan';
 import { loadDispatchPlan } from '@/lib/routing/loadDispatchPlan';
 import { canApplyStopOrder } from '@/lib/routing/locks';
 import { heldDispatchPlan } from '@/lib/routing/reoptimize';
@@ -119,6 +119,31 @@ export async function applyDispatchAction(
     };
   }
   if (decision === 'tenant') return { error: 'That plan does not belong to this workspace.' };
+
+  const { data: capRows, error: capError } = await admin
+    .from('tenant_member_scheduling_profiles')
+    .select('user_id, max_jobs_per_day')
+    .eq('tenant_id', membership.tenantId);
+  if (capError) return { error: 'Could not confirm daily job caps.' };
+  const capByUser = new Map((capRows ?? []).map((row) => [row.user_id, row.max_jobs_per_day]));
+  const cappedIds = new Set(capByUser.keys());
+  for (const visit of held.plan.visits) {
+    for (const cleanerId of visit.assigneeIds) cappedIds.add(cleanerId);
+  }
+  const overCap = dispatchJobCapBreach({
+    cleaners: [...cappedIds].map((id) => ({
+      id,
+      maxJobsPerDay: capByUser.get(id) ?? null,
+    })),
+    planVisits: held.plan.visits,
+  });
+  if (overCap) {
+    return {
+      error: reoptimize
+        ? 'This plan would put a cleaner over their max jobs for the day. Re-optimize again.'
+        : 'This plan would put a cleaner over their max jobs for the day. Suggest dispatch again.',
+    };
+  }
 
   const { error } = await admin.rpc('apply_cleaner_dispatch', {
     p_tenant_id: membership.tenantId,

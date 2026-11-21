@@ -2,8 +2,11 @@ import { isOutboundSuppressed, logOutboundSuppressed } from '@/lib/outbound/supp
 import {
   DISPATCH_OVERLAP,
   DISPATCH_UNPLACED,
+  dailyJobCap,
   flexibleAssignmentBlock,
+  heldJobCount,
   planDispatchHaversine,
+  visitIsReassignedByDispatch,
   whyFlexibleVisitIsUnassigned,
   type DispatchAssignment,
   type DispatchCleanerInput,
@@ -235,6 +238,11 @@ async function solveWithEngine(
       time_window: window,
       skills: [id],
     };
+    const cap = dailyJobCap(cleaner.maxJobsPerDay);
+    if (cap != null) {
+      const room = Math.max(0, cap - heldJobCount(cleaner.id, request.visits));
+      vehicle.max_tasks = pinned.length + room;
+    }
     const endIndex = vehicleEnd.get(cleaner.id);
     if (endIndex != null) vehicle.end_index = endIndex;
     if (breaks.length > 0) vehicle.breaks = breaks;
@@ -258,7 +266,9 @@ async function solveWithEngine(
       const cleaner = cleaners.find((row) => row.id === cleanerId);
       if (!cleaner) return false;
       if (pinned) return primaryCleaner(visit, cleanerIds) === cleaner.id;
-      return flexibleAssignmentBlock(cleaner, visit) == null;
+      return (
+        flexibleAssignmentBlock(cleaner, visit, heldJobCount(cleaner.id, request.visits)) == null
+      );
     });
     if (pinned && allowed.length === 0) throw new EngineFailure('lock-order');
     if (!pinned && visit.requiredCleanerIds.length === 1 && allowed.length === 0) {
@@ -366,6 +376,8 @@ async function solveWithEngine(
   for (const cleaner of cleaners) {
     const ids = orderedByCleaner.get(cleaner.id) ?? [];
     const keptIds: string[] = [];
+    const held = heldJobCount(cleaner.id, request.visits);
+    let added = 0;
     for (const id of ids) {
       const visit = keptVisits.find((row) => row.id === id);
       if (!visit) continue;
@@ -375,7 +387,7 @@ async function solveWithEngine(
         keptIds.push(id);
         continue;
       }
-      const blocked = flexibleAssignmentBlock(cleaner, visit);
+      const blocked = flexibleAssignmentBlock(cleaner, visit, held + added);
       if (blocked) {
         rejectedReason.set(id, blocked);
         unassignedIds.add(id);
@@ -390,6 +402,7 @@ async function solveWithEngine(
         unassignedIds.add(id);
         continue;
       }
+      added += 1;
       keptIds.push(id);
     }
     orderedByCleaner.set(cleaner.id, keptIds);
@@ -471,6 +484,14 @@ async function solveWithEngine(
   for (const visit of dropped) {
     unassigned.push({ id: visit.id, reason: NO_ROAD_ROUTE_REASON });
   }
+  const assignedCounts = new Map<string, number>();
+  for (const cleaner of cleaners) {
+    const flexible = (orderedByCleaner.get(cleaner.id) ?? []).filter((id) => {
+      const visit = keptVisits.find((row) => row.id === id);
+      return visit != null && visitIsReassignedByDispatch(visit);
+    }).length;
+    assignedCounts.set(cleaner.id, heldJobCount(cleaner.id, request.visits) + flexible);
+  }
   for (const id of unassignedIds) {
     if (unassigned.some((row) => row.id === id)) continue;
     const visit = keptVisits.find((row) => row.id === id);
@@ -478,7 +499,7 @@ async function solveWithEngine(
       id,
       reason:
         rejectedReason.get(id) ??
-        (visit ? whyFlexibleVisitIsUnassigned(visit, cleaners) : DISPATCH_UNPLACED),
+        (visit ? whyFlexibleVisitIsUnassigned(visit, cleaners, assignedCounts) : DISPATCH_UNPLACED),
     });
   }
   unassigned.sort((a, b) => a.id.localeCompare(b.id));

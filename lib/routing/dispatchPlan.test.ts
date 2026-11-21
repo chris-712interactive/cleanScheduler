@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   DISPATCH_CLEANER_OFF,
+  DISPATCH_JOB_CAP,
   DISPATCH_NEEDS_CREW,
   DISPATCH_NO_CLEANER,
   DISPATCH_OUTSIDE_HOURS,
   DISPATCH_OVERLAP,
   dispatchFingerprint,
+  dispatchJobCapBreach,
   dispatchPlanKey,
+  dispatchUnassignedNotice,
   planDispatchHaversine,
   validateDispatchApply,
   type DispatchCleanerInput,
   type DispatchPlanRequest,
+  type DispatchPlanVisit,
   type DispatchVisitInput,
 } from '@/lib/routing/dispatchPlan';
 import { straightLineMiles } from '@/lib/routing/haversineOptimizer';
@@ -24,12 +28,14 @@ function cleaner(
   startHour = 6,
   endHour = 21,
   timeOff: DispatchCleanerInput['timeOff'] = [],
+  maxJobsPerDay: number | null = null,
 ): DispatchCleanerInput {
   return {
     id,
     shiftStartSec: startHour * 3600,
     shiftEndSec: endHour * 3600,
     timeOff,
+    maxJobsPerDay,
   };
 }
 
@@ -267,6 +273,147 @@ describe('multi-cleaner dispatch plan', () => {
         ...snapshot.slice(1),
       ]),
     );
+  });
+
+  it('stops assigning once a cleaner reaches max jobs for the day', () => {
+    const plan = planDispatchHaversine({
+      office: { lat: 0, lng: 0 },
+      cleaners: [cleaner('ada', 8, 17, [], 1), cleaner('bea', 8, 17, [], 1)],
+      visits: [
+        visit({
+          id: 'early',
+          point: { lat: 0.1, lng: 0.1 },
+          startSec: 9 * 3600,
+          endSec: 10 * 3600,
+        }),
+        visit({ id: 'mid', point: { lat: 0.2, lng: 0.2 }, startSec: 11 * 3600, endSec: 12 * 3600 }),
+        visit({
+          id: 'late',
+          point: { lat: 0.3, lng: 0.3 },
+          startSec: 13 * 3600,
+          endSec: 14 * 3600,
+        }),
+      ],
+    });
+    const placed = plan.assignments.flatMap((row) => row.orderedIds);
+    expect(placed).toHaveLength(2);
+    expect(plan.assignments.find((row) => row.cleanerId === 'ada')?.orderedIds).toHaveLength(1);
+    expect(plan.assignments.find((row) => row.cleanerId === 'bea')?.orderedIds).toHaveLength(1);
+    expect(plan.unassigned).toEqual([{ id: 'late', reason: DISPATCH_JOB_CAP }]);
+    expect(plan.visits.find((row) => row.id === 'late')).toMatchObject({
+      assigneeIds: [],
+      changeAssignees: true,
+    });
+    expect(dispatchUnassignedNotice(plan.unassigned)).toBe(
+      "1 visit couldn't be placed. At the daily job cap (1).",
+    );
+  });
+
+  it('counts jobs that stay on the cleaner and does not count jobs being reassigned', () => {
+    const plan = planDispatchHaversine({
+      office: { lat: 0, lng: 0 },
+      cleaners: [cleaner('ada', 8, 17, [], 2), cleaner('bea', 8, 17, [], 1)],
+      visits: [
+        visit({
+          id: 'pinned',
+          pinned: true,
+          lockedAt: 1,
+          assigneeIds: ['ada'],
+          startSec: 8 * 3600,
+          endSec: 9 * 3600,
+        }),
+        visit({
+          id: 'team',
+          pinned: true,
+          assigneeIds: ['ada', 'bea'],
+          startSec: 9 * 3600,
+          endSec: 10 * 3600,
+        }),
+        visit({
+          id: 'movable',
+          assigneeIds: ['ada'],
+          point: { lat: 1, lng: 1 },
+          startSec: 12 * 3600,
+          endSec: 13 * 3600,
+        }),
+        visit({
+          id: 'other',
+          point: { lat: 0.2, lng: 0.2 },
+          startSec: 14 * 3600,
+          endSec: 15 * 3600,
+        }),
+      ],
+    });
+    expect(plan.assignments.find((row) => row.cleanerId === 'ada')?.orderedIds).toEqual(
+      expect.arrayContaining(['pinned', 'team']),
+    );
+    expect(plan.assignments.find((row) => row.cleanerId === 'ada')?.orderedIds).not.toContain(
+      'movable',
+    );
+    expect(plan.assignments.find((row) => row.cleanerId === 'bea')?.orderedIds).toEqual([]);
+    expect(plan.unassigned.map((row) => row.id).sort()).toEqual(['movable', 'other']);
+    expect(plan.unassigned.every((row) => row.reason === DISPATCH_JOB_CAP)).toBe(true);
+    expect(dispatchUnassignedNotice(plan.unassigned)).toBe(
+      "2 visits couldn't be placed. At the daily job cap (2).",
+    );
+  });
+
+  it('treats a null or zero daily cap as unlimited', () => {
+    const visits = [
+      visit({ id: 'one', point: { lat: 0.1, lng: 0.1 }, startSec: 9 * 3600, endSec: 10 * 3600 }),
+      visit({ id: 'two', point: { lat: 0.2, lng: 0.2 }, startSec: 11 * 3600, endSec: 12 * 3600 }),
+      visit({ id: 'three', point: { lat: 0.4, lng: 0.4 }, startSec: 13 * 3600, endSec: 14 * 3600 }),
+    ];
+    for (const maxJobsPerDay of [null, 0]) {
+      const plan = planDispatchHaversine({
+        office: { lat: 0, lng: 0 },
+        cleaners: [cleaner('ada', 8, 17, [], maxJobsPerDay)],
+        visits,
+      });
+      expect(plan.unassigned).toEqual([]);
+      expect(plan.assignments[0]?.orderedIds).toHaveLength(3);
+    }
+  });
+
+  it('re-checks the daily cap before a plan is saved', () => {
+    const withinCap: DispatchPlanVisit[] = [
+      { id: 'kept', assigneeIds: ['ada'], routeSequence: 1, changeAssignees: false },
+      { id: 'added', assigneeIds: ['ada'], routeSequence: 2, changeAssignees: true },
+    ];
+    expect(
+      dispatchJobCapBreach({
+        cleaners: [{ id: 'ada', maxJobsPerDay: 2 }],
+        planVisits: withinCap,
+      }),
+    ).toBeNull();
+    expect(
+      dispatchJobCapBreach({
+        cleaners: [{ id: 'ada', maxJobsPerDay: 1 }],
+        planVisits: [
+          { id: 'kept', assigneeIds: ['ada'], routeSequence: 1, changeAssignees: false },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      dispatchJobCapBreach({
+        cleaners: [
+          { id: 'ada', maxJobsPerDay: null },
+          { id: 'bea', maxJobsPerDay: 0 },
+        ],
+        planVisits: [
+          { id: 'a', assigneeIds: ['ada'], routeSequence: 1, changeAssignees: true },
+          { id: 'b', assigneeIds: ['ada'], routeSequence: 2, changeAssignees: true },
+          { id: 'c', assigneeIds: ['bea'], routeSequence: 1, changeAssignees: true },
+          { id: 'd', assigneeIds: ['bea'], routeSequence: 2, changeAssignees: true },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      dispatchJobCapBreach({
+        cleaners: [{ id: 'ada', maxJobsPerDay: 1 }],
+        planVisits: withinCap,
+      }),
+    ).toEqual({ cleanerId: 'ada', cap: 1, assigned: 2, held: 1 });
   });
 
   it('names a missing crew when no cleaner is on the plan', () => {
