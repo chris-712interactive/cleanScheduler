@@ -10,6 +10,7 @@ export const DISPATCH_OUTSIDE_HOURS = 'Outside cleaner hours';
 export const DISPATCH_CLEANER_OFF = 'Cleaner is off';
 export const DISPATCH_OVERLAP = 'Overlaps another visit';
 export const DISPATCH_NEEDS_CREW = 'Needs more than one cleaner';
+export const DISPATCH_JOB_CAP = 'At the daily job cap';
 export const DISPATCH_UNPLACED = 'Could not place this visit';
 
 const TIE_MILES = 1e-9;
@@ -26,6 +27,12 @@ export type DispatchCleanerInput = {
   start?: LatLng | null;
   /** Return point. Null ends the path at the last stop. */
   end?: LatLng | null;
+  /**
+   * `tenant_member_scheduling_profiles.max_jobs_per_day`.
+   * Null means no cap. The office form saves a blank as null and rejects every
+   * other value that is not a whole number from 1 to 20.
+   */
+  maxJobsPerDay?: number | null;
 };
 
 export type DispatchVisitInput = {
@@ -93,6 +100,152 @@ function intervalsOverlap(startA: number, endA: number, startB: number, endB: nu
   return startA < endB && startB < endA;
 }
 
+/**
+ * Null is no cap. A positive count is the cap. The form cannot save 0; a
+ * non-positive number is not a stored cap, so it is not treated as a limit.
+ */
+export function dailyJobCap(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value) || value <= 0) return null;
+  return Math.floor(value);
+}
+
+function teamVisitLabel(teamVisits: number): string | null {
+  const count = Number.isFinite(teamVisits) ? Math.floor(teamVisits) : 0;
+  if (count <= 0) return null;
+  return count === 1 ? '1 team visit' : `${count} team visits`;
+}
+
+/** Office reason when every eligible cleaner is already at the daily cap. */
+export function jobCapReason(teamVisits: number): string {
+  const label = teamVisitLabel(teamVisits);
+  if (!label) return DISPATCH_JOB_CAP;
+  return `At the daily job cap (includes ${label})`;
+}
+
+/**
+ * Shown on a cleaner whose team visits put them at the cap, or one job away,
+ * including when those visits are listed on another person's route.
+ */
+export function dispatchCapNote(input: {
+  maxJobsPerDay: number | null | undefined;
+  assigned: number;
+  teamVisits: number;
+}): string | null {
+  const cap = dailyJobCap(input.maxJobsPerDay);
+  const label = teamVisitLabel(input.teamVisits);
+  if (cap == null || !label) return null;
+  const room = cap - input.assigned;
+  if (room > 1) return null;
+  if (room <= 0) return `At the daily job cap (includes ${label})`;
+  return `Near the daily job cap (includes ${label})`;
+}
+
+/**
+ * True when dispatch may move this visit to another cleaner.
+ * Locked, team, missing-point, and uncovered multi-cleaner visits stay put.
+ */
+export function visitIsReassignedByDispatch(visit: DispatchVisitInput): boolean {
+  if (!usablePoint(visit.point)) return false;
+  if (visit.requiredCleanerIds.length > 1) {
+    const have = new Set(visit.assigneeIds);
+    if (!visit.requiredCleanerIds.every((id) => have.has(id))) return false;
+  }
+  if (visit.pinned || visit.assigneeIds.length > 1) return false;
+  return true;
+}
+
+/** Jobs already on this cleaner today that this suggestion will not move. */
+export function heldJobCount(cleanerId: string, visits: readonly DispatchVisitInput[]): number {
+  const id = cleanerId.trim();
+  if (!id) return 0;
+  const seen = new Set<string>();
+  let count = 0;
+  for (const visit of visits) {
+    if (seen.has(visit.id)) continue;
+    seen.add(visit.id);
+    if (visitIsReassignedByDispatch(visit)) continue;
+    if (visit.assigneeIds.includes(id)) count += 1;
+  }
+  return count;
+}
+
+/** Team visits that stay on this cleaner and still count toward the cap. */
+export function heldTeamJobCount(cleanerId: string, visits: readonly DispatchVisitInput[]): number {
+  const id = cleanerId.trim();
+  if (!id) return 0;
+  const seen = new Set<string>();
+  let count = 0;
+  for (const visit of visits) {
+    if (seen.has(visit.id)) continue;
+    seen.add(visit.id);
+    if (visitIsReassignedByDispatch(visit)) continue;
+    if (visit.assigneeIds.length < 2 || !visit.assigneeIds.includes(id)) continue;
+    count += 1;
+  }
+  return count;
+}
+
+function hasRoomForAnotherJob(cleaner: DispatchCleanerInput, assigned: number): boolean {
+  const cap = dailyJobCap(cleaner.maxJobsPerDay);
+  if (cap == null) return true;
+  return assigned < cap;
+}
+
+export type DispatchJobCapBreach = {
+  cleanerId: string;
+  cap: number;
+  assigned: number;
+  held: number;
+};
+
+/**
+ * Rejects a plan that gives a cleaner more jobs than the cap allows on top of
+ * visits the plan leaves in place. Visits that already sit on that cleaner and
+ * are not reassigned may stay even when they are already over the cap.
+ */
+export function dispatchJobCapBreach(input: {
+  cleaners: readonly Pick<DispatchCleanerInput, 'id' | 'maxJobsPerDay'>[];
+  planVisits: readonly DispatchPlanVisit[];
+}): DispatchJobCapBreach | null {
+  const seenCleaners = new Set<string>();
+  for (const cleaner of input.cleaners) {
+    const cleanerId = cleaner.id.trim();
+    if (!cleanerId || seenCleaners.has(cleanerId)) continue;
+    seenCleaners.add(cleanerId);
+    const cap = dailyJobCap(cleaner.maxJobsPerDay);
+    if (cap == null) continue;
+    const seenVisits = new Set<string>();
+    let assigned = 0;
+    let held = 0;
+    for (const visit of input.planVisits) {
+      if (seenVisits.has(visit.id)) continue;
+      seenVisits.add(visit.id);
+      if (!visit.assigneeIds.includes(cleanerId)) continue;
+      assigned += 1;
+      if (!visit.changeAssignees) held += 1;
+    }
+    if (assigned > cap && assigned > held) {
+      return { cleanerId, cap, assigned, held };
+    }
+  }
+  return null;
+}
+
+/** Office line for visits the suggestion could not place, with a count per reason. */
+export function dispatchUnassignedNotice(unassigned: readonly { reason: string }[]): string | null {
+  if (unassigned.length === 0) return null;
+  const counts = new Map<string, number>();
+  for (const row of unassigned) {
+    const reason = row.reason.trim() || DISPATCH_UNPLACED;
+    counts.set(reason, (counts.get(reason) ?? 0) + 1);
+  }
+  const parts = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([reason, count]) => `${reason} (${count})`);
+  const visits = unassigned.length === 1 ? '1 visit' : `${unassigned.length} visits`;
+  return `${visits} couldn't be placed. ${parts.join('. ')}.`;
+}
+
 function sortedIds(ids: string[]): string[] {
   return [...new Set(ids.map((id) => id.trim()).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b),
@@ -150,6 +303,7 @@ function offDuring(cleaner: DispatchCleanerInput, visit: DispatchVisitInput): bo
 export function flexibleAssignmentBlock(
   cleaner: DispatchCleanerInput,
   visit: DispatchVisitInput,
+  assignedCount = 0,
 ): string | null {
   if (visit.pinned || visit.assigneeIds.length > 1) return null;
   if (visit.requiredCleanerIds.length === 1 && !visit.requiredCleanerIds.includes(cleaner.id)) {
@@ -158,13 +312,16 @@ export function flexibleAssignmentBlock(
   if (!shiftCovers(cleaner, visit)) return DISPATCH_OUTSIDE_HOURS;
   if (offDuring(cleaner, visit)) return DISPATCH_CLEANER_OFF;
   if (visit.blockedCleanerIds.includes(cleaner.id)) return DISPATCH_NO_CLEANER;
+  if (!hasRoomForAnotherJob(cleaner, assignedCount)) return DISPATCH_JOB_CAP;
   return null;
 }
 
-/** Reason when no cleaner can take a flexible visit. Ignores visits already on the day. */
+/** Reason when no cleaner can take a flexible visit. `assignedCounts` includes jobs that stay. */
 export function whyFlexibleVisitIsUnassigned(
   visit: DispatchVisitInput,
   cleaners: DispatchCleanerInput[],
+  assignedCounts?: ReadonlyMap<string, number>,
+  teamCounts?: ReadonlyMap<string, number>,
 ): string {
   if (cleaners.length === 0) return DISPATCH_NO_CLEANER;
   const required = visit.requiredCleanerIds.length === 1 ? new Set(visit.requiredCleanerIds) : null;
@@ -176,6 +333,18 @@ export function whyFlexibleVisitIsUnassigned(
   if (working.length === 0) return DISPATCH_CLEANER_OFF;
   const allowed = working.filter((cleaner) => !visit.blockedCleanerIds.includes(cleaner.id));
   if (allowed.length === 0) return DISPATCH_NO_CLEANER;
+  if (assignedCounts) {
+    const open = allowed.filter((cleaner) =>
+      hasRoomForAnotherJob(cleaner, assignedCounts.get(cleaner.id) ?? 0),
+    );
+    if (open.length === 0) {
+      const team = allowed.reduce(
+        (max, cleaner) => Math.max(max, teamCounts?.get(cleaner.id) ?? 0),
+        0,
+      );
+      return jobCapReason(team);
+    }
+  }
   return DISPATCH_UNPLACED;
 }
 
@@ -210,6 +379,8 @@ function unplacedReason(
   visit: DispatchVisitInput,
   cleaners: DispatchCleanerInput[],
   placed: Map<string, DispatchVisitInput[]>,
+  assigned: ReadonlyMap<string, number>,
+  teamCounts: ReadonlyMap<string, number>,
 ): string {
   if (cleaners.length === 0) return DISPATCH_NO_CLEANER;
   const required = visit.requiredCleanerIds.length === 1 ? new Set(visit.requiredCleanerIds) : null;
@@ -221,7 +392,17 @@ function unplacedReason(
   if (working.length === 0) return DISPATCH_CLEANER_OFF;
   const allowed = working.filter((cleaner) => !visit.blockedCleanerIds.includes(cleaner.id));
   if (allowed.length === 0) return DISPATCH_NO_CLEANER;
-  const open = allowed.filter((cleaner) => !overlapsPlaced(placed, cleaner.id, visit));
+  const underCap = allowed.filter((cleaner) =>
+    hasRoomForAnotherJob(cleaner, assigned.get(cleaner.id) ?? 0),
+  );
+  if (underCap.length === 0) {
+    const team = allowed.reduce(
+      (max, cleaner) => Math.max(max, teamCounts.get(cleaner.id) ?? 0),
+      0,
+    );
+    return jobCapReason(team);
+  }
+  const open = underCap.filter((cleaner) => !overlapsPlaced(placed, cleaner.id, visit));
   if (open.length === 0) return DISPATCH_OVERLAP;
   return DISPATCH_UNPLACED;
 }
@@ -232,6 +413,7 @@ function chooseCleaner(
   placed: Map<string, DispatchVisitInput[]>,
   points: Map<string, LatLng[]>,
   office: LatLng | null,
+  assigned: ReadonlyMap<string, number>,
 ): string | null {
   const required = visit.requiredCleanerIds.length === 1 ? visit.requiredCleanerIds[0] : null;
   let best: DispatchCleanerInput | null = null;
@@ -240,6 +422,7 @@ function chooseCleaner(
     if (required && cleaner.id !== required) continue;
     if (!shiftCovers(cleaner, visit) || offDuring(cleaner, visit)) continue;
     if (visit.blockedCleanerIds.includes(cleaner.id)) continue;
+    if (!hasRoomForAnotherJob(cleaner, assigned.get(cleaner.id) ?? 0)) continue;
     if (overlapsPlaced(placed, cleaner.id, visit)) continue;
     const anchor = anchorFor(cleaner, points, office);
     const miles =
@@ -257,6 +440,17 @@ function chooseCleaner(
     }
   }
   return best?.id ?? null;
+}
+
+function countHeldAssignees(
+  assigned: Map<string, number>,
+  cleanerIds: ReadonlySet<string>,
+  assigneeIds: readonly string[],
+): void {
+  for (const id of assigneeIds) {
+    if (!cleanerIds.has(id)) continue;
+    assigned.set(id, (assigned.get(id) ?? 0) + 1);
+  }
 }
 
 function place(
@@ -325,6 +519,12 @@ export function planDispatchHaversine(request: DispatchPlanRequest): DispatchPla
   const points = new Map<string, LatLng[]>();
   const unassigned: DispatchUnassigned[] = [];
   const held = new Map<string, DispatchPlanVisit>();
+  const assigned = new Map<string, number>();
+  const teamCounts = new Map<string, number>();
+  for (const cleaner of cleaners) {
+    assigned.set(cleaner.id, 0);
+    teamCounts.set(cleaner.id, heldTeamJobCount(cleaner.id, visits));
+  }
 
   const flexible: DispatchVisitInput[] = [];
   for (const visit of visits) {
@@ -341,6 +541,7 @@ export function planDispatchHaversine(request: DispatchPlanRequest): DispatchPla
         routeSequence: null,
         changeAssignees: false,
       });
+      countHeldAssignees(assigned, cleanerIds, normalized.assigneeIds);
       continue;
     }
     if (normalized.requiredCleanerIds.length > 1) {
@@ -354,6 +555,7 @@ export function planDispatchHaversine(request: DispatchPlanRequest): DispatchPla
           routeSequence: null,
           changeAssignees: false,
         });
+        countHeldAssignees(assigned, cleanerIds, normalized.assigneeIds);
         continue;
       }
     }
@@ -367,9 +569,11 @@ export function planDispatchHaversine(request: DispatchPlanRequest): DispatchPla
           routeSequence: null,
           changeAssignees: false,
         });
+        countHeldAssignees(assigned, cleanerIds, normalized.assigneeIds);
         continue;
       }
       place(bags, placedVisits, points, primary, normalized, false, normalized.assigneeIds);
+      countHeldAssignees(assigned, cleanerIds, normalized.assigneeIds);
       continue;
     }
     flexible.push(normalized);
@@ -384,11 +588,11 @@ export function planDispatchHaversine(request: DispatchPlanRequest): DispatchPla
   });
 
   for (const visit of flexible) {
-    const cleanerId = chooseCleaner(visit, cleaners, placedVisits, points, office);
+    const cleanerId = chooseCleaner(visit, cleaners, placedVisits, points, office, assigned);
     if (!cleanerId) {
       unassigned.push({
         id: visit.id,
-        reason: unplacedReason(visit, cleaners, placedVisits),
+        reason: unplacedReason(visit, cleaners, placedVisits, assigned, teamCounts),
       });
       held.set(visit.id, {
         id: visit.id,
@@ -399,6 +603,7 @@ export function planDispatchHaversine(request: DispatchPlanRequest): DispatchPla
       continue;
     }
     place(bags, placedVisits, points, cleanerId, visit, true, [cleanerId]);
+    assigned.set(cleanerId, (assigned.get(cleanerId) ?? 0) + 1);
   }
 
   const byId = new Map(visits.map((visit) => [visit.id, visit]));
