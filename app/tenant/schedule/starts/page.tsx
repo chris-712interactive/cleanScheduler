@@ -57,7 +57,7 @@ export default async function RouteStartsPage() {
       .eq('is_active', true),
     admin
       .from('tenant_route_locations')
-      .select('id, label, latitude, longitude')
+      .select('id, label, address_line1, city, state, postal_code, latitude, longitude')
       .eq('tenant_id', membership.tenantId)
       .order('label'),
     admin
@@ -131,6 +131,14 @@ export default async function RouteStartsPage() {
           id: place.id,
           label: place.label,
           located: place.latitude != null && place.longitude != null,
+          addressLine1: place.address_line1,
+          city: place.city ?? '',
+          state: place.state ?? '',
+          postalCode: place.postal_code ?? '',
+          addressLine: [place.address_line1, place.city, place.state, place.postal_code]
+            .map((part) => part?.trim() ?? '')
+            .filter(Boolean)
+            .join(', '),
         }))}
         cleaners={crew.map((member) => {
           const rows = basesByUser.get(member.user_id) ?? [];

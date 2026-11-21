@@ -13,7 +13,7 @@ Single-cleaner stop order can use a self-hosted Valhalla matrix and a VROOM solv
 - Locked stops get non-overlapping VROOM time windows wider than a full tour, so flexible stops can sit between them and waiting does not change the travel cost. The result is still checked against lock order.
 - A stop with no finite drive from the start, or that cannot be paired with the stops that remain, is unrouted as `No road route`. Other stops still use the engine. If none remain, the whole day falls back to straight-line miles.
 - The matrix is `costing: auto`, `units: miles`. VROOM profile is `auto`. Durations are seconds. Distances are meters. The vehicle has a start and no end, so it does not return to the office.
-- No migration for the single-cleaner engine. `route_sequence` is still `0130`. Multi-cleaner dispatch is `docs/agents/dispatch.md` and uses `0133` for the atomic apply. Pro re-optimize, extra starts, and drive-time reports are `docs/agents/pro-routing.md` and use `0134`.
+- No migration for the single-cleaner engine. `route_sequence` is still `0130`. Multi-cleaner dispatch is `docs/agents/dispatch.md` and uses `0133` for the atomic apply. Pro re-optimize, extra starts, and drive-time reports are `docs/agents/pro-routing.md`. `0134` creates those tables. `0135` requires an active member on office writes to `tenant_cleaner_route_bases` and is not applied by the agent.
 - CI does not call a real engine. Tests pass a mock `fetch`. Local-stack leaves the env vars unset, so the straight-line copy stays what `tests/local-stack/stop-order.spec.ts` looks for.
 
 ## Verify against a live engine later
