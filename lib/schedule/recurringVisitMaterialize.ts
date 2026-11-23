@@ -1,15 +1,9 @@
-import { rrulestr } from 'rrule';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
 import { isRecurringOccurrenceSkipped } from '@/lib/schedule/recurringOccurrenceSkips';
+import { seriesOccurrenceStarts } from '@/lib/schedule/recurringSeriesSplit';
 
 type RuleRow = Database['public']['Tables']['recurring_appointment_rules']['Row'];
-
-function dtstartIcalLine(d: Date): string {
-  const iso = d.toISOString();
-  const compact = iso.replace(/[-:]/g, '').replace(/\.\d{3}Z/, 'Z');
-  return compact;
-}
 
 /**
  * Materializes `tenant_scheduled_visits` for every active recurring rule into
@@ -47,18 +41,20 @@ export async function materializeRecurringVisitsForAllTenants(): Promise<{
         errors.push(`${raw.id}: empty rrule_definition`);
         continue;
       }
-      const full = `DTSTART:${dtstartIcalLine(anchor)}\nRRULE:${def}`;
-      const r = rrulestr(full, { tzid: 'UTC' });
       const horizon = Math.min(120, Math.max(1, raw.horizon_days ?? 60));
       const until = new Date(from.getTime());
       until.setUTCDate(until.getUTCDate() + horizon);
-      const dates = r.between(from, until, true);
+      const dates = seriesOccurrenceStarts({
+        rruleDefinition: def,
+        anchorStartsAt: anchor.toISOString(),
+        from,
+        until,
+      });
       const durMs = (raw.visit_duration_minutes ?? 120) * 60 * 1000;
 
-      for (const dt of dates) {
-        if (dt.getTime() < anchor.getTime()) continue;
-        const startsAt = dt.toISOString();
-        const endsAt = new Date(dt.getTime() + durMs).toISOString();
+      for (const startsAt of dates) {
+        if (new Date(startsAt).getTime() < anchor.getTime()) continue;
+        const endsAt = new Date(new Date(startsAt).getTime() + durMs).toISOString();
 
         if (await isRecurringOccurrenceSkipped(admin, { recurringRuleId: raw.id, startsAt })) {
           skippedDuplicates += 1;

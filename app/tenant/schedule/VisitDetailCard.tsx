@@ -135,6 +135,7 @@ export type VisitDetailSnapshot = {
   checklistItems: VisitChecklistItem[];
   onOurWayEnabled: boolean;
   onOurWayAlreadySent: boolean;
+  recurringRuleId: string | null;
 };
 
 export function VisitDetailCard({
@@ -302,6 +303,7 @@ export function VisitDetailCard({
               currentAssigneeUserIds={visit.assigneeUserIds}
               employeeOptions={employeeOptions}
               isConsultation={isConsultation}
+              seriesVisit={Boolean(visit.recurringRuleId)}
               onVisitPatch={onVisitPatch}
             />
           ) : null}
@@ -528,6 +530,7 @@ export function VisitDetailCard({
                 notes={visit.notes ?? ''}
                 jobTypeLabels={jobTypeLabels}
                 isConsultation={isConsultation}
+                seriesVisit={Boolean(visit.recurringRuleId)}
                 onVisitPatch={onVisitPatch}
               />
             </section>
@@ -568,6 +571,7 @@ export function VisitDetailCard({
                 visitId={visit.visitId}
                 currentAmountCents={defaultAmountCents}
                 onVisitPatch={onVisitPatch}
+                seriesVisit={Boolean(visit.recurringRuleId)}
                 compact
               />
             </section>
