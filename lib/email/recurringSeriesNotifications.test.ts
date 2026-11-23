@@ -162,6 +162,28 @@ describe('recurring series email', () => {
     expect(send.mock.calls[0]?.[1].idempotencyKey).toMatch(/^recurring-series-/);
   });
 
+  it('sends one summary for this visit and future visits, using the workspace window', async () => {
+    const result = await notifyCustomerRecurringSeries(adminStub() as never, {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-new',
+      action: 'changed',
+      previous: weekly,
+      snapshot: { ...weekly, anchorStartsAt: '2026-06-08T14:00:00.000Z' },
+      followingWindow: {
+        startsAt: '2026-06-08T13:00:00.000Z',
+        endsAt: '2026-06-08T15:00:00.000Z',
+      },
+    });
+
+    expect(result.emailed).toBe(1);
+    expect(send).toHaveBeenCalledTimes(1);
+    const payload = send.mock.calls[0]?.[0] as { text: string };
+    expect(payload.text).toContain('Monday, June 8 at 9:00 AM – 11:00 AM');
+    expect(payload.text).toContain('this visit and the visits after it');
+    expect(payload.text).not.toContain('Each visit is not emailed separately');
+  });
+
   it('emails the customer once when frequency, time, or cleaner changes', async () => {
     const result = await notifyCustomerRecurringSeries(
       adminStub({ marketingOptIn: false }) as never,

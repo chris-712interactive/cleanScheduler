@@ -416,6 +416,184 @@ async function seedVisits(admin, workspace, userIds) {
   return ids;
 }
 
+function zonedYmd(timeZone, date) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short',
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  );
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    weekday: parts.weekday,
+  };
+}
+
+function addCalendarDays(year, month, day, delta) {
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  utc.setUTCDate(utc.getUTCDate() + delta);
+  return { year: utc.getUTCFullYear(), month: utc.getUTCMonth() + 1, day: utc.getUTCDate() };
+}
+
+function localWindow(timeZone, ymd, startHour, startMinute, endHour, endMinute) {
+  return {
+    startsAt: utcInstantForZonedCivilTime(
+      timeZone,
+      ymd.year,
+      ymd.month,
+      ymd.day,
+      startHour,
+      startMinute,
+    ).toISOString(),
+    endsAt: utcInstantForZonedCivilTime(
+      timeZone,
+      ymd.year,
+      ymd.month,
+      ymd.day,
+      endHour,
+      endMinute,
+    ).toISOString(),
+  };
+}
+
+async function seedRecurringSeries(admin, workspace, userIds) {
+  const series = workspace.recurring;
+  if (!series) return [];
+  const timeZone = accounts.timeZone;
+  const today = zonedYmd(timeZone, new Date());
+  const weekdayIndex = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const untilMonday = today.weekday === 'Mon' ? 0 : (8 - weekdayIndex[today.weekday]) % 7;
+  const monday = addCalendarDays(today.year, today.month, today.day, untilMonday);
+  const past = addCalendarDays(monday.year, monday.month, monday.day, -7);
+  const next = addCalendarDays(monday.year, monday.month, monday.day, 7);
+  const later = addCalendarDays(monday.year, monday.month, monday.day, 14);
+  const replaced = addCalendarDays(monday.year, monday.month, monday.day, 21);
+  const movedDay = addCalendarDays(replaced.year, replaced.month, replaced.day, 2);
+  const anchor = localWindow(timeZone, past, 18, 0, 19, 0);
+  const customer = workspace.customers.riley;
+  const property = workspace.properties.home;
+  await must(
+    admin.from('recurring_appointment_rules').upsert(
+      {
+        id: series.ruleId,
+        tenant_id: workspace.tenantId,
+        customer_id: customer.id,
+        property_id: property.id,
+        title: 'Weekly QA clean',
+        rrule_definition: 'FREQ=WEEKLY;BYDAY=MO;INTERVAL=1',
+        anchor_starts_at: anchor.startsAt,
+        visit_duration_minutes: 60,
+        horizon_days: 60,
+        is_active: true,
+        expected_amount_cents: 12000,
+      },
+      { onConflict: 'id' },
+    ),
+    'recurring rule',
+  );
+
+  const specs = [
+    {
+      id: series.pastVisitId,
+      day: past,
+      start: [18, 0],
+      end: [19, 0],
+      status: 'completed',
+      title: 'Weekly QA past',
+    },
+    {
+      id: series.thisVisitId,
+      day: monday,
+      start: [18, 0],
+      end: [19, 0],
+      status: 'scheduled',
+      title: 'Weekly QA this',
+    },
+    {
+      id: series.nextVisitId,
+      day: next,
+      start: [18, 0],
+      end: [19, 0],
+      status: 'scheduled',
+      title: 'Weekly QA next',
+    },
+    {
+      id: series.laterVisitId,
+      day: later,
+      start: [18, 0],
+      end: [19, 0],
+      status: 'scheduled',
+      title: 'Weekly QA later',
+    },
+    {
+      id: series.movedVisitId,
+      day: movedDay,
+      start: [13, 0],
+      end: [15, 0],
+      status: 'scheduled',
+      title: 'Weekly QA moved',
+    },
+  ];
+  const cleanerId = userIds[workspace.cleaner.email];
+  if (!cleanerId) throw new Error('No seeded cleaner for the recurring series.');
+  for (const spec of specs) {
+    const window = localWindow(
+      timeZone,
+      spec.day,
+      spec.start[0],
+      spec.start[1],
+      spec.end[0],
+      spec.end[1],
+    );
+    await must(
+      admin.from('tenant_scheduled_visits').upsert(
+        {
+          id: spec.id,
+          tenant_id: workspace.tenantId,
+          customer_id: customer.id,
+          property_id: property.id,
+          recurring_rule_id: series.ruleId,
+          title: spec.title,
+          starts_at: window.startsAt,
+          ends_at: window.endsAt,
+          status: spec.status,
+          visit_purpose: 'service',
+          expected_amount_cents: 12000,
+          notes: 'Weekly QA series',
+        },
+        { onConflict: 'id' },
+      ),
+      `recurring visit ${spec.title}`,
+    );
+    await must(
+      admin
+        .from('tenant_scheduled_visit_assignees')
+        .upsert({ visit_id: spec.id, user_id: cleanerId }, { onConflict: 'visit_id,user_id' }),
+      `recurring assignee ${spec.title}`,
+    );
+  }
+  const replacedWindow = localWindow(timeZone, replaced, 18, 0, 19, 0);
+  await must(
+    admin.from('recurring_appointment_occurrence_skips').upsert(
+      {
+        recurring_rule_id: series.ruleId,
+        starts_at: replacedWindow.startsAt,
+        visit_id: series.movedVisitId,
+      },
+      { onConflict: 'recurring_rule_id,starts_at' },
+    ),
+    'recurring moved skip',
+  );
+  return specs.map((spec) => spec.id);
+}
+
 function todayKey(timeZone) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -495,6 +673,9 @@ export async function seedLocalStack(env = process.env) {
     residentialUsers[accounts.residential.portalUser.email],
   );
   const residentialVisitIds = await seedVisits(admin, accounts.residential, residentialUsers);
+  residentialVisitIds.push(
+    ...(await seedRecurringSeries(admin, accounts.residential, residentialUsers)),
+  );
   await seedDispatchHours(admin, accounts.residential, residentialUsers, [
     accounts.residential.owner,
     accounts.residential.admin,
