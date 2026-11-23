@@ -469,9 +469,11 @@ async function seedRecurringSeries(admin, workspace, userIds) {
   const timeZone = accounts.timeZone;
   const today = zonedYmd(timeZone, new Date());
   const weekdayIndex = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const untilMonday = today.weekday === 'Mon' ? 0 : (8 - weekdayIndex[today.weekday]) % 7;
-  const monday = addCalendarDays(today.year, today.month, today.day, untilMonday);
-  const past = addCalendarDays(monday.year, monday.month, monday.day, -7);
+  // The first editable visit is a future Monday, never today. Today's map and
+  // dispatch counts stay on the other seeded visits.
+  const daysUntilMonday = (8 - weekdayIndex[today.weekday]) % 7 || 7;
+  const monday = addCalendarDays(today.year, today.month, today.day, daysUntilMonday);
+  const past = addCalendarDays(monday.year, monday.month, monday.day, -14);
   const next = addCalendarDays(monday.year, monday.month, monday.day, 7);
   const later = addCalendarDays(monday.year, monday.month, monday.day, 14);
   const replaced = addCalendarDays(monday.year, monday.month, monday.day, 21);

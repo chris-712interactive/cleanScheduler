@@ -24,7 +24,7 @@ async function signIn(page: Page) {
 async function openVisit(page: Page, visitId: string, title: string) {
   await page.goto(`${residentialOrigin}/schedule/${visitId}`);
   await expect(page.getByRole('heading', { name: 'Riley Example' })).toBeVisible();
-  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await expect(page.getByRole('paragraph').filter({ hasText: title })).toBeVisible();
 }
 
 async function setSameDayWindow(page: Page, start: string, end: string) {
