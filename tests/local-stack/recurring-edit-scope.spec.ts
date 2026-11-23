@@ -21,54 +21,58 @@ async function signIn(page: Page) {
   await expect(page).not.toHaveURL(/\/sign-in/, { timeout: 30_000 });
 }
 
+function main(page: Page) {
+  return page.locator('#main');
+}
+
 async function openVisit(page: Page, visitId: string, title: string) {
   await page.goto(`${residentialOrigin}/schedule/${visitId}`);
-  await expect(page.getByRole('heading', { name: 'Riley Example' })).toBeVisible();
-  await expect(page.getByRole('paragraph').filter({ hasText: title })).toBeVisible();
+  await expect(main(page).getByRole('heading', { name: 'Riley Example' }).first()).toBeVisible();
+  await expect(main(page).getByRole('paragraph').filter({ hasText: title }).first()).toBeVisible();
 }
 
 async function setSameDayWindow(page: Page, start: string, end: string) {
-  const startInput = page.locator('#visit_edit_starts_at');
+  const startInput = main(page).locator('#visit_edit_starts_at').first();
   const current = await startInput.inputValue();
   const date = current.slice(0, 10);
   await startInput.fill(`${date}T${start}`);
-  await page.locator('#visit_edit_ends_at').fill(`${date}T${end}`);
+  await main(page).locator('#visit_edit_ends_at').first().fill(`${date}T${end}`);
 }
 
 test('owner chooses this visit only or this and future visits', async ({ page }) => {
   await signIn(page);
   await openVisit(page, series.thisVisitId, 'Weekly QA this');
-  await expect(page.locator('#visit_edit_starts_at')).toHaveValue(/T18:00$/);
+  await expect(main(page).locator('#visit_edit_starts_at').first()).toHaveValue(/T18:00$/);
   await setSameDayWindow(page, '18:30', '19:30');
-  await page.getByRole('button', { name: 'Save time' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Edit repeating visit' });
+  await main(page).getByRole('button', { name: 'Save time' }).first().click();
+  const dialog = main(page).getByRole('dialog', { name: 'Edit repeating visit' }).first();
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'This visit only' }).click();
   await expect(page.getByText('Visit time saved.', { exact: true })).toBeVisible();
   await shot(page, 'recurring-scope-this-visit');
 
   await openVisit(page, series.nextVisitId, 'Weekly QA next');
-  await expect(page.locator('#visit_edit_starts_at')).toHaveValue(/T18:00$/);
-  await expect(page.locator('#visit_edit_ends_at')).toHaveValue(/T19:00$/);
+  await expect(main(page).locator('#visit_edit_starts_at').first()).toHaveValue(/T18:00$/);
+  await expect(main(page).locator('#visit_edit_ends_at').first()).toHaveValue(/T19:00$/);
 
   await setSameDayWindow(page, '18:30', '19:30');
-  await page.getByRole('button', { name: 'Save time' }).click();
+  await main(page).getByRole('button', { name: 'Save time' }).first().click();
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'This and future visits' }).click();
   await expect(page.getByText('Visit time saved.', { exact: true })).toBeVisible();
   await shot(page, 'recurring-scope-this-and-future');
 
   await openVisit(page, series.laterVisitId, 'Weekly QA later');
-  await expect(page.locator('#visit_edit_starts_at')).toHaveValue(/T18:30$/);
-  await expect(page.locator('#visit_edit_ends_at')).toHaveValue(/T19:30$/);
+  await expect(main(page).locator('#visit_edit_starts_at').first()).toHaveValue(/T18:30$/);
+  await expect(main(page).locator('#visit_edit_ends_at').first()).toHaveValue(/T19:30$/);
 
   await openVisit(page, series.movedVisitId, 'Weekly QA moved');
-  await expect(page.locator('#visit_edit_starts_at')).toHaveValue(/T13:00$/);
-  await expect(page.locator('#visit_edit_ends_at')).toHaveValue(/T15:00$/);
+  await expect(main(page).locator('#visit_edit_starts_at').first()).toHaveValue(/T13:00$/);
+  await expect(main(page).locator('#visit_edit_ends_at').first()).toHaveValue(/T15:00$/);
 
   await openVisit(page, series.pastVisitId, 'Weekly QA past');
-  const overview = page.getByLabel('Appointment overview');
+  const overview = main(page).getByLabel('Appointment overview').first();
   await expect(overview).toContainText('6:00 PM');
   await expect(overview).toContainText('7:00 PM');
-  await expect(page.locator('#visit_edit_starts_at')).toHaveCount(0);
+  await expect(main(page).locator('#visit_edit_starts_at')).toHaveCount(0);
 });
