@@ -48,6 +48,7 @@ function adminStub(options?: {
   name?: string;
   rule?: boolean;
   visit?: boolean;
+  timezone?: string;
 }) {
   return {
     from(table: string) {
@@ -66,7 +67,7 @@ function adminStub(options?: {
         return queryResult({
           name: options?.name ?? 'Acme Cleaning',
           slug: 'acme',
-          timezone: 'America/New_York',
+          timezone: options?.timezone ?? 'America/New_York',
           brand_color: '#006D77',
           logo_url: null,
           business_phone: '555-0100',
@@ -285,6 +286,7 @@ describe('recurring series email', () => {
       visitId: 'visit-1',
       title: 'Weekly "deep" clean',
       startsAt: '2026-06-08T13:00:00.000Z',
+      endsAt: '2026-06-08T15:00:00.000Z',
     });
 
     expect(result.emailed).toBe(1);
@@ -292,6 +294,8 @@ describe('recurring series email', () => {
     const payload = send.mock.calls[0]?.[0] as { html: string; subject: string; text: string };
     expect(payload.subject).toContain('one visit was cancelled');
     expect(payload.text).toContain('Only this date was cancelled.');
+    expect(payload.text).toContain('Date: Monday, June 8 at 9:00 AM – 11:00 AM');
+    expect(payload.text).not.toContain('Jun 8, 2026');
     expect(payload.text).not.toContain('will not be added');
     expect(payload.html).toContain('Weekly &quot;deep&quot; clean');
     expect(payload.html).not.toContain('Weekly "deep" clean');
@@ -305,8 +309,73 @@ describe('recurring series email', () => {
       visitId: 'visit-1',
       title: 'Weekly "deep" clean',
       startsAt: '2026-06-08T13:00:00.000Z',
+      endsAt: '2026-06-08T15:00:00.000Z',
     });
     expect(send.mock.calls[1]?.[1].idempotencyKey).toBe(key);
+  });
+
+  it('names the full window in the tenant timezone, including overnight and the spring-forward boundary', async () => {
+    const cases: Array<{
+      timezone: string;
+      startsAt: string;
+      endsAt: string;
+      window: string;
+    }> = [
+      {
+        timezone: 'America/New_York',
+        startsAt: '2026-06-09T02:00:00.000Z',
+        endsAt: '2026-06-09T05:00:00.000Z',
+        window: 'Monday, June 8 at 10:00 PM – Tuesday, June 9 at 1:00 AM',
+      },
+      {
+        timezone: 'America/Chicago',
+        startsAt: '2026-06-08T13:00:00.000Z',
+        endsAt: '2026-06-08T15:00:00.000Z',
+        window: 'Monday, June 8 at 8:00 AM – 10:00 AM',
+      },
+      {
+        timezone: 'America/New_York',
+        startsAt: '2026-03-08T06:30:00.000Z',
+        endsAt: '2026-03-08T07:30:00.000Z',
+        window: 'Sunday, March 8 at 1:30 AM – 3:30 AM',
+      },
+      {
+        timezone: 'America/New_York',
+        startsAt: '2026-03-08T03:00:00.000Z',
+        endsAt: '2026-03-08T07:30:00.000Z',
+        window: 'Saturday, March 7 at 10:00 PM – Sunday, March 8 at 3:30 AM',
+      },
+    ];
+
+    for (const item of cases) {
+      send.mockClear();
+      await notifyCustomerSeriesOccurrenceSkipped(adminStub({ timezone: item.timezone }) as never, {
+        tenantId: 'tenant-1',
+        customerId: 'cust-1',
+        ruleId: 'rule-1',
+        visitId: 'visit-1',
+        title: 'Weekly clean',
+        startsAt: item.startsAt,
+        endsAt: item.endsAt,
+      });
+      const text = (send.mock.calls[0]?.[0] as { text: string }).text;
+      expect(text).toContain(`Date: ${item.window}`);
+      expect(text).not.toContain('Jun 9, 2026');
+    }
+  });
+
+  it('does not throw when Resend rejects a skipped occurrence', async () => {
+    send.mockResolvedValue({ data: null, error: { message: 'down', name: 'api_error' } });
+    const result = await notifyCustomerSeriesOccurrenceSkipped(adminStub() as never, {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly clean',
+      startsAt: '2026-06-08T13:00:00.000Z',
+      endsAt: '2026-06-08T15:00:00.000Z',
+    });
+    expect(result).toMatchObject({ emailed: 0, skipped: 'none' });
   });
 
   it('skips an occurrence email when the series is outside the tenant or the address is suppressed', async () => {
@@ -319,6 +388,7 @@ describe('recurring series email', () => {
         visitId: 'visit-1',
         title: 'Weekly clean',
         startsAt: '2026-06-08T13:00:00.000Z',
+        endsAt: '2026-06-08T15:00:00.000Z',
       },
     );
     expect(missing).toMatchObject({ emailed: 0, skipped: 'no_series' });
@@ -332,6 +402,7 @@ describe('recurring series email', () => {
         visitId: 'visit-1',
         title: 'Weekly clean',
         startsAt: '2026-06-08T13:00:00.000Z',
+        endsAt: '2026-06-08T15:00:00.000Z',
       },
     );
     expect(blocked).toMatchObject({ emailed: 0, skipped: 'suppressed' });
@@ -350,6 +421,7 @@ describe('recurring series email', () => {
       visitId: 'visit-1',
       title: 'Weekly clean',
       startsAt: '2026-06-08T13:00:00.000Z',
+      endsAt: '2026-06-08T15:00:00.000Z',
     });
     expect(suppressed.emailed).toBe(0);
     expect(send).not.toHaveBeenCalled();
@@ -372,6 +444,7 @@ describe('recurring series email', () => {
       visitId: 'visit-1',
       title: 'Weekly clean',
       startsAt: '2026-06-08T13:00:00.000Z',
+      endsAt: '2026-06-08T15:00:00.000Z',
     });
     const subject = (send.mock.calls[0]?.[0] as { subject: string }).subject;
     expect(subject).not.toMatch(/[\r\n\u0000]/);

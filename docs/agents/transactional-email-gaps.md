@@ -19,4 +19,4 @@ Product copy is `docs/product/recurring-series-email.md` and `docs/product/time-
 
 ## Still not emailed
 
-- Approving a customer's reschedule request already sends `notifyCustomerRescheduleResolved`. That path does not also send the office time-change or occurrence-move note.
+- Approving a customer's reschedule request already sends `notifyCustomerRescheduleResolved`. The new window, and the previous window when the send site still has it, use `formatVisitWindow` in `tenants.timezone`. That path does not also send the office time-change or occurrence-move note. A skipped series date uses the same helper for the full window. A Resend failure on the approval note does not fail the request save.

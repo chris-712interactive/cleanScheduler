@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { formatVisitWindow } from '@/lib/datetime/formatInTimeZone';
 import type { Database } from '@/lib/supabase/database.types';
 import {
   emailDeliveryFields,
@@ -6,9 +7,14 @@ import {
   platformEmailBrand,
   tenantEmailBrand,
 } from '@/lib/email/emailBrand';
+import { emailSubjectLine } from '@/lib/email/emailSubject';
 import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
-import { emailButtonHtml, wrapTransactionalEmailHtml } from '@/lib/email/transactionalEmailLayout';
+import {
+  emailButtonHtml,
+  emailFactsHtml,
+  wrapTransactionalEmailHtml,
+} from '@/lib/email/transactionalEmailLayout';
 import { publicEnv } from '@/lib/env';
 
 type Admin = SupabaseClient<Database>;
@@ -111,11 +117,14 @@ export async function notifyCustomerRescheduleResolved(
     resolution: 'completed' | 'declined';
     tenantNote: string | null;
     appliedStartsAt: string | null;
+    appliedEndsAt: string | null;
+    previousStartsAt?: string | null;
+    previousEndsAt?: string | null;
   },
 ): Promise<void> {
   if (!isResendConfigured()) return;
 
-  const [brandLoaded, { data: cust }, { data: visit }] = await Promise.all([
+  const [brandLoaded, { data: cust }, { data: visit }, { data: tenant }] = await Promise.all([
     loadTenantEmailBrand(admin, params.tenantId),
     admin
       .from('customers')
@@ -127,6 +136,7 @@ export async function notifyCustomerRescheduleResolved(
       .select('title, starts_at')
       .eq('id', params.visitId)
       .maybeSingle(),
+    admin.from('tenants').select('timezone').eq('id', params.tenantId).maybeSingle(),
   ]);
 
   const email = (cust?.customer_identities as { email: string | null } | null)?.email?.trim();
@@ -136,10 +146,14 @@ export async function notifyCustomerRescheduleResolved(
   const provider = brand.name;
   const visitLabel = visit?.title?.trim() || 'your visit';
   const approved = params.resolution === 'completed';
+  const timeFacts =
+    approved && params.appliedStartsAt && params.appliedEndsAt
+      ? rescheduleWindowFacts(params, tenant?.timezone)
+      : [];
 
   const text = [
     `${provider} ${approved ? 'approved' : 'declined'} your reschedule request for ${visitLabel}.`,
-    approved && params.appliedStartsAt ? `New time: ${formatWhen(params.appliedStartsAt)}` : null,
+    ...timeFacts.map((row) => `${row.label}: ${row.value}`),
     params.tenantNote ? `Message from provider: ${params.tenantNote}` : null,
   ]
     .filter(Boolean)
@@ -150,20 +164,45 @@ export async function notifyCustomerRescheduleResolved(
     preheader: `${provider} responded to your reschedule request`,
     bodyHtml: `
       <p><strong>${escapeHtmlLite(provider)}</strong> ${approved ? 'approved' : 'declined'} your reschedule request for <strong>${escapeHtmlLite(visitLabel)}</strong>.</p>
-      ${
-        approved && params.appliedStartsAt
-          ? `<p>New time: <strong>${escapeHtmlLite(formatWhen(params.appliedStartsAt))}</strong></p>`
-          : ''
-      }
+      ${emailFactsHtml(timeFacts)}
       ${params.tenantNote ? `<p>Message from provider: ${escapeHtmlLite(params.tenantNote)}</p>` : ''}
     `.trim(),
   });
 
-  await sendTransactionalEmail({
+  const sent = await sendTransactionalEmail({
     to: email,
-    subject: `${provider}: reschedule request ${approved ? 'approved' : 'declined'}`,
+    subject: emailSubjectLine(
+      `${provider}: reschedule request ${approved ? 'approved' : 'declined'}`,
+    ),
     text,
     html,
     ...emailDeliveryFields(brand),
   });
+  if (!sent.ok && !('suppressed' in sent && sent.suppressed)) {
+    console.error('[reschedule] customer decision email failed:', sent.error);
+  }
+}
+
+function rescheduleWindowFacts(
+  params: {
+    appliedStartsAt: string | null;
+    appliedEndsAt: string | null;
+    previousStartsAt?: string | null;
+    previousEndsAt?: string | null;
+  },
+  timeZone: string | null | undefined,
+): Array<{ label: string; value: string }> {
+  const next = formatVisitWindow(
+    params.appliedStartsAt ?? '',
+    params.appliedEndsAt ?? '',
+    timeZone,
+  );
+  const previous =
+    params.previousStartsAt && params.previousEndsAt
+      ? formatVisitWindow(params.previousStartsAt, params.previousEndsAt, timeZone)
+      : null;
+  return [
+    ...(previous ? [{ label: 'Previous time', value: previous }] : []),
+    { label: 'New time', value: next },
+  ];
 }

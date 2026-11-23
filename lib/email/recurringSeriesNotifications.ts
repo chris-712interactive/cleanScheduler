@@ -315,6 +315,7 @@ export async function notifyCustomerSeriesOccurrenceSkipped(
     visitId: string;
     title: string;
     startsAt: string;
+    endsAt: string;
   },
 ): Promise<{
   emailed: number;
@@ -363,7 +364,7 @@ export async function notifyCustomerSeriesOccurrenceSkipped(
     brandLoaded ?? tenantEmailBrand({ name: tenant?.name?.trim() || 'Your cleaning team' });
   const provider = brand.name;
   const title = params.title.trim() || rule.title.trim() || 'Visit';
-  const when = formatNextAppointmentWhen(params.startsAt, tenant?.timezone);
+  const when = formatVisitWindow(params.startsAt, params.endsAt, tenant?.timezone);
   const intro = `${provider} cancelled one visit. The rest of your repeating visits are unchanged.`;
   const facts = [
     { label: 'Service', value: title },
