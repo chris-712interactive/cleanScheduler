@@ -130,13 +130,17 @@ test('customer portal sign-in can request a property', async ({ page }) => {
   await shot(page, 'customer-signed-in');
 
   await page.goto(`${customerOrigin}/properties/new`);
-  await expect(page.getByRole('heading', { name: 'Request a location' })).toBeVisible();
-  await page.getByLabel('Location name').fill('QA portal cottage');
-  await page.getByLabel('Street').fill('400 Portal Lane');
-  await page.getByLabel('City').fill('Asheville');
-  await page.getByLabel('State').fill('NC');
-  await page.getByLabel('Postal code').fill('28801');
-  await page.getByRole('button', { name: 'Request this location' }).click();
+  // A route swap can leave a second copy of this form in the document.
+  const form = page.locator('#main form').filter({ visible: true }).first();
+  await expect(
+    page.locator('#main').getByRole('heading', { name: 'Request a location' }).first(),
+  ).toBeVisible();
+  await form.getByLabel('Location name').fill('QA portal cottage');
+  await form.getByLabel('Street').fill('400 Portal Lane');
+  await form.getByLabel('City').fill('Asheville');
+  await form.getByLabel('State').fill('NC');
+  await form.getByLabel('Postal code').fill('28801');
+  await form.getByRole('button', { name: 'Request this location' }).click();
 
   await expect(page).toHaveURL(/\/properties\?requested=1/);
   await expect(
