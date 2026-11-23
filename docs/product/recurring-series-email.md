@@ -7,7 +7,7 @@ A customer gets **one** email when the office creates, changes, or cancels a rep
 - **Created** — Schedule → Recurring saves a new series. A customer's instant booking that chooses weekly, every other week, or monthly sends this same created email once, after the series row exists. The booking confirmation still sends. Later occurrences are not emailed one by one. A one-time instant booking does not send the series email. A retry that finds the booking already confirmed does not send it again.
 - **Changed** — the office saves a new frequency, series time, or cleaner for upcoming visits. A save that does not change those three does not send.
 - **Cancelled** — the office cancels an active series.
-- **One date** — the office deletes one visit that belongs to a series. The customer hears about that date only. The rest of the series stays. Moving that visit to another time sends a different note for that date only: the previous time and the new time. It does not cancel the series and it does not send the series-changed email.
+- **One date** — the office deletes one visit that belongs to a series. The customer hears about that date only. The note names the full visit window in the workspace timezone (start and end, and the end date when the visit crosses midnight). The rest of the series stays. Moving that visit to another time sends a different note for that date only: the previous time and the new time. It does not cancel the series and it does not send the series-changed email.
 
 The message is from the cleaning company (logo, color, address, reply-to). See `docs/product/email-branding.md`.
 
@@ -45,7 +45,7 @@ Deleting that visit emails the customer that it is cancelled. A visit that belon
 - A second series email when instant booking is confirmed again
 - A time save that does not change the start or the end
 - A series-changed email when only one occurrence moves
-- A second email when the office approves a customer reschedule request (that decision already has its own note)
+- A second email when the office approves a customer reschedule request (that decision already has its own note). The approval names the new window in the workspace timezone, and the previous window when that time is still known. A decline does not include a new time.
 
 No new migration. The suppression list and the Resend idempotency key are the dedupe. Series create, change, and cancel use `recurring-series-` plus a hash of the series. One skipped date uses `series-occurrence-`. One moved occurrence uses `series-occurrence-move-`. One office visit uses `office-visit-`. A time change on that visit uses `office-visit-time-`. Deleting it uses `office-visit-cancel-`. The time-change and move keys include the previous and next window, so the same save cannot send twice and a later, different time can send again.
 

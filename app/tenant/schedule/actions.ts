@@ -504,6 +504,7 @@ export async function deleteScheduledVisit(
         visitId: visit.id,
         title: visit.title,
         startsAt: visit.starts_at,
+        endsAt: visit.ends_at,
       });
     } catch (emailError) {
       console.error(
@@ -844,7 +845,10 @@ export async function resolveVisitRescheduleRequest(
     visitId: request.visit_id,
     resolution,
     tenantNote: note || null,
-    appliedStartsAt: appliedStartsAt,
+    appliedStartsAt,
+    appliedEndsAt,
+    previousStartsAt: visit.starts_at,
+    previousEndsAt: visit.ends_at,
   });
 
   revalidatePath('/schedule/reschedule-requests');
