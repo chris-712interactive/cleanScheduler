@@ -23,6 +23,8 @@ Product copy is `docs/product/recurring-series-email.md`.
 - `deleteScheduledVisit` still checks the owner/admin role first. After a successful delete, a series visit calls `notifyCustomerSeriesOccurrenceSkipped`. A visit with no series calls `notifyCustomerOfficeVisitCancelled`.
 - Moving one occurrence still records a skip for the old start when that start changes. The customer email is the move note (old and new time), not the cancellation note and not the series-changed note.
 - `formatVisitWindow` is the only window string those emails use. A same-day window stays "Monday, June 8 at 9:00 AM – 11:00 AM". When the end is the next calendar day in the workspace timezone, the end includes that date: "Monday, June 8 at 10:00 PM – Tuesday, June 9 at 1:00 AM".
+- A skipped series date uses that same helper with the deleted visit's start and end and `tenants.timezone`. The idempotency key stays the start instant (`series-occurrence-`), so adding the end does not send a second email for a date that was already skipped.
+- Approving a customer reschedule request still uses only `notifyCustomerRescheduleResolved`. That note formats the applied window with `formatVisitWindow` in the workspace timezone. The send site passes the visit start and end loaded before the time write as the previous window, and the email includes it the same way a time-change note does. A decline has no window. `sendTransactionalEmail` catches a Resend failure and the decision sender does not throw, so the request save still succeeds. Do not also send the office time-change or occurrence-move note.
 
 ## Gaps left in place
 
