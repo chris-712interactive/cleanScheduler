@@ -46,7 +46,9 @@ export default function CompareHubPage() {
               <h1 className={styles.title}>How Clean Scheduler compares</h1>
               <p className={styles.lead}>
                 Straightforward comparisons for cleaning business owners evaluating software —
-                including when a competitor might still be the better fit.
+                including when a competitor might still be the better fit. For plan prices and
+                included features, see{' '}
+                <Link href="/no-add-ons">how Clean Scheduler compares on add-on fees</Link>.
               </p>
               <div className={styles.heroActions}>
                 <Button size="lg" href="/start-trial" as="a" iconRight={<ArrowRight size={18} />}>

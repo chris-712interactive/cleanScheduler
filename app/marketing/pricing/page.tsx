@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Container';
@@ -10,6 +11,7 @@ import { PricingTable } from '@/components/marketing/PricingTable';
 import { getPlatformPricingDisplay } from '@/lib/billing/platformPricing';
 import { buildMarketingPageMetadata } from '@/lib/marketing/marketingPageMetadata';
 import { buildPricingPageJsonLd } from '@/lib/marketing/seoJsonLd';
+import { NO_ADD_ONS_PATH } from '@/lib/marketing/noAddOnComparison';
 import { getPublicOrigin } from '@/lib/portal/publicOrigin';
 import styles from './pricing.module.scss';
 
@@ -54,7 +56,11 @@ export default async function PricingPage() {
                 includes a day map and single-cleaner stop ordering. Business adds multi-cleaner
                 dispatch. Pro adds re-optimization, multiple start locations, and drive-time
                 reports. Upgrade your plan for customer portals, campaigns, payroll exports, or
-                advanced analytics. Text packs are the only prepaid extra.
+                advanced analytics. Text packs are the only prepaid extra.{' '}
+                <Link className={styles.inlineLink} href={NO_ADD_ONS_PATH}>
+                  Compare plans with Jobber and Housecall Pro
+                </Link>
+                .
               </p>
             </Stack>
           </Container>
