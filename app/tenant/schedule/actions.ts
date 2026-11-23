@@ -36,14 +36,28 @@ import {
   loadConsultationDurationMinutes,
 } from '@/lib/tenant/consultationDuration';
 import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
-import { notifyCustomerOfficeVisitCreated } from '@/lib/email/officeVisitNotifications';
-import { notifyCustomerSeriesOccurrenceSkipped } from '@/lib/email/recurringSeriesNotifications';
+import {
+  notifyCustomerOfficeVisitCancelled,
+  notifyCustomerOfficeVisitCreated,
+  notifyCustomerOfficeVisitRescheduled,
+} from '@/lib/email/officeVisitNotifications';
+import {
+  notifyCustomerSeriesOccurrenceMoved,
+  notifyCustomerSeriesOccurrenceSkipped,
+} from '@/lib/email/recurringSeriesNotifications';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
 import type { CleanerScheduleVisit } from '@/lib/email/cleanerScheduleChange';
 import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { sanitizeConsultationNotes } from '@/lib/visits/consultationNotes';
+
+function sameCustomerInstant(left: string, right: string): boolean {
+  const a = new Date(left).getTime();
+  const b = new Date(right).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return left.trim() === right.trim();
+  return a === b;
+}
 
 export interface ScheduleFormState {
   error?: string;
@@ -431,7 +445,7 @@ export async function deleteScheduledVisit(
 
   const { data: visit, error: loadErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, title, recurring_rule_id, starts_at, customer_id, property_id')
+    .select('id, title, recurring_rule_id, starts_at, ends_at, customer_id, property_id')
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -497,6 +511,22 @@ export async function deleteScheduledVisit(
         emailError instanceof Error ? emailError.message : 'unknown',
       );
     }
+  } else {
+    try {
+      await notifyCustomerOfficeVisitCancelled(admin, {
+        tenantId: membership.tenantId,
+        customerId: visit.customer_id,
+        visitId: visit.id,
+        title: visit.title,
+        startsAt: visit.starts_at,
+        endsAt: visit.ends_at,
+      });
+    } catch (emailError) {
+      console.error(
+        '[officeVisit] cancel email failed:',
+        emailError instanceof Error ? emailError.message : 'unknown',
+      );
+    }
   }
 
   if (beforeDelete.ok && beforeDelete.visits.length > 0) {
@@ -530,11 +560,17 @@ export async function updateScheduledVisitTimes(
   }
 
   const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  if (!canManageScheduledVisit(membership.role)) {
+    return { error: 'Only owners and admins can change a visit time.' };
+  }
+
   const admin = createAdminClient();
 
   const { data: visit, error: vErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status, checked_in_at, visit_purpose')
+    .select(
+      'id, status, checked_in_at, visit_purpose, title, starts_at, ends_at, recurring_rule_id, customer_id',
+    )
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -598,6 +634,40 @@ export async function updateScheduledVisitTimes(
       conflicts: applied.conflicts,
       needsOverlapConfirm: applied.needsOverlapConfirm,
     };
+  }
+
+  const timeChanged =
+    !sameCustomerInstant(visit.starts_at, startsAt) || !sameCustomerInstant(visit.ends_at, endsAt);
+  if (timeChanged) {
+    try {
+      if (visit.recurring_rule_id) {
+        await notifyCustomerSeriesOccurrenceMoved(admin, {
+          tenantId: membership.tenantId,
+          customerId: visit.customer_id,
+          ruleId: visit.recurring_rule_id,
+          visitId,
+          title: visit.title,
+          previousStartsAt: visit.starts_at,
+          previousEndsAt: visit.ends_at,
+          nextStartsAt: startsAt,
+          nextEndsAt: endsAt,
+        });
+      } else {
+        await notifyCustomerOfficeVisitRescheduled(admin, {
+          tenantId: membership.tenantId,
+          visitId,
+          previousStartsAt: visit.starts_at,
+          previousEndsAt: visit.ends_at,
+          nextStartsAt: startsAt,
+          nextEndsAt: endsAt,
+        });
+      }
+    } catch (emailError) {
+      console.error(
+        '[officeVisit] time email failed:',
+        emailError instanceof Error ? emailError.message : 'unknown',
+      );
+    }
   }
 
   if (beforeTimes.ok) {

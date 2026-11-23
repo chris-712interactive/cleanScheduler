@@ -9,6 +9,9 @@ Product copy is `docs/product/recurring-series-email.md` and `docs/product/time-
 - One series date: `deleteScheduledVisit` emails after the delete when `recurring_rule_id` is set. The copy is that date only. The action calls `canManageScheduledVisit(membership.role)` immediately after `requireTenantPortalAccess`, before the admin client, the delete, or the email. That role is the active `tenant_memberships.role` (owner or admin). A field employee gets "Only owners and admins can delete a visit." and nothing is written.
 - Hour-change approve or deny: `notifyCleanerOfHoursChangeDecision`, Auth login email, same suppression and membership rules as a time-off decision.
 - Cleaner cancels their own pending time off: `notifyOfficeOfTimeOffCancellation` after the pending row updates. Owners and admins, then the office fallback, with suppression.
+- Office visit time change: `notifyCustomerOfficeVisitRescheduled` after `updateScheduledVisitTimes` saves a new start or end on a visit with no series. The same window does not send. The role check is `canManageScheduledVisit` before the admin client.
+- One-off delete: `notifyCustomerOfficeVisitCancelled` after `deleteScheduledVisit` removes a visit with no series. The owner/admin check still runs first.
+- One series occurrence moved: `notifyCustomerSeriesOccurrenceMoved` after that same time save when `recurring_rule_id` is set. The note is that date's old and new time. The series-changed email and the one-date cancellation email are not sent. The old start is still skipped when it changes.
 
 ## Race on series create
 
@@ -16,6 +19,4 @@ Product copy is `docs/product/recurring-series-email.md` and `docs/product/time-
 
 ## Still not emailed
 
-- A time change on one office visit.
-- Deleting a visit that is not part of a series.
-- Moving one series occurrence (the old slot is skipped so it is not generated again; the visit still exists at the new time).
+- Approving a customer's reschedule request already sends `notifyCustomerRescheduleResolved`. That path does not also send the office time-change or occurrence-move note.
