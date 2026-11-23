@@ -52,6 +52,11 @@
   font-size: var(--font-size-lg);
   line-height: 1.5;
   text-align: center;
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+  }
 }
 
 .heroActions {

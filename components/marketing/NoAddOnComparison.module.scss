@@ -1,0 +1,68 @@
+.wrap {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.caption {
+  caption-side: bottom;
+  padding: var(--space-3) var(--space-4) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: left;
+}
+
+.table {
+  width: 100%;
+  min-width: 52rem;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+
+  th,
+  td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  thead th {
+    background: var(--color-bg-subtle);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  tbody th {
+    width: 18%;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  tbody td {
+    width: 27.333%;
+    color: var(--color-text-muted);
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.asOf {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.sources {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+
+  a {
+    color: var(--color-brand-primary);
+  }
+}
