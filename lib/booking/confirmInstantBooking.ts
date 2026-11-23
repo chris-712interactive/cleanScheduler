@@ -1,4 +1,5 @@
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
+import { notifyCustomerRecurringSeries } from '@/lib/email/recurringSeriesNotifications';
 import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerScheduleVisits';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
@@ -584,11 +585,70 @@ export async function finalizeInstantBookingRecord(
     }
   }
 
+  if (payload.finalized === true && payload.recurring_rule_id) {
+    try {
+      await notifyInstantBookingSeriesCreated(admin, {
+        tenantId,
+        visitId: payload.visit_id,
+        ruleId: payload.recurring_rule_id,
+      });
+    } catch (emailError) {
+      console.error(
+        '[recurringSeries] instant booking email failed:',
+        emailError instanceof Error ? emailError.message : 'unknown',
+      );
+    }
+  }
+
   return {
     finalized: payload.finalized === true,
     visitId: payload.visit_id,
     recurringRuleId: payload.recurring_rule_id ?? null,
   };
+}
+
+/** One series-created email. A retry of finalize leaves `finalized` false and does not send again. */
+async function notifyInstantBookingSeriesCreated(
+  admin: Admin,
+  params: { tenantId: string; visitId: string; ruleId: string },
+): Promise<void> {
+  const { data: rule } = await admin
+    .from('recurring_appointment_rules')
+    .select('id, customer_id, title, rrule_definition, anchor_starts_at')
+    .eq('id', params.ruleId)
+    .eq('tenant_id', params.tenantId)
+    .maybeSingle();
+  if (!rule?.customer_id) return;
+
+  const { data: assignees } = await admin
+    .from('tenant_scheduled_visit_assignees')
+    .select('user_id')
+    .eq('visit_id', params.visitId);
+  const assigneeIds = [...new Set((assignees ?? []).map((row) => row.user_id))];
+  let cleanerNames: string[] = [];
+  if (assigneeIds.length > 0) {
+    const { data: profiles } = await admin
+      .from('user_profiles')
+      .select('user_id, display_name')
+      .in('user_id', assigneeIds);
+    const byId = new Map(
+      (profiles ?? []).map((row) => [row.user_id, row.display_name?.trim() || 'Team member']),
+    );
+    cleanerNames = assigneeIds.map((id) => byId.get(id) || 'Team member');
+  }
+
+  await notifyCustomerRecurringSeries(admin, {
+    tenantId: params.tenantId,
+    customerId: rule.customer_id,
+    ruleId: rule.id,
+    action: 'created',
+    snapshot: {
+      title: rule.title,
+      rruleDefinition: rule.rrule_definition,
+      anchorStartsAt: rule.anchor_starts_at,
+      cleanerNames,
+    },
+  });
 }
 
 function readIntake(value: Json): BookingIntake | null {

@@ -35,6 +35,8 @@ import {
   loadConsultationDurationMinutes,
 } from '@/lib/tenant/consultationDuration';
 import { sanitizeInternalReturnPath } from '@/lib/tenant/customerConsultation';
+import { notifyCustomerOfficeVisitCreated } from '@/lib/email/officeVisitNotifications';
+import { notifyCustomerSeriesOccurrenceSkipped } from '@/lib/email/recurringSeriesNotifications';
 import { notifyCustomerRescheduleResolved } from '@/lib/email/rescheduleNotifications';
 import { queueCleanerScheduleNotice } from '@/lib/email/notifyCleanerScheduleChanges';
 import type { CleanerScheduleVisit } from '@/lib/email/cleanerScheduleChange';
@@ -387,6 +389,17 @@ export async function createScheduledVisit(
       startsAt: startsAt,
       status,
     });
+    try {
+      await notifyCustomerOfficeVisitCreated(admin, {
+        tenantId: membership.tenantId,
+        visitId,
+      });
+    } catch (emailError) {
+      console.error(
+        '[officeVisit] email failed:',
+        emailError instanceof Error ? emailError.message : 'unknown',
+      );
+    }
   }
 
   revalidatePath('/schedule');
@@ -413,7 +426,7 @@ export async function deleteScheduledVisit(
 
   const { data: visit, error: loadErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, recurring_rule_id, starts_at, customer_id, property_id')
+    .select('id, title, recurring_rule_id, starts_at, customer_id, property_id')
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -461,6 +474,24 @@ export async function deleteScheduledVisit(
 
   if (del.error) {
     return { error: del.error.message };
+  }
+
+  if (visit.recurring_rule_id) {
+    try {
+      await notifyCustomerSeriesOccurrenceSkipped(admin, {
+        tenantId: membership.tenantId,
+        customerId: visit.customer_id,
+        ruleId: visit.recurring_rule_id,
+        visitId: visit.id,
+        title: visit.title,
+        startsAt: visit.starts_at,
+      });
+    } catch (emailError) {
+      console.error(
+        '[recurringSeries] occurrence email failed:',
+        emailError instanceof Error ? emailError.message : 'unknown',
+      );
+    }
   }
 
   if (beforeDelete.ok && beforeDelete.visits.length > 0) {
