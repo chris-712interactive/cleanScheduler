@@ -43,6 +43,21 @@ export function formatNextAppointmentWhen(
   return `${date} at ${time}`;
 }
 
+/** Start through end, in the workspace timezone. e.g. Tuesday, June 8 at 9:00 AM – 11:00 AM */
+export function formatVisitWindow(
+  startsAt: string,
+  endsAt: string,
+  timeZone: string | null | undefined,
+): string {
+  const start = formatNextAppointmentWhen(startsAt, timeZone);
+  const end = formatDateTimeInTimeZone(endsAt, timeZone, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  if (end === '—') return start;
+  return `${start} – ${end}`;
+}
+
 /** e.g. Tue, May 12, 2025 */
 export function formatUpcomingVisitDate(
   startsAt: string,

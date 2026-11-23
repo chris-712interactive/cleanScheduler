@@ -13,6 +13,7 @@ vi.mock('resend', () => ({
 import {
   describeRecurringFrequency,
   notifyCustomerRecurringSeries,
+  notifyCustomerSeriesOccurrenceMoved,
   notifyCustomerSeriesOccurrenceSkipped,
   recurringSeriesChangeKinds,
   type RecurringSeriesSnapshot,
@@ -46,6 +47,7 @@ function adminStub(options?: {
   marketingOptIn?: boolean;
   name?: string;
   rule?: boolean;
+  visit?: boolean;
 }) {
   return {
     from(table: string) {
@@ -74,6 +76,13 @@ function adminStub(options?: {
           state: 'NC',
           postal_code: '28801',
         });
+      }
+      if (table === 'tenant_scheduled_visits') {
+        return queryResult(
+          options?.visit === false
+            ? null
+            : { id: 'visit-1', customer_id: 'cust-1', recurring_rule_id: 'rule-1' },
+        );
       }
       if (table === 'recurring_appointment_rules') {
         return queryResult(
@@ -366,6 +375,114 @@ describe('recurring series email', () => {
     });
     const subject = (send.mock.calls[0]?.[0] as { subject: string }).subject;
     expect(subject).not.toMatch(/[\r\n\u0000]/);
+    expect(subject).toContain('Bcc: evil@example.com');
+  });
+
+  it('emails one moved occurrence with the old and new time, not the whole series', async () => {
+    const params = {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly <b>"deep"</b> clean',
+      previousStartsAt: '2026-06-08T13:00:00.000Z',
+      previousEndsAt: '2026-06-08T15:00:00.000Z',
+      nextStartsAt: '2026-06-09T14:00:00.000Z',
+      nextEndsAt: '2026-06-09T16:00:00.000Z',
+    };
+    const result = await notifyCustomerSeriesOccurrenceMoved(adminStub() as never, params);
+    expect(result.emailed).toBe(1);
+    const payload = send.mock.calls[0]?.[0] as { html: string; text: string; subject: string };
+    expect(payload.subject).toContain('one visit was moved');
+    expect(payload.subject).not.toContain('series');
+    expect(payload.text).toContain('Previous time');
+    expect(payload.text).toContain('New time');
+    expect(payload.text).toContain('Only this date was moved.');
+    expect(payload.text).not.toContain('will not be added');
+    expect(payload.html).toContain('Weekly &lt;b&gt;&quot;deep&quot;&lt;/b&gt; clean');
+    expect(payload.html).not.toContain('<b>');
+    const key = send.mock.calls[0]?.[1].idempotencyKey as string;
+    expect(key).toMatch(/^series-occurrence-move-/);
+    await notifyCustomerSeriesOccurrenceMoved(adminStub() as never, params);
+    expect(send.mock.calls[1]?.[1].idempotencyKey).toBe(key);
+    await notifyCustomerSeriesOccurrenceMoved(adminStub() as never, {
+      ...params,
+      nextStartsAt: '2026-06-10T14:00:00.000Z',
+    });
+    expect(send.mock.calls[2]?.[1].idempotencyKey).not.toBe(key);
+  });
+
+  it('skips a move when nothing changed, the series is outside the tenant, or the address is suppressed', async () => {
+    const base = {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly clean',
+      previousStartsAt: '2026-06-08T13:00:00.000Z',
+      previousEndsAt: '2026-06-08T15:00:00.000Z',
+      nextStartsAt: '2026-06-09T14:00:00.000Z',
+      nextEndsAt: '2026-06-09T16:00:00.000Z',
+    };
+    const same = await notifyCustomerSeriesOccurrenceMoved(adminStub() as never, {
+      ...base,
+      nextStartsAt: base.previousStartsAt,
+      nextEndsAt: base.previousEndsAt,
+    });
+    expect(same).toMatchObject({ emailed: 0, skipped: 'unchanged' });
+
+    const missing = await notifyCustomerSeriesOccurrenceMoved(
+      adminStub({ visit: false }) as never,
+      base,
+    );
+    expect(missing).toMatchObject({ emailed: 0, skipped: 'no_series' });
+
+    const blocked = await notifyCustomerSeriesOccurrenceMoved(
+      adminStub({ suppressed: true }) as never,
+      base,
+    );
+    expect(blocked).toMatchObject({ emailed: 0, skipped: 'suppressed' });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('keeps a moved-occurrence subject on one line when outbound mail is suppressed', async () => {
+    const name = 'Acme\r\nBcc: evil@example.com';
+    const params = {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly clean',
+      previousStartsAt: '2026-06-08T13:00:00.000Z',
+      previousEndsAt: '2026-06-08T15:00:00.000Z',
+      nextStartsAt: '2026-06-09T14:00:00.000Z',
+      nextEndsAt: '2026-06-09T16:00:00.000Z',
+    };
+    vi.stubEnv('OUTBOUND_SUPPRESSED', '1');
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('NEXT_PUBLIC_APP_DOMAIN', 'dev.cleanscheduler.com');
+    const suppressed = await notifyCustomerSeriesOccurrenceMoved(
+      adminStub({ name }) as never,
+      params,
+    );
+    expect(suppressed.emailed).toBe(0);
+    expect(send).not.toHaveBeenCalled();
+
+    vi.unstubAllEnvs();
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
+    process.env.RESEND_API_KEY = 're_test_key';
+    process.env.RESEND_FROM_EMAIL = 'office@example.com';
+    process.env.NEXT_PUBLIC_APP_ENV = 'local';
+    process.env.NEXT_PUBLIC_APP_DOMAIN = 'lvh.me';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+    delete process.env.OUTBOUND_SUPPRESSED;
+    delete process.env.VERCEL_ENV;
+
+    await notifyCustomerSeriesOccurrenceMoved(adminStub({ name }) as never, params);
+    const subject = (send.mock.calls[0]?.[0] as { subject: string }).subject;
+    expect(subject).not.toMatch(/[\r\n\u0000]/);
+    expect(subject).toContain('one visit was moved');
     expect(subject).toContain('Bcc: evil@example.com');
   });
 });
