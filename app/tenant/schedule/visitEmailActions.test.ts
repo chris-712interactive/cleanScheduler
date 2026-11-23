@@ -256,6 +256,7 @@ describe('visit actions email after a successful write', () => {
       ruleId: 'rule-1',
       visitId: 'visit-1',
       startsAt: '2026-06-08T13:00:00.000Z',
+      endsAt: '2026-06-08T15:00:00.000Z',
     });
   });
 
