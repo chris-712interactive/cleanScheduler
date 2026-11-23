@@ -16,6 +16,11 @@ const harness = vi.hoisted(() => ({
     void params;
     return { emailed: 0 };
   }),
+  notifyCancel: vi.fn(async (admin: unknown, params: unknown) => {
+    void admin;
+    void params;
+    return { emailed: 1 };
+  }),
   insertError: null as { message: string } | null,
   updateError: null as { message: string } | null,
   updated: {
@@ -56,6 +61,8 @@ vi.mock('@/lib/schedule/timeOffVisitConflicts', () => ({
 vi.mock('@/lib/email/timeOffNotifications', () => ({
   notifyOfficeOfTimeOffRequest: (admin: unknown, params: unknown) =>
     harness.notifyOffice(admin, params),
+  notifyOfficeOfTimeOffCancellation: (admin: unknown, params: unknown) =>
+    harness.notifyCancel(admin, params),
   notifyOfficeOfTimeOffConflicts: (admin: unknown, params: unknown) =>
     harness.notifyConflicts(admin, params),
   notifyCleanerOfTimeOffDecision: (admin: unknown, params: unknown) =>
@@ -100,6 +107,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 import {
+  cancelTimeOffRequestAction,
   reviewTimeOffRequestAction,
   submitTimeOffRequestAction,
 } from '@/app/tenant/schedule/time-off/actions';
@@ -115,6 +123,7 @@ describe('time off actions email only after a successful write', () => {
     harness.notifyOffice.mockClear();
     harness.notifyCleaner.mockClear();
     harness.notifyConflicts.mockClear();
+    harness.notifyCancel.mockClear();
     harness.insertError = null;
     harness.updateError = null;
     harness.updated = {
@@ -205,5 +214,43 @@ describe('time off actions email only after a successful write', () => {
     expect(harness.notifyCleaner).toHaveBeenCalledTimes(1);
     expect(harness.notifyCleaner.mock.calls[0]?.[1]).toMatchObject({ decision: 'denied' });
     expect(harness.notifyConflicts).not.toHaveBeenCalled();
+  });
+
+  it('emails the office once when the cleaner cancels their own pending request', async () => {
+    const result = await cancelTimeOffRequestAction(
+      {},
+      form({ tenant_slug: 'acme', request_id: 'req-1' }),
+    );
+    expect(result.success).toContain('cancelled');
+    expect(harness.notifyCancel).toHaveBeenCalledTimes(1);
+    expect(harness.notifyCancel.mock.calls[0]?.[1]).toMatchObject({
+      tenantId: 'tenant-1',
+      requestId: 'req-1',
+      requesterUserId: 'cleaner-1',
+      startsAt: '2026-06-01T13:00:00.000Z',
+    });
+  });
+
+  it('does not email the office when the cancellation does not update a pending request', async () => {
+    harness.updated = null;
+    const missing = await cancelTimeOffRequestAction(
+      {},
+      form({ tenant_slug: 'acme', request_id: 'req-1' }),
+    );
+    expect(missing.error).toMatch(/pending/);
+    expect(harness.notifyCancel).not.toHaveBeenCalled();
+
+    harness.updated = {
+      user_id: 'cleaner-1',
+      starts_at: '2026-06-01T13:00:00.000Z',
+      ends_at: '2026-06-01T21:00:00.000Z',
+    };
+    harness.updateError = { message: 'locked' };
+    const failed = await cancelTimeOffRequestAction(
+      {},
+      form({ tenant_slug: 'acme', request_id: 'req-1' }),
+    );
+    expect(failed.error).toBe('locked');
+    expect(harness.notifyCancel).not.toHaveBeenCalled();
   });
 });

@@ -6,7 +6,7 @@ const harness = vi.hoisted(() => ({
     void params;
     return { emailed: 1, skipped: 'none' as const };
   }),
-  insertError: null as { message: string } | null,
+  insertError: null as { message: string; code?: string } | null,
   updateError: null as { message: string } | null,
   updateRow: {
     id: 'rule-1',
@@ -22,6 +22,7 @@ const harness = vi.hoisted(() => ({
     anchor_starts_at: string;
   }>,
   inserts: 0,
+  insertedIds: [] as string[],
 }));
 
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
@@ -84,10 +85,12 @@ vi.mock('@/lib/supabase/server', () => ({
       const proxy = new Proxy(self, {
         get(_target, prop) {
           if (prop === 'insert' || prop === 'update') {
-            return () => {
+            return (row?: { id?: string }) => {
               op = String(prop);
-              if (prop === 'insert' && table === 'recurring_appointment_rules')
+              if (prop === 'insert' && table === 'recurring_appointment_rules') {
                 harness.inserts += 1;
+                if (row?.id) harness.insertedIds.push(row.id);
+              }
               return proxy;
             };
           }
@@ -177,6 +180,7 @@ describe('recurring series actions do not email a failed write', () => {
     harness.updateError = null;
     harness.recentSeries = [];
     harness.inserts = 0;
+    harness.insertedIds = [];
     harness.updateRow = {
       id: 'rule-1',
       customer_id: 'cust-1',
@@ -246,6 +250,40 @@ describe('recurring series actions do not email a failed write', () => {
     );
     expect(url).toContain('created=1');
     expect(harness.inserts).toBe(0);
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('shares one primary key so a concurrent insert cannot email a second time', async () => {
+    await capture(() =>
+      createRecurringVisitRuleAction(
+        form({
+          tenant_slug: 'acme',
+          customer_id: 'cust-1',
+          preset: 'weekly_mon',
+          starts_at: '2026-06-01T09:00',
+          client_timezone_offset: '0',
+        }),
+      ),
+    );
+    const winner = harness.insertedIds[0];
+    expect(winner).toMatch(/^[0-9a-f-]{36}$/);
+    expect(harness.notify).toHaveBeenCalledTimes(1);
+
+    harness.notify.mockClear();
+    harness.insertError = { message: 'duplicate key value', code: '23505' };
+    const url = await capture(() =>
+      createRecurringVisitRuleAction(
+        form({
+          tenant_slug: 'acme',
+          customer_id: 'cust-1',
+          preset: 'weekly_mon',
+          starts_at: '2026-06-01T09:00',
+          client_timezone_offset: '0',
+        }),
+      ),
+    );
+    expect(url).toContain('created=1');
+    expect(harness.insertedIds[1]).toBe(winner);
     expect(harness.notify).not.toHaveBeenCalled();
   });
 
