@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseTenantDatetimeLocalToIso } from '@/lib/datetime/parseTenantDatetimeLocal';
 import {
+  clampMonthDay,
   endSeriesBefore,
   openSeriesRrule,
   parseRecurringEditScope,
@@ -296,6 +297,82 @@ describe('planRecurringSeriesSplit', () => {
     expect(plan.newRrule).toBe('FREQ=WEEKLY;BYDAY=TU;INTERVAL=1');
     const next = plan.rewrites.find((row) => row.id === 'next');
     expect(zonedCivil(next?.startsAt ?? '', TZ)).toMatchObject({ day: 16, hour: 10 });
+  });
+
+  it('clamps a monthly move onto short months instead of overflowing', () => {
+    const rule = 'FREQ=MONTHLY;BYMONTHDAY=15;INTERVAL=1';
+    const cases = [
+      { year: 2026, day: 31, feb: 28, apr: 30 },
+      { year: 2026, day: 30, feb: 28, apr: 30 },
+      { year: 2026, day: 29, feb: 28, apr: 29 },
+      { year: 2028, day: 31, feb: 29, apr: 30 },
+      { year: 2028, day: 30, feb: 29, apr: 30 },
+      { year: 2028, day: 29, feb: 29, apr: 29 },
+    ];
+    for (const sample of cases) {
+      const visits = [1, 2, 3, 4].map((month) => {
+        const key = `${sample.year}-${String(month).padStart(2, '0')}`;
+        return visit(`${key}`, at(`${key}-15T09:00`), at(`${key}-15T11:00`));
+      });
+      const editedDay = String(sample.day).padStart(2, '0');
+      const plan = planRecurringSeriesSplit({
+        timeZone: TZ,
+        rruleDefinition: rule,
+        anchorStartsAt: visits[0]!.startsAt,
+        editedVisitId: visits[0]!.id,
+        splitStartsAt: visits[0]!.startsAt,
+        editedStartsAt: at(`${sample.year}-01-${editedDay}T09:00`),
+        editedEndsAt: at(`${sample.year}-01-${editedDay}T11:00`),
+        movedVisitIds: [],
+        visits,
+      });
+      expect(plan.ok, `${sample.year} day ${sample.day}`).toBe(true);
+      if (!plan.ok) continue;
+      expect(plan.newRrule).toBe(`FREQ=MONTHLY;BYMONTHDAY=${sample.day};INTERVAL=1`);
+      const local = plan.rewrites.map((row) => zonedCivil(row.startsAt, TZ));
+      expect(local.map((row) => row && `${row.year}-${row.month}-${row.day}`)).toEqual([
+        `${sample.year}-1-${sample.day}`,
+        `${sample.year}-2-${sample.feb}`,
+        `${sample.year}-3-${sample.day}`,
+        `${sample.year}-4-${sample.apr}`,
+      ]);
+      expect(new Set(local.map((row) => row && `${row.year}-${row.month}`)).size).toBe(4);
+      expect(clampMonthDay(sample.year, 2, sample.day)).toBe(sample.feb);
+      expect(clampMonthDay(sample.year, 4, sample.day)).toBe(sample.apr);
+    }
+  });
+
+  it('expands a day-31 rule onto the last day of February and April', () => {
+    const from = new Date('2026-01-01T00:00:00.000Z');
+    const until = new Date('2026-05-15T00:00:00.000Z');
+    const starts = seriesOccurrenceStarts({
+      rruleDefinition: 'FREQ=MONTHLY;BYMONTHDAY=31;INTERVAL=1',
+      anchorStartsAt: at('2026-01-31T09:00'),
+      from,
+      until,
+    }).map((iso) => zonedCivil(iso, TZ));
+    expect(starts.map((row) => row && `${row.month}-${row.day}`)).toEqual([
+      '1-31',
+      '2-28',
+      '3-31',
+      '4-30',
+    ]);
+
+    const leap = seriesOccurrenceStarts({
+      rruleDefinition: 'FREQ=MONTHLY;BYMONTHDAY=29;INTERVAL=1',
+      anchorStartsAt: at('2028-01-29T09:00'),
+      from: new Date('2028-01-01T00:00:00.000Z'),
+      until: new Date('2028-04-01T00:00:00.000Z'),
+    }).map((iso) => zonedCivil(iso, TZ)?.day);
+    expect(leap).toEqual([29, 29, 29]);
+
+    const nonLeap = seriesOccurrenceStarts({
+      rruleDefinition: 'FREQ=MONTHLY;BYMONTHDAY=30;INTERVAL=1',
+      anchorStartsAt: at('2026-01-30T09:00'),
+      from,
+      until,
+    }).map((iso) => zonedCivil(iso, TZ)?.day);
+    expect(nonLeap).toEqual([30, 28, 30, 30]);
   });
 
   it('refuses a split that would put two visits on one instant', () => {

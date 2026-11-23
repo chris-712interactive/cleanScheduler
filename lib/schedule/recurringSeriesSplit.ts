@@ -166,7 +166,94 @@ function dtstartIcalLine(date: Date): string {
   return utcCompact(date);
 }
 
-/** Occurrences of a series between two instants, using the same UTC RRULE as the materializer. */
+/** Last calendar day of a month. `month` is 1–12. */
+export function lastDayOfMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/**
+ * Day-of-month that exists. 31 in February is the 28th or 29th.
+ * Negative values count from the end: -1 is the last day.
+ */
+export function clampMonthDay(year: number, month: number, day: number): number {
+  const last = lastDayOfMonth(year, month);
+  if (day < 0) return Math.min(last, Math.max(1, last + day + 1));
+  return Math.min(last, Math.max(1, day));
+}
+
+function parseUtcCompact(value: string): Date | null {
+  const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(value.trim());
+  if (!match) return null;
+  return new Date(
+    Date.UTC(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      Number(match[4]),
+      Number(match[5]),
+      Number(match[6]),
+    ),
+  );
+}
+
+/**
+ * Months the UTC RRULE skips because BYMONTHDAY does not exist.
+ * The instant keeps the anchor's UTC clock, on the last valid day.
+ */
+function clampedMonthlyStarts(params: {
+  anchor: Date;
+  byMonthDay: number;
+  interval: number;
+  from: Date;
+  until: Date;
+  ruleUntil: Date | null;
+  existing: Set<number>;
+}): string[] {
+  const startIndex = params.anchor.getUTCFullYear() * 12 + params.anchor.getUTCMonth();
+  const hour = params.anchor.getUTCHours();
+  const minute = params.anchor.getUTCMinutes();
+  const second = params.anchor.getUTCSeconds();
+  const extras: string[] = [];
+  let year = params.anchor.getUTCFullYear();
+  let month = params.anchor.getUTCMonth();
+  for (let step = 0; step < 240; step += 1) {
+    const index = year * 12 + month;
+    const delta = index - startIndex;
+    if (delta >= 0 && delta % params.interval === 0) {
+      const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+      const requested = params.byMonthDay < 0 ? last + params.byMonthDay + 1 : params.byMonthDay;
+      if (requested > last || requested < 1) {
+        const day = clampMonthDay(year, month + 1, params.byMonthDay);
+        const clamped = new Date(Date.UTC(year, month, day, hour, minute, second));
+        const ms = clamped.getTime();
+        const withinUntil = params.ruleUntil == null || ms <= params.ruleUntil.getTime();
+        if (
+          withinUntil &&
+          ms >= params.anchor.getTime() &&
+          ms >= params.from.getTime() &&
+          ms <= params.until.getTime() &&
+          !params.existing.has(ms)
+        ) {
+          extras.push(clamped.toISOString());
+          params.existing.add(ms);
+        }
+      }
+    }
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+    if (Date.UTC(year, month, 1) > params.until.getTime() + 32 * 86_400_000) break;
+  }
+  return extras;
+}
+
+/**
+ * Occurrences between two instants. Weekly rules use the UTC RRULE.
+ * Monthly BYMONTHDAY rules use that RRULE and, when the day does not exist,
+ * the last day of that month at the anchor's UTC clock.
+ */
 export function seriesOccurrenceStarts(params: {
   rruleDefinition: string;
   anchorStartsAt: string;
@@ -179,10 +266,27 @@ export function seriesOccurrenceStarts(params: {
   if (!definition) return [];
   const full = `DTSTART:${dtstartIcalLine(anchor)}\nRRULE:${definition}`;
   const rule = rrulestr(full, { tzid: 'UTC' });
-  return rule
+  const generated = rule
     .between(params.from, params.until, true)
     .filter((dt) => dt.getTime() >= anchor.getTime())
     .map((dt) => dt.toISOString());
+  const parts = parseRruleParts(definition);
+  const byMonthDay = Number(parts.BYMONTHDAY);
+  if (parts.FREQ !== 'MONTHLY' || !Number.isFinite(byMonthDay) || byMonthDay === 0) {
+    return generated;
+  }
+  const interval = Number(parts.INTERVAL || '1');
+  const existing = new Set(generated.map((iso) => new Date(iso).getTime()));
+  const extras = clampedMonthlyStarts({
+    anchor,
+    byMonthDay,
+    interval: Number.isFinite(interval) && interval > 0 ? interval : 1,
+    from: params.from,
+    until: params.until,
+    ruleUntil: parts.UNTIL ? parseUtcCompact(parts.UNTIL) : null,
+    existing,
+  });
+  return [...generated, ...extras].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 }
 
 function rruleKeysInOrder(rrule: string): string[] {
@@ -311,27 +415,45 @@ function nearestOccurrence(params: {
   return best?.iso ?? null;
 }
 
+function monthIndex(year: number, month: number): number {
+  return year * 12 + (month - 1);
+}
+
 function shiftWindow(params: {
   visitStartsAt: string;
   splitStartsAt: string;
   editedStartsAt: string;
   durationMinutes: number;
   timeZone: string;
+  rruleDefinition: string;
 }): { startsAt: string; endsAt: string } | null {
   const splitCivil = zonedCivil(params.splitStartsAt, params.timeZone);
   const editedCivil = zonedCivil(params.editedStartsAt, params.timeZone);
   const visitCivil = zonedCivil(params.visitStartsAt, params.timeZone);
   if (!splitCivil || !editedCivil || !visitCivil) return null;
-  const dayDelta =
-    calendarDayNumber(editedCivil.year, editedCivil.month, editedCivil.day) -
-    calendarDayNumber(splitCivil.year, splitCivil.month, splitCivil.day);
-  const shiftedDay = addCalendarDays(visitCivil, dayDelta);
+  const monthly = parseRruleParts(params.rruleDefinition).FREQ === 'MONTHLY';
+  let year = visitCivil.year;
+  let month = visitCivil.month;
+  let day = visitCivil.day;
+  if (monthly) {
+    const delta =
+      monthIndex(editedCivil.year, editedCivil.month) -
+      monthIndex(splitCivil.year, splitCivil.month);
+    const next = monthIndex(visitCivil.year, visitCivil.month) + delta;
+    year = Math.floor(next / 12);
+    month = (next % 12) + 1;
+    day = clampMonthDay(year, month, editedCivil.day);
+  } else {
+    const dayDelta =
+      calendarDayNumber(editedCivil.year, editedCivil.month, editedCivil.day) -
+      calendarDayNumber(splitCivil.year, splitCivil.month, splitCivil.day);
+    const shiftedDay = addCalendarDays(visitCivil, dayDelta);
+    year = shiftedDay.year;
+    month = shiftedDay.month;
+    day = shiftedDay.day;
+  }
   const startsAt = civilToIso(
-    {
-      ...shiftedDay,
-      hour: editedCivil.hour,
-      minute: editedCivil.minute,
-    },
+    { year, month, day, hour: editedCivil.hour, minute: editedCivil.minute },
     params.timeZone,
   );
   if (!startsAt) return null;
@@ -464,6 +586,7 @@ export function planRecurringSeriesSplit(input: {
         editedStartsAt: input.editedStartsAt,
         durationMinutes,
         timeZone: input.timeZone,
+        rruleDefinition: input.rruleDefinition,
       });
       if (!shifted) {
         return {
@@ -530,6 +653,7 @@ export function planRecurringSeriesSplit(input: {
       editedStartsAt: input.editedStartsAt,
       durationMinutes,
       timeZone: input.timeZone,
+      rruleDefinition: input.rruleDefinition,
     });
     claimSkip(shifted?.startsAt ?? visit.startsAt, true);
   }

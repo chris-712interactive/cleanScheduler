@@ -198,7 +198,7 @@ export async function applyRecurringSeriesEdit(
   const { data: rows, error: rowsError } = await admin
     .from('tenant_scheduled_visits')
     .select(
-      'id, starts_at, ends_at, status, checked_in_at, completion_invoice_id, coverage_addon_invoice_id, title, notes, expected_amount_cents',
+      'id, starts_at, ends_at, status, checked_in_at, completion_invoice_id, coverage_addon_invoice_id, title, notes, expected_amount_cents, staffing_status, recurring_rule_id',
     )
     .eq('tenant_id', input.tenantId)
     .eq('recurring_rule_id', rule.id);
@@ -379,33 +379,8 @@ export async function applyRecurringSeriesEdit(
   }
 
   const newRuleId = randomUUID();
-  const inserted = await admin
-    .from('recurring_appointment_rules')
-    .insert({
-      id: newRuleId,
-      tenant_id: input.tenantId,
-      customer_id: rule.customer_id,
-      property_id: rule.property_id,
-      quote_id: rule.quote_id,
-      expected_amount_cents:
-        input.expectedAmountCents === undefined
-          ? rule.expected_amount_cents
-          : input.expectedAmountCents,
-      title: input.title ?? rule.title,
-      rrule_definition: plan.newRrule,
-      anchor_starts_at: plan.newAnchorStartsAt,
-      visit_duration_minutes: plan.newDurationMinutes,
-      horizon_days: rule.horizon_days,
-      is_active: true,
-    })
-    .select('id')
-    .single();
-  if (inserted.error || !inserted.data) {
-    return { ok: false, error: inserted.error?.message ?? 'Could not save the series.' };
-  }
-
   const now = new Date().toISOString();
-  for (const rewrite of plan.rewrites) {
+  const visitPatches = plan.rewrites.map((rewrite) => {
     const update: Database['public']['Tables']['tenant_scheduled_visits']['Update'] = {
       recurring_rule_id: newRuleId,
       starts_at: rewrite.startsAt,
@@ -423,61 +398,72 @@ export async function applyRecurringSeriesEdit(
             ? 'override_confirmed'
             : 'assigned';
     }
-    const saved = await admin
-      .from('tenant_scheduled_visits')
-      .update(update)
-      .eq('id', rewrite.id)
-      .eq('tenant_id', input.tenantId)
-      .eq('recurring_rule_id', rule.id);
-    if (saved.error) return { ok: false, error: saved.error.message };
-  }
-
-  if (nextCrew) {
-    for (const rewrite of plan.rewrites) {
-      const removed = await admin
-        .from('tenant_scheduled_visit_assignees')
-        .delete()
-        .eq('visit_id', rewrite.id);
-      if (removed.error) return { ok: false, error: removed.error.message };
-      if (nextCrew.length === 0) continue;
-      const created = await admin
-        .from('tenant_scheduled_visit_assignees')
-        .insert(nextCrew.map((userId) => ({ visit_id: rewrite.id, user_id: userId })));
-      if (created.error) return { ok: false, error: created.error.message };
-    }
-  }
-
+    return { id: rewrite.id, update };
+  });
   const originalIdByStart = new Map(
     seriesVisits.map((row) => [new Date(row.starts_at).getTime(), row.id]),
   );
-  const oldSkipRows = plan.oldSkips.map((startsAt) => ({
-    recurring_rule_id: rule.id,
-    starts_at: startsAt,
-    visit_id: originalIdByStart.get(new Date(startsAt).getTime()) ?? null,
-  }));
-  const newSkipRows = plan.newSkips.map((startsAt) => ({
-    recurring_rule_id: newRuleId,
-    starts_at: startsAt,
-    visit_id: null,
-  }));
-  const skipRows = [...oldSkipRows, ...newSkipRows];
-  if (skipRows.length > 0) {
-    const skipped = await admin
-      .from('recurring_appointment_occurrence_skips')
-      .upsert(skipRows, { onConflict: 'recurring_rule_id,starts_at', ignoreDuplicates: true });
-    if (skipped.error) return { ok: false, error: skipped.error.message };
-  }
-
-  const closed = await admin
-    .from('recurring_appointment_rules')
-    .update({
+  const skipRows = [
+    ...plan.oldSkips.map((startsAt) => ({
+      recurring_rule_id: rule.id,
+      starts_at: startsAt,
+      visit_id: originalIdByStart.get(new Date(startsAt).getTime()) ?? null,
+    })),
+    ...plan.newSkips.map((startsAt) => ({
+      recurring_rule_id: newRuleId,
+      starts_at: startsAt,
+      visit_id: null as string | null,
+    })),
+  ];
+  const committed = await commitRecurringSeriesSplit(admin, {
+    tenantId: input.tenantId,
+    newRule: {
+      id: newRuleId,
+      tenant_id: input.tenantId,
+      customer_id: rule.customer_id,
+      property_id: rule.property_id,
+      quote_id: rule.quote_id,
+      expected_amount_cents:
+        input.expectedAmountCents === undefined
+          ? rule.expected_amount_cents
+          : input.expectedAmountCents,
+      title: input.title ?? rule.title,
+      rrule_definition: plan.newRrule,
+      anchor_starts_at: plan.newAnchorStartsAt,
+      visit_duration_minutes: plan.newDurationMinutes,
+      horizon_days: rule.horizon_days,
+      is_active: true,
+    },
+    oldRuleId: rule.id,
+    oldRulePatch: {
       rrule_definition: plan.oldRrule,
-      is_active: plan.deactivateOldSeries ? false : true,
+      is_active: !plan.deactivateOldSeries,
       updated_at: now,
-    })
-    .eq('id', rule.id)
-    .eq('tenant_id', input.tenantId);
-  if (closed.error) return { ok: false, error: closed.error.message };
+    },
+    visitPatches,
+    replaceCrew: nextCrew
+      ? plan.rewrites.map((rewrite) => ({ visitId: rewrite.id, userIds: nextCrew }))
+      : null,
+    skips: skipRows,
+    restoreVisits: plan.rewrites.map((rewrite) => {
+      const current = byId.get(rewrite.id);
+      return {
+        id: rewrite.id,
+        recurring_rule_id: rule.id,
+        starts_at: current?.starts_at ?? rewrite.startsAt,
+        ends_at: current?.ends_at ?? rewrite.endsAt,
+        title: current?.title ?? nextTitle,
+        notes: current?.notes ?? null,
+        expected_amount_cents: current?.expected_amount_cents ?? null,
+        staffing_status: current?.staffing_status ?? 'assigned',
+      };
+    }),
+    restoreAssignees: plan.rewrites.map((rewrite) => ({
+      visitId: rewrite.id,
+      userIds: [...(crewByVisit.get(rewrite.id) ?? [])],
+    })),
+  });
+  if (!committed.ok) return { ok: false, error: committed.error };
 
   const chips = await loadChips(admin, visit.id);
   const editedRewrite = plan.rewrites.find((row) => row.id === visit.id);
@@ -512,6 +498,160 @@ export async function applyRecurringSeriesEdit(
       assigneeUserIds: chips.assigneeUserIds,
     },
   };
+}
+
+type VisitRestore = {
+  id: string;
+  recurring_rule_id: string;
+  starts_at: string;
+  ends_at: string;
+  title: string;
+  notes: string | null;
+  expected_amount_cents: number | null;
+  staffing_status: Database['public']['Tables']['tenant_scheduled_visits']['Row']['staffing_status'];
+};
+
+export type SeriesSplitCommit = {
+  tenantId: string;
+  newRule: Database['public']['Tables']['recurring_appointment_rules']['Insert'];
+  oldRuleId: string;
+  oldRulePatch: Database['public']['Tables']['recurring_appointment_rules']['Update'];
+  visitPatches: Array<{
+    id: string;
+    update: Database['public']['Tables']['tenant_scheduled_visits']['Update'];
+  }>;
+  replaceCrew: Array<{ visitId: string; userIds: string[] }> | null;
+  skips: Array<{ recurring_rule_id: string; starts_at: string; visit_id: string | null }>;
+  restoreVisits: VisitRestore[];
+  restoreAssignees: Array<{ visitId: string; userIds: string[] }>;
+};
+
+/**
+ * Writes the split, then undoes every write if a later step fails.
+ * The old series is closed last, so a failed close still rolls the new series back.
+ */
+export async function commitRecurringSeriesSplit(
+  admin: Admin,
+  input: SeriesSplitCommit,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const newRuleId = input.newRule.id;
+  if (!newRuleId) return { ok: false, error: 'Could not save the series.' };
+
+  let inserted = false;
+  let crewStarted = false;
+  let skipsWritten = false;
+
+  const rollback = async (): Promise<string | null> => {
+    const problems: string[] = [];
+    for (const visit of input.restoreVisits) {
+      const restored = await admin
+        .from('tenant_scheduled_visits')
+        .update({
+          recurring_rule_id: visit.recurring_rule_id,
+          starts_at: visit.starts_at,
+          ends_at: visit.ends_at,
+          title: visit.title,
+          notes: visit.notes,
+          expected_amount_cents: visit.expected_amount_cents,
+          staffing_status: visit.staffing_status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', visit.id)
+        .eq('tenant_id', input.tenantId);
+      if (restored.error) problems.push(restored.error.message);
+    }
+    if (crewStarted) {
+      for (const row of input.restoreAssignees) {
+        const removed = await admin
+          .from('tenant_scheduled_visit_assignees')
+          .delete()
+          .eq('visit_id', row.visitId);
+        if (removed.error) problems.push(removed.error.message);
+        if (row.userIds.length === 0) continue;
+        const created = await admin
+          .from('tenant_scheduled_visit_assignees')
+          .insert(row.userIds.map((userId) => ({ visit_id: row.visitId, user_id: userId })));
+        if (created.error) problems.push(created.error.message);
+      }
+    }
+    if (skipsWritten) {
+      for (const skip of input.skips) {
+        const removed = await admin
+          .from('recurring_appointment_occurrence_skips')
+          .delete()
+          .eq('recurring_rule_id', skip.recurring_rule_id)
+          .eq('starts_at', skip.starts_at);
+        if (removed.error) problems.push(removed.error.message);
+      }
+    }
+    if (inserted) {
+      const removed = await admin
+        .from('recurring_appointment_rules')
+        .delete()
+        .eq('id', newRuleId)
+        .eq('tenant_id', input.tenantId);
+      if (removed.error) problems.push(removed.error.message);
+    }
+    return problems.length > 0 ? problems.join('; ') : null;
+  };
+
+  const fail = async (message: string) => {
+    const undo = await rollback();
+    return { ok: false as const, error: undo ? `${message} Undo failed: ${undo}` : message };
+  };
+
+  const insertedRule = await admin
+    .from('recurring_appointment_rules')
+    .insert(input.newRule)
+    .select('id')
+    .single();
+  if (insertedRule.error || !insertedRule.data) {
+    return { ok: false, error: insertedRule.error?.message ?? 'Could not save the series.' };
+  }
+  inserted = true;
+
+  for (const patch of input.visitPatches) {
+    const saved = await admin
+      .from('tenant_scheduled_visits')
+      .update(patch.update)
+      .eq('id', patch.id)
+      .eq('tenant_id', input.tenantId)
+      .eq('recurring_rule_id', input.oldRuleId);
+    if (saved.error) return fail(saved.error.message);
+  }
+
+  if (input.replaceCrew) {
+    crewStarted = true;
+    for (const row of input.replaceCrew) {
+      const removed = await admin
+        .from('tenant_scheduled_visit_assignees')
+        .delete()
+        .eq('visit_id', row.visitId);
+      if (removed.error) return fail(removed.error.message);
+      if (row.userIds.length === 0) continue;
+      const created = await admin
+        .from('tenant_scheduled_visit_assignees')
+        .insert(row.userIds.map((userId) => ({ visit_id: row.visitId, user_id: userId })));
+      if (created.error) return fail(created.error.message);
+    }
+  }
+
+  if (input.skips.length > 0) {
+    const skipped = await admin
+      .from('recurring_appointment_occurrence_skips')
+      .upsert(input.skips, { onConflict: 'recurring_rule_id,starts_at', ignoreDuplicates: true });
+    if (skipped.error) return fail(skipped.error.message);
+    skipsWritten = true;
+  }
+
+  const closed = await admin
+    .from('recurring_appointment_rules')
+    .update(input.oldRulePatch)
+    .eq('id', input.oldRuleId)
+    .eq('tenant_id', input.tenantId);
+  if (closed.error) return fail(closed.error.message);
+
+  return { ok: true };
 }
 
 async function loadChips(
