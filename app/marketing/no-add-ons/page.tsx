@@ -51,8 +51,8 @@ export default function NoAddOnsPage() {
                 Clean Scheduler, Jobber, and Housecall Pro
               </h2>
               <p className={styles.sectionLead}>
-                Clean Scheduler cells list the plan that includes the feature. Competitor cells
-                use published pricing pages, or say when a figure varies.
+                Clean Scheduler cells list the plan that includes the feature. Competitor cells use
+                published pricing pages, or say when a figure varies.
               </p>
               <div className={styles.tableWrap}>
                 <NoAddOnComparison />
