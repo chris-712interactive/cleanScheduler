@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { recentDuplicateSeriesId } from '@/lib/schedule/recentRecurringSeries';
+import {
+  recentDuplicateSeriesId,
+  seriesCreateIdempotencyId,
+} from '@/lib/schedule/recentRecurringSeries';
 
 const now = new Date('2026-06-01T12:00:00.000Z');
 
@@ -48,5 +51,37 @@ describe('recentDuplicateSeriesId', () => {
         },
       ),
     ).toBeNull();
+  });
+});
+
+describe('seriesCreateIdempotencyId', () => {
+  const input = {
+    tenantId: 'tenant-1',
+    customerId: 'cust-1',
+    rruleDefinition: 'FREQ=WEEKLY;BYDAY=MO;INTERVAL=1',
+    anchorStartsAt: '2026-06-08T13:00:00.000Z',
+    now,
+  };
+
+  it('is stable for the same series inside one two-minute bucket', () => {
+    const first = seriesCreateIdempotencyId(input);
+    const second = seriesCreateIdempotencyId({
+      ...input,
+      now: new Date(now.getTime() + 30_000),
+      anchorStartsAt: '2026-06-08T13:00:00Z',
+    });
+    expect(first).toBe(second);
+    expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+
+  it('changes when the series, the anchor, or the bucket changes', () => {
+    const id = seriesCreateIdempotencyId(input);
+    expect(seriesCreateIdempotencyId({ ...input, customerId: 'cust-2' })).not.toBe(id);
+    expect(
+      seriesCreateIdempotencyId({ ...input, anchorStartsAt: '2026-06-08T15:00:00.000Z' }),
+    ).not.toBe(id);
+    expect(
+      seriesCreateIdempotencyId({ ...input, now: new Date(now.getTime() + 2 * 60 * 1000) }),
+    ).not.toBe(id);
   });
 });

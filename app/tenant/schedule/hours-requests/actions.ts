@@ -9,6 +9,7 @@ import {
   memberDayWindowsFromDbRows,
   validateMemberDayWindows,
 } from '@/lib/tenant/memberAvailabilityDays';
+import { notifyCleanerOfHoursChangeDecision } from '@/lib/email/timeOffNotifications';
 import { canReviewEmployeeHours, saveMemberAvailability } from '@/lib/tenant/employeeHoursPolicy';
 
 export interface HoursChangeActionState {
@@ -97,6 +98,21 @@ export async function reviewHoursChangeAction(
     .eq('status', 'pending');
 
   if (error) return { error: error.message };
+
+  try {
+    await notifyCleanerOfHoursChangeDecision(admin, {
+      tenantId: membership.tenantId,
+      requestId: request.id,
+      cleanerUserId: request.user_id,
+      decision,
+      reviewNote,
+    });
+  } catch (emailError) {
+    console.error(
+      '[hoursChange] decision email failed:',
+      emailError instanceof Error ? emailError.message : 'unknown',
+    );
+  }
 
   revalidateHoursSurfaces(request.user_id);
   return {

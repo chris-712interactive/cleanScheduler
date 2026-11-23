@@ -8,6 +8,7 @@ import { parseBrowserDatetimeLocalToIso } from '@/lib/datetime/parseBrowserDatet
 import type { TenantRole } from '@/lib/auth/types';
 import {
   notifyCleanerOfTimeOffDecision,
+  notifyOfficeOfTimeOffCancellation,
   notifyOfficeOfTimeOffConflicts,
   notifyOfficeOfTimeOffRequest,
 } from '@/lib/email/timeOffNotifications';
@@ -192,15 +193,34 @@ export async function cancelTimeOffRequestAction(
   if (!auth) return { error: 'Not signed in.' };
 
   const admin = createAdminClient();
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from('tenant_member_time_off')
     .update({ status: 'cancelled' })
     .eq('id', requestId)
     .eq('tenant_id', membership.tenantId)
     .eq('user_id', auth.user.id)
-    .eq('status', 'pending');
+    .eq('status', 'pending')
+    .select('starts_at, ends_at, request_note')
+    .maybeSingle();
 
   if (error) return { error: error.message };
+  if (!updated) return { error: 'That request is no longer pending.' };
+
+  try {
+    await notifyOfficeOfTimeOffCancellation(admin, {
+      tenantId: membership.tenantId,
+      requestId,
+      requesterUserId: auth.user.id,
+      startsAt: updated.starts_at,
+      endsAt: updated.ends_at,
+      requestNote: updated.request_note ?? '',
+    });
+  } catch (emailError) {
+    console.error(
+      '[timeOffNotifications] cancel email failed:',
+      emailError instanceof Error ? emailError.message : 'unknown',
+    );
+  }
 
   revalidatePath('/schedule/time-off');
   revalidatePath('/schedule/time-off-requests');

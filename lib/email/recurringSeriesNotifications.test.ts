@@ -13,6 +13,7 @@ vi.mock('resend', () => ({
 import {
   describeRecurringFrequency,
   notifyCustomerRecurringSeries,
+  notifyCustomerSeriesOccurrenceSkipped,
   recurringSeriesChangeKinds,
   type RecurringSeriesSnapshot,
 } from '@/lib/email/recurringSeriesNotifications';
@@ -40,7 +41,12 @@ function queryResult(data: unknown) {
   return proxy;
 }
 
-function adminStub(options?: { suppressed?: boolean; marketingOptIn?: boolean; name?: string }) {
+function adminStub(options?: {
+  suppressed?: boolean;
+  marketingOptIn?: boolean;
+  name?: string;
+  rule?: boolean;
+}) {
   return {
     from(table: string) {
       if (table === 'customers') {
@@ -68,6 +74,13 @@ function adminStub(options?: { suppressed?: boolean; marketingOptIn?: boolean; n
           state: 'NC',
           postal_code: '28801',
         });
+      }
+      if (table === 'recurring_appointment_rules') {
+        return queryResult(
+          options?.rule === false
+            ? null
+            : { id: 'rule-1', customer_id: 'cust-1', title: 'Weekly clean' },
+        );
       }
       if (table === 'tenant_billing_accounts') return queryResult(null);
       if (table === 'tenant_customer_portal_domains') return queryResult(null);
@@ -253,5 +266,106 @@ describe('recurring series email', () => {
       'utf8',
     );
     expect(source).not.toMatch(/sendTransactionalEmail|notifyCustomerRecurringSeries/);
+  });
+
+  it('emails one skipped occurrence and leaves the series in place', async () => {
+    const result = await notifyCustomerSeriesOccurrenceSkipped(adminStub() as never, {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly "deep" clean',
+      startsAt: '2026-06-08T13:00:00.000Z',
+    });
+
+    expect(result.emailed).toBe(1);
+    expect(send).toHaveBeenCalledTimes(1);
+    const payload = send.mock.calls[0]?.[0] as { html: string; subject: string; text: string };
+    expect(payload.subject).toContain('one visit was cancelled');
+    expect(payload.text).toContain('Only this date was cancelled.');
+    expect(payload.text).not.toContain('will not be added');
+    expect(payload.html).toContain('Weekly &quot;deep&quot; clean');
+    expect(payload.html).not.toContain('Weekly "deep" clean');
+    const key = send.mock.calls[0]?.[1].idempotencyKey as string;
+    expect(key).toMatch(/^series-occurrence-/);
+
+    await notifyCustomerSeriesOccurrenceSkipped(adminStub() as never, {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly "deep" clean',
+      startsAt: '2026-06-08T13:00:00.000Z',
+    });
+    expect(send.mock.calls[1]?.[1].idempotencyKey).toBe(key);
+  });
+
+  it('skips an occurrence email when the series is outside the tenant or the address is suppressed', async () => {
+    const missing = await notifyCustomerSeriesOccurrenceSkipped(
+      adminStub({ rule: false }) as never,
+      {
+        tenantId: 'tenant-1',
+        customerId: 'cust-1',
+        ruleId: 'rule-1',
+        visitId: 'visit-1',
+        title: 'Weekly clean',
+        startsAt: '2026-06-08T13:00:00.000Z',
+      },
+    );
+    expect(missing).toMatchObject({ emailed: 0, skipped: 'no_series' });
+
+    const blocked = await notifyCustomerSeriesOccurrenceSkipped(
+      adminStub({ suppressed: true }) as never,
+      {
+        tenantId: 'tenant-1',
+        customerId: 'cust-1',
+        ruleId: 'rule-1',
+        visitId: 'visit-1',
+        title: 'Weekly clean',
+        startsAt: '2026-06-08T13:00:00.000Z',
+      },
+    );
+    expect(blocked).toMatchObject({ emailed: 0, skipped: 'suppressed' });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('keeps a skipped-occurrence subject on one line when outbound mail is suppressed', async () => {
+    const name = 'Acme\r\nBcc: evil@example.com';
+    vi.stubEnv('OUTBOUND_SUPPRESSED', '1');
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('NEXT_PUBLIC_APP_DOMAIN', 'dev.cleanscheduler.com');
+    const suppressed = await notifyCustomerSeriesOccurrenceSkipped(adminStub({ name }) as never, {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly clean',
+      startsAt: '2026-06-08T13:00:00.000Z',
+    });
+    expect(suppressed.emailed).toBe(0);
+    expect(send).not.toHaveBeenCalled();
+
+    vi.unstubAllEnvs();
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
+    process.env.RESEND_API_KEY = 're_test_key';
+    process.env.RESEND_FROM_EMAIL = 'office@example.com';
+    process.env.NEXT_PUBLIC_APP_ENV = 'local';
+    process.env.NEXT_PUBLIC_APP_DOMAIN = 'lvh.me';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+    delete process.env.OUTBOUND_SUPPRESSED;
+    delete process.env.VERCEL_ENV;
+
+    await notifyCustomerSeriesOccurrenceSkipped(adminStub({ name }) as never, {
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      title: 'Weekly clean',
+      startsAt: '2026-06-08T13:00:00.000Z',
+    });
+    const subject = (send.mock.calls[0]?.[0] as { subject: string }).subject;
+    expect(subject).not.toMatch(/[\r\n\u0000]/);
+    expect(subject).toContain('Bcc: evil@example.com');
   });
 });

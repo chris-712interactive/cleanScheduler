@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatDateTimeInTimeZone } from '@/lib/datetime/formatInTimeZone';
 import { emailDeliveryFields, platformEmailBrand } from '@/lib/email/emailBrand';
 import { emailSubjectLine } from '@/lib/email/emailSubject';
+import { escapeHtmlLite } from '@/lib/email/escapeHtml';
 import { isResendConfigured, sendTransactionalEmail } from '@/lib/email/resend';
 import { isOutboundSuppressed } from '@/lib/outbound/suppression';
 import {
@@ -13,6 +14,8 @@ import {
 import { publicEnv } from '@/lib/env';
 import { loadTenantTimezone } from '@/lib/schedule/memberScheduleProfile';
 import type { TimeOffVisitConflict } from '@/lib/schedule/timeOffVisitConflicts';
+import { summarizeHoursChange } from '@/lib/tenant/employeeHoursPolicy';
+import { memberDayWindowsFromDbRows } from '@/lib/tenant/memberAvailabilityDays';
 import type { Database } from '@/lib/supabase/database.types';
 
 type Admin = SupabaseClient<Database>;
@@ -21,10 +24,6 @@ type ReviewerContact = {
   userId: string;
   email: string;
 };
-
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 function tenantWorkspaceUrl(slug: string, path: string): string {
   const host = publicEnv.NEXT_PUBLIC_APP_DOMAIN;
@@ -232,10 +231,10 @@ export async function notifyOfficeOfTimeOffRequest(
   const html = wrapTransactionalEmailHtml({
     preheader: `${memberName} requested time off`,
     bodyHtml: `
-      <p><strong>${escapeHtml(memberName)}</strong> requested time off.</p>
+      <p><strong>${escapeHtmlLite(memberName)}</strong> requested time off.</p>
       <ul style="padding-left:20px;margin:16px 0;">
-        <li>When: ${escapeHtml(windowLabel)}</li>
-        ${note ? `<li>Note: ${escapeHtml(note)}</li>` : ''}
+        <li>When: ${escapeHtmlLite(windowLabel)}</li>
+        ${note ? `<li>Note: ${escapeHtmlLite(note)}</li>` : ''}
       </ul>
       ${emailButtonHtml({ href: reviewUrl, label: 'Review time off requests' })}
     `.trim(),
@@ -288,7 +287,7 @@ export async function notifyOfficeOfHoursChangeRequest(
   const html = wrapTransactionalEmailHtml({
     preheader: `${memberName} asked to change weekly hours`,
     bodyHtml: `
-      <p><strong>${escapeHtml(memberName)}</strong> asked to change their weekly hours.</p>
+      <p><strong>${escapeHtmlLite(memberName)}</strong> asked to change their weekly hours.</p>
       <p>Current hours stay on the schedule until you approve the change.</p>
       ${emailButtonHtml({ href: reviewUrl, label: 'Review hour changes' })}
     `.trim(),
@@ -352,15 +351,15 @@ export async function notifyOfficeOfTimeOffConflicts(
     .map((conflict) => {
       const when = formatWindow(conflict.startsAt, conflict.endsAt, timeZone);
       const visitUrl = tenantWorkspaceUrl(workspace.slug, `/schedule/${conflict.visitId}`);
-      return `<li><a href="${escapeEmailAttr(visitUrl)}">${escapeHtml(conflict.customerName)} — ${escapeHtml(conflict.title)}</a> (${escapeHtml(when)})</li>`;
+      return `<li><a href="${escapeEmailAttr(visitUrl)}">${escapeHtmlLite(conflict.customerName)} — ${escapeHtmlLite(conflict.title)}</a> (${escapeHtmlLite(when)})</li>`;
     })
     .join('');
 
   const html = wrapTransactionalEmailHtml({
     preheader: `${params.conflicts.length} job${params.conflicts.length === 1 ? '' : 's'} to reschedule`,
     bodyHtml: `
-      <p><strong>${escapeHtml(memberName)}</strong>'s time off was approved and overlaps scheduled jobs that still need a new time or a different crew member.</p>
-      <p>Time off: ${escapeHtml(windowLabel)}</p>
+      <p><strong>${escapeHtmlLite(memberName)}</strong>'s time off was approved and overlaps scheduled jobs that still need a new time or a different crew member.</p>
+      <p>Time off: ${escapeHtmlLite(windowLabel)}</p>
       <ul style="padding-left:20px;margin:16px 0;">${listHtml}</ul>
       ${emailButtonHtml({ href: issuesUrl, label: 'Open schedule issues' })}
     `.trim(),
@@ -428,10 +427,10 @@ export async function notifyCleanerOfTimeOffDecision(
   const html = wrapTransactionalEmailHtml({
     preheader: `Time off ${decisionLabel}`,
     bodyHtml: `
-      <p><strong>${escapeHtml(workspace.name)}</strong> ${decisionLabel} your time off.</p>
+      <p><strong>${escapeHtmlLite(workspace.name)}</strong> ${decisionLabel} your time off.</p>
       <ul style="padding-left:20px;margin:16px 0;">
-        <li>When: ${escapeHtml(windowLabel)}</li>
-        ${note ? `<li>Note: ${escapeHtml(note)}</li>` : ''}
+        <li>When: ${escapeHtmlLite(windowLabel)}</li>
+        ${note ? `<li>Note: ${escapeHtmlLite(note)}</li>` : ''}
       </ul>
       ${emailButtonHtml({ href: listUrl, label: 'View time off' })}
     `.trim(),
@@ -445,6 +444,172 @@ export async function notifyCleanerOfTimeOffDecision(
       html,
     },
     () => ['decision', params.tenantId, params.requestId, params.decision, email],
+  );
+  return { emailed };
+}
+
+/**
+ * Tells the person who requested an hour change that it was approved or denied.
+ * Same address rules as a time-off decision: Auth login email, active membership,
+ * and the tenant suppression list. `user_metadata` is not read.
+ */
+export async function notifyCleanerOfHoursChangeDecision(
+  admin: Admin,
+  params: {
+    tenantId: string;
+    requestId: string;
+    cleanerUserId: string;
+    decision: 'approved' | 'denied';
+    reviewNote: string;
+  },
+): Promise<{ emailed: number }> {
+  if (!isResendConfigured() && !isOutboundSuppressed()) return { emailed: 0 };
+
+  const { data: member } = await admin
+    .from('tenant_memberships')
+    .select('is_active')
+    .eq('tenant_id', params.tenantId)
+    .eq('user_id', params.cleanerUserId)
+    .maybeSingle();
+  if (!member?.is_active) return { emailed: 0 };
+
+  const { data: request } = await admin
+    .from('tenant_member_availability_change_requests')
+    .select('id, use_tenant_default')
+    .eq('id', params.requestId)
+    .eq('tenant_id', params.tenantId)
+    .eq('user_id', params.cleanerUserId)
+    .maybeSingle();
+  if (!request) return { emailed: 0 };
+
+  const { data: dayRows } = await admin
+    .from('tenant_member_availability_change_request_days')
+    .select('weekday, starts_at, ends_at')
+    .eq('request_id', request.id);
+
+  const [workspace, email] = await Promise.all([
+    loadWorkspace(admin, params.tenantId),
+    loginEmail(admin, params.cleanerUserId),
+  ]);
+  if (!workspace || !email) return { emailed: 0 };
+  if (await addressSuppressed(admin, params.tenantId, email)) return { emailed: 0 };
+
+  const approved = params.decision === 'approved';
+  const decisionLabel = approved ? 'approved' : 'denied';
+  const hours = summarizeHoursChange({
+    useTenantDefault: request.use_tenant_default,
+    days: memberDayWindowsFromDbRows(dayRows ?? []),
+  });
+  const note = params.reviewNote.trim();
+  const accountUrl = tenantWorkspaceUrl(workspace.slug, '/settings/account');
+  const follow = approved
+    ? 'Your new hours are on the schedule.'
+    : 'Your current hours stay on the schedule.';
+  const text = [
+    `${workspace.name} ${decisionLabel} your hour change.`,
+    '',
+    `Hours: ${hours}`,
+    note ? `Note: ${note}` : null,
+    '',
+    follow,
+    '',
+    `View your hours: ${accountUrl}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const html = wrapTransactionalEmailHtml({
+    preheader: `Hour change ${decisionLabel}`,
+    bodyHtml: `
+      <p><strong>${escapeHtmlLite(workspace.name)}</strong> ${decisionLabel} your hour change.</p>
+      <ul style="padding-left:20px;margin:16px 0;">
+        <li>Hours: ${escapeHtmlLite(hours)}</li>
+        ${note ? `<li>Note: ${escapeHtmlLite(note)}</li>` : ''}
+      </ul>
+      <p>${escapeHtmlLite(follow)}</p>
+      ${emailButtonHtml({ href: accountUrl, label: 'View your hours' })}
+    `.trim(),
+  });
+
+  const emailed = await sendToEach(
+    [email],
+    {
+      subject: `${workspace.name}: hour change ${decisionLabel}`,
+      text,
+      html,
+    },
+    () => ['hours-decision', params.tenantId, params.requestId, params.decision, email],
+  );
+  return { emailed };
+}
+
+/** One note to the office when the person who asked cancels their own pending time off. */
+export async function notifyOfficeOfTimeOffCancellation(
+  admin: Admin,
+  params: {
+    tenantId: string;
+    requestId: string;
+    requesterUserId: string;
+    startsAt: string;
+    endsAt: string;
+    requestNote: string;
+  },
+): Promise<{ emailed: number }> {
+  if (!isResendConfigured() && !isOutboundSuppressed()) return { emailed: 0 };
+
+  const [workspace, reviewers, fallbackEmails, memberName, timeZone] = await Promise.all([
+    loadWorkspace(admin, params.tenantId),
+    loadReviewerContacts(admin, params.tenantId),
+    loadFallbackEmails(admin, params.tenantId),
+    loadMemberName(admin, params.requesterUserId),
+    loadTenantTimezone(admin, params.tenantId),
+  ]);
+  if (!workspace) return { emailed: 0 };
+
+  const selected = selectTimeOffNotifyEmails({
+    reviewers,
+    excludeUserId: params.requesterUserId,
+    fallbackEmails,
+  });
+  const recipients: string[] = [];
+  for (const address of selected) {
+    if (await addressSuppressed(admin, params.tenantId, address)) continue;
+    recipients.push(address);
+  }
+  if (recipients.length === 0) return { emailed: 0 };
+
+  const windowLabel = formatWindow(params.startsAt, params.endsAt, timeZone);
+  const reviewUrl = tenantWorkspaceUrl(workspace.slug, '/schedule/time-off-requests');
+  const note = params.requestNote.trim();
+  const text = [
+    `${memberName} cancelled their time off request.`,
+    '',
+    `When: ${windowLabel}`,
+    note ? `Note: ${note}` : null,
+    '',
+    `Open time off requests: ${reviewUrl}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const html = wrapTransactionalEmailHtml({
+    preheader: `${memberName} cancelled a time off request`,
+    bodyHtml: `
+      <p><strong>${escapeHtmlLite(memberName)}</strong> cancelled their time off request.</p>
+      <ul style="padding-left:20px;margin:16px 0;">
+        <li>When: ${escapeHtmlLite(windowLabel)}</li>
+        ${note ? `<li>Note: ${escapeHtmlLite(note)}</li>` : ''}
+      </ul>
+      ${emailButtonHtml({ href: reviewUrl, label: 'Open time off requests' })}
+    `.trim(),
+  });
+
+  const emailed = await sendToEach(
+    recipients,
+    {
+      subject: `${workspace.name}: time off cancelled by ${memberName}`,
+      text,
+      html,
+    },
+    (address) => ['cancelled', params.tenantId, params.requestId, address],
   );
   return { emailed };
 }
