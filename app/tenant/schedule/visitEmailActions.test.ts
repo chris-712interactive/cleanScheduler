@@ -94,6 +94,7 @@ vi.mock('@/lib/email/recurringSeriesNotifications', () => ({
     harness.notifySkip(admin, params),
   notifyCustomerSeriesOccurrenceMoved: (admin: unknown, params: unknown) =>
     harness.notifyMove(admin, params),
+  notifyCustomerRecurringSeries: async () => ({ emailed: 1, skipped: 'none' as const }),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -414,6 +415,7 @@ describe('visit time changes email after a successful save', () => {
         visit_id: 'visit-1',
         starts_at: '2026-06-09T10:00',
         ends_at: '2026-06-09T12:00',
+        edit_scope: 'occurrence',
       }),
     );
     expect(result.success).toBe(true);
@@ -427,6 +429,22 @@ describe('visit time changes email after a successful save', () => {
       visitId: 'visit-1',
       previousStartsAt: '2026-06-08T13:00:00.000Z',
     });
+  });
+
+  it('asks for a scope before changing a series visit', async () => {
+    harness.visit = { ...harness.visit, recurring_rule_id: 'rule-1' };
+    const result = await updateScheduledVisitTimes(
+      {},
+      form({
+        tenant_slug: 'acme',
+        visit_id: 'visit-1',
+        starts_at: '2026-06-09T10:00',
+        ends_at: '2026-06-09T12:00',
+      }),
+    );
+    expect(result.error).toBe('Choose this visit only, or this and future visits.');
+    expect(harness.applyTime).not.toHaveBeenCalled();
+    expect(harness.notifyMove).not.toHaveBeenCalled();
   });
 
   it('rejects a field employee before any time write or email', async () => {

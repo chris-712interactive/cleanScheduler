@@ -18,6 +18,7 @@ import {
   updateScheduledVisitTimes,
   type ScheduleFormState,
 } from './actions';
+import { RecurringScopeForm } from './RecurringEditScopeDialog';
 import type { EmployeeOption } from './ScheduleVisitForm';
 import styles from './schedule.module.scss';
 
@@ -142,6 +143,7 @@ export function VisitScheduleEditPanel({
   currentAssigneeUserIds,
   employeeOptions,
   isConsultation = false,
+  seriesVisit = false,
   onVisitPatch,
 }: {
   tenantSlug: string;
@@ -154,6 +156,7 @@ export function VisitScheduleEditPanel({
   currentAssigneeUserIds: string[];
   employeeOptions: EmployeeOption[];
   isConsultation?: boolean;
+  seriesVisit?: boolean;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [timeState, timeAction, timePending] = useActionState(updateScheduledVisitTimes, initial);
@@ -315,7 +318,11 @@ export function VisitScheduleEditPanel({
       ) : null}
 
       <div className={styles.visitScheduleEditColumns}>
-        <form action={timeAction} className={styles.visitScheduleSection}>
+        <RecurringScopeForm
+          seriesVisit={seriesVisit}
+          action={timeAction}
+          className={styles.visitScheduleSection}
+        >
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="visit_id" value={visitId} />
           {timeConfirmUnavailable ? (
@@ -398,9 +405,13 @@ export function VisitScheduleEditPanel({
               {timePending ? 'Saving…' : 'Save time'}
             </button>
           </div>
-        </form>
+        </RecurringScopeForm>
 
-        <form action={crewAction} className={styles.visitScheduleSection}>
+        <RecurringScopeForm
+          seriesVisit={seriesVisit}
+          action={crewAction}
+          className={styles.visitScheduleSection}
+        >
           <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <input type="hidden" name="visit_id" value={visitId} />
           <input type="hidden" name="starts_at" value={startsLocal} />
@@ -496,7 +507,7 @@ export function VisitScheduleEditPanel({
               {crewPending ? 'Saving…' : 'Save crew'}
             </button>
           </div>
-        </form>
+        </RecurringScopeForm>
       </div>
     </div>
   );

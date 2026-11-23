@@ -113,22 +113,23 @@ export function recurringSeriesIdempotencyKey(input: {
   action: RecurringSeriesAction;
   snapshot: RecurringSeriesSnapshot;
   changes: RecurringSeriesChangeKind[];
+  followingWindow?: { startsAt: string; endsAt: string } | null;
 }): string {
-  const digest = createHash('sha256')
-    .update(
-      JSON.stringify({
-        tenantId: input.tenantId,
-        ruleId: input.ruleId,
-        action: input.action,
-        title: input.snapshot.title.trim(),
-        rrule: input.snapshot.rruleDefinition.trim(),
-        anchor: input.snapshot.anchorStartsAt,
-        cleaners: cleanerKey(input.snapshot.cleanerNames),
-        changes: input.changes,
-      }),
-    )
-    .digest('hex')
-    .slice(0, 32);
+  const body: Record<string, unknown> = {
+    tenantId: input.tenantId,
+    ruleId: input.ruleId,
+    action: input.action,
+    title: input.snapshot.title.trim(),
+    rrule: input.snapshot.rruleDefinition.trim(),
+    anchor: input.snapshot.anchorStartsAt,
+    cleaners: cleanerKey(input.snapshot.cleanerNames),
+    changes: input.changes,
+  };
+  if (input.followingWindow) {
+    body.followingStart = input.followingWindow.startsAt;
+    body.followingEnd = input.followingWindow.endsAt;
+  }
+  const digest = createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32);
   return `recurring-series-${digest}`;
 }
 
@@ -153,6 +154,8 @@ export async function notifyCustomerRecurringSeries(
     action: RecurringSeriesAction;
     snapshot: RecurringSeriesSnapshot;
     previous?: RecurringSeriesSnapshot;
+    /** Set when the office edited this visit and the ones after it. One summary, not one email per visit. */
+    followingWindow?: { startsAt: string; endsAt: string } | null;
   },
 ): Promise<{
   emailed: number;
@@ -201,7 +204,13 @@ export async function notifyCustomerRecurringSeries(
   const provider = brand.name;
   const title = params.snapshot.title.trim() || 'Recurring visit';
   const repeats = describeRecurringFrequency(params.snapshot.rruleDefinition);
-  const when = formatNextAppointmentWhen(params.snapshot.anchorStartsAt, tenant?.timezone);
+  const when = params.followingWindow
+    ? formatVisitWindow(
+        params.followingWindow.startsAt,
+        params.followingWindow.endsAt,
+        tenant?.timezone,
+      )
+    : formatNextAppointmentWhen(params.snapshot.anchorStartsAt, tenant?.timezone);
   const cleaner = formatCleanerNames(params.snapshot.cleanerNames);
   const changeLabel = changes
     .map((kind) => (kind === 'frequency' ? 'Frequency' : kind === 'time' ? 'Time' : 'Cleaner'))
@@ -218,7 +227,9 @@ export async function notifyCustomerRecurringSeries(
       ? 'This email covers the series. Each visit is not emailed separately when it is added to the calendar.'
       : params.action === 'cancelled'
         ? 'New visits will not be added from this series. Visits already on the calendar stay until the office changes them.'
-        : 'This email covers the series. Visits already on the calendar keep their own times until the office moves them.';
+        : params.followingWindow
+          ? 'This email covers this visit and the visits after it. Completed visits stay as they are. A visit that was already moved keeps that time.'
+          : 'This email covers the series. Visits already on the calendar keep their own times until the office moves them.';
 
   const facts = [
     { label: 'Service', value: title },
@@ -268,6 +279,7 @@ export async function notifyCustomerRecurringSeries(
       action: params.action,
       snapshot: params.snapshot,
       changes,
+      followingWindow: params.followingWindow,
     }),
     ...emailDeliveryFields(brand),
   });
