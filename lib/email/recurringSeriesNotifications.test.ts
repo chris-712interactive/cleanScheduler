@@ -397,6 +397,8 @@ describe('recurring series email', () => {
     expect(payload.subject).not.toContain('series');
     expect(payload.text).toContain('Previous time');
     expect(payload.text).toContain('New time');
+    expect(payload.text).toContain('Monday, June 8 at 9:00 AM – 11:00 AM');
+    expect(payload.text).toContain('Tuesday, June 9 at 10:00 AM – 12:00 PM');
     expect(payload.text).toContain('Only this date was moved.');
     expect(payload.text).not.toContain('will not be added');
     expect(payload.html).toContain('Weekly &lt;b&gt;&quot;deep&quot;&lt;/b&gt; clean');

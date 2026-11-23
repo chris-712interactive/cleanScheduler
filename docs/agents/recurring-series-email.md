@@ -22,6 +22,7 @@ Product copy is `docs/product/recurring-series-email.md`.
 - After the time write succeeds, a visit with no series calls `notifyCustomerOfficeVisitRescheduled`. A visit on a series calls `notifyCustomerSeriesOccurrenceMoved`. Neither runs when the start and end are the same instant. A failed write does not send. A thrown send does not fail the save. Approving a customer reschedule request still uses `notifyCustomerRescheduleResolved` only.
 - `deleteScheduledVisit` still checks the owner/admin role first. After a successful delete, a series visit calls `notifyCustomerSeriesOccurrenceSkipped`. A visit with no series calls `notifyCustomerOfficeVisitCancelled`.
 - Moving one occurrence still records a skip for the old start when that start changes. The customer email is the move note (old and new time), not the cancellation note and not the series-changed note.
+- `formatVisitWindow` is the only window string those emails use. A same-day window stays "Monday, June 8 at 9:00 AM – 11:00 AM". When the end is the next calendar day in the workspace timezone, the end includes that date: "Monday, June 8 at 10:00 PM – Tuesday, June 9 at 1:00 AM".
 
 ## Gaps left in place
 

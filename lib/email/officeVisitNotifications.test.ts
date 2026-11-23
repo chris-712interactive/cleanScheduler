@@ -233,6 +233,8 @@ describe('office visit time and cancellation email', () => {
     expect(payload.subject).toContain('your visit time changed');
     expect(payload.text).toContain('Previous time');
     expect(payload.text).toContain('New time');
+    expect(payload.text).toContain('Monday, June 8 at 9:00 AM – 11:00 AM');
+    expect(payload.text).toContain('Tuesday, June 9 at 10:00 AM – 12:00 PM');
     expect(payload.text).toContain('single visit');
     expect(payload.html).toContain('Spring &lt;b&gt;&quot;deep&quot;&lt;/b&gt; &amp; co');
     expect(payload.html).not.toContain('<b>');
@@ -274,6 +276,20 @@ describe('office visit time and cancellation email', () => {
     );
     expect(blocked).toMatchObject({ emailed: 0, skipped: 'suppressed' });
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it('names the end date when a changed window crosses midnight', async () => {
+    const result = await notifyCustomerOfficeVisitRescheduled(adminStub() as never, {
+      ...created,
+      previousStartsAt: '2026-06-09T02:00:00.000Z',
+      previousEndsAt: '2026-06-09T05:00:00.000Z',
+      nextStartsAt: '2026-06-10T02:00:00.000Z',
+      nextEndsAt: '2026-06-10T05:00:00.000Z',
+    });
+    expect(result.emailed).toBe(1);
+    const text = (send.mock.calls[0]?.[0] as { text: string }).text;
+    expect(text).toContain('Monday, June 8 at 10:00 PM – Tuesday, June 9 at 1:00 AM');
+    expect(text).toContain('Tuesday, June 9 at 10:00 PM – Wednesday, June 10 at 1:00 AM');
   });
 
   it('emails a cancelled one-off visit once and keeps the subject on one line', async () => {
