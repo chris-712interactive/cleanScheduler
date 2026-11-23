@@ -1,0 +1,9 @@
+# Port #319 onto main
+
+Learned while cherry-picking squash `3ecba16c239a8f49cb9385c9072698b5db5b12ab` (PR #319 on `dev`) onto `origin/main` `8bad890382dc5e6358cae074cbaa8311ff43daaf`.
+
+One conflict, in `docs/product/implementation-status-summary.md`. Main already has a portal-host paragraph between **Branch** and **Latest polish** (`admin.evil.<apex>` and `admin.<apex>.evil.com` are not the admin portal). #319 prepends the series-edit sentences to **Latest polish**: editing a repeating visit asks "This visit only" or "This and future visits," one visit stays an exception, and this-and-future ends the old series before that visit and starts a new series without rewriting completed or invoiced visits. No new migration. The rest of that file, from the hosted-dev paragraph down, matched the squash, and the **Latest polish** paragraph matches once those sentences are prepended. The resolution keeps main's portal-host paragraph and the blank line under **Branch** (main does not use the squash's two-space break on that line). Every other file in the squash matches `3ecba16` byte for byte. The non-doc patch from this port's parent to the cherry-pick is identical to the patch from `a61aa4d` to `3ecba16`.
+
+No migration files are in this squash. Nothing was applied to shared dev or production. Do not change Supabase, Vercel env vars, workflows, `HOSTED_DEV_ISOLATED`, the cookie domain, or `platformAdminFixtureBlock`. Do not send real email, SMS, or payments. `OUTBOUND_SUPPRESSED` still blocks the Resend client; do not set `OUTBOUND_SUPPRESSED=1` while running `next build`, because `lib/outbound/suppression.ts` refuses that flag when `NODE_ENV=production`.
+
+`npm run format:check`, `npm run lint`, `npm run lint:styles`, `npm run typecheck`, migration checks, and `npm test` passed (209 files, 1161 tests). This environment has no Docker, so the local-stack job was left to GitHub.

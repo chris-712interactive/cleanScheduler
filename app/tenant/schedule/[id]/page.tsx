@@ -86,6 +86,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
       ends_at,
       status,
       notes,
+      recurring_rule_id,
       customer_id,
       property_id,
       checked_in_at,
@@ -394,6 +395,7 @@ export default async function TenantVisitDetailPage({ params, searchParams }: Pa
           completionInvoiceId: row.completion_invoice_id,
           coverageKind: coveragePreview,
           coveragePartyRequired,
+          recurringRuleId: row.recurring_rule_id,
         }}
       />
     </>

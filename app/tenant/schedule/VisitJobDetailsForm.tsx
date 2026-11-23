@@ -5,6 +5,7 @@ import { useFeedbackToast } from '@/components/ui/FeedbackToast';
 import { useServerActionVisitPatch } from '@/lib/hooks/useServerActionVisitPatch';
 import type { VisitDetailPatch } from '@/lib/tenant/visitDetailPatch';
 import { updateVisitJobDetails, type ScheduleFormState } from './actions';
+import { RecurringScopeForm } from './RecurringEditScopeDialog';
 import styles from './schedule.module.scss';
 
 const initial: ScheduleFormState = {};
@@ -16,6 +17,7 @@ export function VisitJobDetailsForm({
   notes,
   jobTypeLabels,
   isConsultation,
+  seriesVisit = false,
   onVisitPatch,
 }: {
   tenantSlug: string;
@@ -24,6 +26,7 @@ export function VisitJobDetailsForm({
   notes: string;
   jobTypeLabels: string[];
   isConsultation: boolean;
+  seriesVisit?: boolean;
   onVisitPatch?: (patch: VisitDetailPatch) => void;
 }) {
   const [state, formAction, pending] = useActionState(updateVisitJobDetails, initial);
@@ -38,7 +41,11 @@ export function VisitJobDetailsForm({
   const matchedType = jobTypeLabels.includes(jobTitle) ? jobTitle : '';
 
   return (
-    <form action={formAction} className={styles.formCompact}>
+    <RecurringScopeForm
+      seriesVisit={seriesVisit}
+      action={formAction}
+      className={styles.formCompact}
+    >
       <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="visit_id" value={visitId} />
       <p className={styles.crewHint}>
@@ -102,6 +109,6 @@ export function VisitJobDetailsForm({
       <button type="submit" className={styles.submit} disabled={pending}>
         {pending ? 'Saving…' : 'Save job details'}
       </button>
-    </form>
+    </RecurringScopeForm>
   );
 }

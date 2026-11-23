@@ -22,6 +22,9 @@ import {
 } from '@/lib/schedule/visitAssigneeConflicts';
 import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
 import { ineligibleScheduleMessage } from '@/lib/schedule/scheduleEligibility';
+import { applyRecurringSeriesEdit } from '@/lib/schedule/applyRecurringSeriesEdit';
+import type { RecurringSeriesEditInput } from '@/lib/schedule/applyRecurringSeriesEdit';
+import { parseRecurringEditScope } from '@/lib/schedule/recurringSeriesSplit';
 import { recordRecurringOccurrenceSkip } from '@/lib/schedule/recurringOccurrenceSkips';
 import { canManageScheduledVisit } from '@/lib/schedule/visitFieldWork';
 import {
@@ -42,6 +45,7 @@ import {
   notifyCustomerOfficeVisitRescheduled,
 } from '@/lib/email/officeVisitNotifications';
 import {
+  notifyCustomerRecurringSeries,
   notifyCustomerSeriesOccurrenceMoved,
   notifyCustomerSeriesOccurrenceSkipped,
 } from '@/lib/email/recurringSeriesNotifications';
@@ -150,6 +154,128 @@ function publishCleanerScheduleNotice(
       error instanceof Error ? error.message : 'unknown',
     );
   }
+}
+
+const SERIES_SCOPE_REQUIRED = 'Choose this visit only, or this and future visits.';
+
+async function cleanerDisplayNames(
+  admin: ReturnType<typeof createAdminClient>,
+  userIds: string[],
+): Promise<string[]> {
+  const ids = [...new Set(userIds.map((id) => id.trim()).filter(Boolean))];
+  if (ids.length === 0) return [];
+  const { data } = await admin
+    .from('user_profiles')
+    .select('user_id, display_name')
+    .in('user_id', ids);
+  const byId = new Map(
+    (data ?? []).map((row) => [row.user_id, row.display_name?.trim() || 'Team member']),
+  );
+  return ids.map((id) => byId.get(id) || 'Team member');
+}
+
+async function saveThisAndFutureVisits(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  input: Omit<RecurringSeriesEditInput, 'tenantId' | 'timeZone'>,
+): Promise<ScheduleFormState> {
+  const { data: current } = await admin
+    .from('tenant_scheduled_visits')
+    .select('id, recurring_rule_id')
+    .eq('id', input.visitId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  const ruleId = current?.recurring_rule_id;
+  const { data: siblings } = ruleId
+    ? await admin
+        .from('tenant_scheduled_visits')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('recurring_rule_id', ruleId)
+    : { data: [] as { id: string }[] };
+  const siblingIds = (siblings ?? []).map((row) => row.id);
+  const before = await loadCleanerScheduleVisitSnapshots(admin, tenantId, siblingIds);
+  const { data: previousCrewRows } = await admin
+    .from('tenant_scheduled_visit_assignees')
+    .select('user_id')
+    .eq('visit_id', input.visitId);
+  const previousCleanerNames = await cleanerDisplayNames(
+    admin,
+    (previousCrewRows ?? []).map((row) => row.user_id),
+  );
+  const tenantTimezone = await loadTenantTimezone(admin, tenantId);
+  const applied = await applyRecurringSeriesEdit(admin, {
+    ...input,
+    tenantId,
+    timeZone: tenantTimezone,
+  });
+  if (!applied.ok) {
+    return {
+      error: applied.error,
+      conflicts: applied.conflicts,
+      needsOverlapConfirm: applied.needsOverlapConfirm,
+    };
+  }
+
+  if (!applied.unchanged && applied.newRuleId) {
+    try {
+      const cleanerNames = await cleanerDisplayNames(admin, applied.cleanerUserIds);
+      await notifyCustomerRecurringSeries(admin, {
+        tenantId,
+        customerId: applied.customerId,
+        ruleId: applied.newRuleId,
+        action: 'changed',
+        previous: {
+          ...applied.previous,
+          anchorStartsAt: applied.previousStartsAt,
+          cleanerNames: previousCleanerNames,
+        },
+        snapshot: {
+          ...applied.next,
+          anchorStartsAt: applied.edited.startsAt,
+          cleanerNames,
+        },
+        followingWindow: {
+          startsAt: applied.edited.startsAt,
+          endsAt: applied.edited.endsAt,
+        },
+      });
+    } catch (emailError) {
+      console.error(
+        '[recurringSeries] future edit email failed:',
+        emailError instanceof Error ? emailError.message : 'unknown',
+      );
+    }
+
+    if (before.ok) {
+      const after = await loadCleanerScheduleVisitSnapshots(admin, tenantId, siblingIds);
+      if (after.ok) {
+        const auth = await getAuthContext();
+        publishCleanerScheduleNotice(admin, {
+          tenantId,
+          actorUserId: auth?.user.id ?? null,
+          before: before.visits,
+          after: after.visits,
+        });
+      }
+    }
+  }
+
+  revalidatePath('/schedule');
+  revalidatePath(`/schedule/${input.visitId}`);
+  revalidatePath('/schedule/recurring');
+  return {
+    success: true,
+    visitPatch: {
+      startsAt: applied.edited.startsAt,
+      endsAt: applied.edited.endsAt,
+      title: applied.edited.title,
+      notes: applied.edited.notes,
+      expectedAmountCents: applied.edited.expectedAmountCents,
+      assignees: applied.edited.assignees,
+      assigneeUserIds: applied.edited.assigneeUserIds,
+    },
+  };
 }
 
 async function loadTenantTimezone(
@@ -613,6 +739,20 @@ export async function updateScheduledVisitTimes(
     return { error: 'End time must be after start time.' };
   }
 
+  if (visit.recurring_rule_id) {
+    const scope = parseRecurringEditScope(String(formData.get('edit_scope') ?? ''));
+    if (!scope) return { error: SERIES_SCOPE_REQUIRED };
+    if (scope === 'future') {
+      return saveThisAndFutureVisits(admin, membership.tenantId, {
+        visitId,
+        confirmOverlap: String(formData.get('confirm_overlap') ?? '') === '1',
+        confirmUnavailable: String(formData.get('confirm_unavailable') ?? '') === 'true',
+        startsAt,
+        endsAt,
+      });
+    }
+  }
+
   const confirmOverlap = String(formData.get('confirm_overlap') ?? '') === '1';
   const confirmUnavailable = String(formData.get('confirm_unavailable') ?? '') === 'true';
   const beforeTimes = await loadCleanerScheduleVisitSnapshots(admin, membership.tenantId, [
@@ -893,7 +1033,7 @@ export async function updateVisitJobPrice(
   const admin = createAdminClient();
   const { data: visit, error: loadErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status')
+    .select('id, status, recurring_rule_id')
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -904,6 +1044,19 @@ export async function updateVisitJobPrice(
 
   if (visit.status !== 'scheduled') {
     return { error: 'Job price can only be updated on scheduled visits.' };
+  }
+
+  if (visit.recurring_rule_id) {
+    const scope = parseRecurringEditScope(String(formData.get('edit_scope') ?? ''));
+    if (!scope) return { error: SERIES_SCOPE_REQUIRED };
+    if (scope === 'future') {
+      return saveThisAndFutureVisits(admin, membership.tenantId, {
+        visitId,
+        confirmOverlap: false,
+        confirmUnavailable: false,
+        expectedAmountCents: cents,
+      });
+    }
   }
 
   const { error: upErr } = await admin
@@ -953,7 +1106,7 @@ export async function updateVisitJobDetails(
   const admin = createAdminClient();
   const { data: visit, error: loadErr } = await admin
     .from('tenant_scheduled_visits')
-    .select('id, status, visit_purpose')
+    .select('id, status, visit_purpose, recurring_rule_id')
     .eq('id', visitId)
     .eq('tenant_id', membership.tenantId)
     .maybeSingle();
@@ -967,6 +1120,20 @@ export async function updateVisitJobDetails(
   }
 
   const nextTitle = visit.visit_purpose === 'consultation' ? CONSULTATION_VISIT_TITLE : title;
+
+  if (visit.recurring_rule_id) {
+    const scope = parseRecurringEditScope(String(formData.get('edit_scope') ?? ''));
+    if (!scope) return { error: SERIES_SCOPE_REQUIRED };
+    if (scope === 'future') {
+      return saveThisAndFutureVisits(admin, membership.tenantId, {
+        visitId,
+        confirmOverlap: false,
+        confirmUnavailable: false,
+        title: nextTitle,
+        notes: notes || null,
+      });
+    }
+  }
 
   const { error: upErr } = await admin
     .from('tenant_scheduled_visits')
@@ -1004,6 +1171,9 @@ export async function updateScheduledVisitAssignees(
   }
 
   const membership = await requireTenantPortalAccess(slug, `/schedule/${visitId}`);
+  if (!canManageScheduledVisit(membership.role)) {
+    return { error: 'Only owners and admins can change visit crew.' };
+  }
   const admin = createAdminClient();
 
   const assigneeIds = formData
@@ -1029,6 +1199,27 @@ export async function updateScheduledVisitAssignees(
     if (parsedStart && parsedEnd && new Date(parsedEnd) > new Date(parsedStart)) {
       startsAtOverride = parsedStart;
       endsAtOverride = parsedEnd;
+    }
+  }
+
+  const { data: crewVisit } = await admin
+    .from('tenant_scheduled_visits')
+    .select('recurring_rule_id')
+    .eq('id', visitId)
+    .eq('tenant_id', membership.tenantId)
+    .maybeSingle();
+  if (crewVisit?.recurring_rule_id) {
+    const scope = parseRecurringEditScope(String(formData.get('edit_scope') ?? ''));
+    if (!scope) return { error: SERIES_SCOPE_REQUIRED };
+    if (scope === 'future') {
+      return saveThisAndFutureVisits(admin, membership.tenantId, {
+        visitId,
+        confirmOverlap,
+        confirmUnavailable,
+        assigneeUserIds: assigneeIds,
+        availabilityStartsAt: startsAtOverride,
+        availabilityEndsAt: endsAtOverride,
+      });
     }
   }
 
