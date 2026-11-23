@@ -535,5 +535,93 @@
         }
       ]
     }
+  },
+  "paused": {
+    "slug": "qa-paused",
+    "name": "QA Paused Cleaning",
+    "segment": "residential",
+    "billingStatus": "active",
+    "platformPlan": "pro",
+    "billingInterval": "month",
+    "stripeSubscriptionStatus": "paused",
+    "stripeCustomerId": "cus_localstack_qa_paused",
+    "stripeSubscriptionId": "sub_localstack_qa_paused",
+    "activatedAt": "2026-01-15T15:00:00.000Z",
+    "tenantId": "66666666-6666-4666-8666-666666666666",
+    "latitude": 35.55,
+    "longitude": -82.55,
+    "owner": {
+      "userId": "66666666-6666-4666-8666-666666666610",
+      "email": "owner.paused@example.test",
+      "role": "owner",
+      "appRole": "employee",
+      "displayName": "Harper Pause"
+    },
+    "cleaner": {
+      "userId": "66666666-6666-4666-8666-666666666601",
+      "email": "cleaner.paused@example.test",
+      "role": "employee",
+      "appRole": "employee",
+      "displayName": "Skyler Pause"
+    },
+    "customers": {
+      "rowan": {
+        "id": "66666666-6666-4666-8666-666666666201",
+        "identityId": "66666666-6666-4666-8666-666666666101",
+        "firstName": "Rowan",
+        "lastName": "Sample",
+        "email": "rowan.paused@example.test",
+        "portal": false
+      }
+    },
+    "properties": {
+      "east": {
+        "id": "66666666-6666-4666-8666-666666666301",
+        "customer": "rowan",
+        "label": "Rowan east",
+        "kind": "residential",
+        "line1": "4 Pause Street",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": true,
+        "geocode": "ok",
+        "latitude": 35.6,
+        "longitude": -82.4
+      },
+      "west": {
+        "id": "66666666-6666-4666-8666-666666666302",
+        "customer": "rowan",
+        "label": "Rowan west",
+        "kind": "residential",
+        "line1": "8 Pause West",
+        "city": "Asheville",
+        "state": "NC",
+        "postal": "28801",
+        "primary": false,
+        "geocode": "ok",
+        "latitude": 35.5,
+        "longitude": -82.8
+      }
+    },
+    "visitId": "66666666-6666-4666-8666-666666666401",
+    "visits": [
+      {
+        "id": "66666666-6666-4666-8666-666666666401",
+        "property": "east",
+        "customer": "rowan",
+        "assignee": "cleaner",
+        "hour": 9,
+        "title": "Pause east"
+      },
+      {
+        "id": "66666666-6666-4666-8666-666666666402",
+        "property": "west",
+        "customer": "rowan",
+        "assignee": "cleaner",
+        "hour": 13,
+        "title": "Pause west"
+      }
+    ]
   }
 }

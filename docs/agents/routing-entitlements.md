@@ -37,4 +37,4 @@ No migration. No Stripe or price change.
 
 Portal suspension stays on mapped `status` and `tenants.is_active`. A paused row is mapped `active`, so it does not show the paused-workspace lock. Texting already blocks raw `paused` on its own.
 
-Local stack: `qa-trial` is `trialing` with a null platform plan. `qa-past-due` is Pro with `past_due`. Both are synthetic `@example.test` offices. The browser checks live in `tests/local-stack/pro-routing.spec.ts`.
+Local stack: `qa-trial` is `trialing` with a null platform plan. `qa-past-due` is Pro with `past_due`. `qa-paused` is Pro with mapped `active` and raw `stripe_subscription_status = paused`. All three are synthetic `@example.test` offices. The browser checks live in `tests/local-stack/pro-routing.spec.ts`. The paused check signs in, confirms the trial routing sentences, and confirms **Manage plan in Stripe** is on `/billing` without submitting it.

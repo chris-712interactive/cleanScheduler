@@ -8,7 +8,7 @@ Disposable Supabase for pull-request CI and for a QA agent on a laptop or a Curs
 npm run test:local-stack
 ```
 
-That starts the Supabase CLI (Docker), applies `supabase/migrations` in order, seeds five fake workspaces, runs the RLS SQL with `RLS_SMOKE_REQUIRED=1`, builds the app, runs the authenticated Playwright suite, then runs `scripts/backfill-property-geocodes.mts` against a loopback geocoder. Containers stop at the end.
+That starts the Supabase CLI (Docker), applies `supabase/migrations` in order, seeds six fake workspaces, runs the RLS SQL with `RLS_SMOKE_REQUIRED=1`, builds the app, runs the authenticated Playwright suite, then runs `scripts/backfill-property-geocodes.mts` against a loopback geocoder. Containers stop at the end.
 
 Flags:
 
@@ -40,6 +40,7 @@ Workspaces:
 - `qa-pro.lvh.me:3000` — owner and one field cleaner on the Pro plan, with a stale applied route so Re-optimize is offered. Home streets on that workspace stay off the other tenants.
 - `qa-trial.lvh.me:3000` — owner and one field cleaner. The billing row is `trialing` with no platform plan. Day map and stop order are on. Suggest dispatch, re-optimize, and drive time show the upgrade sentence.
 - `qa-past-due.lvh.me:3000` — owner and one field cleaner. The billing row is `past_due` on Pro, with a stale applied route, so the paid routing tools stay on.
+- `qa-paused.lvh.me:3000` — owner and one field cleaner. The mapped billing status is `active` on Pro, and `stripe_subscription_status` is `paused`. Day map and stop order are on. Suggest dispatch, re-optimize, start locations, and drive time show the upgrade sentence. Billing still shows **Manage plan in Stripe**. The Stripe customer and subscription ids are local placeholders (`cus_localstack_qa_paused`, `sub_localstack_qa_paused`). The browser test does not submit that button, so no Stripe request is made.
 
 Visits are scheduled for today in `America/New_York`. The residential workspace has two geocoded visits (Riley's home assigned to Drew Cleaner, Casey's house assigned to Avery Owner) and two visits with no point (the cabin is `no_match`, the lake is `lookup_failed`). The commercial visit stays on Quinn's office. The day map Playwright spec opens `/schedule/map` for that local day, checks the legend colors and the missing-point list, and blocks any request that is not loopback or `*.lvh.me`.
 
