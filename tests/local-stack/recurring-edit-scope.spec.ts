@@ -44,7 +44,7 @@ test('owner chooses this visit only or this and future visits', async ({ page })
   const dialog = page.getByRole('dialog', { name: 'Edit repeating visit' });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'This visit only' }).click();
-  await expect(page.getByText('Visit time saved.')).toBeVisible();
+  await expect(page.getByText('Visit time saved.', { exact: true })).toBeVisible();
   await shot(page, 'recurring-scope-this-visit');
 
   await openVisit(page, series.nextVisitId, 'Weekly QA next');
@@ -55,7 +55,7 @@ test('owner chooses this visit only or this and future visits', async ({ page })
   await page.getByRole('button', { name: 'Save time' }).click();
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'This and future visits' }).click();
-  await expect(page.getByText('Visit time saved.')).toBeVisible();
+  await expect(page.getByText('Visit time saved.', { exact: true })).toBeVisible();
   await shot(page, 'recurring-scope-this-and-future');
 
   await openVisit(page, series.laterVisitId, 'Weekly QA later');

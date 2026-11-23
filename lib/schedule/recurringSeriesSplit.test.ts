@@ -299,47 +299,45 @@ describe('planRecurringSeriesSplit', () => {
     expect(zonedCivil(next?.startsAt ?? '', TZ)).toMatchObject({ day: 16, hour: 10 });
   });
 
-  it('clamps a monthly move onto short months instead of overflowing', () => {
+  it.each([
+    { year: 2026, day: 31, feb: 28, apr: 30 },
+    { year: 2026, day: 30, feb: 28, apr: 30 },
+    { year: 2026, day: 29, feb: 28, apr: 29 },
+    { year: 2028, day: 31, feb: 29, apr: 30 },
+    { year: 2028, day: 30, feb: 29, apr: 30 },
+    { year: 2028, day: 29, feb: 29, apr: 29 },
+  ])('clamps $year monthly day $day onto short months', (sample) => {
     const rule = 'FREQ=MONTHLY;BYMONTHDAY=15;INTERVAL=1';
-    const cases = [
-      { year: 2026, day: 31, feb: 28, apr: 30 },
-      { year: 2026, day: 30, feb: 28, apr: 30 },
-      { year: 2026, day: 29, feb: 28, apr: 29 },
-      { year: 2028, day: 31, feb: 29, apr: 30 },
-      { year: 2028, day: 30, feb: 29, apr: 30 },
-      { year: 2028, day: 29, feb: 29, apr: 29 },
-    ];
-    for (const sample of cases) {
-      const visits = [1, 2, 3, 4].map((month) => {
-        const key = `${sample.year}-${String(month).padStart(2, '0')}`;
-        return visit(`${key}`, at(`${key}-15T09:00`), at(`${key}-15T11:00`));
-      });
-      const editedDay = String(sample.day).padStart(2, '0');
-      const plan = planRecurringSeriesSplit({
-        timeZone: TZ,
-        rruleDefinition: rule,
-        anchorStartsAt: visits[0]!.startsAt,
-        editedVisitId: visits[0]!.id,
-        splitStartsAt: visits[0]!.startsAt,
-        editedStartsAt: at(`${sample.year}-01-${editedDay}T09:00`),
-        editedEndsAt: at(`${sample.year}-01-${editedDay}T11:00`),
-        movedVisitIds: [],
-        visits,
-      });
-      expect(plan.ok, `${sample.year} day ${sample.day}`).toBe(true);
-      if (!plan.ok) continue;
-      expect(plan.newRrule).toBe(`FREQ=MONTHLY;BYMONTHDAY=${sample.day};INTERVAL=1`);
-      const local = plan.rewrites.map((row) => zonedCivil(row.startsAt, TZ));
-      expect(local.map((row) => row && `${row.year}-${row.month}-${row.day}`)).toEqual([
-        `${sample.year}-1-${sample.day}`,
-        `${sample.year}-2-${sample.feb}`,
-        `${sample.year}-3-${sample.day}`,
-        `${sample.year}-4-${sample.apr}`,
-      ]);
-      expect(new Set(local.map((row) => row && `${row.year}-${row.month}`)).size).toBe(4);
-      expect(clampMonthDay(sample.year, 2, sample.day)).toBe(sample.feb);
-      expect(clampMonthDay(sample.year, 4, sample.day)).toBe(sample.apr);
-    }
+    const visits = [1, 2, 3, 4].map((month) => {
+      const key = `${sample.year}-${String(month).padStart(2, '0')}`;
+      return visit(`${key}`, at(`${key}-15T09:00`), at(`${key}-15T11:00`));
+    });
+    const editedDay = String(sample.day).padStart(2, '0');
+    const plan = planRecurringSeriesSplit({
+      timeZone: TZ,
+      rruleDefinition: rule,
+      anchorStartsAt: visits[0]!.startsAt,
+      editedVisitId: visits[0]!.id,
+      splitStartsAt: visits[0]!.startsAt,
+      editedStartsAt: at(`${sample.year}-01-${editedDay}T09:00`),
+      editedEndsAt: at(`${sample.year}-01-${editedDay}T11:00`),
+      movedVisitIds: [],
+      visits,
+      horizonDays: 14,
+    });
+    expect(plan.ok).toBe(true);
+    if (!plan.ok) return;
+    expect(plan.newRrule).toBe(`FREQ=MONTHLY;BYMONTHDAY=${sample.day};INTERVAL=1`);
+    const local = plan.rewrites.map((row) => zonedCivil(row.startsAt, TZ));
+    expect(local.map((row) => row && `${row.year}-${row.month}-${row.day}`)).toEqual([
+      `${sample.year}-1-${sample.day}`,
+      `${sample.year}-2-${sample.feb}`,
+      `${sample.year}-3-${sample.day}`,
+      `${sample.year}-4-${sample.apr}`,
+    ]);
+    expect(new Set(local.map((row) => row && `${row.year}-${row.month}`)).size).toBe(4);
+    expect(clampMonthDay(sample.year, 2, sample.day)).toBe(sample.feb);
+    expect(clampMonthDay(sample.year, 4, sample.day)).toBe(sample.apr);
   });
 
   it('expands a day-31 rule onto the last day of February and April', () => {
