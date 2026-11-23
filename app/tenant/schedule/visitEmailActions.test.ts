@@ -9,6 +9,8 @@ const harness = vi.hoisted(() => ({
   }),
   insertError: null as { message: string } | null,
   deleteError: null as { message: string } | null,
+  role: 'owner' as 'owner' | 'admin' | 'employee' | 'viewer',
+  writes: 0,
   visit: {
     id: 'visit-1',
     title: 'Weekly clean',
@@ -33,7 +35,7 @@ vi.mock('@/lib/auth/tenantAccess', () => ({
     tenantId: 'tenant-1',
     tenantSlug: 'acme',
     tenantName: 'Acme',
-    role: 'owner',
+    role: harness.role,
     roleId: null,
   }),
 }));
@@ -73,6 +75,7 @@ vi.mock('@/lib/supabase/server', () => ({
           if (prop === 'insert' || prop === 'update' || prop === 'delete' || prop === 'upsert') {
             return () => {
               op = String(prop);
+              harness.writes += 1;
               return proxy;
             };
           }
@@ -134,6 +137,8 @@ describe('visit actions email after a successful write', () => {
     harness.notifySkip.mockClear();
     harness.insertError = null;
     harness.deleteError = null;
+    harness.role = 'owner';
+    harness.writes = 0;
     harness.visit = {
       id: 'visit-1',
       title: 'Weekly clean',
@@ -199,6 +204,7 @@ describe('visit actions email after a successful write', () => {
       deleteScheduledVisit({}, form({ tenant_slug: 'acme', visit_id: 'visit-1' })),
     );
     expect(url).toContain('/schedule');
+    expect(harness.writes).toBeGreaterThan(0);
     expect(harness.notifySkip).toHaveBeenCalledTimes(1);
     expect(harness.notifySkip.mock.calls[0]?.[1]).toMatchObject({
       tenantId: 'tenant-1',
@@ -222,6 +228,27 @@ describe('visit actions email after a successful write', () => {
     await capture(() =>
       deleteScheduledVisit({}, form({ tenant_slug: 'acme', visit_id: 'visit-1' })),
     );
+    expect(harness.notifySkip).not.toHaveBeenCalled();
+  });
+
+  it('lets an admin delete and still emails once', async () => {
+    harness.role = 'admin';
+    const url = await capture(() =>
+      deleteScheduledVisit({}, form({ tenant_slug: 'acme', visit_id: 'visit-1' })),
+    );
+    expect(url).toContain('/schedule');
+    expect(harness.writes).toBeGreaterThan(0);
+    expect(harness.notifySkip).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a field employee before any delete or email', async () => {
+    harness.role = 'employee';
+    const result = await deleteScheduledVisit(
+      {},
+      form({ tenant_slug: 'acme', visit_id: 'visit-1' }),
+    );
+    expect(result.error).toBe('Only owners and admins can delete a visit.');
+    expect(harness.writes).toBe(0);
     expect(harness.notifySkip).not.toHaveBeenCalled();
   });
 });

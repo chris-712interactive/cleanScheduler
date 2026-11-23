@@ -23,6 +23,7 @@ import {
 import { applyVisitAssignees } from '@/lib/schedule/applyVisitAssignees';
 import { ineligibleScheduleMessage } from '@/lib/schedule/scheduleEligibility';
 import { recordRecurringOccurrenceSkip } from '@/lib/schedule/recurringOccurrenceSkips';
+import { canManageScheduledVisit } from '@/lib/schedule/visitFieldWork';
 import {
   propertyHasCoverageSubscription,
   recordCoverageCancellation,
@@ -422,6 +423,10 @@ export async function deleteScheduledVisit(
   }
 
   const membership = await requireTenantPortalAccess(slug, '/schedule');
+  if (!canManageScheduledVisit(membership.role)) {
+    return { error: 'Only owners and admins can delete a visit.' };
+  }
+
   const admin = createAdminClient();
 
   const { data: visit, error: loadErr } = await admin
