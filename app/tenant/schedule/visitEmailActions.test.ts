@@ -7,6 +7,24 @@ const harness = vi.hoisted(() => ({
     void params;
     return { emailed: 1, skipped: 'none' as const };
   }),
+  notifyCancel: vi.fn(async (admin: unknown, params: unknown) => {
+    void admin;
+    void params;
+    return { emailed: 1, skipped: 'none' as const };
+  }),
+  notifyReschedule: vi.fn(async (admin: unknown, params: unknown) => {
+    void admin;
+    void params;
+    return { emailed: 1, skipped: 'none' as const };
+  }),
+  notifyMove: vi.fn(async (admin: unknown, params: unknown) => {
+    void admin;
+    void params;
+    return { emailed: 1, skipped: 'none' as const };
+  }),
+  applyTime: vi.fn(async (): Promise<{ ok: true } | { ok: false; error: string }> => ({
+    ok: true,
+  })),
   insertError: null as { message: string } | null,
   deleteError: null as { message: string } | null,
   role: 'owner' as 'owner' | 'admin' | 'employee' | 'viewer',
@@ -16,6 +34,10 @@ const harness = vi.hoisted(() => ({
     title: 'Weekly clean',
     recurring_rule_id: 'rule-1' as string | null,
     starts_at: '2026-06-08T13:00:00.000Z',
+    ends_at: '2026-06-08T15:00:00.000Z',
+    status: 'scheduled' as const,
+    checked_in_at: null as string | null,
+    visit_purpose: 'service' as const,
     customer_id: 'cust-1',
     property_id: null as string | null,
   },
@@ -57,12 +79,21 @@ vi.mock('@/lib/schedule/recurringOccurrenceSkips', () => ({
 vi.mock('@/lib/email/notifyCleanerScheduleChanges', () => ({
   queueCleanerScheduleNotice: () => {},
 }));
+vi.mock('@/lib/schedule/applyVisitScheduleTime', () => ({
+  applyVisitScheduleTime: () => harness.applyTime(),
+}));
 vi.mock('@/lib/email/officeVisitNotifications', () => ({
   notifyCustomerOfficeVisitCreated: () => harness.notifyOffice(),
+  notifyCustomerOfficeVisitCancelled: (admin: unknown, params: unknown) =>
+    harness.notifyCancel(admin, params),
+  notifyCustomerOfficeVisitRescheduled: (admin: unknown, params: unknown) =>
+    harness.notifyReschedule(admin, params),
 }));
 vi.mock('@/lib/email/recurringSeriesNotifications', () => ({
   notifyCustomerSeriesOccurrenceSkipped: (admin: unknown, params: unknown) =>
     harness.notifySkip(admin, params),
+  notifyCustomerSeriesOccurrenceMoved: (admin: unknown, params: unknown) =>
+    harness.notifyMove(admin, params),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -112,7 +143,11 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-import { createScheduledVisit, deleteScheduledVisit } from '@/app/tenant/schedule/actions';
+import {
+  createScheduledVisit,
+  deleteScheduledVisit,
+  updateScheduledVisitTimes,
+} from '@/app/tenant/schedule/actions';
 
 function form(values: Record<string, string>) {
   const data = new FormData();
@@ -135,6 +170,11 @@ describe('visit actions email after a successful write', () => {
   beforeEach(() => {
     harness.notifyOffice.mockClear();
     harness.notifySkip.mockClear();
+    harness.notifyCancel.mockClear();
+    harness.notifyReschedule.mockClear();
+    harness.notifyMove.mockClear();
+    harness.applyTime.mockClear();
+    harness.applyTime.mockResolvedValue({ ok: true });
     harness.insertError = null;
     harness.deleteError = null;
     harness.role = 'owner';
@@ -144,6 +184,10 @@ describe('visit actions email after a successful write', () => {
       title: 'Weekly clean',
       recurring_rule_id: 'rule-1',
       starts_at: '2026-06-08T13:00:00.000Z',
+      ends_at: '2026-06-08T15:00:00.000Z',
+      status: 'scheduled',
+      checked_in_at: null,
+      visit_purpose: 'service',
       customer_id: 'cust-1',
       property_id: null,
     };
@@ -215,7 +259,7 @@ describe('visit actions email after a successful write', () => {
     });
   });
 
-  it('does not email when the delete fails or the visit is not part of a series', async () => {
+  it('does not email when the delete fails', async () => {
     harness.deleteError = { message: 'locked' };
     const failed = await deleteScheduledVisit(
       {},
@@ -223,12 +267,24 @@ describe('visit actions email after a successful write', () => {
     );
     expect(failed.error).toBe('locked');
     expect(harness.notifySkip).not.toHaveBeenCalled();
+    expect(harness.notifyCancel).not.toHaveBeenCalled();
+  });
 
+  it('emails a cancelled one-off visit and does not describe a series', async () => {
     harness.visit = { ...harness.visit, recurring_rule_id: null };
-    await capture(() =>
+    const url = await capture(() =>
       deleteScheduledVisit({}, form({ tenant_slug: 'acme', visit_id: 'visit-1' })),
     );
+    expect(url).toContain('/schedule');
     expect(harness.notifySkip).not.toHaveBeenCalled();
+    expect(harness.notifyCancel).toHaveBeenCalledTimes(1);
+    expect(harness.notifyCancel.mock.calls[0]?.[1]).toMatchObject({
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      visitId: 'visit-1',
+      startsAt: '2026-06-08T13:00:00.000Z',
+      endsAt: '2026-06-08T15:00:00.000Z',
+    });
   });
 
   it('lets an admin delete and still emails once', async () => {
@@ -250,5 +306,158 @@ describe('visit actions email after a successful write', () => {
     expect(result.error).toBe('Only owners and admins can delete a visit.');
     expect(harness.writes).toBe(0);
     expect(harness.notifySkip).not.toHaveBeenCalled();
+    expect(harness.notifyCancel).not.toHaveBeenCalled();
+  });
+
+  it('still deletes a one-off visit when the cancel email throws', async () => {
+    harness.visit = { ...harness.visit, recurring_rule_id: null };
+    harness.notifyCancel.mockRejectedValueOnce(new Error('resend down'));
+    const url = await capture(() =>
+      deleteScheduledVisit({}, form({ tenant_slug: 'acme', visit_id: 'visit-1' })),
+    );
+    expect(url).toContain('/schedule');
+    expect(harness.notifyCancel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('visit time changes email after a successful save', () => {
+  beforeEach(() => {
+    harness.notifyReschedule.mockClear();
+    harness.notifyMove.mockClear();
+    harness.notifySkip.mockClear();
+    harness.applyTime.mockClear();
+    harness.applyTime.mockResolvedValue({ ok: true });
+    harness.role = 'owner';
+    harness.writes = 0;
+    harness.visit = {
+      id: 'visit-1',
+      title: 'Spring clean',
+      recurring_rule_id: null,
+      starts_at: '2026-06-08T13:00:00.000Z',
+      ends_at: '2026-06-08T15:00:00.000Z',
+      status: 'scheduled',
+      checked_in_at: null,
+      visit_purpose: 'service',
+      customer_id: 'cust-1',
+      property_id: null,
+    };
+  });
+
+  it('emails the old and new time once when an office visit moves', async () => {
+    const result = await updateScheduledVisitTimes(
+      {},
+      form({
+        tenant_slug: 'acme',
+        visit_id: 'visit-1',
+        starts_at: '2026-06-09T10:00',
+        ends_at: '2026-06-09T12:00',
+      }),
+    );
+    expect(result.success).toBe(true);
+    expect(harness.applyTime).toHaveBeenCalledTimes(1);
+    expect(harness.notifyReschedule).toHaveBeenCalledTimes(1);
+    expect(harness.notifyMove).not.toHaveBeenCalled();
+    expect(harness.notifySkip).not.toHaveBeenCalled();
+    expect(harness.notifyReschedule.mock.calls[0]?.[1]).toMatchObject({
+      tenantId: 'tenant-1',
+      visitId: 'visit-1',
+      previousStartsAt: '2026-06-08T13:00:00.000Z',
+      previousEndsAt: '2026-06-08T15:00:00.000Z',
+    });
+    const next = harness.notifyReschedule.mock.calls[0]?.[1] as {
+      nextStartsAt: string;
+      nextEndsAt: string;
+    };
+    expect(next.nextStartsAt).not.toBe('2026-06-08T13:00:00.000Z');
+    expect(new Date(next.nextEndsAt).getTime()).toBeGreaterThan(
+      new Date(next.nextStartsAt).getTime(),
+    );
+  });
+
+  it('does not email when the customer-visible time is unchanged or the save fails', async () => {
+    const same = await updateScheduledVisitTimes(
+      {},
+      form({
+        tenant_slug: 'acme',
+        visit_id: 'visit-1',
+        starts_at: '2026-06-08T09:00',
+        ends_at: '2026-06-08T11:00',
+      }),
+    );
+    expect(same.success).toBe(true);
+    expect(harness.applyTime).toHaveBeenCalledTimes(1);
+    expect(harness.notifyReschedule).not.toHaveBeenCalled();
+
+    harness.applyTime.mockResolvedValue({ ok: false, error: 'overlap' });
+    const failed = await updateScheduledVisitTimes(
+      {},
+      form({
+        tenant_slug: 'acme',
+        visit_id: 'visit-1',
+        starts_at: '2026-06-09T10:00',
+        ends_at: '2026-06-09T12:00',
+      }),
+    );
+    expect(failed.error).toBe('overlap');
+    expect(harness.notifyReschedule).not.toHaveBeenCalled();
+    expect(harness.notifyMove).not.toHaveBeenCalled();
+  });
+
+  it('emails only that occurrence when a series visit moves, including an admin', async () => {
+    harness.role = 'admin';
+    harness.visit = { ...harness.visit, recurring_rule_id: 'rule-1', title: 'Weekly clean' };
+    const result = await updateScheduledVisitTimes(
+      {},
+      form({
+        tenant_slug: 'acme',
+        visit_id: 'visit-1',
+        starts_at: '2026-06-09T10:00',
+        ends_at: '2026-06-09T12:00',
+      }),
+    );
+    expect(result.success).toBe(true);
+    expect(harness.notifyMove).toHaveBeenCalledTimes(1);
+    expect(harness.notifyReschedule).not.toHaveBeenCalled();
+    expect(harness.notifySkip).not.toHaveBeenCalled();
+    expect(harness.notifyMove.mock.calls[0]?.[1]).toMatchObject({
+      tenantId: 'tenant-1',
+      customerId: 'cust-1',
+      ruleId: 'rule-1',
+      visitId: 'visit-1',
+      previousStartsAt: '2026-06-08T13:00:00.000Z',
+    });
+  });
+
+  it('rejects a field employee before any time write or email', async () => {
+    harness.role = 'employee';
+    const result = await updateScheduledVisitTimes(
+      {},
+      form({
+        tenant_slug: 'acme',
+        visit_id: 'visit-1',
+        starts_at: '2026-06-09T10:00',
+        ends_at: '2026-06-09T12:00',
+      }),
+    );
+    expect(result.error).toBe('Only owners and admins can change a visit time.');
+    expect(harness.writes).toBe(0);
+    expect(harness.applyTime).not.toHaveBeenCalled();
+    expect(harness.notifyReschedule).not.toHaveBeenCalled();
+    expect(harness.notifyMove).not.toHaveBeenCalled();
+  });
+
+  it('still saves when the time email throws', async () => {
+    harness.notifyReschedule.mockRejectedValue(new Error('resend down'));
+    const result = await updateScheduledVisitTimes(
+      {},
+      form({
+        tenant_slug: 'acme',
+        visit_id: 'visit-1',
+        starts_at: '2026-06-09T10:00',
+        ends_at: '2026-06-09T12:00',
+      }),
+    );
+    expect(result.success).toBe(true);
+    expect(harness.notifyReschedule).toHaveBeenCalledTimes(1);
   });
 });
