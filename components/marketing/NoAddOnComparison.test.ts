@@ -28,7 +28,6 @@ describe('NoAddOnComparison', () => {
     expect(text).toContain('Core $49/mo');
     expect(text).toContain('Basic $79/mo');
     expect(text).toContain('As of Nov 2026');
-    expect(text).toContain('Not included');
     expect(text).toContain('Varies, see their site');
     expect(text).toContain('No per-user fee');
 

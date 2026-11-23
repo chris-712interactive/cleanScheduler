@@ -64,7 +64,7 @@ export function textPackIncludedNote(): string {
 
 /**
  * Comparison cells for the public no-add-ons page.
- * Clean Scheduler cells come from plan entitlements. There is no two-way texting flag.
+ * Clean Scheduler cells come from plan entitlements.
  * Competitor cells use only figures confirmed on the public pricing pages in Nov 2026.
  */
 export function buildNoAddOnComparison(): NoAddOnComparisonRow[] {
@@ -89,12 +89,6 @@ export function buildNoAddOnComparison(): NoAddOnComparisonRow[] {
       cleanScheduler: plansIncluding('routeReoptimization'),
       jobber: VARIES,
       housecallPro: 'Max',
-    },
-    {
-      feature: 'Two-way texting',
-      cleanScheduler: `Not included. Outbound customer texts are on ${plansIncluding('smsCommunication')}.`,
-      jobber: VARIES,
-      housecallPro: VARIES,
     },
     {
       feature: 'Multi-cleaner dispatch',

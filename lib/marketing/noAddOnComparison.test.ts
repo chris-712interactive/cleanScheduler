@@ -30,9 +30,6 @@ describe('no add-on comparison', () => {
     expect(row('Route optimization').cleanScheduler).toBe('Pro');
     expect(row('Multi-cleaner dispatch').cleanScheduler).toBe('Business and Pro');
     expect(row('Online booking').cleanScheduler).toBe('All plans');
-    expect(row('Two-way texting').cleanScheduler).toBe(
-      'Not included. Outbound customer texts are on Pro.',
-    );
     expect(row('Per-user fees').cleanScheduler).toContain('No per-user fee');
     expect(row('Per-user fees').cleanScheduler).toContain('5 field seats');
     expect(row('Per-user fees').cleanScheduler).toContain('unlimited field seats');
@@ -59,7 +56,7 @@ describe('no add-on comparison', () => {
     expect(row('Route optimization').housecallPro).toBe('Max');
 
     expect(row('Route optimization').jobber).toBe('Varies, see their site');
-    for (const feature of ['Two-way texting', 'Multi-cleaner dispatch', 'Online booking']) {
+    for (const feature of ['Multi-cleaner dispatch', 'Online booking']) {
       expect(row(feature).jobber).toBe('Varies, see their site');
       expect(row(feature).housecallPro).toBe('Varies, see their site');
     }

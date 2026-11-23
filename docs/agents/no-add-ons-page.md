@@ -9,7 +9,7 @@
 - Monthly price and annual-effective rates come from `monthlyPriceUsd` and `annualEffectiveMonthlyUsd`.
 - There is no per-user fee. Office and field seats come from the plan limits.
 - Route optimization is `routeReoptimization` (Pro). Multi-cleaner dispatch is `multiCleanerDispatch` (Business and Pro). Online booking is `publicBookingRequest` (all paid plans).
-- Two-way texting has no entitlement flag. The cell says it is not included. Outbound customer texts follow `smsCommunication` (Pro). Prepaid text packs stay the only extra charge. Copy uses `TEXT_PACKS` and `TEXT_PACK_PLAN_MESSAGE`.
+- Prepaid text packs stay the only extra charge. Copy uses `TEXT_PACKS` and `TEXT_PACK_PLAN_MESSAGE`.
 
 ## Competitor cells (checked Nov 2026)
 

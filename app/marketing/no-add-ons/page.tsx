@@ -17,7 +17,7 @@ import styles from './no-add-ons.module.scss';
 
 const pageTitle = 'Features included in the plan';
 const pageDescription =
-  'Clean Scheduler includes features in Starter, Business, and Pro with no add-on fees. Compare monthly price, per-user fees, routing, texting, dispatch, and online booking with Jobber and Housecall Pro.';
+  'Clean Scheduler includes features in Starter, Business, and Pro with no add-on fees. Compare monthly price, per-user fees, routing, dispatch, and online booking with Jobber and Housecall Pro.';
 
 export const metadata: Metadata = buildMarketingPageMetadata({
   path: NO_ADD_ONS_PATH,
@@ -51,9 +51,8 @@ export default function NoAddOnsPage() {
                 Clean Scheduler, Jobber, and Housecall Pro
               </h2>
               <p className={styles.sectionLead}>
-                Clean Scheduler cells list the plan that includes the feature. A feature with no
-                plan flag is marked not included. Competitor cells use published pricing pages, or
-                say when a figure varies.
+                Clean Scheduler cells list the plan that includes the feature. Competitor cells
+                use published pricing pages, or say when a figure varies.
               </p>
               <div className={styles.tableWrap}>
                 <NoAddOnComparison />
