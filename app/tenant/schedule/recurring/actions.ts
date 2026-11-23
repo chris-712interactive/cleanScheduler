@@ -20,7 +20,9 @@ import { loadCleanerScheduleVisitSnapshots } from '@/lib/schedule/loadCleanerSch
 import { rruleForRecurringPreset } from '@/lib/schedule/recurringPresets';
 import {
   RECENT_SERIES_WINDOW_MS,
+  isSeriesCreateConflict,
   recentDuplicateSeriesId,
+  seriesCreateIdempotencyId,
 } from '@/lib/schedule/recentRecurringSeries';
 import { replaceFutureRecurringSeriesCrew } from '@/lib/schedule/replaceRecurringSeriesCrew';
 
@@ -187,6 +189,13 @@ export async function createRecurringVisitRuleAction(formData: FormData): Promis
   const { data: created, error } = await admin
     .from('recurring_appointment_rules')
     .insert({
+      id: seriesCreateIdempotencyId({
+        tenantId: membership.tenantId,
+        customerId,
+        rruleDefinition,
+        anchorStartsAt: anchorIso,
+        now,
+      }),
       tenant_id: membership.tenantId,
       customer_id: customerId,
       property_id: propertyId,
@@ -201,6 +210,10 @@ export async function createRecurringVisitRuleAction(formData: FormData): Promis
     })
     .select('id, title, rrule_definition, anchor_starts_at')
     .single();
+  if (isSeriesCreateConflict(error)) {
+    revalidatePath('/schedule/recurring');
+    redirect(seriesPath('created=1'));
+  }
   if (error || !created) {
     redirect(
       seriesPath(`error=${encodeURIComponent(error?.message ?? 'Could not save the series.')}`),

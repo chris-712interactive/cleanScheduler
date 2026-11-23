@@ -280,3 +280,138 @@ export async function notifyCustomerRecurringSeries(
   }
   return { emailed: 1, skipped: 'none' };
 }
+
+export function seriesOccurrenceIdempotencyKey(input: {
+  tenantId: string;
+  ruleId: string;
+  visitId: string;
+  startsAt: string;
+}): string {
+  const digest = createHash('sha256')
+    .update(
+      JSON.stringify({
+        tenantId: input.tenantId,
+        ruleId: input.ruleId,
+        visitId: input.visitId,
+        startsAt: input.startsAt,
+        action: 'skipped',
+      }),
+    )
+    .digest('hex')
+    .slice(0, 32);
+  return `series-occurrence-${digest}`;
+}
+
+/**
+ * One email for a single skipped occurrence. The rest of the series is not described as cancelled.
+ * The visit row may already be gone; the series row is loaded for this tenant and customer.
+ */
+export async function notifyCustomerSeriesOccurrenceSkipped(
+  admin: Admin,
+  params: {
+    tenantId: string;
+    customerId: string;
+    ruleId: string;
+    visitId: string;
+    title: string;
+    startsAt: string;
+  },
+): Promise<{
+  emailed: number;
+  skipped: 'none' | 'no_series' | 'no_email' | 'suppressed' | 'not_configured';
+}> {
+  if (!isResendConfigured() && !isOutboundSuppressed()) {
+    return { emailed: 0, skipped: 'not_configured' };
+  }
+
+  const tenantId = params.tenantId.trim();
+  const customerId = params.customerId.trim();
+  const ruleId = params.ruleId.trim();
+  const { data: rule } = await admin
+    .from('recurring_appointment_rules')
+    .select('id, customer_id, title')
+    .eq('id', ruleId)
+    .eq('tenant_id', tenantId)
+    .eq('customer_id', customerId)
+    .maybeSingle();
+  if (!rule) return { emailed: 0, skipped: 'no_series' };
+
+  const { data: customer } = await admin
+    .from('customers')
+    .select('id, tenant_id, customer_identities(email)')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  const email = identityEmail(customer?.customer_identities);
+  if (!customer || !email) return { emailed: 0, skipped: 'no_email' };
+
+  const { data: suppressed } = await admin
+    .from('tenant_email_suppressions')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('email_normalized', email)
+    .maybeSingle();
+  if (suppressed) return { emailed: 0, skipped: 'suppressed' };
+
+  const [{ data: tenant }, brandLoaded, visitsUrl] = await Promise.all([
+    admin.from('tenants').select('name, timezone').eq('id', tenantId).maybeSingle(),
+    loadTenantEmailBrand(admin, tenantId),
+    customerPortalUrlForTenant(admin, tenantId, '/visits').catch(() => null),
+  ]);
+
+  const brand =
+    brandLoaded ?? tenantEmailBrand({ name: tenant?.name?.trim() || 'Your cleaning team' });
+  const provider = brand.name;
+  const title = params.title.trim() || rule.title.trim() || 'Visit';
+  const when = formatNextAppointmentWhen(params.startsAt, tenant?.timezone);
+  const intro = `${provider} cancelled one visit. The rest of your repeating visits are unchanged.`;
+  const facts = [
+    { label: 'Service', value: title },
+    { label: 'Date', value: when },
+  ];
+
+  const subject = `${provider}: one visit was cancelled`;
+  const text = [
+    intro,
+    '',
+    ...facts.map((row) => `${row.label}: ${row.value}`),
+    '',
+    'Only this date was cancelled.',
+    visitsUrl ? `View your visits: ${visitsUrl}` : null,
+  ]
+    .filter((line): line is string => line != null)
+    .join('\n');
+
+  const html = wrapTransactionalEmailHtml({
+    brand,
+    preheader: intro,
+    bodyHtml: `
+      <p>${escapeHtmlLite(intro)}</p>
+      ${emailFactsHtml(facts)}
+      <p>${escapeHtmlLite('Only this date was cancelled.')}</p>
+      ${visitsUrl ? emailButtonHtml({ href: visitsUrl, label: 'View your visits', color: brand.brandColor }) : ''}
+    `.trim(),
+  });
+
+  const sent = await sendTransactionalEmail({
+    to: email,
+    subject: emailSubjectLine(subject),
+    text,
+    html,
+    idempotencyKey: seriesOccurrenceIdempotencyKey({
+      tenantId,
+      ruleId,
+      visitId: params.visitId,
+      startsAt: params.startsAt,
+    }),
+    ...emailDeliveryFields(brand),
+  });
+
+  if (!sent.ok) {
+    if (!('suppressed' in sent && sent.suppressed)) {
+      console.error('[recurringSeries] occurrence email failed:', sent.error);
+    }
+    return { emailed: 0, skipped: 'suppressed' in sent && sent.suppressed ? 'suppressed' : 'none' };
+  }
+  return { emailed: 1, skipped: 'none' };
+}
