@@ -100,6 +100,7 @@ function ensureHosts() {
     'qa-pro.lvh.me',
     'qa-trial.lvh.me',
     'qa-past-due.lvh.me',
+    'qa-paused.lvh.me',
   ];
   const missing = required.filter((host) => !hosts.includes(host));
   if (missing.length === 0) return;
