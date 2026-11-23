@@ -34,6 +34,7 @@ This is usually **not a bug**. Google found a duplicate URL (commonly `www.…` 
 - Homepage, pricing, start-trial, contact, compare hub, **features hub**
 - Feature pages (`/features/*`), audience pages (`/for/*`)
 - Competitor comparisons (`/compare/*`) — Jobber, ZenMaid, Launch27, Housecall Pro, Swept, plus category compares
+- Plan-included features (`/no-add-ons`) — Clean Scheduler tiers versus published Jobber and Housecall Pro prices. Cells come from `lib/marketing/noAddOnComparison.ts`.
 - Owner help hub + articles (`/help/cleaning-businesses/*`)
 - Legal/security pages, `/help/faq`, `/why-cleanscheduler`
 

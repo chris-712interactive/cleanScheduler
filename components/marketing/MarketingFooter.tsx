@@ -23,6 +23,9 @@ export function MarketingFooter() {
             <Link className={styles.link} href="/compare">
               Compare
             </Link>
+            <Link className={styles.link} href="/no-add-ons">
+              No add-on fees
+            </Link>
             <Link className={styles.link} href="/features">
               Features
             </Link>
