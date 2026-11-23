@@ -43,6 +43,49 @@ export function formatNextAppointmentWhen(
   return `${date} at ${time}`;
 }
 
+function calendarDayKey(iso: string, timeZone: string | null | undefined): string | null {
+  const instant = new Date(iso);
+  if (Number.isNaN(instant.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: safeTimeZone(timeZone),
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(instant);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value;
+  const year = value('year');
+  const month = value('month');
+  const day = value('day');
+  if (!year || !month || !day) return null;
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Start through end, in the workspace timezone.
+ * Same calendar day: Tuesday, June 8 at 9:00 AM – 11:00 AM.
+ * Overnight: Monday, June 8 at 10:00 PM – Tuesday, June 9 at 1:00 AM.
+ */
+export function formatVisitWindow(
+  startsAt: string,
+  endsAt: string,
+  timeZone: string | null | undefined,
+): string {
+  const start = formatNextAppointmentWhen(startsAt, timeZone);
+  if (Number.isNaN(new Date(endsAt).getTime())) return start;
+  const startDay = calendarDayKey(startsAt, timeZone);
+  const endDay = calendarDayKey(endsAt, timeZone);
+  const end =
+    startDay && endDay && startDay !== endDay
+      ? formatNextAppointmentWhen(endsAt, timeZone)
+      : formatDateTimeInTimeZone(endsAt, timeZone, {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+  if (end === '—') return start;
+  return `${start} – ${end}`;
+}
+
 /** e.g. Tue, May 12, 2025 */
 export function formatUpcomingVisitDate(
   startsAt: string,
