@@ -9,6 +9,7 @@ const commercialOrigin = `http://${accounts.commercial.slug}.lvh.me:3000`;
 const proOrigin = `http://${accounts.pro.slug}.lvh.me:3000`;
 const trialOrigin = `http://${accounts.trial.slug}.lvh.me:3000`;
 const pastDueOrigin = `http://${accounts.pastDue.slug}.lvh.me:3000`;
+const pausedOrigin = `http://${accounts.paused.slug}.lvh.me:3000`;
 const otherTenant = ['Quinn Example', '500 Office Park', 'Parker Owner', 'qa-commercial'];
 
 function workspaceDayKey(timeZone: string): string {
@@ -311,4 +312,52 @@ test('past_due pro office keeps paid routing tools', async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText('Upgrade your plan')).toHaveCount(0);
   await shot(page, 'past-due-routing');
+});
+
+test('paused pro office keeps trial routing and the billing portal', async ({ page }) => {
+  await keepTrafficLocal(page);
+  const day = workspaceDayKey(accounts.timeZone);
+  const cleanerId = accounts.paused.cleaner.userId;
+  await signIn(page, pausedOrigin, accounts.paused.owner.email);
+  await page.goto(`${pausedOrigin}/schedule?view=day&date=${day}&employee=${cleanerId}`);
+  await expectUpgrade(page, 'Suggest dispatch', 'Business');
+  await expect(page.getByRole('button', { name: 'Suggest dispatch', exact: true })).toHaveCount(0);
+  await expectUpgrade(page, 'Re-optimize');
+  await expect(page.getByRole('button', { name: 'Re-optimize', exact: true })).toHaveCount(0);
+  const stopOrder = page.getByRole('region', { name: 'Suggest stop order', exact: true });
+  await expect(stopOrder).toBeVisible();
+  await expect(stopOrder).not.toContainText('Upgrade your plan');
+  await page.getByRole('button', { name: 'Suggest stop order', exact: true }).click();
+  await expect(page.getByRole('list', { name: 'Suggested stop order' })).toContainText(
+    'Pause east',
+  );
+  await page.goto(`${pausedOrigin}/schedule/map?date=${day}`);
+  await expect(page.getByRole('heading', { name: 'Day map' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Suggest dispatch', exact: true })).toContainText(
+    'included in the Business plan',
+  );
+  await expect(page.getByRole('region', { name: 'Re-optimize', exact: true })).toContainText(
+    'included in the Pro plan',
+  );
+  await expect(
+    page.getByRole('region', { name: 'Suggest stop order', exact: true }),
+  ).not.toContainText('Upgrade your plan');
+  await page.goto(`${pausedOrigin}/schedule/drive-time`);
+  await expectUpgrade(page, 'Drive time');
+  await page.goto(`${pausedOrigin}/schedule/starts`);
+  await expectUpgrade(page, 'Start locations');
+
+  const billing = await page.goto(`${pausedOrigin}/billing`);
+  expect(billing?.status() ?? 500).toBeLessThan(500);
+  await expect(page).toHaveURL(/\/billing\/?$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Billing' })).toBeVisible();
+  const plan = page.getByRole('region', { name: 'Your workspace plan' });
+  await expect(plan.getByText('Pro', { exact: true })).toBeVisible();
+  await expect(plan.getByText('Active', { exact: true })).toBeVisible();
+  await expect(
+    plan.getByRole('button', { name: 'Manage plan in Stripe', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('This workspace is paused. Pick a plan')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Subscribe to continue' })).toHaveCount(0);
+  await shot(page, 'paused-routing');
 });

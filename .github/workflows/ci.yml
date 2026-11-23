@@ -73,7 +73,7 @@ jobs:
           set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          grep -q 'qa-past-due.lvh.me' /etc/hosts || printf '\n127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me qa-pro.lvh.me qa-trial.lvh.me qa-past-due.lvh.me\n' | sudo tee -a /etc/hosts
+          grep -q 'qa-paused.lvh.me' /etc/hosts || printf '\n127.0.0.1 lvh.me my.lvh.me admin.lvh.me qa-residential.lvh.me qa-commercial.lvh.me qa-pro.lvh.me qa-trial.lvh.me qa-past-due.lvh.me qa-paused.lvh.me\n' | sudo tee -a /etc/hosts
           npm run check:engines
           npm ci
       - name: Local Supabase, RLS, Playwright, geocode backfill

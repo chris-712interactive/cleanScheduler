@@ -203,22 +203,48 @@ async function seedTenant(admin, workspace, members) {
     userIds[member.email] = await ensureUser(admin, member, workspace.tenantId);
   }
 
+  const billing = {
+    tenant_id: workspace.tenantId,
+    status: workspace.billingStatus ?? 'active',
+    platform_plan: Object.prototype.hasOwnProperty.call(workspace, 'platformPlan')
+      ? workspace.platformPlan
+      : 'business',
+    billing_interval: Object.prototype.hasOwnProperty.call(workspace, 'billingInterval')
+      ? workspace.billingInterval
+      : 'month',
+  };
+  if (Object.prototype.hasOwnProperty.call(workspace, 'stripeSubscriptionStatus')) {
+    billing.stripe_subscription_status = workspace.stripeSubscriptionStatus;
+  }
+  if (workspace.stripeCustomerId) billing.stripe_customer_id = workspace.stripeCustomerId;
+  if (workspace.stripeSubscriptionId) {
+    billing.stripe_subscription_id = workspace.stripeSubscriptionId;
+  }
+  if (workspace.activatedAt) billing.activated_at = workspace.activatedAt;
+
   await must(
-    admin.from('tenant_billing_accounts').upsert(
-      {
-        tenant_id: workspace.tenantId,
-        status: workspace.billingStatus ?? 'active',
-        platform_plan: Object.prototype.hasOwnProperty.call(workspace, 'platformPlan')
-          ? workspace.platformPlan
-          : 'business',
-        billing_interval: Object.prototype.hasOwnProperty.call(workspace, 'billingInterval')
-          ? workspace.billingInterval
-          : 'month',
-      },
-      { onConflict: 'tenant_id' },
-    ),
+    admin.from('tenant_billing_accounts').upsert(billing, { onConflict: 'tenant_id' }),
     `billing ${workspace.slug}`,
   );
+
+  if (workspace.stripeSubscriptionStatus) {
+    const stored = await must(
+      admin
+        .from('tenant_billing_accounts')
+        .select('status, platform_plan, stripe_subscription_status, stripe_customer_id')
+        .eq('tenant_id', workspace.tenantId)
+        .maybeSingle(),
+      `read billing ${workspace.slug}`,
+    );
+    if (
+      stored?.stripe_subscription_status !== workspace.stripeSubscriptionStatus ||
+      stored?.status !== billing.status ||
+      stored?.platform_plan !== billing.platform_plan ||
+      (workspace.stripeCustomerId && stored?.stripe_customer_id !== workspace.stripeCustomerId)
+    ) {
+      throw new Error(`Billing row for ${workspace.slug} was not stored as seeded.`);
+    }
+  }
 
   const settings = await must(
     admin
@@ -515,6 +541,17 @@ export async function seedLocalStack(env = process.env) {
   ]);
   await seedRoutingExtras(admin, accounts.pastDue, pastDueUsers);
 
+  const pausedUsers = await seedTenant(admin, accounts.paused, [
+    accounts.paused.owner,
+    accounts.paused.cleaner,
+  ]);
+  await seedCustomers(admin, accounts.paused, null);
+  const pausedVisitIds = await seedVisits(admin, accounts.paused, pausedUsers);
+  await seedDispatchHours(admin, accounts.paused, pausedUsers, [
+    accounts.paused.owner,
+    accounts.paused.cleaner,
+  ]);
+
   const today = new Date().toISOString().slice(0, 10);
   const expectedIds = [
     ...residentialVisitIds,
@@ -522,6 +559,7 @@ export async function seedLocalStack(env = process.env) {
     ...proVisitIds,
     ...trialVisitIds,
     ...pastDueVisitIds,
+    ...pausedVisitIds,
   ];
   const visits = await must(
     admin.from('tenant_scheduled_visits').select('id, starts_at, tenant_id').in('id', expectedIds),
@@ -531,7 +569,7 @@ export async function seedLocalStack(env = process.env) {
     throw new Error(`Expected ${expectedIds.length} QA visits, found ${visits.length}.`);
   }
   console.log(
-    `local-stack seed ok tenants=5 visits=${visits.length} day=${today} emails=@example.test`,
+    `local-stack seed ok tenants=6 visits=${visits.length} day=${today} emails=@example.test`,
   );
 }
 

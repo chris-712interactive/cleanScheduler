@@ -8,7 +8,9 @@ Without Docker, `--postgres-fallback` is the RLS path. Playwright and the backfi
 
 `CENSUS_GEOCODE_URL` is ignored unless it is loopback `http`. The stub treats "outage" as HTTP 503 and "nomatch" as an empty Census match list.
 
-Seed emails are `@example.test`. The seed throws before it constructs a client if the URL is not local. Claims go to `app_metadata` only. Five workspaces: residential (Business), commercial (Starter), pro, trial (`trialing`), and past due (Pro, `past_due`). The last two exist so routing gates can be checked without Stripe.
+Seed emails are `@example.test`. The seed throws before it constructs a client if the URL is not local. Claims go to `app_metadata` only. Six workspaces: residential (Business), commercial (Starter), pro, trial (`trialing`), past due (Pro, `past_due`), and paused (Pro, mapped `active`, raw `stripe_subscription_status = paused`). The last three exist so routing gates can be checked without Stripe.
+
+`qa-paused` stores a fake `stripe_customer_id` so the billing page renders **Manage plan in Stripe**. Mapped `status` stays `active` because the `tenant_billing_status` enum has no `paused` value. Do not add a migration for this seed. Do not submit the portal button in the browser test: with no `STRIPE_SECRET_KEY` the action only redirects, and a configured key would call Stripe. The local-stack runner strips Stripe secrets before the seed and the suite.
 
 Migration `0129` is applied to the disposable database because it is a file in `supabase/migrations`. That does not authorize applying it to a hosted project. `0134` is already on shared dev and production; do not edit it. `0135_route_base_active_member.sql` is the active-member check for office route-base writes. An agent does not apply `0135` to a hosted database. The disposable local stack does, and `pro_routing_extras.sql` rejects a non-member `user_id` while a member insert still succeeds.
 
