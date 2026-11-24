@@ -4,6 +4,8 @@ alwaysApply: true
 ---
 
 # Agents for Development
+
+Product and code map: [AGENTS.md](../../AGENTS.md). This rule does not restate it.
 For agents that are developing code for the project, please continue to use the most up to date version of Grok on High effort.
 
 # Agents for Submitting to Github
