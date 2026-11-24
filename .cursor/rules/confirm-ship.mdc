@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Confirm before shipping
 
+Product and code map: [AGENTS.md](../../AGENTS.md). This rule does not restate it.
+
 After a set of fixes or changes is done, ask once whether to commit and push to `dev` and `main`. Do not commit or push until the user says yes.
 
 Keep the question short. One question covers the whole set of changes from that turn.

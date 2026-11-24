@@ -4,6 +4,8 @@ description: After code has shipped, make sure to do the following.
 ---
 
 # Self Document
+
+Product and code map: [AGENTS.md](../../AGENTS.md). Session notes go in `docs/agents/` and link from that map. Do not paste the map here.
 After every single shipment of code, ensure that you have self-documented anything that you learned during the session.  This would include any information that is useful for you in future sessions to keep everything cohesive.
 
 # Where to Self Document
