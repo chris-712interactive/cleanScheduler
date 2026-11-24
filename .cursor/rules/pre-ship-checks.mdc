@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Pre-ship checks (PRs)
 
+Product and code map: [AGENTS.md](../../AGENTS.md). This rule does not restate it.
+
 Before opening a PR or declaring work ready to ship, **always** run these commands and fix any failures:
 
 ```bash
