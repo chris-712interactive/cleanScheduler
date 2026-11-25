@@ -36,7 +36,7 @@ Declared in `package.json` and `.nvmrc` (installed versions float inside these r
 - Supabase: `@supabase/supabase-js` `^2.110.7`, `@supabase/ssr` `^0.12.3`. Postgres, Auth, Storage. No `supabase/functions` directory. RLS is the tenant boundary.
 - UI: SCSS modules plus `styles/` tokens. No Tailwind. Radix primitives, Lucide icons. Stylelint forbids stray hex (`styles/tokens/_colors.scss`).
 - Zod `^4` for env and inputs (`lib/env.ts`). `rrule` `^2.8.1` for series. Stripe `^22`, Plaid `^43`, Resend `^6`, `@sentdm/sentdm` for SMS. MapLibre for the day map. Passkeys via `@simplewebauthn/*`.
-- Host: Vercel. Crons in `vercel.json` hit `app/api/cron/*`. Routing engine is a separate Docker stack in `infra/routing/` (Valhalla + VROOM behind Caddy), not part of the Next process.
+- Host: Vercel. Crons in `vercel.json` hit `app/api/cron/*`. Preview builds can be skipped (`docs/agents/vercel-builds.md`). Routing engine is a separate Docker stack in `infra/routing/` (Valhalla + VROOM behind Caddy), not part of the Next process.
 - Tests: Vitest `^4` (`vitest.config.ts`, `**/*.test.ts`, Node environment). Playwright `^1.61` in three configs.
 
 Request interception is `proxy.ts` at the repo root. There is no `middleware.ts`.
@@ -259,7 +259,7 @@ Cursor process rules (`.cursor/rules/*.mdc`) and `CLAUDE.md` point here. They do
 | Plaid reconciliation             | `app/tenant/billing/bank-connection/actions.ts`, `lib/plaid/server.ts`, `app/api/webhooks/plaid/route.ts`                         |
 | Platform outreach                | `lib/admin/outreachActions.ts`, `app/admin/outreach/`, `app/api/cron/outreach-send/route.ts`                                      |
 
-Deeper agent notes (read the one that matches; do not load the folder): `docs/agents/address-geocoding.md`, `cleaner-schedule-email.md`, `day-map.md`, `dispatch.md`, `hosted-dev-psql-env.md`, `local-qa-stack.md`, `next-16-4-5-security.md`, `no-add-ons-page.md`, `plan-tier-not-addons.md`, `pro-routing.md`, `quote-create-partial-save.md`, `recurring-series-email.md`, `routing-engine.md`, `routing-entitlements.md`, `stop-order.md`, `tenant-claim-sync-race.md`, `tenant-claims-user-metadata.md`, `text-packs.md`, `transactional-email-gaps.md`.
+Deeper agent notes (read the one that matches; do not load the folder): `docs/agents/address-geocoding.md`, `cleaner-schedule-email.md`, `day-map.md`, `dispatch.md`, `hosted-dev-psql-env.md`, `local-qa-stack.md`, `next-16-4-5-security.md`, `no-add-ons-page.md`, `plan-tier-not-addons.md`, `pro-routing.md`, `quote-create-partial-save.md`, `recurring-series-email.md`, `routing-engine.md`, `routing-entitlements.md`, `stop-order.md`, `tenant-claim-sync-race.md`, `tenant-claims-user-metadata.md`, `text-packs.md`, `transactional-email-gaps.md`, `vercel-builds.md`.
 
 ## Do not
 

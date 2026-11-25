@@ -1,4 +1,10 @@
 {
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
+  "git": {
+    "deploymentEnabled": {
+      "dependabot/**": false
+    }
+  },
   "redirects": [
     {
       "source": "/:path*",
